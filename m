@@ -1,415 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2JVDwD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Oct 2012 23:52:03 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:41139 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751083Ab2JVDwB (ORCPT
+	id S1751594Ab2JVEDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 00:03:55 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29148 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2JVEDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Oct 2012 23:52:01 -0400
-From: Shiraz Hashim <shiraz.hashim@st.com>
-To: <thierry.reding@avionic-design.de>
-Cc: <linux-kernel@vger.kernel.org>, <spear-devel@list.st.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3] PWM: Add SPEAr PWM chip driver support
-Date: Mon, 22 Oct 2012 09:21:43 +0530
-Message-ID: <1350877903-8578-1-git-send-email-shiraz.hashim@st.com>
-X-Mailer: git-send-email 1.7.10
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 22 Oct 2012 00:03:54 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-24-5084c5a81d9a
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        cw00.choi@samsung.com, myungjoo.ham@gmail.com
+Subject: [GIT PULL] extcon fixes for Linux 3.7
+Date: Mon, 22 Oct 2012 13:04:40 +0900
+Message-id: <1350878680-12164-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t8zbd0VR1sCDM4fErW4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZjSs6mAuOiFY83LuFqYGxQaiLkZNDQsBE4v6dR6wQtpjEhXvr
+	2boYuTiEBJYxSvw8s5EVpmjl7/ssEInpjBL/f59mhXCWMklsPPiMBaSKTUBXYuuGu2C2iICc
+	xJPbf5hBbGaBHImutz1gtrCAnsTpbdvAalgEVCUWfV/MDmLzCnhIzJzyCWqbgsSCe2/ZIGoE
+	JL5NPgRUzwEUl5XYdIAZomQLm8SUn0wQtqTEwRU3WCYwCi5gZFjFKJpakFxQnJSea6RXnJhb
+	XJqXrpecn7uJERJS0jsYVzVYHGIU4GBU4uG1mNESIMSaWFZcmXuIUYKDWUmE91Q8UIg3JbGy
+	KrUoP76oNCe1+BCjD9AhE5mlRJPzgeGeVxJvaGxgbGhoaWhmamlqgENYSZy32SMlQEggPbEk
+	NTs1tSC1CGYcEwenVAOjRbPo65iO79cNVvE1Gy+eurF8nebdxecyp/zwe31Pev/p5pSwlhpx
+	9nOHfactOXg4W2PhSvkzPVJhoTXT5Cxa57y4UWsXGsV7lHGDt1jIJNacc06pW755isw+mC6z
+	8GZQzaE50ntP6pR09E89aONy5GAq29TJhy5bT7z/9sucJxpWJ4/x7opcq8RSnJFoqMVcVJwI
+	APD5wvxWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9jQd0VR1sCDF41Clpc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjMYVHcwFR0QrHu7dwtTA
+	2CDUxcjJISFgIrHy930WCFtM4sK99WxdjFwcQgLTGSX+/z7NCuEsZZLYePAZWBWbgK7E1g13
+	wWwRATmJJ7f/MIPYzAI5El1ve8BsYQE9idPbtoHVsAioSiz6vpgdxOYV8JCYOeUTK8Q2BYkF
+	996yTWDkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOGSfSe9gXNVgcYhRgINRiYfX
+	YkZLgBBrYllxZe4hRgkOZiUR3lPxQCHelMTKqtSi/Pii0pzU4kOMPkDbJzJLiSbnA+MpryTe
+	0NjEzMjSyMzYxNzYGIewkjhvs0dKgJBAemJJanZqakFqEcw4Jg5OqQbGuRdUvyyoep7hGuoY
+	sFZmrmzE0xX5+qysTdrJvueOaXTPc9CyPDG1s/Xy6rVaezqW/bjelXAl7voe6b6eU8zl625s
+	zw7U8NF8WThrvqXP46kZTX/2StsWPcjrmN0qVL8310Tsck+W1KQtPx7nXA+I3LZYbnvs1Iaa
+	x3JJt+/1iy8Tq01jCFmuxFKckWioxVxUnAgAG+JH7oYCAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for PWM chips present on SPEAr platforms. These PWM
-chips support 4 channel output with programmable duty cycle and
-frequency.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-More details on these PWM chips can be obtained from relevant
-chapter of reference manual, present at following[1] location.
+Hello Greg,
 
-1. http://www.st.com/internet/mcu/product/251211.jsp
 
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
-Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Reviewed-by: Vipin Kumar <vipin.kumar@st.com>
----
-Changes:-
-V2 --> V3:
-   * remove "disabled" line from pwm dt binding documentation
-   * remove un-necessary check on pwm chip (for NULL) in remove.
-  
-V1 --> V2:
-   * make proper reference to pwm and pwm chip
-   * take care to capitalize PWM at appropriate places
-   * fix compatible string to the SoC where pwm chip was introduced
-   * Rename the documentation file to the name of driver
-   * Fix cosmetic changes like names, function name alignment, paragraph
-     formating, comments placement and formating, etc.
-   * Group and associate the bit field definitions to their registers
-   * Fix kerneldoc for structure definition
-   * Use chip to name pwm device and pwm for the channel instance
-   * Remove init section qualifiers
-   * Remove ifdefs around device tree from code and add dependency on CONFIG_OF
-   * prepare/unprepare clock once in probe/remove and just enable/disable
-     at rest of the places.
-   * Use _relaxed for readl/writel.
-   * Fix pwm disable part in remove
- 
- .../devicetree/bindings/pwm/spear-pwm.txt          |   18 ++
- drivers/pwm/Kconfig                                |   11 +
- drivers/pwm/Makefile                               |    1 +
- drivers/pwm/pwm-spear.c                            |  280 ++++++++++++++++++++
- 4 files changed, 310 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/spear-pwm.txt
- create mode 100644 drivers/pwm/pwm-spear.c
+The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
 
-diff --git a/Documentation/devicetree/bindings/pwm/spear-pwm.txt b/Documentation/devicetree/bindings/pwm/spear-pwm.txt
-new file mode 100644
-index 0000000..3ac779d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/spear-pwm.txt
-@@ -0,0 +1,18 @@
-+== ST SPEAr SoC PWM controller ==
-+
-+Required properties:
-+- compatible: should be one of:
-+  - "st,spear320-pwm"
-+  - "st,spear1340-pwm"
-+- reg: physical base address and length of the controller's registers
-+- #pwm-cells: number of cells used to specify PWM which is fixed to 2 on
-+  SPEAr. The first cell specifies the per-chip index of the PWM to use and
-+  the second cell is the period in nanoseconds.
-+
-+Example:
-+
-+        pwm: pwm@a8000000 {
-+            compatible ="st,spear320-pwm";
-+            reg = <0xa8000000 0x1000>;
-+            #pwm-cells = <2>;
-+        };
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index ed81720..6e556c7 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -112,6 +112,17 @@ config PWM_SAMSUNG
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-samsung.
- 
-+config PWM_SPEAR
-+	tristate "STMicroelectronics SPEAr PWM support"
-+	depends on PLAT_SPEAR
-+	depends on OF
-+	help
-+	  Generic PWM framework driver for the PWM controller on ST
-+	  SPEAr SoCs.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-spear.
-+
- config PWM_TEGRA
- 	tristate "NVIDIA Tegra PWM support"
- 	depends on ARCH_TEGRA
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index acfe482..6512786 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
- obj-$(CONFIG_PWM_PXA)		+= pwm-pxa.o
- obj-$(CONFIG_PWM_SAMSUNG)	+= pwm-samsung.o
- obj-$(CONFIG_PWM_TEGRA)		+= pwm-tegra.o
-+obj-$(CONFIG_PWM_SPEAR)		+= pwm-spear.o
- obj-$(CONFIG_PWM_TIECAP)	+= pwm-tiecap.o
- obj-$(CONFIG_PWM_TIEHRPWM)	+= pwm-tiehrpwm.o
- obj-$(CONFIG_PWM_TWL6030)	+= pwm-twl6030.o
-diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
-new file mode 100644
-index 0000000..bb63508
---- /dev/null
-+++ b/drivers/pwm/pwm-spear.c
-@@ -0,0 +1,280 @@
-+/*
-+ * ST Microelectronics SPEAr Pulse Width Modulator driver
-+ *
-+ * Copyright (C) 2012 ST Microelectronics
-+ * Shiraz Hashim <shiraz.hashim@st.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+#include <linux/kernel.h>
-+#include <linux/math64.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+
-+#define NUM_PWM		4
-+
-+/* PWM registers and bits definitions */
-+#define PWMCR			0x00	/* Control Register */
-+#define PWMCR_PWM_ENABLE	0x1
-+#define PWMCR_PRESCALE_SHIFT	2
-+#define PWMCR_MIN_PRESCALE	0x00
-+#define PWMCR_MAX_PRESCALE	0x3FFF
-+
-+#define PWMDCR			0x04	/* Duty Cycle Register */
-+#define PWMDCR_MIN_DUTY		0x0001
-+#define PWMDCR_MAX_DUTY		0xFFFF
-+
-+#define PWMPCR			0x08	/* Period Register */
-+#define PWMPCR_MIN_PERIOD	0x0001
-+#define PWMPCR_MAX_PERIOD	0xFFFF
-+
-+/* Following only available on 13xx SoCs */
-+#define PWMMCR			0x3C	/* Master Control Register */
-+#define PWMMCR_PWM_ENABLE	0x1
-+
-+/**
-+ * struct spear_pwm_chip - struct representing pwm chip
-+ *
-+ * @mmio_base: base address of pwm chip
-+ * @clk: pointer to clk structure of pwm chip
-+ * @chip: linux pwm chip representation
-+ * @dev: pointer to device structure of pwm chip
-+ */
-+struct spear_pwm_chip {
-+	void __iomem *mmio_base;
-+	struct clk *clk;
-+	struct pwm_chip	chip;
-+	struct device *dev;
-+};
-+
-+static inline struct spear_pwm_chip *to_spear_pwm_chip(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct spear_pwm_chip, chip);
-+}
-+
-+static inline u32 spear_pwm_readl(struct spear_pwm_chip *chip, unsigned int num,
-+				  unsigned long offset)
-+{
-+	return readl_relaxed(chip->mmio_base + (num << 4) + offset);
-+}
-+
-+static inline void spear_pwm_writel(struct spear_pwm_chip *chip,
-+				    unsigned int num, unsigned long offset,
-+				    unsigned long val)
-+{
-+	writel_relaxed(val, chip->mmio_base + (num << 4) + offset);
-+}
-+
-+int spear_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm, int duty_ns,
-+		     int period_ns)
-+{
-+	struct spear_pwm_chip *pc = to_spear_pwm_chip(chip);
-+	u64 val, div, clk_rate;
-+	unsigned long prescale = PWMCR_MIN_PRESCALE, pv, dc;
-+	int ret;
-+
-+	/*
-+	 * Find pv, dc and prescale to suit duty_ns and period_ns. This is done
-+	 * according to formulas described below:
-+	 *
-+	 * period_ns = 10^9 * (PRESCALE + 1) * PV / PWM_CLK_RATE
-+	 * duty_ns = 10^9 * (PRESCALE + 1) * DC / PWM_CLK_RATE
-+	 *
-+	 * PV = (PWM_CLK_RATE * period_ns) / (10^9 * (PRESCALE + 1))
-+	 * DC = (PWM_CLK_RATE * duty_ns) / (10^9 * (PRESCALE + 1))
-+	 */
-+	clk_rate = clk_get_rate(pc->clk);
-+	while (1) {
-+		div = 1000000000;
-+		div *= 1 + prescale;
-+		val = clk_rate * period_ns;
-+		pv = div64_u64(val, div);
-+		val = clk_rate * duty_ns;
-+		dc = div64_u64(val, div);
-+
-+		/* if duty_ns and period_ns are not achievable then return */
-+		if (pv < PWMPCR_MIN_PERIOD || dc < PWMDCR_MIN_DUTY)
-+			return -EINVAL;
-+
-+		/*
-+		 * if pv and dc have crossed their upper limit, then increase
-+		 * prescale and recalculate pv and dc.
-+		 */
-+		if (pv > PWMPCR_MAX_PERIOD || dc > PWMDCR_MAX_DUTY) {
-+			if (++prescale > PWMCR_MAX_PRESCALE)
-+				return -EINVAL;
-+			continue;
-+		}
-+		break;
-+	}
-+
-+	/*
-+	 * NOTE: the clock to PWM has to be enabled first before writing to the
-+	 * registers.
-+	 */
-+	ret = clk_enable(pc->clk);
-+	if (ret)
-+		return ret;
-+
-+	spear_pwm_writel(pc, pwm->hwpwm, PWMCR,
-+			prescale << PWMCR_PRESCALE_SHIFT);
-+	spear_pwm_writel(pc, pwm->hwpwm, PWMDCR, dc);
-+	spear_pwm_writel(pc, pwm->hwpwm, PWMPCR, pv);
-+	clk_disable(pc->clk);
-+
-+	return 0;
-+}
-+
-+static int spear_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct spear_pwm_chip *pc = to_spear_pwm_chip(chip);
-+	int rc = 0;
-+	u32 val;
-+
-+	rc = clk_enable(pc->clk);
-+	if (rc < 0)
-+		return rc;
-+
-+	val = spear_pwm_readl(pc, pwm->hwpwm, PWMCR);
-+	val |= PWMCR_PWM_ENABLE;
-+	spear_pwm_writel(pc, pwm->hwpwm, PWMCR, val);
-+
-+	return 0;
-+}
-+
-+static void spear_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct spear_pwm_chip *pc = to_spear_pwm_chip(chip);
-+	u32 val;
-+
-+	val = spear_pwm_readl(pc, pwm->hwpwm, PWMCR);
-+	val &= ~PWMCR_PWM_ENABLE;
-+	spear_pwm_writel(pc, pwm->hwpwm, PWMCR, val);
-+
-+	clk_disable(pc->clk);
-+}
-+
-+static const struct pwm_ops spear_pwm_ops = {
-+	.config = spear_pwm_config,
-+	.enable = spear_pwm_enable,
-+	.disable = spear_pwm_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int spear_pwm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct spear_pwm_chip *pc;
-+	struct resource *r;
-+	int ret;
-+	u32 val;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!r) {
-+		dev_err(&pdev->dev, "no memory resources defined\n");
-+		return -ENODEV;
-+	}
-+
-+	pc = devm_kzalloc(&pdev->dev, sizeof(*pc), GFP_KERNEL);
-+	if (!pc) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	pc->dev = &pdev->dev;
-+
-+	pc->mmio_base = devm_request_and_ioremap(&pdev->dev, r);
-+	if (!pc->mmio_base)
-+		return -EADDRNOTAVAIL;
-+
-+	platform_set_drvdata(pdev, pc);
-+
-+	pc->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pc->clk))
-+		return PTR_ERR(pc->clk);
-+
-+	pc->chip.dev = &pdev->dev;
-+	pc->chip.ops = &spear_pwm_ops;
-+	pc->chip.base = -1;
-+	pc->chip.npwm = NUM_PWM;
-+
-+	ret = pwmchip_add(&pc->chip);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = clk_prepare_enable(pc->clk);
-+	if (ret < 0)
-+		return pwmchip_remove(&pc->chip);
-+
-+	if (np && of_device_is_compatible(np, "st,spear1340-pwm")) {
-+		/*
-+		 * Following enables PWM chip, channels would still be
-+		 * enabled individually through their control register
-+		 */
-+		val = readl_relaxed(pc->mmio_base + PWMMCR);
-+		val |= PWMMCR_PWM_ENABLE;
-+		writel_relaxed(val, pc->mmio_base + PWMMCR);
-+
-+	}
-+
-+	/* only disable the clk and leave it prepared */
-+	clk_disable(pc->clk);
-+
-+	return 0;
-+}
-+
-+static int spear_pwm_remove(struct platform_device *pdev)
-+{
-+	struct spear_pwm_chip *pc = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = 0; i < NUM_PWM; i++) {
-+		struct pwm_device *pwm = &pc->chip.pwms[i];
-+
-+		if (test_bit(PWMF_ENABLED, &pwm->flags)) {
-+			spear_pwm_writel(pc, i, PWMCR, 0);
-+			clk_disable(pc->clk);
-+		}
-+	}
-+
-+	/* clk was prepared in probe, hence unprepare it here */
-+	clk_unprepare(pc->clk);
-+	return pwmchip_remove(&pc->chip);
-+}
-+
-+static struct of_device_id spear_pwm_of_match[] = {
-+	{ .compatible = "st,spear320-pwm" },
-+	{ .compatible = "st,spear1340-pwm" },
-+	{ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, spear_pwm_of_match);
-+
-+static struct platform_driver spear_pwm_driver = {
-+	.driver = {
-+		.name = "spear-pwm",
-+		.of_match_table = spear_pwm_of_match,
-+	},
-+	.probe = spear_pwm_probe,
-+	.remove = spear_pwm_remove,
-+};
-+
-+module_platform_driver(spear_pwm_driver);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Shiraz Hashim <shiraz.hashim@st.com>");
-+MODULE_AUTHOR("Viresh Kumar <viresh.kumar@linaro.com>");
-+MODULE_ALIAS("platform:spear-pwm");
--- 
-1.7.10
+  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
 
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git for-next
+
+Axel Lin (4):
+      extcon: adc-jack: Fix checking return value of request_any_context_irq
+      extcon: adc-jack: Add missing MODULE_LICENSE
+      extcon: Fix kerneldoc for extcon_set_cable_state and extcon_set_cable_state_
+      extcon: max77693: Use max77693_update_reg for rmw operations
+
+Chanwoo Choi (1):
+      extcon: MAX77693: Add platform data for MUIC device to initialize registers
+
+Devendra Naga (1):
+      extcon-max8997: remove usage of ret in max8997_muic_handle_charger_type_detach
+
+Jenny TC (1):
+      extcon : register for cable interest by cable name
+
+Peter Huewe (2):
+      extcon: Unregister compat class at module unload to fix oops
+      extcon: unregister compat link on cleanup
+
+Sachin Kamat (2):
+      extcon: Remove duplicate inclusion of extcon.h header file
+      extcon: Fix return value in extcon_register_interest()
+
+anish kumar (5):
+      extcon: standard cable names definition and declaration changed
+      extcon: optimising the check_mutually_exclusive function
+      extcon: checkpatch warning removal
+      extcon: driver model release call not needed
+      extcon: trivial: kfree missed from remove path
+
+ drivers/extcon/extcon-adc-jack.c |   10 ++-
+ drivers/extcon/extcon-class.c    |  143 +++++++++++++++++++++----------------
+ drivers/extcon/extcon-gpio.c     |    1 -
+ drivers/extcon/extcon-max77693.c |   46 +++++++++---
+ drivers/extcon/extcon-max8997.c  |    6 +-
+ include/linux/extcon.h           |    2 +-
+ include/linux/mfd/max77693.h     |   13 ++++
+ 7 files changed, 138 insertions(+), 83 deletions(-)
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhMSxAAoJEBOhurvWBoCKpYUP/2XtOkfRONMoSzdTjmE4sR+m
+6Ze1rB4T6gi8NYudpcwhVJ9x/vGubJgFUEKw9seE7+j6Ryi/UxgnDdQMRpClnAg0
+cbDvb6cuzNdO+VWyOh4hlVtIaQKiet2/ZCqwlliX3Gg3zB5AizYXFHwNy/iAJvfO
+6xqpeFay57Z3LISxQSXJPJGv4AT6la4hZzDwUMpTJubc/WHqCkZpwDFPFsRZi7Pr
++0BqLtnNZdqdzD/c5GwDo1Wp3TU1EuL+DPYjAYE5szLAhTVZ8/a6et2CUzskjXGF
+8EGgfavxAYGu7O1YMlukTHQxfbJ9Gdk7d0nWCIppcQ62JB23C+1H7OX/7Mx75vzX
+ZlmsJQvwh8m18LmZg6X5nwTkGX+XNPjZeCh6uOnBOV+TvHET3Kj8ZY03ELSPxCGD
+bGFDwHucEUwd1L/eIltoHRyscg0HkRiUVTmN/HdetLihOGMgK8Kglbz3kQGuxmmu
+2lCMD6Hdr6xkG4VkhHCkEPUY8fLh4Bvi8AQTP2qDmuYA5yNZFOavV2g59oLIQ3f1
+9LTu014T7QuqTyY2zQYZKIVQG1sGcj2q9y0/AXbWjuZKqoWlBqRp/D9yvUcdnPxo
+kqwi4nv32Vnn1rzLFFxf65uDQ2L4sNGxWPo7vCGlhfYyNQoYOSd63UJfPstbFW28
+JHVWg71WQPxR1mGCUGYk
+=9KTH
+-----END PGP SIGNATURE-----
