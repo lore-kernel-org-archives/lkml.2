@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2JVOXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:23:32 -0400
-Received: from david.siemens.de ([192.35.17.14]:34612 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab2JVOXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:23:31 -0400
-Message-ID: <508556D6.4010802@siemens.com>
-Date: Mon, 22 Oct 2012 16:23:18 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755068Ab2JVOXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:23:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38366 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755013Ab2JVOXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:23:43 -0400
+Date: Mon, 22 Oct 2012 15:23:30 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+ GENERIC_KERNEL_EXECVE
+Message-ID: <20121022142330.GE8072@arm.com>
+References: <20121016223508.GR2616@ZenIV.linux.org.uk>
+ <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
+ <20121019213548.GR2616@ZenIV.linux.org.uk>
+ <5082A1F1.3080303@tilera.com>
+ <20121020153401.GT2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-References: <20121022114311.GQ29310@redhat.com> <508531E1.2030307@siemens.com> <508539A8.40404@redhat.com> <50853FF1.8010809@siemens.com> <20121022125301.GS29310@redhat.com> <50854232.8090309@siemens.com> <508542EF.5050401@redhat.com> <508544B6.6070301@siemens.com> <20121022130810.GW29310@redhat.com> <5085495D.6060307@siemens.com> <20121022140056.GY29310@redhat.com>
-In-Reply-To: <20121022140056.GY29310@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121020153401.GT2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-22 16:00, Gleb Natapov wrote:
-> On Mon, Oct 22, 2012 at 03:25:49PM +0200, Jan Kiszka wrote:
->> On 2012-10-22 15:08, Gleb Natapov wrote:
->>> On Mon, Oct 22, 2012 at 03:05:58PM +0200, Jan Kiszka wrote:
->>>> On 2012-10-22 14:58, Avi Kivity wrote:
->>>>> On 10/22/2012 02:55 PM, Jan Kiszka wrote:
->>>>>>> Since the userspace change is needed the idea is dead, but if we could
->>>>>>> implement it I do not see how it can hurt the latency if it would be the
->>>>>>> only mechanism to use coalesced mmio buffer. Checking that the ring buffer
->>>>>>> is empty is cheap and if it is not empty it means that kernel just saved
->>>>>>> you a lot of 8 bytes exists so even after iterating over all the entries there
->>>>>>> you still saved a lot of time.
->>>>>>
->>>>>> When taking an exit for A, I'm not interesting in flushing stuff for B
->>>>>> unless I have a dependency. Thus, buffers would have to be per device
->>>>>> before extending their use.
->>>>>
->>>>> Any mmio exit has to flush everything.  For example a DMA caused by an
->>>>> e1000 write has to see any writes to the framebuffer, in case the guest
->>>>> is transmitting its framebuffer to the outside world.
->>>>
->>>> We already flush when that crazy guest actually accesses the region, no
->>>> need to do this unconditionally.
->>>>
->>> What if framebuffer is accessed from inside the kernel? Is this case handled?
->>
->> Unless I miss a case now, there is no direct access to the framebuffer
->> possible when we are also doing coalescing. Everything needs to go
->> through userspace.
->>
-> Yes, with frame buffer is seems to be the case. One can imagine ROMD
-> device that is MMIO on write but still can be accessed for read from
-> kernel, but it cannot be coalesced even if coalesced buffer is flushed
-> on every exit.
+Hi Al,
 
-Usually, a ROMD device has a stable content as long as it is fast
-read/slow write. Once it switches mode, it is slow read as well.
+Sorry, couldn't reply earlier.
 
-Jan
+On Sat, Oct 20, 2012 at 04:34:01PM +0100, Al Viro wrote:
+> On Sat, Oct 20, 2012 at 09:06:57AM -0400, Chris Metcalf wrote:
+> > First, the compat_sys_execve() declaration provided in
+> > arch/tile/include/asm/compat.h isn't right, so I deleted that (you had only
+> > deleted the PTREGS_SYSCALL trampoline declaration, _compat_sys_execve).
+> > 
+> > However, then arch/tile/kernel/compat.c failed to build, because
+> > <linux/compat.h> is included before <asm/unistd.h>, and <asm/unistd.h>
+> > provides __ARCH_WANT_SYS_EXECVE, and so we end up with no declaration at
+> > all for compat_sys_execve.  For most platforms this is no big deal, but on
+> > tile we use the __SYSCALL #define to provide the actual syscall table, and
+> > for that to work we need a declaration in scope for each syscall at the
+> > time we create the table.
+> > 
+> > The best solution seems likely to be to copy the other place in
+> > <linux/compat.h> where we need to do something configurable (that is,
+> > CONFIG_ARCH_WANT_OLD_COMPAT_IPC), and just convert __ARCH_WANT_SYS_EXECVE
+> > to be a Kconfig option.
+> 
+> Frankly, I hope to get rid of the damn thing completely.  By now we have
+> at least some variant of execve conversions for just about everything;
+> I certainly hope that by the beginning of the next cycle we'll have it
+> defined on everything.  And put unconditional declarations in syscalls.h
+> and compat.h
+> 
+> Actually, we can make the declaration in linux/compat.h unconditional
+> right now.  The only obstacle is the situation on arm64; there the mainline
+> has C variant of that sucker (with struct pt_regs * in arguments) in
+> arch/arm64/kernel/sys_compat.c.  So we could ask Linus to pull
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64 execve
+> and then do the following in one patch:
+> 	introduce current_pt_regs() on tile (from your commit)
+> 	get rid of pt_regs * argument in tile compat_sys_execve(), making it
+> use current_pt_regs(); kill its wrapper
+> 	kill the declarations of compat_sys_execve()/_compat_sys_execve()
+> in tile asm/compat.h
+> 	make declaration in linux/compat.h unconditional
+> Note that this does *not* depend on kernel_thread/kernel_execve patch -
+> kernel_execve() is never going to hit compat_sys_execve(), since it's
+> only called from kernel threads and those are not going to be 32bit.
+> After that we can do kernel_thread/kernel_execve commit and
+> sys_execve() conversion with nothing outside of arch/tile touched.
+> 
+> Comments?  If Catalin feels that arm64 series needs more testing, we could
+> reorder it a bit - all we really need there is getting rid of pt_regs argument
+> in compat_sys_execve() and just as on tile, that isn't tied into kernel_execve
+> and kernel_thread issues.
+
+I don't mind merging it earlier (if Linus is ok to take it after the
+merging window). It works fine in my tests.
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Catalin
