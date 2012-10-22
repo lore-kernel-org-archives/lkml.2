@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab2JVVIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:08:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37913 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab2JVVIE (ORCPT
+	id S1756327Ab2JVVIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:08:16 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:56433 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932255Ab2JVVIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:08:04 -0400
-Date: Tue, 23 Oct 2012 08:07:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@google.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Tree for linux-next
-Message-Id: <20121023080753.bc1fc8b0982d72594653ca69@canb.auug.org.au>
-In-Reply-To: <CAGXu5j+D+pFort3RPLnXsrX5MB6sn1NYnkbx6=nj3NgRkpRirQ@mail.gmail.com>
-References: <CAGXu5j+D+pFort3RPLnXsrX5MB6sn1NYnkbx6=nj3NgRkpRirQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z"
+	Mon, 22 Oct 2012 17:08:12 -0400
+From: Constantine Shulyupin <const@MakeLinux.com>
+To: gregkh@linuxfoundation.org, oneukum@suse.de
+Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH v3] USB: usb-skeleton.c: fix compilation error and restored kref_put on fail in skel_open
+Date: Mon, 22 Oct 2012 23:08:15 +0200
+Message-Id: <1350940095-1106-1-git-send-email-const@MakeLinux.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.180.233 authed with poster@makelinux.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Constantine Shulyupin <const@MakeLinux.com>
 
-Hi Kees,
+Fixing compilaton error.
+Incrementing usage counter only on successful execution of skel_open.
+Removing redundant locking
 
-On Mon, 22 Oct 2012 08:44:26 -0700 Kees Cook <keescook@google.com> wrote:
->
-> Now that we're past rc1, can you please add my tree to your linux-next pu=
-lls?
->=20
-> drop-experimental  git
-> git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git#linux-next
+Some last changes in function skel_open and finally commit
+52a7499 Revert "USB: usb-skeleton.c: fix open/disconnect race"
+introduced a bug in function skel_open, which this patch fixes.
 
-Thanks for the reminder.  It will be included from today.
+--
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+Changelog:
+Changes since v2:
+- refactoring
+- Removing redundant mutex synchronization.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Changes since v1:
+- Fixed accordingly feedback of Oliver Neukum oneukum@suse.de: also need to drop the lock.
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+---
+ drivers/usb/usb-skeleton.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
+index 0616f23..ce31017 100644
+--- a/drivers/usb/usb-skeleton.c
++++ b/drivers/usb/usb-skeleton.c
+@@ -105,20 +105,15 @@ static int skel_open(struct inode *inode, struct file *file)
+ 		goto exit;
+ 	}
+ 
+-	/* increment our usage count for the device */
+-	kref_get(&dev->kref);
+-
+-	/* lock the device to allow correctly handling errors
+-	 * in resumption */
+-	mutex_lock(&dev->io_mutex);
+-
+ 	retval = usb_autopm_get_interface(interface);
+ 	if (retval)
+-		goto out_err;
++		goto exit;
++
++	/* increment our usage count for the device */
++	kref_get(&dev->kref);
+ 
+ 	/* save our object in the file's private structure */
+ 	file->private_data = dev;
+-	mutex_unlock(&dev->io_mutex);
+ 
+ exit:
+ 	return retval;
+-- 
+1.7.9.5
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQhbWpAAoJEECxmPOUX5FEPToP/jPW00UYmpVNorVKCW1kPBdg
-mH+nGyS8TPALDEUnE2Z6wxXrX2NrsaNvCE6DflirZXX45phHQ79AGVbjH+z6xZfR
-NoDtO33PvlAOyR996swLL6g9Soh0jePA4W1NSwA7tG6H596LONKJ0m7CR9Vp2xx3
-sxu3YzFuaSHR0Bd8Wtw2YcaDbJP2fOgaqU57+1nCUovopjvKLczmDj9129mwqB2y
-9TBwZLPURHU/ketf14eOTWW6dY/klmzRfaPpCVBZmJHXYgEWVK2MBilJbuWAGb4z
-h4wYR646O/C/k41UHmBWoOulOvCuDUfYmQzcgEz+10BojPZRY1oeR9PwnNZrEGlB
-hfxjTM0v+R6JJsUtPQX9vLJzkB/rLzFjGhs423oFfl1zlCiYSyLGxqRw84WJADk1
-XB5ZRWpDbZkYKcraCoVbfChV09yWq8nP+FDiZBM+XTNTGnvf+sTRJr7BO3hPgAKo
-YQtUHLdgeSTmuiS8/zH8X9O2N0mGyOthyJKC8mYIdqJVvDdOVgQFdcgKR4kdCSWq
-8ZzBkp2GvZAfRRB6/9Ihq6+2RTa0cxVkt38jIXhN9fgVC/DUXZMZzgwCwLBLDq42
-KgMUQ2aHtsFRn+nGhb7CxTpQHsfVbBCALZd1ERyLCoF5M+X2iDBNC6ky6iU1MnW+
-M+ZgnfyCPi//UELLrMEK
-=jgQ/
------END PGP SIGNATURE-----
-
---Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z--
