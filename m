@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab2JVILv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:11:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43892 "EHLO mx1.redhat.com"
+	id S1752135Ab2JVINI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:13:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57489 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab2JVILu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:11:50 -0400
-Date: Mon, 22 Oct 2012 10:09:31 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
-Message-ID: <20121022080930.GB984@krava.brq.redhat.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
- <20121021163848.GB28726@gmail.com>
+	id S1751603Ab2JVINH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:13:07 -0400
+Date: Mon, 22 Oct 2012 09:05:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Linux-MM <linux-mm@kvack.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/5] mm: compaction: Add scanned and isolated counters for
+ compaction
+Message-ID: <20121022080525.GB2198@suse.de>
+References: <1350892791-2682-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121021163848.GB28726@gmail.com>
+In-Reply-To: <1350892791-2682-1-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 21, 2012 at 06:38:49PM +0200, Ingo Molnar wrote:
-> 
-> * Jiri Olsa <jolsa@redhat.com> wrote:
-> 
-> > hi,
-> > adding support to read sample values through the PERF_SAMPLE_READ
-> > sample type. It's now possible to specify 'S' modifier for an event
-> > and get its sample value by PERF_SAMPLE_READ.
-> > 
-> > For group the 'S' modifier will enable sampling only for the leader
-> > and read all the group member by PERF_SAMPLE_READ smple type with
-> > PERF_FORMAT_GROUP read format.
-> > 
-> > This patchset is based on group report patches by Namhyung Kim:
-> > http://lwn.net/Articles/518569/
-> > 
-> > Example:
-> > (making sample on cycles, reading both cycles and cache-misses
-> >  by PERF_SAMPLE_READ/PERF_FORMAT_GROUP)
-> > 
-> >   # ./perf record -e '{cycles,cache-misses}:S' ls
-> >   ...
-> > 
-> >   # ./perf report --group --show-total-period --stdio
-> >   # ========
-> >   # captured on: Sat Oct 20 16:53:39 2012
-> >   ...
-> >   # group: {cycles,cache-misses}
-> >   # ========
-> >   #
-> >   # Samples: 86  of event 'anon group { cycles, cache-misses }'
-> >   # Event count (approx.): 34863674
-> >   #
-> >   #         Overhead                    Period  Command      Shared Object                            Symbol
-> >   # ................  ........................  .......  .................  ................................
-> 
-> Might make sense to consider this column enumeration:
-> 
->     #
->     #   cycles
->     #   |       cache-misses
->     #   |       |
-> >   #   v       v
-> >   #
-> >       16.56%  19.47%       5773450         475       ls  [kernel.kallsyms]  [k] native_sched_clock          
-> >       10.87%   0.74%       3789088          18       ls  [kernel.kallsyms]  [k] rtl8169_interrupt           
+Compaction already has tracepoints to count scanned and isolated pages
+but it requires that ftrace be enabled and if that information has to be
+written to disk then it can be disruptive. This patch adds vmstat counters
+for compaction called compact_migrate_scanned, compact_free_scanned and
+compact_isolated.
 
-no problem in '--stdio' mode I guess.. not sure in '--tui/--gtk', Namhyung?
+With these counters, it is possible to define a basic cost model for
+compaction. This approximates of how much work compaction is doing and can
+be compared that with an oprofile showing TLB misses and see if the cost of
+compaction is being offset by THP for example. Minimally a compaction patch
+can be evaluated in terms of whether it increases or decreases cost. The
+basic cost model looks like this
 
+Fundamental unit u:	a word	sizeof(void *)
 
-> >        9.82%  15.86%       3423364         387       ls  [kernel.kallsyms]  [k] mark_lock                   
-> >        8.43%  17.75%       2938384         433       ls  ld-2.14.90.so      [.] do_lookup_x                 
-> >        6.79%  20.86%       2365622         509       ls  ls                 [.] calculate_columns           
-> >        6.36%   0.61%       2216808          15       ls  [kernel.kallsyms]  [k] lock_release                
-> >   ...
-> 
-> /me wants this feature ASAP :-)
-> 
-> This should probably be the out of box default for perf record 
-> and perf top as well - the cache miss rate is probably one of 
-> the least appreciated aspects of overhead analysis.
-> 
-> Does it have sane output if the cache-misses event is not 
-> supported? The cache-misses column should probably stay empty in 
-> that case - basically falling back to today's default output.
+Ca  = cost of struct page access = sizeof(struct page) / u
 
-unsupported counters fail before report:
+Cmc = Cost migrate page copy = (Ca + PAGE_SIZE/u) * 2
+Cmf = Cost migrate failure   = Ca * 2
+Ci  = Cost page isolation    = (Ca + Wi)
+	where Wi is a constant that should reflect the approximate
+	cost of the locking operation.
 
-  # ./perf record -e '{cycles,stalled-cycles-backend}:S' ls
-  Error:
-  The stalled-cycles-backend  event is not supported.
-  ls: Terminated
+Csm = Cost migrate scanning = Ca
+Csf = Cost free    scanning = Ca
 
-similar for top, so we'd need special treatment for default
+Overall cost =	(Csm * compact_migrate_scanned) +
+	      	(Csf * compact_free_scanned)    +
+	      	(Ci  * compact_isolated)	+
+		(Cmc * pgmigrate_success)	+
+		(Cmf * pgmigrate_failed)
 
-thanks,
-jirka
+Where the values are read from /proc/vmstat.
+
+This is very basic and ignores certain costs such as the allocation cost
+to do a migrate page copy but any improvement to the model would still
+use the same vmstat counters.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/vm_event_item.h |    2 ++
+ mm/compaction.c               |    8 ++++++++
+ mm/vmstat.c                   |    3 +++
+ 3 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 5ce5c5f..83ea0b6 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -42,6 +42,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
+ #endif
+ #ifdef CONFIG_COMPACTION
++		COMPACTMIGRATE_SCANNED, COMPACTFREE_SCANNED,
++		COMPACTISOLATED,
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+ #ifdef CONFIG_HUGETLB_PAGE
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 11b455b..8422dd4 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -143,6 +143,10 @@ static unsigned long isolate_freepages_block(unsigned long blockpfn,
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
++	count_vm_events(COMPACTFREE_SCANNED, nr_scanned);
++	if (total_isolated)
++		count_vm_events(COMPACTISOLATED, total_isolated);
++
+ 	return total_isolated;
+ }
+ 
+@@ -402,6 +406,10 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+ 
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
++	count_vm_events(COMPACTMIGRATE_SCANNED, nr_scanned);
++	if (nr_isolated)
++		count_vm_events(COMPACTISOLATED, nr_isolated);
++
+ 	return low_pfn;
+ }
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 4849241..ab0b1b1 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -766,6 +766,9 @@ const char * const vmstat_text[] = {
+ 	"pgmigrate_fail",
+ #endif
+ #ifdef CONFIG_COMPACTION
++	"compact_migrate_scanned",
++	"compact_free_scanned",
++	"compact_isolated",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
+-- 
+1.7.7
