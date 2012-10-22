@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab2JVT5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 15:57:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50565 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950Ab2JVT5d (ORCPT
+	id S1755089Ab2JVT6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 15:58:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41214 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab2JVT6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 15:57:33 -0400
-Date: Mon, 22 Oct 2012 12:57:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [PATCH] extcon: driver model release call not needed
-Message-ID: <20121022195730.GB13640@kroah.com>
-References: <1350580326-1574-1-git-send-email-anish198519851985@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350580326-1574-1-git-send-email-anish198519851985@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 15:58:40 -0400
+Date: Mon, 22 Oct 2012 12:58:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
+Message-Id: <20121022125838.20cdc240.akpm@linux-foundation.org>
+In-Reply-To: <20121022134536.172969567@napanee.usersys.redhat.com>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 02:12:06AM +0900, anish kumar wrote:
-> From: anish kumar <anish198519851985@gmail.com>
-> 
-> We don't need a release call in this file as we are doing
-> everything needed in unregister call and we don't have any
-> more pointer to free up.
-> 
-> Signed-off-by: anish kumar <anish198519851985@gmail.com>
-> ---
->  drivers/extcon/extcon-class.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 946a318..cf30eb1 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -585,9 +585,7 @@ static void extcon_cleanup(struct extcon_dev *edev, bool skip)
->  
->  static void extcon_dev_release(struct device *dev)
->  {
-> -	struct extcon_dev *edev = (struct extcon_dev *) dev_get_drvdata(dev);
-> -
-> -	extcon_cleanup(edev, true);
-> +	/* We don't have any thing to free here */
->  }
+On Mon, 22 Oct 2012 09:45:36 -0400
+Aristeu Rozanski <aris@redhat.com> wrote:
 
-In the future (I know you fixed this up), doing an empty release()
-function will get you in big trouble.  Please read the kobject
-documentation for more information about why this is.
+> This patchset rebases the v2 of the patchset since the v1 was pushed into -rc1
+> instead. The last patch, not present on previous patchset, fixes the
+> permission check when allowing everything in a cgroup.
+> 
 
-greg k-h
+I grabbed all four, thanks.  Shall send them on to Linus in a week or
+so, after a bit more review and some linux-next testing.
+
+I've been trying to work out why I merged the v1 patchset rather than
+v2 and cannot find that v2 patchset anywhere.  When was it sent out?
+
