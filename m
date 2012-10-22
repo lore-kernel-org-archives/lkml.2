@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab2JVQ0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:26:19 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:59286 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab2JVQ0S (ORCPT
+	id S1754509Ab2JVQag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:30:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56213 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab2JVQaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:26:18 -0400
-X-Greylist: delayed 2942 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Oct 2012 12:26:18 EDT
-Date: Mon, 22 Oct 2012 10:37:35 -0500
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        John Linn <john.linn@xilinx.com>
-Subject: [PATCH 3/4] zynq: remove use of CLKDEV_LOOKUP
-Message-ID: <20121022153735.GC502@beefymiracle.amer.corp.natinst.com>
-MIME-Version: 1.0
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/22/2012 10:37:30 AM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/22/2012 10:37:31 AM,
-	Serialize complete at 10/22/2012 10:37:31 AM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-22_02:2012-10-22,2012-10-21,1970-01-01 signatures=0
+	Mon, 22 Oct 2012 12:30:35 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3/5] perf help: Fix --help for builtins
+Date: Mon, 22 Oct 2012 14:30:23 -0200
+Message-Id: <1350923425-15400-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1350923425-15400-1-git-send-email-acme@infradead.org>
+References: <1350923425-15400-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Zynq support in mainline does not (yet) make use of any of the
-generic clk or clk lookup functionality.  Remove what is upstream for
-now, until the out-of-tree implementation is in suitable form for
-merging.
+From: Namhyung Kim <namhyung@kernel.org>
 
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+It seems that commit cc5848213329 ("perf help: Remove use of die and
+handle errors") caused the problem - it changed the initial value of
+'help_format' from HELP_FORMAT_MAN to HELP_FORMAT_NONE.
+
+This broke the --help option for all builtins, that would produce no
+output, while 'man perf-top' would work it MANPATH is properly setup.
+
+Reported-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Tested-by: David Ahern <dsahern@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/87r4orj7zc.fsf@sejong.aot.lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/Kconfig                         |  1 -
- arch/arm/mach-zynq/common.c              |  1 -
- arch/arm/mach-zynq/include/mach/clkdev.h | 32 --------------------------------
- 3 files changed, 34 deletions(-)
- delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+ tools/perf/builtin-help.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 73067ef..e37bea3 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -959,7 +959,6 @@ config ARCH_ZYNQ
- 	bool "Xilinx Zynq ARM Cortex A9 Platform"
- 	select ARM_AMBA
- 	select ARM_GIC
--	select CLKDEV_LOOKUP
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select ICST
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index d73963b..6ea86cf 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -31,7 +31,6 @@
- #include <asm/hardware/cache-l2x0.h>
- 
- #include <mach/zynq_soc.h>
--#include <mach/clkdev.h>
- #include "common.h"
- 
- static struct of_device_id zynq_of_bus_ids[] __initdata = {
-diff --git a/arch/arm/mach-zynq/include/mach/clkdev.h b/arch/arm/mach-zynq/include/mach/clkdev.h
-deleted file mode 100644
-index c6e73d8..0000000
---- a/arch/arm/mach-zynq/include/mach/clkdev.h
-+++ /dev/null
-@@ -1,32 +0,0 @@
--/*
-- * arch/arm/mach-zynq/include/mach/clkdev.h
-- *
-- *  Copyright (C) 2011 Xilinx, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#ifndef __MACH_CLKDEV_H__
--#define __MACH_CLKDEV_H__
--
--#include <plat/clock.h>
--
--struct clk {
--	unsigned long		rate;
--	const struct clk_ops	*ops;
--	const struct icst_params *params;
--	void __iomem		*vcoreg;
--};
--
--#define __clk_get(clk) ({ 1; })
--#define __clk_put(clk) do { } while (0)
--
--#endif
+diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
+index 411ee56..178b88a 100644
+--- a/tools/perf/builtin-help.c
++++ b/tools/perf/builtin-help.c
+@@ -414,7 +414,7 @@ static int show_html_page(const char *perf_cmd)
+ int cmd_help(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	bool show_all = false;
+-	enum help_format help_format = HELP_FORMAT_NONE;
++	enum help_format help_format = HELP_FORMAT_MAN;
+ 	struct option builtin_help_options[] = {
+ 	OPT_BOOLEAN('a', "all", &show_all, "print all available commands"),
+ 	OPT_SET_UINT('m', "man", &help_format, "show man page", HELP_FORMAT_MAN),
 -- 
-1.8.0
+1.7.1
 
