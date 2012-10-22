@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab2JVFWR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 01:22:17 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:40258 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2JVFWQ (ORCPT
+	id S1754827Ab2JVFin (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 01:38:43 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44818 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab2JVFil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 01:22:16 -0400
+	Mon, 22 Oct 2012 01:38:41 -0400
 MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 13:22:15 +0800
-Message-ID: <CAPgLHd-Rpp8NA7Oap_uiQ=tNXBCc1g0Bbg1Uv3ALrbQKW=evsw@mail.gmail.com>
-Subject: [PATCH] Staging: ced1401: fix missing unlock on error in FreeCircBlock()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+	<20121019160425.GA10175@dhcp22.suse.cz>
+	<CAKWKT+Z-SZb1=3rwLm+urs3fghQ3M6pdOR_rzXKCevoad11a5g@mail.gmail.com>
+Date: Mon, 22 Oct 2012 11:08:40 +0530
+Message-ID: <CAKTCnzmDhSd-POHSC0wx-ziVPUg9wFverK33Q1_SvCx3Gzuugg@mail.gmail.com>
+Subject: Re: process hangs on do_exit when oom happens
+From: Balbir Singh <bsingharora@gmail.com>
+To: Qiang Gao <gaoqiangscut@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Mon, Oct 22, 2012 at 7:46 AM, Qiang Gao <gaoqiangscut@gmail.com> wrote:
+> I don't know whether  the process will exit finally, bug this stack lasts
+> for hours, which is obviously unnormal.
+> The situation:  we use a command calld "cglimit" to fork-and-exec the worker
+> process,and the "cglimit" will
+> set some limitation on the worker with cgroup. for now,we limit the
+> memory,and we also use cpu cgroup,but with
+> no limiation,so when the worker is running, the cgroup directory looks like
+> following:
+>
+> /cgroup/memory/worker : this directory limit the memory
+> /cgroup/cpu/worker :with no limit,but worker process is in.
+>
+> for some reason(some other process we didn't consider),  the worker process
+> invoke global oom-killer,
+> not cgroup-oom-killer.  then the worker process hangs there.
+>
+> Actually, if we didn't set the worker process into the cpu cgroup, this will
+> never happens.
+>
 
-Add the missing unlock on the error handle path in function
-FreeCircBlock().
+You said you don't use CPU limits right? can you also send in the
+output of /proc/sched_debug. Can you also send in your
+/etc/cgconfig.conf? If the OOM is not caused by cgroup memory limit
+and the global system is under pressure in 2.6.32, it can trigger an
+OOM.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/ced1401/ced_ioc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Also
 
-diff --git a/drivers/staging/ced1401/ced_ioc.c b/drivers/staging/ced1401/ced_ioc.c
-index c9492ed..5813aee 100644
---- a/drivers/staging/ced1401/ced_ioc.c
-+++ b/drivers/staging/ced1401/ced_ioc.c
-@@ -1508,7 +1508,7 @@ int FreeCircBlock(DEVICE_EXTENSION * pdx, TCIRCBLOCK __user * pCB)
- 		iReturn = U14ERR_BADAREA;
- 
- 	if (copy_to_user(pCB, &cb, sizeof(cb)))
--		return -EFAULT;
-+		iReturn = -EFAULT;
- 
- 	mutex_unlock(&pdx->io_mutex);
- 	return iReturn;
+1. Have you turned off swapping (seems like it) right?
+2. Do you have a NUMA policy setup for this task?
 
+Can you also share the .config (not sure if any special patches are
+being used) in the version you've mentioned.
 
+Balbir
