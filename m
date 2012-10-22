@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2JVODw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:03:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53635 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116Ab2JVODu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:03:50 -0400
-Date: Mon, 22 Oct 2012 07:03:39 -0700
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH] perf: Build install-man target when installing
-Message-ID: <20121022140339.GA8775@ghostprotocols.net>
-References: <20120925174658.GD9320@aftab.osrc.amd.com>
- <1348854427-12746-1-git-send-email-bp@amd64.org>
- <20121020111625.GB17563@liondog.tnic>
- <87mwzfj7dn.fsf@sejong.aot.lge.com>
- <20121022100719.GA8352@liondog.tnic>
+	id S1754681Ab2JVOFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12752 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754116Ab2JVOFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:05:33 -0400
+Message-ID: <50855298.9010003@redhat.com>
+Date: Mon, 22 Oct 2012 16:05:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022100719.GA8352@liondog.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Borislav Petkov <bp@alien8.de>
+CC: LKML <linux-kernel@vger.kernel.org>, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH] kvm, svm: Cleanup error statements
+References: <1350757204-14547-1-git-send-email-bp@alien8.de>
+In-Reply-To: <1350757204-14547-1-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 22, 2012 at 12:07:19PM +0200, Borislav Petkov escreveu:
-> On Mon, Oct 22, 2012 at 04:25:24PM +0900, Namhyung Kim wrote:
-> > It will add additional dependencies of asciidoc, docbook-xsl and/or
-> > something to default perf install command. I don't know it matters
-> > much, but just wanted to say. What if a user want to install the perf
-> > but the required packages for documents are not installed?
- 
-> Ok, this is a valid point, more or less.
+On 10/20/2012 08:20 PM, Borislav Petkov wrote:
+> Use __func__ instead of the function name in svm_hardware_enable since
+> those things tend to get out of sync. This also slims down printk line
+> length in conjunction with using pr_err.
+> 
+> No functionality change.
+> 
 
-Yes, its a valid point, to address it I think we should just do as we
-with other features, like, say, when python-devel is not installed warn
-the user that python support won't be included, i.e. if asciidoc, etc
-are not installed, tell the user that documentation will not be
-installed, install package A, B and C to have documentation installed.
+Applied, thanks.
 
-- Arnaldo
+
+-- 
+error compiling committee.c: too many arguments to function
