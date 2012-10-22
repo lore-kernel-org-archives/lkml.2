@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab2JVKd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 06:33:56 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3806 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab2JVKdy convert rfc822-to-8bit (ORCPT
+	id S1752910Ab2JVKfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 06:35:37 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34647 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752098Ab2JVKfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 06:33:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 22 Oct 2012 03:33:53 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 22 Oct 2012 16:03:49 +0530
-Subject: RE: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Topic: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
-Thread-Index: Ac2wPxZ4FvbfnTW7T9Kz8G0eH59L2wAAAtBQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DDFB0CE26@BGMAIL02.nvidia.com>
-References: <1350643085-27294-1-git-send-email-vbyravarasu@nvidia.com>
- <20121019153555.GC440@arwen.pp.htv.fi>
- <D958900912E20642BCBC71664EFECE3E6DDFB0CDCA@BGMAIL02.nvidia.com>
- <20121022100240.GK14033@arwen.pp.htv.fi>
- <D958900912E20642BCBC71664EFECE3E6DDFB0CE1E@BGMAIL02.nvidia.com>
- <20121022101623.GM14033@arwen.pp.htv.fi>
-In-Reply-To: <20121022101623.GM14033@arwen.pp.htv.fi>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 22 Oct 2012 06:35:34 -0400
+Date: Mon, 22 Oct 2012 11:35:03 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "kirill@shutemov.name" <kirill@shutemov.name>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121022103503.GA26619@mudshark.cambridge.arm.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+ <20121002150104.da57fa94.akpm@linux-foundation.org>
+ <20121017130125.GH5973@mudshark.cambridge.arm.com>
+ <20121017.112620.1865348978594874782.davem@davemloft.net>
+ <20121017155401.GJ5973@mudshark.cambridge.arm.com>
+ <20121018150502.3dee7899.akpm@linux-foundation.org>
+ <20121019091016.GA4582@mudshark.cambridge.arm.com>
+ <20121019114955.3a0c2b66.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121019114955.3a0c2b66.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Monday, October 22, 2012 3:46 PM
-> To: Venu Byravarasu
-> Cc: balbi@ti.com; stern@rowland.harvard.edu;
-> gregkh@linuxfoundation.org; linux-usb@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
+> On Fri, 19 Oct 2012 10:10:16 +0100
+> Will Deacon <will.deacon@arm.com> wrote:
 > 
-> * PGP Signed by an unknown key
+> > On Thu, Oct 18, 2012 at 11:05:02PM +0100, Andrew Morton wrote:
+> > > On Wed, 17 Oct 2012 16:54:02 +0100
+> > > Will Deacon <will.deacon@arm.com> wrote:
+> > > 
+> > > > On x86 memory accesses to pages without the ACCESSED flag set result in the
+> > > > ACCESSED flag being set automatically. With the ARM architecture a page access
+> > > > fault is raised instead (and it will continue to be raised until the ACCESSED
+> > > > flag is set for the appropriate PTE/PMD).
+> > > > 
+> > > > For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> > > > setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> > > > be called for a write fault.
+> > > > 
+> > > > This patch ensures that faults on transparent hugepages which do not result
+> > > > in a CoW update the access flags for the faulting pmd.
+> > > 
+> > > Confused.  Where is the arm implementation of update_mmu_cache_pmd()?
+> > 
+> > Right at the end of this patch, which was posted to the ARM list yesterday:
+> > 
+> >   http://lists.infradead.org/pipermail/linux-arm-kernel/2012-October/126387.html
 > 
-> Hi,
-> 
-> >
-> > Hi Felipe,
-> >
-> > The current patch splits out the existing tegra USB phy driver into two parts,
-> as
-> > you would have already noticed from the code.
-> > The probe and etc changes that you asked to add, will be applicable to
-> common
-> > Phy driver and should not have any implications on SOC dependent phy
-> driver.
-> 
-> what is this SOC dependent PHY driver ? 
+> I received and then merged a patch which won't compile!
 
-SOC dependent PHY driver actually deals with the PHY interface programming.
-e.g. please see code present in tegra2_usb_driver.c. 
+Eek, that certainly wasn't intentional and it's compiling fine for me on
+-rc1 and -rc2 for both ARM (no THP) and x86 (with and without THP).
 
-> What sort of dependencies are
-> there ? Those differences should be handled with runtime checks.
- 
-As PHY related bugs got fixed across different set of SOCs apart from
-adding few features, wanted to separate this out from common PHY
-functionality. This will help us in adding support for different SOCs with
-minimum set of changes.
+Please can you send the build failure?
 
-> --
-> balbi
-> 
-> * Unknown Key
-> * 0x35CAA444
+> Ho hum.  I'll drop
+> mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
+> shall assume that you'll sort things out at the appropriate time.
+
+Happy to sort it out once I work out what's going wrong!
+
+Cheers,
+
+Will
