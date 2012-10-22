@@ -1,73 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab2JVQL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:11:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58996 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755545Ab2JVQL5 (ORCPT
+	id S1755668Ab2JVQNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:13:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42798 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545Ab2JVQND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:11:57 -0400
-Date: Mon, 22 Oct 2012 18:11:51 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
-Message-ID: <20121022161151.GS16230@one.firstfloor.org>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org> <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com> <20121022132733.GQ16230@one.firstfloor.org> <20121022133534.GR16230@one.firstfloor.org> <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com> <20121022153633.GK2095@tassilo.jf.intel.com> <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
-Mime-Version: 1.0
+	Mon, 22 Oct 2012 12:13:03 -0400
+Date: Mon, 22 Oct 2012 11:12:57 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
+        Pavel Emelyanov <xemul@openvz.org>, Jiri Slaby <jslaby@suse.cz>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 2/4] device_cgroup: rename deny_all to behavior
+Message-ID: <20121022161257.GB23199@sergelap>
+References: <20121022134536.172969567@napanee.usersys.redhat.com>
+ <20121022134536.839559616@napanee.usersys.redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20121022134536.839559616@napanee.usersys.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 05:53:45PM +0200, Michael Kerrisk (man-pages) wrote:
-> I'm not sure whether anything is using the high 8 bits of prot, bun
-> passing I note that there seems to be no check that the unused bits
-> are zeroed so there's a small chance  existing apps are passing random
-> garbage there. (Of course, mmap() is hardly the only API to have that
-> fault, and it hasn't stopped us from reusing bits in those APIs,
-> though sometimes we've gotten bitten by apps that did pass in random
-> garbage).
-
-Ok.
-
+Quoting Aristeu Rozanski (aris@redhat.com):
+> This was done in a v2 patch but v1 ended up being committed. The variable name
+> is less confusing and stores the default behavior when no matching exception
+> exists.
 > 
-> >> But there seems an obvious solution here: given your value in those
-> >> bits (call it 'n'), the why not apply a multiplier. I mean, certainly
-> >> you never want a value <= 12 for n, and I suspect that the reasonable
-> >> minimum could be much larger (e.g., 2^16). Call that minimum M. Then
-> >> you could interpret the value in your bits as meaning a page size of
-> >>
-> >>     (2^n) * M
-> >
-> > I considered that, but it would seem ugly and does not add that
-> > many bits.
-> >
-> >>
-> >> > So this will use up all remaining flag bits now.
-> >>
-> >> On the other hand, that seems really bad. It looks like that kills the
-> >> ability to further extend the mmap() API with new flags in the future.
-> >> It doesn't sound like we should be doing that.
-> >
-> > You can always add flags to PROT or add a mmap3(). Has been done before.
-> > Or just don't do any new MAP_SECURITY_HOLEs
 > 
-> There seems to be a reasonable argument here for an mmap3() with a
-> 64-bit flags argument...
+> Cc: Dave Jones <davej@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: James Morris <jmorris@namei.org>
+> Cc: Pavel Emelyanov <xemul@openvz.org>
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
 
-It's just a pain to deploy.
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-I think I would rather do the offset then. That could still handle
-PowerPC
-
-14 + 31 = 44 = 16GB           (minimum size 16K)
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> 
+> ---
+>  security/device_cgroup.c |   25 ++++++++++++++-----------
+>  1 file changed, 14 insertions(+), 11 deletions(-)
+> 
+> --- github.orig/security/device_cgroup.c	2012-10-19 16:35:37.936804289 -0400
+> +++ github/security/device_cgroup.c	2012-10-19 16:35:46.366102913 -0400
+> @@ -42,7 +42,10 @@ struct dev_exception_item {
+>  struct dev_cgroup {
+>  	struct cgroup_subsys_state css;
+>  	struct list_head exceptions;
+> -	bool deny_all;
+> +	enum {
+> +		DEVCG_DEFAULT_ALLOW,
+> +		DEVCG_DEFAULT_DENY,
+> +	} behavior;
+>  };
+>  
+>  static inline struct dev_cgroup *css_to_devcgroup(struct cgroup_subsys_state *s)
+> @@ -182,13 +185,13 @@ static struct cgroup_subsys_state *devcg
+>  	parent_cgroup = cgroup->parent;
+>  
+>  	if (parent_cgroup == NULL)
+> -		dev_cgroup->deny_all = false;
+> +		dev_cgroup->behavior = DEVCG_DEFAULT_ALLOW;
+>  	else {
+>  		parent_dev_cgroup = cgroup_to_devcgroup(parent_cgroup);
+>  		mutex_lock(&devcgroup_mutex);
+>  		ret = dev_exceptions_copy(&dev_cgroup->exceptions,
+>  					  &parent_dev_cgroup->exceptions);
+> -		dev_cgroup->deny_all = parent_dev_cgroup->deny_all;
+> +		dev_cgroup->behavior = parent_dev_cgroup->behavior;
+>  		mutex_unlock(&devcgroup_mutex);
+>  		if (ret) {
+>  			kfree(dev_cgroup);
+> @@ -260,7 +263,7 @@ static int devcgroup_seq_read(struct cgr
+>  	 * - List the exceptions in case the default policy is to deny
+>  	 * This way, the file remains as a "whitelist of devices"
+>  	 */
+> -	if (devcgroup->deny_all == false) {
+> +	if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+>  		set_access(acc, ACC_MASK);
+>  		set_majmin(maj, ~0);
+>  		set_majmin(min, ~0);
+> @@ -314,12 +317,12 @@ 		if (ex->minor != ~0 && ex->minor != re
+>  	 * In two cases we'll consider this new exception valid:
+>  	 * - the dev cgroup has its default policy to allow + exception list:
+>  	 *   the new exception should *not* match any of the exceptions
+> -	 *   (!deny_all, !match)
+> +	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
+>  	 * - the dev cgroup has its default policy to deny + exception list:
+>  	 *   the new exception *should* match the exceptions
+> -	 *   (deny_all, match)
+> +	 *   (behavior == DEVCG_DEFAULT_DENY, match)
+>  	 */
+> -	if (dev_cgroup->deny_all == match)
+> +	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
+>  		return 1;
+>  	return 0;
+>  }
+> @@ -375,11 +378,11 @@ 	memset(&ex, 0, sizeof(ex));
+>  			if (!parent_has_perm(devcgroup, &ex))
+>  				return -EPERM;
+>  			dev_exception_clean(devcgroup);
+> -			devcgroup->deny_all = false;
+> +			devcgroup->behavior = DEVCG_DEFAULT_ALLOW;
+>  			break;
+>  		case DEVCG_DENY:
+>  			dev_exception_clean(devcgroup);
+> -			devcgroup->deny_all = true;
+> +			devcgroup->behavior = DEVCG_DEFAULT_DENY;
+>  			break;
+>  		default:
+>  			return -EINVAL;
+> @@ -452,7 +455,7 @@ 		case '\0':
+>  		 * an matching exception instead. And be silent about it: we
+>  		 * don't want to break compatibility
+>  		 */
+> -		if (devcgroup->deny_all == false) {
+> +		if (devcgroup->behavior == DEVCG_DEFAULT_ALLOW) {
+>  			dev_exception_rm(devcgroup, &ex);
+>  			return 0;
+>  		}
+> @@ -463,7 +466,7 @@ 			return 0;
+>  		 * an matching exception instead. And be silent about it: we
+>  		 * don't want to break compatibility
+>  		 */
+> -		if (devcgroup->deny_all == true) {
+> +		if (devcgroup->behavior == DEVCG_DEFAULT_DENY) {
+>  			dev_exception_rm(devcgroup, &ex);
+>  			return 0;
+>  		}
+> 
