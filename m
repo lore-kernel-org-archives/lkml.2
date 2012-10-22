@@ -1,151 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab2JVP3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:29:36 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56868 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab2JVP3f (ORCPT
+	id S1754211Ab2JVPaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:30:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50627 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2JVPaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:29:35 -0400
-Date: Mon, 22 Oct 2012 11:17:23 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/19] x86, mm: Add alloc_low_pages(num)
-Message-ID: <20121022151722.GF22780@phenom.dumpdata.com>
-References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-16-git-send-email-yinghai@kernel.org>
+	Mon, 22 Oct 2012 11:30:18 -0400
+Message-ID: <5085667A.70408@gmail.com>
+Date: Mon, 22 Oct 2012 17:30:02 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350593430-24470-16-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "Artem S. Tashkinov" <t.artem@lycos.com>, bp@alien8.de, pavel@ucw.cz,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        security@kernel.org, linux-media@vger.kernel.org,
+        linux-usb@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: A reliable kernel panic (3.6.2) and system crash when visiting
+ a particular website
+References: <Pine.LNX.4.44L0.1210221116040.1724-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1210221116040.1724-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 01:50:23PM -0700, Yinghai Lu wrote:
-> 32bit kmap mapping need page table to be used for low to high.
-                                    ^-s
+On 22.10.2012 17:17, Alan Stern wrote:
+> On Sun, 21 Oct 2012, Artem S. Tashkinov wrote:
+> 
+>> dmesg messages up to a crash can be seen here: https://bugzilla.kernel.org/attachment.cgi?id=84221
+> 
+> The first problem in the log is endpoint list corruption.  Here's a 
+> debugging patch which should provide a little more information.
 
-> 
-> At this point those page table are still from pgt_buf_* from BRK,
-                                ^s
+Maybe add a BUG() after each of these dev_err() so we stop at the first
+occurance and also see where we're coming from?
 
-> So it is ok now.
-> But we want to move early_ioremap_page_table_range_init() out of
-> init_memory_mapping() and only call it one time later, that will
-> make page_table_range_init/page_table_kmap_check/alloc_low_page to
-> use memblock to get page.
-> 
-> memblock allocation for page table are from high to low.
-                                    ^s
-> 
-> So will get panic from page_table_kmap_check() that has BUG_ON to do
-> ordering checking.
-> 
-> This patch add alloc_low_pages to make it possible to alloc serveral pages
-> at first, and hand out pages one by one from low to high.
 
-.. But for right now this patch just makes it by default one.
 
-Right?
 
+>  drivers/usb/core/hcd.c |   36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/mm/init.c        |   33 +++++++++++++++++++++------------
->  arch/x86/mm/mm_internal.h |    6 +++++-
->  2 files changed, 26 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index dd09d20..de71c0d 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
+> Index: usb-3.6/drivers/usb/core/hcd.c
+> ===================================================================
+> --- usb-3.6.orig/drivers/usb/core/hcd.c
+> +++ usb-3.6/drivers/usb/core/hcd.c
+> @@ -1083,6 +1083,8 @@ EXPORT_SYMBOL_GPL(usb_calc_bus_time);
 >  
->  static unsigned long min_pfn_mapped;
+>  /*-------------------------------------------------------------------------*/
 >  
-> -__ref void *alloc_low_page(void)
-> +__ref void *alloc_low_pages(unsigned int num)
+> +static bool list_error;
+> +
+>  /**
+>   * usb_hcd_link_urb_to_ep - add an URB to its endpoint queue
+>   * @hcd: host controller to which @urb was submitted
+> @@ -1126,6 +1128,20 @@ int usb_hcd_link_urb_to_ep(struct usb_hc
+>  	 */
+>  	if (HCD_RH_RUNNING(hcd)) {
+>  		urb->unlinked = 0;
+> +
+> +		{
+> +			struct list_head *cur = &urb->ep->urb_list;
+> +			struct list_head *prev = cur->prev;
+> +
+> +			if (prev->next != cur && !list_error) {
+> +				list_error = true;
+> +				dev_err(&urb->dev->dev,
+> +					"ep %x list add corruption: %p %p %p\n",
+> +					urb->ep->desc.bEndpointAddress,
+> +					cur, prev, prev->next);
+> +			}
+> +		}
+> +
+>  		list_add_tail(&urb->urb_list, &urb->ep->urb_list);
+>  	} else {
+>  		rc = -ESHUTDOWN;
+> @@ -1193,6 +1209,26 @@ void usb_hcd_unlink_urb_from_ep(struct u
 >  {
->  	unsigned long pfn;
-> -	void *adr;
-> +	int i;
->  
->  #ifdef CONFIG_X86_64
->  	if (after_bootmem) {
-> -		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-> +		unsigned int order;
->  
-> -		return adr;
-> +		order = get_order((unsigned long)num << PAGE_SHIFT);
-> +		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
-> +						__GFP_ZERO, order);
->  	}
->  #endif
->  
-> -	if ((pgt_buf_end + 1) >= pgt_buf_top) {
-> +	if ((pgt_buf_end + num) >= pgt_buf_top) {
->  		unsigned long ret;
->  		if (min_pfn_mapped >= max_pfn_mapped)
->  			panic("alloc_low_page: ran out of memory");
->  		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
->  					max_pfn_mapped << PAGE_SHIFT,
-> -					PAGE_SIZE, PAGE_SIZE);
-> +					PAGE_SIZE * num , PAGE_SIZE);
->  		if (!ret)
->  			panic("alloc_low_page: can not alloc memory");
-> -		memblock_reserve(ret, PAGE_SIZE);
-> +		memblock_reserve(ret, PAGE_SIZE * num);
->  		pfn = ret >> PAGE_SHIFT;
-> -	} else
-> -		pfn = pgt_buf_end++;
-> +	} else {
-> +		pfn = pgt_buf_end;
-> +		pgt_buf_end += num;
-> +	}
+>  	/* clear all state linking urb to this dev (and hcd) */
+>  	spin_lock(&hcd_urb_list_lock);
+> +	{
+> +		struct list_head *cur = &urb->urb_list;
+> +		struct list_head *prev = cur->prev;
+> +		struct list_head *next = cur->next;
 > +
-> +	for (i = 0; i < num; i++) {
-> +		void *adr;
-> +
-> +		adr = __va((pfn + i) << PAGE_SHIFT);
-> +		clear_page(adr);
+> +		if (prev->next != cur && !list_error) {
+> +			list_error = true;
+> +			dev_err(&urb->dev->dev,
+> +				"ep %x list del corruption prev: %p %p %p\n",
+> +				urb->ep->desc.bEndpointAddress,
+> +				cur, prev, prev->next);
+> +		}
+> +		if (next->prev != cur && !list_error) {
+> +			list_error = true;
+> +			dev_err(&urb->dev->dev,
+> +				"ep %x list del corruption next: %p %p %p\n",
+> +				urb->ep->desc.bEndpointAddress,
+> +				cur, next, next->prev);
+> +		}
 > +	}
->  
-> -	adr = __va(pfn * PAGE_SIZE);
-> -	clear_page(adr);
-> -	return adr;
-> +	return __va(pfn << PAGE_SHIFT);
+>  	list_del_init(&urb->urb_list);
+>  	spin_unlock(&hcd_urb_list_lock);
 >  }
->  
->  /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
-> diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
-> index b3f993a..7e3b88e 100644
-> --- a/arch/x86/mm/mm_internal.h
-> +++ b/arch/x86/mm/mm_internal.h
-> @@ -1,6 +1,10 @@
->  #ifndef __X86_MM_INTERNAL_H
->  #define __X86_MM_INTERNAL_H
->  
-> -void *alloc_low_page(void);
-> +void *alloc_low_pages(unsigned int num);
-> +static inline void *alloc_low_page(void)
-> +{
-> +	return alloc_low_pages(1);
-> +}
->  
->  #endif	/* __X86_MM_INTERNAL_H */
-> -- 
-> 1.7.7
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
