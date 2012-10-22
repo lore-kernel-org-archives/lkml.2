@@ -1,103 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654Ab2JVHgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:36:20 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:50867 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751609Ab2JVHgS (ORCPT
+	id S1751719Ab2JVHhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:37:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51456 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab2JVHhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:36:18 -0400
-Message-ID: <1350891382.3592.22.camel@gitbox>
-Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: devicetree-discuss@lists.ozlabs.org, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Mon, 22 Oct 2012 20:36:22 +1300
-In-Reply-To: <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz>
-	 <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
-	 <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de>
-	 <1350888712.3592.11.camel@gitbox> <1350889747.3592.17.camel@gitbox>
-	 <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 22 Oct 2012 03:37:08 -0400
+Date: Mon, 22 Oct 2012 15:36:54 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH RFC] mm/swap: automatic tuning for swapin readahead
+Message-ID: <20121022073654.GA7821@kernel.org>
+References: <50460CED.6060006@redhat.com>
+ <20120906110836.22423.17638.stgit@zurg>
+ <alpine.LSU.2.00.1210011418270.2940@eggly.anvils>
+ <506AACAC.2010609@openvz.org>
+ <alpine.LSU.2.00.1210031337320.1415@eggly.anvils>
+ <506DB816.9090107@openvz.org>
+ <alpine.LSU.2.00.1210081451410.1384@eggly.anvils>
+ <20121016005049.GA1467@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121016005049.GA1467@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-22 at 09:24 +0200, Thierry Reding wrote:
-> On Mon, Oct 22, 2012 at 08:09:07PM +1300, Tony Prisk wrote:
-> > On Mon, 2012-10-22 at 19:51 +1300, Tony Prisk wrote:
-> > > > 
-> > > > >  	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
-> > > > >  	if (chip == NULL) {
-> > > > >  		dev_err(&pdev->dev, "failed to allocate memory\n");
-> > > > > @@ -123,26 +144,32 @@ static int __devinit pwm_probe(struct platform_device *pdev)
-> > > > >  	chip->chip.ops = &vt8500_pwm_ops;
-> > > > >  	chip->chip.base = -1;
-> > > > >  	chip->chip.npwm = VT8500_NR_PWMS;
-> > > > > +	chip->clk = of_clk_get(np, 0);
-> > > > 
-> > > > I thought this was supposed to work transparently across OF and !OF
-> > > > configurations by using just clk_get() or devm_clk_get()? I guess that
-> > > > if the driver depends on OF, then this would be moot, but we should
-> > > > probably stick to the standard usage anyway.
-> > > > 
-> > > > Furthermore, of_clk_get() doesn't seem to be managed, so you'd need to
-> > > > add explicit clk_put() in the error cleanup paths. One more argument in
-> > > > favour of using devm_clk_get() instead.
+On Tue, Oct 16, 2012 at 08:50:49AM +0800, Shaohua Li wrote:
+> On Mon, Oct 08, 2012 at 03:09:58PM -0700, Hugh Dickins wrote:
+> > On Thu, 4 Oct 2012, Konstantin Khlebnikov wrote:
+> > 
+> > > Here results of my test. Workload isn't very realistic, but at least it
+> > > threaded: compiling linux-3.6 with defconfig in 16 threads on tmpfs,
+> > > 512mb ram, dualcore cpu, ordinary hard disk. (test script in attachment)
 > > > 
-> > > Hmm good point. I stuck with of_ functions because its an OF only driver
-> > > and it seemed 'backward' to mix old code with new. It does pose the
-> > > question of 'why have of_clk_get() if existing functions work better'.
+> > > average results for ten runs:
+> > > 
+> > > 		RA=3	RA=0	RA=1	RA=2	RA=4	Hugh	Shaohua
+> > > real time	500	542	528	519	500	523	522
+> > > user time	738	737	735	737	739	737	739
+> > > sys time	93	93	91	92	96	92	93
+> > > pgmajfault	62918	110533	92454	78221	54342	86601	77229
+> > > pgpgin	2070372	795228	1034046	1471010	3177192	1154532	1599388
+> > > pgpgout	2597278	2022037	2110020	2350380	2802670	2286671	2526570
+> > > pswpin	462747	138873	202148	310969	739431	232710	341320
+> > > pswpout	646363	502599	524613	584731	697797	568784	628677
+> > > 
+> > > So, last two columns shows mostly equal results: +4.6% and +4.4% in
+> > > comparison to vanilla kernel with RA=3, but your version shows more stable
+> > > results (std-error 2.7% against 4.8%) (all this numbers in huge table in
+> > > attachment)
 > > 
-> > Was about to fix this but noticed why it wasn't like this to start
-> > with :)
+> > Thanks for doing this, Konstantin, but I'm stuck for anything much to say!
+> > Shaohua and I are both about 4.5% bad for this particular test, but I'm
+> > more consistently bad - hurrah!
 > > 
-> > struct clk *devm_clk_get(struct device *dev, const char *id);
-> > struct clk *of_clk_get(struct device_node *np, int index);
+> > I suspect (not a convincing argument) that if the test were just slightly
+> > different (a little more or a little less memory, SSD instead of hard
+> > disk, diskcache instead of tmpfs), then it would come out differently.
 > > 
-> > devm_clk_get requires me to 'get' the clock by name. arch-vt8500 (and I
-> > believe a lot of other arch's) don't enforce names for clocks defined in
-> > devicetree, therefore there is no way for me to know what name the clk
-> > has unless I include in the binding that the clock must be named 'xxx'.
+> > Did you draw any conclusions from the numbers you found?
+> > 
+> > I haven't done any more on this in the last few days, except to verify
+> > that once an anon_vma is judged random with Shaohua's, then it appears
+> > to be condemned to no-readahead ever after.
+> > 
+> > That's probably something that a hack like I had in mine would fix,
+> > but that addition might change its balance further (and increase vma
+> > or anon_vma size) - not tried yet.
+> > 
+> > All I want to do right now, is suggest to Andrew that he hold Shaohua's
+> > patch back from 3.7 for the moment: I'll send a response to Sep 7th's
+> > mm-commits mail to suggest that - but no great disaster if he ignores me.
 > 
-> I thought clk_get() was supposed to return the first clock specified in
-> DT if you pass NULL as the consumer name. I haven't tested this though.
-> And I haven't looked at the code.
+> Ok, I tested Hugh's patch. My test is a multithread random write workload.
+> With Hugh's patch, 49:28.06elapsed
+> With mine, 43:23.39elapsed
+> There is 12% more time used with Hugh's patch.
 > 
-> > of_clk_get retrieves it by the dt-node + index, so it doesn't care as
-> > long as its the 1st clock listed.
+> In the stable state of this workload, SI:SO ratio should be roughly 1:1. With
+> Hugh's patch, it's around 1.6:1, there is still unnecessary swapin.
 > 
-> So the usual way to do this, I believe, is:
-> 
-> 	clocks = <&clk_foo>;
-> 	clock-names = "foo";
-> 
-> Then use:
-> 
-> 	clk = devm_clk_get(&pdev->dev, "foo");
-> 
-> And as I said above, I was under the impression that the default would
-> be to use the first clock if NULL was specified instead of "foo".
-> 
-> Thierry
+> I also tried a workload with seqential/random write mixed, Hugh's patch is 10%
+> bad too.
 
-clock-names is an optional property (as defined in
-bindings/clock/clock-bindings.txt) so relying on it is .. well,
-unreliable.
+With below change, the si/so ratio is back to around 1:1 in my workload. Guess
+the run time of my test will be reduced too, though I didn't test yet.
+-	used = atomic_xchg(&swapra_hits, 0) + 1;
++	used = atomic_xchg(&swapra_hits, 0);
 
-What you say makes sense, but it means the binding document has to make
-an optional property into a required property simply to use an 'old'
-function when a new function would 'work' (granted not as well, as you
-pointed out) without requiring the optional property.
+I'm wondering how could a global counter based method detect readahead
+correctly. For example, if there are a sequential access thread and a random
+access thread, doesn't this method always make wrong decision?
 
-Your subsystem - your rules. Let me know if I've managed to sway you or
-not :)
-
-Regards
-Tony P
-
+Thanks,
+Shaohua
