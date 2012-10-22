@@ -1,255 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2JVPhB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:37:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41336 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab2JVPg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:36:58 -0400
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <mchehab@infradead.org>, <laurent.pinchart@ideasonboard.com>,
-        <manjunath.hadli@ti.com>, <prabhakar.lad@ti.com>,
-        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux-davincidsp.com>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [RESEND-PATCH] media:davinci: clk - {prepare/unprepare} for common clk
-Date: Mon, 22 Oct 2012 11:36:43 -0400
-Message-ID: <1350920203-21978-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755413Ab2JVPhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:37:14 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:64993 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab2JVPhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 11:37:09 -0400
+Date: Mon, 22 Oct 2012 11:24:58 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/19] x86, mm: only call
+ early_ioremap_page_table_range_init() once
+Message-ID: <20121022152457.GH22780@phenom.dumpdata.com>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+ <1350593430-24470-17-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350593430-24470-17-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a first step towards migrating davinci platforms to use common clock
-framework, replace all instances of clk_enable() with clk_prepare_enable()
-and clk_disable() with clk_disable_unprepare().
+On Thu, Oct 18, 2012 at 01:50:24PM -0700, Yinghai Lu wrote:
+> On 32bit, We should not keep calling that during every init_memory_mapping.
 
-Also fixes some issues related to clk clean up in the driver
+Explain pls why.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
-rebased to v3.7-rc1
+> 
+> Need to update page_table_range_init() to count the pages for kmap page table
+> at first, and use new added alloc_low_pages() to get pages in sequence.
+> That will conform requirement that page table need to be in low to high order.
+                   ^ to the                    ^-s
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/mm/init.c    |   13 +++++--------
+>  arch/x86/mm/init_32.c |   47 +++++++++++++++++++++++++++++++++++++++++------
+>  2 files changed, 46 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index de71c0d..4eece3c 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -334,14 +334,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>  		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+>  						   mr[i].page_size_mask);
+>  
+> -#ifdef CONFIG_X86_32
+> -	early_ioremap_page_table_range_init();
+> -
+> -	load_cr3(swapper_pg_dir);
+> -#endif
+> -
+> -	__flush_tlb_all();
+> -
+>  	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
+>  
+>  	return ret >> PAGE_SHIFT;
+> @@ -435,7 +427,12 @@ void __init init_mem_mapping(void)
+>  		/* can we preseve max_low_pfn ?*/
+>  		max_low_pfn = max_pfn;
+>  	}
+> +#else
+> +	early_ioremap_page_table_range_init();
+> +	load_cr3(swapper_pg_dir);
+> +	__flush_tlb_all();
+>  #endif
+> +
+>  	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+>  }
+>  
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index a7f2df1..ef7f0dc 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -135,8 +135,39 @@ pte_t * __init populate_extra_pte(unsigned long vaddr)
+>  	return one_page_table_init(pmd) + pte_idx;
+>  }
+>  
+> +static unsigned long __init
+> +page_table_range_init_count(unsigned long start, unsigned long end)
+> +{
+> +	unsigned long count = 0;
+> +#ifdef CONFIG_HIGHMEM
+> +	int pmd_idx_kmap_begin = fix_to_virt(FIX_KMAP_END) >> PMD_SHIFT;
+> +	int pmd_idx_kmap_end = fix_to_virt(FIX_KMAP_BEGIN) >> PMD_SHIFT;
+> +	int pgd_idx, pmd_idx;
+> +	unsigned long vaddr;
+> +
+> +	if (pmd_idx_kmap_begin == pmd_idx_kmap_end)
+> +		return count;
 
- drivers/media/platform/davinci/dm355_ccdc.c  |    8 ++++++--
- drivers/media/platform/davinci/dm644x_ccdc.c |   16 ++++++++++------
- drivers/media/platform/davinci/isif.c        |    5 ++++-
- drivers/media/platform/davinci/vpbe.c        |   10 +++++++---
- drivers/media/platform/davinci/vpif.c        |    8 ++++----
- 5 files changed, 31 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/dm355_ccdc.c b/drivers/media/platform/davinci/dm355_ccdc.c
-index ce0e413..030950d 100644
---- a/drivers/media/platform/davinci/dm355_ccdc.c
-+++ b/drivers/media/platform/davinci/dm355_ccdc.c
-@@ -1003,7 +1003,7 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
- 		status = PTR_ERR(ccdc_cfg.mclk);
- 		goto fail_nomap;
- 	}
--	if (clk_enable(ccdc_cfg.mclk)) {
-+	if (clk_prepare_enable(ccdc_cfg.mclk)) {
- 		status = -ENODEV;
- 		goto fail_mclk;
- 	}
-@@ -1014,7 +1014,7 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
- 		status = PTR_ERR(ccdc_cfg.sclk);
- 		goto fail_mclk;
- 	}
--	if (clk_enable(ccdc_cfg.sclk)) {
-+	if (clk_prepare_enable(ccdc_cfg.sclk)) {
- 		status = -ENODEV;
- 		goto fail_sclk;
- 	}
-@@ -1034,8 +1034,10 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
- 	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
- 	return 0;
- fail_sclk:
-+	clk_disable_unprepare(ccdc_cfg.sclk);
- 	clk_put(ccdc_cfg.sclk);
- fail_mclk:
-+	clk_disable_unprepare(ccdc_cfg.mclk);
- 	clk_put(ccdc_cfg.mclk);
- fail_nomap:
- 	iounmap(ccdc_cfg.base_addr);
-@@ -1050,6 +1052,8 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
- {
- 	struct resource	*res;
- 
-+	clk_disable_unprepare(ccdc_cfg.sclk);
-+	clk_disable_unprepare(ccdc_cfg.mclk);
- 	clk_put(ccdc_cfg.mclk);
- 	clk_put(ccdc_cfg.sclk);
- 	iounmap(ccdc_cfg.base_addr);
-diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
-index ee7942b..0215ab6 100644
---- a/drivers/media/platform/davinci/dm644x_ccdc.c
-+++ b/drivers/media/platform/davinci/dm644x_ccdc.c
-@@ -994,7 +994,7 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
- 		status = PTR_ERR(ccdc_cfg.mclk);
- 		goto fail_nomap;
- 	}
--	if (clk_enable(ccdc_cfg.mclk)) {
-+	if (clk_prepare_enable(ccdc_cfg.mclk)) {
- 		status = -ENODEV;
- 		goto fail_mclk;
- 	}
-@@ -1005,7 +1005,7 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
- 		status = PTR_ERR(ccdc_cfg.sclk);
- 		goto fail_mclk;
- 	}
--	if (clk_enable(ccdc_cfg.sclk)) {
-+	if (clk_prepare_enable(ccdc_cfg.sclk)) {
- 		status = -ENODEV;
- 		goto fail_sclk;
- 	}
-@@ -1013,8 +1013,10 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
- 	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
- 	return 0;
- fail_sclk:
-+	clk_disable_unprepare(ccdc_cfg.sclk);
- 	clk_put(ccdc_cfg.sclk);
- fail_mclk:
-+	clk_disable_unprepare(ccdc_cfg.mclk);
- 	clk_put(ccdc_cfg.mclk);
- fail_nomap:
- 	iounmap(ccdc_cfg.base_addr);
-@@ -1029,6 +1031,8 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
- {
- 	struct resource	*res;
- 
-+	clk_disable_unprepare(ccdc_cfg.mclk);
-+	clk_disable_unprepare(ccdc_cfg.sclk);
- 	clk_put(ccdc_cfg.mclk);
- 	clk_put(ccdc_cfg.sclk);
- 	iounmap(ccdc_cfg.base_addr);
-@@ -1046,8 +1050,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
- 	/* Disable CCDC */
- 	ccdc_enable(0);
- 	/* Disable both master and slave clock */
--	clk_disable(ccdc_cfg.mclk);
--	clk_disable(ccdc_cfg.sclk);
-+	clk_disable_unprepare(ccdc_cfg.mclk);
-+	clk_disable_unprepare(ccdc_cfg.sclk);
- 
- 	return 0;
- }
-@@ -1055,8 +1059,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
- static int dm644x_ccdc_resume(struct device *dev)
- {
- 	/* Enable both master and slave clock */
--	clk_enable(ccdc_cfg.mclk);
--	clk_enable(ccdc_cfg.sclk);
-+	clk_prepare_enable(ccdc_cfg.mclk);
-+	clk_prepare_enable(ccdc_cfg.sclk);
- 	/* Restore CCDC context */
- 	ccdc_restore_context();
- 
-diff --git a/drivers/media/platform/davinci/isif.c b/drivers/media/platform/davinci/isif.c
-index b99d542..2c26c3e 100644
---- a/drivers/media/platform/davinci/isif.c
-+++ b/drivers/media/platform/davinci/isif.c
-@@ -1053,7 +1053,7 @@ static int __devinit isif_probe(struct platform_device *pdev)
- 		status = PTR_ERR(isif_cfg.mclk);
- 		goto fail_mclk;
- 	}
--	if (clk_enable(isif_cfg.mclk)) {
-+	if (clk_prepare_enable(isif_cfg.mclk)) {
- 		status = -ENODEV;
- 		goto fail_mclk;
- 	}
-@@ -1125,6 +1125,7 @@ fail_nobase_res:
- 		i--;
- 	}
- fail_mclk:
-+	clk_disable_unprepare(isif_cfg.mclk);
- 	clk_put(isif_cfg.mclk);
- 	vpfe_unregister_ccdc_device(&isif_hw_dev);
- 	return status;
-@@ -1145,6 +1146,8 @@ static int isif_remove(struct platform_device *pdev)
- 		i++;
- 	}
- 	vpfe_unregister_ccdc_device(&isif_hw_dev);
-+	clk_disable_unprepare(isif_cfg.mclk);
-+	clk_put(isif_cfg.mclk);
- 	return 0;
- }
- 
-diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-index 69d7a58..7f5cf9b 100644
---- a/drivers/media/platform/davinci/vpbe.c
-+++ b/drivers/media/platform/davinci/vpbe.c
-@@ -612,7 +612,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
- 			ret =  PTR_ERR(vpbe_dev->dac_clk);
- 			goto fail_mutex_unlock;
- 		}
--		if (clk_enable(vpbe_dev->dac_clk)) {
-+		if (clk_prepare_enable(vpbe_dev->dac_clk)) {
- 			ret =  -ENODEV;
- 			goto fail_mutex_unlock;
- 		}
-@@ -759,8 +759,10 @@ fail_kfree_encoders:
- fail_dev_unregister:
- 	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
- fail_clk_put:
--	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-+	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-+		clk_disable_unprepare(vpbe_dev->dac_clk);
- 		clk_put(vpbe_dev->dac_clk);
-+	}
- fail_mutex_unlock:
- 	mutex_unlock(&vpbe_dev->lock);
- 	return ret;
-@@ -777,8 +779,10 @@ fail_mutex_unlock:
- static void vpbe_deinitialize(struct device *dev, struct vpbe_device *vpbe_dev)
- {
- 	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
--	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-+	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-+		clk_disable_unprepare(vpbe_dev->dac_clk);
- 		clk_put(vpbe_dev->dac_clk);
-+	}
- 
- 	kfree(vpbe_dev->amp);
- 	kfree(vpbe_dev->encoders);
-diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-index cff3c0a..0d6cc8e 100644
---- a/drivers/media/platform/davinci/vpif.c
-+++ b/drivers/media/platform/davinci/vpif.c
-@@ -444,7 +444,7 @@ static int __devinit vpif_probe(struct platform_device *pdev)
- 		status = PTR_ERR(vpif_clk);
- 		goto clk_fail;
- 	}
--	clk_enable(vpif_clk);
-+	clk_prepare_enable(vpif_clk);
- 
- 	spin_lock_init(&vpif_lock);
- 	dev_info(&pdev->dev, "vpif probe success\n");
-@@ -460,7 +460,7 @@ fail:
- static int __devexit vpif_remove(struct platform_device *pdev)
- {
- 	if (vpif_clk) {
--		clk_disable(vpif_clk);
-+		clk_disable_unprepare(vpif_clk);
- 		clk_put(vpif_clk);
- 	}
- 
-@@ -472,13 +472,13 @@ static int __devexit vpif_remove(struct platform_device *pdev)
- #ifdef CONFIG_PM
- static int vpif_suspend(struct device *dev)
- {
--	clk_disable(vpif_clk);
-+	clk_disable_unprepare(vpif_clk);
- 	return 0;
- }
- 
- static int vpif_resume(struct device *dev)
- {
--	clk_enable(vpif_clk);
-+	clk_prepare_enable(vpif_clk);
- 	return 0;
- }
- 
--- 
-1.7.9.5
+Or just 'return 0';
 
