@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2JVUOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:14:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40619 "EHLO mx1.redhat.com"
+	id S1756171Ab2JVUR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:17:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35867 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950Ab2JVUOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:14:37 -0400
-Date: Mon, 22 Oct 2012 16:14:22 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        James Morris <jmorris@namei.org>, Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, Jiri Slaby <jslaby@suse.cz>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 0/4] Rebase device_cgroup v2 patchset
-Message-ID: <20121022201422.GA14085@redhat.com>
-References: <20121022134536.172969567@napanee.usersys.redhat.com>
- <20121022125838.20cdc240.akpm@linux-foundation.org>
+	id S1755782Ab2JVURY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 16:17:24 -0400
+Message-ID: <5085A9A8.5020004@zytor.com>
+Date: Mon, 22 Oct 2012 13:16:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022125838.20cdc240.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
+        tglx@linutronix.de, len.brown@intel.com, fenghua.yu@intel.com,
+        vgoyal@redhat.com, grant.likely@secretlab.ca, rob.herring@calxeda.com
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+References: <20121016043357.20003.5885.stgit@localhost6.localdomain6> <20121016043528.20003.601.stgit@localhost6.localdomain6> <873916i88t.fsf@xmission.com>
+In-Reply-To: <873916i88t.fsf@xmission.com>
+X-Enigmail-Version: 1.4.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-On Mon, Oct 22, 2012 at 12:58:38PM -0700, Andrew Morton wrote:
-> On Mon, 22 Oct 2012 09:45:36 -0400
-> Aristeu Rozanski <aris@redhat.com> wrote:
+On 10/22/2012 01:04 PM, Eric W. Biederman wrote:
+> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 > 
-> > This patchset rebases the v2 of the patchset since the v1 was pushed into -rc1
-> > instead. The last patch, not present on previous patchset, fixes the
-> > permission check when allowing everything in a cgroup.
-> > 
+>> We disable BSP if boot cpu is AP.
+>>
+>> INIT-INIT-SIPI sequence, a protocal to initiate AP, cannot be used for
+>> BSP since it causes BSP jump to BIOS init code; typical visible
+>> behaviour is hang or immediate reset, depending on the BIOS init code.
+>>
+>> INIT can be used to reset AP in a fatal system error state as
+>> described in MP spec 3.7.3 Processor-specific INIT. In contrast, there
+>> is no processor-specific INIT for BSP to initilize from a fatal system
+>> error. It might be possible to do so by NMI plus any hand-crafted
+>> reset code that is carefully designed, but at least I have no idea in
+>> this direction now.
 > 
-> I grabbed all four, thanks.  Shall send them on to Linus in a week or
-> so, after a bit more review and some linux-next testing.
+> Has anyone looked at clearing bit 8 of the IA32_APIC_BASE_MSR (0x1B) on
+> the bootstrap processor?  Bit 8 being the bit that indicates we are a
+> bootstrap processor.
+> 
+> If we can clear that bit INIT will always place the processor in
+> wait-for-startup-ipi mode and we won't have this problem.
+> 
+> That would also solve the hotunplug the bootstrap processor without
+> using an NMI as well.
+> 
 
-thanks, much appreciated
+IIRC Fenghua experimented with that and it didn't work.  Not all BIOSes
+use that bit to determine BSP-ness.
 
-> I've been trying to work out why I merged the v1 patchset rather than
-> v2 and cannot find that v2 patchset anywhere.  When was it sent out?
-
-It was sent to linux-kernel and cgroups@vger on Sep 04th, here's the
-msgid of patch 0 for reference:
-<20120904143419.892872876@napanee.usersys.redhat.com> 
-
--- 
-Aristeu
+	-hpa
 
