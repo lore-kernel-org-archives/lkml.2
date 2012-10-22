@@ -1,101 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2JVQyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:54:20 -0400
-Received: from honeysuckle.london.02.net ([87.194.255.144]:59453 "EHLO
-	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416Ab2JVQyT (ORCPT
+	id S1755516Ab2JVQ4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:56:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57984 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443Ab2JVQ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:54:19 -0400
-From: Matthew Leach <matthew@mattleach.net>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        Matthew Leach <matthew@mattleach.net>
-Subject: [PATCH] init: Use the stringify operator for the __define_initcall macro
-Date: Mon, 22 Oct 2012 17:54:03 +0100
-Message-Id: <1350924843-4429-1-git-send-email-matthew@mattleach.net>
-X-Mailer: git-send-email 1.7.12.4
+	Mon, 22 Oct 2012 12:56:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121022142814.GD14193@konrad-lan.dumpdata.com>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+	<1350593430-24470-7-git-send-email-yinghai@kernel.org>
+	<20121022142814.GD14193@konrad-lan.dumpdata.com>
+Date: Mon, 22 Oct 2012 09:56:01 -0700
+X-Google-Sender-Auth: A26rz1hXRITwwFwdeTdo2x0DSYo
+Message-ID: <CAE9FiQXc7SPmTyX_jkJteO+3UU5+ifDviXNK+DD_1ryH0EsQOQ@mail.gmail.com>
+Subject: Re: [PATCH 03/19] x86, mm: Don't clear page table if range is ram
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the __define_initcall macro takes three arguments, fn, id
-and level. The level argument is exactly the same as the id argument
-but wrapped in quotes. To overcome this need to specify three
-arguments to the __define_initcall macro, where one argument is the
-stringification of another, we can just use the stringification macro
-instead.
+On Mon, Oct 22, 2012 at 7:28 AM, Konrad Rzeszutek Wilk
+<konrad@kernel.org> wrote:
+> On Thu, Oct 18, 2012 at 01:50:14PM -0700, Yinghai Lu wrote:
+>> After we add code use buffer in BRK to pre-map page table,
+>                    ^- to
+>
+> So .. which patch is that? Can you include the title of the
+> patch here?
+>
+>> it should be safe to remove early_memmap for page table accessing.
+>> Instead we get panic with that.
+>>
+>> It turns out we clear the initial page table wrongly for next range that is
+>               ^- that
+>
+>> separated by holes.
+>> And it only happens when we are trying to map range one by one range separately.
+>                                                      ^-s
+>
+>>
+>> We need to check if the range is ram before clearing page table.
+>
+> Ok, so that sounds like a bug-fix... but
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  arch/x86/mm/init_64.c |   37 ++++++++++++++++---------------------
+>>  1 files changed, 16 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+>> index f40f383..61b3c44 100644
+>> --- a/arch/x86/mm/init_64.c
+>> +++ b/arch/x86/mm/init_64.c
+>> @@ -363,20 +363,19 @@ static unsigned long __meminit
+>>  phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+>>             pgprot_t prot)
+>>  {
+>> -     unsigned pages = 0;
+>> +     unsigned long pages = 0, next;
+>>       unsigned long last_map_addr = end;
+>>       int i;
+>>
+>>       pte_t *pte = pte_page + pte_index(addr);
+>>
+>> -     for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
+>> -
+>> +     for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
+>> +             next = (addr & PAGE_MASK) + PAGE_SIZE;
+>>               if (addr >= end) {
+>> -                     if (!after_bootmem) {
+>> -                             for(; i < PTRS_PER_PTE; i++, pte++)
+>> -                                     set_pte(pte, __pte(0));
+>> -                     }
+>> -                     break;
+>> +                     if (!after_bootmem &&
+>> +                         !e820_any_mapped(addr & PAGE_MASK, next, 0))
+>> +                             set_pte(pte, __pte(0));
+>> +                     continue;
+>
+> .. Interestingly, you also removed the extra loop. How come? Why not
+> retain the little loop? (which could call e820_any_mapped?) Is that
+> an improvement and cleanup? If so, I would think you should at least
+> explain in the git commit:
 
-Signed-off-by: Matthew Leach <matthew@mattleach.net>
+Merge that loop to top loop, and we need to use "next" from the top loop.
+
+>
+> "And while we are at it, also axe the extra loop and instead depend on
+> the top loop which we can safely piggyback on."
+
+
+update commit change log to:
+
 ---
- include/linux/init.h | 40 ++++++++++++++++++++--------------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+After we add code use buffer in BRK to pre-map buf for page table in
+following patch:
+        x86, mm: setup page table in top-down
+it should be safe to remove early_memmap for page table accessing.
+Instead we get panic with that.
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index e59041e..eaa3851 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -186,16 +186,16 @@ extern bool initcall_debug;
-  * can point at the same handler without causing duplicate-symbol build errors.
-  */
- 
--#define __define_initcall(level,fn,id) \
-+#define __define_initcall(fn,id) \
- 	static initcall_t __initcall_##fn##id __used \
--	__attribute__((__section__(".initcall" level ".init"))) = fn
-+	__attribute__((__section__(".initcall" #id ".init"))) = fn
- 
- /*
-  * Early initcalls run before initializing SMP.
-  *
-  * Only for built-in code, not modules.
-  */
--#define early_initcall(fn)		__define_initcall("early",fn,early)
-+#define early_initcall(fn)		__define_initcall(fn,early)
- 
- /*
-  * A "pure" initcall has no dependencies on anything else, and purely
-@@ -204,23 +204,23 @@ extern bool initcall_debug;
-  * This only exists for built-in code, not for modules.
-  * Keep main.c:initcall_level_names[] in sync.
-  */
--#define pure_initcall(fn)		__define_initcall("0",fn,0)
--
--#define core_initcall(fn)		__define_initcall("1",fn,1)
--#define core_initcall_sync(fn)		__define_initcall("1s",fn,1s)
--#define postcore_initcall(fn)		__define_initcall("2",fn,2)
--#define postcore_initcall_sync(fn)	__define_initcall("2s",fn,2s)
--#define arch_initcall(fn)		__define_initcall("3",fn,3)
--#define arch_initcall_sync(fn)		__define_initcall("3s",fn,3s)
--#define subsys_initcall(fn)		__define_initcall("4",fn,4)
--#define subsys_initcall_sync(fn)	__define_initcall("4s",fn,4s)
--#define fs_initcall(fn)			__define_initcall("5",fn,5)
--#define fs_initcall_sync(fn)		__define_initcall("5s",fn,5s)
--#define rootfs_initcall(fn)		__define_initcall("rootfs",fn,rootfs)
--#define device_initcall(fn)		__define_initcall("6",fn,6)
--#define device_initcall_sync(fn)	__define_initcall("6s",fn,6s)
--#define late_initcall(fn)		__define_initcall("7",fn,7)
--#define late_initcall_sync(fn)		__define_initcall("7s",fn,7s)
-+#define pure_initcall(fn)		__define_initcall(fn,0)
-+
-+#define core_initcall(fn)		__define_initcall(fn,1)
-+#define core_initcall_sync(fn)		__define_initcall(fn,1s)
-+#define postcore_initcall(fn)		__define_initcall(fn,2)
-+#define postcore_initcall_sync(fn)	__define_initcall(fn,2s)
-+#define arch_initcall(fn)		__define_initcall(fn,3)
-+#define arch_initcall_sync(fn)		__define_initcall(fn,3s)
-+#define subsys_initcall(fn)		__define_initcall(fn,4)
-+#define subsys_initcall_sync(fn)	__define_initcall(fn,4s)
-+#define fs_initcall(fn)			__define_initcall(fn,5)
-+#define fs_initcall_sync(fn)		__define_initcall(fn,5s)
-+#define rootfs_initcall(fn)		__define_initcall(fn,rootfs)
-+#define device_initcall(fn)		__define_initcall(fn,6)
-+#define device_initcall_sync(fn)	__define_initcall(fn,6s)
-+#define late_initcall(fn)		__define_initcall(fn,7)
-+#define late_initcall_sync(fn)		__define_initcall(fn,7s)
- 
- #define __initcall(fn) device_initcall(fn)
- 
--- 
-1.7.12.4
+It turns out that we clear the initial page table wrongly for next range
+that is separated by holes.
+And it only happens when we are trying to map ram range one by one.
 
+We need to check if the range is ram before clearing page table.
+
+We change the loop structure to remove the extra little loop and use
+one loop only, and in that loop will caculate next at first, and check if
+[addr,next) is covered by E820_RAM.
+---
