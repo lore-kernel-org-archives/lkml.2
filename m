@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab2JVTua (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 15:50:30 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61988 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab2JVTu2 (ORCPT
+	id S1756056Ab2JVTvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 15:51:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41199 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755841Ab2JVTvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 15:50:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210222146440.12209@ayla.of.borg>
-References: <alpine.DEB.2.00.1210222146440.12209@ayla.of.borg>
-Date: Mon, 22 Oct 2012 21:50:26 +0200
-X-Google-Sender-Auth: ej-ttoVPSUqJJxcDebLnL4XJOdg
-Message-ID: <CAMuHMdVS-qz0BAHXFGD01+w1GxyQ2M7DpLnLRQKtdZSiDfYgHw@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.7-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 22 Oct 2012 15:51:04 -0400
+Date: Mon, 22 Oct 2012 12:51:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Qing Z <njumical@gmail.com>
+Cc: mingo@kernel.org, ben@decadent.org.uk, markivx@codeaurora.org,
+        ak@linux.intel.com, linux-kernel@vger.kernel.org, cxie4@marvell.com,
+        binw@marvell.com, wwang27@marvell.com, xjian@marvell.com,
+        zhangwm@marvell.com, Qing Zhu <qzhu@marvell.com>
+Subject: Re: [PATCH] panic: fix incomplete panic log in panic()
+Message-Id: <20121022125103.59a655b7.akpm@linux-foundation.org>
+In-Reply-To: <CAE-am1NxHZ2aGrcwPYxdSXwB-59bf2q9uMwS8gA=Fg9w6LVxFA@mail.gmail.com>
+References: <BD54883EA7DE8B41A61B7E723561C711139F75D348@sc-vexch3.marvell.com>
+	<CAE-am1NFB+opbid_f7RA_9EXUKjPCJssdOcZBrEQmQHG4EP9Gg@mail.gmail.com>
+	<20121015150204.6f837a39.akpm@linux-foundation.org>
+	<CAE-am1OY8Tjv6a004-NfhEe1DXTGcFC6ogVAmtVdESW8sZ_R4w@mail.gmail.com>
+	<20121017170654.638e20bf.akpm@linux-foundation.org>
+	<CAE-am1NxHZ2aGrcwPYxdSXwB-59bf2q9uMwS8gA=Fg9w6LVxFA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 9:47 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.7-rc2 to v3.7-rc1[3], the summaries are:
->   - build errors: +4/-44
+On Mon, 22 Oct 2012 22:54:54 +0800
+Qing Z <njumical@gmail.com> wrote:
 
-  + arch/s390/include/asm/kvm_para.h: error: redefinition of
-'kvm_arch_para_features':  => 147:28, 147:99
-  + arch/s390/include/asm/kvm_para.h: error: redefinition of
-'kvm_check_and_clear_guest_paused':  => 152:91, 152:20
+> Hi Andrew,
+>           Basically, console_unlock() should be called to make panic
+> log printed.  Call console_unlock() in panic have some risks when
+> recurse in it(are there other bad cases?). The condition is very rare
+> and the two issue cases I list always happen between console_lock()
+> and console_unlock(). So I think we need to couple with
+> console_lock(), but should avoid the case that panic happen in
+> console_unlock().  I think it is a more modest and safe way.  Please
+> corect me if there is something wrong. Thanks!
+> 
+> bool Is_in_console_unlock;
+> void console_unlock(void)
+> {
+>        ...
+> +      Is_in_console_unlock = ture;
+>         /* flush buffered message fragment immediately to console */
+>         console_cont_flush(text, sizeof(text));
+> again:
+>         for (;;) {
+>         ....
+>  +       Is_in_console_unlock = false;
+> }
+> 
+> void panic(const char *fmt, ...)
+> {
+>         ....
+> +      /*
+> +       * we should unlock console here to make oops log printed, in case
+> +       * console is locked before panic in this cpu, or other cpus lock the
+> +       * console before be stopped.
+> +       */
+> +      if( unlikely(console_locked) && !Is_in_console_unlock )
+> +           {
+> +                  console_unlock();
+> +                  console_locked = 0;
+> +            }
+> 
+>         /*
+>          * Note smp_send_stop is the usual smp shutdown function, which
+>          * unfortunately means it may not be hardened to work in a panic
+>          * situation.
+>          */
+>         smp_send_stop();
+> 
+>         ....
+> }
 
-s390-allmodconfig/s390-allyesconfig/s390-defconfig
+Well, if something like that will solve the problem then yes, I guess
+that is the way to go.  It's not pretty, but it is clear and direct,
+and this isn't a pretty problem!
 
-  + error: phy_n.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `._mcount' defined in .text section in
-arch/powerpc/kernel/entry_64.o:  => (.text+0x1ff9500)
-  + error: relocation truncated to fit: R_PPC64_REL24 against symbol
-`_savegpr0_24' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o:  => (.text+0x1ffac7c)
+But is this approach sufficient?  What happens in the case of an oops
+or a BUG() inside console_lock()?
 
-powerpc-allyesconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5550/ (all 117 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5526/ (all 117 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
