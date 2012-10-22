@@ -1,90 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab2JVOXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:23:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38366 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755013Ab2JVOXn (ORCPT
+	id S1755059Ab2JVO2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:28:21 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41000 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754925Ab2JVO2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:23:43 -0400
-Date: Mon, 22 Oct 2012 15:23:30 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
- GENERIC_KERNEL_EXECVE
-Message-ID: <20121022142330.GE8072@arm.com>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
- <20121019213548.GR2616@ZenIV.linux.org.uk>
- <5082A1F1.3080303@tilera.com>
- <20121020153401.GT2616@ZenIV.linux.org.uk>
+	Mon, 22 Oct 2012 10:28:20 -0400
+Date: Mon, 22 Oct 2012 10:28:14 -0400
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/19] x86, mm: Don't clear page table if range is ram
+Message-ID: <20121022142814.GD14193@konrad-lan.dumpdata.com>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+ <1350593430-24470-7-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121020153401.GT2616@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1350593430-24470-7-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Thu, Oct 18, 2012 at 01:50:14PM -0700, Yinghai Lu wrote:
+> After we add code use buffer in BRK to pre-map page table,
+                   ^- to
 
-Sorry, couldn't reply earlier.
+So .. which patch is that? Can you include the title of the
+patch here?
 
-On Sat, Oct 20, 2012 at 04:34:01PM +0100, Al Viro wrote:
-> On Sat, Oct 20, 2012 at 09:06:57AM -0400, Chris Metcalf wrote:
-> > First, the compat_sys_execve() declaration provided in
-> > arch/tile/include/asm/compat.h isn't right, so I deleted that (you had only
-> > deleted the PTREGS_SYSCALL trampoline declaration, _compat_sys_execve).
-> > 
-> > However, then arch/tile/kernel/compat.c failed to build, because
-> > <linux/compat.h> is included before <asm/unistd.h>, and <asm/unistd.h>
-> > provides __ARCH_WANT_SYS_EXECVE, and so we end up with no declaration at
-> > all for compat_sys_execve.  For most platforms this is no big deal, but on
-> > tile we use the __SYSCALL #define to provide the actual syscall table, and
-> > for that to work we need a declaration in scope for each syscall at the
-> > time we create the table.
-> > 
-> > The best solution seems likely to be to copy the other place in
-> > <linux/compat.h> where we need to do something configurable (that is,
-> > CONFIG_ARCH_WANT_OLD_COMPAT_IPC), and just convert __ARCH_WANT_SYS_EXECVE
-> > to be a Kconfig option.
+> it should be safe to remove early_memmap for page table accessing.
+> Instead we get panic with that.
 > 
-> Frankly, I hope to get rid of the damn thing completely.  By now we have
-> at least some variant of execve conversions for just about everything;
-> I certainly hope that by the beginning of the next cycle we'll have it
-> defined on everything.  And put unconditional declarations in syscalls.h
-> and compat.h
-> 
-> Actually, we can make the declaration in linux/compat.h unconditional
-> right now.  The only obstacle is the situation on arm64; there the mainline
-> has C variant of that sucker (with struct pt_regs * in arguments) in
-> arch/arm64/kernel/sys_compat.c.  So we could ask Linus to pull
-> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64 execve
-> and then do the following in one patch:
-> 	introduce current_pt_regs() on tile (from your commit)
-> 	get rid of pt_regs * argument in tile compat_sys_execve(), making it
-> use current_pt_regs(); kill its wrapper
-> 	kill the declarations of compat_sys_execve()/_compat_sys_execve()
-> in tile asm/compat.h
-> 	make declaration in linux/compat.h unconditional
-> Note that this does *not* depend on kernel_thread/kernel_execve patch -
-> kernel_execve() is never going to hit compat_sys_execve(), since it's
-> only called from kernel threads and those are not going to be 32bit.
-> After that we can do kernel_thread/kernel_execve commit and
-> sys_execve() conversion with nothing outside of arch/tile touched.
-> 
-> Comments?  If Catalin feels that arm64 series needs more testing, we could
-> reorder it a bit - all we really need there is getting rid of pt_regs argument
-> in compat_sys_execve() and just as on tile, that isn't tied into kernel_execve
-> and kernel_thread issues.
+> It turns out we clear the initial page table wrongly for next range that is
+              ^- that
 
-I don't mind merging it earlier (if Linus is ok to take it after the
-merging window). It works fine in my tests.
+> separated by holes.
+> And it only happens when we are trying to map range one by one range separately.
+                                                     ^-s
 
--- 
-Catalin
+> 
+> We need to check if the range is ram before clearing page table.
+
+Ok, so that sounds like a bug-fix... but
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/mm/init_64.c |   37 ++++++++++++++++---------------------
+>  1 files changed, 16 insertions(+), 21 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index f40f383..61b3c44 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -363,20 +363,19 @@ static unsigned long __meminit
+>  phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+>  	      pgprot_t prot)
+>  {
+> -	unsigned pages = 0;
+> +	unsigned long pages = 0, next;
+>  	unsigned long last_map_addr = end;
+>  	int i;
+>  
+>  	pte_t *pte = pte_page + pte_index(addr);
+>  
+> -	for(i = pte_index(addr); i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
+> -
+> +	for (i = pte_index(addr); i < PTRS_PER_PTE; i++, addr = next, pte++) {
+> +		next = (addr & PAGE_MASK) + PAGE_SIZE;
+>  		if (addr >= end) {
+> -			if (!after_bootmem) {
+> -				for(; i < PTRS_PER_PTE; i++, pte++)
+> -					set_pte(pte, __pte(0));
+> -			}
+> -			break;
+> +			if (!after_bootmem &&
+> +			    !e820_any_mapped(addr & PAGE_MASK, next, 0))
+> +				set_pte(pte, __pte(0));
+> +			continue;
+
+.. Interestingly, you also removed the extra loop. How come? Why not
+retain the little loop? (which could call e820_any_mapped?) Is that
+an improvement and cleanup? If so, I would think you should at least
+explain in the git commit:
+
+"And while we are at it, also axe the extra loop and instead depend on
+the top loop which we can safely piggyback on."
+
+>  		}
+>  
+>  		/*
+> @@ -418,16 +417,14 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+>  		pte_t *pte;
+>  		pgprot_t new_prot = prot;
+>  
+> +		next = (address & PMD_MASK) + PMD_SIZE;
+>  		if (address >= end) {
+> -			if (!after_bootmem) {
+> -				for (; i < PTRS_PER_PMD; i++, pmd++)
+> -					set_pmd(pmd, __pmd(0));
+> -			}
+> -			break;
+> +			if (!after_bootmem &&
+> +			    !e820_any_mapped(address & PMD_MASK, next, 0))
+> +				set_pmd(pmd, __pmd(0));
+> +			continue;
+>  		}
+>  
+> -		next = (address & PMD_MASK) + PMD_SIZE;
+> -
+>  		if (pmd_val(*pmd)) {
+>  			if (!pmd_large(*pmd)) {
+>  				spin_lock(&init_mm.page_table_lock);
+> @@ -494,13 +491,11 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+>  		pmd_t *pmd;
+>  		pgprot_t prot = PAGE_KERNEL;
+>  
+> -		if (addr >= end)
+> -			break;
+> -
+>  		next = (addr & PUD_MASK) + PUD_SIZE;
+> -
+> -		if (!after_bootmem && !e820_any_mapped(addr, next, 0)) {
+> -			set_pud(pud, __pud(0));
+> +		if (addr >= end) {
+> +			if (!after_bootmem &&
+> +			    !e820_any_mapped(addr & PUD_MASK, next, 0))
+> +				set_pud(pud, __pud(0));
+>  			continue;
+>  		}
+>  
+> -- 
+> 1.7.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
