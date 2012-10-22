@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab2JVTSc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 15:18:32 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:53484 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752813Ab2JVTSa (ORCPT
+	id S1755821Ab2JVTSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 15:18:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42281 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752876Ab2JVTSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 15:18:30 -0400
-Date: Mon, 22 Oct 2012 15:18:29 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Decotigny <david.decotigny@google.com>,
-        Tom Herbert <therbert@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH v2 4/6] net/core: apply pm_runtime_set_memalloc_noio
- on network devices
-In-Reply-To: <1350894794-1494-5-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1210221516280.1724-100000@iolanthe.rowland.org>
+	Mon, 22 Oct 2012 15:18:49 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121022151411.GE22780@phenom.dumpdata.com>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+	<1350593430-24470-15-git-send-email-yinghai@kernel.org>
+	<20121022151411.GE22780@phenom.dumpdata.com>
+Date: Mon, 22 Oct 2012 12:18:48 -0700
+X-Google-Sender-Auth: I6VUatq8ta0UiqNfF9Tsx2wk1D0
+Message-ID: <CAE9FiQUM=RG17Z6y586MzCeKnp8w_Ltf0z4Os2MKz42h6WKCUQ@mail.gmail.com>
+Subject: Re: [PATCH 11/19] x86, mm, xen: Remove mapping_pagatable_reserve
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Ming Lei wrote:
+On Mon, Oct 22, 2012 at 8:14 AM, Konrad Rzeszutek Wilk
+<konrad@kernel.org> wrote:
+> On Thu, Oct 18, 2012 at 01:50:22PM -0700, Yinghai Lu wrote:
+>> page table area are pre-mapped now, and mark_page_ro is used to make it RO
+>   ^ Page     ^^^^->areas                  ^^^^^^^^^^^-> ? I must have
+> missed that patch. Can you include the title of the patch in this
+> git commit so one could take a look.
 
-> Deadlock might be caused by allocating memory with GFP_KERNEL in
-> runtime_resume callback of network devices in iSCSI situation, so
-> mark network devices and its ancestor as 'memalloc_noio_resume'
-> with the introduced pm_runtime_set_memalloc_noio().
+sorry, forget to remove those words.
 
-Is this really needed?  Even with iSCSI, doesn't register_disk() have
-to be called for the underlying block device?  And given your 3/6
-patch, wouldn't that mark the network device?
+new version:
+---
+Page table area are pre-mapped now after
+        x86, mm: setup page table in top-down
+        x86, mm: Remove early_memremap workaround for page table
+accessing on 64bit
 
-Alan Stern
-
+mapping_pagetable_reserve is not used anymore, so remove it.
+---
