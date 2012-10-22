@@ -1,23 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab2JVPKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:10:34 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:51621 "EHLO mx2.parallels.com"
+	id S1752880Ab2JVPLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:11:46 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:51730 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750913Ab2JVPKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:10:32 -0400
-Message-ID: <508561E0.5000406@parallels.com>
-Date: Mon, 22 Oct 2012 19:10:24 +0400
+	id S1751032Ab2JVPLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 11:11:43 -0400
+Message-ID: <5085621C.3040904@parallels.com>
+Date: Mon, 22 Oct 2012 19:11:24 +0400
 From: Glauber Costa <glommer@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
 To: Christoph Lameter <cl@linux.com>
 CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
-References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com>
-In-Reply-To: <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com>
+        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
+        "Pekka Enberg" <penberg@kernel.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 15/18] Aggregate memcg cache values in slabinfo
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-16-git-send-email-glommer@parallels.com> <0000013a7a93cb72-588b2a69-ebb0-4b5f-9040-102800d3bef4-000000@email.amazonses.com>
+In-Reply-To: <0000013a7a93cb72-588b2a69-ebb0-4b5f-9040-102800d3bef4-000000@email.amazonses.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [46.39.244.6]
@@ -25,32 +30,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 06:45 PM, Christoph Lameter wrote:
-> On Mon, 22 Oct 2012, Glauber Costa wrote:
+On 10/19/2012 11:50 PM, Christoph Lameter wrote:
+> On Fri, 19 Oct 2012, Glauber Costa wrote:
 > 
->> + * kmem_cache_free - Deallocate an object
->> + * @cachep: The cache the allocation was from.
->> + * @objp: The previously allocated object.
->> + *
->> + * Free an object which was previously allocated from this
->> + * cache.
->> + */
->> +void kmem_cache_free(struct kmem_cache *s, void *x)
->> +{
->> +	__kmem_cache_free(s, x);
->> +	trace_kmem_cache_free(_RET_IP_, x);
->> +}
->> +EXPORT_SYMBOL(kmem_cache_free);
 >> +
+>> +/*
+>> + * We use suffixes to the name in memcg because we can't have caches
+>> + * created in the system with the same name. But when we print them
+>> + * locally, better refer to them with the base name
+>> + */
+>> +static inline const char *cache_name(struct kmem_cache *s)
+>> +{
+>> +	if (!is_root_cache(s))
+>> +		return s->memcg_params->root_cache->name;
+>> +	return s->name;
+>> +}
 > 
-> This results in an additional indirection if tracing is off. Wonder if
-> there is a performance impact?
+> Could we avoid this uglyness? You can ID a slab cache by combining a memcg
+> pointer and a slabname.
 > 
-if tracing is on, you mean?
+But that is not what I want.
 
-Tracing already incurs overhead, not sure how much a function call would
-add to the tracing overhead.
+What I want is to show the cache by its root name in memcg-specific
+slabinfo.
 
-I would not be concerned with this, but I can measure, if you have any
-specific workload in mind.
 
