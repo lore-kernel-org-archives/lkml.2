@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766Ab2JVHho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 03:37:44 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:55175 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751483Ab2JVHhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 03:37:43 -0400
-Message-ID: <5084F7B2.7000105@parallels.com>
-Date: Mon, 22 Oct 2012 11:37:22 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1751756Ab2JVHjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 03:39:13 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:34288 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab2JVHjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 03:39:12 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 14/18] memcg/sl[au]b: shrink dead caches
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-15-git-send-email-glommer@parallels.com> <0000013a7a9144d1-de184c46-2a7d-4e6c-8606-927cc1f48969-000000@email.amazonses.com>
-In-Reply-To: <0000013a7a9144d1-de184c46-2a7d-4e6c-8606-927cc1f48969-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121016151817.GB6807@ghostprotocols.net>
+References: <1350344020-8071-1-git-send-email-irina.tirdea@gmail.com>
+ <1350344020-8071-2-git-send-email-irina.tirdea@gmail.com> <20121016151817.GB6807@ghostprotocols.net>
+From: Irina Tirdea <irina.tirdea@gmail.com>
+Date: Mon, 22 Oct 2012 10:38:52 +0300
+Message-ID: <CANg8OWLNwvrc7Zsknv3wOg_snKuUx7_THeg0jUK3vcXHYOM41w@mail.gmail.com>
+Subject: Re: [PATCH v4 1/6] perf tools: configure tmp path at build time
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2012 11:47 PM, Christoph Lameter wrote:
-> On Fri, 19 Oct 2012, Glauber Costa wrote:
-> 
->> An unlikely branch is used to make sure this case does not affect
->> performance in the usual slab_free path.
+On Tue, Oct 16, 2012 at 6:18 PM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Tue, Oct 16, 2012 at 02:33:35AM +0300, Irina Tirdea escreveu:
+>> From: Irina Tirdea <irina.tirdea@intel.com>
 >>
->> The slab allocator has a time based reaper that would eventually get rid
->> of the objects, but we can also call it explicitly, since dead caches
->> are not a likely event.
-> 
-> This is also something that could be done from slab_common since all
-> allocators have kmem_cache_shrink and kmem_cache_shrink can be used to
-> drain the caches and free up empty slab pages.
-> 
+>> Temporary perf files are hardcoded to point to /tmp. Android does not have
+>> a /tmp directory so it needs to set this path at compile time.
+>>
+>> Add a compile-time definition (PERF_TMP_DIR) in the Makefile that sets the path
+>> to temp directory. By default it points to /tmp.
+>>
+>>  $(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+>> -$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+>> +$(OUTPUT)util/pmu.o: util/pmu.c $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>>
+>>  LIB_FILE=$(OUTPUT)libperf.a
+>>
+>> @@ -889,6 +892,21 @@ $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+>>  $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+>>       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+>
+> Humm, so we need to add an specific rule for each source file that needs
+> PERF_TMP_DIR? Why not make it available to all source files?
+>
 
-The changelog needs to be updated. I updated the code, forgot the
-changelog =(
+I've seen this is the way other defines are handled (PERF_HTML_PATH,
+PERF_INFO_PATH, etc). But PERF_TMP_DIR is used in more places so it
+makes sense to make it available to all source files. I'll make the
+changes (for both PERF_TMP_DIR and PERF_SHELL_PATH) and resubmit.
 
-I am actually now following Tejun's last suggestion, and no longer using
-my old verify_dead code.
+>> +$(OUTPUT)util/dso-test-data.o: util/dso-test-data.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>> +
+>> +$(OUTPUT)util/map.o: util/map.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>> +
+>> +$(OUTPUT)util/symbol.o: util/symbol.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>> +
+>> +$(OUTPUT)util/trace-event-info.o: util/trace-event-info.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>> +
+>> +$(OUTPUT)util/vdso.o: util/vdso.c $(OUTPUT)PERF-CFLAGS
+>> +     $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DPERF_TMP_DIR='"$(PERF_TMP_DIR)"' $<
+>> +
+>>  $(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
+>>       $(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+>>
 
-So I am basically calling shrink_slab every once in a while until the
-cache disappears.
-
-The only change I still need in the allocators is to count the amount of
-pages they have, so I can differentiate between need-to-shrink and
-need-to-destroy
-
+Thanks,
+Irina
