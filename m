@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2JVPui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:50:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37636 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab2JVPuf (ORCPT
+	id S1754833Ab2JVPyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:54:07 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40761 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab2JVPyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:50:35 -0400
-Date: Mon, 22 Oct 2012 08:50:28 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: tony@atomide.com, b-cousson@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121022155028.GA13791@core.coreip.homeip.net>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+	Mon, 22 Oct 2012 11:54:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20121022153633.GK2095@tassilo.jf.intel.com>
+References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
+ <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
+ <20121022132733.GQ16230@one.firstfloor.org> <20121022133534.GR16230@one.firstfloor.org>
+ <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com> <20121022153633.GK2095@tassilo.jf.intel.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 22 Oct 2012 17:53:45 +0200
+Message-ID: <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sourav,
+On Mon, Oct 22, 2012 at 5:36 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> Not sure of your notation there. I assume 31..27 means 5 bits (32
+>> through to 28 inclusive, 27 excluded). That gives you just 2^31 ==
+> [27...31]
 
-On Mon, Oct 22, 2012 at 06:43:00PM +0530, Sourav Poddar wrote:
-> Adapt keypad to use pinctrl framework.
-> 
-> Tested on omap4430 sdp with 3.7-rc1 kernel.
+(Hmm -- sleeping as I wrote that, but I at least got the end point right.)
 
-I do not see anything in the driver that would directly use pinctrl. Is
-there a better place to select default pin configuration; maybe when
-instantiating platform device?
+> You're right it's only 5 bits, so just 2GB.
+>
+> Thinking about it more PowerPC has a 16GB page, so we probably
+> need to move this to prot.
+>
+> However I'm not sure if any architectures use let's say the high
+> 8 bits of prot.
 
-Thanks.
+This is all seems to make an awful muck of the API...
 
-> 
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
-> ---
-> v1->v2
-> - Added "PROBE_DEFER" check 
->  drivers/input/keyboard/omap4-keypad.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-> index c05f98c..502b832 100644
-> --- a/drivers/input/keyboard/omap4-keypad.c
-> +++ b/drivers/input/keyboard/omap4-keypad.c
-> @@ -31,6 +31,7 @@
->  #include <linux/input.h>
->  #include <linux/slab.h>
->  #include <linux/pm_runtime.h>
-> +#include <linux/pinctrl/consumer.h>
->  
->  #include <linux/platform_data/omap4-keypad.h>
->  
-> @@ -76,6 +77,7 @@ enum {
->  
->  struct omap4_keypad {
->  	struct input_dev *input;
-> +	struct pinctrl	*pins;
->  
->  	void __iomem *base;
->  	unsigned int irq;
-> @@ -298,6 +300,15 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
->  		goto err_release_mem;
->  	}
->  
-> +	keypad_data->pins = devm_pinctrl_get_select_default(&pdev->dev);
-> +	if (IS_ERR(keypad_data->pins)) {
-> +		if (PTR_ERR(keypad_data->pins) == -EPROBE_DEFER)
-> +			return -EPROBE_DEFER;
-> +
-> +		dev_warn(&pdev->dev, "did not get pins for keypad error: %li\n",
-> +					PTR_ERR(keypad_data->pins));
-> +		keypad_data->pins = NULL;
-> +	}
->  
->  	/*
->  	 * Enable clocks for the keypad module so that we can read
-> -- 
-> 1.7.1
-> 
+I'm not sure whether anything is using the high 8 bits of prot, bun
+passing I note that there seems to be no check that the unused bits
+are zeroed so there's a small chance  existing apps are passing random
+garbage there. (Of course, mmap() is hardly the only API to have that
+fault, and it hasn't stopped us from reusing bits in those APIs,
+though sometimes we've gotten bitten by apps that did pass in random
+garbage).
+
+>> But there seems an obvious solution here: given your value in those
+>> bits (call it 'n'), the why not apply a multiplier. I mean, certainly
+>> you never want a value <= 12 for n, and I suspect that the reasonable
+>> minimum could be much larger (e.g., 2^16). Call that minimum M. Then
+>> you could interpret the value in your bits as meaning a page size of
+>>
+>>     (2^n) * M
+>
+> I considered that, but it would seem ugly and does not add that
+> many bits.
+>
+>>
+>> > So this will use up all remaining flag bits now.
+>>
+>> On the other hand, that seems really bad. It looks like that kills the
+>> ability to further extend the mmap() API with new flags in the future.
+>> It doesn't sound like we should be doing that.
+>
+> You can always add flags to PROT or add a mmap3(). Has been done before.
+> Or just don't do any new MAP_SECURITY_HOLEs
+
+There seems to be a reasonable argument here for an mmap3() with a
+64-bit flags argument...
+
+Cheers,
+
+Michael
 
 -- 
-Dmitry
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
