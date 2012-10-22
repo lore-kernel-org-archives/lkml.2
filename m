@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab2JVMpp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 08:45:45 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:16396 "EHLO thoth.sbs.de"
+	id S1753567Ab2JVMvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 08:51:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39124 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab2JVMpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 08:45:44 -0400
-Message-ID: <50853FF1.8010809@siemens.com>
-Date: Mon, 22 Oct 2012 14:45:37 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752688Ab2JVMvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 08:51:31 -0400
+Date: Mon, 22 Oct 2012 14:51:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        devel@openvz.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v5 06/14] memcg: kmem controller infrastructure
+Message-ID: <20121022125124.GA8344@dhcp22.suse.cz>
+References: <1350382611-20579-1-git-send-email-glommer@parallels.com>
+ <1350382611-20579-7-git-send-email-glommer@parallels.com>
+ <alpine.DEB.2.00.1210171515290.20712@chino.kir.corp.google.com>
+ <507FCA90.8060307@parallels.com>
+ <alpine.DEB.2.00.1210181454100.30894@chino.kir.corp.google.com>
+ <5081269B.5000603@parallels.com>
+ <alpine.DEB.2.00.1210191331400.17804@chino.kir.corp.google.com>
+ <50853D47.4030409@parallels.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: x86: fix vcpu->mmio_fragments overflow
-References: <5081033C.4060503@linux.vnet.ibm.com> <20121022091615.GG29310@redhat.com> <50852972.305@linux.vnet.ibm.com> <20121022112314.GO29310@redhat.com> <50852F9C.9020808@siemens.com> <20121022114311.GQ29310@redhat.com> <508531E1.2030307@siemens.com> <508539A8.40404@redhat.com>
-In-Reply-To: <508539A8.40404@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50853D47.4030409@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-22 14:18, Avi Kivity wrote:
-> On 10/22/2012 01:45 PM, Jan Kiszka wrote:
+[Sorry for the late reply]
+
+On Mon 22-10-12 16:34:15, Glauber Costa wrote:
+> On 10/20/2012 12:34 AM, David Rientjes wrote:
+> > On Fri, 19 Oct 2012, Glauber Costa wrote:
+> > 
+> >>>>> What about gfp & __GFP_FS?
+> >>>>>
+> >>>>
+> >>>> Do you intend to prevent or allow OOM under that flag? I personally
+> >>>> think that anything that accepts to be OOM-killed should have GFP_WAIT
+> >>>> set, so that ought to be enough.
+> >>>>
+> >>>
+> >>> The oom killer in the page allocator cannot trigger without __GFP_FS 
+> >>> because direct reclaim has little chance of being very successful and 
+> >>> thus we end up needlessly killing processes, and that tends to happen 
+> >>> quite a bit if we dont check for it.  Seems like this would also happen 
+> >>> with memcg if mem_cgroup_reclaim() has a large probability of failing?
+> >>>
+> >>
+> >> I can indeed see tests for GFP_FS in some key locations in mm/ before
+> >> calling the OOM Killer.
+> >>
+> >> Should I test for GFP_IO as well?
+> > 
+> > It's not really necessary, if __GFP_IO isn't set then it wouldn't make 
+> > sense for __GFP_FS to be set.
+> > 
+> >> If the idea is preventing OOM to
+> >> trigger for allocations that can write their pages back, how would you
+> >> feel about the following test:
+> >>
+> >> may_oom = (gfp & GFP_KERNEL) && !(gfp & __GFP_NORETRY) ?
+> >>
+> > 
+> > I would simply copy the logic from the page allocator and only trigger oom 
+> > for __GFP_FS and !__GFP_NORETRY.
+> > 
 > 
->>> Indeed. git pull, recheck and call for kvm_flush_coalesced_mmio_buffer()
->>> is gone. So this will break new userspace, not old. By global you mean
->>> shared between devices (or memory regions)?
->>
->> Yes. We only have a single ring per VM, so we cannot flush multi-second
->> VGA access separately from other devices. In theory solvable by
->> introducing per-region rings that can be driven separately.
-> 
-> But in practice unneeded.  Real time VMs can disable coalescing and not
-> use planar VGA modes.
+> That seems reasonable to me. Michal ?
 
-A) At least right now, we do not differentiate between the VGA modes and
-if flushing is needed. So that device is generally taboo for RT cores of
-the VM.
-B) We need to disable coalescing in E1000 as well - if we want to use
-that model.
-C) Gleb seems to propose using coalescing far beyond those two use cases.
-
-Jan
-
+Yes it makes sense to be consistent with the global case. While we are
+at it, do we need to consider PF_DUMPCORE resp. !__GFP_NOFAIL?
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Michal Hocko
+SUSE Labs
