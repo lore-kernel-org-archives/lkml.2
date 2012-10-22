@@ -1,156 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2JVLBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 07:01:03 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48958 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab2JVLBB (ORCPT
+	id S1753254Ab2JVLCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 07:02:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60109 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab2JVLB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 07:01:01 -0400
+	Mon, 22 Oct 2012 07:01:58 -0400
+Date: Mon, 22 Oct 2012 13:56:01 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: Li Yang-R58472 <r58472@freescale.com>, "balbi@ti.com" <balbi@ti.com>,
+        Simon Haggett <simon.haggett@realvnc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a
+ disabled USB endpoint on Freescale hardware
+Message-ID: <20121022105601.GS14033@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
+ <20121019173718.GA2738@arwen.pp.htv.fi>
+ <94F013E7935FF44C83EBE7784D62AD3F094730DB@039-SN2MPN1-023.039d.mgd.msft.net>
+ <1535820.NU10ADjvOZ@avalon>
 MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 19:01:00 +0800
-Message-ID: <CAKw8HL3UuPSUf3_W-JX7rmQxbwhkHQCdOyTgrT0N5oa2_HCL0g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] ARM hardcoded instruction causes cpu-hotplug fail
- to work on big-endian platfrom
-From: Fei Yang <yangfei.kernel@gmail.com>
-To: Dave Martin <dave.martin@linaro.org>, linux@arm.linux.org.uk,
-        lethal@linux-sh.org, magnus.damm@gmail.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Cc: Mikael Pettersson <mikpe@it.uu.se>,
-        "linux-assembly@vger.kernel.org" <linux-assembly@vger.kernel.org>,
-        linux-hotplug@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        yangfei.kernel@gmail.com, "Yangfei (Felix)" <felix.yang@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ggC1wwkyYWqEab//"
+Content-Disposition: inline
+In-Reply-To: <1535820.NU10ADjvOZ@avalon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/17 Fei Yang <yangfei.kernel@gmail.com>:
-> <cut>
->
->> Not handling the Thumb case is a definite bug for any file which may
->> run on v7, since the kernel could be built in Thumb for that case.
->> For example, the existing code is mach-realview/hotplug.c is broken
->> when building an SMP Thumb-2 kernel for the Realview PBX-A9.
->>
->> Cheers
->> ---Dave
->
-> Thanks for pointing this out. I think we just cannot make any
-> assumption about the versions of the tools used. Based on this, I have
-> made a v2 of the patch against linux-3.7-rc1. I am not touching the
-> CFLAGS in the patch as I am not familiar with the three ARM boards
-> here.
-> Can the respective board maintainers
-> (mach-exynos/mach-realveiw/mach-shmobile) give any comments about v2
-> of the patch?
->
-> Thanks.
-> ---Fei
->
-> v2: Define opcode of the ARM "WFI" instruction in the right way.
->
-> Signed-off-by: Fei Yang<yangfei.kernel@gmail.com>
->
-> diff -urN linux-3.7-rc1/arch/arm/mach-exynos/hotplug.c
-> linux/arch/arm/mach-exynos/hotplug.c
-> --- linux-3.7-rc1/arch/arm/mach-exynos/hotplug.c        2012-10-15
-> 05:41:04.000000000 +0800
-> +++ linux/arch/arm/mach-exynos/hotplug.c        2012-10-17 19:25:49.000000000 +0800
-> @@ -18,11 +18,17 @@
->  #include <asm/cacheflush.h>
->  #include <asm/cp15.h>
->  #include <asm/smp_plat.h>
-> +#include <asm/opcodes.h>
->
->  #include <mach/regs-pmu.h>
->
->  #include "common.h"
->
-> +/*
-> + * Define opcode of the WFI instruction.
-> + */
-> +#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
-> +
->  static inline void cpu_enter_lowpower(void)
->  {
->         unsigned int v;
-> @@ -72,7 +78,7 @@
->                 /*
->                  * here's the WFI
->                  */
-> -               asm(".word      0xe320f003\n"
-> +               asm(__WFI
->                     :
->                     :
->                     : "memory", "cc");
-> diff -urN linux-3.7-rc1/arch/arm/mach-realview/hotplug.c
-> linux/arch/arm/mach-realview/hotplug.c
-> --- linux-3.7-rc1/arch/arm/mach-realview/hotplug.c      2012-10-15
-> 05:41:04.000000000 +0800
-> +++ linux/arch/arm/mach-realview/hotplug.c      2012-10-17 19:25:20.000000000 +0800
-> @@ -15,6 +15,12 @@
->  #include <asm/cacheflush.h>
->  #include <asm/cp15.h>
->  #include <asm/smp_plat.h>
-> +#include <asm/opcodes.h>
-> +
-> +/*
-> + * Define opcode of the WFI instruction.
-> + */
-> +#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
->
->  static inline void cpu_enter_lowpower(void)
->  {
-> @@ -64,7 +70,7 @@
->                 /*
->                  * here's the WFI
->                  */
-> -               asm(".word      0xe320f003\n"
-> +               asm(__WFI
->                     :
->                     :
->                     : "memory", "cc");
-> diff -urN linux-3.7-rc1/arch/arm/mach-shmobile/hotplug.c
-> linux/arch/arm/mach-shmobile/hotplug.c
-> --- linux-3.7-rc1/arch/arm/mach-shmobile/hotplug.c      2012-10-15
-> 05:41:04.000000000 +0800
-> +++ linux/arch/arm/mach-shmobile/hotplug.c      2012-10-17 19:25:34.000000000 +0800
-> @@ -20,6 +20,12 @@
->  #include <mach/emev2.h>
->  #include <asm/cacheflush.h>
->  #include <asm/mach-types.h>
-> +#include <asm/opcodes.h>
-> +
-> +/*
-> + * Define opcode of the WFI instruction.
-> + */
-> +#define __WFI __inst_arm_thumb16(0xe320f003, 0xbf30)
->
->  static cpumask_t dead_cpus;
->
-> @@ -39,7 +45,7 @@
->                 /*
->                  * here's the WFI
->                  */
-> -               asm(".word      0xe320f003\n"
-> +               asm(__WFI
->                     :
->                     :
->                     : "memory", "cc");
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+--ggC1wwkyYWqEab//
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-    Any comments on this patch? It is posted last week. Please let me
-know if I missed anything.
-    Thanks.
+On Mon, Oct 22, 2012 at 12:47:21PM +0200, Laurent Pinchart wrote:
+> Hi,
+>=20
+> On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
+> > On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
+> > > On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
+> > > > Some gadget drivers may attempt to dequeue requests for an endpoint
+> > > > that has already been disabled. For example, in the UVC gadget driv=
+er,
+> > > > uvc_function_set_alt() will call usb_ep_disable() when alt setting 0
+> > > > is selected. When the userspace application subsequently issues the
+> > > > VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes usb_ep_dequeue()=
+ to
+> > >=20
+> > > ensure that all requests have been cancelled.
+> > >=20
+> > > bug is on uvc gadget, then. Laurent ?
+>=20
+> We've discussed this topic a couple of months before. I believe that's no=
+t a=20
+> bug.
+>=20
+> http://68.183.106.108/lists/linux-usb/msg68869.html
 
-    ---Fei
+fair enough :-)
+
+That's a different case, however. At the link above we're discussing
+dequeueing a request which is already being dequeued. $SUBJECT is trying
+to fix dequeueing of a request for an endpoint which isn't even enabled.
+
+--=20
+balbi
+
+--ggC1wwkyYWqEab//
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhSZBAAoJEIaOsuA1yqREtvcP/ikDgBcQnGMnmLx0B46yUH8B
+vl0tI2pdTM5vEKj1a0wQrx5sClIVcYCMxGI1F4lwhEZ4fJOSCi7RW5f2UFq48ndh
+Nb8XkmRtGyDOgpW5XZ1YLhOR/JCM5/xDHH4guv8i+kL09Kn+Rp881SlsjMiMRK0n
+pi6W8ZZ9FEtqSY3cmMIkQnbQzo3lsu+k9c6nVjC+kx9PJytCGpk5jXxWva9LUO4q
+DCEtXkHz64slgz7Ok01cYGJ/q8qs8soWHLRaYepHUrsoPcHwZ89kgMhhmlfz2E9A
+t+154yO+ZO4NaRYgHVMhRVRsiLlZpNDx5ljTZgPPhQIxQD6/GIXCLkgGNpqSCpa3
+MUdKSap3VmWbWaF9jxi6otNynHckUyX2CS7Jnp+l4URALhcsRzZjt3LFaAs9VI1l
+jguLJRnTaZw4JtIPrMJYqOqkGR9l1Km5ogphZxzO0czkFx7P+G3ZryeqFvJD7YmR
+dbN5QQPuMDVzBsl6lhdQBIAndRlEeqGR6dg51aYdAURey2HQEQ3XX5UxJTsF3oZb
+u0AfUxtm8jnrcQG1TiC6gBVKiQAwRNMbXbRx9kIAqf6441RZ/8IGnGOUGQsNpGyA
+KhCP0kv9nPdim2mite7td3+ICZIJh+Q2tvHcAT1eVEgS8czJnDpfeDLy4HBskyhb
+NimFSvjXETC5tXwCcF/g
+=8aST
+-----END PGP SIGNATURE-----
+
+--ggC1wwkyYWqEab//--
