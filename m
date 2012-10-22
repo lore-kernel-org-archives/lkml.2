@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2JVNUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:20:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52839 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2JVNUW (ORCPT
+	id S1754093Ab2JVNVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:21:04 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:43214 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab2JVNVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:20:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350909125-20189-2-git-send-email-ulf.hansson@stericsson.com>
-References: <1350909125-20189-1-git-send-email-ulf.hansson@stericsson.com>
-	<1350909125-20189-2-git-send-email-ulf.hansson@stericsson.com>
-Date: Mon, 22 Oct 2012 15:20:21 +0200
-Message-ID: <CACRpkdZMujAko6sBTD=dv_4uOdfE33WYv6fFgqY5xsKJw=Eu7Q@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: Ux500: Control apb clock
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ulf Hansson <ulf.hansson@stericsson.com>
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Ola Lilja <ola.o.lilja@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Oct 2012 09:21:01 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, Stephane Eranian <eranian@gmail.com>
+Subject: [PATCH v2 0/2] perf: enforce exclusive PMU access for SNB INST_RETIRED:PREC_DIST
+Date: Mon, 22 Oct 2012 15:20:50 +0200
+Message-Id: <1350912052-10066-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 2:32 PM, Ulf Hansson <ulf.hansson@stericsson.com> wrote:
+From: Stephane Eranian <eranian@gmail.com>
 
-> From: Ulf Hansson <ulf.hansson@linaro.org>
->
-> When switching to common clock driver for ux500 this clock needs to
-> be handled as well. Before this clock was internally managed by the
-> clock driver itself.
->
-> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+The following patch set enforces exclusive PMU access for
+Intel SandyBridge INST_REITRED:PREC_DIST event when used
+with PEBS as described in the SDM Vol 3b. Without this,
+the sample distribution may not be correct.
 
-Looks correct, Acked-by: Linus Walleij <linus.walleij@linaro.org>
+The kernel now rejects PEBS + INST_RETIRED:PREC_DIST
+on SNB if attr->exclusive is not set. One reason to
+do it this way is to make sure users understands the
+restriction. If the kernel were to force exclusive
+on the fly, users would have cases where they would
+get no samples and no error messages to understand
+why.
 
-Yours,
-Linus Walleij
+The first patch extends perf to allow users to request
+exclusive PMU access by introducing a new modifier: x.
+For instance:
+  $ perf record -e r01c0:ppx .....
+or
+  $ perf record -e cpu/event=0xc0,umask=0x1/ppx ....
+
+In V2, we fixed the pr_info() issue. We know use
+pr_warn_once(). Also fixed the max repeat factor
+for the event modifier in the event parser.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Stephane Eranian (2):
+  perf tools: add event modifier to request exclusive PMU access
+  perf: enforce SNB exclusive access for INST_RETIRED:PREC_DIST
+
+ arch/x86/kernel/cpu/perf_event.h       |    2 +-
+ arch/x86/kernel/cpu/perf_event_intel.c |   30 +++++++++++++++++++++++++-----
+ tools/perf/util/parse-events.c         |    7 +++++++
+ tools/perf/util/parse-events.l         |    2 +-
+ 4 files changed, 34 insertions(+), 7 deletions(-)
+
+-- 
+1.7.9.5
+
