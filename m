@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2JVQrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:47:00 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51566 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab2JVQq6 (ORCPT
+	id S1755494Ab2JVQyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:54:20 -0400
+Received: from honeysuckle.london.02.net ([87.194.255.144]:59453 "EHLO
+	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755416Ab2JVQyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:46:58 -0400
-MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 09:46:57 -0700
-X-Google-Sender-Auth: LbHYKyZ5QuxsfUwnXWLCn-cg1tw
-Message-ID: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-Subject: Process Hang in __read_seqcount_begin
-From: Peter LaDow <petela@gocougs.wsu.edu>
+	Mon, 22 Oct 2012 12:54:19 -0400
+From: Matthew Leach <matthew@mattleach.net>
 To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        Matthew Leach <matthew@mattleach.net>
+Subject: [PATCH] init: Use the stringify operator for the __define_initcall macro
+Date: Mon, 22 Oct 2012 17:54:03 +0100
+Message-Id: <1350924843-4429-1-git-send-email-matthew@mattleach.net>
+X-Mailer: git-send-email 1.7.12.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I posted this problem some time back on the linux-rt-users and
-netfilter lists.  Since then, we thought we had a workaround to avoid
-this problem, so we dropped the issue.  But now 5 months later, the
-problem has reappeared.  And this time it is much more serious and
-much more difficult to re-create.  After perusing both those lists,
-I'm not sure if those were the proper places to post.  The netfilter
-list seems to be more focused on the user space side of things, and
-the RT page indicates that kernel side RT issues should go to lkml.
+Currently the __define_initcall macro takes three arguments, fn, id
+and level. The level argument is exactly the same as the id argument
+but wrapped in quotes. To overcome this need to specify three
+arguments to the __define_initcall macro, where one argument is the
+stringification of another, we can just use the stringification macro
+instead.
 
-Anyway, here's a repost of that problem from July.  Perhaps somebody
-here can point us in the right direction.
+Signed-off-by: Matthew Leach <matthew@mattleach.net>
+---
+ include/linux/init.h | 40 ++++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-We are running 3.0.36-rt57 on a powerpc box.  During some testing with
-heavy loads and interfaces coming up/going down (specifically PPP), we
-have run into a case where iptables hangs and cannot be killed.  It
-requires a reboot to fix the problem.
+diff --git a/include/linux/init.h b/include/linux/init.h
+index e59041e..eaa3851 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -186,16 +186,16 @@ extern bool initcall_debug;
+  * can point at the same handler without causing duplicate-symbol build errors.
+  */
+ 
+-#define __define_initcall(level,fn,id) \
++#define __define_initcall(fn,id) \
+ 	static initcall_t __initcall_##fn##id __used \
+-	__attribute__((__section__(".initcall" level ".init"))) = fn
++	__attribute__((__section__(".initcall" #id ".init"))) = fn
+ 
+ /*
+  * Early initcalls run before initializing SMP.
+  *
+  * Only for built-in code, not modules.
+  */
+-#define early_initcall(fn)		__define_initcall("early",fn,early)
++#define early_initcall(fn)		__define_initcall(fn,early)
+ 
+ /*
+  * A "pure" initcall has no dependencies on anything else, and purely
+@@ -204,23 +204,23 @@ extern bool initcall_debug;
+  * This only exists for built-in code, not for modules.
+  * Keep main.c:initcall_level_names[] in sync.
+  */
+-#define pure_initcall(fn)		__define_initcall("0",fn,0)
+-
+-#define core_initcall(fn)		__define_initcall("1",fn,1)
+-#define core_initcall_sync(fn)		__define_initcall("1s",fn,1s)
+-#define postcore_initcall(fn)		__define_initcall("2",fn,2)
+-#define postcore_initcall_sync(fn)	__define_initcall("2s",fn,2s)
+-#define arch_initcall(fn)		__define_initcall("3",fn,3)
+-#define arch_initcall_sync(fn)		__define_initcall("3s",fn,3s)
+-#define subsys_initcall(fn)		__define_initcall("4",fn,4)
+-#define subsys_initcall_sync(fn)	__define_initcall("4s",fn,4s)
+-#define fs_initcall(fn)			__define_initcall("5",fn,5)
+-#define fs_initcall_sync(fn)		__define_initcall("5s",fn,5s)
+-#define rootfs_initcall(fn)		__define_initcall("rootfs",fn,rootfs)
+-#define device_initcall(fn)		__define_initcall("6",fn,6)
+-#define device_initcall_sync(fn)	__define_initcall("6s",fn,6s)
+-#define late_initcall(fn)		__define_initcall("7",fn,7)
+-#define late_initcall_sync(fn)		__define_initcall("7s",fn,7s)
++#define pure_initcall(fn)		__define_initcall(fn,0)
++
++#define core_initcall(fn)		__define_initcall(fn,1)
++#define core_initcall_sync(fn)		__define_initcall(fn,1s)
++#define postcore_initcall(fn)		__define_initcall(fn,2)
++#define postcore_initcall_sync(fn)	__define_initcall(fn,2s)
++#define arch_initcall(fn)		__define_initcall(fn,3)
++#define arch_initcall_sync(fn)		__define_initcall(fn,3s)
++#define subsys_initcall(fn)		__define_initcall(fn,4)
++#define subsys_initcall_sync(fn)	__define_initcall(fn,4s)
++#define fs_initcall(fn)			__define_initcall(fn,5)
++#define fs_initcall_sync(fn)		__define_initcall(fn,5s)
++#define rootfs_initcall(fn)		__define_initcall(fn,rootfs)
++#define device_initcall(fn)		__define_initcall(fn,6)
++#define device_initcall_sync(fn)	__define_initcall(fn,6s)
++#define late_initcall(fn)		__define_initcall(fn,7)
++#define late_initcall_sync(fn)		__define_initcall(fn,7s)
+ 
+ #define __initcall(fn) device_initcall(fn)
+ 
+-- 
+1.7.12.4
 
-Connecting the BDI and debugging the kernel, we get:
-
-#0  get_counters (t=0xdd5145a0, counters=0xe3458000)
-    at include/linux/seqlock.h:66
-#1  0xc026b4ac in do_ipt_get_ctl (sk=<value optimized out>,
-    cmd=<value optimized out>, user=0x10612078, len=<value optimized out>)
-    at net/ipv4/netfilter/ip_tables.c:918
-#2  0xc022226c in nf_sockopt (sk=<value optimized out>, pf=2 '\002',
-    val=<value optimized out>, opt=<value optimized out>, len=0xdd4c7d4c,
-    get=1) at net/netfilter/nf_sockopt.c:109
-#3  0xc0236b1c in ip_getsockopt (sk=0xdf071480, level=<value optimized out>,
-    optname=65, optval=0x10612078 <Address 0x10612078 out of bounds>,
-    optlen=0xbfbe0c2c) at net/ipv4/ip_sockglue.c:1308
-#4  0xc02522a8 in raw_getsockopt (sk=0xdf071480, level=<value optimized out>,
-    optname=<value optimized out>, optval=<value optimized out>,
-    optlen=<value optimized out>) at net/ipv4/raw.c:811
-#5  0xc01f4c38 in sock_common_getsockopt (sock=<value optimized out>,
-    level=<value optimized out>, optname=<value optimized out>,
-    optval=<value optimized out>, optlen=<value optimized out>)
-    at net/core/sock.c:2157
-#6  0xc01f2df8 in sys_getsockopt (fd=<value optimized out>, level=0,
-    optname=65, optval=0x10612078 <Address 0x10612078 out of bounds>,
-    optlen=0xbfbe0c2c) at net/socket.c:1839
-#7  0xc01f45b4 in sys_socketcall (call=15, args=<value optimized out>)
-    at net/socket.c:2421
-
-It seems to be stuck in __read_seqcount_begin.  From include/linux/seqlock.h:
-
-static inline unsigned __read_seqcount_begin(const seqcount_t *s)
-{
-        unsigned ret;
-
-repeat:
-        ret = ACCESS_ONCE(s->sequence);
-        if (unlikely(ret & 1)) {
-                cpu_relax();
-  <----- It is always here
-                goto repeat;
-        }
-        return ret;
-}
-
-I've been scouring the mailing lists and Google searches trying to
-find something, but thus far have come up with nothing.
-
-Any tips would be appreciated.
-
-Thanks,
-Pete
