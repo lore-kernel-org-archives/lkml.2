@@ -1,43 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755666Ab2JVRAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:00:49 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:38274 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419Ab2JVRAs (ORCPT
+	id S1755648Ab2JVRBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:01:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:33795 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab2JVRBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:00:48 -0400
-Message-ID: <1350925243.1785.24.camel@aeonflux>
-Subject: Re: [PATCH RESEND net-next] bluetooth: hci_core: Replace
- list_for_each with list_for_each_entry() helper
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Denis Kirjanov <kirjanov@gmail.com>
-Cc: davem@davemloft.net, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 22 Oct 2012 10:00:43 -0700
-In-Reply-To: <1350912121-24171-1-git-send-email-kirjanov@gmail.com>
-References: <1350912121-24171-1-git-send-email-kirjanov@gmail.com>
+	Mon, 22 Oct 2012 13:01:44 -0400
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Date: Mon, 22 Oct 2012 19:01:39 +0200
+Message-ID: <1350925299.8609.978.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Denis,
-
-> Replace list_for_each with list_for_each_entry() helper
+On Mon, 2012-10-22 at 09:46 -0700, Peter LaDow wrote:
+> I posted this problem some time back on the linux-rt-users and
+> netfilter lists.  Since then, we thought we had a workaround to avoid
+> this problem, so we dropped the issue.  But now 5 months later, the
+> problem has reappeared.  And this time it is much more serious and
+> much more difficult to re-create.  After perusing both those lists,
+> I'm not sure if those were the proper places to post.  The netfilter
+> list seems to be more focused on the user space side of things, and
+> the RT page indicates that kernel side RT issues should go to lkml.
 > 
-> Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
-> ---
->  include/net/bluetooth/hci_core.h |   20 ++++++++------------
->  1 files changed, 8 insertions(+), 12 deletions(-)
+> Anyway, here's a repost of that problem from July.  Perhaps somebody
+> here can point us in the right direction.
+> 
+> We are running 3.0.36-rt57 on a powerpc box.  During some testing with
+> heavy loads and interfaces coming up/going down (specifically PPP), we
+> have run into a case where iptables hangs and cannot be killed.  It
+> requires a reboot to fix the problem.
+> 
+> Connecting the BDI and debugging the kernel, we get:
+> 
+> #0  get_counters (t=0xdd5145a0, counters=0xe3458000)
+>     at include/linux/seqlock.h:66
+> #1  0xc026b4ac in do_ipt_get_ctl (sk=<value optimized out>,
+>     cmd=<value optimized out>, user=0x10612078, len=<value optimized out>)
+>     at net/ipv4/netfilter/ip_tables.c:918
+> #2  0xc022226c in nf_sockopt (sk=<value optimized out>, pf=2 '\002',
+>     val=<value optimized out>, opt=<value optimized out>, len=0xdd4c7d4c,
+>     get=1) at net/netfilter/nf_sockopt.c:109
+> #3  0xc0236b1c in ip_getsockopt (sk=0xdf071480, level=<value optimized out>,
+>     optname=65, optval=0x10612078 <Address 0x10612078 out of bounds>,
+>     optlen=0xbfbe0c2c) at net/ipv4/ip_sockglue.c:1308
+> #4  0xc02522a8 in raw_getsockopt (sk=0xdf071480, level=<value optimized out>,
+>     optname=<value optimized out>, optval=<value optimized out>,
+>     optlen=<value optimized out>) at net/ipv4/raw.c:811
+> #5  0xc01f4c38 in sock_common_getsockopt (sock=<value optimized out>,
+>     level=<value optimized out>, optname=<value optimized out>,
+>     optval=<value optimized out>, optlen=<value optimized out>)
+>     at net/core/sock.c:2157
+> #6  0xc01f2df8 in sys_getsockopt (fd=<value optimized out>, level=0,
+>     optname=65, optval=0x10612078 <Address 0x10612078 out of bounds>,
+>     optlen=0xbfbe0c2c) at net/socket.c:1839
+> #7  0xc01f45b4 in sys_socketcall (call=15, args=<value optimized out>)
+>     at net/socket.c:2421
+> 
+> It seems to be stuck in __read_seqcount_begin.  From include/linux/seqlock.h:
+> 
+> static inline unsigned __read_seqcount_begin(const seqcount_t *s)
+> {
+>         unsigned ret;
+> 
+> repeat:
+>         ret = ACCESS_ONCE(s->sequence);
+>         if (unlikely(ret & 1)) {
+>                 cpu_relax();
+>   <----- It is always here
+>                 goto repeat;
+>         }
+>         return ret;
+> }
+> 
+> I've been scouring the mailing lists and Google searches trying to
+> find something, but thus far have come up with nothing.
+> 
+> Any tips would be appreciated.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+This looks like a corruption of s->sequence, and is value is odd, even
+if no writer is alive.
 
-Regards
+Does local_bh_disable() disables preemption on RT ?
 
-Marcel
+
 
 
