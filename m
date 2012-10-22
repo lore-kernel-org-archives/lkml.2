@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab2JVRKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:10:24 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:41194 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443Ab2JVRKX (ORCPT
+	id S1755825Ab2JVRM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:12:26 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:34347 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755608Ab2JVRMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:10:23 -0400
-Date: Mon, 22 Oct 2012 19:10:15 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, x86@kernel.org, mingo@elte.hu,
-        tglx@linutronix.de, hpa@zytor.com, len.brown@intel.com,
-        fenghua.yu@intel.com, ebiederm@xmission.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH v1 0/2] x86, apic: Disable BSP if boot cpu is AP
-Message-ID: <20121022191015.2989b7a0@holzheu>
-In-Reply-To: <20121019151753.GF27052@redhat.com>
-References: <20121017141234.GD31663@redhat.com>
-	<20121018.120805.464238435.d.hatayama@jp.fujitsu.com>
-	<20121018141449.GB18147@redhat.com>
-	<20121019.122054.476812873.d.hatayama@jp.fujitsu.com>
-	<20121019151753.GF27052@redhat.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12102217-0342-0000-0000-0000032ABE39
+	Mon, 22 Oct 2012 13:12:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121022160705.GC13791@core.coreip.homeip.net>
+References: <1350424679-20725-1-git-send-email-scott.liu@emc.com.tw>
+	<87hapnnp5t.fsf@emc.com.tw>
+	<20121022160705.GC13791@core.coreip.homeip.net>
+Date: Mon, 22 Oct 2012 19:12:22 +0200
+Message-ID: <CAN+gG=HyzcRnp_Bd=WRq2Hn_5QKCVCjvFjXCvO1xXbAcyBOJfQ@mail.gmail.com>
+Subject: Re: [PATCH v1] Support Elan Touchscreen eKTF product.
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jian-Jhong Ding <jj_ding@emc.com.tw>, Scott Liu <scott.liu@emc.com.tw>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jesse <jesse@emc.com.tw>,
+        Vincent Wang <vincent.wang@emc.com.tw>, Paul <paul.liang@emc.com.tw>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Oct 2012 11:17:53 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On Mon, Oct 22, 2012 at 6:07 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Mon, Oct 22, 2012 at 11:47:42AM +0800, Jian-Jhong Ding wrote:
+>> Scott Liu <scott.liu@emc.com.tw> writes:
+>> > +
+>> > +struct mt_device {
+>> > +   struct mt_slot curdata; /* placeholder of incoming data */
+>> > +   __u8 num_received;      /* how many contacts we received */
+>> > +   __u8 num_expected;      /* expected last contact index */
+>> > +   __u8 maxcontacts;
+>> > +   bool curvalid;          /* is the current contact valid? */
+>> > +   struct mt_slot *slots;
+>> > +};
+>>
+>> With Benjamin's i2c-hid implimentation, is it possible to make
+>> hid-multitouch not depend on USBHID and reuse it to drive this device?
 
-[..]
+We can already use hid-multitouch with hid over I2C devices (I'm
+testing my i2c devices with this module).
+But it's true that hid-multitouch depends on usbhid, and I the funny
+think is that I was removing this dependency today.
+The fact is that currently, i2c devices do not segfault with
+hid-multitouch  because win8 devices do not require anymore to set
+some feature at plug.
 
-> On Fri, Oct 19, 2012 at 12:20:54PM +0900, HATAYAMA Daisuke wrote:
-> I am skeptical that this approach is going to fly in practice. Dumping
-> huge images, processing and transferring these is not very practical.
-> So I would rather narrow down the problem on a running system and take
-> filtered dump of appropriate component where I suspect the problem is.
-> 
-> [..]
-> > > capability was the primary reason that s390 also wants to support
-> > > kdump otherwise there firmware dumping mechanism was working just
-> > > fine.
-> > > 
-> > 
-> > I don't know s390 firmware dumping mechanism at all, but is it
-> > possble for s390 to filter crash dump even on firmware dumping
-> > mechanism?
-> 
-> AFAIK, s390 dump mechanism could not filter dump and tha's the reason
-> they wanted to support kdump and /proc/vmcore so that makedumpfile 
-> could filter it. I am CCing Michael Holzheu, who did the s390 kdump
-> work. He can tell it better.
+>
+> Exactly. Before looking any further - is this the same part that Tom Lin
+> posted a driver for earlier this summer?
 
-Correct. The other s390 dump mechanisms (stand-alone and hypervisor
-dump) are not able to do filtering and therefore the handling of large
-dumps has been a problem for us.
+I'm not Elan, and I can not be sure, but judging from the "hello
+packets" and the other commands, I doubt this device is an I2C over
+HID one.
 
-This was one of the main reasons to implement kdump on s390.
+Anyway, reusing hid-multitouch for this specific case seams to be a
+little bit difficult. You would have first to provide a fake report
+descriptor (or inject commands as if you were hid-core) and then, you
+would have to reformat the incoming data into valid win7 (or 8)
+packets. Judging by the functions elan_touch_parse_fid,
+elan_touch_parse_wid and elants_parse_xy, the data seem to be mixed
+(all the finger ids at the beginning, and not one per touch), so it is
+definitively needed to recreate a valid HID packet.
 
-Michael
+So I'm not surprised with the duplicated code. However, Henrik did a
+big job in kernel 3.7 to factorize mt code, and some part of the
+duplication can be achieve with these functions (look at
+input_mt_sync_frame and input_mt_get_slot_by_key for example).
 
+Cheers,
+Benjamin
+
+>
+> Thanks.
+>
+> --
+> Dmitry
