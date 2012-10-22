@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab2JVJUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:20:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39053 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab2JVJUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:20:21 -0400
-MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 17:20:20 +0800
-Message-ID: <CAPgLHd8spXSn7D6EppZEr2=8+7idUYa_+Qvb+mzmB3Hw2KWDdg@mail.gmail.com>
-Subject: [PATCH] Drivers: hv: remove unused variable from channel_mgmt.c
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: kys@microsoft.com, haiyangz@microsoft.com
-Cc: yongjun_wei@trendmicro.com.cn, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752788Ab2JVJUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:20:50 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:45147 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125Ab2JVJUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 05:20:48 -0400
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: cbouatmailru@gmail.com
+Cc: ccross@android.com, keescook@chromium.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, Maxime Bizon <mbizon@freebox.fr>,
+        stable@vger.kernel.org, Florian Fainelli <ffainelli@freebox.fr>
+Subject: [PATCH v2] pstore/ram: fix undefined usage of rounddown_pow_of_two(0)
+Date: Mon, 22 Oct 2012 11:19:28 +0200
+Message-Id: <1350897568-14262-1-git-send-email-ffainelli@freebox.fr>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1350647942-5260-1-git-send-email-ffainelli@freebox.fr>
+References: <1350647942-5260-1-git-send-email-ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Maxime Bizon <mbizon@freebox.fr>
 
-The variables guidtype, guidinstance and initiate are initialized but
-never used otherwise, so remove the unused variables.
+record_size / console_size / ftrace_size can be 0 (this is how you
+disable the feature), but rounddown_pow_of_two(0) is undefined. As suggested
+by Kees Cook, use !is_power_of_2() as a condition to call rounddown_pow_of_two
+and avoid its undefined behavior on the value 0. This issue has been present
+since commit 1894a253 (ramoops: Move to fs/pstore/ram.c).
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+CC: stable@vger.kernel.org
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 ---
- drivers/hv/channel_mgmt.c | 8 --------
- 1 file changed, 8 deletions(-)
+Changes since v1:
+- use !is_power_of_2(size) instead of (!size)
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 2b8b8d4..2f84c5c 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -265,14 +265,9 @@ static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
- {
- 	struct vmbus_channel_offer_channel *offer;
- 	struct vmbus_channel *newchannel;
--	uuid_le *guidtype;
--	uuid_le *guidinstance;
- 
- 	offer = (struct vmbus_channel_offer_channel *)hdr;
- 
--	guidtype = &offer->offer.if_type;
--	guidinstance = &offer->offer.if_instance;
--
- 	/* Allocate the channel object and save this offer. */
- 	newchannel = alloc_channel();
- 	if (!newchannel) {
-@@ -470,7 +465,6 @@ static void vmbus_onversion_response(
- {
- 	struct vmbus_channel_msginfo *msginfo;
- 	struct vmbus_channel_message_header *requestheader;
--	struct vmbus_channel_initiate_contact *initiate;
- 	struct vmbus_channel_version_response *version_response;
- 	unsigned long flags;
- 
-@@ -484,8 +478,6 @@ static void vmbus_onversion_response(
- 
- 		if (requestheader->msgtype ==
- 		    CHANNELMSG_INITIATE_CONTACT) {
--			initiate =
--			(struct vmbus_channel_initiate_contact *)requestheader;
- 			memcpy(&msginfo->response.version_response,
- 			      version_response,
- 			      sizeof(struct vmbus_channel_version_response));
+ fs/pstore/ram.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 1a4f6da..bdd840d 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -374,10 +374,14 @@ static int __devinit ramoops_probe(struct platform_device *pdev)
+ 		goto fail_out;
+ 	}
+ 
+-	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
+-	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+-	pdata->console_size = rounddown_pow_of_two(pdata->console_size);
+-	pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
++	if (!is_power_of_2(pdata->mem_size))
++		pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
++	if (!is_power_of_2(pdata->record_size))
++		pdata->record_size = rounddown_pow_of_two(pdata->record_size);
++	if (!is_power_of_2(pdata->console_size))
++		pdata->console_size = rounddown_pow_of_two(pdata->console_size);
++	if (!is_power_of_2(pdata->ftrace_size))
++		pdata->ftrace_size = rounddown_pow_of_two(pdata->ftrace_size);
+ 
+ 	cxt->dump_read_cnt = 0;
+ 	cxt->size = pdata->mem_size;
+-- 
+1.7.9.5
 
