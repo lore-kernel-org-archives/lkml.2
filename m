@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab2JVEnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 00:43:02 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:34513 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab2JVEnA (ORCPT
+	id S1753045Ab2JVEqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 00:46:21 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:64119 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2JVEqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 00:43:00 -0400
+	Mon, 22 Oct 2012 00:46:19 -0400
 MIME-Version: 1.0
-Date: Mon, 22 Oct 2012 12:42:59 +0800
-Message-ID: <CAPgLHd-kHAx5Eb8Jd8iH4=KoCv1mjrtaLWd4D7bWJ2zLQoJe3g@mail.gmail.com>
-Subject: [PATCH] TTY: hvcs: fix missing unlock on error in hvcs_initialize()
+Date: Mon, 22 Oct 2012 12:46:19 +0800
+Message-ID: <CAPgLHd-Hw-RQZnqb-Usiuq4xhY250kObCGK40cXoDE8f59Cr8A@mail.gmail.com>
+Subject: [PATCH] ARM: PCI: fix missing unlock on error
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, linuxppc-dev@lists.ozlabs.org,
+To: linux@arm.linux.org.uk
+Cc: yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,29 +22,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Add the missing unlock on the error handling path in function
-hvcs_initialize().
+Add the missing unlock on the error handle path in function
+nanoengine_read_config() and nanoengine_write_config().
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/tty/hvc/hvcs.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/mach-sa1100/pci-nanoengine.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
-index cab5c7a..744c3b8 100644
---- a/drivers/tty/hvc/hvcs.c
-+++ b/drivers/tty/hvc/hvcs.c
-@@ -1496,8 +1496,10 @@ static int __devinit hvcs_initialize(void)
- 		num_ttys_to_alloc = hvcs_parm_num_devs;
+diff --git a/arch/arm/mach-sa1100/pci-nanoengine.c b/arch/arm/mach-sa1100/pci-nanoengine.c
+index ff02e2d..6ff07d7 100644
+--- a/arch/arm/mach-sa1100/pci-nanoengine.c
++++ b/arch/arm/mach-sa1100/pci-nanoengine.c
+@@ -67,8 +67,10 @@ static int nanoengine_read_config(struct pci_bus *bus, unsigned int devfn, int w
+ 	spin_lock_irqsave(&nano_lock, flags);
  
- 	hvcs_tty_driver = alloc_tty_driver(num_ttys_to_alloc);
--	if (!hvcs_tty_driver)
-+	if (!hvcs_tty_driver) {
-+		mutex_unlock(&hvcs_init_mutex);
- 		return -ENOMEM;
+ 	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+-	if (ret != PCIBIOS_SUCCESSFUL)
++	if (ret != PCIBIOS_SUCCESSFUL) {
++		spin_unlock_irqrestore(&nano_lock, flags);
+ 		return ret;
 +	}
+ 	v = __raw_readl(address);
  
- 	if (hvcs_alloc_index_list(num_ttys_to_alloc)) {
- 		rc = -ENOMEM;
+ 	spin_unlock_irqrestore(&nano_lock, flags);
+@@ -95,8 +97,10 @@ static int nanoengine_write_config(struct pci_bus *bus, unsigned int devfn, int
+ 	spin_lock_irqsave(&nano_lock, flags);
+ 
+ 	ret = nanoengine_get_pci_address(bus, devfn, where, &address);
+-	if (ret != PCIBIOS_SUCCESSFUL)
++	if (ret != PCIBIOS_SUCCESSFUL) {
++		spin_unlock_irqrestore(&nano_lock, flags);
+ 		return ret;
++	}
+ 	v = __raw_readl(address);
+ 	switch (size) {
+ 	case 1:
 
 
