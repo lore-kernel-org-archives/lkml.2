@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2JVUup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 16:50:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58232 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167Ab2JVUun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 16:50:43 -0400
-Date: Mon, 22 Oct 2012 13:50:39 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Priit Laes <plaes@plaes.org>, Devendra Naga <develkernel412222@gmail.com>,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: csr: remove a number of unneeded includes of
- version.h
-Message-ID: <20121022205039.GA26163@kroah.com>
-References: <alpine.LNX.2.00.1210182150020.17217@swampdragon.chaosbits.net>
+	id S1756300Ab2JVUu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 16:50:58 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:1604 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756282Ab2JVUu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 16:50:56 -0400
+Message-ID: <5085B1A8.4020609@parallels.com>
+Date: Tue, 23 Oct 2012 00:50:48 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1210182150020.17217@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+References: <20121022191452.785366817@openvz.org> <20121022122934.d2e2fa57.akpm@linux-foundation.org>
+In-Reply-To: <20121022122934.d2e2fa57.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 09:51:56PM +0200, Jesper Juhl wrote:
+On 10/22/2012 11:29 PM, Andrew Morton wrote:
+> On Mon, 22 Oct 2012 23:14:52 +0400
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> Hi guys, during c/r sessions we've found that there is no way at
+>> the moment to fetch some VMA associated flags, such as mlock()
+>> and madvise(), thus the patches in this series intorduce new field
+>> into "smaps" output called VmFlags where all flags associated with
+>> the particular VMA is shown in two letter mnemonic.
+>>
+>> Strictly speaking for c/r we only need mlock/madvise bits but it
+>> has been said that providing just a few flags looks somehow inconsistent.
+>> So all flags are here now.
+>>
+>> Please review. Comments and complains are quite welcome!
+> 
+> Sigh, it's still a pretty nasty-looking interface.  Better ideas are
+> welcomed.
 
-Someone already beat you to this patch, sorry.
+Maybe just a string of two-letter short names like
 
-greg k-h
+VmFlags: rd wr sh sr
+
+?
+
+I.e. in a way flags line looks in cpuinfo file.
+
+> I joined the patches into one, massaged the changelog a bit and added a
+> couple more paragraphs explaining why we're doing this to ourselves.
