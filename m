@@ -1,130 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab2JVVHZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:07:25 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36129 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab2JVVHX (ORCPT
+	id S932252Ab2JVVIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:08:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37913 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab2JVVIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:07:23 -0400
-Date: Mon, 22 Oct 2012 14:07:19 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Sangho Yi <antiroot@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] staging: csr: Fixed indentation errors on
- csr_wifi_vif_utils.h
-Message-ID: <20121022210719.GD23826@kroah.com>
-References: <n>
- <1350406110-2942-1-git-send-email-antiroot@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350406110-2942-1-git-send-email-antiroot@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 17:08:04 -0400
+Date: Tue, 23 Oct 2012 08:07:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kees Cook <keescook@google.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Tree for linux-next
+Message-Id: <20121023080753.bc1fc8b0982d72594653ca69@canb.auug.org.au>
+In-Reply-To: <CAGXu5j+D+pFort3RPLnXsrX5MB6sn1NYnkbx6=nj3NgRkpRirQ@mail.gmail.com>
+References: <CAGXu5j+D+pFort3RPLnXsrX5MB6sn1NYnkbx6=nj3NgRkpRirQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 01:48:29AM +0900, Sangho Yi wrote:
-> There were 4 spaces indented lines, so I fixed using tabs.
-> 
-> Signed-off-by: Sangho Yi <antiroot@gmail.com>
-> ---
->  drivers/staging/csr/csr_wifi_vif_utils.h |   58 ++++++++++++++++--------------
->  1 file changed, 31 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/staging/csr/csr_wifi_vif_utils.h b/drivers/staging/csr/csr_wifi_vif_utils.h
-> index 523172d..c997398 100644
-> --- a/drivers/staging/csr/csr_wifi_vif_utils.h
-> +++ b/drivers/staging/csr/csr_wifi_vif_utils.h
-> @@ -1,10 +1,10 @@
->  /*****************************************************************************
->  
-> -            (c) Cambridge Silicon Radio Limited 2011
-> -            All rights reserved and confidential information of CSR
-> +(c) Cambridge Silicon Radio Limited 2011
-> +All rights reserved and confidential information of CSR
->  
-> -            Refer to LICENSE.txt included with this source for details
-> -            on the license terms.
-> +Refer to LICENSE.txt included with this source for details
-> +on the license terms.
->  
->  *****************************************************************************/
->  
-> @@ -23,28 +23,29 @@ extern "C" {
->  
->  /* MACROS *******************************************************************/
->  
-> -/* Common macros for NME and SME to be used temporarily until SoftMAC changes are made */
-> -#define CSR_WIFI_NUM_INTERFACES        (u8)0x1
-> -#define CSR_WIFI_INTERFACE_IN_USE      (u16)0x0
-> +/* Common macros for NME and SME to be used temporarily until SoftMAC
-> + * changes are made */
-> +#define CSR_WIFI_NUM_INTERFACES		(u8)0x1
-> +#define CSR_WIFI_INTERFACE_IN_USE	(u16)0x0
->  
->  /* This is used at places where interface Id isn't available*/
-> -#define CSR_WIFI_INTERFACE_ZERO        0
-> -#define CSR_WIFI_INTERFACE_STA         0
-> -#define CSR_WIFI_INTERFACE_AMP         0
-> +#define CSR_WIFI_INTERFACE_ZERO		0
-> +#define CSR_WIFI_INTERFACE_STA		0
-> +#define CSR_WIFI_INTERFACE_AMP		0
->  
->  
->  #define CSR_WIFI_VIF_UTILS_UNDEFINED_TAG 0xFFFF
->  
->  /* Extract the Interface Id from the event */
->  #define CsrWifiVifUtilsGetVifTagFromEvent(msg) \
-> -    ((u16) * ((u16 *) ((u8 *) (msg) + sizeof(CsrWifiFsmEvent))))
-> +	((u16) * ((u16 *) ((u8 *) (msg) + sizeof(CsrWifiFsmEvent))))
->  
->  /* The HPI Vif combines the type and the interface id */
->  #define CsrWifiVifUtilsGetVifTagFromHipEvent(msg) \
-> -    ((msg)->virtualInterfaceIdentifier & 0x00FF)
-> +	((msg)->virtualInterfaceIdentifier & 0x00FF)
->  
->  #define CsrWifiVifUtilsPackHipEventVif(type, interfaceId) \
-> -    ((u16)((interfaceId) | ((type) << 8)))
-> +	((u16)((interfaceId) | ((type) << 8)))
->  
->  
->  /* TYPES DEFINITIONS ********************************************************/
-> @@ -55,8 +56,10 @@ extern "C" {
->  
->  /**
->   * @brief
-> - *     First checks if the mode is supported capability bitmap of the interface.
-> - *     If this succeeds, then checks if running this mode on this interface is allowed.
-> + *	First checks if the mode is supported capability bitmap
-> + *	of the interface.
-> + *	If this succeeds, then checks if running this mode on this
-> + *	interface is allowed.
->   *
->   * @param[in] u8 : interface capability bitmap
->   * @param[in] u8* : pointer to the array of current interface modes
-> @@ -64,36 +67,37 @@ extern "C" {
->   * @param[in] CsrWifiInterfaceMode : mode
->   *
->   * @return
-> - *     u8 : returns true if the interface is allowed to operate in the mode otherwise false.
-> + *	u8 : returns true if the interface is allowed to operate
-> + *	in the mode otherwise false.
->   */
-> -extern u8 CsrWifiVifUtilsCheckCompatibility(u8             interfaceCapability,
-> -                                                 u8            *currentInterfaceModes,
-> -                                                 u16            interfaceTag,
-> -                                                 CsrWifiInterfaceMode mode);
-> +extern u8 CsrWifiVifUtilsCheckCompatibility(u8 interfaceCapability,
-> +	u8 *currentInterfaceModes, u16 interfaceTag,
-> +	CsrWifiInterfaceMode mode);
+--Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The first one was almost correct, please indent the parameters back out
-to where they line up.
+Hi Kees,
 
-Please redo these two patches and resend.
+On Mon, 22 Oct 2012 08:44:26 -0700 Kees Cook <keescook@google.com> wrote:
+>
+> Now that we're past rc1, can you please add my tree to your linux-next pu=
+lls?
+>=20
+> drop-experimental  git
+> git://git.kernel.org/pub/scm/linux/kernel/git/kees/linux.git#linux-next
 
-thanks,
+Thanks for the reminder.  It will be included from today.
 
-greg k-h
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
+
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
+
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
+
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQhbWpAAoJEECxmPOUX5FEPToP/jPW00UYmpVNorVKCW1kPBdg
+mH+nGyS8TPALDEUnE2Z6wxXrX2NrsaNvCE6DflirZXX45phHQ79AGVbjH+z6xZfR
+NoDtO33PvlAOyR996swLL6g9Soh0jePA4W1NSwA7tG6H596LONKJ0m7CR9Vp2xx3
+sxu3YzFuaSHR0Bd8Wtw2YcaDbJP2fOgaqU57+1nCUovopjvKLczmDj9129mwqB2y
+9TBwZLPURHU/ketf14eOTWW6dY/klmzRfaPpCVBZmJHXYgEWVK2MBilJbuWAGb4z
+h4wYR646O/C/k41UHmBWoOulOvCuDUfYmQzcgEz+10BojPZRY1oeR9PwnNZrEGlB
+hfxjTM0v+R6JJsUtPQX9vLJzkB/rLzFjGhs423oFfl1zlCiYSyLGxqRw84WJADk1
+XB5ZRWpDbZkYKcraCoVbfChV09yWq8nP+FDiZBM+XTNTGnvf+sTRJr7BO3hPgAKo
+YQtUHLdgeSTmuiS8/zH8X9O2N0mGyOthyJKC8mYIdqJVvDdOVgQFdcgKR4kdCSWq
+8ZzBkp2GvZAfRRB6/9Ihq6+2RTa0cxVkt38jIXhN9fgVC/DUXZMZzgwCwLBLDq42
+KgMUQ2aHtsFRn+nGhb7CxTpQHsfVbBCALZd1ERyLCoF5M+X2iDBNC6ky6iU1MnW+
+M+ZgnfyCPi//UELLrMEK
+=jgQ/
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__23_Oct_2012_08_07_53_+1100_7oDEXA62s./aNV2Z--
