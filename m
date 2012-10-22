@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab2JVWXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 18:23:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42499 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932171Ab2JVWXu (ORCPT
+	id S932332Ab2JVWZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 18:25:06 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:43649 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932171Ab2JVWZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 18:23:50 -0400
+	Mon, 22 Oct 2012 18:25:04 -0400
+Message-ID: <5085C7B6.2030108@oracle.com>
+Date: Mon, 22 Oct 2012 17:24:54 -0500
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1350913454-26927-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1350913454-26927-1-git-send-email-mathias.nyman@linux.intel.com>
-Date: Tue, 23 Oct 2012 00:23:49 +0200
-Message-ID: <CACRpkdbxfL+1NQ73ve8Hz4VKaVMzJS-P7H50kSNVODAU9mm7QA@mail.gmail.com>
-Subject: Re: [RFC PATCH] gpiolib: add gpio get direction support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>, jfs-discussion@lists.sourceforge.net
+Subject: [GIT PULL] jfs bug fix for 3.7
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 3:44 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
+The following changes since commit 8d2b6b3ae280dcf6f6c7a95623670a57cdf562ed:
 
-> Add gpio_get_direction() for checking the current direction of a gpio.
-> Returns 1 for input, 0 for output, or negative error.
-> Gpio drivers need to set the gpio_chip .get_direction callback for this
-> functionality, otherwise gpio_get_direction() returns error.
+  Merge tag 'sh-for-linus' of git://github.com/pmundt/linux-sh (2012-10-16 19:24:00 -0700)
 
-OK...
+are available in the git repository at:
 
-> If the .get_direction callback is set, then gpiolib will use it
-> for showing correct gpio direction in sysfs and debug. If not set
-> then it will work the old way; e.g. guessing everything is input
-> until direction is set.
 
-If the driver cannot report the direction setting you *could*
-cache the result of all calls to gpio_direction_output()
-and gpio_direction_input() somewhere. But I don't know
-if it's a good idea.
+  git://github.com/kleikamp/linux-shaggy.git tags/jfs-3.7-2
 
-Anyway, if the callback is only called internally in the GPIOlib
-why are you making the function public to the entire
-kernel like this?
+for you to fetch changes up to 4e7a4b01222343481d8ff084dbef9b80f7089a19:
 
-> include/asm-generic/gpio.h
-> +extern int gpio_get_direction(unsigned gpio);
+  jfs: Fix FITRIM argument handling (2012-10-17 09:18:38 -0500)
 
-> include/linux/gpio.h
-> +static inline int gpio_get_direction(unsigned gpio)
-> +{
-> +       return -ENOSYS;
-> +}
-> +
+----------------------------------------------------------------
+Bug fix: Fix FITRIM argument handling
 
-Yours,
-Linus Walleij
+----------------------------------------------------------------
+Lukas Czerner (1):
+      jfs: Fix FITRIM argument handling
+
+ fs/jfs/jfs_discard.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
