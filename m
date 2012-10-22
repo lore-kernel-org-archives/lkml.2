@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2JVJxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:53:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44907 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab2JVJxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:53:49 -0400
-Message-ID: <508517A6.3010206@gmail.com>
-Date: Mon, 22 Oct 2012 17:53:42 +0800
-From: iyuqing cai <yuqingcaik@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752026Ab2JVKHX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 06:07:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58884 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751245Ab2JVKHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 06:07:22 -0400
+Date: Mon, 22 Oct 2012 12:07:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH] perf: Build install-man target when installing
+Message-ID: <20121022100719.GA8352@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Namhyung Kim <namhyung@kernel.org>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Borislav Petkov <borislav.petkov@amd.com>
+References: <20120925174658.GD9320@aftab.osrc.amd.com>
+ <1348854427-12746-1-git-send-email-bp@amd64.org>
+ <20121020111625.GB17563@liondog.tnic>
+ <87mwzfj7dn.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: question about kernel debug tools
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <87mwzfj7dn.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi, all.
-I want to know what tools could use to debug a kernel on the arm target?
-the JTAG debugger such as Jlink or XDS560£¬these JTAG tools should be
-used in a IDE, they don't seem can debug the linux kernel.
-so, what is a good choice?
+On Mon, Oct 22, 2012 at 04:25:24PM +0900, Namhyung Kim wrote:
+> It will add additional dependencies of asciidoc, docbook-xsl and/or
+> something to default perf install command. I don't know it matters
+> much, but just wanted to say. What if a user want to install the perf
+> but the required packages for documents are not installed?
 
-TKS.
+Ok, this is a valid point, more or less.
 
-qing
-2012-10-22
+What we could do is leave the reference to "man perf-list" in perf list
+output and *not* build install-man unconditionally. This way, people
+who want to see the manpage, will need to install required packages. On
+distros the manpage is already present so all is taken care of.
+
+This way, we avoid the text duplication of adding this to perf --help.
+
+-- 
+Regards/Gruss,
+    Boris.
