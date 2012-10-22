@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab2JVI1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 04:27:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49921 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751127Ab2JVI1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 04:27:09 -0400
-Message-ID: <50850352.7020000@ti.com>
-Date: Mon, 22 Oct 2012 10:26:58 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751694Ab2JVIaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 04:30:07 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14427 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab2JVIaF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 04:30:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 22 Oct 2012 01:18:08 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 22 Oct 2012 14:00:00 +0530
+Subject: RE: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+Thread-Topic: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+Thread-Index: Ac2uEDkPvBKf9ZDLTkmiZcxekhLfVACHnvtA
+Message-ID: <D958900912E20642BCBC71664EFECE3E6DDFB0CDCA@BGMAIL02.nvidia.com>
+References: <1350643085-27294-1-git-send-email-vbyravarasu@nvidia.com>
+ <20121019153555.GC440@arwen.pp.htv.fi>
+In-Reply-To: <20121019153555.GC440@arwen.pp.htv.fi>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Sourav <sourav.poddar@ti.com>
-CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH] arm: dts: omap4-sdp: pinmux configuration for keypad
-References: <1350890955-29553-1-git-send-email-sourav.poddar@ti.com> <5084F99B.1030709@ti.com> <50850299.7070405@ti.com>
-In-Reply-To: <50850299.7070405@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 10:23 AM, Sourav wrote:
-> Hi Benoit,
-> On Monday 22 October 2012 01:15 PM, Benoit Cousson wrote:
->> Hi Sourav,
->>
->> On 10/22/2012 09:29 AM, Sourav Poddar wrote:
->>> Currently, omap4 keypad mux settings are done in the board file.
->>> Populate the mux settings in the dts file for the keypad to
->>> work via dt.
->> Have you changed the driver to handle properly the dependency with the
->> pinctrl and thus return EPROBE_DEFER if this is not ready?
-> I have send a patch[1] to the mailing list on the driver changes.
-> http://www.spinics.net/lists/linux-omap/msg79985.html.
 
-Yeah, sorry, I've just seen it :-(.
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Friday, October 19, 2012 9:06 PM
+> To: Venu Byravarasu
+> Cc: stern@rowland.harvard.edu; gregkh@linuxfoundation.org;
+> balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+> 
+> * PGP Signed by an unknown key
+> 
+> Hi,
+> 
+> On Fri, Oct 19, 2012 at 04:08:05PM +0530, Venu Byravarasu wrote:
+> > NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc.
+> 
+> I was reading this "driver" more closely and I have a bunch of questions
+> about it, but the most important of all of them is: "why isn't that a
+> real PHY driver ?". It doesn't have a probe() function, it doesn't use
+> struct usb_phy to represent the PHY, it has a bunch of tegra-specific
+> APIs and we can't let those continue.
+> 
+> Please, take a look at drivers/usb/phy/omap_usb2.c (misnamed actually,
+> should be phy-omap-usb2.c so we have a common prefix) to see how your
+> PHY driver should look like and which sort of functionality if should
+> expose to the rest of the kernel.
 
-> Though, I see I have missed the following EPROBE_DEFER check..
+Hi Felipe, 
 
-Yes, indeed.
-
-> +               if (PTR_ERR(dev->pins) == -EPROBE_DEFER)
-> +                       return -EPROBE_DEFER;
-> Will add for the above patch.
+I'll go through omap phy driver and prepare similar patches for tegra phy driver
+and push them with upcoming patches.
+As current patch is mostly re-organizing the existing phy driver, can you plz merge
+This as is?
 
 Thanks,
-Benoit
+Venu
 
->> Seb Guiriec has just sent a patch to do that for the omap-i2c driver
->> ([PATCH] i2c: omap: adopt pinctrl support).
->>
->>> Cc: Felipe Balbi <balbi@ti.com>
->>> Tested on omap4430 sdp with 3.7-rc1.
->>>
->>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
->>> ---
->>>   arch/arm/boot/dts/omap4-sdp.dts |   26 ++++++++++++++++++++++++++
->>>   1 files changed, 26 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/omap4-sdp.dts
->>> b/arch/arm/boot/dts/omap4-sdp.dts
->>> index 5b7e04f..5efb059 100644
->>> --- a/arch/arm/boot/dts/omap4-sdp.dts
->>> +++ b/arch/arm/boot/dts/omap4-sdp.dts
->>> @@ -194,6 +194,27 @@
->>>               0xbc 0x100    /* abe_mcbsp2_fsx.abe_mcbsp2_fsx INPUT |
->>> MODE0 */
->>>           >;
->>>       };
->>> +
->>> +    keypad_pins: pinmux_keypad_pins {
->>> +        pinctrl-single,pins = <
->>> +            0x24 0x4119   /* gpmc_a18.kpd_row6 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x26 0x4119   /* gpmc_a19.kpd_row6 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x2c 0x4001   /* gpmc_a22.kpd_col6 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x2e 0x4001   /* gpmc_a23.kpd_col7 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x13c 0x4001  /* kpd_col0.kpd_col0 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x13e 0x4001  /* kpd_col1.kpd_col1 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x140 0x4001  /* kpd_col2.kpd_col2 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x142 0x10F   /* kpd_col3.kpd_col3 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->> Alway use lower case for hexa value.
-> Ok. Will fix and send a new version.
->>> +            0x144 0x4001  /* kpd_col4.kpd_col4 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x146 0x4001  /* kpd_col5.kpd_col5 OMAP_WAKEUP_EN |
->>> OMAP_MUX_MODE1 */
->>> +            0x148 0xc119  /* kpd_row0.kpd_row0 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x14a 0x4119  /* kpd_row1.kpd_row1 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x14c 0x4119  /* kpd_row2.kpd_row2 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x14e 0x4119  /* kpd_row3.kpd_row3 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x150 0x4119  /* kpd_row4.kpd_row4 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +            0x152 0x4119  /* kpd_row5.kpd_row5 OMAP_PULL_ENA |
->>> OMAP_PULL_UP | OMAP_WAKEUP_EN | OMAP_MUX_MODE1 | OMAP_INPUT_EN */
->>> +        >;
->>> +    };
->>>   };
->>>     &i2c1 {
->>> @@ -406,3 +427,8 @@
->>>   &mcbsp3 {
->>>       status = "disabled";
->>>   };
->>> +
->>> +&keypad {
->>> +        pinctrl-names = "default";
->>> +        pinctrl-0 = <&keypad_pins>;
->>> +};
->> Otherwise that looks good.
->>
->> Thanks,
->> Benoit
-> Thanks,
-> Sourav
-
+> 
+> Please comment on the above.
+> 
+> cheers
+> 
+> --
+> balbi
+> 
+> * Unknown Key
+> * 0x35CAA444
