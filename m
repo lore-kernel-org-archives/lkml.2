@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab2JVJ12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 05:27:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab2JVJ11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 05:27:27 -0400
-Message-ID: <50851163.5050007@redhat.com>
-Date: Mon, 22 Oct 2012 11:26:59 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752862Ab2JVJaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 05:30:21 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:48876 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2JVJaT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 05:30:19 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Borislav Petkov <bp@alien8.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Dave Airlie <airlied@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Linux KVM tool for v3.7-rc0
-References: <CAPM=9twcHxUGgYUc27DV1AcYZbzKSbA1Bru8vK1kcWvcG0Jpkw@mail.gmail.com> <20121021110329.GA7024@infradead.org> <20121021125933.GC19535@gmail.com> <CAFLxGvzLOa-BibZ39_yMEC70AseEPbtjcNGk6jLwaAVsU2ujwA@mail.gmail.com> <20121021150305.GA26108@gmail.com> <20121021171543.GC20642@liondog.tnic> <20121021174041.GA240@x4> <20121021175108.GA3820@gmail.com> <20121021175422.GB240@x4> <20121021180458.GC240@x4> <20121021181031.GB4465@gmail.com>
-In-Reply-To: <20121021181031.GB4465@gmail.com>
+In-Reply-To: <20121020223709.GA5626@htj.dyndns.org>
+References: <20121008020000.GB2575@localhost>
+	<20121019005922.GG13370@google.com>
+	<CAFTL4hz82==b3ioSMhbKzh0CN1ivR7RQMKKMFFWu5PHPjg=Bfg@mail.gmail.com>
+	<20121019193808.GL13370@google.com>
+	<CAFTL4hwQ6Ntn5GJwj=jiO2p3GdwhEMp0MyR8dgUj_Lx0U4kNqg@mail.gmail.com>
+	<20121019210738.GA1180@google.com>
+	<CAFTL4hy+vrvJKrc1Y2FW44k=LBi72H=34337xALpbtG_3u5O7w@mail.gmail.com>
+	<20121020223709.GA5626@htj.dyndns.org>
+Date: Mon, 22 Oct 2012 11:30:18 +0200
+Message-ID: <CAFTL4hyW+WUUye2BTf5V+Qp_nDVjUnedutoOe-wbU1hT5wgHig@mail.gmail.com>
+Subject: Re: [PATCH cgroup/for-3.7-fixes 1/2] Revert "cgroup: Remove
+ task_lock() from cgroup_post_fork()"
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/21/2012 08:10 PM, Ingo Molnar wrote:
-> Ok, looks useful - will someone on the Qemu side script this up 
-> and integrate it into the kernel in a useful form?
+2012/10/21 Tejun Heo <tj@kernel.org>:
+> Hello, Frederic.
+>
+> On Sat, Oct 20, 2012 at 02:21:43PM -0400, Frederic Weisbecker wrote:
+>> CPU 0
+>>                     CPU 1
+>>
+>> cgroup_task_migrate {
+>>         task_lock(p)
+>>         rcu_assign_pointer(tsk->cgroups, newcg);
+>>         task_unlock(tsk);
+>>
+>>         write_lock(&css_set_lock);
+>>         if (!list_empty(&tsk->cg_list))
+>>             list_move(&tsk->cg_list, &newcg->tasks);
+>>         write_unlock(&css_set_lock);
+>>
+>>                           write_lock(&css_set_lock);
+>>       put_css_set(oldcg);
+>>          list_add(&child->cg_list, &child->cgroups->tasks); (1)
+>
+> Man, that's confusing. :)
 
-There are going to be as many options as there are users - people will
-want different things, like block device assignment (for fs/iosched
-people), device assignment (driver developers), cpu/memory topology, or
-a dozen other things.  I think the best we can hope for is an example
-script for people to copy and modify, otherwise we'll end up with the
-same number of options that qemu has.
+Sorry and I'm currently stuck in some airport and too lazy to reorder
+the above lines :)
 
--- 
-error compiling committee.c: too many arguments to function
+>
+>> On (1), child->cgroups should have the value of newcg and not oldcg
+>> due to the memory ordering implied by the locking of css_set_lock. Now
+>> I can't guarantee that because I'm no memory ordering expert. And even
+>> if it's safe, it's so very non obvious that I now agree with you:
+>> let's revert  the patch and restart with a better base by gathering
+>> all the cgroup fork code in the current cgroup_post_fork place.
+>
+> Aye aye, let's move everything to cgroup_post_fork() and then we don't
+> have to worry about grabbing task_lock multiple times.
+
+Agreed. and Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
