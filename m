@@ -1,150 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab2JVQLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:11:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42783 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab2JVQLj (ORCPT
+	id S1755686Ab2JVQL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:11:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58996 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755545Ab2JVQL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:11:39 -0400
-Date: Mon, 22 Oct 2012 11:11:30 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
-        Pavel Emelyanov <xemul@openvz.org>, Jiri Slaby <jslaby@suse.cz>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 1/4] cgroup: fix invalid rcu dereference
-Message-ID: <20121022161130.GA23199@sergelap>
-References: <20121022134536.172969567@napanee.usersys.redhat.com>
- <20121022134536.543579196@napanee.usersys.redhat.com>
-MIME-Version: 1.0
+	Mon, 22 Oct 2012 12:11:57 -0400
+Date: Mon, 22 Oct 2012 18:11:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
+Message-ID: <20121022161151.GS16230@one.firstfloor.org>
+References: <1350665289-7288-1-git-send-email-andi@firstfloor.org> <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com> <20121022132733.GQ16230@one.firstfloor.org> <20121022133534.GR16230@one.firstfloor.org> <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com> <20121022153633.GK2095@tassilo.jf.intel.com> <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121022134536.543579196@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> From: Jiri Slaby <jslaby@suse.cz>
-> 
-> Commit "device_cgroup: convert device_cgroup internally to policy +
-> exceptions" removed rcu locks which are needed in task_devcgroup
-> called in this chain: devcgroup_inode_mknod OR
-> __devcgroup_inode_permission -> __devcgroup_inode_permission ->
-> task_devcgroup -> task_subsys_state -> task_subsys_state_check.
-> 
-> Change the code so that task_devcgroup is safely called with rcu read
-> lock held.
-> 
-> ===============================
-> [ INFO: suspicious RCU usage. ]
-> 3.6.0-rc5-next-20120913+ #42 Not tainted
-> -------------------------------
-> include/linux/cgroup.h:553 suspicious rcu_dereference_check() usage!
-> 
-> other info that might help us debug this:
-> 
-> rcu_scheduler_active = 1, debug_locks = 0
-> 2 locks held by kdevtmpfs/23:
->  #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
-> mnt_want_write+0x1f/0x50
->  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
-> kern_path_create+0x7f/0x170
-> 
-> stack backtrace:
-> Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
-> Call Trace:
->  [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
->  [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
->  [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
->  [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
->  [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
->  [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
->  [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
->  [<ffffffff81093ad6>] kthread+0xd6/0xe0
->  [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
->  [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
->  [<ffffffff81654f20>] ? gs_change+0xb/0xb
-> 
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Pavel Emelyanov <xemul@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+On Mon, Oct 22, 2012 at 05:53:45PM +0200, Michael Kerrisk (man-pages) wrote:
+> I'm not sure whether anything is using the high 8 bits of prot, bun
+> passing I note that there seems to be no check that the unused bits
+> are zeroed so there's a small chance  existing apps are passing random
+> garbage there. (Of course, mmap() is hardly the only API to have that
+> fault, and it hasn't stopped us from reusing bits in those APIs,
+> though sometimes we've gotten bitten by apps that did pass in random
+> garbage).
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Ok.
 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 > 
-> ---
+> >> But there seems an obvious solution here: given your value in those
+> >> bits (call it 'n'), the why not apply a multiplier. I mean, certainly
+> >> you never want a value <= 12 for n, and I suspect that the reasonable
+> >> minimum could be much larger (e.g., 2^16). Call that minimum M. Then
+> >> you could interpret the value in your bits as meaning a page size of
+> >>
+> >>     (2^n) * M
+> >
+> > I considered that, but it would seem ugly and does not add that
+> > many bits.
+> >
+> >>
+> >> > So this will use up all remaining flag bits now.
+> >>
+> >> On the other hand, that seems really bad. It looks like that kills the
+> >> ability to further extend the mmap() API with new flags in the future.
+> >> It doesn't sound like we should be doing that.
+> >
+> > You can always add flags to PROT or add a mmap3(). Has been done before.
+> > Or just don't do any new MAP_SECURITY_HOLEs
 > 
-> And this should fix it.
-> 
->  security/device_cgroup.c |   15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> --- github.orig/security/device_cgroup.c	2012-10-17 11:11:08.514793906 -0400
-> +++ github/security/device_cgroup.c	2012-10-19 16:35:37.936804289 -0400
-> @@ -533,10 +533,10 @@ struct cgroup_subsys devices_subsys = {
->   *
->   * returns 0 on success, -EPERM case the operation is not permitted
->   */
-> -static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-> -					short type, u32 major, u32 minor,
-> +static int __devcgroup_check_permission(short type, u32 major, u32 minor,
->  				        short access)
->  {
-> +	struct dev_cgroup *dev_cgroup;
->  	struct dev_exception_item ex;
->  	int rc;
->  
-> @@ -547,6 +547,7 @@ 	memset(&ex, 0, sizeof(ex));
->  	ex.access = access;
->  
->  	rcu_read_lock();
-> +	dev_cgroup = task_devcgroup(current);
->  	rc = may_access(dev_cgroup, &ex);
->  	rcu_read_unlock();
->  
-> @@ -558,7 +559,6 @@ 	return 0;
->  
->  int __devcgroup_inode_permission(struct inode *inode, int mask)
->  {
-> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
->  	short type, access = 0;
->  
->  	if (S_ISBLK(inode->i_mode))
-> @@ -570,13 +570,12 @@ 	short type, access = 0;
->  	if (mask & MAY_READ)
->  		access |= ACC_READ;
->  
-> -	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-> -					    iminor(inode), access);
-> +	return __devcgroup_check_permission(type, imajor(inode), iminor(inode),
-> +			access);
->  }
->  
->  int devcgroup_inode_mknod(int mode, dev_t dev)
->  {
-> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
->  	short type;
->  
->  	if (!S_ISBLK(mode) && !S_ISCHR(mode))
-> @@ -587,7 +586,7 @@ 		return 0;
->  	else
->  		type = DEV_CHAR;
->  
-> -	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-> -					    MINOR(dev), ACC_MKNOD);
-> +	return __devcgroup_check_permission(type, MAJOR(dev), MINOR(dev),
-> +			ACC_MKNOD);
->  
->  }
-> 
+> There seems to be a reasonable argument here for an mmap3() with a
+> 64-bit flags argument...
+
+It's just a pain to deploy.
+
+I think I would rather do the offset then. That could still handle
+PowerPC
+
+14 + 31 = 44 = 16GB           (minimum size 16K)
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
