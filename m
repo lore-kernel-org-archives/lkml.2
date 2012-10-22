@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2JVRnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:43:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21395 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755781Ab2JVRm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:42:58 -0400
-Date: Mon, 22 Oct 2012 19:44:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/7] freezer: add missing mb's to freezer_count() and
-	freezer_should_skip()
-Message-ID: <20121022174404.GA21553@redhat.com>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-3-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350426526-14254-3-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755948Ab2JVRnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:43:53 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:19877 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755679Ab2JVRnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 13:43:52 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Oct 2012 13:43:52 EDT
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=IpWcbwJXJHdct0ARIdQJ9hdiEcPVGEj/cKClqoUVge8xFa105SCxMcFBkE/a
+	Z1FzfpQGC+xwkXig8RctykJXBkvbjeyamoBP6D2/ARToMryLk3hmPGMGX
+	iiy3tLIbXsFLS6xwDpFrcwDLVsgIkhGGgkbuMggPQhIdNR4xf/FgNk=;
+X-Spam-Processed: mail.digidescorp.com, Mon, 22 Oct 2012 12:37:02 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=16424020ab=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+Message-ID: <1350927423.4238.5.camel@iscandar.digidescorp.com>
+Subject: Re: usbview 2.0 release
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: Anil Nair <anilcoll90@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 22 Oct 2012 12:37:03 -0500
+In-Reply-To: <CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
+References: <20121022162140.GA10021@kroah.com>
+	 <CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16, Tejun Heo wrote:
->
-> +/**
-> + * freezer_count - tell freezer to stop ignoring %current
-> + *
-> + * Undo freezer_do_not_count().  It tells freezers that %current should be
-> + * considered again and tries to freeze if freezing condition is already in
-> + * effect.
->   */
->  static inline void freezer_count(void)
->  {
->  	current->flags &= ~PF_FREEZER_SKIP;
-> +	/*
-> +	 * If freezing is in progress, the following paired with smp_mb()
-> +	 * in freezer_should_skip() ensures that either we see %true
-> +	 * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
-> +	 */
-> +	smp_mb();
->  	try_to_freeze();
+Anil -
 
-I agree, this looks like a bug fix.
+On Mon, 2012-10-22 at 22:49 +0530, Anil Nair wrote: 
+> Hello Greg,
+> 
+> But while compiling it i am getting an error,
+> 
+> "checking for GTK... no
+> configure: error: Package requirements (gtk+-3.0 >= 3.0) were not met:
+> 
+> No package 'gtk+-3.0' found
+... 
+> The OS i am using is ubuntu-11.10 amd64.
 
-> -static inline int freezer_should_skip(struct task_struct *p)
-> +static inline bool freezer_should_skip(struct task_struct *p)
->  {
-> -	return !!(p->flags & PF_FREEZER_SKIP);
-> +	/*
-> +	 * The following smp_mb() paired with the one in freezer_count()
-> +	 * ensures that either freezer_count() sees %true freezing() or we
-> +	 * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
-> +	 * impossible for a task to slip frozen state testing after
-> +	 * clearing %PF_FREEZER_SKIP.
-> +	 */
-> +	smp_mb();
-> +	return p->flags & PF_FREEZER_SKIP;
->  }
+I can't speak for Ubuntu, but on Fedora installing gtk3-devel eliminated
+the message you describe.
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
 
-I am not sure we really need smp_mb() here. Speaking of cgroup_freezer,
-it seems that a single mb() after "->state = CGROUP_FREEZING" should be
-enough.
-
-But even if I am right, I agree that it looks better in freezer_should_skip()
-and this is more robust.
-
-So I think the patch is fine and fixes the bug.
+#include <standard.disclaimer>
 
 
-
-
-
-We probably have another similar race. If ptrace_stop()->may_ptrace_stop()
-returns false, the task does
-
-	__set_current_state(TASK_RUNNING);
-	// no mb in between
-	try_to_freeze();
-
-And this can race with task_is_stopped_or_traced() check in the same way.
-(of course this is only theoretical).
-
-
-do_signal_stop() is probably fine, we can rely on ->siglock.
-
-Oleg.
 
