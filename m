@@ -1,197 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649Ab2JVQJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 12:09:36 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:44179 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab2JVQJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 12:09:34 -0400
-Date: Mon, 22 Oct 2012 11:57:17 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [PATCH 4/6] xen/pvh: bootup and setup related changes.
-Message-ID: <20121022155717.GB25200@phenom.dumpdata.com>
-References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
- <1350695882-12820-5-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.02.1210221428050.2689@kaball.uk.xensource.com>
+	id S1755618Ab2JVQKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 12:10:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47173 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755543Ab2JVQKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 12:10:42 -0400
+Date: Mon, 22 Oct 2012 18:10:40 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, NeilBrown <neilb@suse.de>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: ext3 issue on 3.6.1
+Message-ID: <20121022161040.GC9438@quack.suse.cz>
+References: <20121018212357.GA17646@quack.suse.cz>
+ <1350596425.1366.15.camel@x61.thuisdomein>
+ <20121018220809.GD17646@quack.suse.cz>
+ <20121019124454.316ecfac@notabene.brown>
+ <CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
+ <CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
+ <20121022134541.GA9438@quack.suse.cz>
+ <CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
+ <20121022154258.GB9438@quack.suse.cz>
+ <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210221428050.2689@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 02:34:44PM +0100, Stefano Stabellini wrote:
-> On Sat, 20 Oct 2012, Konrad Rzeszutek Wilk wrote:
-> > From: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > 
-> > In enlighten.c for PVH we can trap cpuid via vmexit, so don't
-> > need to use emulated prefix call. We also check for vector callback
-> > early on, as it is a required feature. PVH also runs at default kernel
-> > IOPL.
-> > 
-> > In setup.c, in xen_add_extra_mem() we can skip updating P2M as it's managed
-> > by Xen. PVH maps the entire IO space, but only RAM pages need to be repopulated.
-> > 
-> > Finally, pure PV settings are moved to a separate function that is only called
-> > for pure PV, ie, pv with pvmmu.
-> > 
-> > Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Mon 22-10-12 18:01:56, Fabio Coatti wrote:
+> 2012/10/22 Jan Kara <jack@suse.cz>:
+> >> Uhu, my fault, I was sure to have answered to your request, sorry.
+> >> So yes, we have an ext3 R/O partition mounted on that machine. The
+> >> 3.6.3, with patch applied, dmesg is here:
+> >   Interesting. You seem to be using data=journal on R/O partition, don't
+> > you? Can you also attach /proc/mounts?
 > >
-> > diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> > index 8971a26..8cce47b 100644
-> > --- a/arch/x86/xen/setup.c
-> > +++ b/arch/x86/xen/setup.c
-> > @@ -27,6 +27,7 @@
-> >  #include <xen/interface/memory.h>
-> >  #include <xen/interface/physdev.h>
-> >  #include <xen/features.h>
-> > +#include "mmu.h"
-> >  #include "xen-ops.h"
-> >  #include "vdso.h"
-> >  
-> > @@ -78,6 +79,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
-> >  
-> >  	memblock_reserve(start, size);
-> >  
-> > +	if (xen_feature(XENFEAT_auto_translated_physmap))
-> > +		return;
-> > +
-> >  	xen_max_p2m_pfn = PFN_DOWN(start + size);
-> >  	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
-> >  		unsigned long mfn = pfn_to_mfn(pfn);
-> > @@ -100,6 +104,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
-> >  		.domid        = DOMID_SELF
-> >  	};
-> >  	unsigned long len = 0;
-> > +	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
-> >  	unsigned long pfn;
-> >  	int ret;
-> >  
-> > @@ -113,7 +118,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
-> >  				continue;
-> >  			frame = mfn;
-> >  		} else {
-> > -			if (mfn != INVALID_P2M_ENTRY)
-> > +			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
-> >  				continue;
-> >  			frame = pfn;
-> >  		}
+> >   Also please try running a kernel with the attached patch and report the
+> > warning. Thanks!
 > 
-> Shouldn't we add a "!xlated_phys &&" to the other case as well?
+> Do you want to try the kernel without touching the mount
+> configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
+> partition, right?)
+  Yes, leave things as they are now...
 
-No. That is handled in xen_pvh_identity_map_chunk which
-just does a xen_set_clr_mmio_pvh_pte call for the "released"
-pages. But that is a bit of ... well, extra logic. I think
-if we did this it would work and look much nicer:
+> right now I can't access the machine, but I recall that the partition
+> is mounted rw, something is wrote onto it and then changed to r/o and
+> among the options there is data=ordered.
+  /proc/mounts should show us whether data=ordered is in use. Actually the
+warning is in function which is called only in data=journal mode so that's
+why I think you are using it...
 
-
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 8cce47b..b451a77 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -114,9 +114,15 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 
- 		if (release) {
- 			/* Make sure pfn exists to start with */
--			if (mfn == INVALID_P2M_ENTRY || mfn_to_pfn(mfn) != pfn)
-+			if (mfn == INVALID_P2M_ENTRY || (!xlated_phys && (mfn_to_pfn(mfn) != pfn)))
- 				continue;
- 			frame = mfn;
-+			/* The hypercall PHYSDEVOP_map_iomem to release memory has already
-+			 * happend, so we just do a nop here. */
-+			if (xlated_phys) {
-+				len++;
-+				continue;
-+			}
- 		} else {
- 			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
- 				continue;
-@@ -219,15 +225,24 @@ static void __init xen_set_identity_and_release_chunk(
- {
- 	unsigned long pfn;
- 
-+	/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-+	 * are released as part of this 1:1 mapping hypercall back to the dom heap.
-+	 * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-+	 */
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
-+
- 	/*
- 	 * If the PFNs are currently mapped, the VA mapping also needs
- 	 * to be updated to be 1:1.
- 	 */
--	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
--		(void)HYPERVISOR_update_va_mapping(
--			(unsigned long)__va(pfn << PAGE_SHIFT),
--			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
--
-+	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
-+		if (xlated_phys)
-+			xen_set_clr_mmio_pvh_pte(pfn, pfn, 1 /* one pfn */, 1 /* add mapping */);
-+		else
-+			(void)HYPERVISOR_update_va_mapping(
-+				(unsigned long)__va(pfn << PAGE_SHIFT),
-+				mfn_pte(pfn, PAGE_KERNEL_IO), 0);
-+	}
- 	if (start_pfn < nr_pages)
- 		*released += xen_release_chunk(
- 			start_pfn, min(end_pfn, nr_pages));
-@@ -235,27 +250,6 @@ static void __init xen_set_identity_and_release_chunk(
- 	*identity += set_phys_range_identity(start_pfn, end_pfn);
- }
- 
--/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-- * are released as part of this 1:1 mapping hypercall back to the dom heap.
-- * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-- */
--static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
--		unsigned long end_pfn, unsigned long *released,
--		unsigned long *identity, unsigned long max_pfn)
--{
--	unsigned long pfn;
--	int numpfns = 1, add_mapping = 1;
--
--	for (pfn = start_pfn; pfn < end_pfn; pfn++)
--		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
--
--	if (start_pfn <= max_pfn) {
--		unsigned long end = min(max_pfn_mapped, end_pfn);
--		*released += end - start_pfn;
--	}
--	*identity += end_pfn - start_pfn;
--}
--
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
- {
-@@ -286,17 +280,10 @@ static unsigned long __init xen_set_identity_and_release(
- 			if (entry->type == E820_RAM)
- 				end_pfn = PFN_UP(entry->addr);
- 
--			if (start_pfn < end_pfn) {
--				if (xlated_phys) {
--					xen_pvh_identity_map_chunk(start_pfn,
--						end_pfn, &released, &identity,
--						nr_pages);
--				} else {
--					xen_set_identity_and_release_chunk(
-+			if (start_pfn < end_pfn)
-+				xen_set_identity_and_release_chunk(
- 						start_pfn, end_pfn, nr_pages,
- 						&released, &identity);
--				}
--			}
- 			start = end;
- 		}
- 	}
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
