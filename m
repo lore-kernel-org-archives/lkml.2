@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab2JVPeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:34:08 -0400
-Received: from userp1050.oracle.com ([156.151.31.82]:19349 "EHLO
-	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab2JVPeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:34:07 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH 15/22] bio: add bvec_length(), like iov_length()
-Date: Mon, 22 Oct 2012 10:15:15 -0500
-Message-Id: <1350918922-6096-16-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: userp1040.oracle.com [156.151.31.81]
+	id S1755164Ab2JVPek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:34:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751555Ab2JVPei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 11:34:38 -0400
+Message-ID: <50856760.2030507@redhat.com>
+Date: Mon, 22 Oct 2012 11:33:52 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michael Wolf <mjw@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, peterz@infradead.org,
+        mtosatti@redhat.com, glommer@parallels.com, mingo@redhat.com,
+        avi@redhat.com, anthony@codemonkey.ws
+Subject: Re: [PATCH RFC V2 0/5] Separate consigned (expected steal) from steal
+ time.
+References: <20121017022249.16949.2775.stgit@lambeau>
+In-Reply-To: <20121017022249.16949.2775.stgit@lambeau>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On 10/16/2012 10:23 PM, Michael Wolf wrote:
+> In the case of where you have a system that is running in a
+> capped or overcommitted environment the user may see steal time
+> being reported in accounting tools such as top or vmstat.  This can
+> cause confusion for the end user.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- include/linux/bio.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+How do s390 and Power systems deal with reporting that kind
+of information?
 
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 820e7aa..f5f9829 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -290,6 +290,14 @@ extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set
- extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
- extern unsigned int bvec_nr_vecs(unsigned short idx);
- 
-+static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
-+{
-+	ssize_t bytes = 0;
-+	while (nr--)
-+		bytes += (bvec++)->bv_len;
-+	return bytes;
-+}
-+
- #ifdef CONFIG_BLK_CGROUP
- int bio_associate_current(struct bio *bio);
- void bio_disassociate_task(struct bio *bio);
+IMHO it would be good to see what those do, so we do not end
+up re-inventing the wheel, and confusing admins with yet another
+way of reporting the information...
+
 -- 
-1.7.12.3
-
+All rights reversed
