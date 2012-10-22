@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754154Ab2JVNyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 09:54:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47538 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753182Ab2JVNyy (ORCPT
+	id S1754386Ab2JVNzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 09:55:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37526 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab2JVNzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 09:54:54 -0400
-Date: Mon, 22 Oct 2012 14:54:52 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Mike Turquette <mturquette@linaro.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        linux-arm-kernel@lists.infradead.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: Make the generic clock API available by default
-Message-ID: <20121022135452.GJ4477@opensource.wolfsonmicro.com>
-References: <1350910970-9095-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20121022130556.GM21164@n2100.arm.linux.org.uk>
- <20121022132711.GE4477@opensource.wolfsonmicro.com>
- <20121022135024.GN21164@n2100.arm.linux.org.uk>
+	Mon, 22 Oct 2012 09:55:45 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="D6z0c4W1rkZNF4Vu"
-Content-Disposition: inline
-In-Reply-To: <20121022135024.GN21164@n2100.arm.linux.org.uk>
-X-Cookie: Just to have it is enough.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350904001-7621-1-git-send-email-shiraz.hashim@st.com>
+References: <1350904001-7621-1-git-send-email-shiraz.hashim@st.com>
+Date: Mon, 22 Oct 2012 19:25:45 +0530
+Message-ID: <CAKohpon7e0+PhikmHkgcY30gEH0v+nYJzctA-0wN7w+oDRO7Vw@mail.gmail.com>
+Subject: Re: [PATCH V4] PWM: Add SPEAr PWM chip driver support
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: thierry.reding@avionic-design.de, Shiraz Hashim <shiraz.hashim@st.com>
+Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 22 October 2012 16:36, Shiraz Hashim <shiraz.hashim@st.com> wrote:
+> Add support for PWM chips present on SPEAr platforms. These PWM
+> chips support 4 channel output with programmable duty cycle and
+> frequency.
+>
+> More details on these PWM chips can be obtained from relevant
+> chapter of reference manual, present at following[1] location.
+>
+> 1. http://www.st.com/internet/mcu/product/251211.jsp
+>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Signed-off-by: Shiraz Hashim <shiraz.hashim@st.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Reviewed-by: Vipin Kumar <vipin.kumar@st.com>
 
---D6z0c4W1rkZNF4Vu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-On Mon, Oct 22, 2012 at 02:50:24PM +0100, Russell King - ARM Linux wrote:
-> On Mon, Oct 22, 2012 at 02:27:11PM +0100, Mark Brown wrote:
+> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+> +static int spear_pwm_probe(struct platform_device *pdev)
+> +{
 
-> > If we're worrying about that there's the larger point that the effect of
-> > this patch is to make HAVE_CLK meaningless as there will be no platform
-> > for which it's not true.  I was just leaving HAVE_CLK alone for now
-> > ready to circle around on it if we ever manage to get the enabling bit
-> > sorted.
+> +       ret = pwmchip_add(&pc->chip);
+> +       if (ret < 0) {
+> +               dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
+> +               return ret;
+> +       }
 
-> Are you sure that all architectures are fine with having that permanently
-> enabled?  What about nommu architectures?
+Sorry couldn't think of this complex situation earlier :(
 
-There's already stubs present so the main use case for depending on it
-(checking if code can build) is already covered without requiring that
-the API actually be built on all platforms.
+Can it happen that we get a request for a pwm here and its config or enable
+gets called...?
 
---D6z0c4W1rkZNF4Vu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If yes, then we must call clk_prepare() before doing pwmchip_add?? Otherwise
+you will see a crash :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+@Thierry: Can this happen?
 
-iQIcBAEBAgAGBQJQhVAlAAoJELSic+t+oim9wHkP/3pjlUZYyEHL/+8l9R1Dbbsz
-2KyQ5ysAuyIN9csGAEpdLz1UO3TQDOVtNlTF2L6GVO6U2h3ollWkUS7PjNMOgaG7
-G+/wrnmL2Yz2DVYD77Yt97OfOU86z407xIi4BldBkn2iTNxAycLJKPQnJgUGdHRA
-aWr3BLsITwh8KHoA6DQU0MdOYzrIyKDuRuorPsKwI2MSzoHxxQMUN4XB9KuYg/rP
-GhjS4TQ4wrgWHyiexZoqokflKZy47qMh90HKZa5qLOeIjQDayJf2x6//74vGohEC
-kT6gAbZWcICpOribDs4BOoOwndn2LkGhQtohM9EVUf0MXf0oWxe6GhRz453/GD9h
-qxTDyh4isI54N0AFhhIJYj08HnTkMzZgZHNsmgTKXF4M7t45bAnJ8pl5tcy5Oui7
-xOHTVK6YnLaspOGS31hBTbJ3D9h3IJZNT5NPB4Jb51Xs4q1BT0n+jngoyqFIUMGl
-dYpHT7PVAydDr2IbETqZHzfbG9xNvFu/a5lx/vwY5vag0m5Nz7+Bzp7erWG3kqly
-sPFx3Wj0YT+f325IBKDdw0YFlUX0ieADA0VqqzpRoYDr8a7KHH4Jyn/xWo6jl5fr
-wULv/EyVQA5VurCEQ6hQJ0fYPJVd98PNvMV0RnuE1AkqnjIr8uGEQD5y4Tuef1zk
-FPqIsY70r00ijVnenqYz
-=DIO5
------END PGP SIGNATURE-----
+> +       ret = clk_prepare_enable(pc->clk);
+> +       if (ret < 0)
+> +               return pwmchip_remove(&pc->chip);
 
---D6z0c4W1rkZNF4Vu--
+--
+viresh
