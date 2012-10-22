@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2JVRZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 13:25:20 -0400
-Received: from [93.179.225.50] ([93.179.225.50]:42235 "EHLO shrek.podlesie.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755869Ab2JVRZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 13:25:18 -0400
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: davem@davemloft.net
-Cc: dwmw2@infradead.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Krzysztof Mazur <krzysiek@podlesie.net>
-Subject: [PATCH v2 1/3] pppoatm: don't send frames to destroyed vcc
-Date: Mon, 22 Oct 2012 19:14:49 +0200
-Message-Id: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-X-Mailer: git-send-email 1.8.0.2.g35080e9
+	id S1755957Ab2JVRZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 13:25:45 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:45484 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755843Ab2JVRZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 13:25:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350925299.8609.978.camel@edumazet-glaptop>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	<1350925299.8609.978.camel@edumazet-glaptop>
+Date: Mon, 22 Oct 2012 10:25:42 -0700
+X-Google-Sender-Auth: Lpc5AQbYv5lzv1VzRI4rbaa7dqQ
+Message-ID: <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pppoatm_send() uses vcc->send() directly and does not check if vcc
-is ready for send(). This causes Oops when send() is used after
-vcc_destroy_socket() at least with usbatm driver:
+On Mon, Oct 22, 2012 at 10:01 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> This looks like a corruption of s->sequence, and is value is odd, even
+> if no writer is alive.
+>
+> Does local_bh_disable() disables preemption on RT ?
 
-Oops: 0000 [#1] PREEMPT
-Pid: 0, comm: swapper Not tainted 3.6.0-krzysiek-00001-gb7cd93b-dirty #60    /AK32
-EIP: 0060:[<c01413c6>] EFLAGS: 00010082 CPU: 0
-EIP is at __wake_up_common+0x16/0x70
-EAX: 30707070 EBX: 00000292 ECX: 00000001 EDX: dca75fc0
-ESI: 00000000 EDI: de7f500f EBP: df409f24 ESP: df409f08
- DS: 007b ES: 007b FS: 0000 GS: 0000 SS: 0068
-CR0: 8005003b CR2: 30707070 CR3: 1c920000 CR4: 000007d0
-DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-DR6: ffff0ff0 DR7: 00000400
-Process swapper (pid: 0, ti=df408000 task=c07bd4e0 task.ti=c07b0000)
-Stack:
- 00000000 00000001 00000001 dca75fc0 00000292 00000000 de7f500f df409f3c
- c0143299 00000000 00000000 dc84f000 dc84f000 df409f4c c0602bf0 00000000
- dc84f000 df409f58 c0604301 dc840cc0 df409fb4 c04672e5 c076a240 00000000
-Call Trace:
- [<c0143299>] __wake_up+0x29/0x50
- [<c0602bf0>] vcc_write_space+0x40/0x80
- [<c0604301>] atm_pop_raw+0x21/0x30
- [<c04672e5>] usbatm_tx_process+0x2a5/0x380
- [<c0126cf9>] tasklet_action+0x39/0x70
- [<c0126f1f>] __do_softirq+0x7f/0x120
- [<c0126ea0>] ? local_bh_enable_ip+0xa0/0xa0
- <IRQ>
+Hmmm....
 
-Now pppoatm_send(), like vcc_sendmsg(), checks for vcc flags that
-indicate that vcc is not ready.
+With PREEMPT_RT_FULL defined (as we have):
 
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: David Woodhouse <dwmw2@infradead.org>
----
-Previously sent with more details as:
-http://marc.info/?l=linux-kernel&m=134952646810580&w=2
+void local_bh_disable(void)
+{
+        migrate_disable();
+        current->softirq_nestcnt++;
+}
 
-This patch extends race window between pppoatm_send() and vcc_destroy_socket().
-This race exists also without this patch and it's fixed in patch 2.
+And the RT patches add the following:
 
- net/atm/pppoatm.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+#ifdef CONFIG_PREEMPT_RT_FULL
+# define preempt_disable_rt()          preempt_disable()
+# define preempt_enable_rt()           preempt_enable()
+# define preempt_disable_nort()                do { } while (0)
+# define preempt_enable_nort()         do { } while (0)
+# ifdef CONFIG_SMP
+   extern void migrate_disable(void);
+   extern void migrate_enable(void);
+# else /* CONFIG_SMP */
+#  define migrate_disable()            do { } while (0)
+#  define migrate_enable()             do { } while (0)
+# endif /* CONFIG_SMP */
+#else
+# define preempt_disable_rt()          do { } while (0)
+# define preempt_enable_rt()           do { } while (0)
+# define preempt_disable_nort()                preempt_disable()
+# define preempt_enable_nort()         preempt_enable()
+# define migrate_disable()             preempt_disable()
+# define migrate_enable()              preempt_enable()
+#endif
 
-diff --git a/net/atm/pppoatm.c b/net/atm/pppoatm.c
-index 226dca9..0dcb5dc 100644
---- a/net/atm/pppoatm.c
-+++ b/net/atm/pppoatm.c
-@@ -269,6 +269,8 @@ static inline int pppoatm_may_send(struct pppoatm_vcc *pvcc, int size)
- static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- {
- 	struct pppoatm_vcc *pvcc = chan_to_pvcc(chan);
-+	struct atm_vcc *vcc;
-+
- 	ATM_SKB(skb)->vcc = pvcc->atmvcc;
- 	pr_debug("(skb=0x%p, vcc=0x%p)\n", skb, pvcc->atmvcc);
- 	if (skb->data[0] == '\0' && (pvcc->flags & SC_COMP_PROT))
-@@ -301,6 +303,12 @@ static int pppoatm_send(struct ppp_channel *chan, struct sk_buff *skb)
- 		return 1;
- 	}
- 
-+	vcc = ATM_SKB(skb)->vcc;
-+	if (test_bit(ATM_VF_RELEASED, &vcc->flags)
-+			|| test_bit(ATM_VF_CLOSE, &vcc->flags)
-+			|| !test_bit(ATM_VF_READY, &vcc->flags))
-+		goto nospace;
-+
- 	atomic_add(skb->truesize, &sk_atm(ATM_SKB(skb)->vcc)->sk_wmem_alloc);
- 	ATM_SKB(skb)->atm_options = ATM_SKB(skb)->vcc->atm_options;
- 	pr_debug("atm_skb(%p)->vcc(%p)->dev(%p)\n",
--- 
-1.8.0.2.g35080e9
+And since we are not SMP, local_bh_disable() essentially does nothing.
+ These definitions are consistent across all the RT patches, up to
+3.6.2-rt4 (as far as I can tell).
 
+Now, is preemption required to be disabled in non-SMP systems?
