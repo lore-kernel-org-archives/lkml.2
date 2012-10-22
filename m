@@ -1,154 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab2JVPVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:21:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:61706 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab2JVPV2 (ORCPT
+	id S1754116Ab2JVPVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:21:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33930 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab2JVPPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:21:28 -0400
-Date: Mon, 22 Oct 2012 11:09:17 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/19] x86, mm: Remove parameter in alloc_low_page for
- 64bit
-Message-ID: <20121022150916.GC22780@phenom.dumpdata.com>
-References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-12-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350593430-24470-12-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 11:15:45 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH 05/22] iov_iter: hide iovec details behind ops function pointers
+Date: Mon, 22 Oct 2012 10:15:05 -0500
+Message-Id: <1350918922-6096-6-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 01:50:19PM -0700, Yinghai Lu wrote:
-> Now all page table buf are pre-mapped, and could use virtual address directly.
-                     ^^ buffers              ^^^^ -> can
+From: Zach Brown <zab@zabbo.net>
 
-> So don't need to remember physics address anymore.
-  ^^ We
+This moves the current iov_iter functions behind an ops struct of
+function pointers.  The current iov_iter functions all work with memory
+which is specified by iovec arrays of user space pointers.
 
-physics? Physical.
+This patch is part of a series that lets us specify memory with bio_vec
+arrays of page pointers.  By moving to an iov_iter operation struct we
+can add that support in later patches in this series by adding another
+set of function pointers.
 
-> 
-> Remove that phys pointer in alloc_low_page(), and that will allow us to merge
-> alloc_low_page between 64bit and 32bit.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/mm/init_64.c |   19 +++++++------------
->  1 files changed, 7 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 4e6873f..cbf8dbe 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
->  	}
->  }
->  
-> -static __ref void *alloc_low_page(unsigned long *phys)
-> +static __ref void *alloc_low_page(void)
->  {
->  	unsigned long pfn;
->  	void *adr;
->  
->  	if (after_bootmem) {
->  		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-> -		*phys = __pa(adr);
->  
->  		return adr;
->  	}
-> @@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
->  
->  	adr = __va(pfn * PAGE_SIZE);
->  	clear_page(adr);
-> -	*phys  = pfn * PAGE_SIZE;
->  	return adr;
->  }
->  
-> @@ -400,7 +398,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  	int i = pmd_index(address);
->  
->  	for (; i < PTRS_PER_PMD; i++, address = next) {
-> -		unsigned long pte_phys;
->  		pmd_t *pmd = pmd_page + pmd_index(address);
->  		pte_t *pte;
->  		pgprot_t new_prot = prot;
-> @@ -453,11 +450,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  			continue;
->  		}
->  
-> -		pte = alloc_low_page(&pte_phys);
-> +		pte = alloc_low_page();
->  		last_map_addr = phys_pte_init(pte, address, end, new_prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-> +		pmd_populate_kernel(&init_mm, pmd, pte);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	update_page_count(PG_LEVEL_2M, pages);
-> @@ -473,7 +470,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  	int i = pud_index(addr);
->  
->  	for (; i < PTRS_PER_PUD; i++, addr = next) {
-> -		unsigned long pmd_phys;
->  		pud_t *pud = pud_page + pud_index(addr);
->  		pmd_t *pmd;
->  		pgprot_t prot = PAGE_KERNEL;
-> @@ -525,12 +521,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  			continue;
->  		}
->  
-> -		pmd = alloc_low_page(&pmd_phys);
-> +		pmd = alloc_low_page();
->  		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
->  					      prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pud_populate(&init_mm, pud, __va(pmd_phys));
-> +		pud_populate(&init_mm, pud, pmd);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	__flush_tlb_all();
-> @@ -555,7 +551,6 @@ kernel_physical_mapping_init(unsigned long start,
->  
->  	for (; start < end; start = next) {
->  		pgd_t *pgd = pgd_offset_k(start);
-> -		unsigned long pud_phys;
->  		pud_t *pud;
->  
->  		next = (start + PGDIR_SIZE) & PGDIR_MASK;
-> @@ -569,12 +564,12 @@ kernel_physical_mapping_init(unsigned long start,
->  			continue;
->  		}
->  
-> -		pud = alloc_low_page(&pud_phys);
-> +		pud = alloc_low_page();
->  		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
->  						 page_size_mask);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pgd_populate(&init_mm, pgd, __va(pud_phys));
-> +		pgd_populate(&init_mm, pgd, pud);
->  		spin_unlock(&init_mm.page_table_lock);
->  		pgd_changed = true;
->  	}
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I only came to this after having initialy tried to teach the current
+iov_iter functions about bio_vecs by introducing conditional branches
+that dealt with bio_vecs in all the functions.  It wasn't pretty.  This
+approach seems to be the lesser evil.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ fs/cifs/file.c     |  4 ++--
+ include/linux/fs.h | 70 ++++++++++++++++++++++++++++++++++++++++++++----------
+ mm/iov-iter.c      | 66 ++++++++++++++++++++++++++++----------------------
+ 3 files changed, 97 insertions(+), 43 deletions(-)
+
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index edb25b4..8b5e2aa 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -2654,8 +2654,8 @@ cifs_readdata_to_iov(struct cifs_readdata *rdata, const struct iovec *iov,
+ 		/* go while there's data to be copied and no errors */
+ 		if (copy && !rc) {
+ 			pdata = kmap(page);
+-			rc = memcpy_toiovecend(ii.iov, pdata, ii.iov_offset,
+-						(int)copy);
++			rc = memcpy_toiovecend(iov_iter_iovec(&ii), pdata,
++					       ii.iov_offset, (int)copy);
+ 			kunmap(page);
+ 			if (!rc) {
+ 				*copied += copy;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 36f9291..f7ee6d4 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -221,29 +221,68 @@ struct address_space;
+ struct writeback_control;
+ 
+ struct iov_iter {
+-	const struct iovec *iov;
++	struct iov_iter_ops *ops;
++	unsigned long data;
+ 	unsigned long nr_segs;
+ 	size_t iov_offset;
+ 	size_t count;
+ };
+ 
+-size_t iov_iter_copy_to_user_atomic(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_to_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_from_user_atomic(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-size_t iov_iter_copy_from_user(struct page *page,
+-		struct iov_iter *i, unsigned long offset, size_t bytes);
+-void iov_iter_advance(struct iov_iter *i, size_t bytes);
+-int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes);
+-size_t iov_iter_single_seg_count(struct iov_iter *i);
++struct iov_iter_ops {
++	size_t (*ii_copy_to_user_atomic)(struct page *, struct iov_iter *,
++					 unsigned long, size_t);
++	size_t (*ii_copy_to_user)(struct page *, struct iov_iter *,
++				  unsigned long, size_t);
++	size_t (*ii_copy_from_user_atomic)(struct page *, struct iov_iter *,
++					   unsigned long, size_t);
++	size_t (*ii_copy_from_user)(struct page *, struct iov_iter *,
++					  unsigned long, size_t);
++	void (*ii_advance)(struct iov_iter *, size_t);
++	int (*ii_fault_in_readable)(struct iov_iter *, size_t);
++	size_t (*ii_single_seg_count)(struct iov_iter *);
++};
++
++static inline size_t iov_iter_copy_to_user_atomic(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_to_user_atomic(page, i, offset, bytes);
++}
++static inline size_t iov_iter_copy_to_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_to_user(page, i, offset, bytes);
++}
++static inline size_t iov_iter_copy_from_user_atomic(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_from_user_atomic(page, i, offset, bytes);
++}
++static inline size_t iov_iter_copy_from_user(struct page *page,
++		struct iov_iter *i, unsigned long offset, size_t bytes)
++{
++	return i->ops->ii_copy_from_user(page, i, offset, bytes);
++}
++static inline void iov_iter_advance(struct iov_iter *i, size_t bytes)
++{
++	return i->ops->ii_advance(i, bytes);
++}
++static inline int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
++{
++	return i->ops->ii_fault_in_readable(i, bytes);
++}
++static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
++{
++	return i->ops->ii_single_seg_count(i);
++}
++
++extern struct iov_iter_ops ii_iovec_ops;
+ 
+ static inline void iov_iter_init(struct iov_iter *i,
+ 			const struct iovec *iov, unsigned long nr_segs,
+ 			size_t count, size_t written)
+ {
+-	i->iov = iov;
++	i->ops = &ii_iovec_ops;
++	i->data = (unsigned long)iov;
+ 	i->nr_segs = nr_segs;
+ 	i->iov_offset = 0;
+ 	i->count = count + written;
+@@ -251,6 +290,11 @@ static inline void iov_iter_init(struct iov_iter *i,
+ 	iov_iter_advance(i, written);
+ }
+ 
++static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
++{
++	return (struct iovec *)i->data;
++}
++
+ static inline size_t iov_iter_count(struct iov_iter *i)
+ {
+ 	return i->count;
+diff --git a/mm/iov-iter.c b/mm/iov-iter.c
+index d68b67f..bae1553 100644
+--- a/mm/iov-iter.c
++++ b/mm/iov-iter.c
+@@ -36,9 +36,10 @@ static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
+  * were sucessfully copied.  If a fault is encountered then return the number of
+  * bytes which were copied.
+  */
+-size_t iov_iter_copy_to_user_atomic(struct page *page,
++static size_t ii_iovec_copy_to_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+@@ -46,45 +47,44 @@ size_t iov_iter_copy_to_user_atomic(struct page *page,
+ 	kaddr = kmap_atomic(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_to_user_inatomic(buf, kaddr + offset, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_to_user(kaddr + offset, iov,
+ 					      i->iov_offset, bytes, 1);
+ 	}
+ 	kunmap_atomic(kaddr);
+ 
+ 	return copied;
+ }
+-EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
+ 
+ /*
+  * This has the same sideeffects and return value as
+- * iov_iter_copy_to_user_atomic().
++ * ii_iovec_copy_to_user_atomic().
+  * The difference is that it attempts to resolve faults.
+  * Page must not be locked.
+  */
+-size_t iov_iter_copy_to_user(struct page *page,
++static size_t ii_iovec_copy_to_user(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+ 	kaddr = kmap(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = copy_to_user(buf, kaddr + offset, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_to_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_to_user(kaddr + offset, iov,
+ 					      i->iov_offset, bytes, 0);
+ 	}
+ 	kunmap(page);
+ 	return copied;
+ }
+-EXPORT_SYMBOL(iov_iter_copy_to_user);
+ 
+ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+ 				     size_t base, size_t bytes, int atomic)
+@@ -116,9 +116,10 @@ static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
+  * were successfully copied.  If a fault is encountered then return the number
+  * of bytes which were copied.
+  */
+-size_t iov_iter_copy_from_user_atomic(struct page *page,
++static size_t ii_iovec_copy_from_user_atomic(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+@@ -126,11 +127,11 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 	kaddr = kmap_atomic(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_from_user(kaddr + offset, iov,
+ 						i->iov_offset, bytes, 1);
+ 	}
+ 	kunmap_atomic(kaddr);
+@@ -141,32 +142,32 @@ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
+ 
+ /*
+  * This has the same sideeffects and return value as
+- * iov_iter_copy_from_user_atomic().
++ * ii_iovec_copy_from_user_atomic().
+  * The difference is that it attempts to resolve faults.
+  * Page must not be locked.
+  */
+-size_t iov_iter_copy_from_user(struct page *page,
++static size_t ii_iovec_copy_from_user(struct page *page,
+ 		struct iov_iter *i, unsigned long offset, size_t bytes)
+ {
++	struct iovec *iov = (struct iovec *)i->data;
+ 	char *kaddr;
+ 	size_t copied;
+ 
+ 	kaddr = kmap(page);
+ 	if (likely(i->nr_segs == 1)) {
+ 		int left;
+-		char __user *buf = i->iov->iov_base + i->iov_offset;
++		char __user *buf = iov->iov_base + i->iov_offset;
+ 		left = __copy_from_user(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++		copied = __iovec_copy_from_user(kaddr + offset, iov,
+ 						i->iov_offset, bytes, 0);
+ 	}
+ 	kunmap(page);
+ 	return copied;
+ }
+-EXPORT_SYMBOL(iov_iter_copy_from_user);
+ 
+-void iov_iter_advance(struct iov_iter *i, size_t bytes)
++static void ii_iovec_advance(struct iov_iter *i, size_t bytes)
+ {
+ 	BUG_ON(i->count < bytes);
+ 
+@@ -174,7 +175,7 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
+ 		i->iov_offset += bytes;
+ 		i->count -= bytes;
+ 	} else {
+-		const struct iovec *iov = i->iov;
++		struct iovec *iov = (struct iovec *)i->data;
+ 		size_t base = i->iov_offset;
+ 		unsigned long nr_segs = i->nr_segs;
+ 
+@@ -196,12 +197,11 @@ void iov_iter_advance(struct iov_iter *i, size_t bytes)
+ 				base = 0;
+ 			}
+ 		}
+-		i->iov = iov;
++		i->data = (unsigned long)iov;
+ 		i->iov_offset = base;
+ 		i->nr_segs = nr_segs;
+ 	}
+ }
+-EXPORT_SYMBOL(iov_iter_advance);
+ 
+ /*
+  * Fault in the first iovec of the given iov_iter, to a maximum length
+@@ -212,23 +212,33 @@ EXPORT_SYMBOL(iov_iter_advance);
+  * would be possible (callers must not rely on the fact that _only_ the
+  * first iovec will be faulted with the current implementation).
+  */
+-int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
++static int ii_iovec_fault_in_readable(struct iov_iter *i, size_t bytes)
+ {
+-	char __user *buf = i->iov->iov_base + i->iov_offset;
+-	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
++	struct iovec *iov = (struct iovec *)i->data;
++	char __user *buf = iov->iov_base + i->iov_offset;
++	bytes = min(bytes, iov->iov_len - i->iov_offset);
+ 	return fault_in_pages_readable(buf, bytes);
+ }
+-EXPORT_SYMBOL(iov_iter_fault_in_readable);
+ 
+ /*
+  * Return the count of just the current iov_iter segment.
+  */
+-size_t iov_iter_single_seg_count(struct iov_iter *i)
++static size_t ii_iovec_single_seg_count(struct iov_iter *i)
+ {
+-	const struct iovec *iov = i->iov;
++	struct iovec *iov = (struct iovec *)i->data;
+ 	if (i->nr_segs == 1)
+ 		return i->count;
+ 	else
+ 		return min(i->count, iov->iov_len - i->iov_offset);
+ }
+-EXPORT_SYMBOL(iov_iter_single_seg_count);
++
++struct iov_iter_ops ii_iovec_ops = {
++	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
++	.ii_copy_to_user = ii_iovec_copy_to_user,
++	.ii_copy_from_user_atomic = ii_iovec_copy_from_user_atomic,
++	.ii_copy_from_user = ii_iovec_copy_from_user,
++	.ii_advance = ii_iovec_advance,
++	.ii_fault_in_readable = ii_iovec_fault_in_readable,
++	.ii_single_seg_count = ii_iovec_single_seg_count,
++};
++EXPORT_SYMBOL(ii_iovec_ops);
+-- 
+1.7.12.3
+
