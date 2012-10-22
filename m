@@ -1,103 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755413Ab2JVPhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:37:14 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64993 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2JVPhJ (ORCPT
+	id S1755336Ab2JVPjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:39:11 -0400
+Received: from userp1050.oracle.com ([156.151.31.82]:26572 "EHLO
+	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab2JVPjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:37:09 -0400
-Date: Mon, 22 Oct 2012 11:24:58 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/19] x86, mm: only call
- early_ioremap_page_table_range_init() once
-Message-ID: <20121022152457.GH22780@phenom.dumpdata.com>
-References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-17-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350593430-24470-17-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 22 Oct 2012 11:39:08 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH 12/22] fs: pull iov_iter use higher up the stack
+Date: Mon, 22 Oct 2012 10:15:12 -0500
+Message-Id: <1350918922-6096-13-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 01:50:24PM -0700, Yinghai Lu wrote:
-> On 32bit, We should not keep calling that during every init_memory_mapping.
+From: Zach Brown <zab@zabbo.net>
 
-Explain pls why.
+Right now only callers of generic_perform_write() pack their iovec
+arguments into an iov_iter structure.  All the callers higher up in the
+stack work on raw iovec arguments.
 
-> 
-> Need to update page_table_range_init() to count the pages for kmap page table
-> at first, and use new added alloc_low_pages() to get pages in sequence.
-> That will conform requirement that page table need to be in low to high order.
-                   ^ to the                    ^-s
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/mm/init.c    |   13 +++++--------
->  arch/x86/mm/init_32.c |   47 +++++++++++++++++++++++++++++++++++++++++------
->  2 files changed, 46 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index de71c0d..4eece3c 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -334,14 +334,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->  		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
->  						   mr[i].page_size_mask);
->  
-> -#ifdef CONFIG_X86_32
-> -	early_ioremap_page_table_range_init();
-> -
-> -	load_cr3(swapper_pg_dir);
-> -#endif
-> -
-> -	__flush_tlb_all();
-> -
->  	add_pfn_range_mapped(start >> PAGE_SHIFT, ret >> PAGE_SHIFT);
->  
->  	return ret >> PAGE_SHIFT;
-> @@ -435,7 +427,12 @@ void __init init_mem_mapping(void)
->  		/* can we preseve max_low_pfn ?*/
->  		max_low_pfn = max_pfn;
->  	}
-> +#else
-> +	early_ioremap_page_table_range_init();
-> +	load_cr3(swapper_pg_dir);
-> +	__flush_tlb_all();
->  #endif
-> +
->  	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
->  }
->  
-> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-> index a7f2df1..ef7f0dc 100644
-> --- a/arch/x86/mm/init_32.c
-> +++ b/arch/x86/mm/init_32.c
-> @@ -135,8 +135,39 @@ pte_t * __init populate_extra_pte(unsigned long vaddr)
->  	return one_page_table_init(pmd) + pte_idx;
->  }
->  
-> +static unsigned long __init
-> +page_table_range_init_count(unsigned long start, unsigned long end)
-> +{
-> +	unsigned long count = 0;
-> +#ifdef CONFIG_HIGHMEM
-> +	int pmd_idx_kmap_begin = fix_to_virt(FIX_KMAP_END) >> PMD_SHIFT;
-> +	int pmd_idx_kmap_end = fix_to_virt(FIX_KMAP_BEGIN) >> PMD_SHIFT;
-> +	int pgd_idx, pmd_idx;
-> +	unsigned long vaddr;
-> +
-> +	if (pmd_idx_kmap_begin == pmd_idx_kmap_end)
-> +		return count;
+This patch introduces the use of the iov_iter abstraction higher up the
+stack.  Private generic path functions are changed to operation on
+iov_iter instead of on raw iovecs.  Exported interfaces that take iovecs
+immediately pack their arguments into an iov_iter and call into the
+shared functions.
 
-Or just 'return 0';
+File operation struct functions are added with iov_iter as an argument
+so that callers to the generic file system functions can specify
+abstract memory rather than iovec arrays only.
+
+Almost all of this patch only transforms arguments and shouldn't change
+functionality.  The buffered read path is the exception.  We add a
+read_actor function which uses the iov_iter helper functions instead of
+operating on each individual iovec element.  This may improve
+performance as the iov_iter helper can copy multiple iovec elements from
+one mapped page cache page.
+
+As always, the direct IO path is special.  Sadly, it may still be
+cleanest to have it work on the underlying memory structures directly
+instead of working through the iov_iter abstraction.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ include/linux/fs.h |  12 +++
+ mm/filemap.c       | 258 ++++++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 180 insertions(+), 90 deletions(-)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 82dd1e9..02e3aae 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1543,7 +1543,9 @@ struct file_operations {
+ 	ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+ 	ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+ 	ssize_t (*aio_read) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
++	ssize_t (*read_iter) (struct kiocb *, struct iov_iter *, loff_t);
+ 	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
++	ssize_t (*write_iter) (struct kiocb *, struct iov_iter *, loff_t);
+ 	int (*readdir) (struct file *, void *, filldir_t);
+ 	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+ 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+@@ -2327,13 +2329,23 @@ extern int generic_file_remap_pages(struct vm_area_struct *, unsigned long addr,
+ extern int file_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
+ int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk);
+ extern ssize_t generic_file_aio_read(struct kiocb *, const struct iovec *, unsigned long, loff_t);
++extern ssize_t generic_file_read_iter(struct kiocb *, struct iov_iter *,
++		loff_t);
+ extern ssize_t __generic_file_aio_write(struct kiocb *, const struct iovec *, unsigned long,
+ 		loff_t *);
++extern ssize_t __generic_file_write_iter(struct kiocb *, struct iov_iter *,
++		loff_t *);
+ extern ssize_t generic_file_aio_write(struct kiocb *, const struct iovec *, unsigned long, loff_t);
++extern ssize_t generic_file_write_iter(struct kiocb *, struct iov_iter *,
++		loff_t);
+ extern ssize_t generic_file_direct_write(struct kiocb *, const struct iovec *,
+ 		unsigned long *, loff_t, loff_t *, size_t, size_t);
++extern ssize_t generic_file_direct_write_iter(struct kiocb *, struct iov_iter *,
++		loff_t, loff_t *, size_t);
+ extern ssize_t generic_file_buffered_write(struct kiocb *, const struct iovec *,
+ 		unsigned long, loff_t, loff_t *, size_t, ssize_t);
++extern ssize_t generic_file_buffered_write_iter(struct kiocb *,
++		struct iov_iter *, loff_t, loff_t *, size_t, ssize_t);
+ extern ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos);
+ extern ssize_t do_sync_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos);
+ extern int generic_segment_checks(const struct iovec *iov,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index d428020..0d426d9 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1372,31 +1372,41 @@ int generic_segment_checks(const struct iovec *iov,
+ }
+ EXPORT_SYMBOL(generic_segment_checks);
+ 
++static int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
++				unsigned long offset, unsigned long size)
++{
++	struct iov_iter *iter = desc->arg.data;
++	unsigned long copied = 0;
++
++	if (size > desc->count)
++		size = desc->count;
++
++	copied = iov_iter_copy_to_user(page, iter, offset, size);
++	if (copied < size)
++		desc->error = -EFAULT;
++
++	iov_iter_advance(iter, copied);
++	desc->count -= copied;
++	desc->written += copied;
++
++	return copied;
++}
++
+ /**
+- * generic_file_aio_read - generic filesystem read routine
++ * generic_file_read_iter - generic filesystem read routine
+  * @iocb:	kernel I/O control block
+- * @iov:	io vector request
+- * @nr_segs:	number of segments in the iovec
++ * @iov_iter:	memory vector
+  * @pos:	current file position
+- *
+- * This is the "read()" routine for all filesystems
+- * that can use the page cache directly.
+  */
+ ssize_t
+-generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long nr_segs, loff_t pos)
++generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct file *filp = iocb->ki_filp;
+-	ssize_t retval;
+-	unsigned long seg = 0;
+-	size_t count;
++	read_descriptor_t desc;
++	ssize_t retval = 0;
++	size_t count = iov_iter_count(iter);
+ 	loff_t *ppos = &iocb->ki_pos;
+ 
+-	count = 0;
+-	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+-	if (retval)
+-		return retval;
+-
+ 	/* coalesce the iovecs and go direct-to-BIO for O_DIRECT */
+ 	if (filp->f_flags & O_DIRECT) {
+ 		loff_t size;
+@@ -1409,16 +1419,11 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 			goto out; /* skip atime */
+ 		size = i_size_read(inode);
+ 		if (pos < size) {
+-			size_t bytes = iov_length(iov, nr_segs);
+ 			retval = filemap_write_and_wait_range(mapping, pos,
+-					pos + bytes - 1);
+-			if (!retval) {
+-				struct iov_iter iter;
+-
+-				iov_iter_init(&iter, iov, nr_segs, bytes, 0);
++					pos + count - 1);
++			if (!retval)
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+-							&iter, pos);
+-			}
++								   iter, pos);
+ 			if (retval > 0) {
+ 				*ppos = pos + retval;
+ 				count -= retval;
+@@ -1439,42 +1444,47 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		}
+ 	}
+ 
+-	count = retval;
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		read_descriptor_t desc;
+-		loff_t offset = 0;
+-
+-		/*
+-		 * If we did a short DIO read we need to skip the section of the
+-		 * iov that we've already read data into.
+-		 */
+-		if (count) {
+-			if (count > iov[seg].iov_len) {
+-				count -= iov[seg].iov_len;
+-				continue;
+-			}
+-			offset = count;
+-			count = 0;
+-		}
+-
+-		desc.written = 0;
+-		desc.arg.buf = iov[seg].iov_base + offset;
+-		desc.count = iov[seg].iov_len - offset;
+-		if (desc.count == 0)
+-			continue;
+-		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
+-		retval += desc.written;
+-		if (desc.error) {
+-			retval = retval ?: desc.error;
+-			break;
+-		}
+-		if (desc.count > 0)
+-			break;
+-	}
++	desc.written = 0;
++	desc.arg.data = iter;
++	desc.count = count;
++	desc.error = 0;
++	do_generic_file_read(filp, ppos, &desc, file_read_iter_actor);
++	if (desc.written)
++		retval = desc.written;
++	else
++		retval = desc.error;
+ out:
+ 	return retval;
+ }
++EXPORT_SYMBOL(generic_file_read_iter);
++
++/**
++ * generic_file_aio_read - generic filesystem read routine
++ * @iocb:      kernel I/O control block
++ * @iov:       io vector request
++ * @nr_segs:   number of segments in the iovec
++ * @pos:       current file position
++ *
++ * This is the "read()" routine for all filesystems
++ * that can use the page cache directly.
++ */
++ssize_t
++generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
++		unsigned long nr_segs, loff_t pos)
++{
++	struct iov_iter iter;
++	int ret;
++	size_t count;
++
++	count = 0;
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
++	if (ret)
++		return ret;
++
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	return generic_file_read_iter(iocb, &iter, pos);
++}
+ EXPORT_SYMBOL(generic_file_aio_read);
+ 
+ #ifdef CONFIG_MMU
+@@ -2031,9 +2041,8 @@ int pagecache_write_end(struct file *file, struct address_space *mapping,
+ EXPORT_SYMBOL(pagecache_write_end);
+ 
+ ssize_t
+-generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long *nr_segs, loff_t pos, loff_t *ppos,
+-		size_t count, size_t ocount)
++generic_file_direct_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++		loff_t pos, loff_t *ppos, size_t count)
+ {
+ 	struct file	*file = iocb->ki_filp;
+ 	struct address_space *mapping = file->f_mapping;
+@@ -2041,12 +2050,14 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+ 	ssize_t		written;
+ 	size_t		write_len;
+ 	pgoff_t		end;
+-	struct iov_iter iter;
+ 
+-	if (count != ocount)
+-		*nr_segs = iov_shorten((struct iovec *)iov, *nr_segs, count);
++	if (count != iov_iter_count(iter)) {
++		written = iov_iter_shorten(iter, count);
++		if (written)
++			goto out;
++	}
+ 
+-	write_len = iov_length(iov, *nr_segs);
++	write_len = count;
+ 	end = (pos + write_len - 1) >> PAGE_CACHE_SHIFT;
+ 
+ 	written = filemap_write_and_wait_range(mapping, pos, pos + write_len - 1);
+@@ -2073,9 +2084,7 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+ 		}
+ 	}
+ 
+-	iov_iter_init(&iter, iov, *nr_segs, write_len, 0);
+-
+-	written = mapping->a_ops->direct_IO(WRITE, iocb, &iter, pos);
++	written = mapping->a_ops->direct_IO(WRITE, iocb, iter, pos);
+ 
+ 	/*
+ 	 * Finally, try again to invalidate clean pages which might have been
+@@ -2101,6 +2110,23 @@ generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+ out:
+ 	return written;
+ }
++EXPORT_SYMBOL(generic_file_direct_write_iter);
++
++ssize_t
++generic_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
++		unsigned long *nr_segs, loff_t pos, loff_t *ppos,
++		size_t count, size_t ocount)
++{
++	struct iov_iter iter;
++	ssize_t ret;
++
++	iov_iter_init(&iter, iov, *nr_segs, ocount, 0);
++	ret = generic_file_direct_write_iter(iocb, &iter, pos, ppos, count);
++	/* generic_file_direct_write_iter() might have shortened the vec */
++	if (*nr_segs != iter.nr_segs)
++		*nr_segs = iter.nr_segs;
++	return ret;
++}
+ EXPORT_SYMBOL(generic_file_direct_write);
+ 
+ /*
+@@ -2234,16 +2260,19 @@ again:
+ }
+ 
+ ssize_t
+-generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long nr_segs, loff_t pos, loff_t *ppos,
+-		size_t count, ssize_t written)
++generic_file_buffered_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++		loff_t pos, loff_t *ppos, size_t count, ssize_t written)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	ssize_t status;
+-	struct iov_iter i;
+ 
+-	iov_iter_init(&i, iov, nr_segs, count, written);
+-	status = generic_perform_write(file, &i, pos);
++	if ((count + written) != iov_iter_count(iter)) {
++		int rc = iov_iter_shorten(iter, count + written);
++		if (rc)
++			return rc;
++	}
++
++	status = generic_perform_write(file, iter, pos);
+ 
+ 	if (likely(status >= 0)) {
+ 		written += status;
+@@ -2252,13 +2281,24 @@ generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
+ 	
+ 	return written ? written : status;
+ }
++EXPORT_SYMBOL(generic_file_buffered_write_iter);
++
++ssize_t
++generic_file_buffered_write(struct kiocb *iocb, const struct iovec *iov,
++		unsigned long nr_segs, loff_t pos, loff_t *ppos,
++		size_t count, ssize_t written)
++{
++	struct iov_iter iter;
++	iov_iter_init(&iter, iov, nr_segs, count, written);
++	return generic_file_buffered_write_iter(iocb, &iter, pos, ppos,
++						count, written);
++}
+ EXPORT_SYMBOL(generic_file_buffered_write);
+ 
+ /**
+  * __generic_file_aio_write - write data to a file
+  * @iocb:	IO state structure (file, offset, etc.)
+- * @iov:	vector with data to write
+- * @nr_segs:	number of segments in the vector
++ * @iter:	iov_iter specifying memory to write
+  * @ppos:	position where to write
+  *
+  * This function does all the work needed for actually writing data to a
+@@ -2273,24 +2313,18 @@ EXPORT_SYMBOL(generic_file_buffered_write);
+  * A caller has to handle it. This is mainly due to the fact that we want to
+  * avoid syncing under i_mutex.
+  */
+-ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-				 unsigned long nr_segs, loff_t *ppos)
++ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				  loff_t *ppos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct address_space * mapping = file->f_mapping;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	struct inode 	*inode = mapping->host;
+ 	loff_t		pos;
+ 	ssize_t		written;
+ 	ssize_t		err;
+ 
+-	ocount = 0;
+-	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
+-	if (err)
+-		return err;
+-
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	pos = *ppos;
+ 
+ 	/* We can write back this queue in page reclaim */
+@@ -2317,8 +2351,8 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		loff_t endbyte;
+ 		ssize_t written_buffered;
+ 
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, pos,
+-							ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, pos,
++							 ppos, count);
+ 		if (written < 0 || written == count)
+ 			goto out;
+ 		/*
+@@ -2327,9 +2361,9 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		 */
+ 		pos += written;
+ 		count -= written;
+-		written_buffered = generic_file_buffered_write(iocb, iov,
+-						nr_segs, pos, ppos, count,
+-						written);
++		iov_iter_advance(iter, written);
++		written_buffered = generic_file_buffered_write_iter(iocb, iter,
++						pos, ppos, count, written);
+ 		/*
+ 		 * If generic_file_buffered_write() retuned a synchronous error
+ 		 * then we want to return the number of bytes which were
+@@ -2361,13 +2395,57 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			 */
+ 		}
+ 	} else {
+-		written = generic_file_buffered_write(iocb, iov, nr_segs,
++		iter->count = count;
++		written = generic_file_buffered_write_iter(iocb, iter,
+ 				pos, ppos, count, written);
+ 	}
+ out:
+ 	current->backing_dev_info = NULL;
+ 	return written ? written : err;
+ }
++EXPORT_SYMBOL(__generic_file_write_iter);
++
++ssize_t generic_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				loff_t pos)
++{
++	struct file *file = iocb->ki_filp;
++	struct inode *inode = file->f_mapping->host;
++	ssize_t ret;
++
++	mutex_lock(&inode->i_mutex);
++	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
++	mutex_unlock(&inode->i_mutex);
++
++	if (ret > 0 || ret == -EIOCBQUEUED) {
++		ssize_t err;
++
++		err = generic_write_sync(file, pos, ret);
++		if (err < 0 && ret > 0)
++			ret = err;
++	}
++	return ret;
++}
++EXPORT_SYMBOL(generic_file_write_iter);
++
++ssize_t
++__generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
++			 unsigned long nr_segs, loff_t *ppos)
++{
++	struct iov_iter iter;
++	size_t count;
++	int ret;
++
++	count = 0;
++	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_READ);
++	if (ret)
++		goto out;
++
++	iov_iter_init(&iter, iov, nr_segs, count, 0);
++
++	ret = __generic_file_write_iter(iocb, &iter, ppos);
++out:
++	return ret;
++}
+ EXPORT_SYMBOL(__generic_file_aio_write);
+ 
+ /**
+-- 
+1.7.12.3
 
