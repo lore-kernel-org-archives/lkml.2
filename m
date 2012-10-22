@@ -1,260 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab2JVPQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 11:16:26 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:34176 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab2JVPQV (ORCPT
+	id S1755231Ab2JVPQX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 11:16:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45691 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab2JVPQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 11:16:21 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        ocfs2-devel@oss.oracle.com
-Subject: [PATCH 18/22] ocfs2: add support for read_iter, write_iter, and direct_IO_bvec
-Date: Mon, 22 Oct 2012 10:15:18 -0500
-Message-Id: <1350918922-6096-19-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 22 Oct 2012 11:16:20 -0400
+Message-ID: <50856335.5050901@ti.com>
+Date: Mon, 22 Oct 2012 11:16:05 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Prabhakar Lad <prabhakar.lad@ti.com>
+CC: <mchehab@infradead.org>, <laurent.pinchart@ideasonboard.com>,
+        <manjunath.hadli@ti.com>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux-davincidsp.com>
+Subject: Re: [PATCH] media:davinci: clk - {prepare/unprepare} for common clk
+ framework
+References: <1350670341-18982-1-git-send-email-m-karicheri2@ti.com> <5082473D.9080306@ti.com>
+In-Reply-To: <5082473D.9080306@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On 10/20/2012 02:39 AM, Prabhakar Lad wrote:
+> Hi Murali,
+>
+> On Friday 19 October 2012 11:42 PM, Murali Karicheri wrote:
+>> As a first step towards migrating davinci platforms to use common clock
+>> framework, replace all instances of clk_enable() with clk_prepare_enable()
+>> and clk_disable() with clk_disable_unprepare().
+>>
+>> Also fixes some issues related to clk clean up in the driver
+>>
+>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>> ---
+>>   drivers/media/video/davinci/dm355_ccdc.c  |    8 ++++++--
+>>   drivers/media/video/davinci/dm644x_ccdc.c |   16 ++++++++++------
+>>   drivers/media/video/davinci/isif.c        |    5 ++++-
+>>   drivers/media/video/davinci/vpbe.c        |   10 +++++++---
+>>   drivers/media/video/davinci/vpif.c        |    8 ++++----
+>>   5 files changed, 31 insertions(+), 16 deletions(-)
+>>
+> Thanks for the patch. Can you rebase this patch on 3.7, Since
+> the folder structure for media drivers has been reorganised.
+> And for some reason this patch hasn't reached any mailing list.
+>
+> Thanks And Regards,
+> --Prabhakar Lad
+Prabakhar,
 
-ocfs2's .aio_read and .aio_write methods are changed to take
-iov_iter and pass it to generic functions.  Wrappers are made to pack
-the iovecs into iters and call these new functions.
+I have re-sent the patches rebased to 3.7rc1. You are right, at times my 
+patches don't show up on the mailing list. I am not sure why. It is not 
+that none of them reaches the list, but some do make it. Do you have any 
+suggestion why this could be happening? I will check with our IT first 
+to see if emails are getting blocked at TI server for some reason. 
+Meanwhile, could you test these patches with video drivers and request a 
+merge to 3.7rcx? The patches are available at 
+https://gitorious.org/~m-karicheri/linux-davinci/linux-davinci-clk/commits/video-clk-patches-v3.7rc1
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
----
- fs/ocfs2/file.c        | 82 +++++++++++++++++++++++++++++++++++---------------
- fs/ocfs2/ocfs2_trace.h |  6 +++-
- 2 files changed, 63 insertions(+), 25 deletions(-)
+https://gitorious.org/~m-karicheri/linux-davinci/linux-davinci-clk/commit/539b2de5913000cbf6f594e63b680673368dd9a2
 
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 5a4ee77..457b9fb 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -2237,15 +2237,13 @@ out:
- 	return ret;
- }
- 
--static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs,
--				    loff_t pos)
-+static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter,
-+				     loff_t pos)
- {
- 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
- 	int can_do_direct, has_refcount = 0;
- 	ssize_t written = 0;
--	size_t ocount;		/* original count */
- 	size_t count;		/* after file limit checks */
- 	loff_t old_size, *ppos = &iocb->ki_pos;
- 	u32 old_clusters;
-@@ -2256,11 +2254,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
- 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
- 	int unaligned_dio = 0;
- 
--	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
-+	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
- 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
- 		file->f_path.dentry->d_name.len,
- 		file->f_path.dentry->d_name.name,
--		(unsigned int)nr_segs);
-+		(unsigned long long)pos);
- 
- 	if (iocb->ki_left == 0)
- 		return 0;
-@@ -2362,28 +2360,24 @@ relock:
- 	/* communicate with ocfs2_dio_end_io */
- 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
- 
--	ret = generic_segment_checks(iov, &nr_segs, &ocount,
--				     VERIFY_READ);
--	if (ret)
--		goto out_dio;
- 
--	count = ocount;
-+	count = iov_iter_count(iter);
- 	ret = generic_write_checks(file, ppos, &count,
- 				   S_ISBLK(inode->i_mode));
- 	if (ret)
- 		goto out_dio;
- 
- 	if (direct_io) {
--		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
--						    ppos, count, ocount);
-+		written = generic_file_direct_write_iter(iocb, iter, *ppos,
-+						    ppos, count);
- 		if (written < 0) {
- 			ret = written;
- 			goto out_dio;
- 		}
- 	} else {
- 		current->backing_dev_info = file->f_mapping->backing_dev_info;
--		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
--						      ppos, count, 0);
-+		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
-+							   ppos, count, 0);
- 		current->backing_dev_info = NULL;
- 	}
- 
-@@ -2447,6 +2441,25 @@ out_sems:
- 	return ret;
- }
- 
-+static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
-+				    const struct iovec *iov,
-+				    unsigned long nr_segs,
-+				    loff_t pos)
-+{
-+	struct iov_iter iter;
-+	size_t count;
-+	int ret;
-+
-+	count = 0;
-+	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_READ);
-+	if (ret)
-+		return ret;
-+
-+	iov_iter_init(&iter, iov, nr_segs, count, 0);
-+
-+	return ocfs2_file_write_iter(iocb, &iter, pos);
-+}
-+
- static int ocfs2_splice_to_file(struct pipe_inode_info *pipe,
- 				struct file *out,
- 				struct splice_desc *sd)
-@@ -2560,19 +2573,18 @@ bail:
- 	return ret;
- }
- 
--static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
--				   const struct iovec *iov,
--				   unsigned long nr_segs,
-+static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
-+				   struct iov_iter *iter,
- 				   loff_t pos)
- {
- 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
- 	struct file *filp = iocb->ki_filp;
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 
--	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
-+	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
- 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
- 			filp->f_path.dentry->d_name.len,
--			filp->f_path.dentry->d_name.name, nr_segs);
-+			filp->f_path.dentry->d_name.name, pos);
- 
- 
- 	if (!inode) {
-@@ -2608,7 +2620,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
- 	 *
- 	 * Take and drop the meta data lock to update inode fields
- 	 * like i_size. This allows the checks down below
--	 * generic_file_aio_read() a chance of actually working.
-+	 * generic_file_read_iter() a chance of actually working.
- 	 */
- 	ret = ocfs2_inode_lock_atime(inode, filp->f_vfsmnt, &lock_level);
- 	if (ret < 0) {
-@@ -2617,8 +2629,8 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
- 	}
- 	ocfs2_inode_unlock(inode, lock_level);
- 
--	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
--	trace_generic_file_aio_read_ret(ret);
-+	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
-+	trace_generic_file_read_iter_ret(ret);
- 
- 	/* buffered aio wouldn't have proper lock coverage today */
- 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
-@@ -2690,6 +2702,24 @@ out:
- 	return offset;
- }
- 
-+static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
-+				   const struct iovec *iov,
-+				   unsigned long nr_segs,
-+				   loff_t pos)
-+{
-+	struct iov_iter iter;
-+	size_t count;
-+	int ret;
-+
-+	ret = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-+	if (ret)
-+		return ret;
-+
-+	iov_iter_init(&iter, iov, nr_segs, count, 0);
-+
-+	return ocfs2_file_read_iter(iocb, &iter, pos);
-+}
-+
- const struct inode_operations ocfs2_file_iops = {
- 	.setattr	= ocfs2_setattr,
- 	.getattr	= ocfs2_getattr,
-@@ -2723,6 +2753,8 @@ const struct file_operations ocfs2_fops = {
- 	.open		= ocfs2_file_open,
- 	.aio_read	= ocfs2_file_aio_read,
- 	.aio_write	= ocfs2_file_aio_write,
-+	.read_iter	= ocfs2_file_read_iter,
-+	.write_iter	= ocfs2_file_write_iter,
- 	.unlocked_ioctl	= ocfs2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ocfs2_compat_ioctl,
-@@ -2771,6 +2803,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
- 	.open		= ocfs2_file_open,
- 	.aio_read	= ocfs2_file_aio_read,
- 	.aio_write	= ocfs2_file_aio_write,
-+	.read_iter	= ocfs2_file_read_iter,
-+	.write_iter	= ocfs2_file_write_iter,
- 	.unlocked_ioctl	= ocfs2_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl   = ocfs2_compat_ioctl,
-diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
-index 3b481f4..8409f00 100644
---- a/fs/ocfs2/ocfs2_trace.h
-+++ b/fs/ocfs2/ocfs2_trace.h
-@@ -1312,12 +1312,16 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
- 
-+DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
-+
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
- 
- DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
- 
-+DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
-+
- DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
- 
- DEFINE_OCFS2_ULL_ULL_EVENT(ocfs2_truncate_file_error);
-@@ -1474,7 +1478,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
- 		  __entry->direct_io, __entry->has_refcount)
- );
- 
--DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
-+DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
- 
- /* End of trace events for fs/ocfs2/file.c. */
- 
--- 
-1.7.12.3
+Murali
+
+>> diff --git a/drivers/media/video/davinci/dm355_ccdc.c b/drivers/media/video/davinci/dm355_ccdc.c
+>> index 5b68847..af88cce 100644
+>> --- a/drivers/media/video/davinci/dm355_ccdc.c
+>> +++ b/drivers/media/video/davinci/dm355_ccdc.c
+>> @@ -1003,7 +1003,7 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(ccdc_cfg.mclk);
+>>   		goto fail_nomap;
+>>   	}
+>> -	if (clk_enable(ccdc_cfg.mclk)) {
+>> +	if (clk_prepare_enable(ccdc_cfg.mclk)) {
+>>   		status = -ENODEV;
+>>   		goto fail_mclk;
+>>   	}
+>> @@ -1014,7 +1014,7 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(ccdc_cfg.sclk);
+>>   		goto fail_mclk;
+>>   	}
+>> -	if (clk_enable(ccdc_cfg.sclk)) {
+>> +	if (clk_prepare_enable(ccdc_cfg.sclk)) {
+>>   		status = -ENODEV;
+>>   		goto fail_sclk;
+>>   	}
+>> @@ -1034,8 +1034,10 @@ static int __init dm355_ccdc_probe(struct platform_device *pdev)
+>>   	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
+>>   	return 0;
+>>   fail_sclk:
+>> +	clk_disable_unprepare(ccdc_cfg.sclk);
+>>   	clk_put(ccdc_cfg.sclk);
+>>   fail_mclk:
+>> +	clk_disable_unprepare(ccdc_cfg.mclk);
+>>   	clk_put(ccdc_cfg.mclk);
+>>   fail_nomap:
+>>   	iounmap(ccdc_cfg.base_addr);
+>> @@ -1050,6 +1052,8 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
+>>   {
+>>   	struct resource	*res;
+>>   
+>> +	clk_disable_unprepare(ccdc_cfg.sclk);
+>> +	clk_disable_unprepare(ccdc_cfg.mclk);
+>>   	clk_put(ccdc_cfg.mclk);
+>>   	clk_put(ccdc_cfg.sclk);
+>>   	iounmap(ccdc_cfg.base_addr);
+>> diff --git a/drivers/media/video/davinci/dm644x_ccdc.c b/drivers/media/video/davinci/dm644x_ccdc.c
+>> index 9303fe5..24388fa 100644
+>> --- a/drivers/media/video/davinci/dm644x_ccdc.c
+>> +++ b/drivers/media/video/davinci/dm644x_ccdc.c
+>> @@ -994,7 +994,7 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(ccdc_cfg.mclk);
+>>   		goto fail_nomap;
+>>   	}
+>> -	if (clk_enable(ccdc_cfg.mclk)) {
+>> +	if (clk_prepare_enable(ccdc_cfg.mclk)) {
+>>   		status = -ENODEV;
+>>   		goto fail_mclk;
+>>   	}
+>> @@ -1005,7 +1005,7 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(ccdc_cfg.sclk);
+>>   		goto fail_mclk;
+>>   	}
+>> -	if (clk_enable(ccdc_cfg.sclk)) {
+>> +	if (clk_prepare_enable(ccdc_cfg.sclk)) {
+>>   		status = -ENODEV;
+>>   		goto fail_sclk;
+>>   	}
+>> @@ -1013,8 +1013,10 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
+>>   	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
+>>   	return 0;
+>>   fail_sclk:
+>> +	clk_disable_unprepare(ccdc_cfg.sclk);
+>>   	clk_put(ccdc_cfg.sclk);
+>>   fail_mclk:
+>> +	clk_disable_unprepare(ccdc_cfg.mclk);
+>>   	clk_put(ccdc_cfg.mclk);
+>>   fail_nomap:
+>>   	iounmap(ccdc_cfg.base_addr);
+>> @@ -1029,6 +1031,8 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
+>>   {
+>>   	struct resource	*res;
+>>   
+>> +	clk_disable_unprepare(ccdc_cfg.mclk);
+>> +	clk_disable_unprepare(ccdc_cfg.sclk);
+>>   	clk_put(ccdc_cfg.mclk);
+>>   	clk_put(ccdc_cfg.sclk);
+>>   	iounmap(ccdc_cfg.base_addr);
+>> @@ -1046,8 +1050,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
+>>   	/* Disable CCDC */
+>>   	ccdc_enable(0);
+>>   	/* Disable both master and slave clock */
+>> -	clk_disable(ccdc_cfg.mclk);
+>> -	clk_disable(ccdc_cfg.sclk);
+>> +	clk_disable_unprepare(ccdc_cfg.mclk);
+>> +	clk_disable_unprepare(ccdc_cfg.sclk);
+>>   
+>>   	return 0;
+>>   }
+>> @@ -1055,8 +1059,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
+>>   static int dm644x_ccdc_resume(struct device *dev)
+>>   {
+>>   	/* Enable both master and slave clock */
+>> -	clk_enable(ccdc_cfg.mclk);
+>> -	clk_enable(ccdc_cfg.sclk);
+>> +	clk_prepare_enable(ccdc_cfg.mclk);
+>> +	clk_prepare_enable(ccdc_cfg.sclk);
+>>   	/* Restore CCDC context */
+>>   	ccdc_restore_context();
+>>   
+>> diff --git a/drivers/media/video/davinci/isif.c b/drivers/media/video/davinci/isif.c
+>> index 5278fe7..d9c3116 100644
+>> --- a/drivers/media/video/davinci/isif.c
+>> +++ b/drivers/media/video/davinci/isif.c
+>> @@ -1053,7 +1053,7 @@ static int __init isif_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(isif_cfg.mclk);
+>>   		goto fail_mclk;
+>>   	}
+>> -	if (clk_enable(isif_cfg.mclk)) {
+>> +	if (clk_prepare_enable(isif_cfg.mclk)) {
+>>   		status = -ENODEV;
+>>   		goto fail_mclk;
+>>   	}
+>> @@ -1125,6 +1125,7 @@ fail_nobase_res:
+>>   		i--;
+>>   	}
+>>   fail_mclk:
+>> +	clk_disable_unprepare(isif_cfg.mclk);
+>>   	clk_put(isif_cfg.mclk);
+>>   	vpfe_unregister_ccdc_device(&isif_hw_dev);
+>>   	return status;
+>> @@ -1145,6 +1146,8 @@ static int isif_remove(struct platform_device *pdev)
+>>   		i++;
+>>   	}
+>>   	vpfe_unregister_ccdc_device(&isif_hw_dev);
+>> +	clk_disable_unprepare(isif_cfg.mclk);
+>> +	clk_put(isif_cfg.mclk);
+>>   	return 0;
+>>   }
+>>   
+>> diff --git a/drivers/media/video/davinci/vpbe.c b/drivers/media/video/davinci/vpbe.c
+>> index c4a82a1..7cfbc1e 100644
+>> --- a/drivers/media/video/davinci/vpbe.c
+>> +++ b/drivers/media/video/davinci/vpbe.c
+>> @@ -628,7 +628,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>>   			ret =  PTR_ERR(vpbe_dev->dac_clk);
+>>   			goto vpbe_unlock;
+>>   		}
+>> -		if (clk_enable(vpbe_dev->dac_clk)) {
+>> +		if (clk_prepare_enable(vpbe_dev->dac_clk)) {
+>>   			ret =  -ENODEV;
+>>   			goto vpbe_unlock;
+>>   		}
+>> @@ -777,8 +777,10 @@ vpbe_fail_sd_register:
+>>   vpbe_fail_v4l2_device:
+>>   	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
+>>   vpbe_fail_clock:
+>> -	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
+>> +	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
+>> +		clk_disable_unprepare(vpbe_dev->dac_clk);
+>>   		clk_put(vpbe_dev->dac_clk);
+>> +	}
+>>   vpbe_unlock:
+>>   	mutex_unlock(&vpbe_dev->lock);
+>>   	return ret;
+>> @@ -795,8 +797,10 @@ vpbe_unlock:
+>>   static void vpbe_deinitialize(struct device *dev, struct vpbe_device *vpbe_dev)
+>>   {
+>>   	v4l2_device_unregister(&vpbe_dev->v4l2_dev);
+>> -	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
+>> +	if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
+>> +		clk_disable_unprepare(vpbe_dev->dac_clk);
+>>   		clk_put(vpbe_dev->dac_clk);
+>> +	}
+>>   
+>>   	kfree(vpbe_dev->amp);
+>>   	kfree(vpbe_dev->encoders);
+>> diff --git a/drivers/media/video/davinci/vpif.c b/drivers/media/video/davinci/vpif.c
+>> index b3637af..2857ced 100644
+>> --- a/drivers/media/video/davinci/vpif.c
+>> +++ b/drivers/media/video/davinci/vpif.c
+>> @@ -442,7 +442,7 @@ static int __init vpif_probe(struct platform_device *pdev)
+>>   		status = PTR_ERR(vpif_clk);
+>>   		goto clk_fail;
+>>   	}
+>> -	clk_enable(vpif_clk);
+>> +	clk_prepare_enable(vpif_clk);
+>>   
+>>   	spin_lock_init(&vpif_lock);
+>>   	dev_info(&pdev->dev, "vpif probe success\n");
+>> @@ -458,7 +458,7 @@ fail:
+>>   static int __devexit vpif_remove(struct platform_device *pdev)
+>>   {
+>>   	if (vpif_clk) {
+>> -		clk_disable(vpif_clk);
+>> +		clk_disable_unprepare(vpif_clk);
+>>   		clk_put(vpif_clk);
+>>   	}
+>>   
+>> @@ -470,13 +470,13 @@ static int __devexit vpif_remove(struct platform_device *pdev)
+>>   #ifdef CONFIG_PM
+>>   static int vpif_suspend(struct device *dev)
+>>   {
+>> -	clk_disable(vpif_clk);
+>> +	clk_disable_unprepare(vpif_clk);
+>>   	return 0;
+>>   }
+>>   
+>>   static int vpif_resume(struct device *dev)
+>>   {
+>> -	clk_enable(vpif_clk);
+>> +	clk_prepare_enable(vpif_clk);
+>>   	return 0;
+>>   }
+>>   
+>>
+>
 
