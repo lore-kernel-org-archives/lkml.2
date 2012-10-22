@@ -1,231 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab2JVVe4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 17:34:56 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55832 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755682Ab2JVVey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 17:34:54 -0400
-Date: Tue, 23 Oct 2012 01:34:49 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
-Message-ID: <20121022213449.GH31440@moon>
-References: <20121022191452.785366817@openvz.org>
- <20121022122934.d2e2fa57.akpm@linux-foundation.org>
- <5085B1A8.4020609@parallels.com>
- <20121022205641.GL2303@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022205641.GL2303@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756214Ab2JVVgC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 17:36:02 -0400
+Received: from mga03.intel.com ([143.182.124.21]:50188 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755015Ab2JVVgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 17:36:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,632,1344236400"; 
+   d="scan'208";a="159106322"
+Subject: [patch] x86, apic: use tsc deadline for oneshot when available
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org
+Cc: linux-kernel@vger.kernel.org, venki@google.com, len.brown@intel.com
+Date: Mon, 22 Oct 2012 14:37:58 -0700
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1350941878.6017.31.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 12:56:41AM +0400, Cyrill Gorcunov wrote:
-> On Tue, Oct 23, 2012 at 12:50:48AM +0400, Pavel Emelyanov wrote:
-> > On 10/22/2012 11:29 PM, Andrew Morton wrote:
-> > > On Mon, 22 Oct 2012 23:14:52 +0400
-> > > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > > 
-> > >> Hi guys, during c/r sessions we've found that there is no way at
-> > >> the moment to fetch some VMA associated flags, such as mlock()
-> > >> and madvise(), thus the patches in this series intorduce new field
-> > >> into "smaps" output called VmFlags where all flags associated with
-> > >> the particular VMA is shown in two letter mnemonic.
-> > >>
-> > >> Strictly speaking for c/r we only need mlock/madvise bits but it
-> > >> has been said that providing just a few flags looks somehow inconsistent.
-> > >> So all flags are here now.
-> > >>
-> > >> Please review. Comments and complains are quite welcome!
-> > > 
-> > > Sigh, it's still a pretty nasty-looking interface.  Better ideas are
-> > > welcomed.
-> > 
-> > Maybe just a string of two-letter short names like
-> > 
-> > VmFlags: rd wr sh sr
-> > 
-> > ?
-> > 
-> > I.e. in a way flags line looks in cpuinfo file.
-> 
-> Yup, I think this will be shorter and more agreeable.
+Thomas, You wanted to run some tests with this, right? Please give it a
+try and see if this is ok to be pushed to the -tip.
 
-What about something like below instead?
+thanks,
+suresh
+--8<--
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: x86, apic: use tsc deadline for oneshot when available
+
+If the TSC deadline mode is supported, LAPIC timer one-shot mode can be
+implemented using IA32_TSC_DEADLINE MSR. An interrupt will be generated
+when the TSC value equals or exceeds the value in the IA32_TSC_DEADLINE
+MSR.
+
+This enables us to skip the APIC calibration during boot. Also,
+in xapic mode, this enables us to skip the uncached apic access
+to re-arm the APIC timer.
+
+As this timer ticks at the high frequency TSC rate, we use the
+TSC_DIVISOR (32) to work with the 32-bit restrictions in the clockevent
+API's to avoid 64-bit divides etc (frequency is u32 and "unsigned long"
+in the set_next_event(), max_delta limits the next event to 32-bit for
+32-bit kernel).
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: procfs: add VmFlags field in smaps output v2
+ Documentation/kernel-parameters.txt |    4 ++
+ arch/x86/include/asm/msr-index.h    |    2 +
+ arch/x86/kernel/apic/apic.c         |   66 ++++++++++++++++++++++++++---------
+ 3 files changed, 55 insertions(+), 17 deletions(-)
 
-During c/r sessions we've found that there is no way at the moment to
-fetch some VMA associated flags, such as mlock() and madvise().
-
-This leads us to a problem -- we don't know if we should call for
-mlock() and/or madvise() after restore on the vma area we're bringing
-back to life.
-
-This patch intorduces a new field into "smaps" output called VmFlags,
-where all set flags associated with the particular VMA is shown as two
-letter mnemonics.
-
-[ Strictly speaking for c/r we only need mlock/madvise bits but it has been
-  said that providing just a few flags looks somehow inconsistent.  So all
-  flags are here now. ]
-
-This feature is made available on CONFIG_CHECKPOINT_RESTORE=n kernels, as
-other applications may start to use these fields.
-
-The data is encoded in a somewhat awkward two letters mnemonic form, to
-encourage userspace to be prepared for fields being added or removed in
-the future.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- Documentation/filesystems/proc.txt |   40 ++++++++++++++++++++++++++++--
- fs/proc/task_mmu.c                 |   49 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 87 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -142,7 +142,7 @@ Table 1-1: Process specific entries in /
-  pagemap	Page table
-  stack		Report full stack trace, enable via CONFIG_STACKTRACE
-  smaps		a extension based on maps, showing the memory consumption of
--		each mapping
-+		each mapping and flags associated with it
- ..............................................................................
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9776f06..4aa9ca0 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1304,6 +1304,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	lapic		[X86-32,APIC] Enable the local APIC even if BIOS
+ 			disabled it.
  
- For example, to get the status information of a process, all you have to do is
-@@ -415,8 +415,9 @@ Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
- Locked:              374 kB
-+VmFlags: rd ex mr mw me de
- 
--The first of these lines shows the same information as is displayed for the
-+the first of these lines shows the same information as is displayed for the
- mapping in /proc/PID/maps.  The remaining lines show the size of the mapping
- (size), the amount of the mapping that is currently resident in RAM (RSS), the
- process' proportional share of this mapping (PSS), the number of clean and
-@@ -430,6 +431,41 @@ and a page is modified, the file page is
- "Swap" shows how much would-be-anonymous memory is also used, but out on
- swap.
- 
-+"VmFlags" field deserves a separate description. This member represents the kernel
-+flags associated with the particular virtual memory area in two letter encoded
-+manner. The codes are the following:
-+    rd  - readable
-+    wr  - writeable
-+    ex  - executable
-+    sh  - shared
-+    mr  - may read
-+    mw  - may write
-+    me  - may execute
-+    ms  - may share
-+    gd  - stack segment growns down
-+    pf  - pure PFN range
-+    dw  - disabled write to the mapped file
-+    lo  - pages are locked in memory
-+    io  - memory mapped I/O area
-+    sr  - sequential read advise provided
-+    rr  - random read advise provided
-+    dc  - do not copy area on fork
-+    de  - do not expand area on remapping
-+    ac  - area is accountable
-+    nr  - swap space is not reserved for the area
-+    ht  - area uses huge tlb pages
-+    nl  - non-linear mapping
-+    ar  - architecture specific flag
-+    dd  - do not include area into core dump
-+    mm  - mixed map area
-+    hg  - huge page advise flag
-+    nh  - no-huge page advise flag
-+    mg  - mergable advise flag
++	lapic=		[x86,APIC] "notscdeadline" Do not use TSC deadline
++			value for LAPIC timer one-shot implementation. Default
++			back to the programmable timer unit in the LAPIC.
 +
-+Note that there is no guarantee that every flag and associated mnemonic will
-+be present in all further kernel releases. Things get changed, the flags may
-+be vanished or the reverse -- new added.
-+
- This file is only present if the CONFIG_MMU kernel configuration option is
- enabled.
+ 	lapic_timer_c2_ok	[X86,APIC] trust the local apic timer
+ 			in C2 power state.
  
-Index: linux-2.6.git/fs/proc/task_mmu.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/task_mmu.c
-+++ linux-2.6.git/fs/proc/task_mmu.c
-@@ -480,6 +480,53 @@ static int smaps_pte_range(pmd_t *pmd, u
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 7f0edce..e400cdb 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -337,6 +337,8 @@
+ #define MSR_IA32_MISC_ENABLE_TURBO_DISABLE	(1ULL << 38)
+ #define MSR_IA32_MISC_ENABLE_IP_PREF_DISABLE	(1ULL << 39)
+ 
++#define MSR_IA32_TSC_DEADLINE		0x000006E0
++
+ /* P4/Xeon+ specific */
+ #define MSR_IA32_MCG_EAX		0x00000180
+ #define MSR_IA32_MCG_EBX		0x00000181
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index b17416e..b0c49b1 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -90,21 +90,6 @@ EXPORT_EARLY_PER_CPU_SYMBOL(x86_bios_cpu_apicid);
+  */
+ DEFINE_EARLY_PER_CPU_READ_MOSTLY(int, x86_cpu_to_logical_apicid, BAD_APICID);
+ 
+-/*
+- * Knob to control our willingness to enable the local APIC.
+- *
+- * +1=force-enable
+- */
+-static int force_enable_local_apic __initdata;
+-/*
+- * APIC command line parameters
+- */
+-static int __init parse_lapic(char *arg)
+-{
+-	force_enable_local_apic = 1;
+-	return 0;
+-}
+-early_param("lapic", parse_lapic);
+ /* Local APIC was disabled by the BIOS and enabled by the kernel */
+ static int enabled_via_apicbase;
+ 
+@@ -133,6 +118,25 @@ static inline void imcr_apic_to_pic(void)
+ }
+ #endif
+ 
++/*
++ * Knob to control our willingness to enable the local APIC.
++ *
++ * +1=force-enable
++ */
++static int force_enable_local_apic __initdata;
++/*
++ * APIC command line parameters
++ */
++static int __init parse_lapic(char *arg)
++{
++	if (config_enabled(CONFIG_X86_32) && !arg)
++		force_enable_local_apic = 1;
++	else if (!strncmp(arg, "notscdeadline", 13))
++		setup_clear_cpu_cap(X86_FEATURE_TSC_DEADLINE_TIMER);
++	return 0;
++}
++early_param("lapic", parse_lapic);
++
+ #ifdef CONFIG_X86_64
+ static int apic_calibrate_pmtmr __initdata;
+ static __init int setup_apicpmtimer(char *s)
+@@ -315,6 +319,7 @@ int lapic_get_maxlvt(void)
+ 
+ /* Clock divisor */
+ #define APIC_DIVISOR 16
++#define TSC_DIVISOR  32
+ 
+ /*
+  * This function sets up the local APIC timer, with a timeout of
+@@ -333,6 +338,9 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
+ 	lvtt_value = LOCAL_TIMER_VECTOR;
+ 	if (!oneshot)
+ 		lvtt_value |= APIC_LVT_TIMER_PERIODIC;
++	else if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER))
++		lvtt_value |= APIC_LVT_TIMER_TSCDEADLINE;
++
+ 	if (!lapic_is_integrated())
+ 		lvtt_value |= SET_APIC_TIMER_BASE(APIC_TIMER_BASE_DIV);
+ 
+@@ -341,6 +349,11 @@ static void __setup_APIC_LVTT(unsigned int clocks, int oneshot, int irqen)
+ 
+ 	apic_write(APIC_LVTT, lvtt_value);
+ 
++	if (lvtt_value & APIC_LVT_TIMER_TSCDEADLINE) {
++		printk_once(KERN_DEBUG "TSC deadline timer enabled\n");
++		return;
++	}
++
+ 	/*
+ 	 * Divide PICLK by 16
+ 	 */
+@@ -453,6 +466,15 @@ static int lapic_next_event(unsigned long delta,
  	return 0;
  }
  
-+static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
++static int lapic_next_deadline(unsigned long delta,
++			       struct clock_event_device *evt)
 +{
-+	/*
-+	 * Don't forget to update Documentation/ on changes.
-+	 */
-+
-+#define __seq_show_vmflag(_f, _s)		\
-+	do {					\
-+		if (vma->vm_flags & (_f))	\
-+			seq_puts(m, _s);	\
-+	} while (0)
-+
-+	seq_puts(m, "VmFlags: ");
-+
-+	__seq_show_vmflag(VM_READ,	"rd ");
-+	__seq_show_vmflag(VM_WRITE,	"wr ");
-+	__seq_show_vmflag(VM_EXEC,	"ex ");
-+	__seq_show_vmflag(VM_SHARED,	"sh ");
-+	__seq_show_vmflag(VM_MAYREAD,	"mr ");
-+	__seq_show_vmflag(VM_MAYWRITE,	"mw ");
-+	__seq_show_vmflag(VM_MAYEXEC,	"me ");
-+	__seq_show_vmflag(VM_MAYSHARE,	"ms ");
-+	__seq_show_vmflag(VM_GROWSDOWN,	"gd ");
-+	__seq_show_vmflag(VM_PFNMAP,	"pf ");
-+	__seq_show_vmflag(VM_DENYWRITE,	"dw ");
-+	__seq_show_vmflag(VM_LOCKED,	"lo ");
-+	__seq_show_vmflag(VM_IO,	"io ");
-+	__seq_show_vmflag(VM_SEQ_READ,	"sr ");
-+	__seq_show_vmflag(VM_RAND_READ,	"rr ");
-+	__seq_show_vmflag(VM_DONTCOPY,	"dc ");
-+	__seq_show_vmflag(VM_DONTEXPAND,"de ");
-+	__seq_show_vmflag(VM_ACCOUNT,	"ac ");
-+	__seq_show_vmflag(VM_NORESERVE,	"nr ");
-+	__seq_show_vmflag(VM_HUGETLB,	"ht ");
-+	__seq_show_vmflag(VM_NONLINEAR,	"nl ");
-+	__seq_show_vmflag(VM_ARCH_1,	"ar ");
-+	__seq_show_vmflag(VM_DONTDUMP,	"dd ");
-+	__seq_show_vmflag(VM_MIXEDMAP,	"mm ");
-+	__seq_show_vmflag(VM_HUGEPAGE,	"hg ");
-+	__seq_show_vmflag(VM_NOHUGEPAGE,"nh ");
-+	__seq_show_vmflag(VM_MERGEABLE,	"mg ");
-+
-+	seq_putc(m, '\n');
-+
-+#undef __seq_show_vmflag
++	u64 tsc;
++	rdtscll(tsc);
++	wrmsrl(MSR_IA32_TSC_DEADLINE, tsc + (((u64) delta) * TSC_DIVISOR));
++	return 0;
 +}
 +
- static int show_smap(struct seq_file *m, void *v, int is_pid)
- {
- 	struct proc_maps_private *priv = m->private;
-@@ -535,6 +582,8 @@ static int show_smap(struct seq_file *m,
- 		seq_printf(m, "Nonlinear:      %8lu kB\n",
- 				mss.nonlinear >> 10);
+ /*
+  * Setup the lapic timer in periodic or oneshot mode
+  */
+@@ -533,7 +555,15 @@ static void __cpuinit setup_APIC_timer(void)
+ 	memcpy(levt, &lapic_clockevent, sizeof(*levt));
+ 	levt->cpumask = cpumask_of(smp_processor_id());
  
-+	show_smap_vma_flags(m, vma);
-+
- 	if (m->count < m->size)  /* vma is copied successfully */
- 		m->version = (vma != get_gate_vma(task->mm))
- 			? vma->vm_start : 0;
+-	clockevents_register_device(levt);
++	if (this_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
++		levt->features &= ~(CLOCK_EVT_FEAT_PERIODIC |
++				    CLOCK_EVT_FEAT_DUMMY);
++		levt->set_next_event = lapic_next_deadline;
++		clockevents_config_and_register(levt,
++						(tsc_khz / TSC_DIVISOR) * 1000,
++						0xF, ~0UL);
++	} else
++		clockevents_register_device(levt);
+ }
+ 
+ /*
+@@ -661,7 +691,9 @@ static int __init calibrate_APIC_clock(void)
+ 	 * in the clockevent structure and return.
+ 	 */
+ 
+-	if (lapic_timer_frequency) {
++	if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER)) {
++		return 0;
++	} else if (lapic_timer_frequency) {
+ 		apic_printk(APIC_VERBOSE, "lapic timer already calibrated %d\n",
+ 				lapic_timer_frequency);
+ 		lapic_clockevent.mult = div_sc(lapic_timer_frequency/APIC_DIVISOR,
+
+
