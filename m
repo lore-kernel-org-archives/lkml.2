@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2JVOQj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:16:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:59628 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab2JVOQi (ORCPT
+	id S1754927Ab2JVOVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:21:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53240 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754727Ab2JVOVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:16:38 -0400
-Date: Mon, 22 Oct 2012 10:16:34 -0400
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/19] x86, mm: Align start address to correct big page
- size
-Message-ID: <20121022141633.GB14193@konrad-lan.dumpdata.com>
-References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
- <1350593430-24470-3-git-send-email-yinghai@kernel.org>
+	Mon, 22 Oct 2012 10:21:34 -0400
+Date: Mon, 22 Oct 2012 10:21:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+In-Reply-To: <20121022075611.GC14033@arwen.pp.htv.fi>
+Message-ID: <Pine.LNX.4.44L0.1210221020190.1724-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350593430-24470-3-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Thu, Oct 18, 2012 at 01:50:10PM -0700, Yinghai Lu wrote:
+On Mon, 22 Oct 2012, Felipe Balbi wrote:
 
-
-I am pretty sure I gave you some ideas of how to fix up the commit
-description in earlier reviews, but it looks like you missed them.
-
-Let me write them here once more.
-
-> We are going to use buffer in BRK to pre-map page table buffer.
-
-What buffer? Is buffer the same thing as page table?
+> Hi,
 > 
-> Page table buffer could be only page aligned, but range around it are
-
-.. ranges
-> ram too, we could use bigger page to map it to avoid small pages.
+> On Fri, Oct 19, 2012 at 10:29:35AM -0600, Stephen Warren wrote:
+> > On 10/19/2012 09:35 AM, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Fri, Oct 19, 2012 at 04:08:05PM +0530, Venu Byravarasu wrote:
+> > >> NVIDIA produces several Tegra SoCs viz Tegra20, Tegra30 etc. In
+> > >> order to support USB PHY drivers on these SoCs, existing PHY
+> > >> driver is split into SoC agnostic common USB PHY driver and
+> > >> Tegra20-specific USB phy driver. This will facilitate easy
+> > >> addition and deletion of phy drivers for Tegra SoCs.
+> > >> 
+> > >> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> > > 
+> > > I was reading this "driver" more closely and I have a bunch of
+> > > questions about it, but the most important of all of them is: "why
+> > > isn't that a real PHY driver ?". It doesn't have a probe()
+> > > function, it doesn't use struct usb_phy to represent the PHY, it
+> > > has a bunch of tegra-specific APIs and we can't let those
+> > > continue.
+> > 
+> > One question here: If the PHY "driver" API changes, there will need to
+> > be a bunch of ehci-tegra.c changes too. Will you take all those
 > 
-> We will adjust page_size_mask in next patch to use big page size for
-
-Instead of saying "next patch" - include the title of the patch
-so that one can search for it.
-
-> small ram range.
+> hmm.. indeed.
 > 
-> Before that, this patch will make start address to be aligned down
-
-s/will make/made/
-
-> according to bigger page size, otherwise entry in page page will
-> not have correct value.
-
-
-I would structure this git commit description to first introduce
-the problem.
-
-Say at the start of the patch:
-
-"Before this patch, the start address was aligned down according
-to bigger a page size (1GB, 2MB). This is a problem b/c an
-entry in the page table will not have correct value. "
-
-Here can you explain why it does not have the correct value?
-
+> > through the PHY tree? If you expect to do that, then I'd like to
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/mm/init_32.c |    1 +
->  arch/x86/mm/init_64.c |    5 +++--
->  2 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-> index 11a5800..27f7fc6 100644
-> --- a/arch/x86/mm/init_32.c
-> +++ b/arch/x86/mm/init_32.c
-> @@ -310,6 +310,7 @@ repeat:
->  					__pgprot(PTE_IDENT_ATTR |
->  						 _PAGE_PSE);
->  
-> +				pfn &= PMD_MASK >> PAGE_SHIFT;
->  				addr2 = (pfn + PTRS_PER_PTE-1) * PAGE_SIZE +
->  					PAGE_OFFSET + PAGE_SIZE-1;
->  
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index ab558eb..f40f383 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -461,7 +461,7 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  			pages++;
->  			spin_lock(&init_mm.page_table_lock);
->  			set_pte((pte_t *)pmd,
-> -				pfn_pte(address >> PAGE_SHIFT,
-> +				pfn_pte((address & PMD_MASK) >> PAGE_SHIFT,
->  					__pgprot(pgprot_val(prot) | _PAGE_PSE)));
->  			spin_unlock(&init_mm.page_table_lock);
->  			last_map_addr = next;
-> @@ -536,7 +536,8 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  			pages++;
->  			spin_lock(&init_mm.page_table_lock);
->  			set_pte((pte_t *)pud,
-> -				pfn_pte(addr >> PAGE_SHIFT, PAGE_KERNEL_LARGE));
-> +				pfn_pte((addr & PUD_MASK) >> PAGE_SHIFT,
-> +					PAGE_KERNEL_LARGE));
->  			spin_unlock(&init_mm.page_table_lock);
->  			last_map_addr = next;
->  			continue;
-> -- 
-> 1.7.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> I can take those if Alan is ok with it :-) Alan ?
+
+I don't mind a bit.  It's kind of difficult for me to review changes to 
+the platform-specific parts of the these drivers, anyway.  I have no 
+way to test them and I'm not familiar with the interfaces involved.
+
+Alan Stern
+
