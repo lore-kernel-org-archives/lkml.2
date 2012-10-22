@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932119Ab2JVOvz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 10:51:55 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:50406 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755295Ab2JVOvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 10:51:46 -0400
-From: ciminaghi@gnudd.com
-To: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
-        broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, Davide Ciminaghi <ciminaghi@gnudd.com>
-Subject: [PATCH 09/10] drivers/mfd/sta2x11-mfd: add defines for some sta2x11 sctl registers
-Date: Mon, 22 Oct 2012 16:50:40 +0200
-Message-Id: <1350917441-4478-10-git-send-email-ciminaghi@gnudd.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
-References: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
+	id S932135Ab2JVOwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 10:52:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48790 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295Ab2JVOwB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 10:52:01 -0400
+Date: Mon, 22 Oct 2012 15:57:01 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH 00/21] TTY buffer in tty_port and other stuff
+Message-ID: <20121022155701.2d51893f@pyramind.ukuu.org.uk>
+In-Reply-To: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
+References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
+On Thu, 18 Oct 2012 22:26:26 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-These are required for the clock infrastructure code to properly configure
-and control the sta2x11 PLLs.
+> Hi,
+> 
+> this is the fifth series of patches which finally move tty buffers
+> from tty_struct (present from open to close/hangup) to tty_port
+> (present as long as the device). This allows us to get rid of the tty
+> refcounting in the interrupt service routines and other hot paths
+> after we are done. This is because we do not need to handle races
+> among ISRs, timers, hangups and others, because tty_port lives as long
+> as an interrupt/timer tick may occur. Unlike tty_struct.
 
-Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
----
- include/linux/mfd/sta2x11-mfd.h |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+Looks good to me working through them
 
-diff --git a/include/linux/mfd/sta2x11-mfd.h b/include/linux/mfd/sta2x11-mfd.h
-index 08cad95..9a855ac 100644
---- a/include/linux/mfd/sta2x11-mfd.h
-+++ b/include/linux/mfd/sta2x11-mfd.h
-@@ -246,8 +246,29 @@ u32 sta2x11_sctl_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val)
- #define SCTL_SCCTL		0x00	/* System controller control register */
- #define SCTL_ARMCFG		0x04	/* ARM configuration register */
- #define SCTL_SCPLLCTL		0x08	/* PLL control status register */
-+
-+#define SCTL_SCPLLCTL_AUDIO_PLL_PD	     BIT(1)
-+#define SCTL_SCPLLCTL_FRAC_CONTROL	     BIT(3)
-+#define SCTL_SCPLLCTL_STRB_BYPASS	     BIT(6)
-+#define SCTL_SCPLLCTL_STRB_INPUT	     BIT(8)
-+
- #define SCTL_SCPLLFCTRL		0x0c	/* PLL frequency control register */
-+
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_NDIV_MASK	0xff
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_NDIV_SHIFT	  10
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_IDF_MASK	   7
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_IDF_SHIFT	  21
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_ODF_MASK	   7
-+#define SCTL_SCPLLFCTRL_AUDIO_PLL_ODF_SHIFT	  18
-+#define SCTL_SCPLLFCTRL_DITHER_DISABLE_MASK     0x03
-+#define SCTL_SCPLLFCTRL_DITHER_DISABLE_SHIFT       4
-+
-+
- #define SCTL_SCRESFRACT		0x10	/* PLL fractional input register */
-+
-+#define SCTL_SCRESFRACT_MASK	0x0000ffff
-+
-+
- #define SCTL_SCRESCTRL1		0x14	/* Peripheral reset control 1 */
- #define SCTL_SCRESXTRL2		0x18	/* Peripheral reset control 2 */
- #define SCTL_SCPEREN0		0x1c	/* Peripheral clock enable register 0 */
--- 
-1.7.10.4
-
+Acked-by: Alan Cox <alan@linux.intel.com>
