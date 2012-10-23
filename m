@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab2JWDCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 23:02:36 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:34947 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab2JWDCe (ORCPT
+	id S1751958Ab2JWDDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 23:03:41 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47099 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab2JWDDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 23:02:34 -0400
-Message-ID: <508608C6.7050605@gmail.com>
-Date: Tue, 23 Oct 2012 07:02:30 +0400
-From: Max Filippov <jcmvbkbc@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
+	Mon, 22 Oct 2012 23:03:39 -0400
+Date: Mon, 22 Oct 2012 20:04:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
 To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
         jooyoung.hwang@samsung.com
-Subject: Re: [PATCH 07/16 v2] f2fs: add segment operations
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com> <001701cdb0c6$21c2a530$6547ef90$%kim@samsung.com>
-In-Reply-To: <001701cdb0c6$21c2a530$6547ef90$%kim@samsung.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 16/16 v2] f2fs: update Kconfig and Makefile
+Message-ID: <20121023030407.GA22018@kroah.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+ <002001cdb0c6$c9527550$5bf75ff0$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <002001cdb0c6$c9527550$5bf75ff0$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Tue, Oct 23, 2012 at 11:33:28AM +0900, Jaegeuk Kim wrote:
+> +config F2FS_STAT_FS
+> +	bool "F2FS Status Information"
+> +	depends on F2FS_FS
+> +	default y
+> +	help
+> +	  /proc/fs/f2fs/ contains information about partitions mounted as f2fs.
+> +	  For each partition, a corresponding directory, named as its device
+> +	  name, is provided with the following proc entries.
+> +
+> +	  f2fs_stat	major file system information managed by f2fs currently
+> +	  f2fs_sit_stat	average SIT information about whole segments
+> +	  f2fs_mem_stat	current memory footprint consumed by f2fs
+> +
+> +	  e.g., in /proc/fs/f2fs/sdb1/
 
-Building f2fs for ARM gives the following error:
+Again, I will point out that this should either be in debugfs, or in
+/sys/fs/ but it should NOT be in /proc/ at all.
 
-  CC      fs/f2fs/segment.o
-  CC      fs/f2fs/recovery.o
-fs/f2fs/segment.c: In function 'build_sit_info':
-fs/f2fs/segment.c:1399:2: error: implicit declaration of function 'vzalloc' [-Werror=implicit-function-declaration]
-fs/f2fs/segment.c:1399:18: warning: assignment makes pointer from integer without a cast [enabled by default]
-fs/f2fs/segment.c:1419:22: warning: assignment makes pointer from integer without a cast [enabled by default]
-fs/f2fs/segment.c: In function 'destroy_sit_info':
-fs/f2fs/segment.c:1777:2: error: implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
+If you need help, I will be glad to do this conversion, just let me know
+and I'll send you a patch on top of this series that moves these entries
+into debugfs, which is where I think they really belong.
 
-The following fixes that:
+thanks,
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 57d0931..5bab838 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -12,6 +12,7 @@
- #include <linux/f2fs_fs.h>
- #include <linux/bio.h>
- #include <linux/blkdev.h>
-+#include <linux/vmalloc.h>
-
- #include "f2fs.h"
- #include "segment.h"
-
--- 
-Thanks.
--- Max
+greg k-h
