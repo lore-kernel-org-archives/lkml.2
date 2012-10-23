@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab2JWJhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:37:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48104 "EHLO mx2.suse.de"
+	id S1756972Ab2JWJnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:43:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48397 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756956Ab2JWJhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:37:41 -0400
+	id S1753027Ab2JWJnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 05:43:19 -0400
+Date: Tue, 23 Oct 2012 11:43:17 +0200
 From: Michal Hocko <mhocko@suse.cz>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
-        Len Brown <len.brown@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH] mm: make zone_pcp_reset independ on MEMORY_HOTREMOVE
-Date: Tue, 23 Oct 2012 11:37:27 +0200
-Message-Id: <1350985047-23148-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10.4
+To: Qiang Gao <gaoqiangscut@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, bsingharora@gmail.com
+Subject: Re: process hangs on do_exit when oom happens
+Message-ID: <20121023094317.GC15397@dhcp22.suse.cz>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+ <20121019160425.GA10175@dhcp22.suse.cz>
+ <CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
+ <20121023083556.GB15397@dhcp22.suse.cz>
+ <CAKWKT+ZG-Rw5spLUdn74H3QQ1RGrax2B4X_ksZB-OCHY5WXC6w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKWKT+ZG-Rw5spLUdn74H3QQ1RGrax2B4X_ksZB-OCHY5WXC6w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-340175b7 (mm/hotplug: free zone->pageset when a zone becomes empty)
-introduced zone_pcp_reset and hided it inside CONFIG_MEMORY_HOTREMOVE.
-The function is since 506e5fb7 (memory-hotplug: allocate zone's pcp
-before onlining pages) called also called from online_pages which
-is called outside CONFIG_MEMORY_HOTREMOVE which causes a linkage error.
+On Tue 23-10-12 17:08:40, Qiang Gao wrote:
+> this is just an example to show how to reproduce. actually,the first time I saw
+> this situation was on a machine with 288G RAM with many tasks running and
+> we limit 30G for each.  but finanlly, no one exceeds this limit the the system
+> oom.
 
-The function, although not used outside of MEMORY_{HOTPLUT,HOTREMOVE},
-seems like universal enough so let's keep it at its current location
-and only remove the HOTREMOVE guard.
+Yes but mentioning memory controller then might be misleading... It
+seems that the only factor in your load is the cpu controller.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
----
- mm/page_alloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e29912e..30e359c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5981,7 +5981,6 @@ void __meminit zone_pcp_update(struct zone *zone)
- }
- #endif
- 
--#ifdef CONFIG_MEMORY_HOTREMOVE
- void zone_pcp_reset(struct zone *zone)
- {
- 	unsigned long flags;
-@@ -6001,6 +6000,7 @@ void zone_pcp_reset(struct zone *zone)
- 	local_irq_restore(flags);
- }
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
-  */
+And please stop top-posting. It makes the discussion messy.
 -- 
-1.7.10.4
-
+Michal Hocko
+SUSE Labs
