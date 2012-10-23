@@ -1,87 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756807Ab2JWR5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:57:14 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53893 "EHLO arroyo.ext.ti.com"
+	id S1756856Ab2JWR51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:57:27 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:10869 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756657Ab2JWR5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:57:12 -0400
-Date: Tue, 23 Oct 2012 20:51:23 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mitch Bradley <wmb@firmworks.com>
-CC: <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121023175123.GB32517@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121022155028.GA13791@core.coreip.homeip.net>
- <CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com>
- <508664CA.7000601@ti.com>
- <CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com>
- <20121023100333.GA24418@arwen.pp.htv.fi>
- <5086CD91.9070101@firmworks.com>
- <20121023172035.GB32167@arwen.pp.htv.fi>
- <5086D91A.5080109@firmworks.com>
+	id S1756812Ab2JWR5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:57:25 -0400
+X-IronPort-AV: E=Sophos;i="4.80,637,1344236400"; 
+   d="scan'208";a="703336925"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Nix <nix@esperi.org.uk>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, "Ted Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
+ (also an unrelated ext4 data loss bug)
+Thread-Topic: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
+ (also an unrelated ext4 data loss bug)
+Thread-Index: AQHNsUTm4bFApwWkDUaJq39XtFx3BJfHKAYwgAB6eYA=
+Date: Tue, 23 Oct 2012 17:57:21 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA90928CE09@SACEXCMBX04-PRD.hq.netapp.com>
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	 <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	 <20121023143019.GA3040@fieldses.org>	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	 <20121023164621.GC3040@fieldses.org>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
+	 <87vce1w241.fsf@spindle.srvr.nix> <87r4opw0og.fsf@spindle.srvr.nix>
+	 <4FA345DA4F4AE44899BD2B03EEEC2FA90928CD7F@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90928CD7F@SACEXCMBX04-PRD.hq.netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <9A81F1147AE73745A63A06D46F68C098@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
-Content-Disposition: inline
-In-Reply-To: <5086D91A.5080109@firmworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9NHvWjY005040
 
---tsOsTdHNUZQcU9Ye
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-10-23 at 17:44 +0000, Myklebust, Trond wrote:
+> You can't hold a spinlock while sleeping. Both mutex_lock() and nsm_create() can definitely sleep.
+> 
+> The correct way to do this is to grab the spinlock and recheck the value of ln->nsm_users inside the 'if (!IS_ERR())' condition. If it is still zero, bump it and set ln->nsm_clnt, otherwise bump it, get the existing ln->nsm_clnt and call rpc_shutdown_clnt() on the redundant nsm client after dropping the spinlock.
+> 
+> Cheers
+>   Trond
 
-Hi,
+Can you please check if the following patch fixes the issue?
 
-(please don't top-post)
+Cheers
+  Trond
 
-On Tue, Oct 23, 2012 at 07:51:22AM -1000, Mitch Bradley wrote:
-> Perhaps I misunderstood what you were suggesting.  I thought that, when
-> you said "explicitly manage all their resources", you meant that the
-> driver should know the platform-specific details about clocks and power
-> domains.  That is one possible interpretation of the word "explicit".
+8<--------------------------------------------------------
+>From 44a070455d246e09de0cefc8875833f21ca655e8 Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date: Tue, 23 Oct 2012 13:51:58 -0400
+Subject: [PATCH] LOCKD: fix races in nsm_client_get
 
-we had two suggestions in the thread:
+Commit e9406db20fecbfcab646bad157b4cfdc7cadddfb (lockd: per-net
+NSM client creation and destruction helpers introduced) contains
+a nasty race on initialisation of the per-net NSM client because
+it doesn't check whether or not the client is set after grabbing
+the nsm_create_mutex.
 
-1) handle it in driver source code (explict)
-2) handle at bus notifiers level (hidden)
+Reported-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+ fs/lockd/mon.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-archives would've helped you clear up that confusion ;-)
+diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+index e4fb3ba..9755603 100644
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -88,7 +88,7 @@ static struct rpc_clnt *nsm_create(struct net *net)
+ static struct rpc_clnt *nsm_client_get(struct net *net)
+ {
+ 	static DEFINE_MUTEX(nsm_create_mutex);
+-	struct rpc_clnt	*clnt;
++	struct rpc_clnt	*clnt, *new;
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 
+ 	spin_lock(&ln->nsm_clnt_lock);
+@@ -101,11 +101,19 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
+ 	spin_unlock(&ln->nsm_clnt_lock);
+ 
+ 	mutex_lock(&nsm_create_mutex);
+-	clnt = nsm_create(net);
+-	if (!IS_ERR(clnt)) {
+-		ln->nsm_clnt = clnt;
+-		smp_wmb();
+-		ln->nsm_users = 1;
++	new = nsm_create(net);
++	clnt = new;
++	if (!IS_ERR(new)) {
++		spin_lock(&ln->nsm_clnt_lock);
++		if (!ln->nsm_users) {
++			ln->nsm_clnt = new;
++			new = NULL;
++		}
++		clnt = ln->nsm_clnt;
++		ln->nsm_users++;
++		spin_unlock(&ln->nsm_clnt_lock);
++		if (new)
++			rpc_shutdown_client(new);
+ 	}
+ 	mutex_unlock(&nsm_create_mutex);
+ out:
+-- 
+1.7.11.7
 
---=20
-balbi
 
---tsOsTdHNUZQcU9Ye
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhtkbAAoJEIaOsuA1yqREz2MP+wVOhQyD6TzW0tcGDMMS8MPH
-ckHhQ8hdoyfwlMI+9z99Fc1ckwGAt6rcP8w6AQY4Pi9jNB1f9GMr8Yy2PAaS23MF
-jtYTRnEUOHDfs1cehkXVts1fqc6aQnVw6quBEo0zmF9nO0dntvOSJahBoevaEgMi
-S1D0PEtOeQw3FDnRSeYwizBndRtvBll24G1tZ8drI20J98pUXKl9nCeKIGkUtvl+
-pkRPY0scJu+d00mVMu40vJZEDba6data70CxCnuoiySpIsb8nNDQ/2DtyoVJrCQB
-kn+fcaDC06al+jP5Koa0VKBIYVKywhwpdTUiQs3N5uAx/781J5IGldV1xemZ9s2L
-heQNx5HWjt3URgIf6jHyh2GBdfLmbH1LhIE+kxZNnYuc27EJqpYzS5UjnSkrUJ2Q
-ghwfpdDGAVzyVys5sWv/h7xgZ2yV7VqtZqOhzd1ZM9QOjZ7JD6GXI6sPoka/zn1U
-Bgci0/uaWpmXTEvc2zxBpz8vap58a15ONmSRz4QmkUYW+Pzz9+keWZ83xWBV1fMx
-9Nz/Q24YETq6pybVqY98nN4Bk9xFukU04GpA8T+8wfBMNzE5q52b6uG5hmuloHNM
-ov2YI9ONLetyUtFh0tpAu8Vq+eYmOX9YVtnhLoL472EVjngqRP7otvOv5hkQAlRG
-QcZHo/D99ab33Es+0sFu
-=Dt2e
------END PGP SIGNATURE-----
-
---tsOsTdHNUZQcU9Ye--
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
