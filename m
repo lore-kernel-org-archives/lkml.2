@@ -1,109 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447Ab2JWUJa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:09:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63055 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450Ab2JWUJ0 (ORCPT
+	id S964942Ab2JWUJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:09:37 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:22222
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933418Ab2JWUJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:09:26 -0400
-Message-ID: <5086F973.6050309@gmail.com>
-Date: Tue, 23 Oct 2012 15:09:23 -0500
-From: Rob Herring <robherring2@gmail.com>
+	Tue, 23 Oct 2012 16:09:33 -0400
+X-Forefront-Antispam-Report: CIP:157.56.240.117;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0610HT003.namprd06.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: PS-3(zzbb2dI98dI9371Izz1202h1d1ah1d2ahzzz2fh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+Message-ID: <5086F963.9070503@convergeddevices.net>
+Date: Tue, 23 Oct 2012 13:09:07 -0700
+From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Josh Cartwright <josh.cartwright@ni.com>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>
-Subject: Re: [PATCH v2 2/4] zynq: move static peripheral mappings
-References: <20121022211219.GC31538@beefymiracle.amer.corp.natinst.com> <201210231450.11540.arnd@arndb.de>
-In-Reply-To: <201210231450.11540.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <hverkuil@xs4all.nl>, <mchehab@redhat.com>, <sameo@linux.intel.com>,
+        <perex@perex.cz>, <tiwai@suse.de>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 6/6] Add a codec driver for SI476X MFD
+References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net> <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net> <20121023192448.GB18814@opensource.wolfsonmicro.com>
+In-Reply-To: <20121023192448.GB18814@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.160.178.141]
+X-OriginatorOrg: convergeddevices.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 09:50 AM, Arnd Bergmann wrote:
-> On Monday 22 October 2012, Josh Cartwright wrote:
->> Shifting them up into the vmalloc region prevents the following warning,
->> when booting a zynq qemu target with more than 512mb of RAM:
->>
->>   BUG: mapping for 0xe0000000 at 0xe0000000 out of vmalloc space
->>
->> In addition, it allows for reuse of these mappings when the proper
->> drivers issue requests via ioremap().
->>
->> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> 
-> This looks like a bug fix that should be backported to older kernels,
-> so it would be good to add 'Cc: stable@vger.kernel.org' below your
-> Signed-off-by.
-> 
-> 
->> diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
->> index d0d3f8f..ae3b236 100644
->> --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
->> +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
->> @@ -15,33 +15,37 @@
->>  #ifndef __MACH_XILINX_SOC_H__
->>  #define __MACH_XILINX_SOC_H__
->>  
->> +#include <asm/pgtable.h>
->> +
->>  #define PERIPHERAL_CLOCK_RATE		2500000
->>  
->> -/* For now, all mappings are flat (physical = virtual)
->> +/* Static peripheral mappings are mapped at the top of the
->> + * vmalloc region
->>   */
->> -#define UART0_PHYS			0xE0000000
->> -#define UART0_VIRT			UART0_PHYS
->> +#define UART0_PHYS		0xE0000000
->> +#define UART0_SIZE		SZ_4K
->> +#define UART0_VIRT		(VMALLOC_END - UART0_SIZE)
-> 
-> There are plans to move the uart location into a fixed virtual
-> address in the future, but it hasn't been decided yet.
-> It will still need a fixed mapping though, just to a different
-> address.
-> 
->> -#define TTC0_PHYS			0xF8001000
->> -#define TTC0_VIRT			TTC0_PHYS
->> +#define TTC0_PHYS		0xF8001000
->> +#define TTC0_SIZE		SZ_4K
->> +#define TTC0_VIRT		(UART0_VIRT - TTC0_SIZE)
-> 
-> It's quite likely that this does not have to be a fixed mapping
-> any more. Just have a look at how drivers/clocksource/dw_apb_timer_of.c
-> calls of_iomap() to get the address.
-> 
->> -#define PL310_L2CC_PHYS			0xF8F02000
->> -#define PL310_L2CC_VIRT			PL310_L2CC_PHYS
->> +#define PL310_L2CC_PHYS		0xF8F02000
->> +#define PL310_L2CC_SIZE		SZ_4K
->> +#define PL310_L2CC_VIRT		(TTC0_VIRT - PL310_L2CC_SIZE)
-> 
-> This address would not need a fixed mapping by calling l2x0_of_init
-> rather than l2x0_init.
-> 
->> -#define SCU_PERIPH_PHYS			0xF8F00000
->> -#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
->> +#define SCU_PERIPH_PHYS		0xF8F00000
->> +#define SCU_PERIPH_SIZE		SZ_8K
->> +#define SCU_PERIPH_VIRT		(PL310_L2CC_VIRT - SCU_PERIPH_SIZE)
-> 
-> And your patch 3 already obsoletes this mapping.
+On 10/23/2012 12:24 PM, Mark Brown wrote:
+> On Tue, Oct 23, 2012 at 11:44:32AM -0700, Andrey Smirnov wrote:
+>> This commit add a sound codec driver for Silicon Laboratories 476x
+>> series of AM/FM radio chips.
+> I already merged a driver for this.  If there are any changes you should
+> send incremental updates rather than a full new driver.
 
-Actually, it's probably still needed. The smp platform code typically
-reads the number of cores from the SCU and the mapping has to be in
-place before ioremap is up. I don't think there is an architected way to
-get the number of cores, but it would be nice to avoid this early SCU
-access. We could also mandate getting the core count from DT instead.
+ OK, will do.
 
-Also, the physical address can be read with this on A9's:
-
-        asm("mrc p15, 4, %0, c15, c0, 0" : "=r" (base));
-
-Rob
