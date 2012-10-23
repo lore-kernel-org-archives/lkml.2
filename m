@@ -1,79 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab2JWVnH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:43:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51138 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796Ab2JWVnG (ORCPT
+	id S1754681Ab2JWVqN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:46:13 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41805 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab2JWVqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:43:06 -0400
-Date: Tue, 23 Oct 2012 19:42:58 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 063/193] drivers/media: remove CONFIG_EXPERIMENTAL
-Message-ID: <20121023194258.465965c5@infradead.org>
-In-Reply-To: <1351022666-6960-64-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-64-git-send-email-keescook@chromium.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 23 Oct 2012 17:46:10 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Mike Turquette <mturquette@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [RFC PATCH] dt: describe base reset signal binding
+Date: Tue, 23 Oct 2012 15:45:56 -0600
+Message-Id: <1351028756-22309-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
+From: Stephen Warren <swarren@nvidia.com>
 
-Em Tue, 23 Oct 2012 13:02:16 -0700
-Kees Cook <keescook@chromium.org> escreveu:
+This binding is intended to represent the hardware reset signals present
+internally in most IC (SoC, FPGA, ...) designs.
 
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
-> 
-> CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+Such a binding would allow the creation of a "reset subsystem", which
+could replace APIs such as the following Tegra-specific API:
 
-For all patches on this series that you c/c me:
+void tegra_periph_reset_deassert(struct clk *c);
+void tegra_periph_reset_assert(struct clk *c);
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+(Note that at present, Tegra couples reset assertion with the clock for
+the affected peripheral module. However, reset and clocking are two
+separate, yet admittedly related, concepts).
 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/media/Kconfig |    7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-> index 4ef0d80..8567a7a 100644
-> --- a/drivers/media/Kconfig
-> +++ b/drivers/media/Kconfig
-> @@ -79,8 +79,7 @@ config MEDIA_RC_SUPPORT
->  #
->  
->  config MEDIA_CONTROLLER
-> -	bool "Media Controller API (EXPERIMENTAL)"
-> -	depends on EXPERIMENTAL
-> +	bool "Media Controller API"
->  	depends on MEDIA_CAMERA_SUPPORT
->  	---help---
->  	  Enable the media controller API used to query media devices internal
-> @@ -100,8 +99,8 @@ config VIDEO_DEV
->  	default y
->  
->  config VIDEO_V4L2_SUBDEV_API
-> -	bool "V4L2 sub-device userspace API (EXPERIMENTAL)"
-> -	depends on VIDEO_DEV && MEDIA_CONTROLLER && EXPERIMENTAL
-> +	bool "V4L2 sub-device userspace API"
-> +	depends on VIDEO_DEV && MEDIA_CONTROLLER
->  	---help---
->  	  Enables the V4L2 sub-device pad-level userspace API used to configure
->  	  video format, size and frame rate between hardware blocks.
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+What do people think of this? Does it sound like a good idea to go ahead
+with a reset subsystem? Should we simply add a new API to the common clock
+subsystem instead (and assume that reset and clock domains match 1:1).
+Should this be implemented as part of the generic power management domains;
+see include/linux/pm_domain.h instead?
 
+ Documentation/devicetree/bindings/reset/reset.txt |   75 +++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/reset/reset.txt
 
+diff --git a/Documentation/devicetree/bindings/reset/reset.txt b/Documentation/devicetree/bindings/reset/reset.txt
+new file mode 100644
+index 0000000..31db6ff
+--- /dev/null
++++ b/Documentation/devicetree/bindings/reset/reset.txt
+@@ -0,0 +1,75 @@
++= Reset Signal Device Tree Bindings =
++
++This binding is intended to represent the hardware reset signals present
++internally in most IC (SoC, FPGA, ...) designs. Reset signals for whole
++standalone chips are most likely better represented as GPIOs, although there
++are likely to be exceptions to this rule.
++
++Hardware blocks typically receive a reset signal. This signal is generated by
++a reset provider (e.g. power management or clock module) and received by a
++reset consumer (the module being reset, or a module managing when a sub-
++ordinate module is reset). This binding exists to represent the provider and
++consumer, and provide a way to couple the two together.
++
++A reset signal is represented by the phandle of the provider, plus a reset
++specifier - a list of DT cells that represents the reset signal within the
++provider. The length (number of cells) and semantics of the reset specifier
++are dictated by the binding of the reset provider, although common schemes
++are described below.
++
++A word on where to place reset signal consumers in device tree: It is possible
++in hardware for a reset signal to affect multiple logically separate HW blocks
++at once. In this case, it would be unwise to represent this reset signal in
++the DT node of each affected HW block, since if activated, an unrelated block
++may be reset. Instead, reset signals should be represented in the DT node
++where it makes most sense to control it; this may be a bus node if all
++children of the bus are affected by the reset signal, or an individual HW
++block node for dedicated reset signals. The intent of this binding is to give
++appropriate software access to the reset signals in order to manage the HW,
++rather than to slavishly enumerate the reset signal that affects each HW
++block.
++
++= Reset providers =
++
++Required properties:
++#reset-cells:	Number of cells in a reset specifier; Typically 0 for nodes
++		with a single reset output and 1 for nodes with multiple
++		reset outputs.
++
++For example:
++
++	rst: reset-controller {
++		#reset-cells = <1>;
++	};
++
++= Reset consumers =
++
++Required properties:
++resets:		List of phandle and reset specifier pairs, one pair
++		for each reset signal that affects the device, or that the
++		device manages. Note: if the reset provider specifies '0' for
++		#reset-cells, then only the phandle portion of the pair will
++		appear.
++
++Optional properties:
++reset-names:	List of reset signal name strings sorted in the same order as
++		the resets property. Consumers drivers will use reset-names to
++		match reset signal names with reset specifiers.
++
++For example:
++
++	device {
++		resets = <&rst 20>;
++		reset-names = "reset";
++	};
++
++This represents a device with a single reset signal named "reset".
++
++	bus {
++		resets = <&rst 10> <&rst 11> <&rst 12> <&rst 11>;
++		reset-names = "i2s1", "i2s2", "dma", "mixer";
++	};
++
++This represents a bus that controls the reset signal of each of four sub-
++ordinate devices. Consider for example a bus that fails to operate unless no
++child device has reset asserted.
+-- 
+1.7.0.4
 
-
-Cheers,
-Mauro
