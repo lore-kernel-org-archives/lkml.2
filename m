@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab2JWRLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:11:43 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42281 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932821Ab2JWRLm (ORCPT
+	id S1757343Ab2JWRSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:18:42 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49625 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757239Ab2JWRSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:11:42 -0400
-Date: Tue, 23 Oct 2012 13:11:39 -0400 (EDT)
-Message-Id: <20121023.131139.1916916979369476334.davem@davemloft.net>
-To: kay@vrfy.org
-Cc: cardoe@cardoe.com, kaber@trash.net, netdev@vger.kernel.org,
-        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vlan: set sysfs device_type to 'vlan'
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAPXgP10EhtdCT5Bus2+Prfrk0LU3tEeBJq8qq4hK4k=TdiS5qQ@mail.gmail.com>
-References: <1350885237-12998-1-git-send-email-cardoe@cardoe.com>
-	<20121023.023647.2164665243829038911.davem@davemloft.net>
-	<CAPXgP10EhtdCT5Bus2+Prfrk0LU3tEeBJq8qq4hK4k=TdiS5qQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 13:18:40 -0400
+Date: Tue, 23 Oct 2012 18:18:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ciminaghi@gnudd.com
+Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] drivers/mfd/sta2x11-mfd: add regmap support
+Message-ID: <20121023171837.GE4477@opensource.wolfsonmicro.com>
+References: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
+ <1350917441-4478-3-git-send-email-ciminaghi@gnudd.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7cXxibKNEnJOqEg4"
+Content-Disposition: inline
+In-Reply-To: <1350917441-4478-3-git-send-email-ciminaghi@gnudd.com>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 23 Oct 2012 12:34:11 +0200
 
-> On Tue, Oct 23, 2012 at 8:36 AM, David Miller <davem@davemloft.net> wrote:
->> From: Doug Goldstein <cardoe@cardoe.com>
->> Date: Mon, 22 Oct 2012 00:53:57 -0500
->>
->>> Sets the sysfs device_type to 'vlan' for udev. This makes it easier for
->>> applications that query network information via udev to identify vlans
->>> instead of using strrchr().
->>>
->>> Signed-off-by: Doug Goldstein <cardoe@cardoe.com>
->>
->> You're extremely misguided.  This change, in fact, makes it ten times
->> harder for such applications to query such devices.
-> 
-> That makes not much sense, really. Every new interface would fall into
-> that category. At least I can't see any mis-guidance here. The other
-> devtypes for the major netif types are not that much older.
+--7cXxibKNEnJOqEg4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Only interfaces which provide a facility available in another way
-fall into this category.
+On Mon, Oct 22, 2012 at 04:50:33PM +0200, ciminaghi@gnudd.com wrote:
 
-Thanks for the scarecrow, but no.
+> +static bool sta2x11_sctl_writeable_reg(struct device *dev, unsigned int reg)
+> +{
+> +	return !__reg_within_range(reg, SCTL_SCPCIECSBRST, SCTL_SCRSTSTA);
+> +}
+
+This and most of your other readable/writable things look like a
+framework feature waiting to be written - something data driven which
+takes a table of register ranges and goes and does the
+__reg_within_range() check on them.  Seems like it'd be really useful
+for devices like this.
+
+> +static bool sta2x11_apb_soc_regs_writeable_reg(struct device *dev,
+> +					       unsigned int reg)
+> +{
+> +	if (!sta2x11_apb_soc_regs_readable_reg(dev, reg))
+> +		return false;
+> +	return (!__reg_within_range(reg, PCIE_PM_STATUS_0_PORT_0_4,
+> +				    PCIE_PM_STATUS_7_0_EP4) &&
+> +		reg != PCIE_COMMON_CLOCK_CONFIG_0_4_0 &&
+> +		!__reg_within_range(reg, PCIE_SoC_INT_ROUTER_STATUS0_REG,
+> +				    PCIE_SoC_INT_ROUTER_STATUS3_REG) &&
+> +		reg != SYSTEM_CONFIG_STATUS_REG &&
+> +		reg != COMPENSATION_REG1);
+
+For this I'd write a switch statement with the range checks in the
+default: case.  Actually you could just use the GCC switch range
+feature:
+
+	case PCIE_PM_STATUS_0_PORT_0_4..PCIE_PM_STATUS_7_0_EP4:
+
+Either of these would increase readability.
+
+but generally
+
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+--7cXxibKNEnJOqEg4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhtFnAAoJELSic+t+oim9tOkP/i5MFgFmsQkH+eXx7XDUAeZ/
+6BGopUv+xfwgVKf2eFwTPMksEp4/F1CEoXjEiLxiZS0GXQin3Y5mFDFThPJcwqZj
+9KJfYe7+4ZFVxeoAsN8Sl6qp6lQgbLwnejVdZV5hd+A//rPd3IoYcHUrXYnlrS85
+Z/wJCIVsUDc4PsNiu6eK0WiptGLRecFbAX4P9B3zk8IIGwT5oRXFtgKV2UDRBT9e
+whY76S4bzqRHx8K7O2rNpwrkgo5zMxHRcs+VtKeW40wByOyQDk8riSD0E2mFjCOD
+yEoYbjxFZduzgqwJimDYORDRRHV/i/C9HgKf87gnS0ZDXun0zAF2R5ay5WNRITRb
+QRmwjx1ygo3CFnyIQkKZX7uPJmqbb3+LlC9M9C0o+CN/ddkQNbVWwTID9K06n2+O
+6DNrWmmqlSBDwHeBwx72YXUzJlfw2awY/erqUP2zoxWAVKVJOwZhBhnkrC5gYcNs
+xqhWTjM6VigJwH71AmS4drKg9bAqfpvHzg/v3fG/u8efGT1zoMJegAuoIz/c4X6m
+AnSktqfKPHHw1Bp6OsMd4UJVZWWaaD+DNmg4berpusKyBOtV6CpxQpiyc1qtP8bj
+0Q8k/SWFWHPM6KYb9Y7a8CzrCTo02y1Jp73I2yPG5CI7qRUsdR1BeYK1xqOaX1Yi
+SD8uF6JI0gV44yeiWNwj
+=gZcw
+-----END PGP SIGNATURE-----
+
+--7cXxibKNEnJOqEg4--
