@@ -1,165 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965695Ab2JWVQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:16:15 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:56433 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933448Ab2JWUE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:04:59 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 016/193] arch/mips: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:01:29 -0700
-Message-Id: <1351022666-6960-17-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S933641Ab2JWVRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:17:06 -0400
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:40896 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933334Ab2JWT64 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 15:58:56 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
+Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 09/23] zr36067: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:12 -0300
+Message-Id: <1351022246-8201-9-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config item has not carried much meaning for a while now and is
-almost always enabled by default. As agreed during the Linux kernel
-summit, remove it.
+This kind of memcpy() is error-prone. Its replacement with a struct
+assignment is prefered because it's type-safe and much easier to read.
 
-CC: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Found by coccinelle. Hand patched and reviewed.
+Tested by compilation only.
+
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+identifier struct_name;
+struct struct_name to;
+struct struct_name from;
+expression E;
+@@
+-memcpy(&(to), &(from), E);
++to = from;
+// </smpl>
+
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- arch/mips/Kconfig |   21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+ drivers/media/pci/zoran/zoran_card.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index dba9390..e66c2d4 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -169,7 +169,7 @@ config MACH_DECSTATION
- 	select SYS_HAS_CPU_R3000
- 	select SYS_HAS_CPU_R4X00
- 	select SYS_SUPPORTS_32BIT_KERNEL
--	select SYS_SUPPORTS_64BIT_KERNEL if EXPERIMENTAL
-+	select SYS_SUPPORTS_64BIT_KERNEL
- 	select SYS_SUPPORTS_LITTLE_ENDIAN
- 	select SYS_SUPPORTS_128HZ
- 	select SYS_SUPPORTS_256HZ
-@@ -395,7 +395,6 @@ config PNX8550_STB810
- 
- config PMC_MSP
- 	bool "PMC-Sierra MSP chipsets"
--	depends on EXPERIMENTAL
- 	select CEVT_R4K
- 	select CSRC_R4K
- 	select DMA_NONCOHERENT
-@@ -515,8 +514,7 @@ config SGI_IP27
- 	  here.
- 
- config SGI_IP28
--	bool "SGI IP28 (Indigo2 R10k) (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	bool "SGI IP28 (Indigo2 R10k)"
- 	select ARC
- 	select ARC64
- 	select BOOT_ELF64
-@@ -574,7 +572,6 @@ config SGI_IP32
- 
- config SIBYTE_CRHINE
- 	bool "Sibyte BCM91120C-CRhine"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select SIBYTE_BCM1120
-@@ -585,7 +582,6 @@ config SIBYTE_CRHINE
- 
- config SIBYTE_CARMEL
- 	bool "Sibyte BCM91120x-Carmel"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select SIBYTE_BCM1120
-@@ -596,7 +592,6 @@ config SIBYTE_CARMEL
- 
- config SIBYTE_CRHONE
- 	bool "Sibyte BCM91125C-CRhone"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select SIBYTE_BCM1125
-@@ -608,7 +603,6 @@ config SIBYTE_CRHONE
- 
- config SIBYTE_RHONE
- 	bool "Sibyte BCM91125E-Rhone"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select SIBYTE_BCM1125H
-@@ -633,7 +627,6 @@ config SIBYTE_SWARM
- 
- config SIBYTE_LITTLESUR
- 	bool "Sibyte BCM91250C2-LittleSur"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select HAVE_PATA_PLATFORM
-@@ -647,7 +640,6 @@ config SIBYTE_LITTLESUR
- 
- config SIBYTE_SENTOSA
- 	bool "Sibyte BCM91250E-Sentosa"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select DMA_COHERENT
- 	select NR_CPUS_DEFAULT_2
-@@ -799,7 +791,6 @@ config CAVIUM_OCTEON_REFERENCE_BOARD
- 
- config NLM_XLR_BOARD
- 	bool "Netlogic XLR/XLS based systems"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select NLM_COMMON
- 	select SYS_HAS_CPU_XLR
-@@ -828,7 +819,6 @@ config NLM_XLR_BOARD
- 
- config NLM_XLP_BOARD
- 	bool "Netlogic XLP based systems"
--	depends on EXPERIMENTAL
- 	select BOOT_ELF32
- 	select NLM_COMMON
- 	select SYS_HAS_CPU_XLP
-@@ -1405,7 +1395,6 @@ config CPU_R5500
- 
- config CPU_R6000
- 	bool "R6000"
--	depends on EXPERIMENTAL
- 	depends on SYS_HAS_CPU_R6000
- 	select CPU_SUPPORTS_32BIT_KERNEL
- 	help
-@@ -1422,7 +1411,6 @@ config CPU_NEVADA
- 
- config CPU_R8000
- 	bool "R8000"
--	depends on EXPERIMENTAL
- 	depends on SYS_HAS_CPU_R8000
- 	select CPU_HAS_PREFETCH
- 	select CPU_SUPPORTS_64BIT_KERNEL
-@@ -1831,7 +1819,7 @@ config PAGE_SIZE_32KB
- 
- config PAGE_SIZE_64KB
- 	bool "64kB"
--	depends on EXPERIMENTAL && !CPU_R3000 && !CPU_TX39XX
-+	depends on !CPU_R3000 && !CPU_TX39XX
- 	help
- 	  Using 64kB page size will result in higher performance kernel at
- 	  the price of higher memory consumption.  This option is available on
-@@ -2348,8 +2336,7 @@ config HZ
- source "kernel/Kconfig.preempt"
- 
- config KEXEC
--	bool "Kexec system call (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	bool "Kexec system call"
- 	help
- 	  kexec is a system call that implements the ability to shutdown your
- 	  current kernel, and to start another kernel.  It is like a reboot
+diff --git a/drivers/media/pci/zoran/zoran_card.c b/drivers/media/pci/zoran/zoran_card.c
+index fffc54b..cea325d 100644
+--- a/drivers/media/pci/zoran/zoran_card.c
++++ b/drivers/media/pci/zoran/zoran_card.c
+@@ -708,8 +708,7 @@ static const struct i2c_algo_bit_data zoran_i2c_bit_data_template = {
+ static int
+ zoran_register_i2c (struct zoran *zr)
+ {
+-	memcpy(&zr->i2c_algo, &zoran_i2c_bit_data_template,
+-	       sizeof(struct i2c_algo_bit_data));
++	zr->i2c_algo = zoran_i2c_bit_data_template;
+ 	zr->i2c_algo.data = zr;
+ 	strlcpy(zr->i2c_adapter.name, ZR_DEVNAME(zr),
+ 		sizeof(zr->i2c_adapter.name));
 -- 
-1.7.9.5
+1.7.4.4
 
