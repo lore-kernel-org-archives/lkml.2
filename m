@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933913Ab2JWUGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:06:41 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:45947 "EHLO smtp.outflux.net"
+	id S933891Ab2JWUGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:06:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46328 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933893Ab2JWUGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:06:08 -0400
+	id S964786Ab2JWUF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:59 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 120/193] drivers/scsi: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:13 -0700
-Message-Id: <1351022666-6960-121-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Karsten Keil <isdn@linux-pingi.de>
+Subject: [PATCH 057/193] drivers/isdn/hisax: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:10 -0700
+Message-Id: <1351022666-6960-58-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -25,69 +24,53 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Karsten Keil <isdn@linux-pingi.de>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/scsi/Kconfig |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/isdn/hisax/Kconfig |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-index 74bf1aa..e2c33d3 100644
---- a/drivers/scsi/Kconfig
-+++ b/drivers/scsi/Kconfig
-@@ -42,7 +42,7 @@ config SCSI_DMA
+diff --git a/drivers/isdn/hisax/Kconfig b/drivers/isdn/hisax/Kconfig
+index 70ecd0c..5313c9e 100644
+--- a/drivers/isdn/hisax/Kconfig
++++ b/drivers/isdn/hisax/Kconfig
+@@ -389,8 +389,8 @@ config HISAX_TELES_CS
+ comment "HiSax sub driver modules"
  
- config SCSI_TGT
- 	tristate "SCSI target support"
--	depends on SCSI && EXPERIMENTAL
-+	depends on SCSI
- 	---help---
- 	  If you want to use SCSI target mode drivers enable this option.
- 	  If you choose M, the module will be called scsi_tgt.
-@@ -1391,8 +1391,8 @@ config SCSI_SYM53C416
- 	  module will be called sym53c416.
+ config HISAX_ST5481
+-	tristate "ST5481 USB ISDN modem (EXPERIMENTAL)"
+-	depends on USB && EXPERIMENTAL
++	tristate "ST5481 USB ISDN modem"
++	depends on USB
+ 	select ISDN_HDLC
+ 	select CRC_CCITT
+ 	select BITREVERSE
+@@ -399,20 +399,19 @@ config HISAX_ST5481
+ 	  e.g. the BeWan Gazel 128 USB
  
- config SCSI_DC395x
--	tristate "Tekram DC395(U/UW/F) and DC315(U) SCSI support (EXPERIMENTAL)"
--	depends on PCI && SCSI && EXPERIMENTAL
-+	tristate "Tekram DC395(U/UW/F) and DC315(U) SCSI support"
-+	depends on PCI && SCSI
- 	---help---
- 	  This driver supports PCI SCSI host adapters based on the ASIC
- 	  TRM-S1040 chip, e.g Tekram DC395(U/UW/F) and DC315(U) variants.
-@@ -1617,8 +1617,8 @@ config GVP11_SCSI
- 	  module will be called gvp11.
- 
- config SCSI_A4000T
--	tristate "A4000T NCR53c710 SCSI support (EXPERIMENTAL)"
--	depends on AMIGA && SCSI && EXPERIMENTAL
-+	tristate "A4000T NCR53c710 SCSI support"
-+	depends on AMIGA && SCSI
- 	select SCSI_SPI_ATTRS
+ config HISAX_HFCUSB
+-	tristate "HFC USB based ISDN modems (EXPERIMENTAL)"
+-	depends on USB && EXPERIMENTAL
++	tristate "HFC USB based ISDN modems"
++	depends on USB
  	help
- 	  If you have an Amiga 4000T and have SCSI devices connected to the
-@@ -1628,8 +1628,8 @@ config SCSI_A4000T
- 	  module will be called a4000t.
+ 	  This enables the driver for HFC USB based ISDN modems.
  
- config SCSI_ZORRO7XX
--	tristate "Zorro NCR53c710 SCSI support (EXPERIMENTAL)"
--	depends on ZORRO && SCSI && EXPERIMENTAL
-+	tristate "Zorro NCR53c710 SCSI support"
-+	depends on ZORRO && SCSI
- 	select SCSI_SPI_ATTRS
+ config HISAX_HFC4S8S
+-	tristate "HFC-4S/8S based ISDN cards (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "HFC-4S/8S based ISDN cards"
  	help
- 	  Support for various NCR53c710-based SCSI controllers on Zorro
-@@ -1806,8 +1806,8 @@ config SCSI_BFA_FC
- 	  be called bfa.
+ 	  This enables the driver for HFC-4S/8S based ISDN cards.
  
- config SCSI_VIRTIO
--	tristate "virtio-scsi support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && VIRTIO
-+	tristate "virtio-scsi support"
-+	depends on VIRTIO
+ config HISAX_FRITZ_PCIPNP
+-	tristate "AVM Fritz!Card PCI/PCIv2/PnP support (EXPERIMENTAL)"
+-	depends on PCI && EXPERIMENTAL
++	tristate "AVM Fritz!Card PCI/PCIv2/PnP support"
++	depends on PCI
  	help
-           This is the virtual HBA driver for virtio.  If the kernel will
-           be used in a virtual machine, say Y or M.
+ 	  This enables the driver for the AVM Fritz!Card PCI,
+ 	  Fritz!Card PCI v2 and Fritz!Card PnP.
 -- 
 1.7.9.5
 
