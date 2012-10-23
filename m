@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933963Ab2JWXGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:06:34 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:56849 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933464Ab2JWXGc (ORCPT
+	id S964811Ab2JWXLu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:11:50 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39094 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933803Ab2JWXLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:06:32 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix>
-	<20121023221913.GC28626@thunk.org>
-Emacs: a real time environment for simulating molasses-based life forms.
-Date: Wed, 24 Oct 2012 00:06:21 +0100
-In-Reply-To: <20121023221913.GC28626@thunk.org> (Theodore Ts'o's message of
-	"Tue, 23 Oct 2012 18:19:13 -0400")
-Message-ID: <87bofsn5zm.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 23 Oct 2012 19:11:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=11 Fuz1=11 Fuz2=11
+In-Reply-To: <alpine.DEB.2.00.1210231545030.1221@chino.kir.corp.google.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-159-git-send-email-keescook@chromium.org>
+	<alpine.DEB.2.00.1210231545030.1221@chino.kir.corp.google.com>
+Date: Tue, 23 Oct 2012 16:11:47 -0700
+X-Google-Sender-Auth: WFn9Z4k4dnnJZUlxdd1WMq4CIzE
+Message-ID: <CAGXu5j+5m+Gj9aYJpkxA+GsRm3rg-RohD5n88amRbn634P=epw@mail.gmail.com>
+Subject: Re: [PATCH 158/193] mm: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 Oct 2012, Theodore Ts'o verbalised:
-> *Sigh*.  My apologies for not catching this when I reviewed this
-> patch.  I believe the following patch should fix the bug; once it's
-> reviewed by other ext4 developers, I'll push this to Linus ASAP.
+On Tue, Oct 23, 2012 at 3:46 PM, David Rientjes <rientjes@google.com> wrote:
+> On Tue, 23 Oct 2012, Kees Cook wrote:
+>
+>> diff --git a/mm/Kconfig b/mm/Kconfig
+>> index a3f8ddd..679945e 100644
+>> --- a/mm/Kconfig
+>> +++ b/mm/Kconfig
+>> @@ -1,6 +1,5 @@
+>>  config SELECT_MEMORY_MODEL
+>>       def_bool y
+>> -     depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
+>>
+>>  choice
+>>       prompt "Memory model"
+>
+> This makes ARCH_SELECT_MEMORY_MODEL pointless, why keep it around?
 
-I note that the patch is in the latest stable releases of 3.4.x and
-3.5.x, which are IIRC end-of-lifed. I'd say that if your patch does
-indeed fix it, this justifies pushing out new releases of both these
-stable kernels with just this patch in, just to make sure people taking
-the latest stable kernel from those releases don't eat their
-filesystems.
+Good point. This seems to trigger much deeper changes. All of these
+and their logic go away:
 
-The bug did really quite a lot of damage to my /home fs in only a few
-minutes of uptime, given how few files I wrote to it. What it could have
-done to a more conventional distro install with everything including
-/home on one filesystem, I shudder to think.
+arch/arm/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/arm/mach-clps711x/Kconfig: select ARCH_SELECT_MEMORY_MODEL
+arch/arm64/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/ia64/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/parisc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/powerpc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/s390/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/sh/mm/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/sparc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+arch/x86/Kconfig:config ARCH_SELECT_MEMORY_MODEL
 
-(I've posted a note to the LWN thread announcing 3.6.3, just in case
-that saves someone's fs.)
+Along with mm/Kconfig:config SELECT_MEMORY_MODEL and associated logic.
+
+How about we handle this as a phase 2, and for phase 1, I just drop
+EXPERIMENTAL?
+
+-Kees
 
 -- 
-NULL && (void)
+Kees Cook
+Chrome OS Security
