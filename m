@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab2JWJ5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:57:08 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:57652 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2JWJ5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:57:05 -0400
+	id S932897Ab2JWJ6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:58:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48934 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932503Ab2JWJ63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 05:58:29 -0400
+Date: Tue, 23 Oct 2012 10:41:58 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, NeilBrown <neilb@suse.de>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: Re: ext3 issue on 3.6.1
+Message-ID: <20121023084158.GA3064@quack.suse.cz>
+References: <20121018220809.GD17646@quack.suse.cz>
+ <20121019124454.316ecfac@notabene.brown>
+ <CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
+ <CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
+ <20121022134541.GA9438@quack.suse.cz>
+ <CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
+ <20121022154258.GB9438@quack.suse.cz>
+ <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
+ <20121022161040.GC9438@quack.suse.cz>
+ <CADpTngVHx_7uzEGM+_XGVK2Neh-dgcfxLnGaXT370SzgXtCZQA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <508667E3.4000509@mvista.com>
-References: <1350907972-11256-1-git-send-email-prabhakar.lad@ti.com> <508667E3.4000509@mvista.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 23 Oct 2012 15:26:43 +0530
-Message-ID: <CA+V-a8v8gku5tuF+grBq71ZnxV9m_SYwtpFyh=4KG31+7bBmNQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND] ARM: dm365: replace V4L2_OUT_CAP_CUSTOM_TIMINGS
- with V4L2_OUT_CAP_DV_TIMINGS
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: LAK <linux-arm-kernel@lists.infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LMML <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADpTngVHx_7uzEGM+_XGVK2Neh-dgcfxLnGaXT370SzgXtCZQA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sergei,
+On Mon 22-10-12 18:18:10, Fabio Coatti wrote:
+> 2012/10/22 Jan Kara <jack@suse.cz>:
+> > On Mon 22-10-12 18:01:56, Fabio Coatti wrote:
+> >> 2012/10/22 Jan Kara <jack@suse.cz>:
+> >> >> Uhu, my fault, I was sure to have answered to your request, sorry.
+> >> >> So yes, we have an ext3 R/O partition mounted on that machine. The
+> >> >> 3.6.3, with patch applied, dmesg is here:
+> >> >   Interesting. You seem to be using data=journal on R/O partition, don't
+> >> > you? Can you also attach /proc/mounts?
+> >> >
+> >> >   Also please try running a kernel with the attached patch and report the
+> >> > warning. Thanks!
+> >>
+> >> Do you want to try the kernel without touching the mount
+> >> configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
+> >> partition, right?)
+> >   Yes, leave things as they are now...
+> >
+> >> right now I can't access the machine, but I recall that the partition
+> >> is mounted rw, something is wrote onto it and then changed to r/o and
+> >> among the options there is data=ordered.
+> >   /proc/mounts should show us whether data=ordered is in use. Actually the
+> > warning is in function which is called only in data=journal mode so that's
+> > why I think you are using it...
+> 
+> Ok, got the options:
+> 
+> ro,noatime,errors=continue,barrier=1,data=ordered 0 0
+  Can you please post *full* /proc/mounts content? Thanks. It is hard to
+believe ext3_journalled_writepage() gets called on data=ordered filesystem.
 
-On Tue, Oct 23, 2012 at 3:18 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
->
->
-> On 22-10-2012 16:12, Prabhakar Lad wrote:
->
->> From: Lad, Prabhakar <prabhakar.lad@ti.com>
->
->
->> This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
->> V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
->> out.
->
->
->> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> Cc: Sekhar Nori <nsekhar@ti.com>
->> ---
->>   Resending the patch since, it didn't reach the DLOS mailing list.
->
->
->>   This patch is based on the following patch series,
->>   ARM: davinci: dm365 EVM: add support for VPBE display
->>   (https://patchwork.kernel.org/patch/1295071/)
->
->
->>   arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c
->> b/arch/arm/mach-davinci/board-dm365-evm.c
->> index 2924d61..771abb5 100644
->> --- a/arch/arm/mach-davinci/board-dm365-evm.c
->> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
->> @@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
->>                         .index          = 1,
->>                         .name           = "Component",
->>                         .type           = V4L2_OUTPUT_TYPE_ANALOG,
->> -                       .capabilities   = V4L2_OUT_CAP_CUSTOM_TIMINGS,
->> +                       .capabilities   =  V4L2_OUT_CAP_DV_TIMINGS,
->
->
->    Why this extra space after '='?
->
-My Bad, I'll post a v2 fixing it.
+									Honza
 
-Regards,
---Prabhakar
-
-> WBR, Sergei
->
+> and as expected, the usual warning triggered, but not the message from
+> your patch:
+> 
+> [  173.408622] ------------[ cut here ]------------
+> [  173.408725] WARNING: at fs/ext3/inode.c:1754
+> ext3_journalled_writepage+0x55/0x1a7()
+> [  173.408850] Hardware name: ProLiant BL465c G7
+> [  173.408940] Pid: 2142, comm: flush-8:0 Not tainted 3.6.3-p #2
+> [  173.409034] Call Trace:
+> [  173.409123]  [<ffffffff81057884>] ? warn_slowpath_common+0x73/0x87
+> [  173.409219]  [<ffffffff8115cd04>] ? ext3_journalled_writepage+0x55/0x1a7
+> [  173.409320]  [<ffffffff810a2833>] ? __writepage+0xa/0x21
+> [  173.409414]  [<ffffffff810a31db>] ? write_cache_pages+0x206/0x2f8
+> [  173.409509]  [<ffffffff810a2829>] ? set_page_dirty+0x5e/0x5e
+> [  173.409604]  [<ffffffff81297cfb>] ? queue_unplugged+0x28/0x34
+> [  173.409698]  [<ffffffff810a330b>] ? generic_writepages+0x3e/0x55
+> [  173.409793]  [<ffffffff810f4eb0>] ? __writeback_single_inode+0x39/0xd1
+> [  173.409889]  [<ffffffff810f5c69>] ? writeback_sb_inodes+0x206/0x392
+> [  173.409983]  [<ffffffff810f5e5c>] ? __writeback_inodes_wb+0x67/0xa2
+> [  173.410079]  [<ffffffff810f5ffa>] ? wb_writeback+0xfd/0x18b
+> [  173.410172]  [<ffffffff810a36d1>] ? bdi_dirty_limit+0x27/0x81
+> [  173.410348]  [<ffffffff810f61c5>] ? wb_do_writeback+0x13d/0x1a2
+> [  173.410461]  [<ffffffff81061e9b>] ? add_timer_on+0x61/0x61
+> [  173.410584]  [<ffffffff810f62a9>] ? bdi_writeback_thread+0x7f/0x13e
+> [  173.410700]  [<ffffffff8106a54d>] ? queue_work_on+0x16/0x1e
+> [  173.410809]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
+> [  173.410902]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
+> [  173.410996]  [<ffffffff8106e134>] ? kthread+0x81/0x89
+> [  173.411089]  [<ffffffff81607e74>] ? kernel_thread_helper+0x4/0x10
+> [  173.411184]  [<ffffffff8106e0b3>] ? kthread_worker_fn+0xe0/0xe0
+> [  173.411277]  [<ffffffff81607e70>] ? gs_change+0xb/0xb
+> [  173.411367] ---[ end trace 8243403b245b6cfc ]---
+> 
+> -- 
+> Fabio
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
