@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab2JWHYZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:24:25 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44318 "EHLO
+	id S1756718Ab2JWHZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:25:53 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41392 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932467Ab2JWHYW (ORCPT
+	with ESMTP id S1756658Ab2JWHZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:24:22 -0400
-Message-ID: <1350977055.4005.2.camel@rajhome2>
+	Tue, 23 Oct 2012 03:25:51 -0400
+Message-ID: <1350977143.4005.3.camel@rajhome2>
 Subject: Kernel 3.7.0-rc1 and 3.7.0-rc2 freeze up after about 20 minutes.
 From: Raj Upadhyaya <raj.upadhyaya@gmail.com>
 Reply-To: raj@upadhyaya.com
 To: linux-kernel@vger.kernel.org
-Date: Tue, 23 Oct 2012 02:24:15 -0500
+Date: Tue, 23 Oct 2012 02:25:43 -0500
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
