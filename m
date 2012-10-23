@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab2JWONG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:13:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34731 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753717Ab2JWOND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:13:03 -0400
-Date: Tue, 23 Oct 2012 10:13:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2]staging: "ehci-w90x900" Fix typos.
-In-Reply-To: <1350973342-3868-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1210231011450.1635-100000@iolanthe.rowland.org>
+	id S1755137Ab2JWOPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:15:31 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:53604 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754531Ab2JWOPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:15:30 -0400
+Message-ID: <5086A678.7010403@parallels.com>
+Date: Tue, 23 Oct 2012 18:15:20 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: JoonSoo Kim <js1304@gmail.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com> <508561E0.5000406@parallels.com> <CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com> <50865024.60309@parallels.com> <0000013a8df775ea-2411bbc8-8025-4514-8b58-ef007d11beef-000000@email.amazonses.com>
+In-Reply-To: <0000013a8df775ea-2411bbc8-8025-4514-8b58-ef007d11beef-000000@email.amazonses.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Justin P. Mattock wrote:
-
-> From: "Justin P. Mattock" <justinmattock@gmail.com>
+On 10/23/2012 06:12 PM, Christoph Lameter wrote:
+> On Tue, 23 Oct 2012, Glauber Costa wrote:
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>> I do agree, but since freeing is ultimately dependent on the allocator
+>> layout, I don't see a clean way of doing this without dropping tears of
+>> sorrow around. The calls in slub/slab/slob would have to be somehow
+>> inlined. Hum... maybe it is possible to do it from
+>> include/linux/sl*b_def.h...
+>>
+>> Let me give it a try and see what I can come up with.
 > 
-> ---
+> The best solution would be something that would have a consolidated
+> kmem_cache_free() in include/linux/slab.h.
 > 
-> The below patch fixes a typo in staging: "ehci-w90x900"
 
-What does ehci-w90x900 have to do with staging?
+I don't know what exactly do you have in mind, but since the cache
+layouts are very different, this is quite hard to do without incurring
+without function calls anyway.
 
->  drivers/usb/host/ehci-w90x900.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-> index ec59808..a9c28a0 100644
-> --- a/drivers/usb/host/ehci-w90x900.c
-> +++ b/drivers/usb/host/ehci-w90x900.c
-> @@ -13,7 +13,7 @@
->  
->  #include <linux/platform_device.h>
->  
-> -/*ebable phy0 and phy1 for w90p910*/
-> +/*enable phy0 and phy1 for w90p910*/
-
-Why bother to correct the spelling without also correcting the missing 
-whitespace?
-
->  #define	ENPHY		(0x01<<8)
->  #define PHY0_CTR	(0xA4)
->  #define PHY1_CTR	(0xA8)
-
-Alan Stern
+Do take a look at what I sent in response to that, and tell me what do
+you think.
 
