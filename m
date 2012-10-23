@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab2JWIaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 04:30:25 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:23089 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2JWIaU (ORCPT
+	id S1756861Ab2JWIbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 04:31:49 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51428 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab2JWIbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 04:30:20 -0400
-From: =?big5?B?vEK5xcJA?= <scott.liu@emc.com.tw>
-To: "'Jian-Jhong Ding'" <jj_ding@emc.com.tw>,
-        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
-        "'Jesse'" <jesse@emc.com.tw>,
-        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
-        "'Paul'" <paul.liang@emc.com.tw>
-Subject: RE: [PATCH v1] Support Elan Touchscreen eKTF product.
-Date: Tue, 23 Oct 2012 16:30:18 +0800
-Message-ID: <7BC14E6A36624121B78375F1425F9C32@elan.corp>
+	Tue, 23 Oct 2012 04:31:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <87pq4aq6if.fsf@emc.com.tw>
-Thread-Index: Ac2wxCLydY2eWF9yRoyEV4sZdlIKGAAM01pg
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <5085A7CA.3070001@wwwdotorg.org>
+References: <1350659375-7335-1-git-send-email-linus.walleij@stericsson.com>
+	<50817E43.8000804@wwwdotorg.org>
+	<CACRpkdbcTT_Mfa67Vw_6Y3RvqOE3CMA7kNXLG5oja0uTNn1FoA@mail.gmail.com>
+	<5085A7CA.3070001@wwwdotorg.org>
+Date: Tue, 23 Oct 2012 10:31:45 +0200
+Message-ID: <CACRpkdZLgnEHAKiyZBT1FTQPdp69rTOQ9ba9ZQ0y4eLODw4zeA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl/nomadik: use irq_create_mapping()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry:
-	This driver is not related to Tom's driver. This driver is ELAN
-standard I2C driver for touch panel and its packets is defined by ELAN own
-format and not related to HID over I2C.
+On Mon, Oct 22, 2012 at 10:08 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/22/2012 02:14 AM, Linus Walleij wrote:
 
-Thanks,
-Scott
+>> It's an IRQ handler so it should be robust to spurious IRQs due to
+>> transient hardware states etc I believe.
+>>
+>> So if there is a transient IRQ before gpio_to_irq() is called -> boom.
+>
+> I wonder though (a) why it would be unmasked in HW, and (b) why the
+> software would even look at the status bit if no handler were registered?
 
-> -----Original Message-----
-> From: Jian-Jhong Ding [mailto:jj_ding@emc.com.tw]
-> Sent: Tuesday, October 23, 2012 10:15 AM
-> To: Dmitry Torokhov
-> Cc: Scott Liu; linux-input@vger.kernel.org; linux-i2c@vger.kernel.org;
-> linux-kernel@vger.kernel.org; Benjamin Tissoires; Jesse; Vincent Wang;
-Paul
-> Subject: Re: [PATCH v1] Support Elan Touchscreen eKTF product.
-> 
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> writes:
-> > On Mon, Oct 22, 2012 at 11:47:42AM +0800, Jian-Jhong Ding wrote:
-> >> With Benjamin's i2c-hid implimentation, is it possible to make
-> >> hid-multitouch not depend on USBHID and reuse it to drive this device?
-> >
-> > Exactly. Before looking any further - is this the same part that Tom Lin
-> > posted a driver for earlier this summer?
-> 
-> No.  Tom's driver was only for trackpads, this is probably for some
-> touch panel.  The controller ICs may have some similarities, but the
-> firmware is developed independently, though both somewhat conform to the
-> HID over I2C protocol.
-> 
-> Thanks,
-> -JJ
-> > Thanks.
-> >
-> > --
-> > Dmitry
+That's true of course ... OK I'll update the patch.
 
+Still I'm not feeling good about the irq_create_mapping/irq_find_mapping
+separation, I think a lot of drivers just get this wrong and it's causing
+bugs... it'd be way better if there was just one of them and we could
+count on descriptors being allocated after adding any kind of irqdomain
+but I have no clue how hard it would be to achieve this.
+
+Yours,
+Linus Walleij
