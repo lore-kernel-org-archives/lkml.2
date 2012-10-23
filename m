@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965465Ab2JWVEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:04:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38822 "EHLO smtp.outflux.net"
+	id S965564Ab2JWVFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:05:36 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57498 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933692Ab2JWUFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:05:12 -0400
+	id S933685Ab2JWUFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:11 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH 055/193] drivers/input/misc: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:08 -0700
-Message-Id: <1351022666-6960-56-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Chris Ball <cjb@laptop.org>
+Subject: [PATCH 070/193] drivers/mmc/core: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:23 -0700
+Message-Id: <1351022666-6960-71-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -28,55 +24,26 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>
-CC: Ashish Jangam <ashish.jangam@kpitcummins.com>
-CC: Andrew Jones <drjones@redhat.com>
-CC: Donggeun Kim <dg77.kim@samsung.com>
+CC: Chris Ball <cjb@laptop.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/input/misc/Kconfig |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/mmc/core/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 7c0f1ec..a7719a2 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -290,8 +290,7 @@ config INPUT_ATI_REMOTE2
- 	  called ati_remote2.
+diff --git a/drivers/mmc/core/Kconfig b/drivers/mmc/core/Kconfig
+index ef10387..269d072 100644
+--- a/drivers/mmc/core/Kconfig
++++ b/drivers/mmc/core/Kconfig
+@@ -18,8 +18,7 @@ config MMC_UNSAFE_RESUME
+ 	  module parameter "removable=0" or "removable=1".
  
- config INPUT_KEYSPAN_REMOTE
--	tristate "Keyspan DMR USB remote control (EXPERIMENTAL)"
+ config MMC_CLKGATE
+-	bool "MMC host clock gating (EXPERIMENTAL)"
 -	depends on EXPERIMENTAL
-+	tristate "Keyspan DMR USB remote control"
- 	depends on USB_ARCH_HAS_HCD
- 	select USB
++	bool "MMC host clock gating"
  	help
-@@ -340,7 +339,6 @@ config INPUT_POWERMATE
- 
- config INPUT_YEALINK
- 	tristate "Yealink usb-p1k voip phone"
--	depends on EXPERIMENTAL
- 	depends on USB_ARCH_HAS_HCD
- 	select USB
- 	help
-@@ -356,7 +354,6 @@ config INPUT_YEALINK
- 
- config INPUT_CM109
- 	tristate "C-Media CM109 USB I/O Controller"
--	depends on EXPERIMENTAL
- 	depends on USB_ARCH_HAS_HCD
- 	select USB
- 	help
-@@ -434,7 +431,7 @@ config INPUT_PCF50633_PMU
- 
- config INPUT_PCF8574
- 	tristate "PCF8574 Keypad input device"
--	depends on I2C && EXPERIMENTAL
-+	depends on I2C
- 	help
- 	  Say Y here if you want to support a keypad connected via I2C
- 	  with a PCF8574.
+ 	  This will attempt to aggressively gate the clock to the MMC card.
+ 	  This is done to save power due to gating off the logic and bus
 -- 
 1.7.9.5
 
