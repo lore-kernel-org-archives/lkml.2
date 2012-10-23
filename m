@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab2JWKRq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:17:46 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7933 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab2JWKRo convert rfc822-to-8bit (ORCPT
+	id S1752851Ab2JWKTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:19:32 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60184 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751603Ab2JWKTa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:17:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 23 Oct 2012 03:05:40 -0700
-From: Pavan Kunapuli <pkunapuli@nvidia.com>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "cjb@laptop.org" <cjb@laptop.org>,
+	Tue, 23 Oct 2012 06:19:30 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Mohammed, Afzal" <afzal@ti.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Pavan Kunapuli <pkunapuli@nvidia.com>
-Date: Tue, 23 Oct 2012 15:47:37 +0530
-Subject: RE: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
-Thread-Topic: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
-Thread-Index: Ac2xBsq9Lim+BJGLSoq9bXhyyK7I4gAAHSlA
-Message-ID: <C79B248886DD134989C8FF6B096A91AB7EC6B8C7C9@BGMAIL01.nvidia.com>
-References: <1350976709-19248-1-git-send-email-pkunapuli@nvidia.com>
- <1350976709-19248-3-git-send-email-pkunapuli@nvidia.com>
- <50866D29.1040709@samsung.com>
-In-Reply-To: <50866D29.1040709@samsung.com>
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
+Thread-Topic: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
+Thread-Index: AQHNqwbV4W1+YLx0nEWLE2X1/J2tgpfGssjw
+Date: Tue, 23 Oct 2012 10:17:55 +0000
+Deferred-Delivery: Tue, 23 Oct 2012 10:17:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3E9D29BE@DBDE01.ent.ti.com>
+References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
+	<1349274589-11389-2-git-send-email-avinashphilip@ti.com>
+ <87obk3va1j.fsf@macbook.be.48ers.dk>
+In-Reply-To: <87obk3va1j.fsf@macbook.be.48ers.dk>
 Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
+x-originating-ip: [172.24.162.25]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For platforms where the board can control vmmc or vqmmc, if the regulator supplies registration is not done before sdhci probe, deferring sdhci probe would ensure that the regulators are available the next time around. For platforms where the board can't control vmmc or vqmmc, we can have a dummy regulator to make sure probe will never get deferred.
-
------Original Message-----
-From: Jaehoon Chung [mailto:jh80.chung@samsung.com] 
-Sent: 23 October 2012 15:41
-To: Pavan Kunapuli
-Cc: swarren@wwwdotorg.org; linux@arm.linux.org.uk; cjb@laptop.org; linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
-
-I didn't understand why defer the probe?
-I think that some board can't control vqmmc or vmmc.
-
-Best Regards,
-Jaehoon Chung
-On 10/23/2012 04:18 PM, Pavan Kunapuli wrote:
-> vmmc and vqmmc regulators control the voltage to the host and device. 
-> Defer the probe if either of them is not registered.
+On Tue, Oct 16, 2012 at 00:26:40, Peter Korsgaard wrote:
+> >>>>> Philip, Avinash <avinashphilip@ti.com> writes:
 > 
-> Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
-> ---
->  drivers/mmc/host/sdhci.c |   25 ++++++++++++++++++++++---
->  1 files changed, 22 insertions(+), 3 deletions(-)
+>  > Update number of errors using nand ecc strength.
+>  > Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
 > 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c index 
-> 7922adb..925c403 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2844,11 +2844,17 @@ int sdhci_add_host(struct sdhci_host *host)
->  	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
->  		mmc->caps |= MMC_CAP_NEEDS_POLL;
+>  > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+>  > ---
+>  > :100644 100644 5b31386... af511a9... M	drivers/mtd/nand/omap2.c
+>  >  drivers/mtd/nand/omap2.c |   12 ++++++++----
+>  >  1 files changed, 8 insertions(+), 4 deletions(-)
+> 
+>  > diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+>  > index 5b31386..af511a9 100644
+>  > --- a/drivers/mtd/nand/omap2.c
+>  > +++ b/drivers/mtd/nand/omap2.c
+>  > @@ -111,6 +111,9 @@
+>  >  #define	ECCCLEAR			0x100
+>  >  #define	ECC1				0x1
 >  
-> -	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
-> +	/*
-> +	 * If vqmmc regulator and no 1.8V signalling, then there's no UHS.
-> +	 * vqmmc regulator should be present. If it's not present,
-> +	 * assume the regulator driver registration is not yet done and
-> +	 * defer the probe.
-> +	 */
->  	host->vqmmc = regulator_get(mmc_dev(mmc), "vqmmc");
->  	if (IS_ERR(host->vqmmc)) {
-> -		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
-> +		pr_err("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
->  		host->vqmmc = NULL;
-> +		return -EPROBE_DEFER;
->  	}
->  	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
->  		regulator_enable(host->vqmmc);
-> @@ -2903,10 +2909,17 @@ int sdhci_add_host(struct sdhci_host *host)
->  
->  	ocr_avail = 0;
->  
-> +	/*
-> +	 * vmmc regulator should be present. If it's not present,
-> +	 * assume the regulator driver registration is not yet done
-> +	 * and defer the probe.
-> +	 */
->  	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
->  	if (IS_ERR(host->vmmc)) {
-> -		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
-> +		pr_err("%s: no vmmc regulator found\n", mmc_hostname(mmc));
->  		host->vmmc = NULL;
-> +		ret = -EPROBE_DEFER;
-> +		goto vmmc_err;
->  	} else
->  		regulator_enable(host->vmmc);
->  
-> @@ -3121,7 +3134,13 @@ reset:
->  untasklet:
->  	tasklet_kill(&host->card_tasklet);
->  	tasklet_kill(&host->finish_tasklet);
-> +vmmc_err:
-> +	if (host->vqmmc) {
-> +		if (regulator_is_enabled(host->vqmmc))
-> +			regulator_disable(host->vqmmc);
->  
-> +		regulator_put(host->vqmmc);
-> +	}
->  	return ret;
->  }
->  
+>  > +#define BCH8_MAX_ERROR		8	/* upto 8 bit coorectable */
+>  > +#define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
+> 
+> First 'correctable' misspelled.
+
+I will correct it
+
+> 
+> I don't personally think these defines improve readability very much
+> compared to to just using 4/8, though.
+
+Thought of removing magic numbers & provide information also.
+
+Thanks
+Avinash
+
+> 
+> -- 
+> Bye, Peter Korsgaard
 > 
 
