@@ -1,239 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab2JWN1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:27:09 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59523 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab2JWN1F (ORCPT
+	id S1757152Ab2JWN3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:29:43 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42306 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754639Ab2JWN3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:27:05 -0400
+	Tue, 23 Oct 2012 09:29:42 -0400
+Date: Tue, 23 Oct 2012 14:29:39 +0100
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/3 v2] firmware: Convert firmware path setup from an
+	array to a list
+Message-ID: <20121023132939.GA10160@opensource.wolfsonmicro.com>
+References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com> <1350996776-17864-2-git-send-email-dp@opensource.wolfsonmicro.com> <CACVXFVOMb3A=9wKm+-wnsg7=dTbjJjU2gZrUPBDK=TROTx_erA@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <5085D159.4090703@adobe.com>
-References: <1345756535-8372-1-git-send-email-palewis@adobe.com>
- <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <5085D159.4090703@adobe.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 23 Oct 2012 15:26:44 +0200
-Message-ID: <CAKgNAkhdqqEZu0CZcCCHfHRjdQ=kce6NmAWD08-Y-odP5p_B4Q@mail.gmail.com>
-Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test app.
-To: "Paton J. Lewis" <palewis@adobe.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVOMb3A=9wKm+-wnsg7=dTbjJjU2gZrUPBDK=TROTx_erA@mail.gmail.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Paton,
+On Tue, Oct 23, 2012 at 09:08:50PM +0800, Ming Lei wrote:
+> On Tue, Oct 23, 2012 at 8:52 PM, Dimitris Papastamos
+> <dp@opensource.wolfsonmicro.com> wrote:
+> > In preparation to support dynamic listing/updating of firmware
+> > paths via procfs, this patch converts the firmware path configuration
+> > from an array to a list.
+> 
+> I remembered that I have questioned on dynamic listing/updating of
+> firmware via procfs, looks you don't reply, :-(
+> 
+>       http://marc.info/?l=linux-kernel&m=134988208617179&w=2
+> 
+> IMO, it is not a good idea to update firmware path dynamically via proc
+> because it may be too late to update a dynamic search path via /proc
+> and drivers need request firmware just after rootfs is mounted.
+> 
+> kernel parameter should be a good way to pass one customerized
+> path.
+> 
+> Thanks,
+> -- 
+> Ming Lei
 
-PLEASE use a properly quoting mail client! It's very hard now for
-third parties to see what I wrote versus your replies.
+Hi sorry for being unclear, I mentioned in the old thread that
+I've not had time to fix this properly (or think about a proper
+fix), Greg requested a rebase on top of linux-next, however, at
+least for firmware path listing.
 
-On Tue, Oct 23, 2012 at 1:06 AM, Paton J. Lewis <palewis@adobe.com> wrote:
->
-> On 10/16/12 8:12 AM, Michael Kerrisk (man-pages) wrote:
->
-> [CC += linux-api@]
->
-> Thank you; is this sufficient to coordinate the required changes to the
-> glibc version of epoll.h?
+Should I amend the commit description so it is not misleading and
+remove the 'updating' part?
 
-I'm not sure. With a bit of luck, someone at glibc might monitor that list.
-
-> Hello Paton,
->
-> On Thu, Aug 23, 2012 at 11:15 PM, Paton J. Lewis <palewis@adobe.com> wrote:
->
-> From: "Paton J. Lewis" <palewis@adobe.com>
->
-> Enhanced epoll_ctl to support EPOLL_CTL_DISABLE, which disables an epoll
-> item.
-> If epoll_ctl doesn't return -EBUSY in this case, it is then safe to delete
-> the
-> epoll item in a multi-threaded environment. Also added a new test_epoll
-> self-
-> test app to both demonstrate the need for this feature and test it.
->
-> (There's a lot of background missing from this version of the patch
-> that was included in the previous version
-> [http://thread.gmane.org/gmane.linux.kernel/1311457]. It helps to
-> include the full rationale with a revised patch--best not to assume
-> that someone has the context of past mails when reading a revised
-> patch.)
->
-> I was trying to present the same information in a more concise manner. I was
-> hoping that the test application would provide a clearer description of the
-> problem and the solution. However, I can include some of my original prose
-> from the v1 email in the next revision's email if you think that would be
-> helpful.
-
-Yes, it would be a good idea.
-
-> I've taken a look at this patch as it currently stands in 3.7-rc1, and
-> done a bit of testing. (By the way, the test program
-> tools/testing/selftests/epoll/test_epoll.c does not compile...)
->
-> Sorry, the test program compiled against commit
-> ecca5c3acc0d0933d89abc44e60afb0cc8170e35 from
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git, which I
-> believe was the current head commit when I emailed the v2 patch in August. I
-> thought that git's format-patch command would include the necessary
-> information so people could see which commit the diff was created from.
-> Should I be pulling from a different repository or working on a different
-> branch? Since this is my first patch submission and I have essentially zero
-> experience with git, I would appreciate any guidance you could provide here.
-
-I'm not expert enough to provide guidance, unfortunately. I'd just
-make sure that the program gets updated with any future patch
-revision.
-
-I should have added that the changes to fix the program were fairly
-trivial (but they involved a misnamed variable--it looks like you did
-a scan renaming a variable but didn't catch all instances, so I'm not
-sure how the test program could have ever compiled in the form that
-was committed), and I did get it going.
-
-> There are one or two places where the behavior seems a little strange,
-> so I have a question or two at the end of this mail. But other than
-> that, I want to check my understanding so that the interface can be
-> correctly documented.
->
-> Just to go though my understanding, the problem is the following
-> scenario in a multithreaded application:
->
-> 1. Multiple threads are performing epoll_wait() operations,
->    and maintaining a user-space cache that contains information
->    corresponding to each file descriptor being monitored by
->    epoll_wait().
->
-> 2. At some point, a thread wants to delete (EPOLL_CTL_DEL)
->    a file descriptor from the epoll interest list, and
->    delete the corresponding record from the user-space cache.
->
-> 3. The problem with (2) is that some other thread may have
->    previously done an epoll_wait() that retrieved information
->    about the fd in question, and may be in the middle of using
->    information in the cache that relates to that fd. Thus,
->    there is a potential race.
->
-> 4. The race can't solved purely in user space, because doing
->    so would require applying a mutex across the epoll_wait()
->    call, which would of course blow thread concurrency.
->
-> Right?
->
-> Yes, that is an accurate description of the problem.
-
-Okay.
-
-> Your solution is the EPOLL_CTL_DISABLE operation. I want to
-> confirm my understanding about how to use this flag, since
-> the description that has accompanied the patches so far
-> has been a bit sparse
->
-> 0. In the scenario you're concerned about, deleting a file
->    descriptor means (safely) doing the following:
->    (a) Deleting the file descriptor from the epoll interest list
->        using EPOLL_CTL_DEL
->    (b) Deleting the corresponding record in the user-space cache
->
-> 1. It's only meaningful to use this EPOLL_CTL_DISABLE in
->    conjunction with EPOLLONESHOT.
->
-> 2. Using EPOLL_CTL_DISABLE without using EPOLLONESHOT in
->    conjunction is a logical error.
->
-> 3. The correct way to code multithreaded applications using
->    EPOLL_CTL_DISABLE and EPOLLONESHOT is as follows:
->
->    a. All EPOLL_CTL_ADD and EPOLL_CTL_MOD operations should
->       should EPOLLONESHOT.
->
->    b. When a thread wants to delete a file descriptor, it
->       should do the following:
->
->       [1] Call epoll_ctl(EPOLL_CTL_DISABLE)
->       [2] If the return status from epoll_ctl(EPOLL_CTL_DISABLE)
->           was zero, then the file descriptor can be safely
->           deleted by the thread that made this call.
->       [3] If the epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY,
->           then the descriptor is in use. In this case, the calling
->           thread should set a flag in the user-space cache to
->           indicate that the thread that is using the descriptor
->           should perform the deletion operation.
->
-> Is all of the above correct?
->
-> Yes, that is correct.
-
-Okay
-
-> The implementation depends on checking on whether
-> (events & ~EP_PRIVATE_BITS) == 0
-> This replies on the fact that EPOLL_CTL_AD and EPOLL_CTL_MOD always
-> set EPOLLHUP and EPOLLERR in the 'events' mask, and EPOLLONESHOT
-> causes those flags (as well as all others in ~EP_PRIVATE_BITS) to be
-> cleared.
->
-> A corollary to the previous paragraph is that using EPOLL_CTL_DISABLE
-> is only useful in conjunction with EPOLLONESHOT. However, as things
-> stand, one can use EPOLL_CTL_DISABLE on a file descriptor that does
-> not have EPOLLONESHOT set in 'events' This results in the following
-> (slightly surprising) behavior:
->
-> (a) The first call to epoll_ctl(EPOLL_CTL_DISABLE) returns 0
->     (the indicator that the file descriptor can be safely deleted).
-> (b) The next call to epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY.
->
-> This doesn't seem particularly useful, and in fact is probably an
-> indication that the user made a logic error: they should only be using
-> epoll_ctl(EPOLL_CTL_DISABLE) on a file descriptor for which
-> EPOLLONESHOT was set in 'events'. If that is correct, then would it
-> not make sense to return an error to user space for this case?
->
-> Good point. I've implemented and tested your suggested change, and I've
-> updated the test application to cover that case. I will soon submit a
-> revised patch.
-
-I suppose that I have a concern that goes in the other direction. Is
-there not some other solution possible that doesn't require the use of
-EPOLLONESHOT? It seems overly restrictive to require that the caller
-must employ this flag, and imposes the burden that the caller must
-re-enable monitoring after each event.
-
-Does a solution like the following (with no requirement for EPOLLONESHOT) work?
-
-0. Implement an epoll_ctl() operation EPOLL_CTL_XXX
-   where the name XXX might be chosen based on the decision
-   in 4(a).
-1. EPOLL_CTL_XXX employs a private flag, EPOLLUSED, in the
-   per-fd events mask in the ready list. By default,
-   that flag is off.
-2. epoll_wait() always clears the EPOLLUSED flag if a
-   file descriptor is found to be ready.
-3. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
-   flag is NOT set, then
-        a) it sets the EPOLLUSED flag
-        b) It disables I/O events (as per EPOLL_CTL_DISABLE)
-           (I'm not 100% sure if this is necesary).
-        c) it returns EBUSY to the caller
-4. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
-   flag IS set, then it
-        a) either deletes the fd or disables events for the fd
-           (the choice here is a matter of design taste, I think;
-           deletion has the virtue of simplicity; disabling provides
-           the option to re-enable the fd later, if desired)
-        b) returns 0 to the caller.
-
-All of the above with suitable locking around the user-space cache.
-
-Cheers,
-
-Michael
+Thanks,
+Dimitris
