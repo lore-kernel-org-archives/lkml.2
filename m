@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755093Ab2JWGNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:13:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53680 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab2JWGNq (ORCPT
+	id S1755189Ab2JWGQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:16:51 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:64553 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab2JWGQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:13:46 -0400
-Date: Tue, 23 Oct 2012 10:13:41 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
-Message-ID: <20121023061341.GA7020@moon>
-References: <20121022191452.785366817@openvz.org>
- <20121022122934.d2e2fa57.akpm@linux-foundation.org>
- <5085B1A8.4020609@parallels.com>
- <20121022205641.GL2303@moon>
- <20121022213449.GH31440@moon>
- <20121022145158.53bddfc1.akpm@linux-foundation.org>
+	Tue, 23 Oct 2012 02:16:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022145158.53bddfc1.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <000f01cdb047$0f033f10$2d09bd30$%choi@samsung.com>
+References: <000f01cdb047$0f033f10$2d09bd30$%choi@samsung.com>
+Date: Tue, 23 Oct 2012 11:46:49 +0530
+Message-ID: <CAK44p227GpAkFDYXwXUTt19H-YiA74OvYofjpyr_7nKj+HhPMw@mail.gmail.com>
+Subject: Re: [PATCH] thermal: exynos: Fix wrong name of MODULE_DEVICE_TABLE
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Jonghwan Choi <jhbird.choi@samsung.com>,
+        "Brown, Len" <len.brown@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Cc: linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 02:51:58PM -0700, Andrew Morton wrote:
-...
-> > +	__seq_show_vmflag(VM_DONTEXPAND,"de ");
-> > +	__seq_show_vmflag(VM_ACCOUNT,	"ac ");
-> > +	__seq_show_vmflag(VM_NORESERVE,	"nr ");
-> > +	__seq_show_vmflag(VM_HUGETLB,	"ht ");
-> > +	__seq_show_vmflag(VM_NONLINEAR,	"nl ");
-> > +	__seq_show_vmflag(VM_ARCH_1,	"ar ");
-> > +	__seq_show_vmflag(VM_DONTDUMP,	"dd ");
-> > +	__seq_show_vmflag(VM_MIXEDMAP,	"mm ");
-> > +	__seq_show_vmflag(VM_HUGEPAGE,	"hg ");
-> > +	__seq_show_vmflag(VM_NOHUGEPAGE,"nh ");
-...
-> 
-> This code would be much denser if we did the old
-> 
-> 	static const char foo[] = "rdwrexshmrmw...";
-> 	unsigned i;
-> 
-> 	for (i = 0; i < BITS_PER_LONG; i++) {
-> 		if (flags & (1 << i))
-> 			seq_printf("%c%c ", foo[i * 2], foo[i * 2 + 1]);
-> 	}
-> 
-> trick.  But then we'd have to remember to fix foo[] each time we
-> alter the flags, so maybe let's not do that.
+On 22 October 2012 16:49, Jonghwan Choi <jhbird.choi@samsung.com> wrote:
+> exynos4_tmu_driver_ids should be exynos_tmu_driver_ids.
+>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  drivers/thermal/exynos_thermal.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/thermal/exynos_thermal.c
+> b/drivers/thermal/exynos_thermal.c
+> index fd03e85..6dd29e4 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -815,7 +815,7 @@ static struct platform_device_id exynos_tmu_driver_ids[]
+> = {
+>         },
+>         { },
+>  };
+> -MODULE_DEVICE_TABLE(platform, exynos4_tmu_driver_ids);
+> +MODULE_DEVICE_TABLE(platform, exynos_tmu_driver_ids);
 
-Yup, but not only that, this kind of trick hides associativity between
-VM_ constant and mnemonic, so on changes one would have to figure out
-which position some flag has in this foo[] array, so I vote for not
-use it :-)
+Your changes looks fine. Adding the thermal maintainers.
+
+Reviewed-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+
+Thanks,
+Amit Daniel
+>
+>  static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
+>                         struct platform_device *pdev)
+> --
+> 1.7.1
+>
