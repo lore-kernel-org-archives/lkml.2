@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965032Ab2JWWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:50:49 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41436 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587Ab2JWWuo (ORCPT
+	id S934098Ab2JWWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:52:29 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:45133 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933983Ab2JWWw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:50:44 -0400
+	Tue, 23 Oct 2012 18:52:28 -0400
+Message-ID: <1351032742.5283.69.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH] vlan: set sysfs device_type to 'vlan'
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Ben Greear <greearb@candelatech.com>
+CC: David Miller <davem@davemloft.net>, <cardoe@cardoe.com>, <kaber@trash.net>,
+        <netdev@vger.kernel.org>, <systemd-devel@lists.freedesktop.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Oct 2012 23:52:22 +0100
+In-Reply-To: <5086C256.20202@candelatech.com>
+References: <1350885237-12998-1-git-send-email-cardoe@cardoe.com>
+	 <20121023.023647.2164665243829038911.davem@davemloft.net>
+	 <5086C256.20202@candelatech.com>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <876260hl0p.fsf@octavius.laptop.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-71-git-send-email-keescook@chromium.org>
-	<876260hl0p.fsf@octavius.laptop.org>
-Date: Tue, 23 Oct 2012 15:50:43 -0700
-X-Google-Sender-Auth: sAc6Eg6ww0MtbjeLsN8YSmaMAG4
-Message-ID: <CAGXu5j+vCw-oA=Uyw6v3-O1d6itTJ7LEU6DLAEMXL1QDQP_uYA@mail.gmail.com>
-Subject: Re: [PATCH 070/193] drivers/mmc/core: remove CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 3:38 PM, Chris Ball <cjb@laptop.org> wrote:
-> On Tue, Oct 23 2012, Kees Cook wrote:
-> > This config item has not carried much meaning for a while now and is
-> > almost always enabled by default. As agreed during the Linux kernel
-> > summit, remove it.
+On Tue, 2012-10-23 at 09:14 -0700, Ben Greear wrote:
+> On 10/22/2012 11:36 PM, David Miller wrote:
+> > From: Doug Goldstein <cardoe@cardoe.com>
+> > Date: Mon, 22 Oct 2012 00:53:57 -0500
 > >
-> > CC: Chris Ball <cjb@laptop.org>
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > ---
-> >  drivers/mmc/core/Kconfig |    3 +--
-> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> >> Sets the sysfs device_type to 'vlan' for udev. This makes it easier for
+> >> applications that query network information via udev to identify vlans
+> >> instead of using strrchr().
+> >>
+> >> Signed-off-by: Doug Goldstein <cardoe@cardoe.com>
 > >
-> > diff --git a/drivers/mmc/core/Kconfig b/drivers/mmc/core/Kconfig
-> > index ef10387..269d072 100644
-> > --- a/drivers/mmc/core/Kconfig
-> > +++ b/drivers/mmc/core/Kconfig
-> > @@ -18,8 +18,7 @@ config MMC_UNSAFE_RESUME
-> >         module parameter "removable=0" or "removable=1".
-> >
-> >  config MMC_CLKGATE
-> > -     bool "MMC host clock gating (EXPERIMENTAL)"
-> > -     depends on EXPERIMENTAL
-> > +     bool "MMC host clock gating"
-> >       help
-> >         This will attempt to aggressively gate the clock to the MMC card.
-> >         This is done to save power due to gating off the logic and bus
->
-> Maybe this isn't important, but:
->
-> I think the commit message should be changed -- this part of the series
-> doesn't remove EXPERIMENTAL, it removes the dependency on it from its
-> current users.  The way the commit message is worded makes it sound like
-> the patch is going to remove MMC_CLKGATE, which of course it doesn't.
->
-> Ditto the subject line, could be ": remove use of CONFIG_EXPERIMENTAL".
+> > You're extremely misguided.  This change, in fact, makes it ten times
+> > harder for such applications to query such devices.
+> 
+> If the application doesn't care, it can use the old way (which at least
+> for me, involves string-comparing the driver name ethtool returns, which
+> sucks at best).
 
-I'll update the commit and subjects for the series; good idea.
+The 'old way' that has only worked since Linux 2.6.29 (3.5 years)?
 
-> Regardless, for this and the subsequent [071] patch:
->
-> Acked-by: Chris Ball <cjb@laptop.org>
->
-> (Let me know if you'd like me to take these, I don't mind who merges them.)
+The 'right way' seems to be to query for VLAN information through
+netlink.  But that has only worked since Linux 2.6.23 (5 years ago).
+The real 'old way' is to use SIOCGIFVLAN. :-/
 
-Either way is fine; I'm already carrying a bunch, so I'm happy to add
-these to that list.
+> And applications that care might suddenly have more features, or be more
+> efficient when running on newer kernels..
 
--Kees
+Ben.
 
---
-Kees Cook
-Chrome OS Security
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
