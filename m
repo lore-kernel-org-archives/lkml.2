@@ -1,99 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755424Ab2JWK0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:26:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:4932 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528Ab2JWKZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:25:31 -0400
-X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
-   d="scan'208";a="6052020"
-From: wency@cn.fujitsu.com
-To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH v2 12/12] memory-hotplug: free node_data when a node is offlined
-Date: Tue, 23 Oct 2012 18:30:50 +0800
-Message-Id: <1350988250-31294-13-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
-References: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:46,
-	Serialize complete at 2012/10/23 18:24:46
+	id S1756232Ab2JWK0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:26:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50408 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681Ab2JWK03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:26:29 -0400
+Date: Tue, 23 Oct 2012 12:26:26 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-next@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Len Brown <len.brown@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: mmotm 2012-10-22-17-08 uploaded (memory_hotplug.c)
+Message-ID: <20121023102625.GA24265@dhcp22.suse.cz>
+References: <20121023000924.C56EF5C0050@hpza9.eem.corp.google.com>
+ <50861FA9.2030506@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50861FA9.2030506@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Mon 22-10-12 21:40:09, Randy Dunlap wrote:
+> On 10/22/2012 05:09 PM, akpm@linux-foundation.org wrote:
+> 
+> > The mm-of-the-moment snapshot 2012-10-22-17-08 has been uploaded to
+> > 
+> >    http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > mmotm-readme.txt says
+> > 
+> > README for mm-of-the-moment:
+> > 
+> > http://www.ozlabs.org/~akpm/mmotm/
+> > 
+> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> > more than once a week.
+> > 
+> 
+> 
+> 
+> on x86_64, when CONFIG_MEMORY_HOTREMOVE is not enabled:
+> 
+> mm/built-in.o: In function `online_pages':
+> (.ref.text+0x10e7): undefined reference to `zone_pcp_reset'
 
-We call hotadd_new_pgdat() to allocate memory to store node_data. So we
-should free it when removing a node.
-
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Caused by memory-hotplug-allocate-zones-pcp-before-onlining-pages.patch.
+And fixed by. Andrew either fold this one in to the above one or keep it
+separate what works better with you.
 ---
- mm/memory_hotplug.c |   20 +++++++++++++++++++-
- 1 files changed, 19 insertions(+), 1 deletions(-)
+>From e8d79e446b00e57c195c59570df0f2ec435ca39d Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Tue, 23 Oct 2012 11:07:11 +0200
+Subject: [PATCH] mm: make zone_pcp_reset independ on MEMORY_HOTREMOVE
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index b1fe41d..6b4cd53 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1320,9 +1320,12 @@ static int check_cpu_on_node(void *data)
- /* offline the node if all memory sections of this node are removed */
- static void try_offline_node(int nid)
- {
-+	pg_data_t *pgdat = NODE_DATA(nid);
- 	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
--	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
-+	unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
- 	unsigned long pfn;
-+	struct page *pgdat_page = virt_to_page(pgdat);
-+	int i;
+340175b7 (mm/hotplug: free zone->pageset when a zone becomes empty)
+introduced zone_pcp_reset and hided it inside CONFIG_MEMORY_HOTREMOVE.
+Since "memory-hotplug: allocate zone's pcp before onlining pages" the
+function is also called from online_pages which is defined outside
+CONFIG_MEMORY_HOTREMOVE which causes a linkage error.
+
+The function, although not used outside of MEMORY_{HOTPLUT,HOTREMOVE},
+seems like universal enough so let's keep it at its current location
+and only remove the HOTREMOVE guard.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+---
+ mm/page_alloc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e29912e..30e359c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5981,7 +5981,6 @@ void __meminit zone_pcp_update(struct zone *zone)
+ }
+ #endif
  
- 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
- 		unsigned long section_nr = pfn_to_section_nr(pfn);
-@@ -1349,6 +1352,21 @@ static void try_offline_node(int nid)
- 	 */
- 	node_set_offline(nid);
- 	unregister_one_node(nid);
-+
-+	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
-+		/* node data is allocated from boot memory */
-+		return;
-+
-+	/* free waittable in each zone */
-+	for (i = 0; i < MAX_NR_ZONES; i++) {
-+		struct zone *zone = pgdat->node_zones + i;
-+
-+		if (zone->wait_table)
-+			vfree(zone->wait_table);
-+	}
-+
-+	arch_refresh_nodedata(nid, NULL);
-+	arch_free_nodedata(pgdat);
+-#ifdef CONFIG_MEMORY_HOTREMOVE
+ void zone_pcp_reset(struct zone *zone)
+ {
+ 	unsigned long flags;
+@@ -6001,6 +6000,7 @@ void zone_pcp_reset(struct zone *zone)
+ 	local_irq_restore(flags);
  }
  
- int __ref remove_memory(int nid, u64 start, u64 size)
++#ifdef CONFIG_MEMORY_HOTREMOVE
+ /*
+  * All pages in the range must be isolated before calling this.
+  */
 -- 
-1.7.1
+1.7.10.4
 
+
+-- 
+Michal Hocko
+SUSE Labs
