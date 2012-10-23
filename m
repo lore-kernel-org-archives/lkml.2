@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab2JWJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:29:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55758 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932792Ab2JWJ3k (ORCPT
+	id S1756975Ab2JWJbS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:31:18 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64732 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753027Ab2JWJbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:29:40 -0400
-Date: Tue, 23 Oct 2012 10:29:27 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] rbtree: include linux/compiler.h for definition of
- __always_inline
-Message-ID: <20121023092927.GB19167@mudshark.cambridge.arm.com>
-References: <1350925287-15929-1-git-send-email-will.deacon@arm.com>
- <CANN689HrJMyQSXTjwJtMmyxJvccgMd-9EzRA-JsgDCp+STX6qw@mail.gmail.com>
+	Tue, 23 Oct 2012 05:31:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANN689HrJMyQSXTjwJtMmyxJvccgMd-9EzRA-JsgDCp+STX6qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5085ACCD.3040203@wwwdotorg.org>
+References: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com>
+	<20121019181019.GP4730@atomide.com>
+	<CACRpkdZazjMoSzkr5t15-GeCnQKCJDsZyvT=KVMyw5XhjDybGQ@mail.gmail.com>
+	<5085ACCD.3040203@wwwdotorg.org>
+Date: Tue, 23 Oct 2012 11:31:15 +0200
+Message-ID: <CACRpkdY002gNuy81_XfenQfhZnMVyAxViMhoSd3nNMH5k0=JBQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pinctrl: reserve pins when states are activated
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
+        Loic Pallardy <loic.pallardy@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 10:56:21PM +0100, Michel Lespinasse wrote:
-> On Mon, Oct 22, 2012 at 10:01 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > rb_erase_augmented is a static function annotated with __always_inline.
-> > This causes a compile failure when attempting to use the rbtree
-> > implementation as a library (e.g. kvm tool):
-> >
-> > rbtree_augmented.h:125:24: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘void’
-> >
-> > This patch includes linux/compiler.h in rbtree_augmented.h so that the
-> > __always_inline macro is resolved correctly.
-> >
-> > Cc: Pekka Enberg <penberg@kernel.org>
-> > Cc: Michel Lespinasse <walken@google.com>
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> 
-> Just curious - what are you going to implement with augmented rbtrees
-> in kvm tool ?
-> 
-> If the basic rbtree or the interval tree implementations are
-> sufficient for your usage, you should try using that (in which case
-> you won't need this header fix).
+On Mon, Oct 22, 2012 at 10:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 10/22/2012 02:21 AM, Linus Walleij wrote:
 
-kvm tool uses interval rbtrees for things like keeping track of virtual
-devices, although it looks like Ingo implemented the augment callbacks
-while moving to -rc1.
+>> If this turns out to be a severe performance bottleneck, I
+>> suggest to add some additional constraint API, like
+>> pinctrl_set_pinmux_homegeneous_pinsets(true) that will
+>> at runtime select whether the pin allocation is done when
+>> getting the pinctrl handle instead.
+>
+> That API sounds like something system-wide, which seems like it would be
+> rather presumptuous (CPU/SoC support code couldn't execute it, since
+> that would presume a facet of all board designs that could change in the
+> future). Even a driver shouldn't be assuming this; it can't know what
+> boards it gets used in ahead of time.
 
-> But either way, the header fix is correct and will be required when
-> someone wants to use augmented rbtrees outside of the kernel. I just
-> didn't think that day would come so fast :)
-> 
-> Reviewed-by: Michel Lespinasse <walken@google.com>
+Well, yeah. It should rather be part of the pinctrl descriptor
+then, so it becomes a per-controller runpath simplification.
 
-Thanks Michel!
+> Instead, it seems like the map registration code could easily look at
+> all states defined for a device, and determine if the set of pins/groups
+> used by those states was identical, and switch between up-front or
+> dynamic registration as needed by the specific map entries.
 
-Will
+That kind of constraint-resolution in the kernel scares me,
+soon we will have a prolog runtime ... (but hm maybe that is not
+such a bad idea considering some other constraint things I've
+seen around)
+
+Yours,
+Linus Walleij
