@@ -1,36 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932881Ab2JWO52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:57:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:32935 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab2JWO51 convert rfc822-to-8bit (ORCPT
+	id S932960Ab2JWO5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:57:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61507 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932821Ab2JWO5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:57:27 -0400
-Message-ID: <5086B052.3030105@arm.com>
-Date: Tue, 23 Oct 2012 15:57:22 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
+	Tue, 23 Oct 2012 10:57:47 -0400
+Date: Tue, 23 Oct 2012 15:57:37 +0100
+From: Will Deacon <will.deacon@arm.com>
 To: Kukjin Kim <kgene@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>
 Subject: Re: ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined
+Message-ID: <20121023145737.GB2823@mudshark.cambridge.arm.com>
 References: <022101cdb12d$724e9650$56ebc2f0$@org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <022101cdb12d$724e9650$56ebc2f0$@org>
-X-Enigmail-Version: 1.5a1pre
-X-OriginalArrivalTime: 23 Oct 2012 14:57:23.0435 (UTC) FILETIME=[B571ABB0:01CDB12E]
-X-MC-Unique: 112102315572513101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/12 15:48, Kukjin Kim wrote:
+On Tue, Oct 23, 2012 at 03:48:21PM +0100, Kukjin Kim wrote:
 > Hi all,
 > 
 > Now, v3.7-rc2 happens following build error with s3c2410_defconfig...
@@ -42,15 +39,6 @@ On 23/10/12 15:48, Kukjin Kim wrote:
 > 
 > Any idea on this?
 
-This is becoming a recurring pattern...
+A fix for this is queued in rmk's fixes branch.
 
-Please see:
-https://patchwork.kernel.org/patch/1570611/
-https://lkml.org/lkml/2012/10/9/393
-
-and probably a few other instances...
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+Will
