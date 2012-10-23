@@ -1,128 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab2JWHSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:18:51 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58047 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756650Ab2JWHSu (ORCPT
+	id S1756729Ab2JWHSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:18:55 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14400 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756666Ab2JWHSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:18:50 -0400
+	Tue, 23 Oct 2012 03:18:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 23 Oct 2012 00:18:53 -0700
+From: Pavan Kunapuli <pkunapuli@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>, <cjb@laptop.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>
+CC: Pavan Kunapuli <pkunapuli@nvidia.com>
+Subject: [PATCH 0/2] mmc: sdhci: Defer probe if regulators are not registered
+Date: Tue, 23 Oct 2012 12:48:27 +0530
+Message-ID: <1350976709-19248-1-git-send-email-pkunapuli@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
-References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
-	<20121019160425.GA10175@dhcp22.suse.cz>
-	<CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
-	<CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
-Date: Tue, 23 Oct 2012 15:18:48 +0800
-Message-ID: <CAKWKT+bYOf0cEDuiibf6eV2raMxe481y-D+nrBgPWR3R+53zvg@mail.gmail.com>
-Subject: Re: process hangs on do_exit when oom happens
-From: Qiang Gao <gaoqiangscut@gmail.com>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This process was moved to RT-priority  queue when global oom-killer
-happened to boost the recovery
-of the system.. but it wasn't get properily dealt with. I still have
-no idea why where the problem is ..
-On Tue, Oct 23, 2012 at 12:40 PM, Balbir Singh <bsingharora@gmail.com> wrote:
-> On Tue, Oct 23, 2012 at 9:05 AM, Qiang Gao <gaoqiangscut@gmail.com> wrote:
->> information about the system is in the attach file "information.txt"
->>
->> I can not reproduce it in the upstream 3.6.0 kernel..
->>
->> On Sat, Oct 20, 2012 at 12:04 AM, Michal Hocko <mhocko@suse.cz> wrote:
->>> On Wed 17-10-12 18:23:34, gaoqiang wrote:
->>>> I looked up nothing useful with google,so I'm here for help..
->>>>
->>>> when this happens:  I use memcg to limit the memory use of a
->>>> process,and when the memcg cgroup was out of memory,
->>>> the process was oom-killed   however,it cannot really complete the
->>>> exiting. here is the some information
->>>
->>> How many tasks are in the group and what kind of memory do they use?
->>> Is it possible that you were hit by the same issue as described in
->>> 79dfdacc memcg: make oom_lock 0 and 1 based rather than counter.
->>>
->>>> OS version:  centos6.2    2.6.32.220.7.1
->>>
->>> Your kernel is quite old and you should be probably asking your
->>> distribution to help you out. There were many fixes since 2.6.32.
->>> Are you able to reproduce the same issue with the current vanila kernel?
->>>
->>>> /proc/pid/stack
->>>> ---------------------------------------------------------------
->>>>
->>>> [<ffffffff810597ca>] __cond_resched+0x2a/0x40
->>>> [<ffffffff81121569>] unmap_vmas+0xb49/0xb70
->>>> [<ffffffff8112822e>] exit_mmap+0x7e/0x140
->>>> [<ffffffff8105b078>] mmput+0x58/0x110
->>>> [<ffffffff81061aad>] exit_mm+0x11d/0x160
->>>> [<ffffffff81061c9d>] do_exit+0x1ad/0x860
->>>> [<ffffffff81062391>] do_group_exit+0x41/0xb0
->>>> [<ffffffff81077cd8>] get_signal_to_deliver+0x1e8/0x430
->>>> [<ffffffff8100a4c4>] do_notify_resume+0xf4/0x8b0
->>>> [<ffffffff8100b281>] int_signal+0x12/0x17
->>>> [<ffffffffffffffff>] 0xffffffffffffffff
->>>
->>> This looks strange because this is just an exit part which shouldn't
->>> deadlock or anything. Is this stack stable? Have you tried to take check
->>> it more times?
->
-> Looking at information.txt, I found something interesting
->
-> rt_rq[0]:/1314
->   .rt_nr_running                 : 1
->   .rt_throttled                  : 1
->   .rt_time                       : 0.856656
->   .rt_runtime                    : 0.000000
->
->
-> cfs_rq[0]:/1314
->   .exec_clock                    : 8738.133429
->   .MIN_vruntime                  : 0.000001
->   .min_vruntime                  : 8739.371271
->   .max_vruntime                  : 0.000001
->   .spread                        : 0.000000
->   .spread0                       : -9792.255554
->   .nr_spread_over                : 1
->   .nr_running                    : 0
->   .load                          : 0
->   .load_avg                      : 7376.722880
->   .load_period                   : 7.203830
->   .load_contrib                  : 1023
->   .load_tg                       : 1023
->   .se->exec_start                : 282004.715064
->   .se->vruntime                  : 18435.664560
->   .se->sum_exec_runtime          : 8738.133429
->   .se->wait_start                : 0.000000
->   .se->sleep_start               : 0.000000
->   .se->block_start               : 0.000000
->   .se->sleep_max                 : 0.000000
->   .se->block_max                 : 0.000000
->   .se->exec_max                  : 77.977054
->   .se->slice_max                 : 0.000000
->   .se->wait_max                  : 2.664779
->   .se->wait_sum                  : 29.970575
->   .se->wait_count                : 102
->   .se->load.weight               : 2
->
-> So 1314 is a real time process and
->
-> cpu.rt_period_us:
-> 1000000
-> ----------------------
-> cpu.rt_runtime_us:
-> 0
->
-> When did tt move to being a Real Time process (hint: see nr_running
-> and nr_throttled)?
->
-> Balbir
+Regulator driver registration may sometimes be done after
+mmc driver registration. In such cases, defer mmc probe
+to obtain vmmc and vmmcq regulators.
+Added vmmc and vmmcq supplies to tegra dt files.
+
+Pavan Kunapuli (2):
+  ARM: dt: tegra: Add sdhci regulators
+  mmc: sdhci: Defer probe if regulator_get fails
+
+ arch/arm/boot/dts/tegra20-harmony.dts    |   27 ++++++++++++++++++++-
+ arch/arm/boot/dts/tegra20-paz00.dts      |   24 +++++++++++++++++++-
+ arch/arm/boot/dts/tegra20-seaboard.dts   |   35 ++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/tegra20-tamonten.dtsi  |   10 ++++++++
+ arch/arm/boot/dts/tegra20-ventana.dts    |   36 ++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/tegra20-whistler.dts   |    9 +++++-
+ arch/arm/boot/dts/tegra30-cardhu-a02.dts |    2 +
+ arch/arm/boot/dts/tegra30-cardhu-a04.dts |    2 +
+ arch/arm/boot/dts/tegra30-cardhu.dtsi    |   19 ++++++++++++++-
+ drivers/mmc/host/sdhci.c                 |   25 ++++++++++++++++++--
+ 10 files changed, 176 insertions(+), 13 deletions(-)
+
