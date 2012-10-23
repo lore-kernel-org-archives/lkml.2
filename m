@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab2JWS0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:26:34 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47651 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933251Ab2JWSYb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 14:24:31 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        stefano.stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
-        mukesh.rathor@oracle.com
-Subject: [PATCH V5] PVH patches for v3.8.
-Date: Tue, 23 Oct 2012 14:12:01 -0400
-Message-Id: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S933436Ab2JWS1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:27:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933264Ab2JWS1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 14:27:01 -0400
+Date: Tue, 23 Oct 2012 20:27:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
+Message-ID: <20121023182711.GA24055@redhat.com>
+References: <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com> <20121023180558.GF2585@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023180558.GF2585@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog [since v4]
- - Mukesh addressed the reviewer's concerns.
- - Took Mukesh's patches and redid the changelogs.
- - Added Ack-ed as appropiate.
- - Fixed PVHVM 32-bit bootup issues.
- - Did some various cleanups, split some patches up.
+On 10/23, Paul E. McKenney wrote:
+>
+> On Tue, Oct 23, 2012 at 06:59:12PM +0200, Oleg Nesterov wrote:
+> > Not really the comment, but the question...
+> >
+> > On 10/22, Mikulas Patocka wrote:
+> > >
+> > >  static inline void percpu_down_read(struct percpu_rw_semaphore *p)
+> > >  {
+> > >  	rcu_read_lock();
+> > > @@ -24,22 +27,12 @@ static inline void percpu_down_read(stru
+> > >  	}
+> > >  	this_cpu_inc(*p->counters);
+> > >  	rcu_read_unlock();
+> > > +	light_mb(); /* A, between read of p->locked and read of data, paired with D */
+> > >  }
+> >
+> > rcu_read_unlock() (or even preempt_enable) should have compiler barrier
+> > semantics... But I agree, this adds more documentation for free.
+>
+> Although rcu_read_lock() does have compiler-barrier semantics if
+> CONFIG_PREEMPT=y, it does not for CONFIG_PREEMPT=n.  So the
+> light_mb() (which appears to be barrier()) is needed in that case.
 
-The big change is that I've made the xen_remove_from_physmap structure
-be of the same size and offset on 32 and 64 bit builds. Currently PVH 
-only runs with 64-bit guests, but in the future it could run with 32-bit.
-This change will eliminate having to add a compat layer to deal with
-32-bit hypercalls.
+Indeed, I missed this.
 
-Besides that the patches boot on an normal hypervisor - in
-dom0 (32 or 64bit), PV domU (32 or 64) and PVHVM domU (32 or 64).
-I don't have the PVH hypervisor patches so I could not address the
-change to xen_remove_from_physmap but I hope Mukesh can do that.
+> > Ignoring the current implementation, according to the documentation
+> > synchronize_sched() has all rights to return immediately if there is
+> > no active rcu_read_lock_sched() section. If this were possible, than
+> > percpu_up_read() lacks mb.
+>
+> Even if there happen to be no RCU-sched read-side critical sections
+> at the current instant, synchronize_sched() is required to make sure
+> that everyone agrees that whatever code is executed by the caller after
+> synchronize_sched() returns happens after any of the preceding RCU
+> read-side critical sections.
+>
+> So, if we have this, with x==0 initially:
+>
+> 	Task 0					Task 1
+>
+> 						rcu_read_lock_sched();
+> 						x = 1;
+> 						rcu_read_unlock_sched();
+> 	synchronize_sched();
+> 	r1 = x;
+>
+> Then the value of r1 had better be one.
 
-The patches are also located at:
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/pvh.v5
+Yes, yes, this too. ("active rcu_read_lock_sched() section" above
+was confusing, I agree).
 
+>  * Note that this guarantee implies a further memory-ordering guarantee.
+>  * On systems with more than one CPU, when synchronize_sched() returns,
+>  * each CPU is guaranteed to have executed a full memory barrier since
+>  * the end of its last RCU read-side critical section whose beginning
+>  * preceded the call to synchronize_sched().  Note that this guarantee
+>  * includes CPUs that are offline, idle, or executing in user mode, as
+>  * well as CPUs that are executing in the kernel.  Furthermore, if CPU A
+>  * invoked synchronize_sched(), which returned to its caller on CPU B,
+>  * then both CPU A and CPU B are guaranteed to have executed a full memory
+>  * barrier during the execution of synchronize_sched().
 
- arch/x86/include/asm/xen/interface.h |   11 ++-
- arch/x86/include/asm/xen/page.h      |    3 +
- arch/x86/xen/Kconfig                 |   10 ++
- arch/x86/xen/enlighten.c             |   78 ++++++++++++----
- arch/x86/xen/irq.c                   |    5 +-
- arch/x86/xen/mmu.c                   |  162 ++++++++++++++++++++++++++++++++--
- arch/x86/xen/mmu.h                   |    2 +
- arch/x86/xen/p2m.c                   |    2 +-
- arch/x86/xen/setup.c                 |   58 +++++++++----
- arch/x86/xen/smp.c                   |   75 ++++++++++------
- arch/x86/xen/xen-head.S              |   11 ++-
- drivers/xen/balloon.c                |   15 ++--
- drivers/xen/cpu_hotplug.c            |    4 +-
- drivers/xen/events.c                 |    9 ++-
- drivers/xen/gntdev.c                 |    3 +-
- drivers/xen/grant-table.c            |   27 +++++-
- drivers/xen/privcmd.c                |   72 ++++++++++++++-
- drivers/xen/xenbus/xenbus_client.c   |    3 +-
- include/xen/interface/memory.h       |   29 ++++++-
- include/xen/interface/physdev.h      |   10 ++
- include/xen/xen-ops.h                |    5 +-
- 21 files changed, 504 insertions(+), 90 deletions(-)
+Great!
 
-Konrad Rzeszutek Wilk (4):
-      xen/pvh: Fix PVHVM 32-bit bootup problems.
-      xen/hypercall: Make xen_remove_from_physmap the same on 64/32 builds.
-      xen/smp: Move the common CPU init code a bit to prep for PVH patch.
-      xen/e820: Coalesce the PVH release/populate logic in the generic case.
+Thanks Paul.
 
-Mukesh Rathor (6):
-      xen/pvh: Support ParaVirtualized Hardware extensions.
-      xen/pvh: Extend vcpu_guest_context, p2m, event, and XenBus.
-      xen/pvh: Implement MMU changes for PVH.
-      xen/pvh: bootup and setup (E820) related changes.
-      xen/pvh: balloon and grant changes.
-      xen/pvh: /dev/xen/privcmd changes.
+Oleg.
 
