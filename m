@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965472Ab2JWU7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:59:42 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:55812 "EHLO smtp.outflux.net"
+	id S965458Ab2JWU7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:59:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:41694 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933722Ab2JWUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933426Ab2JWUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:15 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Pete Zaitcev <zaitcev@redhat.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [PATCH 038/193] drivers/block: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:01:51 -0700
-Message-Id: <1351022666-6960-39-git-send-email-keescook@chromium.org>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 098/193] drivers/net/usb: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:51 -0700
+Message-Id: <1351022666-6960-99-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -29,61 +26,73 @@ almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
 CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Asai Thambi S P <asamymuthupa@micron.com>
-CC: Pete Zaitcev <zaitcev@redhat.com>
-CC: Cong Wang <xiyou.wangcong@gmail.com>
-CC: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/block/Kconfig |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/usb/Kconfig |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index f529407..6983a65 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -166,8 +166,8 @@ config BLK_DEV_DAC960
- 	  module will be called DAC960.
+diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
+index c1ae769..4d5c34d 100644
+--- a/drivers/net/usb/Kconfig
++++ b/drivers/net/usb/Kconfig
+@@ -8,8 +8,7 @@ menu "USB Network Adapters"
+ 	depends on USB && NET
  
- config BLK_DEV_UMEM
--	tristate "Micro Memory MM5415 Battery Backed RAM support (EXPERIMENTAL)"
--	depends on PCI && EXPERIMENTAL
-+	tristate "Micro Memory MM5415 Battery Backed RAM support"
-+	depends on PCI
+ config USB_CATC
+-	tristate "USB CATC NetMate-based Ethernet device support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "USB CATC NetMate-based Ethernet device support"
+ 	select CRC32
  	---help---
- 	  Saying Y here will include support for the MM5415 family of
- 	  battery backed (Non-volatile) RAM cards.
-@@ -430,8 +430,8 @@ config CDROM_PKTCDVD_BUFFERS
- 	  a disc is opened for writing.
+ 	  Say Y if you want to use one of the following 10Mbps USB Ethernet
+@@ -83,8 +82,7 @@ config USB_PEGASUS
+ 	  module will be called pegasus.
  
- config CDROM_PKTCDVD_WCACHE
--	bool "Enable write caching (EXPERIMENTAL)"
--	depends on CDROM_PKTCDVD && EXPERIMENTAL
-+	bool "Enable write caching"
-+	depends on CDROM_PKTCDVD
+ config USB_RTL8150
+-	tristate "USB RTL8150 based ethernet device support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "USB RTL8150 based ethernet device support"
+ 	select NET_CORE
+ 	select MII
  	help
- 	  If enabled, write caching will be set for the CD-R/W device. For now
- 	  this option is dangerous unless the CD-RW media is known good, as we
-@@ -508,8 +508,8 @@ config XEN_BLKDEV_BACKEND
+@@ -188,7 +186,7 @@ config USB_NET_CDCETHER
  
+ config USB_NET_CDC_EEM
+ 	tristate "CDC EEM support"
+-	depends on USB_USBNET && EXPERIMENTAL
++	depends on USB_USBNET
+ 	help
+ 	  This option supports devices conforming to the Communication Device
+ 	  Class (CDC) Ethernet Emulation Model, a specification that's easy to
+@@ -265,7 +263,7 @@ config USB_NET_PLUSB
+ 	tristate "Prolific PL-2301/2302/25A1 based cables"
+ 	# if the handshake/init/reset problems, from original 'plusb',
+ 	# are ever resolved ... then remove "experimental"
+-	depends on USB_USBNET && EXPERIMENTAL
++	depends on USB_USBNET
+ 	help
+ 	  Choose this option if you're using a host-to-host cable
+ 	  with one of these chips.
+@@ -279,8 +277,8 @@ config USB_NET_MCS7830
+ 	  adapters marketed under the DeLOCK brand.
  
- config VIRTIO_BLK
--	tristate "Virtio block driver (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && VIRTIO
-+	tristate "Virtio block driver"
-+	depends on VIRTIO
- 	---help---
- 	  This is the virtual block driver for virtio.  It can be used with
-           lguest or QEMU based VMMs (like KVM or Xen).  Say Y or M.
-@@ -528,7 +528,7 @@ config BLK_DEV_HD
+ config USB_NET_RNDIS_HOST
+-	tristate "Host for RNDIS and ActiveSync devices (EXPERIMENTAL)"
+-	depends on USB_USBNET && EXPERIMENTAL
++	tristate "Host for RNDIS and ActiveSync devices"
++	depends on USB_USBNET
+ 	select USB_NET_CDCETHER
+ 	help
+ 	  This option enables hosting "Remote NDIS" USB networking links,
+@@ -358,7 +356,7 @@ config USB_EPSON2888
  
- config BLK_DEV_RBD
- 	tristate "Rados block device (RBD)"
--	depends on INET && EXPERIMENTAL && BLOCK
-+	depends on INET && BLOCK
- 	select CEPH_LIB
- 	select LIBCRC32C
- 	select CRYPTO_AES
+ config USB_KC2190
+ 	boolean "KT Technology KC2190 based cables (InstaNet)"
+-	depends on USB_NET_CDC_SUBSET && EXPERIMENTAL
++	depends on USB_NET_CDC_SUBSET
+ 	help
+ 	  Choose this option if you're using a host-to-host cable
+ 	  with one of these chips.
 -- 
 1.7.9.5
 
