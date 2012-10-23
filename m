@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932829Ab2JWNST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:18:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61504 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab2JWNSP (ORCPT
+	id S1757064Ab2JWNTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:19:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59786 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab2JWNTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:18:15 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: Manjunath Hadli <manjunath.hadli@ti.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: [PATCH v2] ARM: dm365: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with V4L2_OUT_CAP_DV_TIMINGS
-Date: Tue, 23 Oct 2012 18:47:53 +0530
-Message-Id: <1350998273-19769-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 23 Oct 2012 09:19:03 -0400
+Date: Tue, 23 Oct 2012 15:19:01 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 15/34] perf, core: Add a concept of a weightened sample
+Message-ID: <20121023131901.GU16230@one.firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-16-git-send-email-andi@firstfloor.org> <1350998032.13456.25.camel@twins>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350998032.13456.25.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
+On Tue, Oct 23, 2012 at 03:13:52PM +0200, Peter Zijlstra wrote:
+> > @@ -562,6 +565,7 @@ enum perf_event_type {
+> >          *      { u64                   stream_id;} && PERF_SAMPLE_STREAM_ID
+> >          *      { u32                   cpu, res; } && PERF_SAMPLE_CPU
+> >          *      { u64                   period;   } && PERF_SAMPLE_PERIOD
+> > +        *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
+> >          *
+> >          *      { struct read_format    values;   } && PERF_SAMPLE_READ
+> >          * 
+> 
+> So the only issues I have are that his makes every sample more expensive
+> by having to 0 out that weight data and the sample placement.
 
-This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
-V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
-out.
+It's only reported when explicitely enabled (-W). So most users
+shouldn't see any overhead (except two untaken if()s or so)
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>
----
- Changes for v2:
- 1: fixed code  alignment as pointed by Sergei
+-Andi
 
- arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 2924d61..8519d2d 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
- 			.index		= 1,
- 			.name		= "Component",
- 			.type		= V4L2_OUTPUT_TYPE_ANALOG,
--			.capabilities	= V4L2_OUT_CAP_CUSTOM_TIMINGS,
-+			.capabilities	= V4L2_OUT_CAP_DV_TIMINGS,
- 		},
- 		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
- 		.default_mode	= "480p59_94",
 -- 
-1.7.4.1
-
+ak@linux.intel.com -- Speaking for myself only.
