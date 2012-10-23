@@ -1,54 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933566Ab2JWUCi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:02:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55621 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756972Ab2JWUCf (ORCPT
+	id S933584Ab2JWUCn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:02:43 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:49262 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab2JWUCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:02:35 -0400
-Date: Tue, 23 Oct 2012 13:02:34 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-Message-Id: <20121023130234.827aa5df.akpm@linux-foundation.org>
-In-Reply-To: <1351021889.7502.55.camel@joe-AO722>
-References: <20121023144221.5ae3061a11766df8175b959d@canb.auug.org.au>
-	<20121023124414.61568323.akpm@linux-foundation.org>
-	<1351021889.7502.55.camel@joe-AO722>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 23 Oct 2012 16:02:39 -0400
+Date: Tue, 23 Oct 2012 21:41:26 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next 2/2] r8169: update the settings for RTL8111G
+Message-ID: <20121023194126.GC10463@electric-eye.fr.zoreil.com>
+References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <1350974831-1438-1-git-send-email-hayeswang@realtek.com> <1350974831-1438-2-git-send-email-hayeswang@realtek.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350974831-1438-2-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 12:51:29 -0700
-Joe Perches <joe@perches.com> wrote:
+Hayes Wang <hayeswang@realtek.com> :
+> Update the parameters of RTL8111G
 
-> > btw, what's up with printk_syslog.h?  It includes two header files which it
-> > doesn't need but fails to include the two it *does* need: printk_log.h
-> > and types.h.
-> > 
-> > 
+I am Jack's Broken Heart. :o/
+
+In a not too distant future somebody may try to figure if things should
+be fed into one of the numerous -stable trees. He will appreciate figuring
+from the comment if this commit is supposed to fix anything or if it's a
+pure performance thing or whatever.
+
+The pll_power changes could be a bugfix for instance. The ALDPS change
+isn't.
+
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> ---
+>  drivers/net/ethernet/realtek/r8169.c | 118 ++++++++++++++++++++++++++++++-----
+>  1 file changed, 101 insertions(+), 17 deletions(-)
 > 
-> printk_syslog.c includes kernel.h (it includes types.h)
-> and printk_log.h.
-> 
-> I think printk_syslog.h doesn't need printk_log.h
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+> index cdd46de..3a393f7 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+[...]
+> @@ -3400,29 +3410,57 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+>  {
+>  	static const u16 mac_ocp_patch[] = {
+>  		0xe008, 0xe01b, 0xe01d, 0xe01f,
+> -		0xe021, 0xe023, 0xe025, 0xe027,
+> +		0xe022, 0xe025, 0xe031, 0xe04d,
+>  		0x49d2, 0xf10d, 0x766c, 0x49e2,
+>  		0xf00a, 0x1ec0, 0x8ee1, 0xc60a,
+> -
+>  		0x77c0, 0x4870, 0x9fc0, 0x1ea0,
+>  		0xc707, 0x8ee1, 0x9d6c, 0xc603,
+>  		0xbe00, 0xb416, 0x0076, 0xe86c,
+> -		0xc602, 0xbe00, 0x0000, 0xc602,
+> -
+> -		0xbe00, 0x0000, 0xc602, 0xbe00,
+> -		0x0000, 0xc602, 0xbe00, 0x0000,
+> -		0xc602, 0xbe00, 0x0000, 0xc602,
+> -		0xbe00, 0x0000, 0xc602, 0xbe00,
+> -
+> -		0x0000, 0x0000, 0x0000, 0x0000
+> +		0xc602, 0xbe00, 0xa000, 0xc602,
+> +		0xbe00, 0x0000, 0x1b76, 0xc202,
+> +		0xba00, 0x059c, 0x1b76, 0xc602,
+> +		0xbe00, 0x065a, 0x74e6, 0x1b78,
+> +		0x46dc, 0x1300, 0xf005, 0x74f8,
+> +		0x48c3, 0x48c4, 0x8cf8, 0x64e7,
+> +		0xc302, 0xbb00, 0x06a0, 0x74e4,
+> +		0x49c5, 0xf106, 0x49c6, 0xf107,
+> +		0x48c8, 0x48c9, 0xe011, 0x48c9,
+> +		0x4848, 0xe00e, 0x4848, 0x49c7,
+> +		0xf00a, 0x48c9, 0xc60d, 0x1d1f,
+> +		0x8dc2, 0x1d00, 0x8dc3, 0x1d11,
+> +		0x8dc0, 0xe002, 0x4849, 0x94e5,
+> +		0xc602, 0xbe00, 0x01f0, 0xe434,
+> +		0x49d9, 0xf01b, 0xc31e, 0x7464,
+> +		0x49c4, 0xf114, 0xc31b, 0x6460,
+> +		0x14fa, 0xfa02, 0xe00f, 0xc317,
+> +		0x7460, 0x49c0, 0xf10b, 0xc311,
+> +		0x7462, 0x48c1, 0x9c62, 0x4841,
+> +		0x9c62, 0xc30a, 0x1c04, 0x8c60,
+> +		0xe004, 0x1c15, 0xc305, 0x8c60,
+> +		0xc602, 0xbe00, 0x0384, 0xe434,
+> +		0xe030, 0xe61c, 0xe906
+>  	};
 
-A general rule is that the header file shouldn't know or care what else
-it's includer has included.  Ideally it shouldn't know or care what
-else its includees have included, either.
+Do you remember why firmware loading was introduced in the first place ?
 
-A fun test would be
+I find it increasingly hard to believe that it does not apply here.
 
-for i in *.h
-	echo $i > foo.c
-	make foo.o
-done
+[...]
+>  	/* Patch code for GPHY reset */
+> +	r8168_mac_ocp_write(tp, 0xfc26, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc28, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc2a, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc2c, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc2e, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc30, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc32, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc34, 0x0000);
+> +	r8168_mac_ocp_write(tp, 0xfc36, 0x0000);
+>  	for (i = 0; i < ARRAY_SIZE(mac_ocp_patch); i++)
+> -		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);
+> +		r8168_mac_ocp_write(tp, 0xf800 + 2 * i, mac_ocp_patch[i]);
+>  	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);
+>  	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);
+> +	r8168_mac_ocp_write(tp, 0xfc2e, 0x059b);
+> +	r8168_mac_ocp_write(tp, 0xfc30, 0x0659);
+> +	r8168_mac_ocp_write(tp, 0xfc32, 0x069f);
+> +	r8168_mac_ocp_write(tp, 0xfc34, 0x01cd);
+> +	r8168_mac_ocp_write(tp, 0xfc36, 0x0303);
 
+Within a few weeks / months there will be a new update with a new
+set of completely obscure parameters. It will takes a kernel cycle or
+more to be distributed.
 
+There should be some higher level data struct that could use a mundane
+"for" loop and some indirection in place of this code bloat.
+
+It is getting out of control.
+
+-- 
+Ueimor
