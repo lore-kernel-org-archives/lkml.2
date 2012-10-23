@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2JWABE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 20:01:04 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43356 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102Ab2JWABC (ORCPT
+	id S932453Ab2JWABr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 20:01:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39008 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab2JWABq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 20:01:02 -0400
-Message-ID: <5085DE38.6030906@gmail.com>
-Date: Mon, 22 Oct 2012 20:00:56 -0400
-From: Daniel Hazelton <dshadowwolf@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Mon, 22 Oct 2012 20:01:46 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        fengguang.wu@intel.com, kosaki.motohiro@jp.fujitsu.com,
-        drepper@gmail.com, paulmck@linux.vnet.ibm.com
-Subject: tools/vm build fails
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQWGkKQSGzpA5v9XNwi2-CsPodNuH3u+3bARQP_7TPHN1A@mail.gmail.com>
+References: <1350593430-24470-1-git-send-email-yinghai@kernel.org>
+	<1350593430-24470-17-git-send-email-yinghai@kernel.org>
+	<20121022152457.GH22780@phenom.dumpdata.com>
+	<CAE9FiQWGkKQSGzpA5v9XNwi2-CsPodNuH3u+3bARQP_7TPHN1A@mail.gmail.com>
+Date: Mon, 22 Oct 2012 17:01:45 -0700
+X-Google-Sender-Auth: WmBOpUsoKTyuSAfRQykpsQ9v_Xw
+Message-ID: <CAE9FiQU=rfZ9qTSDwx9783xOxpsbMrjUfFxXfhfzfjW612VOvQ@mail.gmail.com>
+Subject: Re: [PATCH 13/19] x86, mm: only call early_ioremap_page_table_range_init()
+ once
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After doing any build in the kernel (last attempt was an allmodconfig) 
-I've tried to build the 'vm' tool in tools/vm and the build fails - 
-looks to be fallout from the uapi header work.
+I updated the for-x86-mm branch with updated change log and several
+split_mem_range clean up.
 
-[madman@localhost tools]$ make V=1 vm
-make -C vm/
-make[1]: Entering directory `/home/madman/sources/linux-2.6/tools/vm'
-gcc -Wall -Wextra -o page-types page-types.c
-In file included from page-types.c:38:0:
-../../include/linux/kernel-page-flags.h:4:42: fatal error: 
-uapi/linux/kernel-page-flags.h: No such file or directory
-compilation terminated.
-make[1]: *** [page-types] Error 1
-make[1]: Leaving directory `/home/madman/sources/linux-2.6/tools/vm'
-make: *** [vm] Error 2
+Please check them.
+	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-mm
 
-I'm not a kernel developer (I've tried and been unable to wrap my head 
-around any part that I was going to try working on :( )and was just 
-trying bits in tools/ at random to see what, exactly, they were and this 
-kept happening, no matter the state of the tree.
+At the same time, please do check domU 32bit, that looks like only
+path that is not tested yet.
 
-I updated my git tree about 3 hours ago to mirror the latest Linus from 
-git.kernel.org after having run into this error yesterday and deciding I 
-must have done something wrong. This looks like it might be a missing -I 
-or similar since the file does exist and is at that exact path from the 
-file that is directly including it.
+Thanks
 
-DRH
+Yinghai
