@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab2JWT6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:58:31 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62157 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757452Ab2JWT63 (ORCPT
+	id S1757477Ab2JWT6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:58:46 -0400
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:40896 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab2JWT6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:58:29 -0400
+	Tue, 23 Oct 2012 15:58:42 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
         Ezequiel Garcia <elezegarcia@gmail.com>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 02/23] cx231xx: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:05 -0300
-Message-Id: <1351022246-8201-2-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 03/23] usbvision: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:06 -0300
+Message-Id: <1351022246-8201-3-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
@@ -45,37 +45,23 @@ expression E;
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/usb/cx231xx/cx231xx-cards.c |    2 +-
- drivers/media/usb/cx231xx/cx231xx-video.c |    3 +--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/media/usb/usbvision/usbvision-i2c.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/usb/cx231xx/cx231xx-cards.c b/drivers/media/usb/cx231xx/cx231xx-cards.c
-index b84ebc5..352d676 100644
---- a/drivers/media/usb/cx231xx/cx231xx-cards.c
-+++ b/drivers/media/usb/cx231xx/cx231xx-cards.c
-@@ -705,7 +705,7 @@ void cx231xx_sleep_s5h1432(struct cx231xx *dev)
+diff --git a/drivers/media/usb/usbvision/usbvision-i2c.c b/drivers/media/usb/usbvision/usbvision-i2c.c
+index 89fec02..ba262a3 100644
+--- a/drivers/media/usb/usbvision/usbvision-i2c.c
++++ b/drivers/media/usb/usbvision/usbvision-i2c.c
+@@ -189,8 +189,7 @@ int usbvision_i2c_register(struct usb_usbvision *usbvision)
+ 	if (usbvision->registered_i2c)
+ 		return 0;
  
- static inline void cx231xx_set_model(struct cx231xx *dev)
- {
--	memcpy(&dev->board, &cx231xx_boards[dev->model], sizeof(dev->board));
-+	dev->board = cx231xx_boards[dev->model];
- }
+-	memcpy(&usbvision->i2c_adap, &i2c_adap_template,
+-	       sizeof(struct i2c_adapter));
++	usbvision->i2c_adap = i2c_adap_template;
  
- /* Since cx231xx_pre_card_setup() requires a proper dev->model,
-diff --git a/drivers/media/usb/cx231xx/cx231xx-video.c b/drivers/media/usb/cx231xx/cx231xx-video.c
-index fedf785..c5109ba 100644
---- a/drivers/media/usb/cx231xx/cx231xx-video.c
-+++ b/drivers/media/usb/cx231xx/cx231xx-video.c
-@@ -2627,8 +2627,7 @@ int cx231xx_register_analog_devices(struct cx231xx *dev)
- 		     dev->name, video_device_node_name(dev->vdev));
- 
- 	/* Initialize VBI template */
--	memcpy(&cx231xx_vbi_template, &cx231xx_video_template,
--	       sizeof(cx231xx_vbi_template));
-+	cx231xx_vbi_template = cx231xx_video_template;
- 	strcpy(cx231xx_vbi_template.name, "cx231xx-vbi");
- 
- 	/* Allocate and fill vbi video_device struct */
+ 	sprintf(usbvision->i2c_adap.name, "%s-%d-%s", i2c_adap_template.name,
+ 		usbvision->dev->bus->busnum, usbvision->dev->devpath);
 -- 
 1.7.4.4
 
