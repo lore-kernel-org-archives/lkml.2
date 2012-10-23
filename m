@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab2JWSPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:15:41 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:26351 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756746Ab2JWSPk (ORCPT
+	id S1757243Ab2JWSQX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:16:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34880 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756708Ab2JWSQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 14:15:40 -0400
-Date: Tue, 23 Oct 2012 18:15:38 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at
- /proc/meminfo
-In-Reply-To: <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
-Message-ID: <0000013a8ed646c2-4cc34bd5-19c3-4e99-9fa0-248cdbc24feb-000000@email.amazonses.com>
-References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com> <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com> <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 23 Oct 2012 14:16:22 -0400
+Date: Tue, 23 Oct 2012 14:16:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+In-Reply-To: <CACVXFVN+=XH_f5BmRkXeagTNowz0o0-Pd7GcxCneO0FSq8xqEw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1210231402040.1635-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Ezequiel Garcia wrote:
+On Tue, 23 Oct 2012, Ming Lei wrote:
 
-> SLUB handles large kmalloc allocations falling back
-> to page-size allocations (kmalloc_large, etc).
-> This path doesn't touch NR_SLAB_XXRECLAIMABLE zone item state.
+> With the problem of non-SMP-safe bitfields access, the power.lock should
+> be held, but that is not enough to prevent children from being probed or
+> disconnected. Looks another lock is still needed. I think a global lock
+> is OK in the infrequent path.
 
-Right. UNRECLAIMABLE allocations do not factor in reclaim decisions.
+Agreed.
 
-> Without fully understanding it, I've decided to implement the same
-> behavior for SLOB,
-> leaving page-size allocations unaccounted on /proc/meminfo.
->
-> Is this expected / wanted ?
+> Got it, thanks for your detailed explanation.
+> 
+> Looks the problem is worse than above, not only bitfields are affected, the
+> adjacent fields might be involved too, see:
+> 
+>            http://lwn.net/Articles/478657/
 
-Yes that is fine.
+Linus made it clear (in various emails at the time) that the kernel
+requires the compiler not to do the sort of things discussed in that
+article.  But even the restrictions he wanted would not prevent
+adjacent bitfields from interfering with each other.
 
-> SLAB, on the other side, handles every allocation through some slab cache,
-> so it always set the zone state.
-
-Right but the caching barely has any effect at large sizes.
+Alan Stern
 
