@@ -1,335 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab2JWFfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 01:35:20 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46042 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab2JWFfS (ORCPT
+	id S1754283Ab2JWFjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 01:39:01 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37192 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753673Ab2JWFi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 01:35:18 -0400
-Date: Mon, 22 Oct 2012 22:35:14 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH] Input: introduce managed input devices (add devres support)
-Message-ID: <20121023053513.GA15642@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 01:38:59 -0400
+X-AuditID: cbfee611-b7fa86d0000010a9-33-50862d71dcae
+Date: Tue, 23 Oct 2012 05:38:57 +0000 (GMT)
+From: Jongman Heo <jongman.heo@samsung.com>
+Subject: Re: 3.7-rc2 regression : file copied to CIFS-mounted directory
+ corrupted
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "edumazet@google.com" <edumazet@google.com>
+Cc: Jongman Heo <jongman.heo@samsung.com>
+Reply-to: jongman.heo@samsung.com
+MIME-version: 1.0
+X-MTR: 20121023052818668@jongman.heo
+Msgkey: 20121023052818668@jongman.heo
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPHeader: ML
+X-RootMTR: 20121023032623567@jongman.heo
+X-ParentMTR: 20121023032623567@jongman.heo
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <22207427.56211350970373630.JavaMail.weblogic@epml04>
+DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t8zHd1C3bYAg41PuSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGzQuPmArWGVWsmL6NvYGxxbCLkZNDSEBN4ubnQ4wgtoSAicTe
+	ljUsELaYxIV769m6GLmAamYxSvRPPcEMU/TrwXeoxHxGicddD5lAEiwCqhK7Pr5gB7HZBHQk
+	Ov7vZ+1i5OAQFgiU2Ps4FaReRGApo8Shu+/AtjELaEtcX3yfCeIKRYlrSxezgdi8AoISJ2c+
+	YQHplRBQkdj7zQEirCrxYOtrqBvEJS7MvcQOYfNKzGh/CnW0nMS0r2ugaqQlzs/aAPUYv8Sx
+	2zuYIGxNie2zlkPZ2hKHP71jganZdWo5M8zM+1vmMkGcqSgxpfshO8g5zEC963fpo7oSxHaU
+	OLpuPwskFAQkvk0+xALyroTAX3aJ6Q2ToHZJShxccYNlAqP8LCT9s5CsmIWwAlnJAkaWVYyi
+	qQXJBcVJ6anmesWJucWleel6yfm5mxgh8S+4g3Fpg8UhRgEORiUeXosjrQFCrIllxZW5hxgl
+	OJiVRHiVA4BCvCmJlVWpRfnxRaU5qcWHGH2Arp3ILCWanA9MTXkl8YbGBsaGhpaGZqaWpgY4
+	hJXEecs9UgKEBNITS1KzU1MLUotgxjFxcEo1MDKt+lGja733e9q6GNG1qbnTnjaa5+44UnDn
+	ddxLFVftF6lHp2vyXzoad3uuf0qDUY1m7u6nlyvmHWyY6Fq5LfOG0JRLW5PX2qlWfAy6NOtC
+	/qEykS7taRYvH7A1um79lfu3q9FX6rjc2VsHP2z89XXdvaupR4TO/C1olTgYbeYju5Hhgmbq
+	lbNKLMUZiYZazEXFiQCsEJX+LAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJKsWRmVeSWpSXmKPExsVy+t/tGbqFum0BBg92sFlc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jJsXHjEVrDOqWDF9G3sDY4thFyMnh5CAmsTNz4cYQWwJAROJXw++s0HYYhIX7q0HsrmAauYz
+	SjzuesgEkmARUJXY9fEFO4jNJqAj0fF/P2sXIweHsECgxN7HqSD1IgJLGSUO3X0HNpRZQFvi
+	+uL7TBDLFCWuLV0MtoBXQFDi5MwnLCC9EgIqEnu/OUCEVSUebH3NDHGDuMSFuZfYIWxeiRnt
+	T1kgbDmJaV/XQNVIS5yftQHqfn6JY7d3MEHYmhLbZy2HsrUlDn96xwJTs+vUcmaYmfe3zGWC
+	OFNRYkr3Q3aQc5iBetfv0kd1JYjtKHF03X6WCYxSs5CkZiHpnoXQjaxkASPLKkbR1ILkguKk
+	9FRzveLE3OLSvHS95PzcTYzg9PFMcAfj0gaLQ4wCHIxKPLwWR1oDhFgTy4orcw8xSnAwK4nw
+	KgcAhXhTEiurUovy44tKc1KLDzH6AKNjIrOUaHI+MLXllcQbGhsYGxpamhuYGhpZ4BBWEuct
+	90gJEBJITyxJzU5NLUgtghnHxMEp1cBos7BIYn+rWke/SlbG7hvKX58cjv3ZMeX+vTDlm3Hv
+	1nDxHVvH4nO9oTQ3iTl0EU85023tC17yDNuU/u7KE/55eaPZ/Lof71TNXa8lLz8bZHVymtXl
+	g9mWxRO2P1+Q7l1+mfGqsendOK8akV3t+wyVzb+2bXtmtqJPhee6YpxlcZXuzdi7ZcuUWIoz
+	Eg21mIuKEwE0uYrkTAMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-There is a demand from driver's writers to use managed devices framework
-for their drivers. Unfortunately up to this moment input devices did not
-provide support for managed devices and that lead to mixing two styles
-of resource management which usually introduced more bugs, such as
-manually unregistering input device but relying in devres to free
-interrupt handler which (unless device is properly shut off) can cause
-ISR to reference already freed memory.
-
-This change introduces devm_input_allocate_device() that will allocate
-managed instance of input device so that driver writers who prefer
-using devm_* framework do not have to mix 2 styles.
-
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- drivers/input/input.c | 175 ++++++++++++++++++++++++++++++++++++++++++--------
- include/linux/input.h |   7 +-
- 2 files changed, 154 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 53a0dde..7fe74f8 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -1723,7 +1723,7 @@ EXPORT_SYMBOL_GPL(input_class);
- /**
-  * input_allocate_device - allocate memory for new input device
-  *
-- * Returns prepared struct input_dev or NULL.
-+ * Returns prepared struct input_dev or %NULL.
-  *
-  * NOTE: Use input_free_device() to free devices that have not been
-  * registered; input_unregister_device() should be used for already
-@@ -1750,6 +1750,70 @@ struct input_dev *input_allocate_device(void)
- }
- EXPORT_SYMBOL(input_allocate_device);
- 
-+struct input_devres {
-+	struct input_dev *input;
-+};
-+
-+static int devm_input_device_match(struct device *dev, void *res, void *data)
-+{
-+	struct input_devres *devres = res;
-+
-+	return devres->input == data;
-+}
-+
-+static void devm_input_device_release(struct device *dev, void *res)
-+{
-+	struct input_devres *devres = res;
-+	struct input_dev *input = devres->input;
-+
-+	dev_dbg(dev, "%s: dropping reference to %s\n",
-+		__func__, dev_name(&input->dev));
-+	input_put_device(input);
-+}
-+
-+/**
-+ * devm_input_allocate_device - allocate managed input device
-+ * @dev: device owning the input device being created
-+ *
-+ * Returns prepared struct input_dev or %NULL.
-+ *
-+ * Managed input devices do not need to be explicitly unregistered or
-+ * freed as it will be done automatically when owner device unbinds from
-+ * its driver (or binding fails). Once managed input device is allocated,
-+ * it is ready to be set up and registered in the same fashion as regular
-+ * input device. There are no special devm_input_device_[un]register()
-+ * variants, regular ones work with both managed and unmanaged devices.
-+ *
-+ * NOTE: the owner device is set up as parent of input device and users
-+ * should not override it.
-+ */
-+
-+struct input_dev *devm_input_allocate_device(struct device *dev)
-+{
-+	struct input_dev *input;
-+	struct input_devres *devres;
-+
-+	devres = devres_alloc(devm_input_device_release,
-+			      sizeof(struct input_devres), GFP_KERNEL);
-+	if (!devres)
-+		return NULL;
-+
-+	input = input_allocate_device();
-+	if (!input) {
-+		devres_free(devres);
-+		return NULL;
-+	}
-+
-+	input->dev.parent = dev;
-+	input->devres_managed = true;
-+
-+	devres->input = input;
-+	devres_add(dev, devres);
-+
-+	return input;
-+}
-+EXPORT_SYMBOL(devm_input_allocate_device);
-+
- /**
-  * input_free_device - free memory occupied by input_dev structure
-  * @dev: input device to free
-@@ -1766,8 +1830,14 @@ EXPORT_SYMBOL(input_allocate_device);
-  */
- void input_free_device(struct input_dev *dev)
- {
--	if (dev)
-+	if (dev) {
-+		if (dev->devres_managed)
-+			WARN_ON(devres_destroy(dev->dev.parent,
-+						devm_input_device_release,
-+						devm_input_device_match,
-+						dev));
- 		input_put_device(dev);
-+	}
- }
- EXPORT_SYMBOL(input_free_device);
- 
-@@ -1888,6 +1958,38 @@ static void input_cleanse_bitmasks(struct input_dev *dev)
- 	INPUT_CLEANSE_BITMASK(dev, SW, sw);
- }
- 
-+static void __input_unregister_device(struct input_dev *dev)
-+{
-+	struct input_handle *handle, *next;
-+
-+	input_disconnect_device(dev);
-+
-+	mutex_lock(&input_mutex);
-+
-+	list_for_each_entry_safe(handle, next, &dev->h_list, d_node)
-+		handle->handler->disconnect(handle);
-+	WARN_ON(!list_empty(&dev->h_list));
-+
-+	del_timer_sync(&dev->timer);
-+	list_del_init(&dev->node);
-+
-+	input_wakeup_procfs_readers();
-+
-+	mutex_unlock(&input_mutex);
-+
-+	device_del(&dev->dev);
-+}
-+
-+static void devm_input_device_unregister(struct device *dev, void *res)
-+{
-+	struct input_devres *devres = res;
-+	struct input_dev *input = devres->input;
-+
-+	dev_dbg(dev, "%s: unregistering device %s\n",
-+		__func__, dev_name(&input->dev));
-+	__input_unregister_device(input);
-+}
-+
- /**
-  * input_register_device - register device with input core
-  * @dev: device to be registered
-@@ -1903,11 +2005,21 @@ static void input_cleanse_bitmasks(struct input_dev *dev)
- int input_register_device(struct input_dev *dev)
- {
- 	static atomic_t input_no = ATOMIC_INIT(0);
-+	struct input_devres *devres = NULL;
- 	struct input_handler *handler;
- 	unsigned int packet_size;
- 	const char *path;
- 	int error;
- 
-+	if (dev->devres_managed) {
-+		devres = devres_alloc(devm_input_device_unregister,
-+				      sizeof(struct input_devres), GFP_KERNEL);
-+		if (!devres)
-+			return -ENOMEM;
-+
-+		devres->input = dev;
-+	}
-+
- 	/* Every input device generates EV_SYN/SYN_REPORT events. */
- 	__set_bit(EV_SYN, dev->evbit);
- 
-@@ -1923,8 +2035,10 @@ int input_register_device(struct input_dev *dev)
- 
- 	dev->max_vals = max(dev->hint_events_per_packet, packet_size) + 2;
- 	dev->vals = kcalloc(dev->max_vals, sizeof(*dev->vals), GFP_KERNEL);
--	if (!dev->vals)
--		return -ENOMEM;
-+	if (!dev->vals) {
-+		error = -ENOMEM;
-+		goto err_devres_free;
-+	}
- 
- 	/*
- 	 * If delay and period are pre-set by the driver, then autorepeating
-@@ -1949,7 +2063,7 @@ int input_register_device(struct input_dev *dev)
- 
- 	error = device_add(&dev->dev);
- 	if (error)
--		return error;
-+		goto err_free_vals;
- 
- 	path = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
- 	pr_info("%s as %s\n",
-@@ -1958,10 +2072,8 @@ int input_register_device(struct input_dev *dev)
- 	kfree(path);
- 
- 	error = mutex_lock_interruptible(&input_mutex);
--	if (error) {
--		device_del(&dev->dev);
--		return error;
--	}
-+	if (error)
-+		goto err_device_del;
- 
- 	list_add_tail(&dev->node, &input_dev_list);
- 
-@@ -1972,7 +2084,20 @@ int input_register_device(struct input_dev *dev)
- 
- 	mutex_unlock(&input_mutex);
- 
-+	if (dev->devres_managed) {
-+		dev_info(dev->dev.parent, "%s: registerign %s with devres.\n",
-+			__func__, dev->name ?: "N/A");
-+		devres_add(dev->dev.parent, devres);
-+	}
- 	return 0;
-+
-+err_device_del:
-+	device_del(&dev->dev);
-+err_free_vals:
-+	kfree(dev->vals);
-+err_devres_free:
-+	devres_free(devres);
-+	return error;
- }
- EXPORT_SYMBOL(input_register_device);
- 
-@@ -1985,24 +2110,20 @@ EXPORT_SYMBOL(input_register_device);
-  */
- void input_unregister_device(struct input_dev *dev)
- {
--	struct input_handle *handle, *next;
--
--	input_disconnect_device(dev);
--
--	mutex_lock(&input_mutex);
--
--	list_for_each_entry_safe(handle, next, &dev->h_list, d_node)
--		handle->handler->disconnect(handle);
--	WARN_ON(!list_empty(&dev->h_list));
--
--	del_timer_sync(&dev->timer);
--	list_del_init(&dev->node);
--
--	input_wakeup_procfs_readers();
--
--	mutex_unlock(&input_mutex);
--
--	device_unregister(&dev->dev);
-+	if (dev->devres_managed) {
-+		WARN_ON(devres_destroy(dev->dev.parent,
-+					devm_input_device_unregister,
-+					devm_input_device_match,
-+					dev));
-+		__input_unregister_device(dev);
-+		/*
-+		 * We do not do input_put_device() here because it will be done
-+		 * when 2nd devres fires up.
-+		 */
-+	} else {
-+		__input_unregister_device(dev);
-+		input_put_device(dev);
-+	}
- }
- EXPORT_SYMBOL(input_unregister_device);
- 
-diff --git a/include/linux/input.h b/include/linux/input.h
-index 15464ba..bfc479c 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -1256,6 +1256,8 @@ struct input_value {
-  * @h_list: list of input handles associated with the device. When
-  *	accessing the list dev->mutex must be held
-  * @node: used to place the device onto input_dev_list
-+ * @devres_managed: indicates that devices is managed with devres framework
-+ *	and needs not be explicitly unregistered or freed.
-  */
- struct input_dev {
- 	const char *name;
-@@ -1324,6 +1326,8 @@ struct input_dev {
- 	unsigned int num_vals;
- 	unsigned int max_vals;
- 	struct input_value *vals;
-+
-+	bool devres_managed;
- };
- #define to_input_dev(d) container_of(d, struct input_dev, dev)
- 
-@@ -1467,7 +1471,8 @@ struct input_handle {
- 	struct list_head	h_node;
- };
- 
--struct input_dev *input_allocate_device(void);
-+struct input_dev __must_check *input_allocate_device(void);
-+struct input_dev __must_check *devm_input_allocate_device(struct device *);
- void input_free_device(struct input_dev *dev);
- 
- static inline struct input_dev *input_get_device(struct input_dev *dev)
--- 
-1.7.11.7
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9N5d6GI001211
 
 
--- 
-Dmitry
+Hmm,
+
+I've just met the issue, with the commit 5640f768 reverted.
+It seems that the issue does not always happen. So, my bisection may not be correct.
+
+At this moment, I don't have enough time to do bisection again..
+
+Regards.
+
+[sorry for top posting, our corporate MTA is not good at e-mail writing for mailing list... ]
+
+------- Original Message -------
+Sender : Jongman Heo<jongman.heo@samsung.com>
+Date : 2012-10-23 12:30 (GMT+09:00)
+Title : 3.7-rc2 regression : file copied to CIFS-mounted directory corrupted
+
+
+Hi, all,
+
+With 3.7-rc2, I noticed that file copied to CIFS-mounted directory is corrupted. 
+Integrity is checked by md5sum.
+
+  1. get md5sum of file located on local (ext4) disk
+  2. copy the file to CIFS-mounted directory
+  3. check md5sum of the copied file
+
+Host   : Windows 7
+Guest : Fedora 16 on VMWare
+Kernel : 3.7-rc2
+
+Shared directory exists on Windows 7 Host, and Linux Guest on VMware mounts it using CIFS.
+
+I thought it was related to CIFS or VFS changes, but it wasn't.
+
+Below is a git bisect log, and first bad commit is 5640f768, "net: use a per task frag allocator".
+
+Reverting the commit 5640f768 fixes the corruption issue on CIFS directory.
+During revert, I got conflict in net/ipv4/raw.c. I took "parent of 5640f76" hunk to resolve it.
+
+# git bisect log
+git bisect start
+# bad: [6f0c0580b70c89094b3422ba81118c7b959c7556] Linux 3.7-rc2
+git bisect bad 6f0c0580b70c89094b3422ba81118c7b959c7556
+# good: [a0d271cbfed1dd50278c6b06bead3d00ba0a88f9] Linux 3.6
+git bisect good a0d271cbfed1dd50278c6b06bead3d00ba0a88f9
+# good: [fec344e3f31aa911297cd3a4639432d983b1f324] cifs: change cifs_call_async to use smb_rqst structs
+git bisect good fec344e3f31aa911297cd3a4639432d983b1f324
+# good: [3d6d854a13844223b603fd7a16a4a4a4afd62c72] cifs: add FL_CLOSE to fl_flags mask in cifs_read_flock
+git bisect good 3d6d854a13844223b603fd7a16a4a4a4afd62c72
+# good: [f065fd099fc475333fc7a55677a7f64764445d55] CIFS: Fix possible freed pointer dereference in CIFS_SessSetup
+git bisect good f065fd099fc475333fc7a55677a7f64764445d55
+# bad: [b7a10626c8bc88fd097a8bb4486c89558f89320c] [CIFS] WARN_ON_ONCE if kernel_sendmsg() returns -ENOSPC
+git bisect bad b7a10626c8bc88fd097a8bb4486c89558f89320c
+# good: [1d4ab9077681b7cce60ff46e3a42fe2dafa0b83d] [CIFS] Fix indentation of fs/cifs/Kconfig entries
+git bisect good 1d4ab9077681b7cce60ff46e3a42fe2dafa0b83d
+# bad: [aab174f0df5d72d31caccf281af5f614fa254578] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs
+git bisect bad aab174f0df5d72d31caccf281af5f614fa254578
+# good: [d9a807461fc8cc0d6ba589ea0730d139122af012] Merge tag 'usb-3.6' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb
+git bisect good d9a807461fc8cc0d6ba589ea0730d139122af012
+# good: [a20acf99f75e49271381d65db097c9763060a1e8] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next
+git bisect good a20acf99f75e49271381d65db097c9763060a1e8
+# bad: [d379142bc4d9b78cdd9fc5aa696ca1ea083fb7d4] be2net: fixup log messages
+git bisect bad d379142bc4d9b78cdd9fc5aa696ca1ea083fb7d4
+# good: [2a35cfa591ac63f17815c2d9432b799e37527980] r8169: add D-Link DGE-560T identifiers.
+git bisect good 2a35cfa591ac63f17815c2d9432b799e37527980
+# good: [9316f0e3c6ba524d8fa14bfded048b252891931a] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next into for-davem
+git bisect good 9316f0e3c6ba524d8fa14bfded048b252891931a
+# good: [623df484a777f3c00c1ea3d6a7565b8d8ac688a1] tcp: extract code to compute SYNACK RTT
+git bisect good 623df484a777f3c00c1ea3d6a7565b8d8ac688a1
+# bad: [c523530ce17defe6b28ccfe622c506488f430866] can: c_can: fix segfault during rmmod
+git bisect bad c523530ce17defe6b28ccfe622c506488f430866
+# good: [6ee584be3ee30f72dec8a8ca87bc10824e27a631] netfilter: nfnetlink_queue: add NFQA_CAP_LEN attribute
+git bisect good 6ee584be3ee30f72dec8a8ca87bc10824e27a631
+# good: [725b9c0425f54450d1f376befb85dae706ea0c7a] qeth: cleanup channel path descriptor function
+git bisect good 725b9c0425f54450d1f376befb85dae706ea0c7a
+# good: [0cf833aefaa85bbfce3ff70485e5534e09254773] net: loopback: set default mtu to 64K
+git bisect good 0cf833aefaa85bbfce3ff70485e5534e09254773
+# bad: [9e49e88958feb41ec701fa34b44723dabadbc28c] filter: add XOR instruction for use with X/K
+git bisect bad 9e49e88958feb41ec701fa34b44723dabadbc28c
+# bad: [5640f7685831e088fe6c2e1f863a6805962f8e81] net: use a per task frag allocator
+git bisect bad 5640f7685831e088fe6c2e1f863a6805962f8e81
+# good: [b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c] gianfar: Change default HW Tx queue scheduling mode
+git bisect good b98b8babd6e3370fadb7c6eaacb00eb2f6344a6c
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
