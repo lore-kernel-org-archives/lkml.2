@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab2JWNxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:53:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44658 "EHLO mga01.intel.com"
+	id S933110Ab2JWNxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:53:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44667 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757140Ab2JWNxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757147Ab2JWNxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 09:53:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191105"
+   d="scan'208";a="237191183"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 14/26] mmc: panic write: bypass bus ref locking
-Date: Tue, 23 Oct 2012 16:48:12 +0300
-Message-Id: <1351000104-13015-15-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 17/26] mmc: sdhci: panic write: call tasklets inline
+Date: Tue, 23 Oct 2012 16:48:15 +0300
+Message-Id: <1351000104-13015-18-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -31,37 +31,121 @@ From: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/core/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/mmc/host/sdhci.c |   31 +++++++++++++++++++++----------
+ 1 file changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 4fd7061..3daec19 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1418,6 +1418,11 @@ static inline void mmc_bus_get(struct mmc_host *host)
- {
- 	unsigned long flags;
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 827e34f..ff72e98 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -914,6 +914,17 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
+ 	sdhci_writew(host, mode, SDHCI_TRANSFER_MODE);
+ }
  
-+	if (mmc_am_panic_task(host)) {
-+		host->bus_refs++;
-+		return;
-+	}
++static void sdhci_tasklet_card(unsigned long param);
++static void sdhci_tasklet_finish(unsigned long param);
 +
- 	spin_lock_irqsave(&host->lock, flags);
- 	host->bus_refs++;
- 	spin_unlock_irqrestore(&host->lock, flags);
-@@ -1431,6 +1436,11 @@ static inline void mmc_bus_put(struct mmc_host *host)
++#define sdhci_sched_tasklet(host, name)				\
++{								\
++	if (mmc_am_panic_task(host->mmc))			\
++		sdhci_tasklet_##name((unsigned long)host);	\
++	else							\
++		tasklet_schedule(&host->name##_tasklet);	\
++}
++
+ static void sdhci_finish_data(struct sdhci_host *host)
  {
- 	unsigned long flags;
+ 	struct mmc_data *data;
+@@ -965,7 +976,7 @@ static void sdhci_finish_data(struct sdhci_host *host)
  
-+	if (mmc_am_panic_task(host)) {
-+		host->bus_refs--;
-+		return;
-+	}
-+
- 	spin_lock_irqsave(&host->lock, flags);
- 	host->bus_refs--;
- 	if ((host->bus_refs == 0) && host->bus_ops)
+ 		sdhci_send_command(host, data->stop);
+ 	} else
+-		tasklet_schedule(&host->finish_tasklet);
++		sdhci_sched_tasklet(host, finish);
+ }
+ 
+ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+@@ -994,7 +1005,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 				"inhibit bit(s).\n", mmc_hostname(host->mmc));
+ 			sdhci_dumpregs(host);
+ 			cmd->error = -EIO;
+-			tasklet_schedule(&host->finish_tasklet);
++			sdhci_sched_tasklet(host, finish);
+ 			return;
+ 		}
+ 		timeout--;
+@@ -1015,7 +1026,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 		pr_err("%s: Unsupported response type!\n",
+ 			mmc_hostname(host->mmc));
+ 		cmd->error = -EINVAL;
+-		tasklet_schedule(&host->finish_tasklet);
++		sdhci_sched_tasklet(host, finish);
+ 		return;
+ 	}
+ 
+@@ -1076,7 +1087,7 @@ static void sdhci_finish_command(struct sdhci_host *host)
+ 			sdhci_finish_data(host);
+ 
+ 		if (!host->cmd->data)
+-			tasklet_schedule(&host->finish_tasklet);
++			sdhci_sched_tasklet(host, finish);
+ 
+ 		host->cmd = NULL;
+ 	}
+@@ -1303,7 +1314,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 
+ 	if (!present || host->flags & SDHCI_DEVICE_DEAD) {
+ 		host->mrq->cmd->error = -ENOMEDIUM;
+-		tasklet_schedule(&host->finish_tasklet);
++		sdhci_sched_tasklet(host, finish);
+ 	} else {
+ 		u32 present_state;
+ 
+@@ -2079,7 +2090,7 @@ static void sdhci_tasklet_card(unsigned long param)
+ 		sdhci_reset(host, SDHCI_RESET_DATA);
+ 
+ 		host->mrq->cmd->error = -ENOMEDIUM;
+-		tasklet_schedule(&host->finish_tasklet);
++		sdhci_sched_tasklet(host, finish);
+ 	}
+ 
+ 	sdhci_unlock_irqrestore(host, flags);
+@@ -2174,7 +2185,7 @@ static void sdhci_timeout_timer(unsigned long data)
+ 			else
+ 				host->mrq->cmd->error = -ETIMEDOUT;
+ 
+-			tasklet_schedule(&host->finish_tasklet);
++			sdhci_sched_tasklet(host, finish);
+ 		}
+ 	}
+ 
+@@ -2221,7 +2232,7 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
+ 		host->cmd->error = -EILSEQ;
+ 
+ 	if (host->cmd->error) {
+-		tasklet_schedule(&host->finish_tasklet);
++		sdhci_sched_tasklet(host, finish);
+ 		return;
+ 	}
+ 
+@@ -2429,7 +2440,7 @@ again:
+ 		sdhci_writel(host, intmask & (SDHCI_INT_CARD_INSERT |
+ 			     SDHCI_INT_CARD_REMOVE), SDHCI_INT_STATUS);
+ 		intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
+-		tasklet_schedule(&host->card_tasklet);
++		sdhci_sched_tasklet(host, card);
+ 	}
+ 
+ 	if (intmask & SDHCI_INT_CMD_MASK) {
+@@ -3192,7 +3203,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
+ 				" transfer!\n", mmc_hostname(host->mmc));
+ 
+ 			host->mrq->cmd->error = -ENOMEDIUM;
+-			tasklet_schedule(&host->finish_tasklet);
++			sdhci_sched_tasklet(host, finish);
+ 		}
+ 
+ 		sdhci_unlock_irqrestore(host, flags);
 -- 
 1.7.9.5
 
