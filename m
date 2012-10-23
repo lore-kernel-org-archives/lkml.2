@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab2JWRjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:39:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:61979 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab2JWRjq (ORCPT
+	id S1757298Ab2JWRmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:42:10 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:40579 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab2JWRmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:39:46 -0400
-Date: Tue, 23 Oct 2012 19:40:47 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU
- hung
-Message-ID: <20121023174047.GT24005@phenom.ffwll.local>
-Mail-Followup-To: "Justin P. Mattock" <justinmattock@gmail.com>,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <5086CEAC.2000804@gmail.com>
+	Tue, 23 Oct 2012 13:42:08 -0400
+Message-ID: <5086D6EB.7020701@acm.org>
+Date: Tue, 23 Oct 2012 19:42:03 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5086CEAC.2000804@gmail.com>
-X-Operating-System: Linux phenom 3.6.0-rc7+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: [patch/rfc/rft] sd: allocate request_queue on device's local
+ numa node
+References: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com> <50863D0A.6040800@acm.org> <x49fw556sgu.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49fw556sgu.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 10:06:52AM -0700, Justin P. Mattock wrote:
-> This is happening both with MAINLINE and NEXT.
-> 
-> basically system is running fine, then under load system becomes
-> really sluggish and unresponsive. I was able to get dmesg of the
-> error..:
-> 
-> [ 7745.007008] ath9k 0000:05:00.0 wlan0: disabling VHT as WMM/QoS is
-> not supported by the AP
-> [ 7745.007736] wlan0: associate with 68:7f:74:b8:05:82 (try 1/3)
-> [ 7745.011456] wlan0: RX AssocResp from 68:7f:74:b8:05:82
-> (capab=0x411 status=0 aid=5)
-> [ 7745.011529] wlan0: associated
-> [ 8120.812482] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
-> elapsed... GPU hung
-> [ 8120.812642] [drm] capturing error event; look for more
-> information in /debug/dri/0/i915_error_state
-> [ 8122.328682] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
-> elapsed... GPU hung
-> [ 8122.328845] [drm:i915_reset] *ERROR* GPU hanging too fast,
-> declaring wedged!
-> [ 8122.328850] [drm:i915_reset] *ERROR* Failed to reset chip.
-> 
-> full log is here: http://fpaste.org/7xH8/
-> 
-> as for good kernels from what I remember 3.6.0-rc1. I can try a
-> bisect on this once I get the time. or if anybody has a patch I can
-> test.
+On 10/23/12 18:52, Jeff Moyer wrote:
+> Bart Van Assche <bvanassche@acm.org> writes:
+>> Please keep in mind that a
+>> single PCIe bus may have a minimal distance to more than one NUMA
+>> node. See e.g. the diagram at the top of page 8 in
+>> http://bizsupport1.austin.hp.com/bc/docs/support/SupportManual/c03261871/c03261871.pdf
+>> for a system diagram of a NUMA system where each PCIe bus has a
+>> minimal distance to two different NUMA nodes.
+>
+> That's an interesting configuration.  I wonder what the numa_node sysfs
+> file contains for such systems--do you know?  I'm not sure how we could
+> allow this to be user-controlled at probe time.  Did you have a specific
+> mechanism in mind?  Module parameters?  Something else?
 
-Can you please rehand your machine, and then grab the i915_error_state
-from debugfs? That contains the gpu hang dump we need to diagnose things.
+As far as I can see in drivers/pci/pci-sysfs.c the numa_node sysfs 
+attribute contains a single number, even for a topology like the one 
+described above.
 
-And the bisect would obviously be awesome.
+With regard to user control of the numa node: I'm not sure how to solve 
+this in general. But for the ib_srp driver this should be easy to do: 
+SCSI host creation is triggered by sending a login string to a sysfs 
+attribute ("add_target"). It wouldn't take much time to add a parameter 
+to that login string that specifies the NUMA node.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Bart.
+
