@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965724Ab2JWXTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:19:32 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:26344 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964849Ab2JWXTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:19:30 -0400
-Message-ID: <508725FF.50108@synaptics.com>
-Date: Tue, 23 Oct 2012 16:19:27 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S965746Ab2JWX2a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:28:30 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57113 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934083Ab2JWX22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 19:28:28 -0400
+Date: Tue, 23 Oct 2012 19:28:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121023232813.GF28626@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org,
+	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+	Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <20121023221913.GC28626@thunk.org>
+ <87bofsn5zm.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <1349496603-20775-2-git-send-email-cheiny@synaptics.com> <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com> <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local> <CACRpkdY3jctXSBB+SMJ=6k=CcLEsHz4jY8T3db8htcE+zWnJWw@mail.gmail.com> <20121016062603.GG8670@opensource.wolfsonmicro.com>
-In-Reply-To: <20121016062603.GG8670@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bofsn5zm.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2012 11:26 PM, Mark Brown wrote:
-> On Thu, Oct 11, 2012 at 05:32:59PM +0200, Linus Walleij wrote:
->> On Thu, Oct 11, 2012 at 5:41 AM, Christopher Heiny <Cheiny@synaptics.com> wrote:
->
->>> In previous patch submissions, we always used these warning functions.
->>> But in the feedback on those patches, we were asked to just make
->>> sysfs show/store NULL if the attribute is write/read only.  However,
->>> during their development process, our customers want to see the
->>> warnings if the attributes are accessed incorrectly.  So we made
->>> these warnings a debug option.
->
->> Basically my stance is that you should not lower yourself to the
->> level of others not getting the point of your technical solution
->> by making unelegant compromises, what
->> you should do is to bring them up to your level so they
->> understand that your solution is elegant.
->
-> It seems like what you really want to do is add a debug feature to sysfs
-> which will optionally complain loudly at bad accesses; obviously it's
-> not something that should be there all the time as running then handling
-> an error is a perfectly legitimate thing to do.  As with the /CS
-> handling it'd mean it was handled at an appropriate level and could be
-> reused elsewhere (it might also help make it clear to your customers why
-> this is generally bad form).
+On Wed, Oct 24, 2012 at 12:06:21AM +0100, Nix wrote:
+> I note that the patch is in the latest stable releases of 3.4.x and
+> 3.5.x, which are IIRC end-of-lifed. I'd say that if your patch does
+> indeed fix it, this justifies pushing out new releases of both these
+> stable kernels with just this patch in, just to make sure people taking
+> the latest stable kernel from those releases don't eat their
+> filesystems.
 
-See my reply to Dmitry of a bit ago.  These are no longer needed, and 
-we'll be dropping them.
+Eric is in the process of reviewing the bug, and creating a repro case
+so we can definitely show that my theory is sound, and that the bug
+has been fixed by my proposed fix.  We know that my patch definitely
+restores the behaviour previous to commit eeecef0af5, so it can't
+hurt, but we do want to make 100% sure that it really fixes the
+problem.  (I found the potential bug by desk checking the all of the
+commits between v3.6.1 and v3.6.3, and none of the other commits
+triggered my WTF alarm, but we want to have a easy repro case so we
+can be 100% sure it's been fixed.  It's always nice when theory is
+backed up with empircal evidence.  :-)
+
+Until then, it should also be fine to just revert that commit on the
+other stable kernels.
+
+> The bug did really quite a lot of damage to my /home fs in only a few
+> minutes of uptime, given how few files I wrote to it. What it could have
+> done to a more conventional distro install with everything including
+> /home on one filesystem, I shudder to think.
+
+Well, the problem won't show up if the journal has wrapped.  So it
+will only show up if the system has been rebooted twice in fairly
+quick succession.  A full conventional distro install probably
+wouldn't have triggered a bug... although someone who habitually
+reboots their laptop instead of using suspend/resume or hiberbate, or
+someone who is trying to bisect the kernel looking for some other bug
+could easily trip over this --- which I guess is how you got hit by
+it.
+
+Regards,
+
+						- Ted
