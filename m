@@ -1,113 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932979Ab2JWKLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:11:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:28263 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab2JWKL3 (ORCPT
+	id S932994Ab2JWKLt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:11:49 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56513 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932948Ab2JWKLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:11:29 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-59-50866d4fe3c2
-Message-id: <50866D29.1040709@samsung.com>
-Date: Tue, 23 Oct 2012 19:10:49 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120827
- Thunderbird/15.0
-MIME-version: 1.0
-To: Pavan Kunapuli <pkunapuli@nvidia.com>
-Cc: swarren@wwwdotorg.org, linux@arm.linux.org.uk, cjb@laptop.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
-References: <1350976709-19248-1-git-send-email-pkunapuli@nvidia.com>
- <1350976709-19248-3-git-send-email-pkunapuli@nvidia.com>
-In-reply-to: <1350976709-19248-3-git-send-email-pkunapuli@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jAV3/3LYAgx2/jCwu75rDZnHkfz+j
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBlT589gKzgmXPHn3G22Bsaj/F2MnBwSAiYSM9+9YoGw
-	xSQu3FvP1sXIxSEksIhR4t26qSwQzktGic4LTWBVvAJaEj8WNILZLAKqEodn/GYHsdkEdCS2
-	fzvOBGKLCoRILJn7lR2iXlDix+R7YPUiApoSb2/9BathFqiRmD3lI5gtLOAusWjhPjYQW0ig
-	XmLynCtgNqeAq8Tz3RsZIep1JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNoakFy
-	QXFSeq6hXnFibnFpXrpecn7uJkZwMD6T2sG4ssHiEKMAB6MSD6/FkdYAIdbEsuLK3EOMEhzM
-	SiK8pvZtAUK8KYmVValF+fFFpTmpxYcYpTlYlMR5mz1SAoQE0hNLUrNTUwtSi2CyTBycUg2M
-	B57xa3AGme2QP6kwYd+l5E9lhU99Tq35W3vz/dOLdZUrDCRZTj6O3Pe5fUWh4WLRq0vmnT29
-	QlpTo3q/c26A+Lb9/y7PXXHqIE9xs3XJ/ZNKj5ueXjl4+rL7xsYOSdYjbaV/ku+lCb/L+nNY
-	6zE7+4M1j3Nz7i5nkboa6JX7qTb1QerFh6/Ue5RYijMSDbWYi4oTAXMiappCAgAA
+	Tue, 23 Oct 2012 06:11:46 -0400
+Date: Tue, 23 Oct 2012 11:11:25 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "kirill@shutemov.name" <kirill@shutemov.name>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121023101125.GA20210@mudshark.cambridge.arm.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+ <20121002150104.da57fa94.akpm@linux-foundation.org>
+ <20121017130125.GH5973@mudshark.cambridge.arm.com>
+ <20121017.112620.1865348978594874782.davem@davemloft.net>
+ <20121017155401.GJ5973@mudshark.cambridge.arm.com>
+ <20121018150502.3dee7899.akpm@linux-foundation.org>
+ <20121019091016.GA4582@mudshark.cambridge.arm.com>
+ <20121019114955.3a0c2b66.akpm@linux-foundation.org>
+ <20121022103503.GA26619@mudshark.cambridge.arm.com>
+ <20121022111843.4406850d.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121022111843.4406850d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't understand why defer the probe?
-I think that some board can't control vqmmc or vmmc.
+On Mon, Oct 22, 2012 at 07:18:43PM +0100, Andrew Morton wrote:
+> On Mon, 22 Oct 2012 11:35:03 +0100
+> Will Deacon <will.deacon@arm.com> wrote:
+> 
+> > On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
+> > > Ho hum.  I'll drop
+> > > mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
+> > > shall assume that you'll sort things out at the appropriate time.
+> > 
+> > Happy to sort it out once I work out what's going wrong!
+> 
+> The patch "ARM: mm: Transparent huge page support for LPAE systems" is
+> not present in linux-next, so this patch ("mm: thp: Set the accessed
+> flag for old pages on access fault") will not compile?
 
-Best Regards,
-Jaehoon Chung
-On 10/23/2012 04:18 PM, Pavan Kunapuli wrote:
-> vmmc and vqmmc regulators control the voltage to
-> the host and device. Defer the probe if either of
-> them is not registered.
-> 
-> Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
-> ---
->  drivers/mmc/host/sdhci.c |   25 ++++++++++++++++++++++---
->  1 files changed, 22 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 7922adb..925c403 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2844,11 +2844,17 @@ int sdhci_add_host(struct sdhci_host *host)
->  	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
->  		mmc->caps |= MMC_CAP_NEEDS_POLL;
->  
-> -	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
-> +	/*
-> +	 * If vqmmc regulator and no 1.8V signalling, then there's no UHS.
-> +	 * vqmmc regulator should be present. If it's not present,
-> +	 * assume the regulator driver registration is not yet done and
-> +	 * defer the probe.
-> +	 */
->  	host->vqmmc = regulator_get(mmc_dev(mmc), "vqmmc");
->  	if (IS_ERR(host->vqmmc)) {
-> -		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
-> +		pr_err("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
->  		host->vqmmc = NULL;
-> +		return -EPROBE_DEFER;
->  	}
->  	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
->  		regulator_enable(host->vqmmc);
-> @@ -2903,10 +2909,17 @@ int sdhci_add_host(struct sdhci_host *host)
->  
->  	ocr_avail = 0;
->  
-> +	/*
-> +	 * vmmc regulator should be present. If it's not present,
-> +	 * assume the regulator driver registration is not yet done
-> +	 * and defer the probe.
-> +	 */
->  	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
->  	if (IS_ERR(host->vmmc)) {
-> -		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
-> +		pr_err("%s: no vmmc regulator found\n", mmc_hostname(mmc));
->  		host->vmmc = NULL;
-> +		ret = -EPROBE_DEFER;
-> +		goto vmmc_err;
->  	} else
->  		regulator_enable(host->vmmc);
->  
-> @@ -3121,7 +3134,13 @@ reset:
->  untasklet:
->  	tasklet_kill(&host->card_tasklet);
->  	tasklet_kill(&host->finish_tasklet);
-> +vmmc_err:
-> +	if (host->vqmmc) {
-> +		if (regulator_is_enabled(host->vqmmc))
-> +			regulator_disable(host->vqmmc);
->  
-> +		regulator_put(host->vqmmc);
-> +	}
->  	return ret;
->  }
->  
-> 
+This patch ("mm: thp: Set the accessed flag for old pages on access fault")
+doesn't depend on "ARM: mm: Transparent huge page support for LPAE systems"
+because currently transparent huge pages cannot be enabled for ARM in
+mainline (or linux-next). update_mmu_cache_pmd is only called from
+mm/huge_memory.c, which depends on CONFIG_TRANSPARENT_HUGEPAGE=y.
 
+As for the new huge_pmd_set_accessed function... there's a similar situation
+for the do_huge_pmd_wp_page function: it's called from mm/memory.c but is
+only defined in mm/huge_memory.c. Looks like the compiler optimises those
+calls away because pmd_trans_huge and friends constant-fold to 0.
+
+Will
