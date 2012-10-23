@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab2JWEIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 00:08:54 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:38430 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2JWEIw (ORCPT
+	id S1752208Ab2JWEOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 00:14:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55428 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478Ab2JWEOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 00:08:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
- <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
- <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
- <87sj97hs5e.fsf@rustcorp.com.au> <CAMOw1v7ySGT2g5s8djEbCGnqTNjqHky_LvaZsGEN6CSLNPMUgw@mail.gmail.com>
- <CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Tue, 23 Oct 2012 02:08:31 -0200
-Message-ID: <CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: Kees Cook <keescook@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, mtk.manpages@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        jonathon@jonmasters.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Oct 2012 00:14:04 -0400
+Date: Tue, 23 Oct 2012 15:13:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Florian Fainelli <florian@openwrt.org>
+Subject: linux-next: build failure after merge of the final tree (usb tree
+ related)
+Message-Id: <20121023151354.497d9b4f25b9ce7ff54e0785@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__23_Oct_2012_15_13_54_+1100_0.7rlnxdqA890_p8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 1:40 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Oct 22, 2012 at 7:37 PM, Lucas De Marchi
-> <lucas.demarchi@profusion.mobi> wrote:
->> On Mon, Oct 22, 2012 at 5:39 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>>> FIX: add flags arg to sys_finit_module()
->>>>>
->>>>> Thanks to Michael Kerrisk for keeping us honest.
->>>>
->>>> w00t! Thanks, Rusty ;-).
->>>>
->>>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
->>>
->>> Here's the version I ended up with when I added two flags.
->>>
->>> Lucas, is this useful to you?
->>>
->>> BTW Michael: why aren't the syscall man pages in the kernel source?
->>>
->>> Thanks,
->>> Rusty.
->>>
->>> module: add flags arg to sys_finit_module()
->>>
->>> Thanks to Michael Kerrisk for keeping us honest.  These flags are actually
->>> useful for eliminating the only case where kmod has to mangle a module's
->>> internals: for overriding module versioning.
->>>
->>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->
-> Acked-by: Kees Cook <keescook@chromium.org>
->
->> I wonder if we shouldn't get a new init_module2() as well, adding the
->> flags parameter. Of course this would be in another patch.
->>
->> My worries are that for compressed modules we still need to use
->> init_module() and then --force won't work with signed modules.
->
-> For those cases, I think it should remain up to userspace to do the
-> decompress and use init_module(). The code I'd written for patching
-> module-init-tools basically just kept the fd around if it didn't need
-> to mangle the module, and it would use finit_module (written before
-> the flags argument was added):
->
->         /* request kernel linkage */
-> -       ret = init_module(module->data, module->len, opts);
-> +       if (fd < 0)
-> +               ret = init_module(module->data, module->len, opts);
-> +       else {
-> +           ret = finit_module(fd, opts);
-> +           if (ret != 0 && errno == ENOSYS)
-> +                   ret = init_module(module->data, module->len, opts);
-> +       }
->         if (ret != 0) {
->
-> (And yes, I realize kmod is what'll actually be getting this logic.
-> This was for my testing in Chrome OS, which is still using
-> module-init-tools.)
+--Signature=_Tue__23_Oct_2012_15_13_54_+1100_0.7rlnxdqA890_p8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-sure... but do you realize this will fail in case kernel is checking
-module signature and we passed --force to modprobe (therefore mangled
-the decompressed memory area)?
+Hi all,
 
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-Lucas De Marchi
+In file included from drivers/usb/host/ohci-hcd.c:1165:0:
+drivers/usb/host/ohci-sm501.c: In function 'ohci_sm501_resume':
+drivers/usb/host/ohci-sm501.c:241:2: error: implicit declaration of functio=
+n 'ohci_finish_controller_resume' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit cfa49b4b88fe ("USB: ohci: merge
+ohci_finish_controller_resume with ohci_resume").
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__23_Oct_2012_15_13_54_+1100_0.7rlnxdqA890_p8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQhhmCAAoJEECxmPOUX5FEY3AP/0tdrijETfk9SgoeVyOh0DJy
+aB+3tAWqXyo7tocCtqRH91WBcHDSKpih9mFfMhVWD8wni1DYAbNtXipfqXQO/cOx
+Az/kgeCy+FH0aZS/lVQh5QaZj5Dei69lESoBDsMwnFeUTvbio6zGtgrVxzn6g1sK
+RCDNgfbTIm+S3/TRDjrBdd5cJXfYth3QbivY9I8NyW2LAUmcH61zwpoxxOI/9wRc
+yQy5PYifHWVsAcOlE0KwhOd/IwiSpaUAGs+Y33EynBMY6XaNBSMh+43W1RYbIpfY
+6da6fG9tUQsPX6UomXq0Ix6F0WsVSDOL8oiEE2o3qauDEyxfVhb4gp9e2w5E5JJa
+xrE1euJIgjh7c6dpmom5KI9IdvQPInQqFyxBcukMrniFqNuQSf8OCutA0KiSHDWc
+rzEQlHWq7nEwA0hzlEWtsgyo6EBr5cj80nBWqACERZ5ve4/DH5ofIkAnx+a76fyI
+H7x9xfviqcSzHloS6Rqs+W7zhAohL5gz4P5phLoAQTBjyZYs8COmgPSEaP10X40M
+Ckz/lpD564b9inEdECX8tLN9XtH7YcavnSBjoKCFccOsacaWv+B8T6kQv1pIPSN8
+ZOfOCRo2YLlFtKBaE2OhOe6Unx6CqL7jMo/ZHwQpm61uF8YKgnMNzRQNJ6SBQcQU
+Gg+5WbNJVF3ylhKcDWoZ
+=YcxL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__23_Oct_2012_15_13_54_+1100_0.7rlnxdqA890_p8--
