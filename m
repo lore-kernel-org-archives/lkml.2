@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933943Ab2JWUHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:07:39 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38547 "EHLO smtp.outflux.net"
+	id S933957Ab2JWUHo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:07:44 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53016 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933606Ab2JWUHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:07:35 -0400
+	id S933606Ab2JWUHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:07:40 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Samuel Ortiz <samuel@sortiz.org>
-Subject: [PATCH 095/193] drivers/net/irda: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:48 -0700
-Message-Id: <1351022666-6960-96-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 074/193] drivers/mtd/devices: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:27 -0700
+Message-Id: <1351022666-6960-75-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,141 +28,38 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Samuel Ortiz <samuel@sortiz.org>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: Artem Bityutskiy <Artem.Bityutskiy@linux.intel.com>
+CC: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: Fabio Estevam <fabio.estevam@freescale.com>
+CC: Richard Weinberger <richard@nod.at>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/irda/Kconfig |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/mtd/devices/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/irda/Kconfig b/drivers/net/irda/Kconfig
-index 5952054..59e9d9e 100644
---- a/drivers/net/irda/Kconfig
-+++ b/drivers/net/irda/Kconfig
-@@ -140,7 +140,7 @@ config LITELINK_DONGLE
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index 27f80cd..c187342 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -52,7 +52,7 @@ config MTD_MS02NV
  
- config MA600_DONGLE
- 	tristate "Mobile Action MA600 dongle"
--	depends on IRTTY_SIR && DONGLE && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && DONGLE && IRDA
+ config MTD_DATAFLASH
+ 	tristate "Support for AT45xxx DataFlash"
+-	depends on SPI_MASTER && EXPERIMENTAL
++	depends on SPI_MASTER
  	help
- 	  Say Y here if you want to build support for the Mobile Action MA600
- 	  dongle.  To compile it as a module, choose M here. The MA600 dongle
-@@ -153,7 +153,7 @@ config MA600_DONGLE
+ 	  This enables access to AT45xxx DataFlash chips, using SPI.
+ 	  Sometimes DataFlash chips are packaged inside MMC-format
+@@ -81,7 +81,7 @@ config MTD_DATAFLASH_OTP
  
- config GIRBIL_DONGLE
- 	tristate "Greenwich GIrBIL dongle"
--	depends on IRTTY_SIR && DONGLE && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && DONGLE && IRDA
+ config MTD_M25P80
+ 	tristate "Support most SPI Flash chips (AT26DF, M25P, W25X, ...)"
+-	depends on SPI_MASTER && EXPERIMENTAL
++	depends on SPI_MASTER
  	help
- 	  Say Y here if you want to build support for the Greenwich GIrBIL
- 	  dongle.  If you want to compile it as a module, choose M here.
-@@ -164,7 +164,7 @@ config GIRBIL_DONGLE
- 
- config MCP2120_DONGLE
- 	tristate "Microchip MCP2120"
--	depends on IRTTY_SIR && DONGLE && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && DONGLE && IRDA
- 	help
- 	  Say Y here if you want to build support for the Microchip MCP2120
- 	  dongle.  If you want to compile it as a module, choose M here.
-@@ -178,7 +178,7 @@ config MCP2120_DONGLE
- 
- config OLD_BELKIN_DONGLE
- 	tristate "Old Belkin dongle"
--	depends on IRTTY_SIR && DONGLE && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && DONGLE && IRDA
- 	help
- 	  Say Y here if you want to build support for the Adaptec Airport 1000
- 	  and 2000 dongles.  If you want to compile it as a module, choose
-@@ -187,7 +187,7 @@ config OLD_BELKIN_DONGLE
- 
- config ACT200L_DONGLE
- 	tristate "ACTiSYS IR-200L dongle"
--	depends on IRTTY_SIR && DONGLE && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && DONGLE && IRDA
- 	help
- 	  Say Y here if you want to build support for the ACTiSYS IR-200L
- 	  dongle. If you want to compile it as a module, choose M here.
-@@ -198,7 +198,7 @@ config ACT200L_DONGLE
- 
- config KINGSUN_DONGLE
- 	tristate "KingSun/DonShine DS-620 IrDA-USB dongle"
--	depends on IRDA && USB && EXPERIMENTAL
-+	depends on IRDA && USB
- 	help
- 	  Say Y or M here if you want to build support for the KingSun/DonShine
- 	  DS-620 IrDA-USB bridge device driver.
-@@ -212,14 +212,14 @@ config KINGSUN_DONGLE
- 
- config EP7211_DONGLE
- 	tristate "Cirrus Logic clps711x I/R support"
--	depends on IRTTY_SIR && ARCH_CLPS711X && IRDA && EXPERIMENTAL
-+	depends on IRTTY_SIR && ARCH_CLPS711X && IRDA
- 	help
- 	  Say Y here if you want to build support for the Cirrus logic
- 	  EP7211 chipset's infrared module.
- 
- config KSDAZZLE_DONGLE
--	tristate "KingSun Dazzle IrDA-USB dongle (EXPERIMENTAL)"
--	depends on IRDA && USB && EXPERIMENTAL
-+	tristate "KingSun Dazzle IrDA-USB dongle"
-+	depends on IRDA && USB
- 	help
- 	  Say Y or M here if you want to build support for the KingSun Dazzle
- 	  IrDA-USB bridge device driver.
-@@ -232,8 +232,8 @@ config KSDAZZLE_DONGLE
- 	  ksdazzle-sir.
- 
- config KS959_DONGLE
--	tristate "KingSun KS-959 IrDA-USB dongle (EXPERIMENTAL)"
--	depends on IRDA && USB && EXPERIMENTAL
-+	tristate "KingSun KS-959 IrDA-USB dongle"
-+	depends on IRDA && USB
- 	help
- 	  Say Y or M here if you want to build support for the KingSun KS-959
- 	  IrDA-USB bridge device driver.
-@@ -264,8 +264,8 @@ config USB_IRDA
- 	  you will need both USB and IrDA support in your kernel...
- 
- config SIGMATEL_FIR
--	tristate "SigmaTel STIr4200 bridge (EXPERIMENTAL)"
--	depends on IRDA && USB && EXPERIMENTAL
-+	tristate "SigmaTel STIr4200 bridge"
-+	depends on IRDA && USB
- 	select CRC32
- 	---help---
- 	  Say Y here if you want to build support for the SigmaTel STIr4200
-@@ -331,8 +331,8 @@ config SMC_IRCC_FIR
- 	  smsc-ircc2.o.
- 
- config ALI_FIR
--	tristate "ALi M5123 FIR (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && IRDA && ISA_DMA_API
-+	tristate "ALi M5123 FIR"
-+	depends on IRDA && ISA_DMA_API
- 	help
- 	  Say Y here if you want to build support for the ALi M5123 FIR
- 	  Controller.  The ALi M5123 FIR Controller is embedded in ALi M1543C,
-@@ -343,8 +343,8 @@ config ALI_FIR
- 	  ali-ircc.
- 
- config VLSI_FIR
--	tristate "VLSI 82C147 SIR/MIR/FIR (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && IRDA && PCI
-+	tristate "VLSI 82C147 SIR/MIR/FIR"
-+	depends on IRDA && PCI
- 	help
- 	  Say Y here if you want to build support for the VLSI 82C147
- 	  PCI-IrDA Controller. This controller is used by the HP OmniBook 800
-@@ -387,7 +387,7 @@ config PXA_FICP
- 
- config MCS_FIR
- 	tristate "MosChip MCS7780 IrDA-USB dongle"
--	depends on IRDA && USB && EXPERIMENTAL
-+	depends on IRDA && USB
- 	select CRC32
- 	help
- 	  Say Y or M here if you want to build support for the MosChip
+ 	  This enables access to most modern SPI flash chips, used for
+ 	  program and data storage.   Series supported include Atmel AT26DF,
 -- 
 1.7.9.5
 
