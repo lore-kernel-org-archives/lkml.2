@@ -1,87 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab2JWV7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:59:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58333 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab2JWV7L (ORCPT
+	id S1754819Ab2JWWB2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:01:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59670 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab2JWWB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:59:11 -0400
-Date: Wed, 24 Oct 2012 01:59:07 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
-Message-ID: <20121023215907.GB24069@moon>
-References: <5085B1A8.4020609@parallels.com>
- <20121022205641.GL2303@moon>
- <20121022213449.GH31440@moon>
- <20121022145158.53bddfc1.akpm@linux-foundation.org>
- <20121023061341.GA7020@moon>
- <20121022233025.09ec2d92.akpm@linux-foundation.org>
- <20121023063430.GB7020@moon>
- <20121023071549.GC7020@moon>
- <20121023143045.183657c4.akpm@linux-foundation.org>
- <20121023214639.GM7020@moon>
+	Tue, 23 Oct 2012 18:01:26 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 23 Oct 2012 15:02:40 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lm-sensors@lm-sensors.org,
+        linaro-dev@lists.linaro.org
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+Message-ID: <20121023220240.GA25895@roeck-us.net>
+References: <1351013449.9070.5.camel@hornet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121023214639.GM7020@moon>
+In-Reply-To: <1351013449.9070.5.camel@hornet>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 01:46:39AM +0400, Cyrill Gorcunov wrote:
+On Tue, Oct 23, 2012 at 06:30:49PM +0100, Pawel Moll wrote:
+> Greetings All,
 > 
-> > Also...  what happens if there's an unrecognised bit set in `flags'? 
-> > Memory corruption or code skew could cause this.  We emit a couple of
-> > NULs into the procfs output, which I guess is an OK response to such a
-> > condition.
+> More and more of people are getting interested in the subject of power
+> (energy) consumption monitoring. We have some external tools like
+> "battery simulators", energy probes etc., but some targets can measure
+> their power usage on their own.
 > 
-> That's indeed will produce some nil character on the screen. I guess we
-> need some designited init here, say
+> Traditionally such data should be exposed to the user via hwmon sysfs
+> interface, and that's exactly what I did for "my" platform - I have
+> a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
+> enough to draw pretty graphs in userspace. Everyone was happy...
 > 
-> 	[0 ... (BITS_PER_LONG-1)] = { {'-', '-'} },
-> 	...
-> 	[ilog2(VM_READ)]	= { {'r', 'd'} },
-> 	...
-> 	and so on, i'll update on top
+Only driver supporting "energy" output so far is ibmaem, and the reported energy
+is supposed to be cumulative, as in energy = power * time. Do you mean power,
+possibly ?
+
+> Now I am getting new requests to do more with this data. In particular
+> I'm asked how to add such information to ftrace/perf output. The second
+> most frequent request is about providing it to a "energy aware"
+> cpufreq governor.
 > 
 
-Andrew, could you please fold it on top of your
-procfs-add-vmflags-field-in-smaps-output-v3-fix ?
+Anything energy related would have to be along the line of "do something after a
+certain amount of work has been performed", which at least at the surface does
+not make much sense to me, unless you mean something along the line of a
+process scheduler which schedules a process not based on time slices but based
+on energy consumed, ie if you want to define a time slice not in milli-seconds
+but in Joule.
 
-(If this is inconvenient -- just give me a word and I'll
- squash everything in one new patch instead).
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: procfs-add-vmflags-field-in-smaps-output-v3-fix-on-top
+If so, I would argue that a similar behavior could be achieved by varying the
+duration of time slices with the current CPU speed, or simply by using cycle
+count instead of time as time slice parameter. Not that I am sure if such an
+approach would really be of interest for anyone. 
 
-Use designated init to assign "??" mnemonic on unknown flags.
+Or do you really mean power, not energy, such as in "reduce CPU speed if its
+power consumption is above X Watt" ?
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- fs/proc/task_mmu.c |    5 +++++
- 1 file changed, 5 insertions(+)
+> I've came up with three (non-mutually exclusive) options. I will
+> appreciate any other ideas and comments (including "it makes not sense
+> whatsoever" ones, with justification). Of course I am more than willing
+> to spend time on prototyping anything that seems reasonable and propose
+> patches.
+> 
+> 
+> 
+> === Option 1: Trace event ===
+> 
+> This seems to be the "cheapest" option. Simply defining a trace event
+> that can be generated by a hwmon (or any other) driver makes the
+> interesting data immediately available to any ftrace/perf user. Of
+> course it doesn't really help with the cpufreq case, but seems to be
+> a good place to start with.
+> 
+> The question is how to define it... I've came up with two prototypes:
+> 
+> = Generic hwmon trace event =
+> 
+> This one allows any driver to generate a trace event whenever any
+> "hwmon attribute" (measured value) gets updated. The rate at which the
+> updates happen can be controlled by already existing "update_interval"
+> attribute.
+> 
+> 8<-------------------------------------------
+> TRACE_EVENT(hwmon_attr_update,
+> 	TP_PROTO(struct device *dev, struct attribute *attr, long long input),
+> 	TP_ARGS(dev, attr, input),
+> 
+> 	TP_STRUCT__entry(
+> 		__string(       dev,		dev_name(dev))
+> 		__string(	attr,		attr->name)
+> 		__field(	long long,	input)
+> 	),
+> 
+> 	TP_fast_assign(
+> 		__assign_str(dev, dev_name(dev));
+> 		__assign_str(attr, attr->name);
+> 		__entry->input = input;
+> 	),
+> 
+> 	TP_printk("%s %s %lld", __get_str(dev), __get_str(attr), __entry->input)
+> );
+> 8<-------------------------------------------
+> 
+> It generates such ftrace message:
+> 
+> <...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
+> 
+> One issue with this is that some external knowledge is required to
+> relate a number to a processor core. Or maybe it's not an issue at all
+> because it should be left for the user(space)?
+> 
+> = CPU power/energy/temperature trace event =
+> 
+> This one is designed to emphasize the relation between the measured
+> value (whether it is energy, temperature or any other physical
+> phenomena, really) and CPUs, so it is quite specific (too specific?)
+> 
+> 8<-------------------------------------------
+> TRACE_EVENT(cpus_environment,
+> 	TP_PROTO(const struct cpumask *cpus, long long value, char unit),
+> 	TP_ARGS(cpus, value, unit),
+> 
+> 	TP_STRUCT__entry(
+> 		__array(	unsigned char,	cpus,	sizeof(struct cpumask))
+> 		__field(	long long,	value)
+> 		__field(	char,		unit)
+> 	),
+> 
+> 	TP_fast_assign(
+> 		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
+> 		__entry->value = value;
+> 		__entry->unit = unit;
+> 	),
+> 
+> 	TP_printk("cpus %s %lld[%c]",
+> 		__print_cpumask((struct cpumask *)__entry->cpus),
+> 		__entry->value, __entry->unit)
+> );
+> 8<-------------------------------------------
+> 
+> And the equivalent ftrace message is:
+> 
+> <...>127.063107: cpus_environment: cpus 0,1,2,3 34361[C]
+> 
+> It's a cpumask, not just single cpu id, because the sensor may measure
+> the value per set of CPUs, eg. a temperature of the whole silicon die
+> (so all the cores) or an energy consumed by a subset of cores (this
+> is my particular use case - two meters monitor a cluster of two
+> processors and a cluster of three processors, all working as a SMP
+> system).
+> 
+> Of course the cpus __array could be actually a special __cpumask field
+> type (I've just hacked the __print_cpumask so far). And I've just
+> realised that the unit field should actually be a string to allow unit
+> prefixes to be specified (the above should obviously be "34361[mC]"
+> not "[C]"). Also - excuse the "cpus_environment" name - this was the
+> best I was able to come up with at the time and I'm eager to accept
+> any alternative suggestions :-)
+> 
+I am not sure how this would be expected to work. hwmon is, by its very nature,
+a passive subsystem: It doesn't do anything unless data is explicitly requested
+from it. It does not update an attribute unless that attribute is read.
+That does not seem to fit well with the idea of tracing - which assumes
+that some activity is happening, ultimately, all by itself, presumably
+periodically. The idea to have a user space application read hwmon data only
+for it to trigger trace events does not seem to be very compelling to me.
 
-Index: linux-2.6.git/fs/proc/task_mmu.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/task_mmu.c
-+++ linux-2.6.git/fs/proc/task_mmu.c
-@@ -488,6 +488,11 @@ static void show_smap_vma_flags(struct s
- 	static const struct {
- 		const char l[2];
- 	} mnemonics[BITS_PER_LONG] = {
-+		/*
-+		 * In case if we meet a flag we don't know about.
-+		 */
-+		[0 ... (BITS_PER_LONG-1)] = { {'?', '?'} },
-+
- 		[ilog2(VM_READ)]	= { {'r', 'd'} },
- 		[ilog2(VM_WRITE)]	= { {'w', 'r'} },
- 		[ilog2(VM_EXEC)]	= { {'e', 'x'} },
+An exception is if a monitoring device suppports interrupts, and if its driver
+actually implements those interrupts. This is, however, not the case for most of
+the current drivers (if any), mostly because interrupt support for hardware
+monitoring devices is very platform dependent and thus difficult to implement.
+
+> 
+> === Option 2: hwmon perf PMU ===
+> 
+> Although the trace event makes it possible to obtain interesting
+> information using perf, the user wouldn't be able to treat the
+> energy meter as a normal data source. In particular there would
+> be no way of creating a group of events consisting eg. of a
+> "normal" leader (eg. cache miss event) triggering energy meter
+> read. The only way to get this done is to implement a perf PMU
+> backend providing "environmental data" to the user.
+> 
+> = High-level hwmon API and PMU =
+> 
+> Current hwmon subsystem does not provide any abstraction for the
+> measured values and requires particular drivers to create specified
+> sysfs attributes than used by userspace libsensors. This makes
+> the framework ultimately flexible and ultimately hard to access
+> from within the kernel...
+> 
+> What could be done here is some (simple) API to register the
+> measured values with the hwmon core which would result in creating
+> equivalent sysfs attributes automagically, but also allow a
+> in-kernel API for values enumeration and access. That way the core
+> could also register a "hwmon PMU" with the perf framework providing
+> data from all "compliant" drivers.
+> 
+> = A driver-specific PMU =
+> 
+> Of course a particular driver could register its own perf PMU on its
+> own. It's certainly an option, just very suboptimal in my opinion.
+> Or maybe not? Maybe the task is so specialized that it makes sense?
+> 
+We had a couple of attempts to provide an in-kernel API. Unfortunately,
+the result was, at least so far, more complexity on the driver side.
+So the difficulty is really to define an API which is really simple, and does
+not just complicate driver development for a (presumably) rare use case.
+
+Guenter
+
+> 
+> 
+> === Option 3: CPU power(energy) monitoring framework ===
+> 
+> And last but not least, maybe the problem deserves some dedicated
+> API? Something that would take providers and feed their data into
+> interested parties, in particular a perf PMU implementation and
+> cpufreq governors?
+> 
+> Maybe it could be an extension to the thermal framework? It already
+> gives some meaning to a physical phenomena. Adding other, related ones
+> like energy, and relating it to cpu cores could make some sense.
+> 
+> 
+> 
+> I've tried to gather all potentially interested audience in the To:
+> list, but if I missed anyone - please, do let them (and/or me) know.
+> 
+> Best regards and thanks for participation in the discussion!
+> 
+> Pawel
+> 
+> 
+> 
+> 
