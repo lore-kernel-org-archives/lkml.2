@@ -1,115 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757021Ab2JWMpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:45:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:44511 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756582Ab2JWMpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:45:12 -0400
-Date: Tue, 23 Oct 2012 15:39:27 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sekhar Nori <nsekhar@ti.com>
-CC: Constantine Shulyupin <const@MakeLinux.com>, <gregkh@linuxfoundation.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-Message-ID: <20121023123927.GB29281@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
- <50868EED.7050909@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bCsyhTFzCvuiizWE"
-Content-Disposition: inline
-In-Reply-To: <50868EED.7050909@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932328Ab2JWMrL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:47:11 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63894 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab2JWMrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 08:47:09 -0400
+From: Ying Zhu <casualfisher@gmail.com>
+To: akpm@linux-foundation.org
+Cc: fengguang.wu@intel.com, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ying Zhu <casualfisher@gmail.com>
+Subject: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+Date: Tue, 23 Oct 2012 20:46:51 +0800
+Message-Id: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bCsyhTFzCvuiizWE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi,
+  Recently we ran into the bug that an opened file's ra_pages does not
+synchronize with it's backing device's when the latter is changed
+with blockdev --setra, the application needs to reopen the file
+to know the change, which is inappropriate under our circumstances.
+This bug is also mentioned in scst (generic SCSI target subsystem for Linux)'s
+README file.
+  This patch tries to unify the ra_pages in struct file_ra_state 
+and struct backing_dev_info. Basically current readahead algorithm 
+will ramp file_ra_state.ra_pages up to bdi.ra_pages once it detects the 
+read mode is sequential. Then all files sharing the same backing device 
+have the same max value bdi.ra_pages set in file_ra_state. 
+  Applying this means the flags POSIX_FADV_NORMAL and POSIX_FADV_SEQUENTIAL
+in fadivse will only set file reading mode without signifying the
+max readahead size of the file. The current apporach adds no additional
+overhead in read IO path, IMHO is the simplest solution. 
+Any comments are welcome, thanks in advance.
 
-On Tue, Oct 23, 2012 at 06:04:53PM +0530, Sekhar Nori wrote:
-> On 10/8/2012 6:47 PM, Constantine Shulyupin wrote:
-> > From: Constantine Shulyupin <const@MakeLinux.com>
-> >=20
-> > Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly=20
-> > CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST=20
-> > and set MUSB_OTG configuration by default
-> > because this configuration options are removed from Kconfig.
-> >=20
-> > Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
->=20
-> Queuing this patch for v3.8. Since the config options are removed there
-> is no use having code which refers to them. The patch has been tested on
-> DM644x and DM365 in both host and gadget mode (I will add this
-> information to commit text while committing). Without this patch .mode
-> seems to be defaulting to MUSB_UNDEFINED which I think is definitely wron=
-g.
+Thanks,
+	Ying Zhu
 
-sorry for the delay, this looks ok:
+Signed-off-by: Ying Zhu <casualfisher@gmail.com>
+---
+ include/linux/fs.h |    1 -
+ mm/fadvise.c       |    2 --
+ mm/filemap.c       |   17 +++++++++++------
+ mm/readahead.c     |    8 ++++----
+ 4 files changed, 15 insertions(+), 13 deletions(-)
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 17fd887..36303a5 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -991,7 +991,6 @@ struct file_ra_state {
+ 	unsigned int async_size;	/* do asynchronous readahead when
+ 					   there are only # of pages ahead */
+ 
+-	unsigned int ra_pages;		/* Maximum readahead window */
+ 	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
+ 	loff_t prev_pos;		/* Cache last read() position */
+ };
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 469491e..75e2378 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -76,7 +76,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 
+ 	switch (advice) {
+ 	case POSIX_FADV_NORMAL:
+-		file->f_ra.ra_pages = bdi->ra_pages;
+ 		spin_lock(&file->f_lock);
+ 		file->f_mode &= ~FMODE_RANDOM;
+ 		spin_unlock(&file->f_lock);
+@@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 		spin_unlock(&file->f_lock);
+ 		break;
+ 	case POSIX_FADV_SEQUENTIAL:
+-		file->f_ra.ra_pages = bdi->ra_pages * 2;
+ 		spin_lock(&file->f_lock);
+ 		file->f_mode &= ~FMODE_RANDOM;
+ 		spin_unlock(&file->f_lock);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a4a5260..e7e4409 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1058,11 +1058,15 @@ EXPORT_SYMBOL(grab_cache_page_nowait);
+  * readahead(R+4...B+3) => bang => read(R+4) => read(R+5) => ......
+  *
+  * It is going insane. Fix it by quickly scaling down the readahead size.
++ * It's hard to estimate how the bad sectors lay out, so to be conservative,
++ * set the read mode in random.
+  */
+ static void shrink_readahead_size_eio(struct file *filp,
+ 					struct file_ra_state *ra)
+ {
+-	ra->ra_pages /= 4;
++	spin_lock(&filp->f_lock);
++	filp->f_mode |= FMODE_RANDOM;
++	spin_unlock(&filp->f_lock);
+ }
+ 
+ /**
+@@ -1527,12 +1531,12 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
+ 	/* If we don't want any read-ahead, don't bother */
+ 	if (VM_RandomReadHint(vma))
+ 		return;
+-	if (!ra->ra_pages)
++	if (!mapping->backing_dev_info->ra_pages)
+ 		return;
+ 
+ 	if (VM_SequentialReadHint(vma)) {
+-		page_cache_sync_readahead(mapping, ra, file, offset,
+-					  ra->ra_pages);
++		page_cache_sync_readahead(mapping, ra, file, offset, 
++					mapping->backing_dev_info->ra_pages);
+ 		return;
+ 	}
+ 
+@@ -1550,7 +1554,7 @@ static void do_sync_mmap_readahead(struct vm_area_struct *vma,
+ 	/*
+ 	 * mmap read-around
+ 	 */
+-	ra_pages = max_sane_readahead(ra->ra_pages);
++	ra_pages = max_sane_readahead(mapping->backing_dev_info->ra_pages);
+ 	ra->start = max_t(long, 0, offset - ra_pages / 2);
+ 	ra->size = ra_pages;
+ 	ra->async_size = ra_pages / 4;
+@@ -1576,7 +1580,8 @@ static void do_async_mmap_readahead(struct vm_area_struct *vma,
+ 		ra->mmap_miss--;
+ 	if (PageReadahead(page))
+ 		page_cache_async_readahead(mapping, ra, file,
+-					   page, offset, ra->ra_pages);
++					   page, offset, 
++					   mapping->backing_dev_info->ra_pages);
+ }
+ 
+ /**
+diff --git a/mm/readahead.c b/mm/readahead.c
+index ea8f8fa..6ea5999 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -27,7 +27,6 @@
+ void
+ file_ra_state_init(struct file_ra_state *ra, struct address_space *mapping)
+ {
+-	ra->ra_pages = mapping->backing_dev_info->ra_pages;
+ 	ra->prev_pos = -1;
+ }
+ EXPORT_SYMBOL_GPL(file_ra_state_init);
+@@ -400,7 +399,8 @@ ondemand_readahead(struct address_space *mapping,
+ 		   bool hit_readahead_marker, pgoff_t offset,
+ 		   unsigned long req_size)
+ {
+-	unsigned long max = max_sane_readahead(ra->ra_pages);
++	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	unsigned long max = max_sane_readahead(bdi->ra_pages);
+ 
+ 	/*
+ 	 * start of file
+@@ -507,7 +507,7 @@ void page_cache_sync_readahead(struct address_space *mapping,
+ 			       pgoff_t offset, unsigned long req_size)
+ {
+ 	/* no read-ahead */
+-	if (!ra->ra_pages)
++	if (!mapping->backing_dev_info->ra_pages)
+ 		return;
+ 
+ 	/* be dumb */
+@@ -543,7 +543,7 @@ page_cache_async_readahead(struct address_space *mapping,
+ 			   unsigned long req_size)
+ {
+ 	/* no read-ahead */
+-	if (!ra->ra_pages)
++	if (!mapping->backing_dev_info->ra_pages)
+ 		return;
+ 
+ 	/*
+-- 
+1.7.1
 
->=20
-> Thanks,
-> Sekhar
->=20
-> > =20
-> > ---
-> >  arch/arm/mach-davinci/usb.c |    6 ------
-> >  1 file changed, 6 deletions(-)
-> >=20
-> > diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-> > index f77b953..34509ff 100644
-> > --- a/arch/arm/mach-davinci/usb.c
-> > +++ b/arch/arm/mach-davinci/usb.c
-> > @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config =3D {
-> >  };
-> > =20
-> >  static struct musb_hdrc_platform_data usb_data =3D {
-> > -#if defined(CONFIG_USB_MUSB_OTG)
-> >  	/* OTG requires a Mini-AB connector */
-> >  	.mode           =3D MUSB_OTG,
-> > -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
-> > -	.mode           =3D MUSB_PERIPHERAL,
-> > -#elif defined(CONFIG_USB_MUSB_HOST)
-> > -	.mode           =3D MUSB_HOST,
-> > -#endif
-> >  	.clock		=3D "usb",
-> >  	.config		=3D &musb_config,
-> >  };
-> >=20
-
---=20
-balbi
-
---bCsyhTFzCvuiizWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQho//AAoJEIaOsuA1yqREMtIP/jdZ108B4IvH4f2+spApVsp7
-3meE4I7BrIvNrWXvbeD81rx8ibr0h/dSxdZu8lVsOXTmNGT+u92U30o7Se8Dw+5V
-lmmS1OJaXdDOyJ+aYY9UoKnTtkFwEZ2Ofp+JXyjwE3pfk/LcJXs7BCdEGp5keW4U
-OnUb0dTDUE2ECNbjpN8tBIoMSe5tTlZmnf+VaTA8eOYAVS56X0K80pmZJpkRBSnN
-dqqxLDQkE7LA9mzwGdq3+vFY2WfgxCmLQuGU5E4rFdWThz0I+LbIwRuXRg/Wl8iJ
-7P2V9qbLRQqdYFkHW7tyCz3+vJH7+DTBbiJNGzZaAfWvtxpDSLThHGrwVf02OJpQ
-RCDOLHco9wB8yK99V4fqQOa8qdZXWXJ1cQExZjdPh0aEjIYMDfSzTcoEhIC5zj7T
-i0goQ3hCbcVLTOdhCdXYjeY7JtQ2PQuCbJtK8RfpY++eIDXznFJzFOYLe3XRGm+i
-Q0U0z9NF2Ut6xqe+uxnRuLDcj4+mWTNiQzvY+Yo3x3xlKQuuYj0xJrAIeCgctgS8
-34jntM4RhJMk6jJExEib0oYH5A+CNyVD2GQWSKvUsDUiXwIOQGeyHq0yc6xUQlSf
-OGgB/2cJbKtcEALNZteBMEUrnYRgFSMHdIMFKQiPqv5lfcUqmZ7a1R557y6v0b8r
-jgWsdA9VhkGR94VXuu48
-=pb/D
------END PGP SIGNATURE-----
-
---bCsyhTFzCvuiizWE--
