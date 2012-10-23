@@ -1,45 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932880Ab2JWJ4c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:56:32 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49934 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2JWJ4a (ORCPT
+	id S932914Ab2JWJ4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:56:40 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58761 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932885Ab2JWJ4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:56:30 -0400
-Date: Tue, 23 Oct 2012 11:01:33 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Min Zhang <mzhang@mvista.com>
-Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: 8250 check iir rdi in interrupt
-Message-ID: <20121023110133.62bed522@pyramind.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.02.1210221633450.28146@nightowl>
-References: <alpine.LFD.2.02.1210221633450.28146@nightowl>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 05:56:37 -0400
+Date: Tue, 23 Oct 2012 11:56:25 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Prisk <linux@prisktech.co.nz>, devicetree-discuss@lists.ozlabs.org,
+        arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
+Message-ID: <20121023095625.GA2062@avionic-0098.mockup.avionic-design.de>
+References: <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
+ <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de>
+ <1350888712.3592.11.camel@gitbox>
+ <1350889747.3592.17.camel@gitbox>
+ <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de>
+ <1350891382.3592.22.camel@gitbox>
+ <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de>
+ <1350981706.20938.7.camel@gitbox>
+ <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
+ <20121023093128.GR21164@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
+Content-Disposition: inline
+In-Reply-To: <20121023093128.GR21164@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:8U1qQXBU9m7j96UG+yMHXsvaDvRq+d/MadVZiVN/RWJ
+ oLv80MBJBjvlLi9OnTz3galLGitd1/JRmXkdhOYRsquyUrGrGp
+ el4ymqb4bK2pcQ+HYzQv+EuTk2I/4sjVv2KNGbGSVOK/+F8Pwy
+ BHKhZHEI0j1119EvE4sxFLJ1xda64DcMwnL+A65BrLhBENMMwW
+ AMVSD4ucJnF84ydY7Soxug9+fl0m7bumOMjvv3gSVC6C31tbQV
+ STCekLBBYyKBPUoFKS3EW/G9NX/uKmMgI2A+szbnqxvXytl9ag
+ hqWCXpEpUuSvS86rtX/oGAK3u+J5aYPOQjEH9duzpVwjjAJiSH
+ /U4fRVeq70z3RTdkYfzURLL1+r5BclGjdaaJXqZxpsP3UcfYDu
+ C+H68fa7m9dMapVJ2cT0TAum28Tr/DFMTv1lPzjZdv0wFTP0uU
+ xqX8N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Added module parameter skip_rdi_check to opt out this workaround.
 
-NAK. Anything like this should be runtime.
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Tested on Radisys ATCA 46XX which uses FPGA 16550-compatible and
-> other generic 16550 UART. It takes from an hour to days to reproduce by
-> pumping inputs to serial console continously using TeraTerm script:
+On Tue, Oct 23, 2012 at 10:31:28AM +0100, Russell King - ARM Linux wrote:
+> On Tue, Oct 23, 2012 at 11:22:47AM +0200, Thierry Reding wrote:
+> > On Tue, Oct 23, 2012 at 09:41:46PM +1300, Tony Prisk wrote:
+> > > Further to the discussion, my preference is still for of_clk_get()
+> > > (although I've changed the patch anyway as you saw because it makes no
+> > > difference in this case) :)
+> > >=20
+> > > clk_get(x, NULL) and devm_clk_get(x, NULL) both seems like 'hacks' to
+> > > allow platforms to convert to DT without having to update all their
+> > > drivers first. It only allows the first (default) clock, as your poin=
+ted
+> > > out. Getting a 2nd... clock relies on an optional property in DT (whi=
+ch
+> > > again, seems like it is there to support 'old' drivers) which allows =
+you
+> > > to request clocks by name.
+> > >=20
+> > > of_clk_get() on the other hand seems like a properly native DT functi=
+on.
+> > > You don't need to know anything about the clock, as long as the corre=
+ct
+> > > clock is specified in the correct order as documented by the binding.
+> > > Relying on 'pre-OF' code for a OF-only driver also seems
+> > > counter-intuitive.
+> >=20
+> > I do agree with those arguments. What I was saying is that for drivers
+> > which aren't DT only, of_clk_get() is not an option and that maybe
+> > others would be encouraged by the example to not use the generic APIs
+> > even if their driver could be used in non-DT setups. But maybe I'm
+> > worrying needlessly.
+> >=20
+> > That said, maybe somebody with a broader view of things like Arnd
+> > (Cc'ed) could share his thoughts.
+>=20
+> As I have already said, the way the DT bindings were done for the clk
+> stuff was wrong.  A little thought put into it would've come up with
+> a much better solution which wouldn't have needed of_clk_get() at all.
+>=20
+> How?
+>=20
+> The arguments for clk_get() are:
+> 1. the struct device, which you can get the OF-node from.
+> 2. a _device_ _specific_ _clock_ _input_ _name_ (or NULL if there's only
+>    one.)
+>=20
+> So, we have something that defines a hardware clock input name, which
+> can be used to generate a property name for OF.  So, what _could_ have
+> been done is this:
+>=20
+> 	clock-<input-name> =3D <&provider-node clk-output-index>;
+>=20
+> where the property name is generated by:
+>=20
+> 	snprintf(prop, sizeof(prop), "clk-%s", name ? name : "default");
 
-You turn this on by default but it's a nasty IRQ latency penalty
-on a lot of x86 platforms with the uarts on the lpc bus.
+But we already have this, only with slightly different syntax:
 
-What I am not clear on from this is
+	clocks =3D <&provider foo-index>, <&provider bar-index>;
+	clock-names =3D "foo", "bar";
 
-- do you see it on both the ports (the bug that is)
-- if you do see it on both are you sure its not in reality a symptom of
-  some other console/irq handling race ?
+> So I continue to assert that our current design is wrong - and it will
+> cause driver authors to pointlessly have to make a choice at every stage
+> between DT and non-DT based systems.
 
-Alan
+I think the reason that Tony brought this up is that with this API, the
+clock-names property becomes mandatory if you have more than one input
+clock.
+
+Thierry
+
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhmnJAAoJEN0jrNd/PrOh82oP/3rYF+GMTIX/9foqFXmWldyM
+HfRVJgwXIPGDAmFjTaHYqz2QrkshZ5RGcQNapT0sS+YcND2qKfRfUH//QCIJHgmG
+koACjYdgX1vQ1ydKxGUzp7bF/VHWW0JlilfuoH050DBDpjK6S1SKapvALx7OLwwL
+PdVJIXqX1kDhWY8xhUmq8LMGvCA2/BaGsQ17k5LNYzLaZLMeCk14XUPWFfOJWD0j
+6E8EXFoqgpYy90LRfVk/KbgfhVhKxtPL7DETRB5xMVZPvMZG0sDxKWO1mErH8o0/
+Hp9pD474YOZGLiSTQtQW0kcOzuL1cx4lQIVMIzOOXhHfCOydpfLEUbDVPBQKwS/8
+5sftxgX+7E76i34DWdtXflrE4cGYATnQcJsCwAFXcW+egjx4hXPlGFNdEUrHDQbB
+eXnIWjtO6+Z3iw8dAuUzDzJOH90b8lDFtWPEgB1DjZRD++18CzfAefZJHReHx9ht
+jPN8+mzpoQvkg4Lwko+GCtsNp9NduYjNMIvUco2gXTAcjar7FTA4jLLblyh+RDRf
+E1rLXm5b/wQZrJInRolB7HJE1sm1lRVFWrgv+6MjYLlqWq/XHUMTq5bQxD2xaNXv
+AjXcBaZUG7ybErD+s7Kp100e2R+kpG3gKHBEoYMwKiApNN4mMWR4r0zlbzwopgdY
+vpZHaOAnkNupsDHZt11+
+=Vr+q
+-----END PGP SIGNATURE-----
+
+--k1lZvvs/B4yU6o8G--
