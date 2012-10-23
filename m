@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934013Ab2JXB40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:56:26 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33728 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab2JXB4X (ORCPT
+	id S934108Ab2JXB5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:57:52 -0400
+Received: from [65.119.96.30] ([65.119.96.30]:51521 "EHLO mailgw.tensilica.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755615Ab2JXB5v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:56:23 -0400
-Date: Wed, 24 Oct 2012 02:56:13 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Jeff King <peff@peff.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>, git@vger.kernel.org,
+	Tue, 23 Oct 2012 21:57:51 -0400
+From: Marc Gauthier <marc@tensilica.com>
+To: Jeff King <peff@peff.net>, Thomas Gleixner <tglx@linutronix.de>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Chris Metcalf <cmetcalf@tilera.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
         Junio C Hamano <gitster@pobox.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+Date: Tue, 23 Oct 2012 15:06:59 -0700
+Subject: RE: [PATCH] tile: support GENERIC_KERNEL_THREAD and
  GENERIC_KERNEL_EXECVE
-Message-ID: <20121024015613.GB2616@ZenIV.linux.org.uk>
-References: <20121019213548.GR2616@ZenIV.linux.org.uk>
- <5082A1F1.3080303@tilera.com>
+Thread-Topic: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+ GENERIC_KERNEL_EXECVE
+Thread-Index: Ac2xaEaiYfRoOwemT4mLA5kHexs5aAAAKeOw
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D0B60880C30@exch.hq.tensilica.com>
+References: <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
+ <20121019213548.GR2616@ZenIV.linux.org.uk> <5082A1F1.3080303@tilera.com>
  <20121020153401.GT2616@ZenIV.linux.org.uk>
- <20121020171643.GU2616@ZenIV.linux.org.uk>
- <5086D432.4070008@tilera.com>
+ <20121020171643.GU2616@ZenIV.linux.org.uk> <5086D432.4070008@tilera.com>
  <20121023184122.GZ2616@ZenIV.linux.org.uk>
  <alpine.LFD.2.02.1210232232070.2756@ionos>
  <20121023205119.GA27729@sigill.intra.peff.net>
  <alpine.LFD.2.02.1210232307480.2756@ionos>
- <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
+ <20121023214717.GA29306@sigill.intra.peff.net>
+In-Reply-To: <20121023214717.GA29306@sigill.intra.peff.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 04:02:49AM +0300, Linus Torvalds wrote:
-> On Wed, Oct 24, 2012 at 12:25 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >>
-> >> It is spelled:
-> >>
-> >>   git notes add -m <comment> SHA1
+Jeff King wrote:
+> On Tue, Oct 23, 2012 at 11:25:06PM +0200, Thomas Gleixner wrote:
+> > > The resulting notes are stored in a separate
+> > > revision-controlled branch
 > >
-> > Cool!
-> 
-> Don't use them for anything global.
-> 
-> Use them for local codeflow, but don't expect them to be distributed.
-> It's a separate "flow", and while it *can* be distributed, it's not
-> going to be for the kernel, for example. So no, don't start using this
-> to ack things, because the acks *will* get lost.
+> > Which branch(es) is/are that ? What are the semantics of that?
+[...]
 
-How about git commit --allow-empty, with
-"belated ACK for <commit>
 
-Acked-by: <...>
-" as commit message?  I mean, that ought to work and propagate sanely,
-but I'm really not sure if that's something in a good taste and should
-be allowed as a common practice...
+Nice feature.
+
+Can a later commit be eventually be made to reference some set
+of notes added so far, so they become part of the whole history
+signed by the HEAD SHA1?  hence pulled/pushed automatically as
+well.  Otherwise do you not end up with a forever growing separate
+tree of notes that loses some of the properties of being behind
+the head SHA1 (and perhaps less scalable in manageability)?
+Also that way notes are separate only temporarily.
+
+As for automating the inclusion of notes in the flow, can that
+be conditional on some pattern in the note, so that e.g. the
+Acked-by's get included and folded in automatically, whereas
+others do not, according to settings?
+
+-Marc
