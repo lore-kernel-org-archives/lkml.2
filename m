@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab2JWKLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:11:11 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57497 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab2JWKLJ convert rfc822-to-8bit (ORCPT
+	id S932814Ab2JWKLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:11:25 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51330 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab2JWKLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:11:09 -0400
+	Tue, 23 Oct 2012 06:11:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121022203405.GA4395@kroah.com>
-References: <1350059835-5408-1-git-send-email-mujeeb.adil@gmail.com>
-	<20121022203405.GA4395@kroah.com>
-Date: Tue, 23 Oct 2012 15:41:08 +0530
-Message-ID: <CANBXnMkt-yFe6TRmbrMKdzxi0oUGB8233nF-5-376Ld+P+3CGA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] Staging: winbond: Fixed coding style issues
-From: Adil Mujeeb <mujeeb.adil@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: pavel@ucw.cz, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1350906877-19410-1-git-send-email-balbi@ti.com>
+References: <1350906877-19410-1-git-send-email-balbi@ti.com>
+Date: Tue, 23 Oct 2012 12:11:21 +0200
+Message-ID: <CACRpkdYiMtriTaKG=nT=7Jg2g0wUN3+JeN90V3jRke0bP2EHrA@mail.gmail.com>
+Subject: Re: [PATCH] arm: sched: stop sched_clock() during suspend
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kevin Hilman <khilman@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 2:04 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Fri, Oct 12, 2012 at 10:07:06PM +0530, Adil Mujeeb wrote:
->>
->> winbond directory files have lots of coding style issues. The patch set tries to remove *most* (if not all) of the coding style issues. checkpatch.pl script is still complaining (like 80 characters limit) but major part of the serious coding style issues have been rectified.
+On Mon, Oct 22, 2012 at 1:54 PM, Felipe Balbi <balbi@ti.com> wrote:
+
+> The scheduler imposes a requirement to sched_clock()
+> which is to stop the clock during suspend, if we don't
+> do that IRQ threads will be rescheduled in the future
+> which might cause transfers to timeout depending on
+> how driver is written.
 >
-> None of your patches can be applied due to the wrong patch level they
-> were generated at.  Please redo them, drop the two offending patches,
-> and resend the whole series.
+> This became an issue on OMAP when we converted omap-i2c.c
+> to use threaded IRQs, it turned out that depending on how
+> much time we spent on suspend, the I2C IRQ thread would
+> end up being rescheduled so far in the future that I2C
+> transfers would timeout and, because omap_hsmmc depends
+> on an I2C-connected device to detect if an MMC card is
+> inserted in the slot, our rootfs would just vanish.
 >
-> thanks,
+> arch/arm/kernel/sched_clock.c already had an optional
+> implementation (sched_clock_needs_suspend()) which would
+> handle scheduler's requirement properly, what this patch
+> does is simply to make that implementation non-optional.
 >
-> greg k-h
+> This has been tested with beagleboard XM (OMAP3630) and
+> pandaboard rev A3 (OMAP4430). Suspend to RAM is now working
+> after this patch.
+>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-Thanks Greg. I will recreate the patches and shall drop the mentioned
-ones. But I am still not able find where I am doing wrong in
-generating the patches. I am following your tutorial :) but may be
-missing something. Please help. I am doing in the following ways:
+After Russell explains so I get it:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-1. I am downloading the latest rc source archive from ftp.kernel.org
-under directory /pub/linux/kernel/v3.x/testing
-2. Then creating my own git repository treating the base source as master.
-3. Creating a branch from it and tries to fix some sources.
-4. Create the patch through git format-patch
-5. Submit the patch through git send-email command.
-
-Dry run works fine with my repository. Could you please help?
-
-Regards,
-Adil
+Yours,
+Linus Walleij
