@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965641Ab2JWVMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:12:30 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:49681 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933656Ab2JWUFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:05:03 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH 030/193] arch/unicore32: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:01:43 -0700
-Message-Id: <1351022666-6960-31-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S965628Ab2JWVNF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:13:05 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:37249 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933556Ab2JWVNB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 17:13:01 -0400
+Date: Tue, 23 Oct 2012 23:12:58 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Priit Laes <plaes@plaes.org>, Devendra Naga <develkernel412222@gmail.com>,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: csr: remove a number of unneeded includes of
+ version.h
+In-Reply-To: <20121022205039.GA26163@kroah.com>
+Message-ID: <alpine.LNX.2.00.1210232312090.1515@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1210182150020.17217@swampdragon.chaosbits.net> <20121022205039.GA26163@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config item has not carried much meaning for a while now and is
-almost always enabled by default. As agreed during the Linux kernel
-summit, remove it.
+On Mon, 22 Oct 2012, Greg Kroah-Hartman wrote:
 
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- arch/unicore32/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On Thu, Oct 18, 2012 at 09:51:56PM +0200, Jesper Juhl wrote:
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> 
+> Someone already beat you to this patch, sorry.
+> 
+Heh. That happens - no problem - as long as it gets fixed :)
 
-diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-index e5c5473..4def59a 100644
---- a/arch/unicore32/Kconfig
-+++ b/arch/unicore32/Kconfig
-@@ -216,7 +216,7 @@ config PUV3_GPIO
- 	bool
- 	depends on !ARCH_FPGA
- 	select GENERIC_GPIO
--	select GPIO_SYSFS if EXPERIMENTAL
-+	select GPIO_SYSFS
- 	default y
- 
- if PUV3_NB0916
+
 -- 
-1.7.9.5
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
