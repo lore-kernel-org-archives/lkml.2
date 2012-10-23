@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab2JWAHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 20:07:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43667 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102Ab2JWAHE (ORCPT
+	id S932494Ab2JWAH3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 20:07:29 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58637 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932366Ab2JWAH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 20:07:04 -0400
-Date: Mon, 22 Oct 2012 17:07:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: minyard@acm.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: Re: [PATCH 2/5] ACPI: Reorder IPMI driver before any other ACPI
- drivers
-Message-Id: <20121022170703.03a11f39.akpm@linux-foundation.org>
-In-Reply-To: <20121023000033.GA11756@srcf.ucam.org>
-References: <1350420820-7156-1-git-send-email-minyard@acm.org>
-	<1350420820-7156-3-git-send-email-minyard@acm.org>
-	<20121022164538.3b707397.akpm@linux-foundation.org>
-	<20121023000033.GA11756@srcf.ucam.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Oct 2012 20:07:27 -0400
+Date: Tue, 23 Oct 2012 02:07:25 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sooman Jeong <77smart@hanyang.ac.kr>
+Cc: linux-kernel@vger.kernel.org, Vyacheslav Dubeyko <slava@dubeyko.com>
+Subject: Re: Initial report on F2FS filesystem performance
+Message-ID: <20121023000725.GA10990@elf.ucw.cz>
+References: <1350360423154.2800.144.00.1.77smart@hanyang.ac.kr>
+ <20121020192215.GB555@elf.ucw.cz>
+ <E0328919-ACAA-4052-B922-952AFA375FD8@dubeyko.com>
+ <20121021102638.GA14031@elf.ucw.cz>
+ <1350905803450.1936.166.00.1.77smart@hanyang.ac.kr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350905803450.1936.166.00.1.77smart@hanyang.ac.kr>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 01:00:34 +0100
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+Hi!
 
-> On Mon, Oct 22, 2012 at 04:45:38PM -0700, Andrew Morton wrote:
-> 
-> > Relying upon link ordering is the old-fashioned way of doing things,
-> > and I have vague memories that it only works by luck - that there's no
-> > hard-and-fast rule that the linker has to obey what we think we asked
-> > it to do.
-> > 
-> > The usual way of doing this sort of thing is to use the initcall
-> > priority levels - core_initcall(), postcore_initcall(), etc.  Can that
-> > be done here?
-> 
-> Not really - some of this code can be built as modules, so it's mostly 
-> module_init rather than anything from the initcall family.
-> 
+> As requested, I compared performance of VFAT with f2fs on SD card.
+> Following is summary of the measurement.
 
-hm.  So the ACPI code has found a way to defeat depmod? 
+Thanks.
+
+> VFAT shows better performance on both random write+fsync and buffered-sequential write than f2fs.
+> However, on buffered-random and sequential write+fsync, f2fs still exhibits better performance 
+> than other filesystems.
+> 
+> 
+> * buffered write (1GB file), 4KByte write
+> ------------------------------------------------------------------------------
+>                      Desktop PC                         Galaxy-S3
+> ------------------------------------------------------------------------------
+>          sequential (MB/s)  random (IOPS)  sequential (MB/s)   random (IOPS)  
+> ------------------------------------------------------------------------------
+...
+>   F2FS          10.6            2675               6.9             1682      
+>   VFAT           7.3            1108               7.3             1075               
+> ------------------------------------------------------------------------------
+
+Ok, f2fs is bit faster on desktop PC and a bit slower on S3. Good.
+
+
+> * write + fsync (100MB file), 4KByte write
+> ------------------------------------------------------------------------------
+>                      Desktop PC                         Galaxy-S3
+> ------------------------------------------------------------------------------
+>          sequential (KB/s)  random (IOPS)  sequential (KB/s)   random (IOPS)  
+> ------------------------------------------------------------------------------
+>   F2FS         1057.9            240              772.3             184
+>   VFAT          356.5            260              474.4             373
+> ------------------------------------------------------------------------------
+
+Ok, random access on VFAT is a lot faster on S3 (and only very
+a bit on PC). Any idea why results are so different between PC and S3?
+Does F2FS need significantly more CPU? Does F2FS need significantly
+more RAM? (Booting PC with low mem= option my answer that).
+
+Anyway, it looks like F2FS is pretty fast filesystem...
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
