@@ -1,115 +1,503 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab2JWCYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 22:24:46 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:50912 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756472Ab2JWCYo (ORCPT
+	id S932569Ab2JWCZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 22:25:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:46732 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756472Ab2JWCZO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 22:24:44 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9N2ObsF015420, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <20121022192748.GA16370@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
-Date: Tue, 23 Oct 2012 10:24:39 +0800
-Message-ID: <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac2wjkbI4gFT6+CoSU+X/ZM3Pr9IaQAMoxkg
-In-Reply-To: <20121022192748.GA16370@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+	Mon, 22 Oct 2012 22:25:14 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-d6-508600086adc
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+In-reply-to: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+Subject: [PATCH 01/16 v2] f2fs: add document
+Date: Tue, 23 Oct 2012 11:25:11 +0900
+Message-id: <001101cdb0c5$a1052fd0$e30f8f70$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2wxSqFSBGNbwToQsqWze4D+LI2xQAAFr0Q
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ10OhrYAg62f5S327D3JYnF51xw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLeX9/DXLBpB2PFvk9rGBsYV/cwdjFyckgImEjMXvUV
+	yhaTuHBvPRuILSSwjFHi2aw4mJr1S08wdTFyAcUXMUq8urOXEcL5xyjx9+wW9i5GDg42AW2J
+	zfsNQOIiAg8ZJfY/W8oOMclWYtL/xcwgNqeAncSzRxfBtgkL6Ei8eQDRyyKgKtHxJw8kzAtU
+	fnPWWhYIW1Dix+R7YDazgLrEpHmLmCFsbYkn7y6wgrRKAMUf/dUFCYsIGEnsapjDCFEiIrHv
+	xTswm0VAQOLb5EMsEOWyEpsOMINcKSGwiF1iyYRN7BA/SkocXHGDZQKj+Cwkm2ch2TwLyeZZ
+	SFYsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRESTdI7GFc1WBxiFOBgVOLh7djfGiDE
+	mlhWXJl7iFGCg1lJhFc5ACjEm5JYWZValB9fVJqTWnyI0Qfo8onMUqLJ+cBIzyuJNzQ2NjEz
+	MTUxtzQ1N8UhrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qBkdeZYcVEuUfWG8MPbluue6d6
+	warEFzHXy7Z6NiofOPLEQeBV2/0XZxM+7uczP/7+wvWn8o42IkrPJQ/ll7ckFD+9OuX+5V3d
+	Nav1Ije1cacdY0pl+vLlS+TVo8df3lJ/p1KaLPKchfunwU0LQQXr/b3XwmS6fqVe3Xlrlcs6
+	mZ521ilZM4Oju5VYijMSDbWYi4oTAQCAn4nTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jAV0OhrYAg+U7JC327D3JYnF51xw2
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgz3l/fw1ywaQdj
+	xb5PaxgbGFf3MHYxcnJICJhIrF96ggnCFpO4cG89WxcjF4eQwCJGiVd39jJCOP8YJf6e3cLe
+	xcjBwSagLbF5vwFIXETgIaPE/mdL2UG6hQRsJSb9X8wMYnMK2Ek8e3QRbIOwgI7EmwcQvSwC
+	qhIdf/JAwrxA5TdnrWWBsAUlfky+B2YzC6hLTJq3iBnC1pZ48u4CK0irBFD80V9dkLCIgJHE
+	roY5jBAlIhL7XrxjnMAoOAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS
+	83M3MYKj9Zn0DsZVDRaHGAU4GJV4eDv2twYIsSaWFVfmHmKU4GBWEuFVDgAK8aYkVlalFuXH
+	F5XmpBYfYvQB+nMis5Rocj4wkeSVxBsam5gZWRqZWRiZmJvjEFYS5232SAkQEkhPLEnNTk0t
+	SC2CGcfEwSnVwOj/27uCe4e/veeGKWf2TuiKkWPKXb1qwR+Z9HmWCx1lImbxySzT/vlj9ZR/
+	kvN11lxKdtn2cepevXUvQmfNCLu8+7G50ekpIcpJ835GBXU6fQ8Pel/+qjm9bbVVPAtnUDPH
+	5S0vP1jXPqpRbIjal9bz+cbKMwLWS6dMrV3j/Ndi6tk3XiXf04SUWIozEg21mIuKEwE0V0Jc
+	AwMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Tuesday, October 23, 2012 3:28 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; 
-> jean@google.com
-> Subject: Re: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
-> 
-[...]
-> > @@ -687,6 +687,7 @@ enum features {
-> >  	RTL_FEATURE_WOL		= (1 << 0),
-> >  	RTL_FEATURE_MSI		= (1 << 1),
-> >  	RTL_FEATURE_GMII	= (1 << 2),
-> > +	RTL_FEATURE_EXTENDED	= (1 << 3),
-> 
-> Is there a specific reason why it is not named RTL_FEATURE_ALDPS ?
-> 
-> RTL_FEATURE_EXTENDED is anything but enlightning.
-> 
+This adds a document describing the mount options, proc entries, usage, and
+design of Flash-Friendly File System, namely F2FS.
 
-The flag is determined if the firmware is loaded. It doesn't mean to enable
-ALDPS. Besides ALDPS, the firmware includes the other features about power
-saving, performance, hw behavior, and so on. Thus, I think it  is the extended
-feature. Any suggestion?
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ Documentation/filesystems/00-INDEX |    2 +
+ Documentation/filesystems/f2fs.txt |  404 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 406 insertions(+)
+ create mode 100644 Documentation/filesystems/f2fs.txt
 
-[...]
-> > @@ -6391,6 +6433,8 @@ static void 
-> rtl8169_net_suspend(struct net_device *dev)
-> >  {
-> >  	struct rtl8169_private *tp = netdev_priv(dev);
-> >  
-> > +	tp->features &= ~RTL_FEATURE_EXTENDED;
-> > +
-> 
-> The commit message does not explain this part.
-> 
-> What are you trying to achieve ?
+diff --git a/Documentation/filesystems/00-INDEX b/Documentation/filesystems/00-INDEX
+index 8c624a1..ce5fd46 100644
+--- a/Documentation/filesystems/00-INDEX
++++ b/Documentation/filesystems/00-INDEX
+@@ -48,6 +48,8 @@ ext4.txt
+ 	- info, mount options and specifications for the Ext4 filesystem.
+ files.txt
+ 	- info on file management in the Linux kernel.
++f2fs.txt
++	- info and mount options for the F2FS filesystem.
+ fuse.txt
+ 	- info on the Filesystem in User SpacE including mount options.
+ gfs2.txt
+diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+new file mode 100644
+index 0000000..f2b4fde
+--- /dev/null
++++ b/Documentation/filesystems/f2fs.txt
+@@ -0,0 +1,404 @@
++================================================================================
++WHAT IS Flash-Friendly File System (F2FS)?
++================================================================================
++
++NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
++been widely being used for storage ranging from mobile to server systems. Since
++they are known to have different characteristics from the conventional rotating
++disks, a file system, an upper layer to the storage device, should adapt to the
++changes from the sketch in the design level.
++
++F2FS is a file system exploiting NAND flash memory-based storage devices, which
++is based on Log-structured File System (LFS). The design has been focused on
++addressing the fundamental issues in LFS, which are snowball effect of wandering
++tree and high cleaning overhead.
++
++Since a NAND flash memory-based storage device shows different characteristic
++according to its internal geometry or flash memory management scheme, namely FTL,
++F2FS and its tools support various parameters not only for configuring on-disk
++layout, but also for selecting allocation and cleaning algorithms.
++
++The file system formatting tool, "mkfs.f2fs", is available from the following
++download page:		http://sourceforge.net/projects/f2fs-tools/
++
++================================================================================
++BACKGROUND AND DESIGN ISSUES
++================================================================================
++
++Log-structured File System (LFS)
++--------------------------------
++"A log-structured file system writes all modifications to disk sequentially in
++a log-like structure, thereby speeding up  both file writing and crash recovery.
++The log is the only structure on disk; it contains indexing information so that
++files can be read back from the log efficiently. In order to maintain large free
++areas on disk for fast writing, we divide  the log into segments and use a
++segment cleaner to compress the live information from heavily fragmented
++segments." from Rosenblum, M. and Ousterhout, J. K., 1992, "The design and
++implementation of a log-structured file system", ACM Trans. Computer Systems
++10, 1, 26–52.
++
++Wandering Tree Problem
++----------------------
++In LFS, when a file data is updated and written to the end of log, its direct
++pointer block is updated due to the changed location. Then the indirect pointer
++block is also updated due to the direct pointer block update. In this manner,
++the upper index structures such as inode, inode map, and checkpoint block are
++also updated recursively. This problem is called as wandering tree problem [1],
++and in order to enhance the performance, it should eliminate or relax the update
++propagation as much as possible.
++
++[1] Bityutskiy, A. 2005. JFFS3 design issues. http://www.linux-mtd.infradead.org/
++
++Cleaning Overhead
++-----------------
++Since LFS is based on out-of-place writes, it produces so many obsolete blocks
++scattered across the whole storage. In order to serve new empty log space, it
++needs to reclaim these obsolete blocks seamlessly to users. This job is called
++as a cleaning process.
++
++The process consists of three operations as follows.
++1. A victim segment is selected through referencing segment usage table.
++2. It loads parent index structures of all the data in the victim identified by
++   segment summary blocks.
++3. It checks the cross-reference between the data and its parent index structure.
++4. It moves valid data selectively.
++
++This cleaning job may cause unexpected long delays, so the most important goal
++is to hide the latencies to users. And also definitely, it should reduce the
++amount of valid data to be moved, and move them quickly as well.
++
++================================================================================
++KEY FEATURES
++================================================================================
++
++Flash Awareness
++---------------
++- Enlarge the random write area for better performance, but provide the high
++  spatial locality
++- Align FS data structures to the operational units in FTL as best efforts
++
++Wandering Tree Problem
++----------------------
++- Use a term, “node”, that represents inodes as well as various pointer blocks
++- Introduce Node Address Table (NAT) containing the locations of all the “node”
++  blocks; this will cut off the update propagation.
++
++Cleaning Overhead
++-----------------
++- Support a background cleaning process
++- Support greedy and cost-benefit algorithms for victim selection policies
++- Support multi-head logs for static/dynamic hot and cold data separation
++- Introduce adaptive logging for efficient block allocation
++
++================================================================================
++MOUNT OPTIONS
++================================================================================
++
++background_gc_off      Turn off cleaning operations, namely garbage collection,
++		       triggered in background when I/O subsystem is idle.
++disable_roll_forward   Disable the roll-forward recovery routine
++discard                Issue discard/TRIM commands when a segment is cleaned.
++no_heap                Disable heap-style segment allocation which finds free
++                       segments for data from the beginning of main area, while
++		       for node from the end of main area.
++nouser_xattr           Disable Extended User Attributes. Note: xattr is enabled
++                       by default if CONFIG_F2FS_FS_XATTR is selected.
++noacl                  Disable POSIX Access Control List. Note: acl is enabled
++                       by default if CONFIG_F2FS_FS_POSIX_ACL is selected.
++active_logs=%u         Support configuring the number of active logs. In the
++                       current design, f2fs supports only 2, 4, and 6 logs.
++                       Default number is 6.
++disable_ext_identify   Disable the extension list configured by mkfs, so f2fs
++                       does not aware of cold files such as media files.
++
++================================================================================
++PROC ENTRIES
++================================================================================
++
++/proc/fs/f2fs/ contains information about partitions mounted as f2fs. For each
++partition, a corresponding directory, named as its device name, is provided with
++the following proc entries.
++
++- f2fs_stat	major file system information managed by f2fs currently
++- f2fs_sit_stat	average utilization information of the whole segments
++- f2fs_mem_stat	current memory footprint consumed by f2fs
++
++e.g., in /proc/fs/f2fs/sdb1/
++
++================================================================================
++USAGE
++================================================================================
++
++1. Download userland tools
++
++2. Insmod f2fs.ko module:
++ # insmod f2fs.ko
++
++3. Check the directory trying to mount
++ # mkdir /mnt/f2fs
++
++4. Format the block device, and then mount as f2fs
++ # mkfs.f2fs -l label /dev/block_device
++ # mount -t f2fs /dev/block_device /mnt/f2fs
++
++Mount options
++-------------
++-l [label]   : Give a volume label, up to 256 unicode name.
++-a [0 or 1]  : Split start location of each area for heap-based allocation.
++               1 is set by default, which performs this.
++-o [int]     : Set overprovision ratio in percent over volume size.
++               5 is set by default.
++-s [int]     : Set the number of segments per section.
++               1 is set by default.
++-z [int]     : Set the number of sections per zone.
++               1 is set by default.
++-e [str]     : Set basic extension list. e.g. "mp3,gif,mov"
++
++================================================================================
++DESIGN
++================================================================================
++
++On-disk Layout
++--------------
++
++F2FS divides the whole volume into a number of segments, each of which is 2MB in
++size by default. A section is composed of consecutive segments, and a zone
++consists of a set of sections.
++
++F2FS maintains logically six log areas. Except SB, all the log areas are managed
++in a unit of multiple segments. SB is located at the beginning of the partition,
++and there exist two superblocks to avoid file system crash. Other file system
++metadata such as CP, NAT, SIT, and SSA are located in the front part of the
++volume. Main area contains file and directory data including their indices.
++
++Each area manages the following contents.
++- CP		File system information, bitmaps for valid NAT/SIT sets, orphan
++		inode lists, and summary entries of current active segments.
++- NAT		Block address table for all the node blocks stored in Main area.
++- SIT		Segment information such as valid block count and bitmap for the
++		validity of all the blocks.
++- SSA		Summary entries which contains the owner information of all the
++		data and node blocks stored in Main area.
++- Main		Node and data blocks.
++
++In order to avoid misalignment between file system and flash-based storage, F2FS
++aligns the start block address of CP with the segment size. Also, it aligns the
++start block address of Main area with the zone size by reserving some segments
++in SSA area.
++
++                                            align with the zone size <-|
++                 |-> align with the segment size
++     _________________________________________________________________________
++    |            |            |    Node     |   Segment   |   Segment  |      |
++    | Superblock | Checkpoint |   Address   |    Info.    |   Summary  | Main |
++    |    (SB)    |   (CP)     | Table (NAT) | Table (SIT) | Area (SSA) |      |
++    |____________|_____2______|______N______|______N______|______N_____|__N___|
++                                                                       .      .
++                                                             .                .
++                                                 .                            .
++                                    ._________________________________________.
++                                    |_Segment_|_..._|_Segment_|_..._|_Segment_|
++                                    .           .
++                                    ._________._________
++                                    |_section_|__...__|_
++                                    .            .
++		                    .________.
++	                            |__zone__|
++
++
++File System Metadata Structure
++------------------------------
++
++F2FS adopts the checkpointing scheme to maintain file system consistency. At
++mount time, F2FS first tries to find the last valid checkpoint data by scanning
++CP area. In order to reduce the scanning time, F2FS uses only two copies of CP.
++One of them always indicates the last valid data, which is called as shadow copy
++mechanism. In addition to CP, NAT and SIT also adopt the shadow copy mechanism.
++
++For file system consistency, each CP points to which NAT and SIT copies are
++valid, as shown as below.
++
++  +--------+----------+---------+
++  |   CP   |    NAT   |   SIT   |
++  +--------+----------+---------+
++  .         .          .          .
++  .            .              .              .
++  .               .                 .                 .
++  +-------+-------+--------+--------+--------+--------+
++  | CP #0 | CP #1 | NAT #0 | NAT #1 | SIT #0 | SIT #1 |
++  +-------+-------+--------+--------+--------+--------+
++     |             ^                          ^
++     |             |                          |
++     `----------------------------------------'
++
++Index Structure
++---------------
++
++The key data structure to manage the data locations is a "node". Similar to
++traditional file structures, F2FS has three types of node: inode, direct node,
++indirect node. F2FS assigns 4KB to an inode block which contains 929 data block
++indices, two direct node pointers, two indirect node pointers, and one double
++indirect node pointer as described below. One direct node block contains 1018
++data blocks, and one indirect node block contains also 1018 node blocks. Thus,
++one inode block (i.e., a file) covers:
++
++  4KB * (927 + 2 * 1018 + 2 * 1018 * 1018 + 1018 * 1018 * 1018) := 3.94TB.
++
++   Inode block (4KB)
++     |- data (927)
++     |- direct node (2)
++     |          `- data (1018)
++     |- indirect node (2)
++     |            `- direct node (1018)
++     |                       `- data (1018)
++     `- double indirect node (1)
++                         `- indirect node (1018)
++			              `- direct node (1018)
++	                                         `- data (1018)
++
++Note that, all the node blocks are mapped by NAT which means the location of
++each node is translated by the NAT table. In the consideration of the wandering
++tree problem, F2FS is able to cut off the propagation of node updates caused by
++leaf data writes.
++
++Directory Structure
++-------------------
++
++A directory entry occupies 11 bytes, which consists of the following attributes.
++
++- hash		hash value of the file name
++- ino		inode number
++- len		the length of file name
++- type		file type such as directory, symlink, etc
++
++A dentry block consists of 214 dentry slots and file names. Therein a bitmap is
++used to represent whether each dentry is valid or not. A dentry block occupies
++4KB with the following composition.
++
++  Dentry Block(4 K) = bitmap (27 bytes) + reserved (3 bytes) +
++	              dentries(11 * 214 bytes) + file name (8 * 214 bytes)
++
++                         [Bucket]
++             +--------------------------------+
++             |dentry block 1 | dentry block 2 |
++             +--------------------------------+
++             .               .
++       .                             .
++  .       [Dentry Block Structure: 4KB]       .
++  +--------+----------+----------+------------+
++  | bitmap | reserved | dentries | file names |
++  +--------+----------+----------+------------+
++  [Dentry Block: 4KB] .   .
++		 .               .
++            .                          .
++            +------+------+-----+------+
++            | hash | ino  | len | type |
++            +------+------+-----+------+
++            [Dentry Structure: 11 bytes]
++
++F2FS implements multi-level hash tables for directory structure. Each level has
++a hash table with dedicated number of hash buckets as shown below. Note that
++"A(2B)" means a bucket includes 2 data blocks.
++
++----------------------
++A : bucket
++B : block
++N : MAX_DIR_HASH_DEPTH
++----------------------
++
++level #0   | A(2B)
++           |
++level #1   | A(2B) - A(2B)
++           |
++level #2   | A(2B) - A(2B) - A(2B) - A(2B)
++     .     |   .       .       .       .
++level #N/2 | A(2B) - A(2B) - A(2B) - A(2B) - A(2B) - ... - A(2B)
++     .     |   .       .       .       .
++level #N   | A(4B) - A(4B) - A(4B) - A(4B) - A(4B) - ... - A(4B)
++
++The number of blocks and buckets are determined by,
++
++                            ,- 2, if n < MAX_DIR_HASH_DEPTH / 2,
++  # of blocks in level #n = |
++                            `- 4, Otherwise
++
++                             ,- 2^n, if n < MAX_DIR_HASH_DEPTH / 2,
++  # of buckets in level #n = |
++                             `- 2^((MAX_DIR_HASH_DEPTH / 2) - 1), Otherwise
++
++When F2FS finds a file name in a directory, at first a hash value of the file
++name is calculated. Then, F2FS scans the hash table in level #0 to find the
++dentry consisting of the file name and its inode number. If not found, F2FS
++scans the next hash table in level #1. In this way, F2FS scans hash tables in
++each levels incrementally from 1 to N. In each levels F2FS needs to scan only
++one bucket determined by the following equation, which shows O(log(# of files))
++complexity.
++
++  bucket number to scan in level #n = (hash value) % (# of buckets in level #n)
++
++In the case of file creation, F2FS finds empty consecutive slots that cover the
++file name. F2FS searches the empty slots in the hash tables of whole levels from
++1 to N in the same way as the lookup operation.
++
++The following figure shows an example of two cases holding children.
++       --------------> Dir <--------------
++       |                                 |
++    child                             child
++
++    child - child                     [hole] - child
++
++    child - child - child             [hole] - [hole] - child
++
++   Case 1:                           Case 2:
++   Number of children = 6,           Number of children = 3,
++   File size = 7                     File size = 7
++
++Default Block Allocation
++------------------------
++
++At runtime, F2FS manages six active logs inside "Main" area: Hot/Warm/Cold node
++and Hot/Warm/Cold data.
++
++- Hot node	contains direct node blocks of directories.
++- Warm node	contains direct node blocks except hot node blocks.
++- Cold node	contains indirect node blocks
++- Hot data	contains dentry blocks
++- Warm data	contains data blocks except hot and cold data blocks
++- Cold data	contains multimedia data or migrated data blocks
++
++LFS has two schemes for free space management: threaded log and copy-and-compac-
++tion. The copy-and-compaction scheme which is known as cleaning, is well-suited
++for devices showing very good sequential write performance, since free segments
++are served all the time for writing new data. However, it suffers from cleaning
++overhead under high utilization. Contrarily, the threaded log scheme suffers
++from random writes, but no cleaning process is needed. F2FS adopts a hybrid
++scheme where the copy-and-compaction scheme is adopted by default, but the
++policy is dynamically changed to the threaded log scheme according to the file
++system status.
++
++In order to align F2FS with underlying flash-based storage, F2FS allocates a
++segment in a unit of section. F2FS expects that the section size would be the
++same as the unit size of garbage collection in FTL. Furthermore, with respect
++to the mapping granularity in FTL, F2FS allocates each section of the active
++logs from different zones as much as possible, since FTL can write the data in
++the active logs into one allocation unit according to its mapping granularity.
++
++Cleaning process
++----------------
++
++F2FS does cleaning both on demand and in the background. On-demand cleaning is
++triggered when there are not enough free segments to serve VFS calls. Background
++cleaner is operated by a kernel thread, and triggers the cleaning job when the
++system is idle.
++
++F2FS supports two victim selection policies: greedy and cost-benefit algorithms.
++In the greedy algorithm, F2FS selects a victim segment having the smallest number
++of valid blocks. In the cost-benefit algorithm, F2FS selects a victim segment
++according to the segment age and the number of valid blocks in order to address
++log block thrashing problem in the greedy algorithm. F2FS adopts the greedy
++algorithm for on-demand cleaner, while background cleaner adopts cost-benefit
++algorithm.
++
++In order to identify whether the data in the victim segment are valid or not,
++F2FS manages a bitmap. Each bit represents the validity of a block, and the
++bitmap is composed of a bit stream covering whole blocks in main area.
+-- 
+1.7.9.5
 
-I don't sure if the firmware code still exists and works after hibernation. I
-clear the flag for safe. It would be set again after loading firmware. It is
-used to make sure to enable ALDPS with firmware.
 
-> 
-> After this patch the driver would look like:
-> 1. disable ALDPS before setting firmware (unmodified by patch)
->    RTL_GIGA_MAC_VER_29 "RTL8105e"
->    RTL_GIGA_MAC_VER_30 "RTL8105e"
->    RTL_GIGA_MAC_VER_37 "RTL8402"
->    RTL_GIGA_MAC_VER_39 "RTL8106e"
-> 
-> 2. apply_firmware (unmodified by patch)
->    RTL_GIGA_MAC_VER_25 "RTL8168d/8111d"
->    RTL_GIGA_MAC_VER_26 "RTL8168d/8111d"
->    RTL_GIGA_MAC_VER_29 "RTL8105e"
->    RTL_GIGA_MAC_VER_30 "RTL8105e"
->    RTL_GIGA_MAC_VER_32 "RTL8168e/8111e"
->    RTL_GIGA_MAC_VER_33 "RTL8168e/8111e"
->    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
->    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
->    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
->    RTL_GIGA_MAC_VER_37 "RTL8402"
->    RTL_GIGA_MAC_VER_38 "RTL8411"
->    RTL_GIGA_MAC_VER_39 "RTL8106e"
->    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
-> 
-> 3. enable ALDPS after firmware
->    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
->    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
->    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
->    RTL_GIGA_MAC_VER_37 "RTL8402"
->    RTL_GIGA_MAC_VER_38 "RTL8411"
->    RTL_GIGA_MAC_VER_39 "RTL8106e"
->    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
-> 
-> The disable/enable ALDPS code is not trivially balanced.
-> 
-> Do we exactly perform the required ALDPS operations ? Nothing more,
-> nothing less ?
-> 
 
-Because the different design between the giga nic and 10/100M nic, the behavior
-would be different. For example, you couldn't disable the ALDPS of the giga nic
-directly just like the 10/100M (8136 series) one. The giga nic would disable
-ALDPS automatically when loading firmware, but the 8136 series wouldn't.
 
-Best Regards,
-Hayes
+---
+Jaegeuk Kim
+Samsung
+
+
 
