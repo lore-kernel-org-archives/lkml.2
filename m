@@ -1,188 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933189Ab2JWQVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:21:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47867 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab2JWQVP (ORCPT
+	id S1757235Ab2JWQVs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:21:48 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44130 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab2JWQVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:21:15 -0400
-Date: Tue, 23 Oct 2012 11:19:58 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
-        jmorris@namei.org, mtk.manpages@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, paulmck@linux.vnet.ibm.com,
-        sds@tycho.nsa.gov, devel@openvz.org, a.p.zijlstra@chello.nl,
-        cmetcalf@tilera.com, linux-driver@qlogic.com, ron.mercer@qlogic.com,
-        viro@zeniv.linux.org.uk, eparis@parisplace.org, tglx@linutronix.de,
-        jitendra.kalsaria@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        ebiederm@xmission.com, casey@schaufler-ca.com
-Subject: Re: [PATCH v6 03/10] ipc: segment key change helper introduced
-Message-ID: <20121023161958.GB9755@sergelap>
-References: <20121015155800.28348.23561.stgit@localhost.localdomain>
- <20121015155951.28348.65427.stgit@localhost.localdomain>
+	Tue, 23 Oct 2012 12:21:46 -0400
+Message-ID: <5086C417.102@wwwdotorg.org>
+Date: Tue, 23 Oct 2012 10:21:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121015155951.28348.65427.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pavan Kunapuli <pkunapuli@nvidia.com>
+CC: linux@arm.linux.org.uk, cjb@laptop.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: dt: tegra: Add sdhci regulators
+References: <1350976709-19248-1-git-send-email-pkunapuli@nvidia.com> <1350976709-19248-2-git-send-email-pkunapuli@nvidia.com>
+In-Reply-To: <1350976709-19248-2-git-send-email-pkunapuli@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
-> This patch introduces existent segment key changing infrastructure.
-> New function ipc_update_key() can be used change segment key, cuid, cgid
-> values. It checks for that new key is not used (except IPC_PRIVATE) prior to
-> set it on existent.
-> To make this possible, added copying of this fields from user-space in
-> __get_compat_ipc_perm() and __get_compat_ipc64_perm() functions. Also segment
-> search by key and lock were splitted into different functions, because
-> ipc_update_key() doesn't need to lock the segment during check that new key is
-> not used.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+On 10/23/2012 01:18 AM, Pavan Kunapuli wrote:
+> Adding vmmc and vmmcq supplies for sdhci nodes
+> in tegra dt files.
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-
-> ---
->  ipc/compat.c |    6 ++++++
->  ipc/util.c   |   51 ++++++++++++++++++++++++++++++++++++++++++++++++---
->  ipc/util.h   |    2 ++
->  3 files changed, 56 insertions(+), 3 deletions(-)
-> 
-> diff --git a/ipc/compat.c b/ipc/compat.c
-> index ad9518e..af30d13 100644
-> --- a/ipc/compat.c
-> +++ b/ipc/compat.c
-> @@ -144,6 +144,9 @@ static inline int __get_compat_ipc64_perm(struct ipc64_perm *p64,
->  	err  = __get_user(p64->uid, &up64->uid);
->  	err |= __get_user(p64->gid, &up64->gid);
->  	err |= __get_user(p64->mode, &up64->mode);
-> +	err |= __get_user(p64->cuid, &up64->cuid);
-> +	err |= __get_user(p64->cgid, &up64->cgid);
-> +	err |= __get_user(p64->key, &up64->key);
->  	return err;
->  }
->  
-> @@ -155,6 +158,9 @@ static inline int __get_compat_ipc_perm(struct ipc64_perm *p,
->  	err  = __get_user(p->uid, &up->uid);
->  	err |= __get_user(p->gid, &up->gid);
->  	err |= __get_user(p->mode, &up->mode);
-> +	err |= __get_user(p->cuid, &up->cuid);
-> +	err |= __get_user(p->cgid, &up->cgid);
-> +	err |= __get_user(p->key, &up->key);
->  	return err;
->  }
->  
-> diff --git a/ipc/util.c b/ipc/util.c
-> index 503946e..faae296 100644
-> --- a/ipc/util.c
-> +++ b/ipc/util.c
-> @@ -173,7 +173,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
->   *	@key: The key to find
->   *	
->   *	Requires ipc_ids.rw_mutex locked.
-> - *	Returns the LOCKED pointer to the ipc structure if found or NULL
-> + *	Returns the UNLOCKED pointer to the ipc structure if found or NULL
->   *	if not.
->   *	If key is found ipc points to the owning ipc structure
->   */
-> @@ -195,7 +195,6 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
->  			continue;
->  		}
->  
-> -		ipc_lock_by_ptr(ipc);
->  		return ipc;
->  	}
->  
-> @@ -203,6 +202,27 @@ static struct kern_ipc_perm *ipc_findkey(struct ipc_ids *ids, key_t key)
->  }
->  
->  /**
-> + *	ipc_findkey_locked	-	find and lock a key in an ipc identifier set
-> + *	@ids: Identifier set
-> + *	@key: The key to find
-> + *
-> + *	Requires ipc_ids.rw_mutex locked.
-> + *	Returns the LOCKED pointer to the ipc structure if found or NULL
-> + *	if not.
-> + *	If key is found ipc points to the owning ipc structure
-> + */
-> +
-> +static struct kern_ipc_perm *ipc_findkey_locked(struct ipc_ids *ids, key_t key)
-> +{
-> +	struct kern_ipc_perm *ipc;
-> +
-> +	ipc = ipc_findkey(ids, key);
-> +	if (ipc)
-> +		ipc_lock_by_ptr(ipc);
-> +	return ipc;
-> +}
-> +
-> +/**
->   *	ipc_get_maxid 	-	get the last assigned id
->   *	@ids: IPC identifier set
->   *
-> @@ -388,7 +408,7 @@ retry:
->  	 * a new entry + read locks are not "upgradable"
->  	 */
->  	down_write(&ids->rw_mutex);
-> -	ipcp = ipc_findkey(ids, params->key);
-> +	ipcp = ipc_findkey_locked(ids, params->key);
->  	if (ipcp == NULL) {
->  		/* key not used */
->  		if (!(flg & IPC_CREAT))
-> @@ -755,6 +775,31 @@ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
->  }
->  
->  /**
-> + * ipc_update_key - update the key of an IPC.
-> + * @in:  the permission given as input.
-> + * @out: the permission of the ipc to set.
-> + *
-> + * Common routine called by sys_shmctl(), sys_semctl(). sys_msgctl().
-> + */
-> +int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
-> +		    struct kern_ipc_perm *out)
-> +{
-> +
-> +	if (in->key && out->key != in->key) {
-> +		/*
-> +		 * Check for existent segment with the same key.
-> +		 * Note: ipc_ids.rw_mutex is taken for write already.
-> +		 */
-> +		if (ipc_findkey(ids, in->key))
-> +			return -EEXIST;
-> +	}
-> +	out->cuid = in->cuid;
-> +	out->cgid = in->cgid;
-> +	out->key = in->key;
-> +	return 0;
-> +}
-> +
-> +/**
->   * ipc_update_perm - update the permissions of an IPC.
->   * @in:  the permission given as input.
->   * @out: the permission of the ipc to set.
-> diff --git a/ipc/util.h b/ipc/util.h
-> index 3a9e558..271bded 100644
-> --- a/ipc/util.h
-> +++ b/ipc/util.h
-> @@ -126,6 +126,8 @@ struct kern_ipc_perm *ipc_lock(struct ipc_ids *, int);
->  
->  void kernel_to_ipc64_perm(struct kern_ipc_perm *in, struct ipc64_perm *out);
->  void ipc64_perm_to_ipc_perm(struct ipc64_perm *in, struct ipc_perm *out);
-> +int ipc_update_key(struct ipc_ids *ids, struct ipc64_perm *in,
-> +		   struct kern_ipc_perm *out);
->  int ipc_update_perm(struct ipc64_perm *in, struct kern_ipc_perm *out);
->  struct kern_ipc_perm *ipcctl_pre_down(struct ipc_namespace *ns,
->  				      struct ipc_ids *ids, int id, int cmd,
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+As I already mentioned downstream, this patch is invalid because it will
+cause runtime failures if applied before the second patch in this
+series. Please see the more detailed explanation I sent downstream.
