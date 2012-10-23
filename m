@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab2JWCwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 22:52:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49061 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2JWCwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 22:52:36 -0400
-Date: Mon, 22 Oct 2012 19:53:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: SeongJae Park <sj38.park@gmail.com>
-Cc: Lauri Hintsala <lauri.hintsala@bluegiga.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: csr: fix coding style
-Message-ID: <20121023025304.GA21810@kroah.com>
-References: <1350287745-14442-1-git-send-email-sj38.park@gmail.com>
- <507D08FE.4070902@bluegiga.com>
- <20121022205626.GA4368@kroah.com>
- <CAEjAshoH2CJpnq-mt1TB6XB3i22QM+UeTKzr__ZgjHNUts3odA@mail.gmail.com>
- <CAEjAshqiVPA86fYNehmAEqiiZt0tGBvhu3ntFy+7XA4oLZKtRg@mail.gmail.com>
+	id S1751601Ab2JWC4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 22:56:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:35468 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822Ab2JWC4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 22:56:21 -0400
+X-IronPort-AV: E=Sophos;i="4.80,634,1344182400"; 
+   d="scan'208";a="6048008"
+Message-ID: <50860711.10807@cn.fujitsu.com>
+Date: Tue, 23 Oct 2012 10:55:13 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAEjAshqiVPA86fYNehmAEqiiZt0tGBvhu3ntFy+7XA4oLZKtRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@amd64.org>,
+        tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, miaox@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
+References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com> <5084AB10.7010807@cn.fujitsu.com> <20121022101442.GB8352@liondog.tnic>
+In-Reply-To: <20121022101442.GB8352@liondog.tnic>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 10:55:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 10:55:48,
+	Serialize complete at 2012/10/23 10:55:48
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 11:41:06AM +0900, SeongJae Park wrote:
-> Hello,
-> 
-> 
-> I think it was my mistake.
-> 
-> CsrThread is enclosed by macro #ifdef __KERNEL__
-> and it used by csr_framework_ext.h as CsrThreadHandle type(typedef
-> used at csr_framework_ext_types.h).
-> 
-> I think that's why I didn't see build failure.
+On 10/22/2012 06:14 PM, Borislav Petkov wrote:
+> On Mon, Oct 22, 2012 at 10:10:24AM +0800, Tang Chen wrote:
+>> I don't why before we just jumped over it. But I think if we have an
+>> online cpu == dying here, it must be wrong. So I think we should warn
+>> it, not just jump over it.
+>
+> Why do we need to warn? What good would that bring us?
+>
+> AFAICT, the check in cmci_rediscover is there to make sure we absolutely
+> don't rediscover on the dying cpu. I think it is a safety precaution in
+> concurrency scenarios between cpu hotplug and mce code.
 
-When building the driver __KERNEL__ is defined :)
+Well, I see. I dropped the if statement. :)
 
-> So, I think I should not remove CsrThread.
-> If there is anything I missed or wrong, Please let me know.
+So, how about warn once, and continue:
+	if (cpu == dying) {
+		WARN_ON_ONCE(cpu == dying);
+		continue;
+	}
 
-No, you are right, this can't be removed just yet, so all is good.
+or, use BUG_ON() instead ?
 
-If you want to send more patches cleaning stuff up like this one, that
-would be great.
+>
+> Thanks.
+>
 
-thanks,
-
-greg k-h
