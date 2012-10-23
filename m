@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965262Ab2JWUrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:47:40 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51246 "EHLO smtp.outflux.net"
+	id S965235Ab2JWUrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:47:39 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34253 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933785Ab2JWUFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:05:23 -0400
+	id S933787Ab2JWUFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:24 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>
-Subject: [PATCH 148/193] fs/hfs: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:41 -0700
-Message-Id: <1351022666-6960-149-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 023/193] arch/powerpc/platforms/cell: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:36 -0700
+Message-Id: <1351022666-6960-24-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,24 +26,27 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- fs/hfs/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/cell/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/hfs/Kconfig b/fs/hfs/Kconfig
-index b77c5bc..998e3a6 100644
---- a/fs/hfs/Kconfig
-+++ b/fs/hfs/Kconfig
-@@ -1,6 +1,6 @@
- config HFS_FS
--	tristate "Apple Macintosh file system support (EXPERIMENTAL)"
--	depends on BLOCK && EXPERIMENTAL
-+	tristate "Apple Macintosh file system support"
-+	depends on BLOCK
- 	select NLS
+diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
+index 2e7ff0c..53aaefe 100644
+--- a/arch/powerpc/platforms/cell/Kconfig
++++ b/arch/powerpc/platforms/cell/Kconfig
+@@ -124,7 +124,7 @@ config CBE_CPUFREQ
+ 
+ config CBE_CPUFREQ_PMI_ENABLE
+ 	bool "CBE frequency scaling using PMI interface"
+-	depends on CBE_CPUFREQ && EXPERIMENTAL
++	depends on CBE_CPUFREQ
+ 	default n
  	help
- 	  If you say Y here, you will be able to mount Macintosh-formatted
+ 	  Select this, if you want to use the PMI interface
 -- 
 1.7.9.5
 
