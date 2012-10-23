@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab2JWUEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:04:20 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61542 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417Ab2JWT7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:59:02 -0400
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
-Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 11/23] au0828: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:14 -0300
-Message-Id: <1351022246-8201-11-git-send-email-elezegarcia@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	id S933605Ab2JWUEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:04:46 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:44312 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933448Ab2JWUEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:04:41 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH 000/193] remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:13 -0700
+Message-Id: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This kind of memcpy() is error-prone. Its replacement with a struct
-assignment is prefered because it's type-safe and much easier to read.
+This config item has not carried much meaning for a while now and is
+almost always enabled by default (especially in distro builds). As agreed
+during the Linux kernel summit, it should be removed.
 
-Found by coccinelle. Hand patched and reviewed.
-Tested by compilation only.
+As such, this is the patch series for removing CONFIG_EXPERIMENTAL, 
+with the hopes of all the various maintainers pulling these changes into
+their trees.  I'm carrying the first patch (that makes CONFIG_EXPERIMENTAL
+"default y") in my linux-next tree, so builds there will see the impact
+immediately. 
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+Some patches remove "(EXPERIMENTAL)" from Kconfig titles when there was
+no "depends on EXPERIMENTAL". I've removed the cases of these where I
+know the maintainer intended it that way. I've left the others in case a
+"depends on EXPERIMENTAL" had been removed in the past and it had been
+accidentally forgotten in the title. If the title is correct as-is, 
+just let me know, and I'll drop the patch from my series.
 
-// <smpl>
-@@
-identifier struct_name;
-struct struct_name to;
-struct struct_name from;
-expression E;
-@@
--memcpy(&(to), &(from), E);
-+to = from;
-// </smpl>
+Here is an outline of how to handle things going forward, from the first
+patch's commit message, based on earlier lkml discussions:
 
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
----
- drivers/media/usb/au0828/au0828-cards.c |    2 +-
- drivers/media/usb/au0828/au0828-i2c.c   |    9 +++------
- 2 files changed, 4 insertions(+), 7 deletions(-)
+  For items that really are experimental, maintainers should use "default
+  n", optionally include "(EXPERIMENTAL)" in the title, and add language to
+  the help text indicating why the item should be considered experimental.
 
-diff --git a/drivers/media/usb/au0828/au0828-cards.c b/drivers/media/usb/au0828/au0828-cards.c
-index 448361c..8830d6d 100644
---- a/drivers/media/usb/au0828/au0828-cards.c
-+++ b/drivers/media/usb/au0828/au0828-cards.c
-@@ -192,7 +192,7 @@ void au0828_card_setup(struct au0828_dev *dev)
- 
- 	dprintk(1, "%s()\n", __func__);
- 
--	memcpy(&dev->board, &au0828_boards[dev->boardnr], sizeof(dev->board));
-+	dev->board = au0828_boards[dev->boardnr];
- 
- 	if (dev->i2c_rc == 0) {
- 		dev->i2c_client.addr = 0xa0 >> 1;
-diff --git a/drivers/media/usb/au0828/au0828-i2c.c b/drivers/media/usb/au0828/au0828-i2c.c
-index 4ded17f..71fbe59 100644
---- a/drivers/media/usb/au0828/au0828-i2c.c
-+++ b/drivers/media/usb/au0828/au0828-i2c.c
-@@ -364,12 +364,9 @@ int au0828_i2c_register(struct au0828_dev *dev)
- {
- 	dprintk(1, "%s()\n", __func__);
- 
--	memcpy(&dev->i2c_adap, &au0828_i2c_adap_template,
--	       sizeof(dev->i2c_adap));
--	memcpy(&dev->i2c_algo, &au0828_i2c_algo_template,
--	       sizeof(dev->i2c_algo));
--	memcpy(&dev->i2c_client, &au0828_i2c_client_template,
--	       sizeof(dev->i2c_client));
-+	dev->i2c_adap = au0828_i2c_adap_template;
-+	dev->i2c_algo = au0828_i2c_algo_template;
-+	dev->i2c_client = au0828_i2c_client_template;
- 
- 	dev->i2c_adap.dev.parent = &dev->usbdev->dev;
- 
--- 
-1.7.4.4
+  For items that are dangerously experimental, the maintainer is encouraged
+  to follow the above title recommendation, add stronger language to the
+  help text, and optionally use (depending on the extent of the danger,
+  from least to most dangerous): printk(), add_taint(TAINT_WARN),
+  add_taint(TAINT_CRAP), WARN_ON(1), and CONFIG_BROKEN.
+
+Thanks,
+
+-Kees
 
