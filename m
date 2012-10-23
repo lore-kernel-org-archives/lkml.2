@@ -1,145 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933393Ab2JWTjc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:39:32 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35492 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab2JWTjb (ORCPT
+	id S933251Ab2JWTlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:41:49 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40049 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756852Ab2JWTls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:39:31 -0400
-Subject: Re: [Pv-drivers] 3.7-rc2 regression : file copied to CIFS-mounted
- directory corrupted
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shreyas Bhatewara <sbhatewara@vmware.com>
-Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
-        edumazet@google.com, linux-kernel@vger.kernel.org,
-        jongman heo <jongman.heo@samsung.com>
-In-Reply-To: <1351000246.8609.1926.camel@edumazet-glaptop>
-References: <1103939870.6550404.1350986530909.JavaMail.root@vmware.com>
-	 <1351000246.8609.1926.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Oct 2012 21:39:20 +0200
-Message-ID: <1351021160.8609.2503.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 15:41:48 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX1/0O9k0NxH0U7OQvOSQa1xXzK3SMsTjNM3j+SAoeU
+	yhngCYvhDJ17j4
+From: Marc Dietrich <marvin24@gmx.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Pavan Kunapuli <pkunapuli@nvidia.com>, linux@arm.linux.org.uk,
+        cjb@laptop.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: dt: tegra: Add sdhci regulators
+Date: Tue, 23 Oct 2012 21:41:03 +0200
+Message-ID: <2541818.PkGB9YPA25@ax5200p>
+User-Agent: KMail/4.8.5 (Linux/3.5.0-17-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <5086E503.8090604@wwwdotorg.org>
+References: <1350976740-19284-1-git-send-email-pkunapuli@nvidia.com> <4346406.Jy2o1pWcOR@ax5200p> <5086E503.8090604@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 15:50 +0200, Eric Dumazet wrote:
+On Tuesday 23 October 2012 12:42:11 Stephen Warren wrote:
+> On 10/23/2012 12:07 PM, Marc Dietrich wrote:
+> > Pavan,
+> > 
+> > On Tuesday 23 October 2012 12:48:59 Pavan Kunapuli wrote:
+> >> Adding vmmc and vmmcq supplies for sdhci nodes
+> >> in tegra dt files.
+> > 
+> > <...>
+> > 
+> >> diff --git a/arch/arm/boot/dts/tegra20-paz00.dts
+> >> b/arch/arm/boot/dts/tegra20-paz00.dts index 6a93d14..e161b65 100644
+> >> --- a/arch/arm/boot/dts/tegra20-paz00.dts
+> >> +++ b/arch/arm/boot/dts/tegra20-paz00.dts
+> >> @@ -422,13 +422,17 @@
+> >> 
+> >>  		status = "okay";
+> >>  		cd-gpios = <&gpio 173 0>; /* gpio PV5 */
+> >>  		wp-gpios = <&gpio 57 0>;  /* gpio PH1 */
+> >> 
+> >> -		power-gpios = <&gpio 169 0>; /* gpio PV1 */
+> >> 
+> >>  		bus-width = <4>;
+> >> 
+> >> +		vmmc-supply = <&vddio_sd_reg>;
+> >> +		vqmmc-supply = <&vddio_sd_reg>;
+> >> 
+> >>  	};
+> >>  	
+> >>  	sdhci@c8000600 {
+> >>  	
+> >>  		status = "okay";
+> >>  		bus-width = <8>;
+> >> 
+> >> +		vmmc-supply = <&vddio_sdmmc_reg>;
+> >> +		vqmmc-supply = <&vddio_sdmmc_reg>;
+> > 
+> > to make it better, this should be:
+> > 
+> > vmmc-supply = <&vcore_mmc_reg>; and
+> > vqmmc-supply = <&vddio_nand_reg>;
+> > 
+> > with vcore_mmc_reg is ldo5 and vddio_nand_reg is the fixed regulator
+> > below.
+> 
+> I think for the eMMC (not SD card), the core supply is actually +3vs_s3,
+> and hence fixed; it looks like LDO5 used to be used, but they changed
+> it. See the note for the VCC connections on the eMMC chip.
 
-> Only the skb head is handled in the code you copy/pasted.
-> 
-> You need to generalize that to code in lines ~754
-> 
-> 
-> Then, the number of estimated descriptors is bad :
-> 
-> /* conservatively estimate # of descriptors to use */
-> count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
-> 	skb_shinfo(skb)->nr_frags + 1;
-> 
-> 
-> Yes, you need a more precise estimation and vmxnet3_map_pkt() should
-> eventually split too big frags.
+yes, you are right. The schematic had a comment that this was changed.
 
-raw patch would be :
+> > By doing so, I get "sdhci-tegra sdhci-tegra.3: could not set regulator OCR
+> > (-1)". MMC subsys wants to set ldo5 to 3.3V but it is fixed. I guess
+> > that's
+> > harmless for now.
+> 
+> What I mention above might end up fixing that?
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index ce9d4f2..0ae1bcc 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -744,28 +744,43 @@ vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
- 
- 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
- 		const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-+		u32 buf_size;
- 
--		tbi = tq->buf_info + tq->tx_ring.next2fill;
--		tbi->map_type = VMXNET3_MAP_PAGE;
--		tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
--						 0, skb_frag_size(frag),
--						 DMA_TO_DEVICE);
-+		buf_offset = 0;
-+		len = skb_frag_size(frag);
-+		while (len) {
-+			tbi = tq->buf_info + tq->tx_ring.next2fill;
-+			if (len < VMXNET3_MAX_TX_BUF_SIZE) {
-+				buf_size = len;
-+				dw2 |= len;
-+			} else {
-+				buf_size = VMXNET3_MAX_TX_BUF_SIZE;
-+				/* spec says that for TxDesc.len, 0 == 2^14 */
-+			}
-+			tbi->map_type = VMXNET3_MAP_PAGE;
-+			tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
-+							 buf_offset, buf_size,
-+							 DMA_TO_DEVICE);
- 
--		tbi->len = skb_frag_size(frag);
-+			tbi->len = buf_size;
- 
--		gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
--		BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
-+			gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
-+			BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
- 
--		gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
--		gdesc->dword[2] = cpu_to_le32(dw2 | skb_frag_size(frag));
--		gdesc->dword[3] = 0;
-+			gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
-+			gdesc->dword[2] = cpu_to_le32(dw2);
-+			gdesc->dword[3] = 0;
- 
--		dev_dbg(&adapter->netdev->dev,
--			"txd[%u]: 0x%llu %u %u\n",
--			tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
--			le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
--		vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
--		dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
-+			dev_dbg(&adapter->netdev->dev,
-+				"txd[%u]: 0x%llu %u %u\n",
-+				tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
-+				le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
-+			vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
-+			dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
-+
-+			len -= buf_size;
-+			buf_offset += buf_size;
-+		}
- 	}
- 
- 	ctx->eop_txd = gdesc;
-@@ -886,6 +901,18 @@ vmxnet3_prepare_tso(struct sk_buff *skb,
- 	}
- }
- 
-+static int txd_estimate(const struct sk_buff *skb)
-+{
-+	int count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) + 1;
-+	int i;
-+
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-+
-+		count += VMXNET3_TXD_NEEDED(skb_frag_size(frag));
-+	}
-+	return count;
-+}
- 
- /*
-  * Transmits a pkt thru a given tq
-@@ -914,9 +941,7 @@ vmxnet3_tq_xmit(struct sk_buff *skb, struct vmxnet3_tx_queue *tq,
- 	union Vmxnet3_GenericDesc tempTxDesc;
- #endif
- 
--	/* conservatively estimate # of descriptors to use */
--	count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
--		skb_shinfo(skb)->nr_frags + 1;
-+	count = txd_estimate(skb);
- 
- 	ctx.ipv4 = (vlan_get_protocol(skb) == cpu_to_be16(ETH_P_IP));
- 
+yes, it does.
 
+So the original patch is just fine. Sorry for the noise.
+
+Marc
 
