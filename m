@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942Ab2JWUJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:09:37 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:22222
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933418Ab2JWUJd (ORCPT
+	id S933606Ab2JWUKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:10:21 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:43103 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933408Ab2JWUKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:09:33 -0400
-X-Forefront-Antispam-Report: CIP:157.56.240.117;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0610HT003.namprd06.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zzbb2dI98dI9371Izz1202h1d1ah1d2ahzzz2fh2a8h668h839hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-Message-ID: <5086F963.9070503@convergeddevices.net>
-Date: Tue, 23 Oct 2012 13:09:07 -0700
-From: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 23 Oct 2012 16:10:18 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 16:10:17 EDT
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 23 Oct 2012 16:03:33 -0400
+To: linux-kernel@vger.kernel.org
+Cc: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
+        Len Sorensen <lsorense@csclub.uwaterloo.ca>, linux@sierrawireless.com
+Subject: Fix memory leak in sierra_release()
+Message-ID: <20121023200333.GN18610@csclub.uwaterloo.ca>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: <hverkuil@xs4all.nl>, <mchehab@redhat.com>, <sameo@linux.intel.com>,
-        <perex@perex.cz>, <tiwai@suse.de>, <linux-media@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 6/6] Add a codec driver for SI476X MFD
-References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net> <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net> <20121023192448.GB18814@opensource.wolfsonmicro.com>
-In-Reply-To: <20121023192448.GB18814@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [173.160.178.141]
-X-OriginatorOrg: convergeddevices.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 12:24 PM, Mark Brown wrote:
-> On Tue, Oct 23, 2012 at 11:44:32AM -0700, Andrey Smirnov wrote:
->> This commit add a sound codec driver for Silicon Laboratories 476x
->> series of AM/FM radio chips.
-> I already merged a driver for this.  If there are any changes you should
-> send incremental updates rather than a full new driver.
+I found a memory leak in sierra_release() (well sierra_probe() I guess)
+that looses 8 bytes each time the driver releases a device.
 
- OK, will do.
+Here is the patch to fix it.
 
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 01d882c..76ef95b 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -959,6 +959,7 @@ static void sierra_release(struct usb_serial *serial)
+ 			continue;
+ 		kfree(portdata);
+ 	}
++	kfree(serial->private);
+ }
+ 
+ #ifdef CONFIG_PM
+
+-- 
+Len Sorensen
