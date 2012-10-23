@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab2JWBov (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 21:44:51 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56417 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756407Ab2JWBot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 21:44:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121020225738.GB11442@htj.dyndns.org>
-References: <1350750607-2051-1-git-send-email-js1304@gmail.com>
-	<1350750607-2051-4-git-send-email-js1304@gmail.com>
-	<20121020225738.GB11442@htj.dyndns.org>
-Date: Tue, 23 Oct 2012 10:44:49 +0900
-Message-ID: <CAAmzW4OsXsDuMew7OvKOxktSxXe7C4_DuPQfvDLUCp7D0DSDoQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] workqueue: remove unused argument of wq_worker_waking_up()
-From: JoonSoo Kim <js1304@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756532Ab2JWBoy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 21:44:54 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37218 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756512Ab2JWBow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 21:44:52 -0400
+Message-ID: <1350956664.2728.19.camel@pasglop>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
+ v6
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: mtk.manpages@gmail.com
+Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>
+Date: Tue, 23 Oct 2012 12:44:24 +1100
+In-Reply-To: <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
+References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
+	 <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
+	 <20121022132733.GQ16230@one.firstfloor.org>
+	 <20121022133534.GR16230@one.firstfloor.org>
+	 <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
+	 <20121022153633.GK2095@tassilo.jf.intel.com>
+	 <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/21 Tejun Heo <tj@kernel.org>:
-> On Sun, Oct 21, 2012 at 01:30:07AM +0900, Joonsoo Kim wrote:
->> Commit 63d95a91 ('workqueue: use @pool instead of @gcwq or @cpu where
->> applicable') changes an approach to access nr_running.
->> Thus, wq_worker_waking_up() doesn't use @cpu anymore.
->> Remove it and remove comment related to it.
->>
->> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
->
-> I'm not sure whether I wanna remove or add WARN_ON_ONCE() on it.  That
-> part has gone through some changes and seen some bugs.  Can we please
-> do the following instead at least for now?
->
->         if (!(worker->flags & WORKER_NOT_RUNNING)) {
->                 WARN_ON_ONCE(worker->pool->gcwq->cpu != cpu);
->                 atomic_inc(get_pool_nr_running(worker->pool));
->         }
->
+On Mon, 2012-10-22 at 17:53 +0200, Michael Kerrisk (man-pages) wrote:
 
-I have no objection to do this for now.
-Thanks.
+> This is all seems to make an awful muck of the API...
+
+ .../...
+
+> There seems to be a reasonable argument here for an mmap3() with a
+> 64-bit flags argument...
+
+I tend to agree. There's a similar issue happening when we try to shovel
+things into protection bits, like we do with SAO (strong access
+ordering) and want to do with per-page endian on embedded.
+
+It think we need a pile of additional flag space.
+
+Cheers,
+Ben.
+
