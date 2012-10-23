@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965245Ab2JWUua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:50:30 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36231 "EHLO smtp.outflux.net"
+	id S965167Ab2JWUu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:50:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36839 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933772Ab2JWUFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933774Ab2JWUFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:22 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: [PATCH 053/193] drivers/iio/dac: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:06 -0700
-Message-Id: <1351022666-6960-54-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 128/193] drivers/video: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:21 -0700
+Message-Id: <1351022666-6960-129-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -28,29 +25,97 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Jonathan Cameron <jic23@cam.ac.uk>
-CC: Lars-Peter Clausen <lars@metafoo.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Michael Hennerich <michael.hennerich@analog.com>
-CC: Peter Meerwald <pmeerw@pmeerw.net>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/iio/dac/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/Kconfig |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
-index b1c0ee5..1f3ce77 100644
---- a/drivers/iio/dac/Kconfig
-+++ b/drivers/iio/dac/Kconfig
-@@ -122,7 +122,7 @@ config AD5686
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index d08d799..58b038a 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -1112,8 +1112,8 @@ config FB_RIVA_BACKLIGHT
+ 	  Say Y here if you want to control the backlight of your display.
  
- config MAX517
- 	tristate "Maxim MAX517/518/519 DAC driver"
--	depends on I2C && EXPERIMENTAL
-+	depends on I2C
+ config FB_I740
+-	tristate "Intel740 support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && FB && PCI
++	tristate "Intel740 support"
++	depends on FB && PCI
+ 	select FB_MODE_HELPERS
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+@@ -1124,8 +1124,8 @@ config FB_I740
+ 	  This driver supports graphics cards based on Intel740 chip.
+ 
+ config FB_I810
+-	tristate "Intel 810/815 support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && FB && PCI && X86_32 && AGP_INTEL
++	tristate "Intel 810/815 support"
++	depends on FB && PCI && X86_32 && AGP_INTEL
+ 	select FB_MODE_HELPERS
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+@@ -1187,8 +1187,8 @@ config FB_CARILLO_RANCH
+ 	  This driver supports the LE80578 (Carillo Ranch) board
+ 
+ config FB_INTEL
+-	tristate "Intel 830M/845G/852GM/855GM/865G/915G/945G/945GM/965G/965GM support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && FB && PCI && X86 && AGP_INTEL && EXPERT
++	tristate "Intel 830M/845G/852GM/855GM/865G/915G/945G/945GM/965G/965GM support"
++	depends on FB && PCI && X86 && AGP_INTEL && EXPERT
+ 	select FB_MODE_HELPERS
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+@@ -1432,7 +1432,7 @@ config FB_ATY_CT
+ 	  is at <http://support.ati.com/products/pc/mach64/mach64.html>.
+ 
+ config FB_ATY_GENERIC_LCD
+-	bool "Mach64 generic LCD support (EXPERIMENTAL)"
++	bool "Mach64 generic LCD support"
+ 	depends on FB_ATY_CT
  	help
- 	  If you say yes here you get support for the Maxim chips MAX517,
- 	  MAX518 and MAX519 (I2C 8-Bit DACs with rail-to-rail outputs).
+ 	  Say Y if you have a laptop with an ATI Rage LT PRO, Rage Mobility,
+@@ -1479,7 +1479,7 @@ config FB_S3_DDC
+ 
+ config FB_SAVAGE
+ 	tristate "S3 Savage support"
+-	depends on FB && PCI && EXPERIMENTAL
++	depends on FB && PCI
+ 	select FB_MODE_HELPERS
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+@@ -1633,15 +1633,15 @@ config FB_3DFX
+ 	  module will be called tdfxfb.
+ 
+ config FB_3DFX_ACCEL
+-	bool "3Dfx Acceleration functions (EXPERIMENTAL)"
+-	depends on FB_3DFX && EXPERIMENTAL
++	bool "3Dfx Acceleration functions"
++	depends on FB_3DFX
+ 	---help---
+ 	This will compile the 3Dfx Banshee/Voodoo3/VSA-100 frame buffer
+ 	device driver with acceleration functions.
+ 
+ config FB_3DFX_I2C
+ 	bool "Enable DDC/I2C support"
+-	depends on FB_3DFX && EXPERIMENTAL
++	depends on FB_3DFX
+ 	select FB_DDC
+ 	default y
+ 	help
+@@ -1714,8 +1714,8 @@ config FB_ARK
+ 	  and ICS 5342 RAMDAC.
+ 
+ config FB_PM3
+-	tristate "Permedia3 support (EXPERIMENTAL)"
+-	depends on FB && PCI && EXPERIMENTAL
++	tristate "Permedia3 support"
++	depends on FB && PCI
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
 -- 
 1.7.9.5
 
