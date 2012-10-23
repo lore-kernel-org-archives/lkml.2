@@ -1,92 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933820Ab2JWWkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:40:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:49390 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933508Ab2JWWkK (ORCPT
+	id S933862Ab2JWWmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:42:15 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48591 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933719Ab2JWWmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:40:10 -0400
-Date: Tue, 23 Oct 2012 15:40:05 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>
-Subject: Re: [PATCH 146/193] fs/ecryptfs: remove CONFIG_EXPERIMENTAL
-Message-ID: <20121023224005.GB29213@boyd>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
- <1351022666-6960-147-git-send-email-keescook@chromium.org>
+	Tue, 23 Oct 2012 18:42:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="0eh6TmSyL6TZE2Uz"
-Content-Disposition: inline
-In-Reply-To: <1351022666-6960-147-git-send-email-keescook@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350615088-14562-4-git-send-email-mporter@ti.com>
+References: <1350615088-14562-1-git-send-email-mporter@ti.com> <1350615088-14562-4-git-send-email-mporter@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 23 Oct 2012 23:41:53 +0100
+X-Google-Sender-Auth: EarQXUK61yLQlvJuL1lKjMV2ChU
+Message-ID: <CACxGe6sY7AuSBgyKj2B_O8mFMq3peMFYirtgH7OQ_S8zBUVRZg@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/3] mmc: davinci: get SG segment limits with dma_get_channel_caps()
+To: Matt Porter <mporter@ti.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 19, 2012 at 3:51 AM, Matt Porter <mporter@ti.com> wrote:
+> Replace the hardcoded values used to set max_segs/max_seg_size with
+> a dma_get_channel_caps() query to the dmaengine driver.
+>
+> Signed-off-by: Matt Porter <mporter@ti.com>
 
---0eh6TmSyL6TZE2Uz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Series looks reasonable to me.
 
-On 2012-10-23 13:03:39, Kees Cook wrote:
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
->=20
-> CC: Tyler Hicks <tyhicks@canonical.com>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
 
-Kees - Please push this through your tree. Thanks!
-
-Acked-by: Tyler Hicks <tyhicks@canonical.com>
-
-> CC: Dustin Kirkland <dustin.kirkland@gazzang.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
 > ---
->  fs/ecryptfs/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/fs/ecryptfs/Kconfig b/fs/ecryptfs/Kconfig
-> index cc16562..e15ef38 100644
-> --- a/fs/ecryptfs/Kconfig
-> +++ b/fs/ecryptfs/Kconfig
-> @@ -1,6 +1,6 @@
->  config ECRYPT_FS
-> -	tristate "eCrypt filesystem layer support (EXPERIMENTAL)"
-> -	depends on EXPERIMENTAL && KEYS && CRYPTO && (ENCRYPTED_KEYS || ENCRYPT=
-ED_KEYS=3Dn)
-> +	tristate "eCrypt filesystem layer support"
-> +	depends on KEYS && CRYPTO && (ENCRYPTED_KEYS || ENCRYPTED_KEYS=3Dn)
->  	select CRYPTO_ECB
->  	select CRYPTO_CBC
->  	select CRYPTO_MD5
-> --=20
+>  drivers/mmc/host/davinci_mmc.c            |   66 +++++++++--------------------
+>  include/linux/platform_data/mmc-davinci.h |    3 --
+>  2 files changed, 21 insertions(+), 48 deletions(-)
+>
+> diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
+> index f5d46ea..d1efacc 100644
+> --- a/drivers/mmc/host/davinci_mmc.c
+> +++ b/drivers/mmc/host/davinci_mmc.c
+> @@ -145,18 +145,6 @@
+>  /* MMCSD Init clock in Hz in opendrain mode */
+>  #define MMCSD_INIT_CLOCK               200000
+>
+> -/*
+> - * One scatterlist dma "segment" is at most MAX_CCNT rw_threshold units,
+> - * and we handle up to MAX_NR_SG segments.  MMC_BLOCK_BOUNCE kicks in only
+> - * for drivers with max_segs == 1, making the segments bigger (64KB)
+> - * than the page or two that's otherwise typical. nr_sg (passed from
+> - * platform data) == 16 gives at least the same throughput boost, using
+> - * EDMA transfer linkage instead of spending CPU time copying pages.
+> - */
+> -#define MAX_CCNT       ((1 << 16) - 1)
+> -
+> -#define MAX_NR_SG      16
+> -
+>  static unsigned rw_threshold = 32;
+>  module_param(rw_threshold, uint, S_IRUGO);
+>  MODULE_PARM_DESC(rw_threshold,
+> @@ -217,8 +205,6 @@ struct mmc_davinci_host {
+>         u8 version;
+>         /* for ns in one cycle calculation */
+>         unsigned ns_in_one_cycle;
+> -       /* Number of sg segments */
+> -       u8 nr_sg;
+>  #ifdef CONFIG_CPU_FREQ
+>         struct notifier_block   freq_transition;
+>  #endif
+> @@ -422,16 +408,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
+>         int ret = 0;
+>
+>         if (host->data_dir == DAVINCI_MMC_DATADIR_WRITE) {
+> -               struct dma_slave_config dma_tx_conf = {
+> -                       .direction = DMA_MEM_TO_DEV,
+> -                       .dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
+> -                       .dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> -                       .dst_maxburst =
+> -                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
+> -               };
+>                 chan = host->dma_tx;
+> -               dmaengine_slave_config(host->dma_tx, &dma_tx_conf);
+> -
+>                 desc = dmaengine_prep_slave_sg(host->dma_tx,
+>                                 data->sg,
+>                                 host->sg_len,
+> @@ -444,16 +421,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
+>                         goto out;
+>                 }
+>         } else {
+> -               struct dma_slave_config dma_rx_conf = {
+> -                       .direction = DMA_DEV_TO_MEM,
+> -                       .src_addr = host->mem_res->start + DAVINCI_MMCDRR,
+> -                       .src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> -                       .src_maxburst =
+> -                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
+> -               };
+>                 chan = host->dma_rx;
+> -               dmaengine_slave_config(host->dma_rx, &dma_rx_conf);
+> -
+>                 desc = dmaengine_prep_slave_sg(host->dma_rx,
+>                                 data->sg,
+>                                 host->sg_len,
+> @@ -1166,6 +1134,7 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>         struct resource *r, *mem = NULL;
+>         int ret = 0, irq = 0;
+>         size_t mem_size;
+> +       struct dmaengine_chan_caps *dma_chan_caps;
+>
+>         /* REVISIT:  when we're fully converted, fail if pdata is NULL */
+>
+> @@ -1215,12 +1184,6 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>
+>         init_mmcsd_host(host);
+>
+> -       if (pdata->nr_sg)
+> -               host->nr_sg = pdata->nr_sg - 1;
+> -
+> -       if (host->nr_sg > MAX_NR_SG || !host->nr_sg)
+> -               host->nr_sg = MAX_NR_SG;
+> -
+>         host->use_dma = use_dma;
+>         host->mmc_irq = irq;
+>         host->sdio_irq = platform_get_irq(pdev, 1);
+> @@ -1249,14 +1212,27 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
+>                 mmc->caps |= pdata->caps;
+>         mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+>
+> -       /* With no iommu coalescing pages, each phys_seg is a hw_seg.
+> -        * Each hw_seg uses one EDMA parameter RAM slot, always one
+> -        * channel and then usually some linked slots.
+> -        */
+> -       mmc->max_segs           = MAX_NR_SG;
+> +       {
+> +               struct dma_slave_config dma_txrx_conf = {
+> +                       .src_addr = host->mem_res->start + DAVINCI_MMCDRR,
+> +                       .src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +                       .src_maxburst =
+> +                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +                       .dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
+> +                       .dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +                       .dst_maxburst =
+> +                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
+> +               };
+> +               dmaengine_slave_config(host->dma_tx, &dma_txrx_conf);
+> +               dmaengine_slave_config(host->dma_rx, &dma_txrx_conf);
+> +       }
+>
+> -       /* EDMA limit per hw segment (one or two MBytes) */
+> -       mmc->max_seg_size       = MAX_CCNT * rw_threshold;
+> +       /* Just check one channel for the DMA SG limits */
+> +       dma_chan_caps = dma_get_channel_caps(host->dma_tx, DMA_MEM_TO_DEV);
+> +       if (dma_chan_caps) {
+> +               mmc->max_segs = dma_chan_caps->seg_nr;
+> +               mmc->max_seg_size = dma_chan_caps->seg_len;
+> +       }
+>
+>         /* MMC/SD controller limits for multiblock requests */
+>         mmc->max_blk_size       = 4095;  /* BLEN is 12 bits */
+> diff --git a/include/linux/platform_data/mmc-davinci.h b/include/linux/platform_data/mmc-davinci.h
+> index 5ba6b22..6910209 100644
+> --- a/include/linux/platform_data/mmc-davinci.h
+> +++ b/include/linux/platform_data/mmc-davinci.h
+> @@ -25,9 +25,6 @@ struct davinci_mmc_config {
+>
+>         /* Version of the MMC/SD controller */
+>         u8      version;
+> -
+> -       /* Number of sg segments */
+> -       u8      nr_sg;
+>  };
+>  void davinci_setup_mmc(int module, struct davinci_mmc_config *config);
+>
+> --
 > 1.7.9.5
->=20
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
---0eh6TmSyL6TZE2Uz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCgAGBQJQhxzFAAoJENaSAD2qAscKzJEP/j3gWw8jIUUxgPqSGBvCp1F7
-I7bSJHhhaXSawsdwy0AeYOj4VMow6fq5CXrY/RoKYr9N4dmpcnUaRtRuCEvSHqL2
-BynPyl7YwaxRIyfSatj9aa/TmtZdkouHNjnquqMWgSjKuFM1aofP/CiFO2JYsLV7
-nlRNGdEllaTM/II50ov7aGiXB3gRtIqZ+iKuVkiOfkW9X2mANKkRTR58HXYYxzhC
-JJbDBqSGoYzhb5lolKNevLdX0Zb0s6lF75BGeEQY/5rh9a7j5jRXa+PninQM2Jn1
-DT0MRrf+5xugVwGjWMS+lcIjfHeT4ijd3GwZBWQshrMksXQkGw1hje6NWH/UOcyY
-pal7Xg5wPklFaUYptvS1QWvoiaznIxScbL64HkTgtfdYaqxqgKIhh1seCrhvAyZH
-ztR3Bw8oIGBfNzPGiIiTvvVLRxi2YRYbIRef9fLgSPMAoprbc7yBPkhv+H6yybN+
-96uoZcLet/LXjXntgTb7yDWU9YNQMAIAfJLHpirwwNCRdlkdN5hC2JZpf0a/cIKL
-vKUpd6F+IcKT7Tc7uVrYVBrBTYSQ8kDgozUriWKMU+QmzCDsEEf7Ibap/Ee43BYC
-FfBkENaefVcD6/R/FQ/l6HYpbKq28oU5TVxQpKGb/NROeq34scWy6ickKo079YF3
-F16UeS4pUbpG/x98DhsJ
-=yPtE
------END PGP SIGNATURE-----
-
---0eh6TmSyL6TZE2Uz--
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
