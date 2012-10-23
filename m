@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965609Ab2JWVI7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:08:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:46731 "EHLO mga14.intel.com"
+	id S965501Ab2JWVHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:07:15 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46036 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965573Ab2JWVHT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:07:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,637,1344236400"; 
-   d="scan'208";a="208148419"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Kees Cook <keescook@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Yu, Fenghua" <fenghua.yu@intel.com>
-Subject: RE: [PATCH 011/193] arch/ia64: remove CONFIG_EXPERIMENTAL
-Thread-Topic: [PATCH 011/193] arch/ia64: remove CONFIG_EXPERIMENTAL
-Thread-Index: AQHNsVmsCfa+wDfOIEm0PgC37rWNvJfHYZsQ
-Date: Tue, 23 Oct 2012 21:07:17 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D58EE4@ORSMSX108.amr.corp.intel.com>
+	id S933683Ab2JWUFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:10 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>
+Subject: [PATCH 080/193] drivers/net/ethernet/fujitsu: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:33 -0700
+Message-Id: <1351022666-6960-81-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
- <1351022666-6960-12-git-send-email-keescook@chromium.org>
-In-Reply-To: <1351022666-6960-12-git-send-email-keescook@chromium.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
+This config item has not carried much meaning for a while now and is
+almost always enabled by default. As agreed during the Linux kernel
+summit, remove it.
 
-Acked-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/net/ethernet/fujitsu/Kconfig |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-[ditto for parts 012 and 013 of 193]
+diff --git a/drivers/net/ethernet/fujitsu/Kconfig b/drivers/net/ethernet/fujitsu/Kconfig
+index dffee9d..80926c1 100644
+--- a/drivers/net/ethernet/fujitsu/Kconfig
++++ b/drivers/net/ethernet/fujitsu/Kconfig
+@@ -5,7 +5,7 @@
+ config NET_VENDOR_FUJITSU
+ 	bool "Fujitsu devices"
+ 	default y
+-	depends on ISA || PCMCIA || ((ISA || MCA_LEGACY) && EXPERIMENTAL)
++	depends on ISA || PCMCIA || MCA_LEGACY
+ 	---help---
+ 	  If you have a network (Ethernet) card belonging to this class, say Y
+ 	  and read the Ethernet-HOWTO, available from
+@@ -18,8 +18,8 @@ config NET_VENDOR_FUJITSU
+ if NET_VENDOR_FUJITSU
+ 
+ config AT1700
+-	tristate "AT1700/1720 support (EXPERIMENTAL)"
+-	depends on (ISA || MCA_LEGACY) && EXPERIMENTAL
++	tristate "AT1700/1720 support"
++	depends on (ISA || MCA_LEGACY)
+ 	select CRC32
+ 	---help---
+ 	  If you have a network (Ethernet) card of this type, say Y and read
+-- 
+1.7.9.5
 
