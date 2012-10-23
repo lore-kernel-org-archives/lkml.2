@@ -1,58 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2JWO03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:26:29 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:65129 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab2JWO02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:26:28 -0400
-Message-ID: <5086A90E.1040007@gmail.com>
-Date: Tue, 23 Oct 2012 10:26:22 -0400
-From: Daniel Hazelton <dshadowwolf@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1755401Ab2JWOaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:30:25 -0400
+Received: from fieldses.org ([174.143.236.118]:60286 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754044Ab2JWOaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:30:24 -0400
+Date: Tue, 23 Oct 2012 10:30:19 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+        gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
+Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server panic: 3.6.2+ regression?
+Message-ID: <20121023143019.GA3040@fieldses.org>
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: fengguang.wu@intel.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UAPI: Fix tools/vm/page-types.c
-References: <20121023132007.32177.42349.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121023132007.32177.42349.stgit@warthog.procyon.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwzdnuww.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/12 09:20, David Howells wrote:
-> Fix tools/vm/page-types.c to use the UAPI variant of linux/kernel-page-flags.h
-> lest the following error appear:
->
-> 	In file included from page-types.c:38:0:
-> 	../../include/linux/kernel-page-flags.h:4:42: fatal error:
-> 	uapi/linux/kernel-page-flags.h: No such file or directory
->
-> Reported-by: Daniel Hazelton <dshadowwolf@gmail.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->
->   tools/vm/page-types.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/vm/page-types.c b/tools/vm/page-types.c
-> index cd1b03e..b76edf2 100644
-> --- a/tools/vm/page-types.c
-> +++ b/tools/vm/page-types.c
-> @@ -35,7 +35,7 @@
->   #include <sys/mount.h>
->   #include <sys/statfs.h>
->   #include "../../include/uapi/linux/magic.h"
-> -#include "../../include/linux/kernel-page-flags.h"
-> +#include "../../include/uapi/linux/kernel-page-flags.h"
->
->
->   #ifndef MAX_PATH
->
->
-FWIW: Tested-by: Daniel Hazelton <dshadowwolf@gmail.com>
+On Tue, Oct 23, 2012 at 03:07:59PM +0100, Nix wrote:
+> On 23 Oct 2012, J. Bruce Fields uttered the following:
+> 
+> > On Mon, Oct 22, 2012 at 05:17:04PM +0100, Nix wrote:
+> >> I just had a panic/oops on upgrading from 3.6.1 to 3.6.3, after weeks of
+> >> smooth operation on 3.6.1: one of the NFS changes that went into one of
+> >> the two latest stable kernels appears to be lethal after around half an
+> >> hour of uptime. The oops came from NFSv4, IIRC (relying on memory since
+> >> my camera was recharging and there is no netconsole from that box
+> >> because it is where the netconsole logs go, so I'll have to reproduce it
+> >> later today). The machine is an NFSv3 server only at present, with no
+> >> NFSv4 running (though NFSv4 is built in).
+> >
+> > Note recent clients may try to negotiate NFSv4 by default, so it's
+> > possible to use it without knowing.
+> 
+> Every NFS import from all this server's clients has 'vers=3' forced on
+> (for now, until I get around to figuring out what if anything needs to
+> be done to move to NFSv4: it may be the answer is 'nothing' but I tread
+> quite carefully with this server, since my $HOME is there).
+> 
+> /proc/fs/nfsfs/volumes on the clients confirms that everything is v3.
+> 
+> > You didn't change anything else about your server or clients recently?
+> 
+> Nope (other than upgrading the clients to 3.6.3 in concert). Running
+> 3.6.1 here on that server now and 3.6.3 on all the clients, and no crash
+> in over a day.
+> 
+> nfs-utils is a bit old, 1.2.6-rc6, I should probably upgrade it...
+
+nfs-utils shouldn't be capable of oopsing the kernel, so from my
+(selfish) point of view I'd actually rather you stick with whatever you
+have and try to reproduce the oops.
+
+(It's unlikely to make any difference anyway.)
+
+--b.
+
+> > I don't see an obvious candidate on a quick skim of v3.6.1..v3.6.3
+> > commits, but of course I could be missing something.
+> 
+> I'll try rebooting into it again soon, and get an oops report if it
+> should happen again (and hopefully less filesystem corruption this time,
+> right after a reboot into a new kernel was clearly the wrong time to
+> move a bunch of directories around).
+> 
+> Sorry for the continuing lack of useful information... I'll try to fix
+> that shortly (once with a report of a false alarm, since I really want
+> this stable kernel: my server is affected by the tx stalls fixed by
+> 3468e9d and I'm getting tired of the frequent 1s lags talking to it: I
+> could just apply that one fix, but I'd rather track this down properly).
