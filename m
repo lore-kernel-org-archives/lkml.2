@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab2JWK5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:57:17 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:45833 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab2JWK5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:57:16 -0400
-Date: Tue, 23 Oct 2012 12:57:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] core kernel fixes
-Message-ID: <20121023105709.GA27126@gmail.com>
+	id S1753953Ab2JWK7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:59:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52268 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829Ab2JWK7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:59:21 -0400
+Date: Tue, 23 Oct 2012 13:53:39 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driver
+Message-ID: <20121023105339.GD24820@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350643085-27294-1-git-send-email-vbyravarasu@nvidia.com>
+ <20121019153555.GC440@arwen.pp.htv.fi>
+ <D958900912E20642BCBC71664EFECE3E6DDFB0CDCA@BGMAIL02.nvidia.com>
+ <20121022100240.GK14033@arwen.pp.htv.fi>
+ <D958900912E20642BCBC71664EFECE3E6DDFB0CE1E@BGMAIL02.nvidia.com>
+ <20121022101623.GM14033@arwen.pp.htv.fi>
+ <D958900912E20642BCBC71664EFECE3E6DE0B97217@BGMAIL02.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mSxgbZZZvrAyzONB"
 Content-Disposition: inline
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DE0B97217@BGMAIL02.nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+--mSxgbZZZvrAyzONB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please pull the latest core-urgent-for-linus git tree from:
+Hi,
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
+On Tue, Oct 23, 2012 at 04:23:19PM +0530, Venu Byravarasu wrote:
+> > -----Original Message-----
+> > From: Venu Byravarasu
+> > Sent: Monday, October 22, 2012 4:04 PM
+> > To: 'balbi@ti.com'
+> > Cc: stern@rowland.harvard.edu; gregkh@linuxfoundation.org; linux-
+> > usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: RE: [PATCH v3 resend] USB: PHY: Re-organize Tegra USB PHY driv=
+er
+> >=20
+> > >
+> > > what is this SOC dependent PHY driver ?
+> >=20
+> > SOC dependent PHY driver actually deals with the PHY interface
+> > programming.
+> > e.g. please see code present in tegra2_usb_driver.c.
+> >=20
+> > > What sort of dependencies are
+> > > there ? Those differences should be handled with runtime checks.
+> >=20
+> > As PHY related bugs got fixed across different set of SOCs apart from
+> > adding few features, wanted to separate this out from common PHY
+> > functionality. This will help us in adding support for different SOCs w=
+ith
+> > minimum set of changes.
+>=20
+> Felipe,
+>=20
+> Please let me know if you have any more questions on this patch.
+> If not, can you please merge this?
 
-   HEAD: fd0587339d80dd2fea5ead7f734676c9c618eace Documentation: Reflect the new location of the NMI watchdog info
+Like I said before, those differences should be handled by runtime
+checks, you shouldn't need separate files for that. What you need to do
+is implement a single PHY driver which can handle all tegras known to
+date, later you can add support for new tegras by patching a few things
+here and there.
 
-Two small fixes.
+--=20
+balbi
 
- Thanks,
+--mSxgbZZZvrAyzONB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
------------------->
-Jean Delvare (1):
-      Documentation: Reflect the new location of the NMI watchdog info
+iQIcBAEBAgAGBQJQhnczAAoJEIaOsuA1yqREfgYP/0Es45XWgAbMBnaKOeUurcLX
+76R8IKFTZERDjt7aPCbwsaaZNw/0ng6hf9DwecuivYJF5s1R1B2Ss7IE1nToB3Pk
+meKFfFgX+svnTGt8kkAr3DTjQLAm8HA5Jb5H6YA2fAkO1HogpcUxreFA2PRg6TgB
+pv2rCIy893zviOx0IeiWj6LIZq8YNSzBRue9sgX2Hq5tLpmtYVTPrdU8PVqoXk5f
+hxp30GXJvMqUUlsZPb6vNvZZMDBBoz8ZC15/UvioZ7bi7kdksKp7NaHseLbTcce+
+NsrzpRqqQ+EBfwxhlRGns6LY04L+UPxiJO382Jv9cb2TjKNpGquXXLyac+hRhait
+CLh6xgvzAznWd/w1ScCiH9ysTUcNkoVaevfj1cQeYo+LGgJOQIUOXUbD13sgZGf+
+6DlKms9gH7Lh0Ufb2pEaJjqFPRQogvGmn77KvCwqqqZ03dhdwj3K2DL9Om66iz75
+8r5KlNU38AKtiXPq7YPMDhn1Zi9hE4LtZpvJLXy1t0Ac4oCpqU+SY7uXrIQ/uFzI
+ab9xeTqBKYERj8l8d9KOZy7mG43HFyiCN1mY8VeMx/xFUtYpgt0cM8z5augFpFv3
+3E6tijoG5K+D5tbCYo3QwTU63Y5RuqkWON0IFDN9u+Fxo+8liqbkHq2hcnc6P5kZ
+zbPCzYR0QgBRqZMK1J24
+=NLi7
+-----END PGP SIGNATURE-----
 
-Michal Hocko (1):
-      nohz: Fix idle ticks in cpu summary line of /proc/stat
-
-
- Documentation/00-INDEX |  4 ++--
- fs/proc/stat.c         | 14 ++++++++++----
- 2 files changed, 12 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 49c0513..fec55dc 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -210,6 +210,8 @@ local_ops.txt
- 	- semantics and behavior of local atomic operations.
- lockdep-design.txt
- 	- documentation on the runtime locking correctness validator.
-+lockup-watchdogs.txt
-+	- info on soft and hard lockup detectors (aka nmi_watchdog).
- logo.gif
- 	- full colour GIF image of Linux logo (penguin - Tux).
- logo.txt
-@@ -240,8 +242,6 @@ netlabel/
- 	- directory with information on the NetLabel subsystem.
- networking/
- 	- directory with info on various aspects of networking with Linux.
--nmi_watchdog.txt
--	- info on NMI watchdog for SMP systems.
- nommu-mmap.txt
- 	- documentation about no-mmu memory mapping support.
- numastat.txt
-diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-index 64c3b31..e296572 100644
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int cpu)
- 
- static u64 get_idle_time(int cpu)
- {
--	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
-+	u64 idle, idle_time = -1ULL;
-+
-+	if (cpu_online(cpu))
-+		idle_time = get_cpu_idle_time_us(cpu, NULL);
- 
- 	if (idle_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.idle */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
- 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
- 	else
- 		idle = usecs_to_cputime64(idle_time);
-@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
- 
- static u64 get_iowait_time(int cpu)
- {
--	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-+	u64 iowait, iowait_time = -1ULL;
-+
-+	if (cpu_online(cpu))
-+		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
- 
- 	if (iowait_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.iowait */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
- 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
- 	else
- 		iowait = usecs_to_cputime64(iowait_time);
+--mSxgbZZZvrAyzONB--
