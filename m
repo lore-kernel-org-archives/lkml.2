@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab2JWNP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:15:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42203 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab2JWNPz convert rfc822-to-8bit (ORCPT
+	id S1757003Ab2JWNQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:16:08 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:42371 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756377Ab2JWNQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:15:55 -0400
-Message-ID: <1350998110.13456.26.camel@twins>
-Subject: Re: [PATCH 16/34] perf, x86: Support weight samples for PEBS
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 23 Oct 2012 15:15:10 +0200
-In-Reply-To: <1350602382-12771-17-git-send-email-andi@firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
-	 <1350602382-12771-17-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 23 Oct 2012 09:16:04 -0400
+Message-ID: <5086988F.6090107@gmail.com>
+Date: Tue, 23 Oct 2012 08:15:59 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 3.7.0-rc2] dt: match id-table before creating platform
+ device
+References: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> When a weighted sample is requested, first try to report the TSX abort cost
-> on Haswell. If that is not available report the memory latency. This
-> allows profiling both by abort cost and by memory latencies.
-> 
-> Memory latencies requires enabling a different PEBS mode (LL).
-> When both address and weight is requested address wins.
-> 
-> The LL mode only works for memory related PEBS events, so add a
-> separate event constraint table for those.
-> 
-> I only did this for Haswell for now, but it could be added
-> for several other Intel CPUs too by just adding the right
-> table for them.
+Adding lkml. DT patches should go to both lists.
 
-This looks like it will interfere with Stephane's LL patches -- which
-should be out any day now ;-)
+On 10/23/2012 05:30 AM, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> 
+> As part of of_platform_populate call, the existing code iterates each
+> child node and then creates a platform device for each child, however
+> there is bug in the code which does not check the match table before
+> creating the platform device. This might result creating two platfrom
+> devices and also invoking driver probe twice, which is incorrect.
+> 
+> This patch moves a existing of_match_node check to start of the function
+> to fix the bug, doing this way will return immediately without creating
+> any datastructures if the child does not match the supplied match-table.
+> 
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>  drivers/of/platform.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index b80891b..1aaa560 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -367,6 +367,9 @@ static int of_platform_bus_create(struct device_node *bus,
+>  		return 0;
+>  	}
+>  
+> +	if (!of_match_node(matches, bus))
+> +		return 0;
+> +
 
-Stephane, any comments on how we should deal with all that?
+This is not right. This function is recursive and this change would
+break that. Perhaps we could only call of_platform_device_create_pdata
+if !of_match_node instead, but I'm not completely sure that would be the
+right thing to do. There's also some historical things we have to
+support which is why we have of_platform_populate and of_platform_bus_probe.
+
+Rob
+
+>  	auxdata = of_dev_lookup(lookup, bus);
+>  	if (auxdata) {
+>  		bus_id = auxdata->name;
+> @@ -379,7 +382,7 @@ static int of_platform_bus_create(struct device_node *bus,
+>  	}
+>  
+>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
+> -	if (!dev || !of_match_node(matches, bus))
+> +	if (!dev)
+>  		return 0;
+>  
+>  	for_each_child_of_node(bus, child) {
+> 
+
