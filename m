@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab2JWRHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:07:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56497 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754731Ab2JWRHm (ORCPT
+	id S1757308Ab2JWRLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:11:23 -0400
+Received: from oproxy11-pub.bluehost.com ([173.254.64.10]:34933 "HELO
+	oproxy11-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754731Ab2JWRLV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:07:42 -0400
-Date: Tue, 23 Oct 2012 18:07:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Lucas Stach <dev@lynxeye.de>, Pavan Kunapuli <pkunapuli@nvidia.com>,
-        linux@arm.linux.org.uk, cjb@laptop.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
-Message-ID: <20121023170723.GD4477@opensource.wolfsonmicro.com>
-References: <1350976740-19284-1-git-send-email-pkunapuli@nvidia.com>
- <1350976740-19284-3-git-send-email-pkunapuli@nvidia.com>
- <1350979047.20572.6.camel@tellur>
- <5086C5F5.4070801@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kUmo4NyTJbuJZ752"
-Content-Disposition: inline
-In-Reply-To: <5086C5F5.4070801@wwwdotorg.org>
-X-Cookie: Just to have it is enough.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 13:11:21 -0400
+Subject: Re: Initial report on F2FS filesystem performance
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <20121023000725.GA10990@elf.ucw.cz>
+Date: Tue, 23 Oct 2012 21:10:46 +0400
+Cc: Sooman Jeong <77smart@hanyang.ac.kr>, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <54B92072-C95C-404F-A058-CF77098855C4@dubeyko.com>
+References: <1350360423154.2800.144.00.1.77smart@hanyang.ac.kr> <20121020192215.GB555@elf.ucw.cz> <E0328919-ACAA-4052-B922-952AFA375FD8@dubeyko.com> <20121021102638.GA14031@elf.ucw.cz> <1350905803450.1936.166.00.1.77smart@hanyang.ac.kr> <20121023000725.GA10990@elf.ucw.cz>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---kUmo4NyTJbuJZ752
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Oct 23, 2012, at 4:07 AM, Pavel Machek wrote:
 
-On Tue, Oct 23, 2012 at 10:29:41AM -0600, Stephen Warren wrote:
-> On 10/23/2012 01:57 AM, Lucas Stach wrote:
+> Hi!
+> 
+>> As requested, I compared performance of VFAT with f2fs on SD card.
+>> Following is summary of the measurement.
+> 
+> Thanks.
+> 
+>> VFAT shows better performance on both random write+fsync and buffered-sequential write than f2fs.
+>> However, on buffered-random and sequential write+fsync, f2fs still exhibits better performance 
+>> than other filesystems.
+>> 
+>> 
+>> * buffered write (1GB file), 4KByte write
+>> ------------------------------------------------------------------------------
+>>                     Desktop PC                         Galaxy-S3
+>> ------------------------------------------------------------------------------
+>>         sequential (MB/s)  random (IOPS)  sequential (MB/s)   random (IOPS)  
+>> ------------------------------------------------------------------------------
+> ...
+>>  F2FS          10.6            2675               6.9             1682      
+>>  VFAT           7.3            1108               7.3             1075               
+>> ------------------------------------------------------------------------------
+> 
+> Ok, f2fs is bit faster on desktop PC and a bit slower on S3. Good.
+> 
+> 
+>> * write + fsync (100MB file), 4KByte write
+>> ------------------------------------------------------------------------------
+>>                     Desktop PC                         Galaxy-S3
+>> ------------------------------------------------------------------------------
+>>         sequential (KB/s)  random (IOPS)  sequential (KB/s)   random (IOPS)  
+>> ------------------------------------------------------------------------------
+>>  F2FS         1057.9            240              772.3             184
+>>  VFAT          356.5            260              474.4             373
+>> ------------------------------------------------------------------------------
+> 
+> Ok, random access on VFAT is a lot faster on S3 (and only very
+> a bit on PC). Any idea why results are so different between PC and S3?
+> Does F2FS need significantly more CPU? Does F2FS need significantly
+> more RAM? (Booting PC with low mem= option my answer that).
+> 
 
-> > Does this work with boards where we don't have any MMC supplies? Or are
-> > we just deferring the probe indefinitely there?
+Yes, I think that f2fs really needs more CPU and memory for functioning. The f2fs keeps more metadata as VFAT, as I understand. Moreover, it manages six active logs at runtime and GC can works in background. All of it needs in more CPU power.
 
-> > For boards that power MMC unconditionally, are we supposed to add dummy
-> > regulators to make them work with this patchset?
+With the best regards,
+Vyacheslav Dubeyko.
 
-> I believe that dummy (fixed) regulators are supposed to be provided in
-> all cases where the platform doesn't actually have one. The fact that
-> everything worked OK without them before this patch was most likely a
-> mistake/accident.
+> Anyway, it looks like F2FS is pretty fast filesystem...
+> 
+> 									Pavel
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
 
-That's the general idea; clearly there *are* supplies here, they're just
-not software controlled supplies.
-
---kUmo4NyTJbuJZ752
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhs7SAAoJELSic+t+oim9susP/0AssZKAu0Kc9VvmhgVgu3fo
-uP6TknKZf5pfa+U+Up9rlmjzxgmbOHIjGL1joJpUVpbL9iHuuYqqU9S4/sw/bOpy
-0yJTrJzrRYWdIK0bx5g+EW6F3RPcPWc7B2ZLPiSHcPFIe6jTSrgQAPCTqAnRYnDv
-GvDoy+Oya1Ztjim+uIMTuNDJ29t3xrdvwP+Ds7r/Dkz0P3fPCcbleS0NMhbctiNg
-hP6jOr+roHou+TRPwok5XAoN3j/C9/6riZGy+C1TpRzMR/YLNzuTcLShxG33Pm+l
-85PNQLzo27XQBn2ZOX1UyX1FKAkxK3JQ8UavR6TtkEjE5PeCiFP6sqtKdOb3gB+1
-kAvK8fbhf8O7JMREFjKNVhOssFQQWOCI5IMlOtAnfuBEl/P1b1S2RXZByUX3KsOu
-laI1Z3VfSMUfYiklbarHO5CCCzP1TUNpgqnboK3IJjWf0haIuLeTtUDro11lSP8V
-z+zUckY+AHDilo6IUN6lFRyL8cZU/ohZUE/Snw8NiFzKevubqDQ269usWvKR6kWh
-pZCisbrU29U0SYwnOH3Zf7VcpuVwjaEUjtinHrprsQhiOs0JvFcTemWYXrabhA8U
-xTb158lEF1AV9MuFiZe+RBTAiTVuF1ZNnQ3mWgIBoMI8mEv3weu4ncwBz5IC+1xh
-EVqnpeuK56wfTi+EMHfL
-=9GG4
------END PGP SIGNATURE-----
-
---kUmo4NyTJbuJZ752--
