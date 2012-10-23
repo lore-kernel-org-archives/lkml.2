@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab2JWKLt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:11:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56513 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932948Ab2JWKLq (ORCPT
+	id S933008Ab2JWKLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:11:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39464 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932948Ab2JWKLu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:11:46 -0400
-Date: Tue, 23 Oct 2012 11:11:25 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        Steve Capper <Steve.Capper@arm.com>
-Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-ID: <20121023101125.GA20210@mudshark.cambridge.arm.com>
-References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
- <20121002150104.da57fa94.akpm@linux-foundation.org>
- <20121017130125.GH5973@mudshark.cambridge.arm.com>
- <20121017.112620.1865348978594874782.davem@davemloft.net>
- <20121017155401.GJ5973@mudshark.cambridge.arm.com>
- <20121018150502.3dee7899.akpm@linux-foundation.org>
- <20121019091016.GA4582@mudshark.cambridge.arm.com>
- <20121019114955.3a0c2b66.akpm@linux-foundation.org>
- <20121022103503.GA26619@mudshark.cambridge.arm.com>
- <20121022111843.4406850d.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022111843.4406850d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 06:11:50 -0400
+Message-ID: <1350987096.2768.108.camel@twins>
+Subject: Re: [PATCH 1/6] perf, x86: Basic Haswell LBR call stack support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, ak@linux.intel.com
+Date: Tue, 23 Oct 2012 12:11:36 +0200
+In-Reply-To: <50862E02.6020002@intel.com>
+References: <1350886279-6141-1-git-send-email-zheng.z.yan@intel.com>
+	  <1350886279-6141-2-git-send-email-zheng.z.yan@intel.com>
+	 <1350902138.2768.86.camel@twins> <50862E02.6020002@intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 07:18:43PM +0100, Andrew Morton wrote:
-> On Mon, 22 Oct 2012 11:35:03 +0100
-> Will Deacon <will.deacon@arm.com> wrote:
-> 
-> > On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
-> > > Ho hum.  I'll drop
-> > > mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
-> > > shall assume that you'll sort things out at the appropriate time.
+On Tue, 2012-10-23 at 13:41 +0800, Yan, Zheng wrote:
+> On 10/22/2012 06:35 PM, Peter Zijlstra wrote:
+> > On Mon, 2012-10-22 at 14:11 +0800, Yan, Zheng wrote:
+> >> --- a/include/uapi/linux/perf_event.h
+> >> +++ b/include/uapi/linux/perf_event.h
+> >> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
+> >>         PERF_SAMPLE_BRANCH_ABORT        = 1U << 7, /* transaction aborts */
+> >>         PERF_SAMPLE_BRANCH_INTX         = 1U << 8, /* in transaction (flag) */
+> >>         PERF_SAMPLE_BRANCH_NOTX         = 1U << 9, /* not in transaction (flag) */
+> >> +       PERF_SAMPLE_BRANCH_CALL_STACK   = 1U << 10, /* call stack */
+> >>  
+> >> -       PERF_SAMPLE_BRANCH_MAX          = 1U << 10, /* non-ABI */
+> >> +       PERF_SAMPLE_BRANCH_MAX          = 1U << 11, /* non-ABI */
+> >>  }; 
 > > 
-> > Happy to sort it out once I work out what's going wrong!
-> 
-> The patch "ARM: mm: Transparent huge page support for LPAE systems" is
-> not present in linux-next, so this patch ("mm: thp: Set the accessed
-> flag for old pages on access fault") will not compile?
+> > You add an ABI sample type without mentioning it in your changelog.. I
+> > think I'll stop reading here.
+> > 
+> Ok, I will add the ABI change to the change log. Do you think we should hide this
+> branch sample type from user?
 
-This patch ("mm: thp: Set the accessed flag for old pages on access fault")
-doesn't depend on "ARM: mm: Transparent huge page support for LPAE systems"
-because currently transparent huge pages cannot be enabled for ARM in
-mainline (or linux-next). update_mmu_cache_pmd is only called from
-mm/huge_memory.c, which depends on CONFIG_TRANSPARENT_HUGEPAGE=y.
-
-As for the new huge_pmd_set_accessed function... there's a similar situation
-for the do_huge_pmd_wp_page function: it's called from mm/memory.c but is
-only defined in mm/huge_memory.c. Looks like the compiler optimises those
-calls away because pmd_trans_huge and friends constant-fold to 0.
-
-Will
+Possibly not, I haven't really thought about it. But never hide an ABI
+change. Explicitly mention it and preferably explain why you felt it
+needed to extend the ABI.
