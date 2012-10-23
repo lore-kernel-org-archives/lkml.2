@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965167Ab2JWUu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:50:29 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36839 "EHLO smtp.outflux.net"
+	id S965396Ab2JWUwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:52:19 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52141 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933774Ab2JWUFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:05:22 -0400
+	id S933758Ab2JWUFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:21 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [PATCH 128/193] drivers/video: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:21 -0700
-Message-Id: <1351022666-6960-129-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Jeff Dike <jdike@addtoit.com>,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH 029/193] arch/um: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:42 -0700
+Message-Id: <1351022666-6960-30-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -25,97 +25,60 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+CC: Jeff Dike <jdike@addtoit.com>
+CC: Richard Weinberger <richard@nod.at>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/video/Kconfig |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ arch/um/Kconfig.net |    2 +-
+ arch/um/Kconfig.um  |    8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index d08d799..58b038a 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -1112,8 +1112,8 @@ config FB_RIVA_BACKLIGHT
- 	  Say Y here if you want to control the backlight of your display.
+diff --git a/arch/um/Kconfig.net b/arch/um/Kconfig.net
+index 3160b1a..820a56f 100644
+--- a/arch/um/Kconfig.net
++++ b/arch/um/Kconfig.net
+@@ -157,7 +157,7 @@ config UML_NET_MCAST
  
- config FB_I740
--	tristate "Intel740 support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && FB && PCI
-+	tristate "Intel740 support"
-+	depends on FB && PCI
- 	select FB_MODE_HELPERS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-@@ -1124,8 +1124,8 @@ config FB_I740
- 	  This driver supports graphics cards based on Intel740 chip.
- 
- config FB_I810
--	tristate "Intel 810/815 support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && FB && PCI && X86_32 && AGP_INTEL
-+	tristate "Intel 810/815 support"
-+	depends on FB && PCI && X86_32 && AGP_INTEL
- 	select FB_MODE_HELPERS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-@@ -1187,8 +1187,8 @@ config FB_CARILLO_RANCH
- 	  This driver supports the LE80578 (Carillo Ranch) board
- 
- config FB_INTEL
--	tristate "Intel 830M/845G/852GM/855GM/865G/915G/945G/945GM/965G/965GM support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && FB && PCI && X86 && AGP_INTEL && EXPERT
-+	tristate "Intel 830M/845G/852GM/855GM/865G/915G/945G/945GM/965G/965GM support"
-+	depends on FB && PCI && X86 && AGP_INTEL && EXPERT
- 	select FB_MODE_HELPERS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-@@ -1432,7 +1432,7 @@ config FB_ATY_CT
- 	  is at <http://support.ati.com/products/pc/mach64/mach64.html>.
- 
- config FB_ATY_GENERIC_LCD
--	bool "Mach64 generic LCD support (EXPERIMENTAL)"
-+	bool "Mach64 generic LCD support"
- 	depends on FB_ATY_CT
+ config UML_NET_PCAP
+ 	bool "pcap transport"
+-	depends on UML_NET && EXPERIMENTAL
++	depends on UML_NET
  	help
- 	  Say Y if you have a laptop with an ATI Rage LT PRO, Rage Mobility,
-@@ -1479,7 +1479,7 @@ config FB_S3_DDC
+ 	The pcap transport makes a pcap packet stream on the host look
+ 	like an ethernet device inside UML.  This is useful for making
+diff --git a/arch/um/Kconfig.um b/arch/um/Kconfig.um
+index bf87f25..a7520c9 100644
+--- a/arch/um/Kconfig.um
++++ b/arch/um/Kconfig.um
+@@ -45,8 +45,8 @@ config HOSTFS
+           say Y or M here; otherwise say N.
  
- config FB_SAVAGE
- 	tristate "S3 Savage support"
--	depends on FB && PCI && EXPERIMENTAL
-+	depends on FB && PCI
- 	select FB_MODE_HELPERS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
-@@ -1633,15 +1633,15 @@ config FB_3DFX
- 	  module will be called tdfxfb.
- 
- config FB_3DFX_ACCEL
--	bool "3Dfx Acceleration functions (EXPERIMENTAL)"
--	depends on FB_3DFX && EXPERIMENTAL
-+	bool "3Dfx Acceleration functions"
-+	depends on FB_3DFX
- 	---help---
- 	This will compile the 3Dfx Banshee/Voodoo3/VSA-100 frame buffer
- 	device driver with acceleration functions.
- 
- config FB_3DFX_I2C
- 	bool "Enable DDC/I2C support"
--	depends on FB_3DFX && EXPERIMENTAL
-+	depends on FB_3DFX
- 	select FB_DDC
- 	default y
+ config HPPFS
+-	tristate "HoneyPot ProcFS (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && PROC_FS
++	tristate "HoneyPot ProcFS"
++	depends on PROC_FS
  	help
-@@ -1714,8 +1714,8 @@ config FB_ARK
- 	  and ICS 5342 RAMDAC.
+ 	  hppfs (HoneyPot ProcFS) is a filesystem which allows UML /proc
+ 	  entries to be overridden, removed, or fabricated from the host.
+@@ -96,7 +96,7 @@ config MAGIC_SYSRQ
+ 	  unless you really know what this hack does.
  
- config FB_PM3
--	tristate "Permedia3 support (EXPERIMENTAL)"
--	depends on FB && PCI && EXPERIMENTAL
-+	tristate "Permedia3 support"
-+	depends on FB && PCI
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
+ config SMP
+-	bool "Symmetric multi-processing support (EXPERIMENTAL)"
++	bool "Symmetric multi-processing support"
+ 	default n
+ 	depends on BROKEN
+ 	help
+@@ -126,7 +126,7 @@ config NR_CPUS
+ 	default "32"
+ 
+ config HIGHMEM
+-	bool "Highmem support (EXPERIMENTAL)"
++	bool "Highmem support"
+ 	depends on !64BIT && BROKEN
+ 	default n
+ 	help
 -- 
 1.7.9.5
 
