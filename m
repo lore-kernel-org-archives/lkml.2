@@ -1,235 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020Ab2JWNlz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:41:55 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51539 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291Ab2JWNly (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:41:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAA9v8mGMa3SDD1OLTG_wdhCGx7K-0kvSV1+MRi9uCGTz6zZaLg@mail.gmail.com>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
-	<508699D3.9040509@gmail.com>
-	<CAA9v8mGMa3SDD1OLTG_wdhCGx7K-0kvSV1+MRi9uCGTz6zZaLg@mail.gmail.com>
-Date: Tue, 23 Oct 2012 21:41:53 +0800
-Message-ID: <CAA9v8mGGE2sPW1hv-zSaFEq4PD2DZES=zYTJ=aeY1CVe8sXwyw@mail.gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-From: YingHang Zhu <casualfisher@gmail.com>
-To: akpm@linux-foundation.org
-Cc: Fengguang Wu <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933031Ab2JWNmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:42:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19703 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932291Ab2JWNmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:42:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
+   d="scan'208";a="237190899"
+From: Irina Tirdea <irina.tirdea@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Subject: [PATCH 01/26] pstore: allow for big files
+Date: Tue, 23 Oct 2012 16:47:59 +0300
+Message-Id: <1351000104-13015-2-git-send-email-irina.tirdea@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
+References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the annoying, I forgot ccs in the previous mail.
-Thanks,
-         Ying Zhu
-Hi Chen,
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-On Tue, Oct 23, 2012 at 9:21 PM, Ni zhan Chen <nizhan.chen@gmail.com> wrote:
-> On 10/23/2012 08:46 PM, Ying Zhu wrote:
->>
->> Hi,
->>    Recently we ran into the bug that an opened file's ra_pages does not
->> synchronize with it's backing device's when the latter is changed
->> with blockdev --setra, the application needs to reopen the file
->> to know the change, which is inappropriate under our circumstances.
->
->
-> Could you tell me in which function do this synchronize stuff?
-With this patch we use bdi.ra_pages directly, so change bdi.ra_pages also
-change an opened file's ra_pages.
->
->
->> This bug is also mentioned in scst (generic SCSI target subsystem for
->> Linux)'s
->> README file.
->>    This patch tries to unify the ra_pages in struct file_ra_state
->> and struct backing_dev_info. Basically current readahead algorithm
->> will ramp file_ra_state.ra_pages up to bdi.ra_pages once it detects the
->
->
-> You mean ondemand readahead algorithm will do this? I don't think so.
-> file_ra_state_init only called in btrfs path, correct?
-No, it's also called in do_dentry_open.
->
->
->> read mode is sequential. Then all files sharing the same backing device
->> have the same max value bdi.ra_pages set in file_ra_state.
->
->
-> why remove file_ra_state? If one file is read sequential and another file is
-> read ramdom, how can use the global bdi.ra_pages to indicate the max
-> readahead window of each file?
-This patch does not remove file_ra_state, an file's readahead window
-is determined
-by it's backing device.
->
->
->>    Applying this means the flags POSIX_FADV_NORMAL and
->> POSIX_FADV_SEQUENTIAL
->> in fadivse will only set file reading mode without signifying the
->> max readahead size of the file. The current apporach adds no additional
->> overhead in read IO path, IMHO is the simplest solution.
->> Any comments are welcome, thanks in advance.
->
->
-> Could you show me how you test this patch?
-This patch brings no perfmance gain, just fixs some functional bugs.
-By reading a 500MB file, the default max readahead size of the
-backing device was 128KB, after applying this patch, the read file's
-max ra_pages
-changed when I tuned the device's read ahead size with blockdev.
->
->
->>
->> Thanks,
->>         Ying Zhu
->>
->> Signed-off-by: Ying Zhu <casualfisher@gmail.com>
->> ---
->>   include/linux/fs.h |    1 -
->>   mm/fadvise.c       |    2 --
->>   mm/filemap.c       |   17 +++++++++++------
->>   mm/readahead.c     |    8 ++++----
->>   4 files changed, 15 insertions(+), 13 deletions(-)
->>
->> diff --git a/include/linux/fs.h b/include/linux/fs.h
->> index 17fd887..36303a5 100644
->> --- a/include/linux/fs.h
->> +++ b/include/linux/fs.h
->> @@ -991,7 +991,6 @@ struct file_ra_state {
->>         unsigned int async_size;        /* do asynchronous readahead when
->>                                            there are only # of pages ahead
->> */
->>   -     unsigned int ra_pages;          /* Maximum readahead window */
->>         unsigned int mmap_miss;         /* Cache miss stat for mmap
->> accesses */
->>         loff_t prev_pos;                /* Cache last read() position */
->>   };
->> diff --git a/mm/fadvise.c b/mm/fadvise.c
->> index 469491e..75e2378 100644
->> --- a/mm/fadvise.c
->> +++ b/mm/fadvise.c
->> @@ -76,7 +76,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
->> loff_t len, int advice)
->>         switch (advice) {
->>         case POSIX_FADV_NORMAL:
->> -               file->f_ra.ra_pages = bdi->ra_pages;
->>                 spin_lock(&file->f_lock);
->>                 file->f_mode &= ~FMODE_RANDOM;
->>                 spin_unlock(&file->f_lock);
->> @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
->> loff_t len, int advice)
->>                 spin_unlock(&file->f_lock);
->>                 break;
->>         case POSIX_FADV_SEQUENTIAL:
->> -               file->f_ra.ra_pages = bdi->ra_pages * 2;
->>                 spin_lock(&file->f_lock);
->>                 file->f_mode &= ~FMODE_RANDOM;
->>                 spin_unlock(&file->f_lock);
->> diff --git a/mm/filemap.c b/mm/filemap.c
->> index a4a5260..e7e4409 100644
->> --- a/mm/filemap.c
->> +++ b/mm/filemap.c
->> @@ -1058,11 +1058,15 @@ EXPORT_SYMBOL(grab_cache_page_nowait);
->>    * readahead(R+4...B+3) => bang => read(R+4) => read(R+5) => ......
->>    *
->>    * It is going insane. Fix it by quickly scaling down the readahead
->> size.
->> + * It's hard to estimate how the bad sectors lay out, so to be
->> conservative,
->> + * set the read mode in random.
->>    */
->>   static void shrink_readahead_size_eio(struct file *filp,
->>                                         struct file_ra_state *ra)
->>   {
->> -       ra->ra_pages /= 4;
->> +       spin_lock(&filp->f_lock);
->> +       filp->f_mode |= FMODE_RANDOM;
->> +       spin_unlock(&filp->f_lock);
->>   }
->>     /**
->> @@ -1527,12 +1531,12 @@ static void do_sync_mmap_readahead(struct
->> vm_area_struct *vma,
->>         /* If we don't want any read-ahead, don't bother */
->>         if (VM_RandomReadHint(vma))
->>                 return;
->> -       if (!ra->ra_pages)
->> +       if (!mapping->backing_dev_info->ra_pages)
->>                 return;
->>         if (VM_SequentialReadHint(vma)) {
->> -               page_cache_sync_readahead(mapping, ra, file, offset,
->> -                                         ra->ra_pages);
->> +               page_cache_sync_readahead(mapping, ra, file, offset,
->> +
->> mapping->backing_dev_info->ra_pages);
->>                 return;
->>         }
->>   @@ -1550,7 +1554,7 @@ static void do_sync_mmap_readahead(struct
->> vm_area_struct *vma,
->>         /*
->>          * mmap read-around
->>          */
->> -       ra_pages = max_sane_readahead(ra->ra_pages);
->> +       ra_pages =
->> max_sane_readahead(mapping->backing_dev_info->ra_pages);
->>         ra->start = max_t(long, 0, offset - ra_pages / 2);
->>         ra->size = ra_pages;
->>         ra->async_size = ra_pages / 4;
->> @@ -1576,7 +1580,8 @@ static void do_async_mmap_readahead(struct
->> vm_area_struct *vma,
->>                 ra->mmap_miss--;
->>         if (PageReadahead(page))
->>                 page_cache_async_readahead(mapping, ra, file,
->> -                                          page, offset, ra->ra_pages);
->> +                                          page, offset,
->> +
->> mapping->backing_dev_info->ra_pages);
->>   }
->>     /**
->> diff --git a/mm/readahead.c b/mm/readahead.c
->> index ea8f8fa..6ea5999 100644
->> --- a/mm/readahead.c
->> +++ b/mm/readahead.c
->> @@ -27,7 +27,6 @@
->>   void
->>   file_ra_state_init(struct file_ra_state *ra, struct address_space
->> *mapping)
->>   {
->> -       ra->ra_pages = mapping->backing_dev_info->ra_pages;
->>         ra->prev_pos = -1;
->>   }
->>   EXPORT_SYMBOL_GPL(file_ra_state_init);
->> @@ -400,7 +399,8 @@ ondemand_readahead(struct address_space *mapping,
->>                    bool hit_readahead_marker, pgoff_t offset,
->>                    unsigned long req_size)
->>   {
->> -       unsigned long max = max_sane_readahead(ra->ra_pages);
->> +       struct backing_dev_info *bdi = mapping->backing_dev_info;
->> +       unsigned long max = max_sane_readahead(bdi->ra_pages);
->>         /*
->>          * start of file
->> @@ -507,7 +507,7 @@ void page_cache_sync_readahead(struct address_space
->> *mapping,
->>                                pgoff_t offset, unsigned long req_size)
->>   {
->>         /* no read-ahead */
->> -       if (!ra->ra_pages)
->> +       if (!mapping->backing_dev_info->ra_pages)
->>                 return;
->>         /* be dumb */
->> @@ -543,7 +543,7 @@ page_cache_async_readahead(struct address_space
->> *mapping,
->>                            unsigned long req_size)
->>   {
->>         /* no read-ahead */
->> -       if (!ra->ra_pages)
->> +       if (!mapping->backing_dev_info->ra_pages)
->>                 return;
->>         /*
->
->
+pstore reads all files into memory at mount time. To allow for back ends
+that will store arbitrarily large files, enhance pstore also to be able
+to read from the back end as needed.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+---
+ drivers/acpi/apei/erst.c |   16 +++++++++-------
+ fs/pstore/inode.c        |   26 ++++++++++++++++++++------
+ fs/pstore/internal.h     |    5 +++--
+ fs/pstore/platform.c     |   11 +++++++----
+ fs/pstore/ram.c          |   15 +++++++--------
+ include/linux/pstore.h   |    7 +++++--
+ 6 files changed, 51 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+index e4d9d24..f70ba37 100644
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -931,9 +931,9 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+ 
+ static int erst_open_pstore(struct pstore_info *psi);
+ static int erst_close_pstore(struct pstore_info *psi);
+-static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-			   struct timespec *time, char **buf,
+-			   struct pstore_info *psi);
++static int erst_reader(u64 *id, enum pstore_type_id *type,
++		       struct timespec *time, char **buf, loff_t *size,
++		       struct pstore_info *psi);
+ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+ 		       u64 *id, unsigned int part,
+ 		       size_t size, struct pstore_info *psi);
+@@ -987,9 +987,9 @@ static int erst_close_pstore(struct pstore_info *psi)
+ 	return 0;
+ }
+ 
+-static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+-			   struct timespec *time, char **buf,
+-			   struct pstore_info *psi)
++static int erst_reader(u64 *id, enum pstore_type_id *type,
++		       struct timespec *time, char **buf, loff_t *size,
++		       struct pstore_info *psi)
+ {
+ 	int rc;
+ 	ssize_t len = 0;
+@@ -1051,7 +1051,9 @@ skip:
+ 
+ out:
+ 	kfree(rcd);
+-	return (rc < 0) ? rc : (len - sizeof(*rcd));
++	if (!rc)
++		*size = len - sizeof(*rcd);
++	return rc;
+ }
+ 
+ static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 4ab572e..ff0970f 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -49,7 +49,8 @@ struct pstore_private {
+ 	struct pstore_info *psi;
+ 	enum pstore_type_id type;
+ 	u64	id;
+-	ssize_t	size;
++	loff_t	size;
++	bool	big;
+ 	char	data[];
+ };
+ 
+@@ -65,12 +66,13 @@ static void *pstore_ftrace_seq_start(struct seq_file *s, loff_t *pos)
+ {
+ 	struct pstore_private *ps = s->private;
+ 	struct pstore_ftrace_seq_data *data;
++	loff_t size = ps->size;
+ 
+ 	data = kzalloc(sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return NULL;
+ 
+-	data->off = ps->size % REC_SIZE;
++	data->off = do_div(size,  REC_SIZE);
+ 	data->off += *pos * REC_SIZE;
+ 	if (data->off + REC_SIZE > ps->size) {
+ 		kfree(data);
+@@ -127,6 +129,12 @@ static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
+ 
+ 	if (ps->type == PSTORE_TYPE_FTRACE)
+ 		return seq_read(file, userbuf, count, ppos);
++	if (ps->big) {
++		if (ps->psi->file_read)
++			return ps->psi->file_read(ps->id, ps->type, userbuf,
++						count, ppos, ps->psi);
++		return -EFBIG;
++	}
+ 	return simple_read_from_buffer(userbuf, count, ppos, ps->data, ps->size);
+ }
+ 
+@@ -271,8 +279,8 @@ int pstore_is_mounted(void)
+  * Set the mtime & ctime to the date that this record was originally stored.
+  */
+ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+-		  char *data, size_t size, struct timespec time,
+-		  struct pstore_info *psi)
++		  char *data, loff_t size, struct timespec time,
++		  struct pstore_info *psi, bool big)
+ {
+ 	struct dentry		*root = pstore_sb->s_root;
+ 	struct dentry		*dentry;
+@@ -281,6 +289,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	char			name[PSTORE_NAMELEN];
+ 	struct pstore_private	*private, *pos;
+ 	unsigned long		flags;
++	size_t			inline_size;
+ 
+ 	spin_lock_irqsave(&allpstore_lock, flags);
+ 	list_for_each_entry(pos, &allpstore, list) {
+@@ -301,12 +310,17 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 		goto fail;
+ 	inode->i_mode = S_IFREG | 0444;
+ 	inode->i_fop = &pstore_file_operations;
+-	private = kmalloc(sizeof *private + size, GFP_KERNEL);
++	if (big)
++		inline_size = 0;
++	else
++		inline_size = size;
++	private = kmalloc(sizeof(*private) + inline_size, GFP_KERNEL);
+ 	if (!private)
+ 		goto fail_alloc;
+ 	private->type = type;
+ 	private->id = id;
+ 	private->psi = psi;
++	private->big = big;
+ 
+ 	switch (type) {
+ 	case PSTORE_TYPE_DMESG:
+@@ -336,7 +350,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+ 	if (IS_ERR(dentry))
+ 		goto fail_lockedalloc;
+ 
+-	memcpy(private->data, data, size);
++	memcpy(private->data, data, inline_size);
+ 	inode->i_size = private->size = size;
+ 
+ 	inode->i_private = private;
+diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+index 4847f58..f840159 100644
+--- a/fs/pstore/internal.h
++++ b/fs/pstore/internal.h
+@@ -50,8 +50,9 @@ extern struct pstore_info *psinfo;
+ extern void	pstore_set_kmsg_bytes(int);
+ extern void	pstore_get_records(int);
+ extern int	pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+-			      char *data, size_t size,
+-			      struct timespec time, struct pstore_info *psi);
++			      char *data, loff_t size,
++			      struct timespec time, struct pstore_info *psi,
++			      bool big);
+ extern int	pstore_is_mounted(void);
+ 
+ #endif
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index a40da07..108bd69 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -264,7 +264,7 @@ void pstore_get_records(int quiet)
+ {
+ 	struct pstore_info *psi = psinfo;
+ 	char			*buf = NULL;
+-	ssize_t			size;
++	loff_t			size;
+ 	u64			id;
+ 	enum pstore_type_id	type;
+ 	struct timespec		time;
+@@ -277,9 +277,12 @@ void pstore_get_records(int quiet)
+ 	if (psi->open && psi->open(psi))
+ 		goto out;
+ 
+-	while ((size = psi->read(&id, &type, &time, &buf, psi)) > 0) {
+-		rc = pstore_mkfile(type, psi->name, id, buf, (size_t)size,
+-				  time, psi);
++	while (1) {
++		rc = psi->read(&id, &type, &time, &buf, &size, psi);
++		if (rc && rc != -EFBIG)
++			break;
++		rc = pstore_mkfile(type, psi->name, id, buf, size,
++				  time, psi, rc == -EFBIG);
+ 		kfree(buf);
+ 		buf = NULL;
+ 		if (rc && (rc != -EEXIST || !quiet))
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 1a4f6da..dd47a87 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -131,12 +131,11 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
+ 	return prz;
+ }
+ 
+-static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
++static int ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 				   struct timespec *time,
+-				   char **buf,
++				   char **buf, loff_t *size,
+ 				   struct pstore_info *psi)
+ {
+-	ssize_t size;
+ 	struct ramoops_context *cxt = psi->data;
+ 	struct persistent_ram_zone *prz;
+ 
+@@ -150,19 +149,19 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
+ 					   1, id, type, PSTORE_TYPE_FTRACE, 0);
+ 	if (!prz)
+-		return 0;
++		return -EINVAL;
+ 
+ 	/* TODO(kees): Bogus time for the moment. */
+ 	time->tv_sec = 0;
+ 	time->tv_nsec = 0;
+ 
+-	size = persistent_ram_old_size(prz);
+-	*buf = kmalloc(size, GFP_KERNEL);
++	*size = persistent_ram_old_size(prz);
++	*buf = kmalloc(*size, GFP_KERNEL);
+ 	if (*buf == NULL)
+ 		return -ENOMEM;
+-	memcpy(*buf, persistent_ram_old(prz), size);
++	memcpy(*buf, persistent_ram_old(prz), *size);
+ 
+-	return size;
++	return 0;
+ }
+ 
+ static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index ee3034a..3a293ff 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -49,8 +49,11 @@ struct pstore_info {
+ 	struct mutex	read_mutex;	/* serialize open/read/close */
+ 	int		(*open)(struct pstore_info *psi);
+ 	int		(*close)(struct pstore_info *psi);
+-	ssize_t		(*read)(u64 *id, enum pstore_type_id *type,
+-			struct timespec *time, char **buf,
++	int		(*read)(u64 *id, enum pstore_type_id *type,
++			struct timespec *time, char **buf, loff_t *size,
++			struct pstore_info *psi);
++	ssize_t		(*file_read)(u64 id, enum pstore_type_id type,
++			char __user *userbuf, size_t count, loff_t *ppos,
+ 			struct pstore_info *psi);
+ 	int		(*write)(enum pstore_type_id type,
+ 			enum kmsg_dump_reason reason, u64 *id,
+-- 
+1.7.9.5
+
