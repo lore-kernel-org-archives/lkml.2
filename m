@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933521Ab2JWT7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:59:37 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:62157 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab2JWT7d (ORCPT
+	id S933485Ab2JWT71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:59:27 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:49915 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757516Ab2JWT7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:59:33 -0400
+	Tue, 23 Oct 2012 15:59:19 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
         Ezequiel Garcia <elezegarcia@gmail.com>,
+        Andy Walls <awalls@md.metrocast.net>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 23/23] wl128x: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:26 -0300
-Message-Id: <1351022246-8201-23-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 18/23] cx18: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:21 -0300
+Message-Id: <1351022246-8201-18-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
@@ -42,26 +43,35 @@ expression E;
 +to = from;
 // </smpl>
 
+Cc: Andy Walls <awalls@md.metrocast.net>
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/radio/wl128x/fmdrv_common.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/media/pci/cx18/cx18-i2c.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/radio/wl128x/fmdrv_common.c b/drivers/media/radio/wl128x/fmdrv_common.c
-index bf867a6..902f19d 100644
---- a/drivers/media/radio/wl128x/fmdrv_common.c
-+++ b/drivers/media/radio/wl128x/fmdrv_common.c
-@@ -1563,8 +1563,7 @@ int fmc_prepare(struct fmdev *fmdev)
- 	fmdev->irq_info.mask = FM_MAL_EVENT;
+diff --git a/drivers/media/pci/cx18/cx18-i2c.c b/drivers/media/pci/cx18/cx18-i2c.c
+index 51609d5..930d40f 100644
+--- a/drivers/media/pci/cx18/cx18-i2c.c
++++ b/drivers/media/pci/cx18/cx18-i2c.c
+@@ -240,15 +240,13 @@ int init_cx18_i2c(struct cx18 *cx)
  
- 	/* Region info */
--	memcpy(&fmdev->rx.region, &region_configs[default_radio_region],
--			sizeof(struct region_info));
-+	fmdev->rx.region = region_configs[default_radio_region];
+ 	for (i = 0; i < 2; i++) {
+ 		/* Setup algorithm for adapter */
+-		memcpy(&cx->i2c_algo[i], &cx18_i2c_algo_template,
+-			sizeof(struct i2c_algo_bit_data));
++		cx->i2c_algo[i] = cx18_i2c_algo_template;
+ 		cx->i2c_algo_cb_data[i].cx = cx;
+ 		cx->i2c_algo_cb_data[i].bus_index = i;
+ 		cx->i2c_algo[i].data = &cx->i2c_algo_cb_data[i];
  
- 	fmdev->rx.mute_mode = FM_MUTE_OFF;
- 	fmdev->rx.rf_depend_mute = FM_RX_RF_DEPENDENT_MUTE_OFF;
+ 		/* Setup adapter */
+-		memcpy(&cx->i2c_adap[i], &cx18_i2c_adap_template,
+-			sizeof(struct i2c_adapter));
++		cx->i2c_adap[i] = cx18_i2c_adap_template;
+ 		cx->i2c_adap[i].algo_data = &cx->i2c_algo[i];
+ 		sprintf(cx->i2c_adap[i].name + strlen(cx->i2c_adap[i].name),
+ 				" #%d-%d", cx->instance, i);
 -- 
 1.7.4.4
 
