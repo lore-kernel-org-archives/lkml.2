@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933606Ab2JWUKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:10:21 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:43103 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933408Ab2JWUKS (ORCPT
+	id S933900Ab2JWUKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:10:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43968 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933408Ab2JWUKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:10:18 -0400
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 16:10:17 EDT
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Tue, 23 Oct 2012 16:03:33 -0400
-To: linux-kernel@vger.kernel.org
-Cc: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>, linux@sierrawireless.com
-Subject: Fix memory leak in sierra_release()
-Message-ID: <20121023200333.GN18610@csclub.uwaterloo.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 23 Oct 2012 16:10:43 -0400
+Date: Tue, 23 Oct 2012 16:10:39 -0400 (EDT)
+Message-Id: <20121023.161039.1059939326508311054.davem@davemloft.net>
+To: keescook@chromium.org
+Cc: linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au
+Subject: Re: [PATCH 034/193] crypto: remove CONFIG_EXPERIMENTAL
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1351022666-6960-35-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-35-git-send-email-keescook@chromium.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found a memory leak in sierra_release() (well sierra_probe() I guess)
-that looses 8 bytes each time the driver releases a device.
+From: Kees Cook <keescook@chromium.org>
+Date: Tue, 23 Oct 2012 13:01:47 -0700
 
-Here is the patch to fix it.
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+> 
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 01d882c..76ef95b 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -959,6 +959,7 @@ static void sierra_release(struct usb_serial *serial)
- 			continue;
- 		kfree(portdata);
- 	}
-+	kfree(serial->private);
- }
- 
- #ifdef CONFIG_PM
-
--- 
-Len Sorensen
+Acked-by: David S. Miller <davem@davemloft.net>
