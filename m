@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab2JWVxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:53:41 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42670 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab2JWVxj (ORCPT
+	id S1755532Ab2JWV64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:58:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56947 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab2JWV6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:53:39 -0400
-Subject: Re: [PATCH v5] posix timers: allocate timer id per process
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, peterz@infradead.org,
-        mingo@redhat.com, devel@openvz.org, linux-kernel@vger.kernel.org,
-        xemul@parallels.com
-In-Reply-To: <alpine.LFD.2.02.1210232345200.2756@ionos>
-References: <20121023073913.23514.87934.stgit@localhost.localdomain>
-	 <1350978723.8609.1555.camel@edumazet-glaptop>
-	 <alpine.LFD.2.02.1210232345200.2756@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Oct 2012 23:53:36 +0200
-Message-ID: <1351029216.6537.3.camel@edumazet-glaptop>
+	Tue, 23 Oct 2012 17:58:54 -0400
+Date: Tue, 23 Oct 2012 14:58:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Denis Kirjanov <kirjanov@gmail.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
+Message-Id: <20121023145853.a9244066.akpm@linux-foundation.org>
+In-Reply-To: <20121023213845.GA21115@aftab.osrc.amd.com>
+References: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+	<20121023121005.ed33061a.akpm@linux-foundation.org>
+	<20121023202612.GA20526@aftab.osrc.amd.com>
+	<20121023133709.21e9cb72.akpm@linux-foundation.org>
+	<20121023204926.GA20787@aftab.osrc.amd.com>
+	<20121023140939.28ed0df4.akpm@linux-foundation.org>
+	<20121023213845.GA21115@aftab.osrc.amd.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 23:47 +0200, Thomas Gleixner wrote:
+On Tue, 23 Oct 2012 23:38:45 +0200
+Borislav Petkov <bp@amd64.org> wrote:
 
-> Not so good to me.
->  
-> > Signed-off-by: Eric Dumazet <edumazet@google.com>
-> 
-> And that should be either an Acked-by or a Reviewed-by. You can't sign
-> off on patches which have not been submitted or transported by you.
+> And I see you'll carry this patch so I won't send it to Linus next merge
+> window so thanks for this!
 
-I actually gave some input, provided a hash function, and so on.
-
-So this SOB was valid. I do that all the time.
-
-And yes, there are bugs in this patch, as many patches that were merged
-in linux tree, included by you.
-
-Thanks
+No, please merge it yourself.  Once it (or a version of it) turns up in
+linux-next, I'll drop my copy.  Merging stuff I shouldn't is my crude
+way of keeping track of things ;)
 
 
