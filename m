@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033Ab2JWNnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:43:22 -0400
+	id S933076Ab2JWNn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:43:28 -0400
 Received: from mga01.intel.com ([192.55.52.88]:38218 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932976Ab2JWNnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:43:21 -0400
+	id S933051Ab2JWNnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:43:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191014"
+   d="scan'208";a="237191030"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 05/26] block: add panic write
-Date: Tue, 23 Oct 2012 16:48:03 +0300
-Message-Id: <1351000104-13015-6-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 07/26] mmc: panic write: bypass host claiming
+Date: Tue, 23 Oct 2012 16:48:05 +0300
+Message-Id: <1351000104-13015-8-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -28,131 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Adrian Hunter <adrian.hunter@intel.com>
 
-Add a small interface to allow block devices to attempt to write
-during an oops or panic.
-
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/block/Kconfig  |    3 ++
- include/linux/blkdev.h |   77 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/genhd.h  |    3 ++
- 3 files changed, 83 insertions(+)
+ drivers/mmc/core/core.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 332ba52..f58853c 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -553,4 +553,7 @@ config BLK_DEV_OOPS
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 06c42cf..dbe5332 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -767,6 +767,9 @@ int __mmc_claim_host(struct mmc_host *host, atomic_t *abort)
+ 	unsigned long flags;
+ 	int stop;
  
- 	  See <file:Documentation/blockdev/blkoops.txt> for more information.
++	if (mmc_am_panic_task(host))
++		return 0;
++
+ 	might_sleep();
  
-+config BLK_DEV_PANIC_WRITE
-+	bool
-+
- endif # BLK_DEV
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1756001..bedfaab 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1461,6 +1461,83 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+ 	add_wait_queue(&host->wq, &wait);
+@@ -807,6 +810,9 @@ int mmc_try_claim_host(struct mmc_host *host)
+ 	int claimed_host = 0;
+ 	unsigned long flags;
  
- #endif /* CONFIG_BLK_DEV_INTEGRITY */
++	if (mmc_am_panic_task(host))
++		return 1;
++
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	if (!host->claimed || host->claimer == current) {
+ 		host->claimed = 1;
+@@ -837,6 +843,9 @@ void mmc_release_host(struct mmc_host *host)
+ 	if (host->ops->disable && host->claim_cnt == 1)
+ 		host->ops->disable(host);
  
-+#ifdef CONFIG_BLK_DEV_PANIC_WRITE
++	if (mmc_am_panic_task(host))
++		return;
 +
-+/**
-+ * struct panic_write_operations - operations to support writing during an oops
-+ *				   or panic.
-+ * @init: allocate resources
-+ * @cleanup: release resources
-+ * @write: called in an oops or panic context to write data
-+ * @flush: called in an oops or panic context to finish write operations
-+ *
-+ * @write may need resources that cannot be allocated in a panic or oops
-+ * context.  @init can be used to allocate those resources in advance.
-+ * @cleanup is called if panic writing becomes disabled.
-+ */
-+struct panic_write_operations {
-+	int (*init)(struct block_device *);
-+	void (*cleanup)(struct block_device *);
-+	int (*write)(struct block_device *, sector_t, void *, unsigned long);
-+	int (*flush)(struct block_device *);
-+};
-+
-+static inline int blk_panic_init(struct block_device *bdev)
-+{
-+	if (!bdev->bd_disk->pwops || !bdev->bd_disk->pwops->write)
-+		return -EOPNOTSUPP;
-+	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->init)
-+		return bdev->bd_disk->pwops->init(bdev);
-+	return 0;
-+}
-+
-+static inline void blk_panic_cleanup(struct block_device *bdev)
-+{
-+	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->cleanup)
-+		bdev->bd_disk->pwops->cleanup(bdev);
-+}
-+
-+static inline int blk_panic_write(struct block_device *bdev, sector_t sect,
-+				  void *addr, unsigned long len)
-+{
-+	if (!bdev->bd_disk->pwops || !bdev->bd_disk->pwops->write)
-+		return -EOPNOTSUPP;
-+	if (bdev != bdev->bd_contains)
-+		sect += bdev->bd_part->start_sect;
-+	return bdev->bd_disk->pwops->write(bdev, sect, addr, len);
-+}
-+
-+static inline int blk_panic_flush(struct block_device *bdev)
-+{
-+	if (bdev->bd_disk->pwops && bdev->bd_disk->pwops->flush)
-+		return bdev->bd_disk->pwops->flush(bdev);
-+	return 0;
-+}
-+
-+#else
-+
-+static inline int blk_panic_init(struct block_device *bdev)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+static inline void blk_panic_cleanup(struct block_device *bdev)
-+{
-+}
-+
-+static inline int blk_panic_write(struct block_device *bdev, sector_t sect,
-+				  void *addr, unsigned long len)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+static inline int blk_panic_flush(struct block_device *bdev)
-+{
-+	return -EOPNOTSUPP;
-+}
-+
-+#endif /* CONFIG_BLK_DEV_PANIC_WRITE */
-+
- struct block_device_operations {
- 	int (*open) (struct block_device *, fmode_t);
- 	int (*release) (struct gendisk *, fmode_t);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 4f440b3..73470af 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -195,6 +195,9 @@ struct gendisk {
- #ifdef  CONFIG_BLK_DEV_INTEGRITY
- 	struct blk_integrity *integrity;
- #endif
-+#ifdef CONFIG_BLK_DEV_PANIC_WRITE
-+	const struct panic_write_operations *pwops;
-+#endif
- 	int node_id;
- };
- 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	if (--host->claim_cnt) {
+ 		/* Release for nested claim */
 -- 
 1.7.9.5
 
