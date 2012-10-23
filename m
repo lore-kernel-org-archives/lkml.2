@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab2JWRmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:42:10 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:40579 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab2JWRmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:42:08 -0400
-Message-ID: <5086D6EB.7020701@acm.org>
-Date: Tue, 23 Oct 2012 19:42:03 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1757361Ab2JWRnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:43:12 -0400
+Received: from fieldses.org ([174.143.236.118]:48316 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754731Ab2JWRnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:43:09 -0400
+Date: Tue, 23 Oct 2012 13:43:03 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Nix <nix@esperi.org.uk>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
+        Peng Tao <bergwolf@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
+ (also an unrelated ext4 data loss bug)
+Message-ID: <20121023174303.GE3040@fieldses.org>
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <20121023164621.GC3040@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
+ <87vce1w241.fsf@spindle.srvr.nix>
+ <87r4opw0og.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        SCSI Mailing List <linux-scsi@vger.kernel.org>
-Subject: Re: [patch/rfc/rft] sd: allocate request_queue on device's local
- numa node
-References: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com> <50863D0A.6040800@acm.org> <x49fw556sgu.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49fw556sgu.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87r4opw0og.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/12 18:52, Jeff Moyer wrote:
-> Bart Van Assche <bvanassche@acm.org> writes:
->> Please keep in mind that a
->> single PCIe bus may have a minimal distance to more than one NUMA
->> node. See e.g. the diagram at the top of page 8 in
->> http://bizsupport1.austin.hp.com/bc/docs/support/SupportManual/c03261871/c03261871.pdf
->> for a system diagram of a NUMA system where each PCIe bus has a
->> minimal distance to two different NUMA nodes.
->
-> That's an interesting configuration.  I wonder what the numa_node sysfs
-> file contains for such systems--do you know?  I'm not sure how we could
-> allow this to be user-controlled at probe time.  Did you have a specific
-> mechanism in mind?  Module parameters?  Something else?
+On Tue, Oct 23, 2012 at 06:36:15PM +0100, Nix wrote:
+> On 23 Oct 2012, nix@esperi.org.uk uttered the following:
+> 
+> > On 23 Oct 2012, Trond Myklebust spake thusly:
+> >> On Tue, 2012-10-23 at 12:46 -0400, J. Bruce Fields wrote:
+> >>> Looks like there's some confusion about whether nsm_client_get() returns
+> >>> NULL or an error?
+> >>
+> >> nsm_client_get() looks extremely racy in the case where ln->nsm_users ==
+> >> 0.  Since we never recheck the value of ln->nsm_users after taking
+> >> nsm_create_mutex, what is stopping 2 different threads from both setting
+> >> ln->nsm_clnt and re-initialising ln->nsm_users?
+> >
+> > Yep. At the worst possible time:
+> >
+> > 	spin_lock(&ln->nsm_clnt_lock);
+> > 	if (ln->nsm_users) {
+> > 		if (--ln->nsm_users)
+> > 			ln->nsm_clnt = NULL;
+> > (1)		shutdown = !ln->nsm_users;
+> > 	}
+> > 	spin_unlock(&ln->nsm_clnt_lock);
+> >
+> > If a thread reinitializes nsm_users at point (1), after the assignment,
+> > we could well end up with ln->nsm_clnt NULL and shutdown false. A bit
+> > later, nsm_mon_unmon gets called with a NULL clnt, and boom.
+> 
+> Possible fix if so, utterly untested so far (will test when I can face
+> yet another reboot and fs-corruption-recovery-hell cycle, in a few
+> hours), may ruin performance, violate locking hierarchies, and consume
+> kittens:
 
-As far as I can see in drivers/pci/pci-sysfs.c the numa_node sysfs 
-attribute contains a single number, even for a topology like the one 
-described above.
+Right, mutexes can't be taken while holding spinlocks.  Keep the kittens
+well away from the computer.
 
-With regard to user control of the numa node: I'm not sure how to solve 
-this in general. But for the ib_srp driver this should be easy to do: 
-SCSI host creation is triggered by sending a login string to a sysfs 
-attribute ("add_target"). It wouldn't take much time to add a parameter 
-to that login string that specifies the NUMA node.
+--b.
 
-Bart.
-
+> 
+> diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
+> index e4fb3ba..da91cdf 100644
+> --- a/fs/lockd/mon.c
+> +++ b/fs/lockd/mon.c
+> @@ -98,7 +98,6 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
+>  		spin_unlock(&ln->nsm_clnt_lock);
+>  		goto out;
+>  	}
+> -	spin_unlock(&ln->nsm_clnt_lock);
+>  
+>  	mutex_lock(&nsm_create_mutex);
+>  	clnt = nsm_create(net);
+> @@ -108,6 +107,7 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
+>  		ln->nsm_users = 1;
+>  	}
+>  	mutex_unlock(&nsm_create_mutex);
+> +	spin_unlock(&ln->nsm_clnt_lock);
+>  out:
+>  	return clnt;
+>  }
+> 
