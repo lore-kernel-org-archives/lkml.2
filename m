@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934118Ab2JWWzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:55:12 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:17864 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757486Ab2JWWzJ (ORCPT
+	id S964955Ab2JWW61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:58:27 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41947 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab2JWW60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:55:09 -0400
-Message-ID: <5087204A.3080303@synaptics.com>
-Date: Tue, 23 Oct 2012 15:55:06 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <1349496603-20775-2-git-send-email-cheiny@synaptics.com> <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com> <BFABBC009FBA1C43B207B15FD485ABD922C22BC4@USW-MAIL1.synaptics-inc.local> <20121011082420.GC32175@core.coreip.homeip.net>
-In-Reply-To: <20121011082420.GC32175@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 23 Oct 2012 18:58:26 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Andi Kleen <ak@linux.intel.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB v6
+In-Reply-To: Your message of "Mon, 22 Oct 2012 08:36:33 -0700."
+             <20121022153633.GK2095@tassilo.jf.intel.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1350665289-7288-1-git-send-email-andi@firstfloor.org> <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com> <20121022132733.GQ16230@one.firstfloor.org> <20121022133534.GR16230@one.firstfloor.org> <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
+            <20121022153633.GK2095@tassilo.jf.intel.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1351033000_2138P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Date: Tue, 23 Oct 2012 18:56:40 -0400
+Message-ID: <79194.1351033000@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020207.508720AB.0007,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 01:24 AM, Dmitry Torokhov wrote:
-> On Thu, Oct 11, 2012 at 03:41:41AM +0000, Christopher Heiny wrote:
->> >Linus Walleij wrote:
->>> > >On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny<cheiny@synaptics.com>  wrote:
->>> > >
->>>> > > >+#ifdef CONFIG_RMI4_DEBUG
->>>> > > >+/**
->>>> > > >+ * Utility routine to handle writes to read-only attributes.  Hopefully
->>>> > > >+ * this will never happen, but if the user does something stupid, we
->>>> > > >don't
->>>> > > >+ * want to accept it quietly (which is what can happen if you just put
->>>> > > >NULL + * for the attribute's store function).
->>>> > > >+ */
->>>> > > >+static inline ssize_t rmi_store_error(struct device *dev,
->>>> > > >+                       struct device_attribute *attr,
->>>> > > >+                       const char *buf, size_t count)
->>>> > > >+{
->>>> > > >+       dev_warn(dev,
->>>> > > >+                "WARNING: Attempt to write %d characters to read-only
->>>> > > >attribute %s.", +               count, attr->attr.name);
->>>> > > >+       return -EPERM;
->>>> > > >+}
->>> > >
->>> > >Here it looks like you're hiding a lot of stuff that should be dev_warn()?
->>> > >Consider my earlier point about dynamic debug.
->> >
->> >In previous patch submissions, we always used these warning functions.
->> >But in the feedback on those patches, we were asked to just make sysfs
->> >show/store NULL if the attribute is write/read only.  However, during
->> >their development process, our customers want to see the warnings if
->> >the attributes are accessed incorrectly.  So we made these warnings a
->> >debug option.
- >
-> I think it is the case when customer is not always right. Given that
-> the attributes are created with S_IRUGO mask how will we even get these
-> methods to fire?
+--==_Exmh_1351033000_2138P
+Content-Type: text/plain; charset=us-ascii
 
-We were able to get those to fire in earlier kernels under some UIs 
-(such as Android).  However, we no longer support those earlier version. 
-  I have checked the behavior on up-to-date kernels and UI versions, and 
-everyone seems to handle this correctly.  That means we can drop these 
-definitions entirely, so we'll do that.
+On Mon, 22 Oct 2012 08:36:33 -0700, Andi Kleen said:
+
+> Thinking about it more PowerPC has a 16GB page, so we probably
+> need to move this to prot.
+
+Gaak - is that a typo?  If not, what is the use case - allowing a small number of
+pages to cover all memory, with big wins on TLB hit ratios?  I certainly can't see
+it as a sane primitive for a virtual memory design that does paging/swapping?
+
+--==_Exmh_1351033000_2138P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUIcgqAdmEQWDXROgAQKGzw//QTyQq0JUUKzodJC7HovRCqtPHWi2CuuX
+9O57hcMs9vT3OkgwaVesgcQy39Ro2ImnPlLCNlJXaemCDfdpZglY/XkCo3L9bmVG
+OULdsCRUzl1/0F/7oXqRbccuHk+G5ck0jc80uUxgZYFH6Das83R00VVGv4xVdy3h
+nFOgNdEC4FemnMtnMqVACA5s2t7t8Pdn/jbM7z3atSfFGG/J6Pa9/+HvLQtag+rs
+Xl+xF1wNfwDxUEixjoooO9fWRDMm2j7P/Ushbdzh/3+soV+Y2ZCzTvDMmH9uDRSx
+/8sXkhk8fH4ZdWPkXacMUYCKIEcx9lp1bhNyElJmtrsB4Z+UEEL70jyfdZm5bkYD
+3c6ZnrpLAX+oJWWD+mdGK/NqKUOu8JGOJ1/eoObH7Jj7dHeO6QDRld/I+whbD+YN
+4jDMU3xgYi9Rs0qCdOyYSntzsn7wMgBXhd1zXX7FVP7ighvOpOQu7Iy9Nij26+22
+I+jN/6Kt2fhD3uzWTT3+Ocj7JR/7ACXTM+lLZXCk0N88TQbAwDxehyZ0ayzKXqzV
+GE0Ivdq0Mlfj9YoIn1eLiWr7yKT2kwkPJQoNrrJcJ/PumQWZxSv+eZy9bswtP39I
+oTGESX5u+jtSYOOA2mqmI1dQBndgKsJyUJIqHInKM2ct07s6Tq2uzzYJ7DbuXNlN
+yPNhVeQmm/s=
+=HKHw
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1351033000_2138P--
+
