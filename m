@@ -1,43 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933390Ab2JWV0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:26:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59809 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796Ab2JWV0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:26:00 -0400
-Message-ID: <50870B5E.3060105@windriver.com>
-Date: Tue, 23 Oct 2012 16:25:50 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S933409Ab2JWV1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:27:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5018 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932832Ab2JWV1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 17:27:07 -0400
+Date: Tue, 23 Oct 2012 17:26:48 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
+In-Reply-To: <20121023192318.GA25872@redhat.com>
+Message-ID: <Pine.LNX.4.64.1210231724320.2689@file.rdu.redhat.com>
+References: <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com>
+ <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com>
+ <20121023192318.GA25872@redhat.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Jiri Kosina <jkosina@suse.cz>, Masanari Iida <standby24x7@gmail.com>,
-        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
-        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
-        Harry Wei <harryxiyou@gmail.com>
-Subject: Re: [PATCH 003/193] Documentation: remove CONFIG_EXPERIMENTAL
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org> <1351022666-6960-4-git-send-email-keescook@chromium.org>
-In-Reply-To: <1351022666-6960-4-git-send-email-keescook@chromium.org>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 03:01 PM, Kees Cook wrote:
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
+
+
+On Tue, 23 Oct 2012, Oleg Nesterov wrote:
+
+> On 10/23, Oleg Nesterov wrote:
+> >
+> > Not really the comment, but the question...
 > 
+> Damn. And another question.
+> 
+> Mikulas, I am sorry for this (almost) off-topic noise. Let me repeat
+> just in case that I am not arguing with your patches.
+> 
+> 
+> 
+> 
+> So write_lock/write_unlock needs to call synchronize_sched() 3 times.
+> I am wondering if it makes any sense to try to make it a bit heavier
+> but faster.
+> 
+> What if we change the reader to use local_irq_disable/enable around
+> this_cpu_inc/dec (instead of rcu read lock)? I have to admit, I have
+> no idea how much cli/sti is slower compared to preempt_disable/enable.
+> 
+> Then the writer can use
+> 
+> 	static void mb_ipi(void *arg)
+> 	{
+> 		smp_mb(); /* unneeded ? */
+> 	}
+> 
+> 	static void force_mb_on_each_cpu(void)
+> 	{
+> 		smp_mb();
+> 		smp_call_function(mb_ipi, NULL, 1);
+> 	}
+> 
+> to a) synchronise with irq_disable and b) to insert the necessary mb's.
+> 
+> Of course smp_call_function() means more work for each CPU, but
+> write_lock() should be rare...
+> 
+> This can also wakeup the idle CPU's, but probably we can do
+> on_each_cpu_cond(cond_func => !idle_cpu). Perhaps cond_func() can
+> also return false if rcu_user_enter() was called...
+> 
+> Actually I was thinking about this from the very beginning, but I do
+> not feel this looks like a good idea. Still I'd like to ask what do
+> you think.
+> 
+> Oleg.
 
-Works for me.
+I think - if we can avoid local_irq_disable/enable, just avoid it (and use 
+barrier-vs-synchronize_kernel).
 
-Acked-by: Jason Wessel <jason.wessel@windriver.com>
-
-Cheers,
-Jason.
-
+Mikulas
