@@ -1,108 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840Ab2JWWro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:47:44 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:59653 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab2JWWrl (ORCPT
+	id S933947Ab2JWWt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:49:56 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48978 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933543Ab2JWWty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:47:41 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix>
-	<20121023221913.GC28626@thunk.org>
-Emacs: because you deserve a brk today.
-Date: Tue, 23 Oct 2012 23:47:27 +0100
-In-Reply-To: <20121023221913.GC28626@thunk.org> (Theodore Ts'o's message of
-	"Tue, 23 Oct 2012 18:19:13 -0400")
-Message-ID: <87k3ugn6v4.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 23 Oct 2012 18:49:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=11 Fuz1=11 Fuz2=11
+In-Reply-To: <1350615088-14562-2-git-send-email-mporter@ti.com>
+References: <1350615088-14562-1-git-send-email-mporter@ti.com> <1350615088-14562-2-git-send-email-mporter@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 23 Oct 2012 23:49:33 +0100
+X-Google-Sender-Auth: lcXxSP9bcLZfUCoQMI9Cn44EqtM
+Message-ID: <CACxGe6sUrXPc2wtLfOy8_LvRMM+e=9=sSDNLkeszfe=JX_ipbw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
+To: Matt Porter <mporter@ti.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 Oct 2012, Theodore Ts'o said:
-
-> The reason why the problem happens rarely is that the effect of the
-> buggy commit is that if the journal's starting block is zero, we fail
-> to truncate the journal when we unmount the file system.
-
-Oh dear oh dear.
-
->                                                           This can
-> happen if we mount and then unmount the file system fairly quickly,
-> before the log has a chance to wrap.
-
-... which is quite likely if you're rebooting frequently to try to track
-down some other kernel bug.
-
->                                       After the first time this has
-> happened, it's not a disaster, since when we replay the journal, we'll
-> just replay some extra transactions.  But if this happens twice, the
-> oldest valid transaction will still not have gotten updated, but some
-> of the newer transactions from the last mount session will have gotten
-> written by the very latest transacitons, and when we then try to do
-> the extra transaction replays, the metadata blocks can end up getting
-> very scrambled indeed.
-
-Ow. OK, it's a good thing I rebooted fast. :) and only fses that got
-written to, but not too much, will see this. Hence my /usr/src stayed
-intact because it had lots of updates of lots of tiny files, more than
-enough to cause the journal to wrap over and over again, even
-journalling only metadata. But /home doesn't see so many updates, and
-neither does /var...
-
-This seems to explain everything.
-
-It looks like fscking everything will fix it (it'll replay the buggered
-journal, mangling the metadata, but then fix up the scrambled metadata
-and fix the journal's starting block). So I probably don't need to worry
-about latent corruption hiding waiting to pounce. Phew.
-
-> *Sigh*.  My apologies for not catching this when I reviewed this
-> patch.  I believe the following patch should fix the bug; once it's
-> reviewed by other ext4 developers, I'll push this to Linus ASAP.
-
-No problem. This is my first data-corruption bug in more than seventeen
-years of ext* use (it even survived horribly faulty RAM). I call that a
-good record. And it happened one day after a full backup, and was
-immediately highlighted by corruption of .bash_history and input/output
-errors logging in -- and fsck pretty much fixed the problem, with only a
-few missing files, one file full of garbage, and one high-ASCII filename
-in a temporary directory to show for it. I call that luckier than I have
-any right to be.
-
-Plus, my faith in the amazingly fast bugfixing talents of ext4 devs is
-undimmed! :)
-
-> 						- Ted
+On Fri, Oct 19, 2012 at 3:51 AM, Matt Porter <mporter@ti.com> wrote:
+> Add a dmaengine API to retrieve per channel capabilities.
+> Currently, only channel ops and SG segment limitations are
+> implemented caps.
 >
-> commit 26de1ba5acc39f0ab57ce1ed523cb128e4ad73a4
-> Author: Theodore Ts'o <tytso@mit.edu>
-> Date:   Tue Oct 23 18:15:22 2012 -0400
+> The API is optionally implemented by drivers and when
+> unimplemented will return a NULL pointer. It is intended
+> to be executed after a channel has been requested and, if
+> the channel is intended to be used with slave SG transfers,
+> then it may only be called after dmaengine_slave_config()
+> has executed. The slave driver provides parameters such as
+> burst size and address width which may be necessary for
+> the dmaengine driver to use in order to properly return SG
+> segment limit caps.
 >
->     jbd2: fix a potential fs corrupting bug in jbd2_mark_journal_empty
+> Suggested-by: Vinod Koul <vinod.koul@intel.com>
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  include/linux/dmaengine.h |   52 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+>
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index 11d9e25..0181887 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -371,6 +371,38 @@ struct dma_slave_config {
+>         unsigned int slave_id;
+>  };
+>
+> +enum dmaengine_apis {
+> +       DMAENGINE_MEMCPY        = 0x0001,
+> +       DMAENGINE_XOR           = 0x0002,
+> +       DMAENGINE_XOR_VAL       = 0x0004,
+> +       DMAENGINE_PQ            = 0x0008,
+> +       DMAENGINE_PQ_VAL        = 0x0010,
+> +       DMAENGINE_MEMSET        = 0x0020,
+> +       DMAENGINE_SLAVE         = 0x0040,
+> +       DMAENGINE_CYCLIC        = 0x0080,
+> +       DMAENGINE_INTERLEAVED   = 0x0100,
+> +       DMAENGINE_SG            = 0x0200,
+> +};
 
-I'll apply this tomorrow (enough fun with filesystem restoration for
-today) and see what happens. (What could *possibly* go wrong?)
+Actually, one more comment. Why the new enum? Why can't the
+dma_transaction_type enum be used directly along with dma_cap_mask_t?
 
-But I might not upgrade to stable kernels quite so often in future :(
-you know what they say: once burnt, twice not upgrading before doing a
-full backup!
+> +
+> +/* struct dmaengine_chan_caps - expose capability of a channel
+> + * Note: each channel can have same or different capabilities
+> + *
+> + * This primarily classifies capabilities into
+> + * a) APIs/ops supported
+> + * b) channel physical capabilities
+> + *
+> + * @ops: or'ed api capability
+> + * @seg_nr: maximum number of SG segments supported on a SG/SLAVE
+> + *         channel (0 for no maximum or not a SG/SLAVE channel)
+> + * @seg_len: maximum length of SG segments supported on a SG/SLAVE
+> + *          channel (0 for no maximum or not a SG/SLAVE channel)
+> + */
+> +struct dmaengine_chan_caps {
+> +       enum dmaengine_apis ops;
+> +       int seg_nr;
+> +       int seg_len;
+> +};
+> +
+>  static inline const char *dma_chan_name(struct dma_chan *chan)
+>  {
+>         return dev_name(&chan->dev->device);
+> @@ -534,6 +566,7 @@ struct dma_tx_state {
+>   *     struct with auxiliary transfer status information, otherwise the call
+>   *     will just return a simple status code
+>   * @device_issue_pending: push pending transactions to hardware
+> + * @device_channel_caps: return the channel capabilities
+>   */
+>  struct dma_device {
+>
+> @@ -602,6 +635,8 @@ struct dma_device {
+>                                             dma_cookie_t cookie,
+>                                             struct dma_tx_state *txstate);
+>         void (*device_issue_pending)(struct dma_chan *chan);
+> +       struct dmaengine_chan_caps *(*device_channel_caps)(
+> +               struct dma_chan *chan, enum dma_transfer_direction direction);
+>  };
+>
+>  static inline int dmaengine_device_control(struct dma_chan *chan,
+> @@ -969,6 +1004,23 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
+>         }
+>  }
+>
+> +/**
+> + * dma_get_channel_caps - flush pending transactions to HW
+> + * @chan: target DMA channel
+> + * @dir: direction of transfer
+> + *
+> + * Get the channel-specific capabilities. If the dmaengine
+> + * driver does not implement per channel capbilities then
+> + * NULL is returned.
+> + */
+> +static inline struct dmaengine_chan_caps
+> +*dma_get_channel_caps(struct dma_chan *chan, enum dma_transfer_direction dir)
+> +{
+> +       if (chan->device->device_channel_caps)
+> +               return chan->device->device_channel_caps(chan, dir);
+> +       return NULL;
+> +}
+> +
+>  enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
+>  #ifdef CONFIG_DMA_ENGINE
+>  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 -- 
-NULL && (void)
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
