@@ -1,121 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab2JWPmz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 11:42:55 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49849 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946Ab2JWPmx (ORCPT
+	id S933193Ab2JWPnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 11:43:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:36538 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933130Ab2JWPnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 11:42:53 -0400
+	Tue, 23 Oct 2012 11:43:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
-	<CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
-	<50749DE8.7010703@zytor.com>
-	<CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
-	<5074A0AB.8040207@zytor.com>
-	<87d30o7iy6.fsf@rustcorp.com.au>
-	<CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
-	<87ipa8o4mn.fsf@rustcorp.com.au>
-	<CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
-	<87sj97hs5e.fsf@rustcorp.com.au>
-	<CAMOw1v7ySGT2g5s8djEbCGnqTNjqHky_LvaZsGEN6CSLNPMUgw@mail.gmail.com>
-	<CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com>
-	<CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com>
-Date: Tue, 23 Oct 2012 08:42:51 -0700
-X-Google-Sender-Auth: VBxYmdiAEKF8qzuEsTDVPyYMmn8
-Message-ID: <CAGXu5j+2vpA3J4sCUCaNkzCfO0yON2cVwSqFOiXku5u8GMwmmA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-From: Kees Cook <keescook@chromium.org>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, mtk.manpages@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        jonathon@jonmasters.org
+In-Reply-To: <508676FA.4000107@parallels.com>
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com>
+	<1350914737-4097-3-git-send-email-glommer@parallels.com>
+	<0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com>
+	<508561E0.5000406@parallels.com>
+	<CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com>
+	<50865024.60309@parallels.com>
+	<508676FA.4000107@parallels.com>
+Date: Wed, 24 Oct 2012 00:43:09 +0900
+Message-ID: <CAAmzW4M9Casm+b4TOe7MOuZMYf7PKmzOHs1wZOXvybhRxCqZRA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+From: JoonSoo Kim <js1304@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 9:08 PM, Lucas De Marchi
-<lucas.demarchi@profusion.mobi> wrote:
-> On Tue, Oct 23, 2012 at 1:40 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, Oct 22, 2012 at 7:37 PM, Lucas De Marchi
->> <lucas.demarchi@profusion.mobi> wrote:
->>> On Mon, Oct 22, 2012 at 5:39 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>>>> FIX: add flags arg to sys_finit_module()
->>>>>>
->>>>>> Thanks to Michael Kerrisk for keeping us honest.
->>>>>
->>>>> w00t! Thanks, Rusty ;-).
->>>>>
->>>>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
->>>>
->>>> Here's the version I ended up with when I added two flags.
->>>>
->>>> Lucas, is this useful to you?
->>>>
->>>> BTW Michael: why aren't the syscall man pages in the kernel source?
->>>>
->>>> Thanks,
->>>> Rusty.
->>>>
->>>> module: add flags arg to sys_finit_module()
->>>>
->>>> Thanks to Michael Kerrisk for keeping us honest.  These flags are actually
->>>> useful for eliminating the only case where kmod has to mangle a module's
->>>> internals: for overriding module versioning.
->>>>
->>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->>
->> Acked-by: Kees Cook <keescook@chromium.org>
->>
->>> I wonder if we shouldn't get a new init_module2() as well, adding the
->>> flags parameter. Of course this would be in another patch.
+2012/10/23 Glauber Costa <glommer@parallels.com>:
+> On 10/23/2012 12:07 PM, Glauber Costa wrote:
+>> On 10/23/2012 04:48 AM, JoonSoo Kim wrote:
+>>> Hello, Glauber.
 >>>
->>> My worries are that for compressed modules we still need to use
->>> init_module() and then --force won't work with signed modules.
+>>> 2012/10/23 Glauber Costa <glommer@parallels.com>:
+>>>> On 10/22/2012 06:45 PM, Christoph Lameter wrote:
+>>>>> On Mon, 22 Oct 2012, Glauber Costa wrote:
+>>>>>
+>>>>>> + * kmem_cache_free - Deallocate an object
+>>>>>> + * @cachep: The cache the allocation was from.
+>>>>>> + * @objp: The previously allocated object.
+>>>>>> + *
+>>>>>> + * Free an object which was previously allocated from this
+>>>>>> + * cache.
+>>>>>> + */
+>>>>>> +void kmem_cache_free(struct kmem_cache *s, void *x)
+>>>>>> +{
+>>>>>> +    __kmem_cache_free(s, x);
+>>>>>> +    trace_kmem_cache_free(_RET_IP_, x);
+>>>>>> +}
+>>>>>> +EXPORT_SYMBOL(kmem_cache_free);
+>>>>>> +
+>>>>>
+>>>>> This results in an additional indirection if tracing is off. Wonder if
+>>>>> there is a performance impact?
+>>>>>
+>>>> if tracing is on, you mean?
+>>>>
+>>>> Tracing already incurs overhead, not sure how much a function call would
+>>>> add to the tracing overhead.
+>>>>
+>>>> I would not be concerned with this, but I can measure, if you have any
+>>>> specific workload in mind.
+>>>
+>>> With this patch, kmem_cache_free() invokes __kmem_cache_free(),
+>>> that is, it add one more "call instruction" than before.
+>>>
+>>> I think that Christoph's comment means above fact.
 >>
->> For those cases, I think it should remain up to userspace to do the
->> decompress and use init_module(). The code I'd written for patching
->> module-init-tools basically just kept the fd around if it didn't need
->> to mangle the module, and it would use finit_module (written before
->> the flags argument was added):
+>> Ah, this. Ok, I got fooled by his mention to tracing.
 >>
->>         /* request kernel linkage */
->> -       ret = init_module(module->data, module->len, opts);
->> +       if (fd < 0)
->> +               ret = init_module(module->data, module->len, opts);
->> +       else {
->> +           ret = finit_module(fd, opts);
->> +           if (ret != 0 && errno == ENOSYS)
->> +                   ret = init_module(module->data, module->len, opts);
->> +       }
->>         if (ret != 0) {
+>> I do agree, but since freeing is ultimately dependent on the allocator
+>> layout, I don't see a clean way of doing this without dropping tears of
+>> sorrow around. The calls in slub/slab/slob would have to be somehow
+>> inlined. Hum... maybe it is possible to do it from
+>> include/linux/sl*b_def.h...
 >>
->> (And yes, I realize kmod is what'll actually be getting this logic.
->> This was for my testing in Chrome OS, which is still using
->> module-init-tools.)
+>> Let me give it a try and see what I can come up with.
+>>
 >
-> sure... but do you realize this will fail in case kernel is checking
-> module signature and we passed --force to modprobe (therefore mangled
-> the decompressed memory area)?
+> Ok.
+>
+> I am attaching a PoC for this for your appreciation. This gets quite
+> ugly, but it's the way I found without including sl{a,u,o}b.c directly -
+> which would be even worse.
 
-Hm, yeah, userspace mangling of a module plus signing would fail.
-Seems like mangling and signing aren't compatible. Doing it in
-kernel-space (as now written for finit_module) solves that, but it
-means that now compression isn't possible if you need both signing and
-mangling.
+Hmm...
+This is important issue for sl[aou]b common allocators.
+Because there are similar functions like as kmem_cache_alloc, ksize, kfree, ...
+So it is good time to resolve this issue.
 
-I'm not a user of signing, compression, or mangling, so I'm probably a
-bit unimaginative here. It seems like the case for needing all three
-is pretty uncommon. (e.g. if you're doing compression, you're probably
-building embedded images, which means you're unlikely to need
---force.)
+As far as I know, now, we have 3 solutions.
 
--Kees
+1. include/linux/slab.h
+__always_inline kmem_cache_free()
+{
+__kmem_cache_free();
+blablabla...
+}
 
--- 
-Kees Cook
-Chrome OS Security
+2. define macro like as Glauber's solution
+3. include sl[aou]b.c directly.
+
+Is there other good solution?
+Among them, I prefer "solution 3", because future developing cost may
+be minimum among them.
+
+"Solution 2" may be error-prone for future developing.
+"Solution 1" may make compile-time longer and larger code.
+
+Is my understanding right?
+Is "Solution 3" really ugly?
+
+Thanks.
