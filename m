@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965485Ab2JWU7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:59:43 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:48137 "EHLO smtp.outflux.net"
+	id S965472Ab2JWU7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:59:42 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55812 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933719Ab2JWUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933722Ab2JWUFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:15 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>
-Subject: [PATCH 110/193] drivers/parport: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:03 -0700
-Message-Id: <1351022666-6960-111-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Pete Zaitcev <zaitcev@redhat.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [PATCH 038/193] drivers/block: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:51 -0700
+Message-Id: <1351022666-6960-39-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,59 +28,62 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Asai Thambi S P <asamymuthupa@micron.com>
+CC: Pete Zaitcev <zaitcev@redhat.com>
+CC: Cong Wang <xiyou.wangcong@gmail.com>
+CC: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/parport/Kconfig |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/block/Kconfig |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/parport/Kconfig b/drivers/parport/Kconfig
-index 4b6e4e7..0e60438 100644
---- a/drivers/parport/Kconfig
-+++ b/drivers/parport/Kconfig
-@@ -57,8 +57,8 @@ config PARPORT_SERIAL
- 	  will be called parport_serial.
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index f529407..6983a65 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -166,8 +166,8 @@ config BLK_DEV_DAC960
+ 	  module will be called DAC960.
  
- config PARPORT_PC_FIFO
--	bool "Use FIFO/DMA if available (EXPERIMENTAL)"
--	depends on PARPORT_PC && EXPERIMENTAL
-+	bool "Use FIFO/DMA if available"
-+	depends on PARPORT_PC
- 	help
- 	  Many parallel port chipsets provide hardware that can speed up
- 	  printing. Say Y here if you want to take advantage of that.
-@@ -70,8 +70,8 @@ config PARPORT_PC_FIFO
- 	  specify which IRQ/DMA to use.
+ config BLK_DEV_UMEM
+-	tristate "Micro Memory MM5415 Battery Backed RAM support (EXPERIMENTAL)"
+-	depends on PCI && EXPERIMENTAL
++	tristate "Micro Memory MM5415 Battery Backed RAM support"
++	depends on PCI
+ 	---help---
+ 	  Saying Y here will include support for the MM5415 family of
+ 	  battery backed (Non-volatile) RAM cards.
+@@ -430,8 +430,8 @@ config CDROM_PKTCDVD_BUFFERS
+ 	  a disc is opened for writing.
  
- config PARPORT_PC_SUPERIO
--	bool "SuperIO chipset support (EXPERIMENTAL)"
--	depends on PARPORT_PC && EXPERIMENTAL
-+	bool "SuperIO chipset support"
-+	depends on PARPORT_PC
+ config CDROM_PKTCDVD_WCACHE
+-	bool "Enable write caching (EXPERIMENTAL)"
+-	depends on CDROM_PKTCDVD && EXPERIMENTAL
++	bool "Enable write caching"
++	depends on CDROM_PKTCDVD
  	help
- 	  Saying Y here enables some probes for Super-IO chipsets in order to
- 	  find out things like base addresses, IRQ lines and DMA channels.  It
-@@ -85,8 +85,8 @@ config PARPORT_PC_PCMCIA
- 	  ports. If unsure, say N.
+ 	  If enabled, write caching will be set for the CD-R/W device. For now
+ 	  this option is dangerous unless the CD-RW media is known good, as we
+@@ -508,8 +508,8 @@ config XEN_BLKDEV_BACKEND
  
- config PARPORT_IP32
--	tristate "SGI IP32 builtin port (EXPERIMENTAL)"
--	depends on SGI_IP32 && EXPERIMENTAL
-+	tristate "SGI IP32 builtin port"
-+	depends on SGI_IP32
- 	select PARPORT_NOT_PC
- 	help
- 	  Say Y here if you need support for the parallel port on
-@@ -126,8 +126,8 @@ config PARPORT_GSC
- 	select PARPORT_NOT_PC
  
- config PARPORT_SUNBPP
--	tristate "Sparc hardware (EXPERIMENTAL)"
--	depends on SBUS && EXPERIMENTAL
-+	tristate "Sparc hardware"
-+	depends on SBUS
- 	select PARPORT_NOT_PC
- 	help
- 	  This driver provides support for the bidirectional parallel port
+ config VIRTIO_BLK
+-	tristate "Virtio block driver (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && VIRTIO
++	tristate "Virtio block driver"
++	depends on VIRTIO
+ 	---help---
+ 	  This is the virtual block driver for virtio.  It can be used with
+           lguest or QEMU based VMMs (like KVM or Xen).  Say Y or M.
+@@ -528,7 +528,7 @@ config BLK_DEV_HD
+ 
+ config BLK_DEV_RBD
+ 	tristate "Rados block device (RBD)"
+-	depends on INET && EXPERIMENTAL && BLOCK
++	depends on INET && BLOCK
+ 	select CEPH_LIB
+ 	select LIBCRC32C
+ 	select CRYPTO_AES
 -- 
 1.7.9.5
 
