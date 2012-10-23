@@ -1,44 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab2JWVeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:34:07 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:52361 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756855Ab2JWVeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:34:06 -0400
-Date: Tue, 23 Oct 2012 21:34:03 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tim Bird <tim.bird@am.sony.com>
-cc: Ezequiel Garcia <elezegarcia@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at
- /proc/meminfo
-In-Reply-To: <508705BE.2020403@am.sony.com>
-Message-ID: <0000013a8f8bed5f-050d67ef-e37b-42aa-b576-9a08a74bff16-000000@email.amazonses.com>
-References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com> <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com> <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
- <0000013a8ed646c2-4cc34bd5-19c3-4e99-9fa0-248cdbc24feb-000000@email.amazonses.com> <CALF0-+WASdSAT9rnLxx8OmHrNV5tjrDwpBTE9irCRd91QxMkBA@mail.gmail.com> <0000013a8f524097-4ebaed3b-0d77-4183-a6ad-f01b8855f9bf-000000@email.amazonses.com>
- <508705BE.2020403@am.sony.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757460Ab2JWVix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:38:53 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:57157 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756855Ab2JWViv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 17:38:51 -0400
+Date: Tue, 23 Oct 2012 23:38:45 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Denis Kirjanov <kirjanov@gmail.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
+Message-ID: <20121023213845.GA21115@aftab.osrc.amd.com>
+References: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+ <20121023121005.ed33061a.akpm@linux-foundation.org>
+ <20121023202612.GA20526@aftab.osrc.amd.com>
+ <20121023133709.21e9cb72.akpm@linux-foundation.org>
+ <20121023204926.GA20787@aftab.osrc.amd.com>
+ <20121023140939.28ed0df4.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121023140939.28ed0df4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012, Tim Bird wrote:
+On Tue, Oct 23, 2012 at 02:09:39PM -0700, Andrew Morton wrote:
+> On Tue, 23 Oct 2012 22:49:26 +0200
+> Borislav Petkov <bp@amd64.org> wrote:
+> 
+> > Now you only need to give me a proper patch with your S-O-B and we're
+> > ready to go :).
+> 
+> who, me, what?!?!  Sounds stressful.
 
-> There's a certain irony here.  In embedded, we get all worked
-> up about efficiencies in the slab allocators, but don't have a good
-> way to track the larger memory allocations.  Am I missing
-> something, or is there really no way to track these large
-> scale allocations?
+Yeah, this is to show you how we all feel when we're on the sending end
+of patches :-).
 
-We could use consistent allocator calls everywhere. But these
-large allocators are rather rare. And sometimes we need pointers to page
-structs and other times we use pointers to the raw memory.
+> 
+> umm, OK here we go.
+> 
+> What I don't understand is the effects of the bug.  If the present code
+> can indeed start using the n+1th element of the array then it's writing
+> random garbage into the hardware.  If this can ever happen then I
+> suspect that yes, a cc:stable is needed?
 
+Yes, cc:stable is needed.
+
+The code has a very subtle bug because I should've robustified it from
+the get-go instead of fiddling with it.
+
+Basically, this is what happens:
+
+If you supply new_bw < 761, i.e. so that the last element matches, *and*
+you have a minimum scrubrate set to != 0x0 (due to unsupported scrubrate
+settings on some families) the first continue in the loop with i being
+22 (last array element) terminates the loop after incrementing i one
+last time.
+
+Thus, it doesn't let us break out of it in the next statement where
+the new_bw will match and we'll be able to exit the loop without it
+incrementing i one last time and thus get us out of bounds.
+
+So yes, your fix is correct, I'll test it tomorrow just in case and
+will sit down and rewrite this loop because it pisses me off to see how
+stupidly fragile it is.
+
+And I see you'll carry this patch so I won't send it to Linus next merge
+window so thanks for this!
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: drivers/edac/amd64_edac.c:__amd64_set_scrub_rate(): avoid overindexing scrubrates[]
+> 
+> If none of the elements in scrubrates[] matches, this loop will cause
+> __amd64_set_scrub_rate() to incorrectly use the n+1th element.
+> 
+> As the function is designed to use the final scrubrates[] element in the
+> case of no match, we can fix this bug by simply terminating the array
+> search at the n-1th element.
+> 
+> Reported-by: Denis Kirjanov <kirjanov@gmail.com>
+> Cc: Doug Thompson <dougthompson@xmission.com>
+> Cc: Borislav Petkov <borislav.petkov@amd.com>
+
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Cc: stable@vger.kernel.org
+
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+[ … ]
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
