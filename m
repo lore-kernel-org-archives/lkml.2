@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab2JXBgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:36:21 -0400
-Received: from bosmailout16.eigbox.net ([66.96.186.16]:35187 "EHLO
-	bosmailout16.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab2JXBgU (ORCPT
+	id S1755636Ab2JXBhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:37:03 -0400
+Received: from userp1050.oracle.com ([156.151.31.82]:34326 "EHLO
+	userp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab2JXBhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:36:20 -0400
-X-Greylist: delayed 2478 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 21:36:20 EDT
-X-Authority-Analysis: v=2.0 cv=Jc0LWz2V c=1 sm=1
- a=+z5hrXJ4/nZDuNu/IEWDVw==:17 a=bc2JKO6qiGsA:10 a=FB6NmUnAAagA:10
- a=nlncmwdmcoAA:10 a=8nJEP1OIZ-IA:10 a=cRAXhCL3cXIA:10
- a=bJ0fqD8TFZgqkSadqForXVIPBlU=:19 a=OLL_FvSJAAAA:8 a=YgUFFZ79AAAA:8
- a=P-2dg1YcEPkYP63RdZ8A:9 a=wPNLvfGTeEIA:10 a=fD39coGZ-YEA:10
- a=BF10AaGwQl41phDg7WSPyA==:117
-X-EN-OrigOutIP: 10.20.18.8
-X-EN-IMPSID: Eouz1k0070ASroS01ouzLE
-Message-ID: <50873BFF.4070508@yahoo.es>
-Date: Wed, 24 Oct 2012 08:53:19 +0800
-From: Hein Tibosch <hein_tibosch@yahoo.es>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        viresh kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ludovic.desroches" <ludovic.desroches@atmel.com>,
-        Havard Skinnemoen <havard@skinnemoen.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH REGRESSION FIX] dw_dmac: make driver's endianness configurable
-References: <507A6FA5.1000800@yahoo.es> <20121023161218.45a7ae4e.akpm@linux-foundation.org>
-In-Reply-To: <20121023161218.45a7ae4e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Oct 2012 21:37:00 -0400
+Date: Tue, 23 Oct 2012 16:47:29 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [PATCH 4/6] xen/pvh: bootup and setup related changes.
+Message-ID: <20121023164729.0ed51a1d@mantra.us.oracle.com>
+In-Reply-To: <alpine.DEB.2.02.1210231406490.2689@kaball.uk.xensource.com>
+References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
+	<1350695882-12820-5-git-send-email-konrad.wilk@oracle.com>
+	<alpine.DEB.2.02.1210221428050.2689@kaball.uk.xensource.com>
+	<20121022155717.GB25200@phenom.dumpdata.com>
+	<alpine.DEB.2.02.1210231406490.2689@kaball.uk.xensource.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 3946c951b80c12a8be5482963a0b1232:e0ae43bc192b431f8b69f09a37527cbc
-X-EN-AuthUser: hein@htibosch.net
-X-EN-OrigIP: 114.79.57.33
-X-EN-OrigHost: unknown
+X-Source-IP: userp1040.oracle.com [156.151.31.81]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, 23 Oct 2012 14:07:06 +0100
+Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
 
-On 10/24/2012 7:12 AM, Andrew Morton wrote:
-> On Sun, 14 Oct 2012 15:54:13 +0800
-> Hein Tibosch <hein_tibosch@yahoo.es> wrote:
->
->> The dw_dmac was originally developed for avr32 to be used with the Synopsys
->> DesignWare AHB DMA controller. Starting from 2.6.38, access to the device's i/o
->> memory was done with the little-endian readl/writel functions(1)
->>
->> This broke the driver for the avr32 platform, because it needs big (native)
->> endian accessors.
->> This patch makes the endianness configurable using 'DW_DMAC_BIG_ENDIAN_IO',
->> which will default be true for AVR32
-> Do we think this bug should be fixed in earlier kernel versions?
->
-> If so, the patch might need to be tweaked for 3.6 and earlier, which
-> don't have the dma_read_byaddr() definition.
+> On Mon, 22 Oct 2012, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Oct 22, 2012 at 02:34:44PM +0100, Stefano Stabellini wrote:
+> > > On Sat, 20 Oct 2012, Konrad Rzeszutek Wilk wrote:
+> > > > From: Mukesh Rathor <mukesh.rathor@oracle.com>
+> > > > 
+> > > >  	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn;
+> > > > pfn++) { unsigned long mfn = pfn_to_mfn(pfn);
+> > > > @@ -100,6 +104,7 @@ static unsigned long __init
+> > > > xen_do_chunk(unsigned long start, .domid        = DOMID_SELF
+> > > >  	};
+> > > >  	unsigned long len = 0;
+> > > > +	int xlated_phys =
+> > > > xen_feature(XENFEAT_auto_translated_physmap); unsigned long pfn;
+> > > >  	int ret;
+> > > >  
+> > > > @@ -113,7 +118,7 @@ static unsigned long __init
+> > > > xen_do_chunk(unsigned long start, continue;
+> > > >  			frame = mfn;
+> > > >  		} else {
+> > > > -			if (mfn != INVALID_P2M_ENTRY)
+> > > > +			if (!xlated_phys && mfn !=
+> > > > INVALID_P2M_ENTRY) continue;
+> > > >  			frame = pfn;
+> > > >  		}
+> > > 
+> > > Shouldn't we add a "!xlated_phys &&" to the other case as well?
+> > 
+> > No. That is handled in xen_pvh_identity_map_chunk which
+> > just does a xen_set_clr_mmio_pvh_pte call for the "released"
+> > pages. But that is a bit of ... well, extra logic. I think
+> > if we did this it would work and look much nicer:
+> 
+> Yes, I think that this version looks better
 
-The 'bug' only affected avr32 (AP700x) users. I think there won't be much demand
-for it. Beside that, there were more breakages after 2.6.38, which have only
-recently been fixed in 3.7-rc1
+But doesn't boot:
 
-These patches should then be back-ported as well:
+(XEN) vmx_hybrid.c:710:d0 Dom:0 EPT violation 0x181 (r--/---), gpa 0x000000bf421e1c, mfn 0xffffffffffffffff, type 4.
+(XEN) p2m-ept.c:642:d0 Walking EPT tables for domain 0 gfn bf421
+(XEN) p2m-ept.c:648:d0  gfn exceeds max_mapped_pfn 4b062
+(XEN) vmx_hybrid.c:717:d0  --- GLA 0xffffffffff477e1c
 
- http://www.spinics.net/lists/linux-mmc/msg16104.html
- http://www.gossamer-threads.com/lists/linux/kernel/1603537
 
-Thanks, Hein
+I'll have to debug it, or we can go back to the prev version, which
+I don't think is that un-pretty :).
+
+Mukesh
+
+
