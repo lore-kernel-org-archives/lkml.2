@@ -1,50 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab2JWErZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 00:47:25 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:54898 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab2JWErY (ORCPT
+	id S1752973Ab2JWEvE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 00:51:04 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:43940 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750885Ab2JWEvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 00:47:24 -0400
+	Tue, 23 Oct 2012 00:51:03 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19cbgF8o4ZcypurEMbKmdhDjWfEoLtnWl2avSqtqb
+	yCEobjIc8Pmf0S
+Message-ID: <50862224.60908@gmx.de>
+Date: Tue, 23 Oct 2012 04:50:44 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120922 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20121022185004.GA19645@kroah.com>
-References: <20121022162140.GA10021@kroah.com>
-	<CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
-	<1350927423.4238.5.camel@iscandar.digidescorp.com>
-	<20121022175907.GA19113@kroah.com>
-	<CAHkwNTnH-qx5rUZhVwB9cW-4wVOa-TEuO3=A158XZ7T+Y7LOPw@mail.gmail.com>
-	<CAHkwNTniuL-G11c25FV5k5F_yyhOR-++OBhOahBugjeFqWzFng@mail.gmail.com>
-	<20121022185004.GA19645@kroah.com>
-Date: Tue, 23 Oct 2012 10:17:22 +0530
-Message-ID: <CAHkwNTmqVkjnZBi01RkY3McSOHYFOvb4m82Lfrc_dVSxSoBWDg@mail.gmail.com>
-Subject: Re: usbview 2.0 release
-From: Anil Nair <anilcoll90@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 4/5] xen-fbfront: handle backend CLOSED without CLOSING
+References: <507FD39F.4060601@citrix.com> <1350554618-14582-4-git-send-email-david.vrabel@citrix.com> <20121019130011.GD26830@phenom.dumpdata.com>
+In-Reply-To: <20121019130011.GD26830@phenom.dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+Hi Konrad,
 
-> No, debugfs needs to be mounted at /sys/kernel/debug/  Is it not mounted
-> that way for you?  Perhaps it is mounted with root-only access (default
-> for 3.7-rc1 and newer kernels)?
+On 10/19/2012 01:00 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Oct 18, 2012 at 11:03:37AM +0100, David Vrabel wrote:
+>> From: David Vrabel <david.vrabel@citrix.com>
+>>
+>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
+>> CLOSED.  If a backend does transition to CLOSED too soon then the
+>> frontend may not see the CLOSING state and will not properly shutdown.
+>>
+>> So, treat an unexpected backend CLOSED state the same as CLOSING.
+>>
+>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>> Cc: linux-fbdev@vger.kernel.org
+>> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> 
+> Hey Florian,
+> 
+> Should I prep a git pull for you with this or would it be OK
+> if I just have your Ack to put this in my git pull for Linus?
 
-Yes you are right i verified "/sys/kernel/debug" has root-only access.
-The kernel version i am using is 3.0.0-26-generic(Default kernel
-provided by ubuntu 11.10 amd64).
+Feel free to take it and add
+Acked-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-> I should just port the thing to use libusb instead of debugfs, but
-> that's a larger job for such a low-priority tool.
 
-If you don't mind i would like to give it a try, though most of the
-terminologies i don't know but i would like to give it a try, just
-guide me on way of doing it thats all.
+Best regards,
 
--- 
-Regards,
-Anil Nair
+Florian Tobias Schandinat
+
+> 
+> Thanks!
+>> ---
+>>  drivers/video/xen-fbfront.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+>> index b7f5173..917bb56 100644
+>> --- a/drivers/video/xen-fbfront.c
+>> +++ b/drivers/video/xen-fbfront.c
+>> @@ -641,7 +641,6 @@ static void xenfb_backend_changed(struct xenbus_device *dev,
+>>  	case XenbusStateReconfiguring:
+>>  	case XenbusStateReconfigured:
+>>  	case XenbusStateUnknown:
+>> -	case XenbusStateClosed:
+>>  		break;
+>>  
+>>  	case XenbusStateInitWait:
+>> @@ -670,6 +669,10 @@ InitWait:
+>>  		info->feature_resize = val;
+>>  		break;
+>>  
+>> +	case XenbusStateClosed:
+>> +		if (dev->state == XenbusStateClosed)
+>> +			break;
+>> +		/* Missed the backend's CLOSING state -- fallthrough */
+>>  	case XenbusStateClosing:
+>>  		xenbus_frontend_closed(dev);
+>>  		break;
+>> -- 
+>> 1.7.2.5
+> 
+
