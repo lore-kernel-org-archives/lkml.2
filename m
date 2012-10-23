@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab2JWOFk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:05:40 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59923 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab2JWOFj (ORCPT
+	id S932982Ab2JWOIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:08:11 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:59777 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932638Ab2JWOIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:05:39 -0400
-Date: Tue, 23 Oct 2012 16:05:38 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 16/34] perf, x86: Support weight samples for PEBS
-Message-ID: <20121023140538.GH16230@one.firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-17-git-send-email-andi@firstfloor.org> <1350998110.13456.26.camel@twins>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350998110.13456.26.camel@twins>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 23 Oct 2012 10:08:09 -0400
+From: Nix <nix@esperi.org.uk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+        gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
+Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server panic: 3.6.2+ regression?
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org>
+Emacs: a Lisp interpreter masquerading as ... a Lisp interpreter!
+Date: Tue, 23 Oct 2012 15:07:59 +0100
+In-Reply-To: <20121023013343.GB6370@fieldses.org> (J. Bruce Fields's message
+	of "Mon, 22 Oct 2012 21:33:43 -0400")
+Message-ID: <87mwzdnuww.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=7 Fuz1=7 Fuz2=7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This looks like it will interfere with Stephane's LL patches -- which
-> should be out any day now ;-)
+On 23 Oct 2012, J. Bruce Fields uttered the following:
 
-To be honest I'm tired of waiting for them. They have been vapourware
-for far too long.
+> On Mon, Oct 22, 2012 at 05:17:04PM +0100, Nix wrote:
+>> I just had a panic/oops on upgrading from 3.6.1 to 3.6.3, after weeks of
+>> smooth operation on 3.6.1: one of the NFS changes that went into one of
+>> the two latest stable kernels appears to be lethal after around half an
+>> hour of uptime. The oops came from NFSv4, IIRC (relying on memory since
+>> my camera was recharging and there is no netconsole from that box
+>> because it is where the netconsole logs go, so I'll have to reproduce it
+>> later today). The machine is an NFSv3 server only at present, with no
+>> NFSv4 running (though NFSv4 is built in).
+>
+> Note recent clients may try to negotiate NFSv4 by default, so it's
+> possible to use it without knowing.
 
-I would have rebased on his, but since he never posts (and I do) 
-I think it's reasonable now to require him to rebase on mine.
+Every NFS import from all this server's clients has 'vers=3' forced on
+(for now, until I get around to figuring out what if anything needs to
+be done to move to NFSv4: it may be the answer is 'nothing' but I tread
+quite carefully with this server, since my $HOME is there).
 
--Andi
+/proc/fs/nfsfs/volumes on the clients confirms that everything is v3.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> You didn't change anything else about your server or clients recently?
+
+Nope (other than upgrading the clients to 3.6.3 in concert). Running
+3.6.1 here on that server now and 3.6.3 on all the clients, and no crash
+in over a day.
+
+nfs-utils is a bit old, 1.2.6-rc6, I should probably upgrade it...
+
+> I don't see an obvious candidate on a quick skim of v3.6.1..v3.6.3
+> commits, but of course I could be missing something.
+
+I'll try rebooting into it again soon, and get an oops report if it
+should happen again (and hopefully less filesystem corruption this time,
+right after a reboot into a new kernel was clearly the wrong time to
+move a bunch of directories around).
+
+Sorry for the continuing lack of useful information... I'll try to fix
+that shortly (once with a report of a false alarm, since I really want
+this stable kernel: my server is affected by the tx stalls fixed by
+3468e9d and I'm getting tired of the frequent 1s lags talking to it: I
+could just apply that one fix, but I'd rather track this down properly).
