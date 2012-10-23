@@ -1,127 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab2JWTDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:03:05 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:57123 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714Ab2JWTDD (ORCPT
+	id S933254Ab2JWTFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:05:22 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54455 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756841Ab2JWTFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:03:03 -0400
-Date: Tue, 23 Oct 2012 14:50:50 -0400
+	Tue, 23 Oct 2012 15:05:21 -0400
+Date: Tue, 23 Oct 2012 14:53:09 -0400
 From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk drivers
-Message-ID: <20121023185049.GB20350@phenom.dumpdata.com>
-References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com>
- <20121022134708.GA13832@konrad-lan.dumpdata.com>
- <5086C0C8.5000306@citrix.com>
- <20121023172008.GB11787@phenom.dumpdata.com>
- <5086DD57.4000206@citrix.com>
+        xen-devel@lists.xensource.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-linus-3.7-rc2-tag for
+ v3.7-rc2
+Message-ID: <20121023185308.GC20350@phenom.dumpdata.com>
+References: <20121023162707.GA16634@phenom.dumpdata.com>
+ <468189240.20121023193753@eikelenboom.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5086DD57.4000206@citrix.com>
+In-Reply-To: <468189240.20121023193753@eikelenboom.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 08:09:27PM +0200, Roger Pau Monné wrote:
-> On 23/10/12 19:20, Konrad Rzeszutek Wilk wrote:
-> >>>> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> >>>> index c6decb9..2b982b2 100644
-> >>>> --- a/drivers/block/xen-blkback/blkback.c
-> >>>> +++ b/drivers/block/xen-blkback/blkback.c
-> >>>> @@ -78,6 +78,7 @@ struct pending_req {
-> >>>>       unsigned short          operation;
-> >>>>       int                     status;
-> >>>>       struct list_head        free_list;
-> >>>> +     unsigned int            unmap_seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+On Tue, Oct 23, 2012 at 07:37:53PM +0200, Sander Eikelenboom wrote:
+> Hi Konrad,
 > 
-> Should I change this to a bool? Since we are only setting it to 0 or 1.
+> Did you push the tag ?
+> It doesn't seem to be in your git repo.
 
-I would just keep it as 'int'. Eventually we can replace this with a
-bit-map, but that can be done later.
+http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=tag;h=bfc3f7b8b971ce4969e637c3c0f8019a4bc20c85
 
+looks to be there?
 > 
-> >>> Perhaps there should be a #define for that array..
-> >>
-> >> Do you mean something like:
-> >>
-> >> #define unmap(req, i) req->unmap_seg[i]
-> > 
-> > I was thinking that you just check for req->unamp_seg[i] to
-> > have an non-zero value. But since that array is just used as an check
-> > to see whether the functionality is enabled (or not), you might want
-> > to declerare the right values so:
-> > #define UNMAP_SG_ON 1
-> > #define UNMAP_SG_OFF 0
-> > 
-> > or so.
+> --
+> Sander
 > 
-> Agreed, will add the defines.
+> Tuesday, October 23, 2012, 6:27:07 PM, you wrote:
 > 
-> >>>> +             if (persistent_gnts[i]) {
-> >>>> +                     if (!persistent_gnts[i]->handle) {
-> >>>> +                             /*
-> >>>> +                              * If this is a new persistent grant
-> >>>> +                              * save the handler
-> >>>> +                              */
-> >>>> +                             persistent_gnts[i]->handle = map[j].handle;
-> >>>> +                             persistent_gnts[i]->dev_bus_addr =
-> >>>> +                                     map[j++].dev_bus_addr;
-> >>>> +                     }
-> >>>> +                     pending_handle(pending_req, i) =
-> >>>> +                             persistent_gnts[i]->handle;
-> >>>> +                     pending_req->unmap_seg[i] = 0;
-> >>>
-> >>> Could we have a #define for that?
-> >>
-> >> Sure.
+> > Hey Linus,
 > 
-> I've used the previous macro, so it looks like:
+> > Please git pull the following tag:
 > 
-> unmap(req, i) = UNMAP_SG_OFF;
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.7-rc2-tag
 > 
-> I'm not sure if this is what you meant, or if you where interested in
-> defining a set of macros like:
+> > which has bug-fixes. Most of them are just code cleanup to make x86 and ARM code
+> > work in unison. There is one serious bug-fix which manifested itself in some
+> > applications mysteriously getting SIGKILL. Besides that nothing earth-shattering.
 > 
-> #define check_unmap(req, i) req->unmap_seg[i]
-> #define unset_unmap(req, i) req->unmap_seg[i] = UNMAP_SG_OFF
-> #define set_unmap(req, i) req->unmap_seg[i] = UNMAP_SG_ON
+> > <copied from the signed tag>:
+> >  * Fix mysterious SIGSEGV or SIGKILL in applications due to corrupting
+> >    of the %eip when returning from a signal handler.
+> >  * Fix various ARM compile issues after the merge fallout.
+> >  * Continue on making more of the Xen generic code usable by ARM platform.
+> >  * Fix SR-IOV passthrough to mirror multifunction PCI devices.
+> >  * Fix various compile warnings.
+> >  * Remove hypercalls that don't exist anymore.
+> > </copy from signed tag>
 > 
-> I would go for the first option (the unmap macro that can be used here
-> and in xen_blkbk_unmap).
-
-I was just thinking something as simple as
-
-	if (reg->unmap_seg[i] == UNMAP_SG_OFF)
-		continue;
-
-And the #defines are just for the hard-coded values of 0 or 1.
-
+> >  arch/arm/include/asm/xen/interface.h |   12 +++++++++---
+> >  arch/arm/include/asm/xen/page.h      |   13 ++++++++++---
+> >  arch/arm/xen/grant-table.c           |    2 +-
+> >  arch/x86/include/asm/xen/interface.h |    4 ++--
+> >  arch/x86/kernel/entry_32.S           |    8 +++++---
+> >  arch/x86/kernel/entry_64.S           |    2 +-
+> >  arch/x86/xen/enlighten.c             |    2 --
+> >  drivers/xen/balloon.c                |    3 +--
+> >  drivers/xen/dbgp.c                   |    2 ++
+> >  drivers/xen/events.c                 |    4 ++++
+> >  drivers/xen/grant-table.c            |    8 ++++----
+> >  drivers/xen/sys-hypervisor.c         |    4 +++-
+> >  drivers/xen/xen-pciback/vpci.c       |   14 ++++++++++----
+> >  drivers/xen/xenbus/xenbus_xs.c       |    2 ++
+> >  include/xen/grant_table.h            |    2 +-
+> >  include/xen/interface/grant_table.h  |    2 +-
+> >  include/xen/interface/memory.h       |   24 ++----------------------
+> >  17 files changed, 58 insertions(+), 50 deletions(-)
 > 
-> >>> HA! By default, eh?
-> >>
-> >> Yes, you caught me, there's a paragraph in the commit message that
-> >> explains that we are using persistent grants in the frontend
-> >> unconditionally, since the protocol is compatible (you can have a
-> >> persistent blkfront and a non-persistent blkback). It simplifies the
-> >> logic in blkfront. Are you OK with it?
-> > 
-> > It is OK, but you should be checking whether the backend supports it.
-> > I don't see it checking the info->feature_persistent_grant to print
-> > that.
+> > David Vrabel (1):
+> >       xen/x86: don't corrupt %eip when returning from a signal handler
 > 
-> I don't understand why blkfront needs to check if the backend supports
-> persisten grants, blkfront is going to use persistent grants anyway.
-
-What if it does not (say this guest runs on an older xen-blkback?)?
-Then you would be still printing 'persistent grants' in the blkfront.
+> > Ian Campbell (11):
+> >       xen: xenbus: quirk uses x86 specific cpuid
+> >       xen: sysfs: include err.h for PTR_ERR etc
+> >       xen: sysfs: fix build warning.
+> >       xen: XENMEM_translate_gpfn_list was remove ages ago and is unused.
+> >       xen: events: pirq_check_eoi_map is X86 specific
+> >       xen: grant: use xen_pfn_t type for frame_list.
+> >       xen: balloon: don't include e820.h
+> >       xen: arm: make p2m operations NOPs
+> >       xen: balloon: use correct type for frame_list
+> >       xen: arm: comment on why 64-bit xen_pfn_t is safe even on 32 bit
+> >       xen: dbgp: Fix warning when CONFIG_PCI is not enabled.
+> 
+> > Konrad Rzeszutek Wilk (1):
+> >       xen/xenbus: Fix compile warning.
+> 
+> > Laszlo Ersek (1):
+> >       xen PV passthru: assign SR-IOV virtual functions to separate virtual slots
+> 
+> > Wei Yongjun (1):
+> >       xen/x86: remove duplicated include from enlighten.c
+> 
 > 
 > 
 > _______________________________________________
