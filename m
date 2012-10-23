@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2JWQHp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:07:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56718 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab2JWQHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:07:43 -0400
-Message-ID: <5086C0C3.1060305@ti.com>
-Date: Tue, 23 Oct 2012 18:07:31 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S933118Ab2JWQMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:12:38 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63768 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab2JWQMg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 12:12:36 -0400
 MIME-Version: 1.0
-To: Jon Hunter <jon-hunter@ti.com>
-CC: Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap5: Update GPIO with address space
- and interrupts
-References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com> <1350981432-6750-2-git-send-email-s-guiriec@ti.com> <5086AE8E.60106@ti.com> <5086B316.6000001@ti.com> <5086BECA.9070502@ti.com>
-In-Reply-To: <5086BECA.9070502@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1350973015.8609.1444.camel@edumazet-glaptop>
+References: <1350748093-7868-1-git-send-email-js1304@gmail.com>
+	<1350748093-7868-2-git-send-email-js1304@gmail.com>
+	<0000013a88e2e9dc-9f72abd3-9a31-454c-b70b-9937ba54c0ee-000000@email.amazonses.com>
+	<CAAmzW4Nz_=_Tj-D=DXaO-SR5pRZ_n7-gfVbKHa+=DP0NQioAaQ@mail.gmail.com>
+	<1350973015.8609.1444.camel@edumazet-glaptop>
+Date: Wed, 24 Oct 2012 01:12:36 +0900
+Message-ID: <CAAmzW4PyEB+GSPDGFV-B436wA+avTQ_1BomGaYDq-3s6wRZpjQ@mail.gmail.com>
+Subject: Re: [PATCH for-v3.7 2/2] slub: optimize kmalloc* inlining for GFP_DMA
+From: JoonSoo Kim <js1304@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 05:59 PM, Jon Hunter wrote:
-> 
-> On 10/23/2012 10:09 AM, Benoit Cousson wrote:
->> On 10/23/2012 04:49 PM, Jon Hunter wrote:
->>> Hi Seb,
->>>
->>> On 10/23/2012 03:37 AM, Sebastien Guiriec wrote:
->>>> Add base address and interrupt line inside Device Tree data for
->>>> OMAP5
->>>>
->>>> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
->>>> ---
->>>>  arch/arm/boot/dts/omap5.dtsi |   16 ++++++++++++++++
->>>>  1 file changed, 16 insertions(+)
->>>>
->>>> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
->>>> index 42c78be..9e39f9f 100644
->>>> --- a/arch/arm/boot/dts/omap5.dtsi
->>>> +++ b/arch/arm/boot/dts/omap5.dtsi
->>>> @@ -104,6 +104,8 @@
->>>>  
->>>>  		gpio1: gpio@4ae10000 {
->>>>  			compatible = "ti,omap4-gpio";
->>>> +			reg = <0x4ae10000 0x200>;
->>>> +			interrupts = <0 29 0x4>;
->>>>  			ti,hwmods = "gpio1";
->>>>  			gpio-controller;
->>>>  			#gpio-cells = <2>;
->>>
->>> I am wondering if we should add the "interrupt-parent" property to add
->>> nodes in the device-tree source. I know that today the interrupt-parent
->>> is being defined globally, but when device-tree maps an interrupt for a
->>> device it searches for the interrupt-parent starting the current device
->>> node.
->>>
->>> So in other words, for gpio1 it will search the gpio1 binding for
->>> "interrupt-parent" and if not found move up a level and search again. It
->>> will keep doing this until it finds the "interrupt-parent".
->>>
->>> Therefore, I believe it will improve search time and hence, boot time if
->>> we have interrupt-parent defined in each node.
+Hi, Eric.
+
+2012/10/23 Eric Dumazet <eric.dumazet@gmail.com>:
+> On Tue, 2012-10-23 at 11:29 +0900, JoonSoo Kim wrote:
+>> 2012/10/22 Christoph Lameter <cl@linux.com>:
+>> > On Sun, 21 Oct 2012, Joonsoo Kim wrote:
+>> >
+>> >> kmalloc() and kmalloc_node() of the SLUB isn't inlined when @flags = __GFP_DMA.
+>> >> This patch optimize this case,
+>> >> so when @flags = __GFP_DMA, it will be inlined into generic code.
+>> >
+>> > __GFP_DMA is a rarely used flag for kmalloc allocators and so far it was
+>> > not considered that it is worth to directly support it in the inlining
+>> > code.
+>> >
+>> >
 >>
->> Mmm, I'm not that sure. it will increase the size of the blob, so
->> increase the time to load it and then to parse it. Where in the current
->> case, it is just going up to the parent node using the already
->> un-flatten tree in memory and thus that should not take that much time.
-> 
-> Yes it will definitely increase the size, so that could slow things down.
-> 
->> That being said, it might be interesting to benchmark that to see what
->> is the real impact.
-> 
-> Right, I wonder what the key functions are we need to benchmark to get
-> an overall feel for what is best? Right now I am seeing some people add
-> the interrupt-parent for device nodes and others not. Ideally we should
-> be consistent, but at the same time it is probably something that we can
-> easily sort out later. So not a big deal either way.
+>> Hmm... but, the SLAB already did that optimization for __GFP_DMA.
+>> Almost every kmalloc() is invoked with constant flags value,
+>> so I think that overhead from this patch may be negligible.
+>> With this patch, code size of vmlinux is reduced slightly.
+>
+> Only because you asked a allyesconfig
+>
+> GFP_DMA is used for less than 0.1 % of kmalloc() calls, for legacy
+> hardware (from last century)
 
-For consistency, I'd rather not add it at all for the moment.
-Later, when we will only support DT boot, people will start complaining
-about the boot time increase and then we will start optimizing a little
-bit :-)
+I'm not doing with allyesconfig,
+but localmodconfig on my ubuntu desktop system.
+On my system, 700 bytes of text of vmlinux is reduced
+which mean there may be more than 100 callsite with GFP_DMA.
 
-Regards,
-Benoit
+> In fact if you want to reduce even more your vmlinux, you could test
+>
+> if (__builtin_constant_p(flags) && (flags & SLUB_DMA))
+>     return kmem_cache_alloc_trace(s, flags, size);
+>
+> to force the call to out of line code.
 
+The reason why I mention about code size is that I want to say it may
+be good for performance,
+although it has a just small impact.
+I'm not interest of reducing code size :)
 
+Thanks for comment.
