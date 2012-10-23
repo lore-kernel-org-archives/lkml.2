@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab2JWBoy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 21:44:54 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37218 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512Ab2JWBow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 21:44:52 -0400
-Message-ID: <1350956664.2728.19.camel@pasglop>
-Subject: Re: [PATCH] MM: Support more pagesizes for MAP_HUGETLB/SHM_HUGETLB
- v6
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: mtk.manpages@gmail.com
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Hillf Danton <dhillf@gmail.com>
-Date: Tue, 23 Oct 2012 12:44:24 +1100
-In-Reply-To: <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
-References: <1350665289-7288-1-git-send-email-andi@firstfloor.org>
-	 <CAHO5Pa0W-WGBaPvzdRJxYPdrg-K9guChswo3KJheK4BaRzsRwQ@mail.gmail.com>
-	 <20121022132733.GQ16230@one.firstfloor.org>
-	 <20121022133534.GR16230@one.firstfloor.org>
-	 <CAKgNAkgQ6JZdwOsCAQ4Ak_gVXtav=TzgzW2tbk5jMUwxtMqOAg@mail.gmail.com>
-	 <20121022153633.GK2095@tassilo.jf.intel.com>
-	 <CAKgNAki=AL+KdYDdYnE8ZhjK-tUf5cZ163BWPe6GRM0rpi-z7w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1756520Ab2JWBz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 21:55:57 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34801 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756320Ab2JWBz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 21:55:56 -0400
+Message-ID: <1350957354.7502.22.camel@joe-AO722>
+Subject: Re: mmotm 2012-10-22-17-08 uploaded (printk build errors)
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Date: Mon, 22 Oct 2012 18:55:54 -0700
+In-Reply-To: <5085F14D.7060005@xenotime.net>
+References: <20121023000924.C56EF5C0050@hpza9.eem.corp.google.com>
+	 <5085F14D.7060005@xenotime.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-22 at 17:53 +0200, Michael Kerrisk (man-pages) wrote:
+On Mon, 2012-10-22 at 18:22 -0700, Randy Dunlap wrote:
+> On 10/22/2012 05:09 PM, akpm@linux-foundation.org wrote:
 
-> This is all seems to make an awful muck of the API...
+Hi Randy.
 
- .../...
+> on i386, when CONFIG_PRINTK is not enabled:
+[]
+> case 1.  CONFIG_TTY_PRINTK=y, CONFIG_EARLY_PRINTK=y
+> 
+> see config-r8272
 
-> There seems to be a reasonable argument here for an mmap3() with a
-> 64-bit flags argument...
+[]
 
-I tend to agree. There's a similar issue happening when we try to shovel
-things into protection bits, like we do with SAO (strong access
-ordering) and want to do with per-page endian on embedded.
+> case 2.  CONFIG_TTY_PRINTK=n, CONFIG_EARLY_PRINTK=n
+> 
+> see config-r8274
 
-It think we need a pile of additional flag space.
+Where do I see these configs?
 
-Cheers,
-Ben.
+I've built it here defconfig and CONFIG_PRINTK=n without warning.
+
 
