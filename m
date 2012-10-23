@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab2JWRnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:43:12 -0400
-Received: from fieldses.org ([174.143.236.118]:48316 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754731Ab2JWRnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:43:09 -0400
-Date: Tue, 23 Oct 2012 13:43:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Nix <nix@esperi.org.uk>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
- (also an unrelated ext4 data loss bug)
-Message-ID: <20121023174303.GE3040@fieldses.org>
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <20121023164621.GC3040@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
- <87vce1w241.fsf@spindle.srvr.nix>
- <87r4opw0og.fsf@spindle.srvr.nix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4opw0og.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757378Ab2JWRnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:43:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8989 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757251Ab2JWRnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:43:11 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=lmT2Z4Mpfl0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lWe663OmXZ4A:10 a=Md2_uM7vpecJbsWCsHMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351014187.8467.24.camel@gandalf.local.home>
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lm-sensors@lm-sensors.org,
+        linaro-dev@lists.linaro.org
+Date: Tue, 23 Oct 2012 13:43:07 -0400
+In-Reply-To: <1351013449.9070.5.camel@hornet>
+References: <1351013449.9070.5.camel@hornet>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 06:36:15PM +0100, Nix wrote:
-> On 23 Oct 2012, nix@esperi.org.uk uttered the following:
-> 
-> > On 23 Oct 2012, Trond Myklebust spake thusly:
-> >> On Tue, 2012-10-23 at 12:46 -0400, J. Bruce Fields wrote:
-> >>> Looks like there's some confusion about whether nsm_client_get() returns
-> >>> NULL or an error?
-> >>
-> >> nsm_client_get() looks extremely racy in the case where ln->nsm_users ==
-> >> 0.  Since we never recheck the value of ln->nsm_users after taking
-> >> nsm_create_mutex, what is stopping 2 different threads from both setting
-> >> ln->nsm_clnt and re-initialising ln->nsm_users?
-> >
-> > Yep. At the worst possible time:
-> >
-> > 	spin_lock(&ln->nsm_clnt_lock);
-> > 	if (ln->nsm_users) {
-> > 		if (--ln->nsm_users)
-> > 			ln->nsm_clnt = NULL;
-> > (1)		shutdown = !ln->nsm_users;
-> > 	}
-> > 	spin_unlock(&ln->nsm_clnt_lock);
-> >
-> > If a thread reinitializes nsm_users at point (1), after the assignment,
-> > we could well end up with ln->nsm_clnt NULL and shutdown false. A bit
-> > later, nsm_mon_unmon gets called with a NULL clnt, and boom.
-> 
-> Possible fix if so, utterly untested so far (will test when I can face
-> yet another reboot and fs-corruption-recovery-hell cycle, in a few
-> hours), may ruin performance, violate locking hierarchies, and consume
-> kittens:
-
-Right, mutexes can't be taken while holding spinlocks.  Keep the kittens
-well away from the computer.
-
---b.
+On Tue, 2012-10-23 at 18:30 +0100, Pawel Moll wrote:
 
 > 
-> diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-> index e4fb3ba..da91cdf 100644
-> --- a/fs/lockd/mon.c
-> +++ b/fs/lockd/mon.c
-> @@ -98,7 +98,6 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
->  		spin_unlock(&ln->nsm_clnt_lock);
->  		goto out;
->  	}
-> -	spin_unlock(&ln->nsm_clnt_lock);
->  
->  	mutex_lock(&nsm_create_mutex);
->  	clnt = nsm_create(net);
-> @@ -108,6 +107,7 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
->  		ln->nsm_users = 1;
->  	}
->  	mutex_unlock(&nsm_create_mutex);
-> +	spin_unlock(&ln->nsm_clnt_lock);
->  out:
->  	return clnt;
->  }
+> === Option 1: Trace event ===
 > 
+> This seems to be the "cheapest" option. Simply defining a trace event
+> that can be generated by a hwmon (or any other) driver makes the
+> interesting data immediately available to any ftrace/perf user. Of
+> course it doesn't really help with the cpufreq case, but seems to be
+> a good place to start with.
+> 
+> The question is how to define it... I've came up with two prototypes:
+> 
+> = Generic hwmon trace event =
+> 
+> This one allows any driver to generate a trace event whenever any
+> "hwmon attribute" (measured value) gets updated. The rate at which the
+> updates happen can be controlled by already existing "update_interval"
+> attribute.
+> 
+> 8<-------------------------------------------
+> TRACE_EVENT(hwmon_attr_update,
+> 	TP_PROTO(struct device *dev, struct attribute *attr, long long input),
+> 	TP_ARGS(dev, attr, input),
+> 
+> 	TP_STRUCT__entry(
+> 		__string(       dev,		dev_name(dev))
+> 		__string(	attr,		attr->name)
+> 		__field(	long long,	input)
+> 	),
+> 
+> 	TP_fast_assign(
+> 		__assign_str(dev, dev_name(dev));
+> 		__assign_str(attr, attr->name);
+> 		__entry->input = input;
+> 	),
+> 
+> 	TP_printk("%s %s %lld", __get_str(dev), __get_str(attr), __entry->input)
+> );
+> 8<-------------------------------------------
+> 
+> It generates such ftrace message:
+> 
+> <...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
+> 
+> One issue with this is that some external knowledge is required to
+> relate a number to a processor core. Or maybe it's not an issue at all
+> because it should be left for the user(space)?
+
+If the external knowledge can be characterized in a userspace tool with
+the given data here, I see no issues with this.
+
+> 
+> = CPU power/energy/temperature trace event =
+> 
+> This one is designed to emphasize the relation between the measured
+> value (whether it is energy, temperature or any other physical
+> phenomena, really) and CPUs, so it is quite specific (too specific?)
+> 
+> 8<-------------------------------------------
+> TRACE_EVENT(cpus_environment,
+> 	TP_PROTO(const struct cpumask *cpus, long long value, char unit),
+> 	TP_ARGS(cpus, value, unit),
+> 
+> 	TP_STRUCT__entry(
+> 		__array(	unsigned char,	cpus,	sizeof(struct cpumask))
+> 		__field(	long long,	value)
+> 		__field(	char,		unit)
+> 	),
+> 
+> 	TP_fast_assign(
+> 		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
+
+Copying the entire cpumask seems like overkill. Especially when you have
+4096 CPU machines.
+
+> 		__entry->value = value;
+> 		__entry->unit = unit;
+> 	),
+> 
+> 	TP_printk("cpus %s %lld[%c]",
+> 		__print_cpumask((struct cpumask *)__entry->cpus),
+> 		__entry->value, __entry->unit)
+> );
+> 8<-------------------------------------------
+> 
+> And the equivalent ftrace message is:
+> 
+> <...>127.063107: cpus_environment: cpus 0,1,2,3 34361[C]
+> 
+> It's a cpumask, not just single cpu id, because the sensor may measure
+> the value per set of CPUs, eg. a temperature of the whole silicon die
+> (so all the cores) or an energy consumed by a subset of cores (this
+> is my particular use case - two meters monitor a cluster of two
+> processors and a cluster of three processors, all working as a SMP
+> system).
+> 
+> Of course the cpus __array could be actually a special __cpumask field
+> type (I've just hacked the __print_cpumask so far). And I've just
+> realised that the unit field should actually be a string to allow unit
+> prefixes to be specified (the above should obviously be "34361[mC]"
+> not "[C]"). Also - excuse the "cpus_environment" name - this was the
+> best I was able to come up with at the time and I'm eager to accept
+> any alternative suggestions :-)
+
+Perhaps making a field that can be a subset of cpus may be better. That
+way we don't waste the ring buffer with lots of zeros. I'm guessing that
+it will only be a group of cpus, and not a scattered list? Of course,
+I've seen boxes where the cpu numbers went from core to core. That is,
+cpu 0 was on core 1, cpu 1 was on core 2, and then it would repeat. 
+cpu 8 was on core 1, cpu 9 was on core 2, etc.
+
+But still, this could be compressed somehow.
+
+I'll let others comment on the rest.
+
+-- Steve
+
+
