@@ -1,92 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab2JWRac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:30:32 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:25501 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485Ab2JWRaa (ORCPT
+	id S933312Ab2JWRa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:30:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:35562 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab2JWRaz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:30:30 -0400
-Message-ID: <5086D432.4070008@tilera.com>
-Date: Tue, 23 Oct 2012 13:30:26 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
-References: <20121016223508.GR2616@ZenIV.linux.org.uk> <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com> <20121019213548.GR2616@ZenIV.linux.org.uk> <5082A1F1.3080303@tilera.com> <20121020153401.GT2616@ZenIV.linux.org.uk> <20121020171643.GU2616@ZenIV.linux.org.uk>
-In-Reply-To: <20121020171643.GU2616@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 13:30:55 -0400
+Message-ID: <1351013449.9070.5.camel@hornet>
+Subject: [RFC] Energy/power monitoring within the kernel
+From: Pawel Moll <pawel.moll@arm.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lm-sensors@lm-sensors.org, linaro-dev@lists.linaro.org
+Date: Tue, 23 Oct 2012 18:30:49 +0100
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 23 Oct 2012 17:30:50.0652 (UTC) FILETIME=[255F7DC0:01CDB144]
+X-MC-Unique: 112102318305300401
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/20/2012 1:16 PM, Al Viro wrote:
-> On Sat, Oct 20, 2012 at 04:34:01PM +0100, Al Viro wrote:
->> On Sat, Oct 20, 2012 at 09:06:57AM -0400, Chris Metcalf wrote:
->>> First, the compat_sys_execve() declaration provided in
->>> arch/tile/include/asm/compat.h isn't right, so I deleted that (you had only
->>> deleted the PTREGS_SYSCALL trampoline declaration, _compat_sys_execve).
->>>
->>> However, then arch/tile/kernel/compat.c failed to build, because
->>> <linux/compat.h> is included before <asm/unistd.h>, and <asm/unistd.h>
->>> provides __ARCH_WANT_SYS_EXECVE, and so we end up with no declaration at
->>> all for compat_sys_execve.  For most platforms this is no big deal, but on
->>> tile we use the __SYSCALL #define to provide the actual syscall table, and
->>> for that to work we need a declaration in scope for each syscall at the
->>> time we create the table.
->>>
->>> The best solution seems likely to be to copy the other place in
->>> <linux/compat.h> where we need to do something configurable (that is,
->>> CONFIG_ARCH_WANT_OLD_COMPAT_IPC), and just convert __ARCH_WANT_SYS_EXECVE
->>> to be a Kconfig option.
->> Frankly, I hope to get rid of the damn thing completely.  By now we have
->> at least some variant of execve conversions for just about everything;
->> I certainly hope that by the beginning of the next cycle we'll have it
->> defined on everything.  And put unconditional declarations in syscalls.h
->> and compat.h
->>
->> Actually, we can make the declaration in linux/compat.h unconditional
->> right now.  The only obstacle is the situation on arm64; there the mainline
->> has C variant of that sucker (with struct pt_regs * in arguments) in
->> arch/arm64/kernel/sys_compat.c.  So we could ask Linus to pull
->> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64 execve
->> and then do the following in one patch:
->> 	introduce current_pt_regs() on tile (from your commit)
->> 	get rid of pt_regs * argument in tile compat_sys_execve(), making it
->> use current_pt_regs(); kill its wrapper
->> 	kill the declarations of compat_sys_execve()/_compat_sys_execve()
->> in tile asm/compat.h
->> 	make declaration in linux/compat.h unconditional
->> Note that this does *not* depend on kernel_thread/kernel_execve patch -
->> kernel_execve() is never going to hit compat_sys_execve(), since it's
->> only called from kernel threads and those are not going to be 32bit.
->> After that we can do kernel_thread/kernel_execve commit and
->> sys_execve() conversion with nothing outside of arch/tile touched.
-> Another possible variant is for you to merge that branch from arm64 tree
-> (only 3 commits it it) and then do as described above.  I.e. on top of
-> that apply the thing below, followed by your kernel_thread()/kernel_execve()
-> patch (sans current_pt_regs() part), followed by obviously massaged parts
-> of generic sys_execve for tile patch I've sent.  FWIW, I've put the
-> whole series (based at the end of arm64 branch) in signal.git#arch-tile.
-> Comments?
+Greetings All,
 
-I fetched the series from your arch-tile branch and built it, and it works
-fine.  It looks good from my inspection:
+More and more of people are getting interested in the subject of power
+(energy) consumption monitoring. We have some external tools like
+"battery simulators", energy probes etc., but some targets can measure
+their power usage on their own.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Traditionally such data should be exposed to the user via hwmon sysfs
+interface, and that's exactly what I did for "my" platform - I have
+a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
+enough to draw pretty graphs in userspace. Everyone was happy...
 
-As you had suggested in an earlier email, I went ahead and eliminated the
-special pt_regs handling for sigaltstack, rt_sigreturn, and clone.  (Also a
-tilepro-specific syscall that was also using PTREG_SYSCALL.)  I'll send it
-separately and you can include it in your tree if you like.
+Now I am getting new requests to do more with this data. In particular
+I'm asked how to add such information to ftrace/perf output. The second
+most frequent request is about providing it to a "energy aware"
+cpufreq governor.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+I've came up with three (non-mutually exclusive) options. I will
+appreciate any other ideas and comments (including "it makes not sense
+whatsoever" ones, with justification). Of course I am more than willing
+to spend time on prototyping anything that seems reasonable and propose
+patches.
+
+
+
+=== Option 1: Trace event ===
+
+This seems to be the "cheapest" option. Simply defining a trace event
+that can be generated by a hwmon (or any other) driver makes the
+interesting data immediately available to any ftrace/perf user. Of
+course it doesn't really help with the cpufreq case, but seems to be
+a good place to start with.
+
+The question is how to define it... I've came up with two prototypes:
+
+= Generic hwmon trace event =
+
+This one allows any driver to generate a trace event whenever any
+"hwmon attribute" (measured value) gets updated. The rate at which the
+updates happen can be controlled by already existing "update_interval"
+attribute.
+
+8<-------------------------------------------
+TRACE_EVENT(hwmon_attr_update,
+	TP_PROTO(struct device *dev, struct attribute *attr, long long input),
+	TP_ARGS(dev, attr, input),
+
+	TP_STRUCT__entry(
+		__string(       dev,		dev_name(dev))
+		__string(	attr,		attr->name)
+		__field(	long long,	input)
+	),
+
+	TP_fast_assign(
+		__assign_str(dev, dev_name(dev));
+		__assign_str(attr, attr->name);
+		__entry->input = input;
+	),
+
+	TP_printk("%s %s %lld", __get_str(dev), __get_str(attr), __entry->input)
+);
+8<-------------------------------------------
+
+It generates such ftrace message:
+
+<...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
+
+One issue with this is that some external knowledge is required to
+relate a number to a processor core. Or maybe it's not an issue at all
+because it should be left for the user(space)?
+
+= CPU power/energy/temperature trace event =
+
+This one is designed to emphasize the relation between the measured
+value (whether it is energy, temperature or any other physical
+phenomena, really) and CPUs, so it is quite specific (too specific?)
+
+8<-------------------------------------------
+TRACE_EVENT(cpus_environment,
+	TP_PROTO(const struct cpumask *cpus, long long value, char unit),
+	TP_ARGS(cpus, value, unit),
+
+	TP_STRUCT__entry(
+		__array(	unsigned char,	cpus,	sizeof(struct cpumask))
+		__field(	long long,	value)
+		__field(	char,		unit)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
+		__entry->value = value;
+		__entry->unit = unit;
+	),
+
+	TP_printk("cpus %s %lld[%c]",
+		__print_cpumask((struct cpumask *)__entry->cpus),
+		__entry->value, __entry->unit)
+);
+8<-------------------------------------------
+
+And the equivalent ftrace message is:
+
+<...>127.063107: cpus_environment: cpus 0,1,2,3 34361[C]
+
+It's a cpumask, not just single cpu id, because the sensor may measure
+the value per set of CPUs, eg. a temperature of the whole silicon die
+(so all the cores) or an energy consumed by a subset of cores (this
+is my particular use case - two meters monitor a cluster of two
+processors and a cluster of three processors, all working as a SMP
+system).
+
+Of course the cpus __array could be actually a special __cpumask field
+type (I've just hacked the __print_cpumask so far). And I've just
+realised that the unit field should actually be a string to allow unit
+prefixes to be specified (the above should obviously be "34361[mC]"
+not "[C]"). Also - excuse the "cpus_environment" name - this was the
+best I was able to come up with at the time and I'm eager to accept
+any alternative suggestions :-)
+
+
+
+=== Option 2: hwmon perf PMU ===
+
+Although the trace event makes it possible to obtain interesting
+information using perf, the user wouldn't be able to treat the
+energy meter as a normal data source. In particular there would
+be no way of creating a group of events consisting eg. of a
+"normal" leader (eg. cache miss event) triggering energy meter
+read. The only way to get this done is to implement a perf PMU
+backend providing "environmental data" to the user.
+
+= High-level hwmon API and PMU =
+
+Current hwmon subsystem does not provide any abstraction for the
+measured values and requires particular drivers to create specified
+sysfs attributes than used by userspace libsensors. This makes
+the framework ultimately flexible and ultimately hard to access
+from within the kernel...
+
+What could be done here is some (simple) API to register the
+measured values with the hwmon core which would result in creating
+equivalent sysfs attributes automagically, but also allow a
+in-kernel API for values enumeration and access. That way the core
+could also register a "hwmon PMU" with the perf framework providing
+data from all "compliant" drivers.
+
+= A driver-specific PMU =
+
+Of course a particular driver could register its own perf PMU on its
+own. It's certainly an option, just very suboptimal in my opinion.
+Or maybe not? Maybe the task is so specialized that it makes sense?
+
+
+
+=== Option 3: CPU power(energy) monitoring framework ===
+
+And last but not least, maybe the problem deserves some dedicated
+API? Something that would take providers and feed their data into
+interested parties, in particular a perf PMU implementation and
+cpufreq governors?
+
+Maybe it could be an extension to the thermal framework? It already
+gives some meaning to a physical phenomena. Adding other, related ones
+like energy, and relating it to cpu cores could make some sense.
+
+
+
+I've tried to gather all potentially interested audience in the To:
+list, but if I missed anyone - please, do let them (and/or me) know.
+
+Best regards and thanks for participation in the discussion!
+
+Pawel
+
+
 
