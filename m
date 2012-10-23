@@ -1,72 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab2JWTvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:51:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42354 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757239Ab2JWTva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:51:30 -0400
-Message-ID: <1351021889.7502.55.camel@joe-AO722>
-Subject: Re: linux-next: build failure after merge of the akpm tree
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Date: Tue, 23 Oct 2012 12:51:29 -0700
-In-Reply-To: <20121023124414.61568323.akpm@linux-foundation.org>
-References: <20121023144221.5ae3061a11766df8175b959d@canb.auug.org.au>
-	 <20121023124414.61568323.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1757446Ab2JWTxC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:53:02 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:49214 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756884Ab2JWTxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 15:53:00 -0400
+Date: Tue, 23 Oct 2012 21:31:46 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: hayeswang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
+Message-ID: <20121023193146.GA10463@electric-eye.fr.zoreil.com>
+References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <20121022192748.GA16370@electric-eye.fr.zoreil.com> <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 12:44 -0700, Andrew Morton wrote:
-> On Tue, 23 Oct 2012 14:42:21 +1100
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Andrew,
+hayeswang <hayeswang@realtek.com> :
+[...]
+> The flag is determined if the firmware is loaded. It doesn't mean to enable
+> ALDPS. Besides ALDPS, the firmware includes the other features about power
+> saving, performance, hw behavior, and so on. Thus, I think it  is the extended
+> feature. Any suggestion?
+
+RTL_FEATURE_FW_LOADED
+
+[...]
+> I don't sure if the firmware code still exists and works after hibernation. I
+> clear the flag for safe. It would be set again after loading firmware. It is
+> used to make sure to enable ALDPS with firmware.
+
+I don't understand if you want to avoid a coding bug or a hardware problem.
+
+The code only enables ALDPS in the hw_phy_config helpers. Said helpers are
+the only places where firmware loading is requested. Loading the firmware
+always set RTL_FEATURE_XYZ.
+
+Whatever you are trying to achieve, the change in rtl8169_net_suspend
+seem rather useless. Please explain.
+
+(if you want to enforce that ALDPS does nothing when it is not called
+right after firmware loading, the ALDPS enable method itself is imho the
+natural place to reset the bit).
+
+[...]
+> > After this patch the driver would look like:
+> > 1. disable ALDPS before setting firmware (unmodified by patch)
+> >    RTL_GIGA_MAC_VER_29 "RTL8105e"
+> >    RTL_GIGA_MAC_VER_30 "RTL8105e"
+> >    RTL_GIGA_MAC_VER_37 "RTL8402"
+> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
 > > 
-> > After merging the akpm tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
+> > 2. apply_firmware (unmodified by patch)
+> >    RTL_GIGA_MAC_VER_25 "RTL8168d/8111d"
+> >    RTL_GIGA_MAC_VER_26 "RTL8168d/8111d"
+> >    RTL_GIGA_MAC_VER_29 "RTL8105e"
+> >    RTL_GIGA_MAC_VER_30 "RTL8105e"
+> >    RTL_GIGA_MAC_VER_32 "RTL8168e/8111e"
+> >    RTL_GIGA_MAC_VER_33 "RTL8168e/8111e"
+> >    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
+> >    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
+> >    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
+> >    RTL_GIGA_MAC_VER_37 "RTL8402"
+> >    RTL_GIGA_MAC_VER_38 "RTL8411"
+> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
+> >    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
 > > 
-> > kernel/printk/printk_syslog.c: In function 'printk_syslog_print':
-> > kernel/printk/printk_syslog.c:108:3: error: implicit declaration of function 'copy_to_user' [-Werror=implicit-function-declaration]
-> > kernel/printk/printk_syslog.c: In function 'do_syslog':
-> > kernel/printk/printk_syslog.c:245:3: error: implicit declaration of function 'access_ok' [-Werror=implicit-function-declaration]
-> > kernel/printk/printk_syslog.c:245:18: error: 'VERIFY_WRITE' undeclared (first use in this function)
-> > kernel/printk/printk_syslog.c:245:18: note: each undeclared identifier is reported only once for each function it appears in
+> > 3. enable ALDPS after firmware
+> >    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
+> >    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
+> >    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
+> >    RTL_GIGA_MAC_VER_37 "RTL8402"
+> >    RTL_GIGA_MAC_VER_38 "RTL8411"
+> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
+> >    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
 > > 
-> > Caused by commit 598815e5f25f ("printk: add printk_syslog.c and .h").
+> > The disable/enable ALDPS code is not trivially balanced.
 > > 
-> > Presumably missing an (or some) include files - see Rule 1 in
-> > Documentation/SubmitChecklist.
+> > Do we exactly perform the required ALDPS operations ? Nothing more,
+> > nothing less ?
 > > 
-> > I have reverted that commit for today (and the following commit
-> > 2cf91e0e4b9f ("printk: move kmsg_dump functions to separate file")).
 > 
-> I'll add the include.
-> 
-> btw, what's up with printk_syslog.h?  It includes two header files which it
-> doesn't need but fails to include the two it *does* need: printk_log.h
-> and types.h.
-> 
-> 
+> Because the different design between the giga nic and 10/100M nic, the behavior
+> would be different. For example, you couldn't disable the ALDPS of the giga nic
+> directly just like the 10/100M (8136 series) one. The giga nic would disable
+> ALDPS automatically when loading firmware, but the 8136 series wouldn't.
 
-printk_syslog.c includes kernel.h (it includes types.h)
-and printk_log.h.
+It would be nice to state these things in the commit message, namely:
+- ALDPS should never be enabled for the RTL8105e
+- none of the firmware-free chipsets support ALDPS
+- neither do the RTL8168d/8111d
 
-I think printk_syslog.h doesn't need printk_log.h
-
-I'd appreciate being cc'd.
-
-There's also a needed fix for braille
-and a duplicate #define.
-
-I'll resubmit the whole series tomorrow.
-
-cheers, Joe
-
+-- 
+Ueimor
