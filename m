@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab2JWIFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 04:05:10 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:33944 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751728Ab2JWIFB (ORCPT
+	id S1756777Ab2JWIFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 04:05:23 -0400
+Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:59275 "EHLO
+	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751728Ab2JWIFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 04:05:01 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202h1d1ah1d2ahzz17326ah8275bhz2dh668h839hd24he5bhf0ah107ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1155h)
-X-WSS-ID: 0MCC6FZ-02-2M2-02
-X-M-MSG: 
-From: <steffen.schwigon@amd.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <ss5@renormalist.net>, <srostedt@redhat.com>,
-        <Dariusz.Filipski@comarch.com>, <yoshitake.kobayashi@toshiba.co.jp>,
-        <sassmann@redhat.com>, <andre.przywara@amd.com>,
-        <frank.arnold@amd.com>, <conny.seidel@amd.com>, <csd@broadcom.com>,
-        Steffen Schwigon <steffen.schwigon@amd.com>
-Subject: [PATCH 2/2] A common test subdirectory
-Date: Tue, 23 Oct 2012 10:03:02 +0200
-Message-ID: <1350979382-19983-3-git-send-email-steffen.schwigon@amd.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1350979382-19983-1-git-send-email-steffen.schwigon@amd.com>
-References: <1350979382-19983-1-git-send-email-steffen.schwigon@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Tue, 23 Oct 2012 04:05:16 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 04:05:15 EDT
+Message-ID: <1350979047.20572.6.camel@tellur>
+Subject: Re: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
+From: Lucas Stach <dev@lynxeye.de>
+To: Pavan Kunapuli <pkunapuli@nvidia.com>
+Cc: swarren@wwwdotorg.org, linux@arm.linux.org.uk, cjb@laptop.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Date: Tue, 23 Oct 2012 09:57:27 +0200
+In-Reply-To: <1350976740-19284-3-git-send-email-pkunapuli@nvidia.com>
+References: <1350976740-19284-1-git-send-email-pkunapuli@nvidia.com>
+	 <1350976740-19284-3-git-send-email-pkunapuli@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steffen Schwigon <steffen.schwigon@amd.com>
+Am Dienstag, den 23.10.2012, 12:49 +0530 schrieb Pavan Kunapuli:
+> vmmc and vqmmc regulators control the voltage to
+> the host and device. Defer the probe if either of
+> them is not registered.
+> 
+Does this work with boards where we don't have any MMC supplies? Or are
+we just deferring the probe indefinitely there?
 
-This commit introduces t/ as a subdirectory for placing
-tests that can be run via the existing Linux tool
-'prove' (available in all major Linux distributions).
+For boards that power MMC unconditionally, are we supposed to add dummy
+regulators to make them work with this patchset?
 
-Tests in there are assumed to produce TAP, the "Test
-Anything Protocol" (see http://testanything.org).
-
-A library with special utilities to write TAP tests for
-Linux (inclusive KVM and Xen support) is provided in the
-previous commit ('bash-test-utils'). TAP libraries are
-available for many programming languages. The autotest
-project already provides TAP support.
-
-Signed-off-by: Steffen Schwigon <steffen.schwigon@amd.com>
----
- t/examples/basic.t |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100755 t/examples/basic.t
-
-diff --git a/t/examples/basic.t b/t/examples/basic.t
-new file mode 100755
-index 0000000..d776108
---- /dev/null
-+++ b/t/examples/basic.t
-@@ -0,0 +1,49 @@
-+#!/bin/bash
-+
-+############################################################
-+#
-+# t/examples/basic.t
-+#
-+# An example test script for bash-test-utils
-+#
-+# Run it with:
-+#
-+#   $ cd $LINUX_SRC_DIR
-+#   $ prove -v t/examples/basic.t
-+#
-+############################################################
-+
-+. ./tools/testing/tap/bash-test-utils
-+
-+uname -a | grep -q Linux  # example for ok exit code
-+ok $? "we run on Linux"
-+
-+# require_* functions gracefully exit if requirements not met
-+require_cpufeature "msr"
-+require_cpufeature "fpu"
-+
-+# store success in variables and make complex tests
-+if grep -q sse2 /proc/cpuinfo ; then
-+    success=0
-+else
-+    success=1
-+fi
-+
-+# ok() evaluates arg 1 with exit code shell boolean semantics
-+# and creates TAP
-+ok $success "SSE2 in cpuinfo"
-+
-+# negate_ok() reverses the success semantics of ok()
-+grep -q impossible-value /proc/cpuinfo
-+negate_ok $? "no impossible-value in cpuinfo"
-+
-+# mark tests with "# TODO" at end of description
-+# for test driven development
-+grep -q not-yet-implemented-detail /proc/cpuinfo
-+ok $? "example that fails expectedly # TODO some todo explanation"
-+
-+# append key:value lines to track values
-+bogomips=$(grep -i bogomips /proc/cpuinfo | head -1 | cut -d: -f2)
-+append_tapdata "bogomips: $(echo $bogomips)"
-+
-+done_testing
--- 
-1.7.10.4
+> Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
+> ---
+>  drivers/mmc/host/sdhci.c |   25 ++++++++++++++++++++++---
+>  1 files changed, 22 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 7922adb..925c403 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2844,11 +2844,17 @@ int sdhci_add_host(struct sdhci_host *host)
+>  	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+>  		mmc->caps |= MMC_CAP_NEEDS_POLL;
+>  
+> -	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
+> +	/*
+> +	 * If vqmmc regulator and no 1.8V signalling, then there's no UHS.
+> +	 * vqmmc regulator should be present. If it's not present,
+> +	 * assume the regulator driver registration is not yet done and
+> +	 * defer the probe.
+> +	 */
+>  	host->vqmmc = regulator_get(mmc_dev(mmc), "vqmmc");
+>  	if (IS_ERR(host->vqmmc)) {
+> -		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+> +		pr_err("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+>  		host->vqmmc = NULL;
+> +		return -EPROBE_DEFER;
+>  	}
+>  	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
+>  		regulator_enable(host->vqmmc);
+> @@ -2903,10 +2909,17 @@ int sdhci_add_host(struct sdhci_host *host)
+>  
+>  	ocr_avail = 0;
+>  
+> +	/*
+> +	 * vmmc regulator should be present. If it's not present,
+> +	 * assume the regulator driver registration is not yet done
+> +	 * and defer the probe.
+> +	 */
+>  	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
+>  	if (IS_ERR(host->vmmc)) {
+> -		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+> +		pr_err("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+>  		host->vmmc = NULL;
+> +		ret = -EPROBE_DEFER;
+> +		goto vmmc_err;
+>  	} else
+>  		regulator_enable(host->vmmc);
+>  
+> @@ -3121,7 +3134,13 @@ reset:
+>  untasklet:
+>  	tasklet_kill(&host->card_tasklet);
+>  	tasklet_kill(&host->finish_tasklet);
+> +vmmc_err:
+> +	if (host->vqmmc) {
+> +		if (regulator_is_enabled(host->vqmmc))
+> +			regulator_disable(host->vqmmc);
+>  
+> +		regulator_put(host->vqmmc);
+> +	}
+>  	return ret;
+>  }
+>  
 
 
