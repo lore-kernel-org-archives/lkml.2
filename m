@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897Ab2JWJ6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:58:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48934 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932503Ab2JWJ63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:58:29 -0400
-Date: Tue, 23 Oct 2012 10:41:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fabio Coatti <fabio.coatti@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, NeilBrown <neilb@suse.de>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Subject: Re: ext3 issue on 3.6.1
-Message-ID: <20121023084158.GA3064@quack.suse.cz>
-References: <20121018220809.GD17646@quack.suse.cz>
- <20121019124454.316ecfac@notabene.brown>
- <CADpTngX=6vWV1fv8x-g8ufKTb3gW2=phPZBHZJHATEcqqjwtYg@mail.gmail.com>
- <CADpTngVnJwmu-E3wJwUaK2CKGBsRoJphRNtDPAO9AHyOnnfeRQ@mail.gmail.com>
- <20121022134541.GA9438@quack.suse.cz>
- <CADpTngX9YNq6Own1gvrHnwizUfG0KfjRuXL2F38n2C+CnOTpDA@mail.gmail.com>
- <20121022154258.GB9438@quack.suse.cz>
- <CADpTngUxFT+Sj1aZDY3iBMLpwgrj5rziTSibWD3HMC_DszZpDw@mail.gmail.com>
- <20121022161040.GC9438@quack.suse.cz>
- <CADpTngVHx_7uzEGM+_XGVK2Neh-dgcfxLnGaXT370SzgXtCZQA@mail.gmail.com>
+	id S932906Ab2JWJ77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:59:59 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:24862 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab2JWJ76 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 05:59:58 -0400
+X-Authority-Analysis: v=2.0 cv=Q6tQEvKa c=1 sm=0 a=YPDeGStqRoQnMAluW+pq4Q==:17 a=65KWcu232dMA:10 a=0N38pj-gRz4A:10 a=glBvsuNLT8EA:10 a=05ChyHeVI94A:10 a=8nJEP1OIZ-IA:10 a=ayC55rCoAAAA:8 a=9H2X1eDI008A:10 a=1JbS-s2C-jsue1JZQisA:9 a=wPNLvfGTeEIA:10 a=YPDeGStqRoQnMAluW+pq4Q==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 50.89.247.146
+Message-ID: <50866A9C.5060507@cfl.rr.com>
+Date: Tue, 23 Oct 2012 05:59:56 -0400
+From: Mark Hounschell <dmarkh@cfl.rr.com>
+Reply-To: dmarkh@cfl.rr.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADpTngVHx_7uzEGM+_XGVK2Neh-dgcfxLnGaXT370SzgXtCZQA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: markh@compro.net, linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] drm_kms_helper problems
+References: <508409FC.6080805@cfl.rr.com> <20121021165802.578d6d6b@neptune.home> <50843C83.8040801@cfl.rr.com> <20121021211817.58c6ccaf@neptune.home> <50853121.3040803@cfl.rr.com> <50858513.3070909@compro.net> <5085C092.8020309@cfl.rr.com> <20121023083623.774f093e@pluto.restena.lu>
+In-Reply-To: <20121023083623.774f093e@pluto.restena.lu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-10-12 18:18:10, Fabio Coatti wrote:
-> 2012/10/22 Jan Kara <jack@suse.cz>:
-> > On Mon 22-10-12 18:01:56, Fabio Coatti wrote:
-> >> 2012/10/22 Jan Kara <jack@suse.cz>:
-> >> >> Uhu, my fault, I was sure to have answered to your request, sorry.
-> >> >> So yes, we have an ext3 R/O partition mounted on that machine. The
-> >> >> 3.6.3, with patch applied, dmesg is here:
-> >> >   Interesting. You seem to be using data=journal on R/O partition, don't
-> >> > you? Can you also attach /proc/mounts?
-> >> >
-> >> >   Also please try running a kernel with the attached patch and report the
-> >> > warning. Thanks!
-> >>
-> >> Do you want to try the kernel without touching the mount
-> >> configuration, right? (I mean, without (say) mounting ext2 the ext3 ro
-> >> partition, right?)
-> >   Yes, leave things as they are now...
-> >
-> >> right now I can't access the machine, but I recall that the partition
-> >> is mounted rw, something is wrote onto it and then changed to r/o and
-> >> among the options there is data=ordered.
-> >   /proc/mounts should show us whether data=ordered is in use. Actually the
-> > warning is in function which is called only in data=journal mode so that's
-> > why I think you are using it...
-> 
-> Ok, got the options:
-> 
-> ro,noatime,errors=continue,barrier=1,data=ordered 0 0
-  Can you please post *full* /proc/mounts content? Thanks. It is hard to
-believe ext3_journalled_writepage() gets called on data=ordered filesystem.
+On 10/23/2012 02:36 AM, Bruno Prémont wrote:
+> On Mon, 22 Oct 2012 17:54:26 Mark Hounschell wrote:
+>> Another interesting thing. I changed the boot file to only
+>> "video=HDMI-A-1:e" and the monitor on the DVI port complains about the
+>> resolution being to high. I then put the hdmi cable onto my dvi/hdmi
+>> adapter and plug it into the DVI port and wala, a 1920 x 1080 desktop. So I
+>> reboot with it in that configuration  and again comes up good connected to
+>> the DVI connector.
+>
+> So at least the EDID firmware now gets recognized and considered :)
+>
+>> # xrandr
+>> Screen 0: minimum 320 x 200, current 1920 x 1080, maximum 8192 x 8192
+>> VGA1 disconnected (normal left inverted right x axis y axis)
+>> HDMI1 connected 1920x1080+0+0 (normal left inverted right x axis y axis)
+>> 708mm x 398mm
+>>      1920x1080      60.0*+   50.0     25.0     30.0     30.0     24.0
+>>      1680x1050      59.9
+>>      1680x945       60.0
+>>      1400x1050      59.9
+>>      1600x900       60.0
+>>      1280x1024      75.0     60.0
+>>      1440x900       59.9
+>>      1280x960       60.0
+>>      1366x768       60.0
+>>      1360x768       60.0
+>>      1280x800       74.9     59.9
+>>      1152x864       75.0
+>>      1280x768       74.9     60.0
+>>      1280x720       50.0     60.0
+>>      1024x768       75.1     70.1     60.0
+>>      1024x576       60.0
+>>      800x600        72.2     75.0     60.3     56.2
+>>      720x576        50.0
+>>      848x480        60.0
+>>      720x480        59.9
+>>      640x480        72.8     75.0     60.0     59.9     59.9
+>>      720x400        70.1
+>> DP1 disconnected (normal left inverted right x axis y axis)
+>> HDMI2 disconnected (normal left inverted right x axis y axis)
+>> HDMI3 disconnected (normal left inverted right x axis y axis)
+>> DP2 disconnected (normal left inverted right x axis y axis)
+>> DP3 disconnected (normal left inverted right x axis y axis)
+>>
+>> I'm still getting the same messages spewed into the kernel log file. So
+>> this looks to me like the kernel is confused. Again, I ask, why do I have 3
+>> HDMIs and 3 DPs but just one VGA.
+>
+> Maybe Daniel or Chris can comment on that high quantity of DP/HDMI
+> connectors seen by driver. Those are probably also the cause of the
+> persistent EDID complaints in kernel log.
+>
 
-									Honza
+What I see is that HDMI-1 is the DVI port, HDMI-3 is the HDMI port, so I 
+assume HDMI-2 is that "other" video port.
 
-> and as expected, the usual warning triggered, but not the message from
-> your patch:
-> 
-> [  173.408622] ------------[ cut here ]------------
-> [  173.408725] WARNING: at fs/ext3/inode.c:1754
-> ext3_journalled_writepage+0x55/0x1a7()
-> [  173.408850] Hardware name: ProLiant BL465c G7
-> [  173.408940] Pid: 2142, comm: flush-8:0 Not tainted 3.6.3-p #2
-> [  173.409034] Call Trace:
-> [  173.409123]  [<ffffffff81057884>] ? warn_slowpath_common+0x73/0x87
-> [  173.409219]  [<ffffffff8115cd04>] ? ext3_journalled_writepage+0x55/0x1a7
-> [  173.409320]  [<ffffffff810a2833>] ? __writepage+0xa/0x21
-> [  173.409414]  [<ffffffff810a31db>] ? write_cache_pages+0x206/0x2f8
-> [  173.409509]  [<ffffffff810a2829>] ? set_page_dirty+0x5e/0x5e
-> [  173.409604]  [<ffffffff81297cfb>] ? queue_unplugged+0x28/0x34
-> [  173.409698]  [<ffffffff810a330b>] ? generic_writepages+0x3e/0x55
-> [  173.409793]  [<ffffffff810f4eb0>] ? __writeback_single_inode+0x39/0xd1
-> [  173.409889]  [<ffffffff810f5c69>] ? writeback_sb_inodes+0x206/0x392
-> [  173.409983]  [<ffffffff810f5e5c>] ? __writeback_inodes_wb+0x67/0xa2
-> [  173.410079]  [<ffffffff810f5ffa>] ? wb_writeback+0xfd/0x18b
-> [  173.410172]  [<ffffffff810a36d1>] ? bdi_dirty_limit+0x27/0x81
-> [  173.410348]  [<ffffffff810f61c5>] ? wb_do_writeback+0x13d/0x1a2
-> [  173.410461]  [<ffffffff81061e9b>] ? add_timer_on+0x61/0x61
-> [  173.410584]  [<ffffffff810f62a9>] ? bdi_writeback_thread+0x7f/0x13e
-> [  173.410700]  [<ffffffff8106a54d>] ? queue_work_on+0x16/0x1e
-> [  173.410809]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
-> [  173.410902]  [<ffffffff810f622a>] ? wb_do_writeback+0x1a2/0x1a2
-> [  173.410996]  [<ffffffff8106e134>] ? kthread+0x81/0x89
-> [  173.411089]  [<ffffffff81607e74>] ? kernel_thread_helper+0x4/0x10
-> [  173.411184]  [<ffffffff8106e0b3>] ? kthread_worker_fn+0xe0/0xe0
-> [  173.411277]  [<ffffffff81607e70>] ? gs_change+0xb/0xb
-> [  173.411367] ---[ end trace 8243403b245b6cfc ]---
-> 
-> -- 
-> Fabio
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+If I set video=HDMI-A-1:d nothing comes out the DVI port and if I set 
+HDMI-A-3:d nothing comes out the HDMI port. This is rather confusing. Is it 
+correct?
+
+>
+> You could maybe try to disable those outputs in xorg.conf in order to not
+> get your log filled with bad EDID complaints for "unused" connectors.
+> But as specifying the EDID as firmware it's just a work-around to the
+> issue.
+>
+
+These messages get spewed even if X is not running. The machine is 
+unresponsive for 2-3 seconds when this happens.
+
+Sure, specifying the EDID as firmware is a work around, but it's a work 
+around that isn't working as intended on this hardware, for whatever 
+reason. Seems like someone would be interested in fixing it? I've got a 
+machine I could provide some access to?
+
+Mark
+
+
+
