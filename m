@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2JWTxC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:53:02 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:49214 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756884Ab2JWTxA (ORCPT
+	id S1757465Ab2JWTxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:53:19 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43316 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756884Ab2JWTxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:53:00 -0400
-Date: Tue, 23 Oct 2012 21:31:46 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: hayeswang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
-Message-ID: <20121023193146.GA10463@electric-eye.fr.zoreil.com>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <20121022192748.GA16370@electric-eye.fr.zoreil.com> <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Tue, 23 Oct 2012 15:53:16 -0400
+Message-ID: <5086F5A7.9090406@vlnb.net>
+Date: Tue, 23 Oct 2012 15:53:11 -0400
+From: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+In-Reply-To: <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hayeswang <hayeswang@realtek.com> :
-[...]
-> The flag is determined if the firmware is loaded. It doesn't mean to enable
-> ALDPS. Besides ALDPS, the firmware includes the other features about power
-> saving, performance, hw behavior, and so on. Thus, I think it  is the extended
-> feature. Any suggestion?
+杨苏立 Yang Su Li, on 10/11/2012 12:32 PM wrote:
+> I am not quite whether I should ask this question here, but in terms
+> of light weight barrier/fsync, could anyone tell me why the device
+> driver / OS provide the barrier interface other than some other
+> abstractions anyway? I am sorry if this sounds like a stupid questions
+> or it has been discussed before....
+>
+> I mean, most of the time, we only need some ordering in writes; not
+> complete order, but partial,very simple topological order. And a
+> barrier seems to be a heavy weighted solution to achieve this anyway:
+> you have to finish all writes before the barrier, then start all
+> writes issued after the barrier. That is some ordering which is much
+> stronger than what we need, isn't it?
+>
+> As most of the time the order we need do not involve too many blocks
+> (certainly a lot less than all the cached blocks in the system or in
+> the disk's cache), that topological order isn't likely to be very
+> complicated, and I image it could be implemented efficiently in a
+> modern device, which already has complicated caching/garbage
+> collection/whatever going on internally. Particularly, it seems not
+> too hard to be implemented on top of SCSI's ordered/simple task mode?
 
-RTL_FEATURE_FW_LOADED
+Yes, SCSI has full support for ordered/simple commands designed exactly for that 
+task: to have steady flow of commands even in case when some of them are ordered. 
+It also has necessary facilities to handle commands errors without unexpected 
+reorders of their subsequent commands (ACA, etc.). Those allow to get full storage 
+performance by fully "fill the pipe", using networking terms. I can easily imaging 
+real life configs, where it can bring 2+ times more performance, than with queue 
+flushing.
 
-[...]
-> I don't sure if the firmware code still exists and works after hibernation. I
-> clear the flag for safe. It would be set again after loading firmware. It is
-> used to make sure to enable ALDPS with firmware.
+In fact, AFAIK, AIX requires from storage to support ordered commands and ACA.
 
-I don't understand if you want to avoid a coding bug or a hardware problem.
+Implementation should be relatively easy as well, because all transports naturally 
+have link as the point of serialization, so all you need in multithreaded 
+environment is to pass some SN from the point when each ORDERED command created to 
+the point when it sent to the link and make sure that no SIMPLE commands can ever 
+cross ORDERED commands. You can see how it is implemented in SCST in an elegant 
+and lockless manner (for SIMPLE commands).
 
-The code only enables ALDPS in the hw_phy_config helpers. Said helpers are
-the only places where firmware loading is requested. Loading the firmware
-always set RTL_FEATURE_XYZ.
+But historically for some reason Linux storage developers were stuck with 
+"barriers" concept, which is obviously not the same as ORDERED commands, hence had 
+a lot troubles with their ambiguous semantic. As far as I can tell the reason of 
+that was some lack of sufficiently deep SCSI understanding (how to handle errors, 
+believe that ACA is something legacy from parallel SCSI times, etc.).
 
-Whatever you are trying to achieve, the change in rtl8169_net_suspend
-seem rather useless. Please explain.
+Hopefully, eventually the storage developers will realize the value behind ordered 
+commands and learn corresponding SCSI facilities to deal with them. It's quite 
+easy to demonstrate this value, if you know where to look at and not blindly 
+refusing such possibility. I have already tried to explain it a couple of times, 
+but was not successful.
 
-(if you want to enforce that ALDPS does nothing when it is not called
-right after firmware loading, the ALDPS enable method itself is imho the
-natural place to reset the bit).
+Before that happens, people will keep returning again and again with those simple 
+questions: why the queue must be flushed for any ordered operation? Isn't is an 
+obvious overkill?
 
-[...]
-> > After this patch the driver would look like:
-> > 1. disable ALDPS before setting firmware (unmodified by patch)
-> >    RTL_GIGA_MAC_VER_29 "RTL8105e"
-> >    RTL_GIGA_MAC_VER_30 "RTL8105e"
-> >    RTL_GIGA_MAC_VER_37 "RTL8402"
-> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
-> > 
-> > 2. apply_firmware (unmodified by patch)
-> >    RTL_GIGA_MAC_VER_25 "RTL8168d/8111d"
-> >    RTL_GIGA_MAC_VER_26 "RTL8168d/8111d"
-> >    RTL_GIGA_MAC_VER_29 "RTL8105e"
-> >    RTL_GIGA_MAC_VER_30 "RTL8105e"
-> >    RTL_GIGA_MAC_VER_32 "RTL8168e/8111e"
-> >    RTL_GIGA_MAC_VER_33 "RTL8168e/8111e"
-> >    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
-> >    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
-> >    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
-> >    RTL_GIGA_MAC_VER_37 "RTL8402"
-> >    RTL_GIGA_MAC_VER_38 "RTL8411"
-> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
-> >    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
-> > 
-> > 3. enable ALDPS after firmware
-> >    RTL_GIGA_MAC_VER_34 "RTL8168evl/8111evl"
-> >    RTL_GIGA_MAC_VER_35 "RTL8168f/8111f"
-> >    RTL_GIGA_MAC_VER_36 "RTL8168f/8111f"
-> >    RTL_GIGA_MAC_VER_37 "RTL8402"
-> >    RTL_GIGA_MAC_VER_38 "RTL8411"
-> >    RTL_GIGA_MAC_VER_39 "RTL8106e"
-> >    RTL_GIGA_MAC_VER_40 "RTL8168g/8111g"
-> > 
-> > The disable/enable ALDPS code is not trivially balanced.
-> > 
-> > Do we exactly perform the required ALDPS operations ? Nothing more,
-> > nothing less ?
-> > 
-> 
-> Because the different design between the giga nic and 10/100M nic, the behavior
-> would be different. For example, you couldn't disable the ALDPS of the giga nic
-> directly just like the 10/100M (8136 series) one. The giga nic would disable
-> ALDPS automatically when loading firmware, but the 8136 series wouldn't.
-
-It would be nice to state these things in the commit message, namely:
-- ALDPS should never be enabled for the RTL8105e
-- none of the firmware-free chipsets support ALDPS
-- neither do the RTL8168d/8111d
-
--- 
-Ueimor
+Vlad
