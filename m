@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933195Ab2JWRoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:44:16 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:10448 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757154Ab2JWRoO convert rfc822-to-8bit (ORCPT
+	id S1757399Ab2JWRsk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:48:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52452 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab2JWRsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:44:14 -0400
-X-IronPort-AV: E=Sophos;i="4.80,637,1344236400"; 
-   d="scan'208";a="703331974"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Nix <nix@esperi.org.uk>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Schumaker, Bryan" <Bryan.Schumaker@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: RE: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
- (also an unrelated ext4 data loss bug)
-Thread-Topic: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
- (also an unrelated ext4 data loss bug)
-Thread-Index: AQHNsUTm4bFApwWkDUaJq39XtFx3BJfHKAYw
-Date: Tue, 23 Oct 2012 17:44:12 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA90928CD7F@SACEXCMBX04-PRD.hq.netapp.com>
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<20121023164621.GC3040@fieldses.org>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
-	<87vce1w241.fsf@spindle.srvr.nix> <87r4opw0og.fsf@spindle.srvr.nix>
-In-Reply-To: <87r4opw0og.fsf@spindle.srvr.nix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.53]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Oct 2012 13:48:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH v2 2/4] zynq: move static peripheral mappings
+Date: Tue, 23 Oct 2012 17:48:33 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, John Linn <john.linn@xilinx.com>
+References: <20121022211219.GC31538@beefymiracle.amer.corp.natinst.com> <201210231450.11540.arnd@arndb.de> <20121023162641.GG20593@beefymiracle.amer.corp.natinst.com>
+In-Reply-To: <20121023162641.GG20593@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210231748.33373.arnd@arndb.de>
+X-Provags-ID: V02:K0:BfaJ2GI3edsMWw9ZCd6wrhel5pxW+pj16p/ohdsH+Xf
+ yl7y0H5xzoYxmDKTuqw54BGNINBGyHZzJMYhl8rq2pWAP0VZXy
+ k1VH1EwZbROxN1M6EFvuXjYedj5awcrBzMC73M4sCZfSBhUu49
+ 2+0bAqenk6T3drjBuTiDiBODg7wL18mnexkl+br0PJ0zpdgJgz
+ XiLkyT8/szkoSBXvLiwyaUyKu88Zuvqb4FFwaTOgizd6le1aBp
+ BN+Hf90x834zNOsZUWyBYGr6usZ7qlDbgO7mT8g295V2B+UcVE
+ J1/bWlWeWiCwArkqyVMFzYSxxmGr275FOA3Cn+Jf4zqqIxoI7e
+ D2uuutEvJZ8ineHLlYAI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Nix [mailto:nix@esperi.org.uk]
-> Sent: Tuesday, October 23, 2012 1:36 PM
-> To: Myklebust, Trond
-> Cc: J. Bruce Fields; Ted Ts'o; linux-kernel@vger.kernel.org; Schumaker,
-> Bryan; Peng Tao; gregkh@linuxfoundation.org; linux-nfs@vger.kernel.org;
-> Stanislav Kinsbursky
-> Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression? (also
-> an unrelated ext4 data loss bug)
+On Tuesday 23 October 2012, Josh Cartwright wrote:
+> On Tue, Oct 23, 2012 at 02:50:11PM +0000, Arnd Bergmann wrote:
+> > On Monday 22 October 2012, Josh Cartwright wrote:
 > 
-> On 23 Oct 2012, nix@esperi.org.uk uttered the following:
+> > > diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> > > index d0d3f8f..ae3b236 100644
+> > > --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> > > +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> > > -#define TTC0_PHYS			0xF8001000
+> > > -#define TTC0_VIRT			TTC0_PHYS
+> > > +#define TTC0_PHYS		0xF8001000
+> > > +#define TTC0_SIZE		SZ_4K
+> > > +#define TTC0_VIRT		(UART0_VIRT - TTC0_SIZE)
+> > 
+> > It's quite likely that this does not have to be a fixed mapping
+> > any more. Just have a look at how drivers/clocksource/dw_apb_timer_of.c
+> > calls of_iomap() to get the address.
 > 
-> > On 23 Oct 2012, Trond Myklebust spake thusly:
-> >> On Tue, 2012-10-23 at 12:46 -0400, J. Bruce Fields wrote:
-> >>> Looks like there's some confusion about whether nsm_client_get()
-> >>> returns NULL or an error?
-> >>
-> >> nsm_client_get() looks extremely racy in the case where ln->nsm_users
-> >> == 0.  Since we never recheck the value of ln->nsm_users after taking
-> >> nsm_create_mutex, what is stopping 2 different threads from both
-> >> setting
-> >> ln->nsm_clnt and re-initialising ln->nsm_users?
-> >
-> > Yep. At the worst possible time:
-> >
-> > 	spin_lock(&ln->nsm_clnt_lock);
-> > 	if (ln->nsm_users) {
-> > 		if (--ln->nsm_users)
-> > 			ln->nsm_clnt = NULL;
-> > (1)		shutdown = !ln->nsm_users;
-> > 	}
-> > 	spin_unlock(&ln->nsm_clnt_lock);
-> >
-> > If a thread reinitializes nsm_users at point (1), after the
-> > assignment, we could well end up with ln->nsm_clnt NULL and shutdown
-> > false. A bit later, nsm_mon_unmon gets called with a NULL clnt, and boom.
-> 
-> Possible fix if so, utterly untested so far (will test when I can face yet another
-> reboot and fs-corruption-recovery-hell cycle, in a few hours), may ruin
-> performance, violate locking hierarchies, and consume
-> kittens:
-> 
-> diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c index e4fb3ba..da91cdf 100644
-> --- a/fs/lockd/mon.c
-> +++ b/fs/lockd/mon.c
-> @@ -98,7 +98,6 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
->  		spin_unlock(&ln->nsm_clnt_lock);
->  		goto out;
->  	}
-> -	spin_unlock(&ln->nsm_clnt_lock);
-> 
->  	mutex_lock(&nsm_create_mutex);
->  	clnt = nsm_create(net);
-> @@ -108,6 +107,7 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
->  		ln->nsm_users = 1;
->  	}
->  	mutex_unlock(&nsm_create_mutex);
-> +	spin_unlock(&ln->nsm_clnt_lock);
+> Yes, this is already on my list of plans.  The in-tree TTC driver
+> unfortunately doesn't yet support device tree bindings.  Are you
+> comfortable waiting on the DT-ification of the TTC in a follow-up
+> patchset?
 
-You can't hold a spinlock while sleeping. Both mutex_lock() and nsm_create() can definitely sleep.
+Yes, that's fine. If you do that, you can also move the driver to
+drivers/clocksource in another patch.
 
-The correct way to do this is to grab the spinlock and recheck the value of ln->nsm_users inside the 'if (!IS_ERR())' condition. If it is still zero, bump it and set ln->nsm_clnt, otherwise bump it, get the existing ln->nsm_clnt and call rpc_shutdown_clnt() on the redundant nsm client after dropping the spinlock.
-
-Cheers
-  Trond
+	Arnd
