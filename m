@@ -1,152 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab2JWWt4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:49:56 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48978 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab2JWWty (ORCPT
+	id S965032Ab2JWWut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:50:49 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41436 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933587Ab2JWWuo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:49:54 -0400
+	Tue, 23 Oct 2012 18:50:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1350615088-14562-2-git-send-email-mporter@ti.com>
-References: <1350615088-14562-1-git-send-email-mporter@ti.com> <1350615088-14562-2-git-send-email-mporter@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 23 Oct 2012 23:49:33 +0100
-X-Google-Sender-Auth: lcXxSP9bcLZfUCoQMI9Cn44EqtM
-Message-ID: <CACxGe6sUrXPc2wtLfOy8_LvRMM+e=9=sSDNLkeszfe=JX_ipbw@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
-To: Matt Porter <mporter@ti.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
+In-Reply-To: <876260hl0p.fsf@octavius.laptop.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-71-git-send-email-keescook@chromium.org>
+	<876260hl0p.fsf@octavius.laptop.org>
+Date: Tue, 23 Oct 2012 15:50:43 -0700
+X-Google-Sender-Auth: sAc6Eg6ww0MtbjeLsN8YSmaMAG4
+Message-ID: <CAGXu5j+vCw-oA=Uyw6v3-O1d6itTJ7LEU6DLAEMXL1QDQP_uYA@mail.gmail.com>
+Subject: Re: [PATCH 070/193] drivers/mmc/core: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 3:51 AM, Matt Porter <mporter@ti.com> wrote:
-> Add a dmaengine API to retrieve per channel capabilities.
-> Currently, only channel ops and SG segment limitations are
-> implemented caps.
+On Tue, Oct 23, 2012 at 3:38 PM, Chris Ball <cjb@laptop.org> wrote:
+> On Tue, Oct 23 2012, Kees Cook wrote:
+> > This config item has not carried much meaning for a while now and is
+> > almost always enabled by default. As agreed during the Linux kernel
+> > summit, remove it.
+> >
+> > CC: Chris Ball <cjb@laptop.org>
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > ---
+> >  drivers/mmc/core/Kconfig |    3 +--
+> >  1 file changed, 1 insertion(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/mmc/core/Kconfig b/drivers/mmc/core/Kconfig
+> > index ef10387..269d072 100644
+> > --- a/drivers/mmc/core/Kconfig
+> > +++ b/drivers/mmc/core/Kconfig
+> > @@ -18,8 +18,7 @@ config MMC_UNSAFE_RESUME
+> >         module parameter "removable=0" or "removable=1".
+> >
+> >  config MMC_CLKGATE
+> > -     bool "MMC host clock gating (EXPERIMENTAL)"
+> > -     depends on EXPERIMENTAL
+> > +     bool "MMC host clock gating"
+> >       help
+> >         This will attempt to aggressively gate the clock to the MMC card.
+> >         This is done to save power due to gating off the logic and bus
 >
-> The API is optionally implemented by drivers and when
-> unimplemented will return a NULL pointer. It is intended
-> to be executed after a channel has been requested and, if
-> the channel is intended to be used with slave SG transfers,
-> then it may only be called after dmaengine_slave_config()
-> has executed. The slave driver provides parameters such as
-> burst size and address width which may be necessary for
-> the dmaengine driver to use in order to properly return SG
-> segment limit caps.
+> Maybe this isn't important, but:
 >
-> Suggested-by: Vinod Koul <vinod.koul@intel.com>
-> Signed-off-by: Matt Porter <mporter@ti.com>
-> ---
->  include/linux/dmaengine.h |   52 +++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 52 insertions(+)
+> I think the commit message should be changed -- this part of the series
+> doesn't remove EXPERIMENTAL, it removes the dependency on it from its
+> current users.  The way the commit message is worded makes it sound like
+> the patch is going to remove MMC_CLKGATE, which of course it doesn't.
 >
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 11d9e25..0181887 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -371,6 +371,38 @@ struct dma_slave_config {
->         unsigned int slave_id;
->  };
->
-> +enum dmaengine_apis {
-> +       DMAENGINE_MEMCPY        = 0x0001,
-> +       DMAENGINE_XOR           = 0x0002,
-> +       DMAENGINE_XOR_VAL       = 0x0004,
-> +       DMAENGINE_PQ            = 0x0008,
-> +       DMAENGINE_PQ_VAL        = 0x0010,
-> +       DMAENGINE_MEMSET        = 0x0020,
-> +       DMAENGINE_SLAVE         = 0x0040,
-> +       DMAENGINE_CYCLIC        = 0x0080,
-> +       DMAENGINE_INTERLEAVED   = 0x0100,
-> +       DMAENGINE_SG            = 0x0200,
-> +};
+> Ditto the subject line, could be ": remove use of CONFIG_EXPERIMENTAL".
 
-Actually, one more comment. Why the new enum? Why can't the
-dma_transaction_type enum be used directly along with dma_cap_mask_t?
+I'll update the commit and subjects for the series; good idea.
 
-> +
-> +/* struct dmaengine_chan_caps - expose capability of a channel
-> + * Note: each channel can have same or different capabilities
-> + *
-> + * This primarily classifies capabilities into
-> + * a) APIs/ops supported
-> + * b) channel physical capabilities
-> + *
-> + * @ops: or'ed api capability
-> + * @seg_nr: maximum number of SG segments supported on a SG/SLAVE
-> + *         channel (0 for no maximum or not a SG/SLAVE channel)
-> + * @seg_len: maximum length of SG segments supported on a SG/SLAVE
-> + *          channel (0 for no maximum or not a SG/SLAVE channel)
-> + */
-> +struct dmaengine_chan_caps {
-> +       enum dmaengine_apis ops;
-> +       int seg_nr;
-> +       int seg_len;
-> +};
-> +
->  static inline const char *dma_chan_name(struct dma_chan *chan)
->  {
->         return dev_name(&chan->dev->device);
-> @@ -534,6 +566,7 @@ struct dma_tx_state {
->   *     struct with auxiliary transfer status information, otherwise the call
->   *     will just return a simple status code
->   * @device_issue_pending: push pending transactions to hardware
-> + * @device_channel_caps: return the channel capabilities
->   */
->  struct dma_device {
+> Regardless, for this and the subsequent [071] patch:
 >
-> @@ -602,6 +635,8 @@ struct dma_device {
->                                             dma_cookie_t cookie,
->                                             struct dma_tx_state *txstate);
->         void (*device_issue_pending)(struct dma_chan *chan);
-> +       struct dmaengine_chan_caps *(*device_channel_caps)(
-> +               struct dma_chan *chan, enum dma_transfer_direction direction);
->  };
+> Acked-by: Chris Ball <cjb@laptop.org>
 >
->  static inline int dmaengine_device_control(struct dma_chan *chan,
-> @@ -969,6 +1004,23 @@ dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used,
->         }
->  }
->
-> +/**
-> + * dma_get_channel_caps - flush pending transactions to HW
-> + * @chan: target DMA channel
-> + * @dir: direction of transfer
-> + *
-> + * Get the channel-specific capabilities. If the dmaengine
-> + * driver does not implement per channel capbilities then
-> + * NULL is returned.
-> + */
-> +static inline struct dmaengine_chan_caps
-> +*dma_get_channel_caps(struct dma_chan *chan, enum dma_transfer_direction dir)
-> +{
-> +       if (chan->device->device_channel_caps)
-> +               return chan->device->device_channel_caps(chan, dir);
-> +       return NULL;
-> +}
-> +
->  enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  #ifdef CONFIG_DMA_ENGINE
->  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> (Let me know if you'd like me to take these, I don't mind who merges them.)
 
+Either way is fine; I'm already carrying a bunch, so I'm happy to add
+these to that list.
 
+-Kees
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+--
+Kees Cook
+Chrome OS Security
