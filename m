@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab2JWPrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 11:47:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38688 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab2JWPrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 11:47:42 -0400
+	id S933068Ab2JWPu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 11:50:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754833Ab2JWPuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 11:50:25 -0400
+Date: Tue, 23 Oct 2012 17:51:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called
+	after the task is added to css_set
+Message-ID: <20121023155128.GB16201@redhat.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org> <20121021191141.GA26218@redhat.com> <20121021192222.GB5951@atj.dyndns.org> <20121022180445.GB21553@redhat.com> <20121022211631.GE5951@atj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20121023154226.GB16140@aftab.osrc.amd.com>
-References: <1350921364-26366-1-git-send-email-kirjanov@gmail.com>
-	<20121023154226.GB16140@aftab.osrc.amd.com>
-Date: Tue, 23 Oct 2012 19:47:41 +0400
-Message-ID: <CAHj3AVkZnFh1K7fpL8tGzHDXkMjiXBXiU4JE6XbpfmEzOHpZPw@mail.gmail.com>
-Subject: Re: [PATCH] check the kzalloc return value
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121022211631.GE5951@atj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll resubmit a new patch.
+On 10/22, Tejun Heo wrote:
+>
+> On Mon, Oct 22, 2012 at 08:04:45PM +0200, Oleg Nesterov wrote:
+>
+> > > > I am starting to think again about a big-rw-lock around copy_process.
+> > > > Recently I tried to add one around dup_mmap for uprobes, but perhaps
+> > > > cgroups can use it too...
+> > >
+> > > If some other subsystems need it, maybe just make threadgroup locking
+> > > coarser?
+> >
+> > What do you mean?
+>
+> I probabl have misunderstood you
 
-Thanks!
+Probably me ;)
 
-On 10/23/12, Borislav Petkov <bp@amd64.org> wrote:
-> On Mon, Oct 22, 2012 at 07:56:04PM +0400, Denis Kirjanov wrote:
->>
->
-> Needs a commit message.
->
->> Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
->> ---
->>  drivers/edac/edac_mc_sysfs.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
->> index ed0bc07..55ce016 100644
->> --- a/drivers/edac/edac_mc_sysfs.c
->> +++ b/drivers/edac/edac_mc_sysfs.c
->> @@ -1128,7 +1128,8 @@ int __init edac_mc_sysfs_init(void)
->>  	}
->>
->>  	mci_pdev = kzalloc(sizeof(*mci_pdev), GFP_KERNEL);
->> -
->> +	if (!mci_pdev)
->> +		return -ENOMEM;
->
-> This either needs to do
->
-> 	edac_put_sysfs_subsys();
->
-> on the error-out path.
->
->>  	mci_pdev->bus = edac_subsys;
->>  	mci_pdev->type = &mc_attr_type;
->>  	device_initialize(mci_pdev);
->
-> Thanks.
->
-> --
-> Regards/Gruss,
-> Boris.
->
-> Advanced Micro Devices GmbH
-> Einsteinring 24, 85609 Dornach
-> GM: Alberto Bozzo
-> Reg: Dornach, Landkreis Muenchen
-> HRB Nr. 43632 WEEE Registernr: 129 19551
->
+> but If you're gonna add big-rw-lock
+> around copy-process which is always gonna be grabbed, I was suggesting
+> maybe we could simply repurpose the existing threadgroup locking.
 
+Yes, yes. But in this case (I mean, for uprobes) "threadgroup" in the name
+is misleading. It should be called unconditially without any argument.
 
--- 
-Regards,
-Denis
+Please see
+
+	[PATCH 1/2] brw_mutex: big read-write mutex
+	http://marc.info/?l=linux-kernel&m=135032816223715
+
+	[PATCH 2/2] uprobes: Use brw_mutex to fix register/unregister vs dup_mmap() race
+	http://marc.info/?l=linux-kernel&m=135032817823720
+
+for details, but in short 2/2 needs this giant lock to block dup_mmap()
+system-wide, while cgroup (currently) only needs threadgroup lock if
+CLONE_THREAD (ignoring do_exit) and per-task.
+
+So please forget, I no longer think it makes sense to use the same
+thing for uprobes and cgroups.
+
+Oleg.
+
