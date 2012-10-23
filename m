@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab2JWMzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:55:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51371 "EHLO
+	id S932961Ab2JWMzc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:55:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51367 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932770Ab2JWMyp (ORCPT
+	by vger.kernel.org with ESMTP id S932337Ab2JWMyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:54:45 -0400
+	Tue, 23 Oct 2012 08:54:44 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 3/3 v2] firmware: Factor out code to add paths to the firmware path list
-Date: Tue, 23 Oct 2012 13:52:56 +0100
-Message-Id: <1350996776-17864-4-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/3 v2] firmware: Convert firmware path setup from an array to a list
+Date: Tue, 23 Oct 2012 13:52:54 +0100
+Message-Id: <1350996776-17864-2-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -20,75 +20,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In preparation to support dynamic listing/updating of firmware
+paths via procfs, this patch converts the firmware path configuration
+from an array to a list.
+
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/firmware_class.c | 36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+ drivers/base/firmware_class.c | 74 +++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 65 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 322fff3..cf4aa5f 100644
+index 8945f4e..d76152b 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -1426,6 +1426,22 @@ static int fw_cache_piggyback_on_request(const char *name)
+@@ -36,6 +36,13 @@ MODULE_AUTHOR("Manuel Estrada Sainz");
+ MODULE_DESCRIPTION("Multi purpose firmware loading support");
+ MODULE_LICENSE("GPL");
+ 
++struct fw_path_rec {
++	const char *name;
++	struct list_head list;
++};
++
++static LIST_HEAD(fw_path_list);
++
+ /* Builtin firmware support */
+ 
+ #ifdef CONFIG_FW_LOADER
+@@ -267,12 +274,6 @@ static void fw_free_buf(struct firmware_buf *buf)
+ }
+ 
+ /* direct firmware loading support */
+-static const char *fw_path[] = {
+-	"/lib/firmware/updates/" UTS_RELEASE,
+-	"/lib/firmware/updates",
+-	"/lib/firmware/" UTS_RELEASE,
+-	"/lib/firmware"
+-};
+ 
+ /* Don't inline this: 'struct kstat' is biggish */
+ static noinline long fw_file_size(struct file *file)
+@@ -309,13 +310,13 @@ static bool fw_read_file_contents(struct file *file, struct firmware_buf *fw_buf
+ 
+ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
+ {
+-	int i;
+ 	bool success = false;
+ 	char *path = __getname();
++	struct fw_path_rec *fwp;
+ 
+-	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
++	list_for_each_entry(fwp, &fw_path_list, list) {
+ 		struct file *file;
+-		snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
++		snprintf(path, PATH_MAX, "%s/%s", fwp->name, buf->fw_id);
+ 
+ 		file = filp_open(path, O_RDONLY, 0);
+ 		if (IS_ERR(file))
+@@ -1423,6 +1424,50 @@ static int fw_cache_piggyback_on_request(const char *name)
  }
  #endif
  
-+static int fw_add_path_to_list(const char *path)
++static void fw_free_path_list(void)
 +{
 +	struct fw_path_rec *fwp;
 +
-+	fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
-+	if (!fwp)
-+		return -ENOMEM;
-+	fwp->name = kstrdup(path, GFP_KERNEL);
-+	if (!fwp->name) {
++	while (!list_empty(&fw_path_list)) {
++		fwp = list_first_entry(&fw_path_list,
++				       struct fw_path_rec,
++				       list);
++		kfree(fwp->name);
++		list_del(&fwp->list);
 +		kfree(fwp);
-+		return -ENOMEM;
 +	}
-+	list_add_tail(&fwp->list, &fw_path_list);
-+	return 0;
 +}
 +
- static void fw_free_path_list(void)
++static int fw_populate_path_list(void)
++{
++	int i;
++	struct fw_path_rec *fwp;
++	static const char *fw_path[] = {
++		"/lib/firmware/updates/" UTS_RELEASE,
++		"/lib/firmware/updates",
++		"/lib/firmware/" UTS_RELEASE,
++		"/lib/firmware"
++	};
++
++	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
++		fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
++		if (!fwp)
++			goto err_fwp_alloc;
++		fwp->name = kstrdup(fw_path[i], GFP_KERNEL);
++		if (!fwp->name)
++			goto err_fwp_name_alloc;
++		list_add_tail(&fwp->list, &fw_path_list);
++	}
++
++	return 0;
++
++err_fwp_name_alloc:
++	kfree(fwp);
++err_fwp_alloc:
++	fw_free_path_list();
++	return -ENOMEM;
++}
++
+ static void __init fw_cache_init(void)
  {
- 	struct fw_path_rec *fwp;
-@@ -1443,7 +1459,7 @@ static void fw_free_path_list(void)
- static int fw_populate_path_list(void)
+ 	spin_lock_init(&fw_cache.lock);
+@@ -1445,7 +1490,17 @@ static void __init fw_cache_init(void)
+ 
+ static int __init firmware_class_init(void)
  {
- 	int i;
--	struct fw_path_rec *fwp;
 +	int ret;
- 	static const char *fw_path[] = {
- 		"/lib/firmware/updates/" UTS_RELEASE,
- 		"/lib/firmware/updates",
-@@ -1452,22 +1468,14 @@ static int fw_populate_path_list(void)
- 	};
- 
- 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
--		fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
--		if (!fwp)
--			goto err_fwp_alloc;
--		fwp->name = kstrdup(fw_path[i], GFP_KERNEL);
--		if (!fwp->name)
--			goto err_fwp_name_alloc;
--		list_add_tail(&fwp->list, &fw_path_list);
-+		ret = fw_add_path_to_list(fw_path[i]);
-+		if (ret < 0) {
-+			fw_free_path_list();
-+			return ret;
-+		}
- 	}
- 
- 	return 0;
--
--err_fwp_name_alloc:
--	kfree(fwp);
--err_fwp_alloc:
--	fw_free_path_list();
--	return -ENOMEM;
++
+ 	fw_cache_init();
++
++	ret = fw_populate_path_list();
++	if (ret < 0) {
++		pr_err("%s: Failed to populate firmware path list: %d\n",
++		       __func__, ret);
++		return ret;
++	}
++
+ 	return class_register(&firmware_class);
  }
  
- static void *fw_path_seq_start(struct seq_file *seq, loff_t *pos)
+@@ -1455,6 +1510,7 @@ static void __exit firmware_class_exit(void)
+ 	unregister_syscore_ops(&fw_syscore_ops);
+ 	unregister_pm_notifier(&fw_cache.pm_notify);
+ #endif
++	fw_free_path_list();
+ 	class_unregister(&firmware_class);
+ }
+ 
 -- 
 1.8.0
 
