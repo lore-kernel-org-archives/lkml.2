@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964940Ab2JWUIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:08:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42106 "EHLO smtp.outflux.net"
+	id S964963Ab2JWUIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:08:38 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36752 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964929Ab2JWUI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:08:29 -0400
+	id S964942Ab2JWUIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:08:34 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH 073/193] drivers/mtd/chips: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:26 -0700
-Message-Id: <1351022666-6960-74-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [PATCH 067/193] drivers/media/video/s5p-tv: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:20 -0700
+Message-Id: <1351022666-6960-68-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,25 +27,29 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: David Woodhouse <dwmw2@infradead.org>
+CC: Kyungmin Park <kyungmin.park@samsung.com>
+CC: Tomasz Stanislawski <t.stanislaws@samsung.com>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/mtd/chips/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/platform/s5p-tv/Kconfig |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/chips/Kconfig b/drivers/mtd/chips/Kconfig
-index e469b01..c219e3d 100644
---- a/drivers/mtd/chips/Kconfig
-+++ b/drivers/mtd/chips/Kconfig
-@@ -225,7 +225,7 @@ config MTD_ABSENT
+diff --git a/drivers/media/platform/s5p-tv/Kconfig b/drivers/media/platform/s5p-tv/Kconfig
+index ea11a51..7b659bd 100644
+--- a/drivers/media/platform/s5p-tv/Kconfig
++++ b/drivers/media/platform/s5p-tv/Kconfig
+@@ -7,9 +7,8 @@
+ # Licensed under GPL
  
- config MTD_XIP
- 	bool "XIP aware MTD support"
--	depends on !SMP && (MTD_CFI_INTELEXT || MTD_CFI_AMDSTD) && EXPERIMENTAL && ARCH_MTD_XIP
-+	depends on !SMP && (MTD_CFI_INTELEXT || MTD_CFI_AMDSTD) && ARCH_MTD_XIP
- 	default y if XIP_KERNEL
- 	help
- 	  This allows MTD support to work with flash memory which is also
+ config VIDEO_SAMSUNG_S5P_TV
+-	bool "Samsung TV driver for S5P platform (experimental)"
++	bool "Samsung TV driver for S5P platform"
+ 	depends on PLAT_S5P && PM_RUNTIME
+-	depends on EXPERIMENTAL
+ 	default n
+ 	---help---
+ 	  Say Y here to enable selecting the TV output devices for
 -- 
 1.7.9.5
 
