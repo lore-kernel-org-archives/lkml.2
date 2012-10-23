@@ -1,105 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2JWVrX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:47:23 -0400
-Received: from 75-15-5-89.uvs.iplsin.sbcglobal.net ([75.15.5.89]:51611 "EHLO
-	peff.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab2JWVrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:47:21 -0400
-Date: Tue, 23 Oct 2012 17:47:17 -0400
-From: Jeff King <peff@peff.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Chris Metcalf <cmetcalf@tilera.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>, git@vger.kernel.org,
-        Junio C Hamano <gitster@pobox.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
- GENERIC_KERNEL_EXECVE
-Message-ID: <20121023214717.GA29306@sigill.intra.peff.net>
-References: <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
- <20121019213548.GR2616@ZenIV.linux.org.uk>
- <5082A1F1.3080303@tilera.com>
- <20121020153401.GT2616@ZenIV.linux.org.uk>
- <20121020171643.GU2616@ZenIV.linux.org.uk>
- <5086D432.4070008@tilera.com>
- <20121023184122.GZ2616@ZenIV.linux.org.uk>
- <alpine.LFD.2.02.1210232232070.2756@ionos>
- <20121023205119.GA27729@sigill.intra.peff.net>
- <alpine.LFD.2.02.1210232307480.2756@ionos>
+	id S1755454Ab2JWVrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:47:25 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:42587 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754509Ab2JWVrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 17:47:22 -0400
+Date: Tue, 23 Oct 2012 14:47:21 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Kees Cook <keescook@chromium.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 143/193] fs/ceph: remove CONFIG_EXPERIMENTAL
+In-Reply-To: <1351022666-6960-144-git-send-email-keescook@chromium.org>
+Message-ID: <alpine.DEB.2.00.1210231447090.6264@cobra.newdream.net>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org> <1351022666-6960-144-git-send-email-keescook@chromium.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1210232307480.2756@ionos>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 11:25:06PM +0200, Thomas Gleixner wrote:
-
-> > The resulting notes are stored in a separate revision-controlled branch
+On Tue, 23 Oct 2012, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
 > 
-> Which branch(es) is/are that ? What are the semantics of that?
+> CC: Sage Weil <sage@inktank.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-They are stored in refs/notes/commits by default, but you can have
-multiple notes refs if you want to store logically distinct sets of
-notes.
-
-A notes ref's tree is just a tree whose entries are sha1s, and the file
-contents contain the notes themselves (the sha1s are broken down into
-subdirectories for performance, but "git notes" handles this behind the
-scenes). Technically you could check it out as a branch, edit, and
-commit, but "git checkout" is not happy to have a HEAD outside of
-refs/heads/, so you are stuck with plumbing like:
-
-  $ git checkout `git rev-parse refs/notes/commits`
-  $ edit edit edit
-  $ git commit ...
-  $ git update-ref refs/notes/commits HEAD
-
-It's probably not good for much beyond exploring how notes are
-implemented. See "git help notes" for more discussion.
-
-> Assume I commit something to branch "foo"
-> 
-> Now I get that late Ack/Reviewed-by and want to associate that to that
-> commit in branch "foo". Does that go into "notes/foo" ?
-
-No. It would go into refs/notes/commits, or you could ask it to go to
-refs/notes/acks if you wanted to keep them separate from your default
-notes. It is indexed by commit object, not by branch (so if that branch
-later goes away, the notes are always still attached to the commit
-objects, assuming they got merged in).
-
-> Later when I send a pull request to my upstream maintainer for branch
-> "foo" does he get "notes/foo" automagically or do I have to request to
-> pull him that separately?
-
-No, he would have to pull your notes separately. Most of the discussion
-around sharing has been configuring the default refspec configuration to
-fetch notes.  But in the kernel you guys use a lot of one-off pulls
-without configured remotes. I'm not sure what the right workflow would
-be. It might simply be to ask git to always pull particular notes
-commits at the same time (so you might push your notes to
-refs/notes/for-linus, and then git would automatically grab the notes
-when somebody pulls refs/heads/for-linus).
-
-> Either way is fine for me, though something which lets me "automate"
-> that would be appreciated. I can work around that easily as my pull
-> requests are generated via scripts, so I can add the secondary one for
-> the dependent "notes" branch if necessary. Though it would be nice to
-> avoid that. Avoiding that, i.e having a straight connection (maybe
-> configurable) between "foo" and "notes/foo" and the commits which have
-> not yet hit my upstream maintainer would make my life easier. I.e. I
-> just have to check "foo" for stuff which is not upstream yet instead
-> of checking both, but that might just be my laziness.
-> 
-> Thoughts?
-
-That all makes sense. Putting extra work on the puller is not a good
-long-term solution. So while sending them an extra "also pull these
-notes" line, even if it ends up being a cut-and-pastable single-liner,
-is not great (even if it is the most flexible thing). Using a convention
-based on name-equivalence seems like a sensible compromise.
-
--Peff
+Acked-by: Sage Weil <sage@inktank.com>
