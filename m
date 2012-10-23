@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab2JWMyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:54:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51369 "EHLO
+	id S932947Ab2JWMzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:55:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51371 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757006Ab2JWMyp (ORCPT
+	by vger.kernel.org with ESMTP id S932770Ab2JWMyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 08:54:45 -0400
 From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 2/3 v2] firmware: Add /proc/firmware_path entry to list the firmware paths
-Date: Tue, 23 Oct 2012 13:52:55 +0100
-Message-Id: <1350996776-17864-3-git-send-email-dp@opensource.wolfsonmicro.com>
+Subject: [PATCH 3/3 v2] firmware: Factor out code to add paths to the firmware path list
+Date: Tue, 23 Oct 2012 13:52:56 +0100
+Message-Id: <1350996776-17864-4-git-send-email-dp@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
 References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
@@ -20,106 +20,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides the aforementioned procfs file that lists
-the default firmware paths that are used during firmware lookup.
-
-The file contains a white space separated list of paths.
-
-There will be another patch on top of this that adds the functionality
-to modify the paths at runtime.
-
 Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 ---
- drivers/base/firmware_class.c | 55 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
+ drivers/base/firmware_class.c | 36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d76152b..322fff3 100644
+index 322fff3..cf4aa5f 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -27,6 +27,8 @@
- #include <linux/pm.h>
- #include <linux/suspend.h>
- #include <linux/syscore_ops.h>
-+#include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
- 
- #include <generated/utsrelease.h>
- 
-@@ -1468,6 +1470,56 @@ err_fwp_alloc:
- 	return -ENOMEM;
+@@ -1426,6 +1426,22 @@ static int fw_cache_piggyback_on_request(const char *name)
  }
+ #endif
  
-+static void *fw_path_seq_start(struct seq_file *seq, loff_t *pos)
++static int fw_add_path_to_list(const char *path)
 +{
-+	return seq_list_start_head(&fw_path_list, *pos);
-+}
++	struct fw_path_rec *fwp;
 +
-+static void *fw_path_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	return seq_list_next(v, &fw_path_list, pos);
-+}
-+
-+static int fw_path_seq_show(struct seq_file *seq, void *v)
-+{
-+	const struct fw_path_rec *fwp;
-+	struct list_head *l = v;
-+
-+	if (l == &fw_path_list)
-+		return 0;
-+	fwp = list_entry(v, struct fw_path_rec, list);
-+	seq_puts(seq, fwp->name);
-+	if (l->next != &fw_path_list)
-+		seq_putc(seq, ' ');
-+	else
-+		seq_putc(seq, '\n');
++	fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
++	if (!fwp)
++		return -ENOMEM;
++	fwp->name = kstrdup(path, GFP_KERNEL);
++	if (!fwp->name) {
++		kfree(fwp);
++		return -ENOMEM;
++	}
++	list_add_tail(&fwp->list, &fw_path_list);
 +	return 0;
 +}
 +
-+static void fw_path_seq_stop(struct seq_file *seq, void *v)
-+{
-+}
-+
-+static const struct seq_operations fw_path_ops = {
-+	.start = fw_path_seq_start,
-+	.next = fw_path_seq_next,
-+	.stop = fw_path_seq_stop,
-+	.show = fw_path_seq_show,
-+};
-+
-+static int fw_path_open(struct inode *inode, struct file *file)
-+{
-+	return seq_open(file, &fw_path_ops);
-+}
-+
-+static const struct file_operations fw_path_seq_fops = {
-+	.owner = THIS_MODULE,
-+	.open = fw_path_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = seq_release,
-+};
-+
- static void __init fw_cache_init(void)
+ static void fw_free_path_list(void)
  {
- 	spin_lock_init(&fw_cache.lock);
-@@ -1501,6 +1553,8 @@ static int __init firmware_class_init(void)
- 		return ret;
+ 	struct fw_path_rec *fwp;
+@@ -1443,7 +1459,7 @@ static void fw_free_path_list(void)
+ static int fw_populate_path_list(void)
+ {
+ 	int i;
+-	struct fw_path_rec *fwp;
++	int ret;
+ 	static const char *fw_path[] = {
+ 		"/lib/firmware/updates/" UTS_RELEASE,
+ 		"/lib/firmware/updates",
+@@ -1452,22 +1468,14 @@ static int fw_populate_path_list(void)
+ 	};
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+-		fwp = kmalloc(sizeof(*fwp), GFP_KERNEL);
+-		if (!fwp)
+-			goto err_fwp_alloc;
+-		fwp->name = kstrdup(fw_path[i], GFP_KERNEL);
+-		if (!fwp->name)
+-			goto err_fwp_name_alloc;
+-		list_add_tail(&fwp->list, &fw_path_list);
++		ret = fw_add_path_to_list(fw_path[i]);
++		if (ret < 0) {
++			fw_free_path_list();
++			return ret;
++		}
  	}
  
-+	proc_create("firmware_path", S_IRUGO, NULL, &fw_path_seq_fops);
-+
- 	return class_register(&firmware_class);
+ 	return 0;
+-
+-err_fwp_name_alloc:
+-	kfree(fwp);
+-err_fwp_alloc:
+-	fw_free_path_list();
+-	return -ENOMEM;
  }
  
-@@ -1510,6 +1564,7 @@ static void __exit firmware_class_exit(void)
- 	unregister_syscore_ops(&fw_syscore_ops);
- 	unregister_pm_notifier(&fw_cache.pm_notify);
- #endif
-+	remove_proc_entry("firmware_path", NULL);
- 	fw_free_path_list();
- 	class_unregister(&firmware_class);
- }
+ static void *fw_path_seq_start(struct seq_file *seq, loff_t *pos)
 -- 
 1.8.0
 
