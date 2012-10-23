@@ -1,118 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab2JWHBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:01:52 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47463 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab2JWHBv (ORCPT
+	id S1756668Ab2JWHIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:08:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:31797 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756136Ab2JWHIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:01:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <001b01cdb0c6$67e386b0$37aa9410$%kim@samsung.com>
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
-	<001b01cdb0c6$67e386b0$37aa9410$%kim@samsung.com>
-Date: Tue, 23 Oct 2012 09:01:48 +0200
-Message-ID: <CANGUGtC+g22+ohn-QjK+ZQkeoZCk6gsDUn8S=c8jmkJ1tek1AQ@mail.gmail.com>
-Subject: Re: [PATCH 11/16 v2] f2fs: add inode operations for special inodes
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+	Tue, 23 Oct 2012 03:08:42 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-d0-508642792af1
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: "'Marco Stornelli'" <marco.stornelli@gmail.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
         tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
         jooyoung.hwang@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+ <001201cdb0c5$bdf728f0$39e57ad0$%kim@samsung.com>
+ <CANGUGtDLAQxjiRgFDhJww1j7qSEshvJbHFKaD_QwmjyK9rBBmQ@mail.gmail.com>
+In-reply-to: <CANGUGtDLAQxjiRgFDhJww1j7qSEshvJbHFKaD_QwmjyK9rBBmQ@mail.gmail.com>
+Subject: RE: [PATCH 02/16 v2] f2fs: add on-disk layout
+Date: Tue, 23 Oct 2012 16:08:40 +0900
+Message-id: <009401cdb0ed$3af5afd0$b0e10f70$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2w6kFrxBSM1rDUQoiNrnGnlVhslwAAev7w
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zI91Kp7YAgzNv2Cz27D3JYnF51xw2
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDKmnzrMWrCdu+L6kVNsDYyfOboYOTkkBEwk5n3cwwxh
+	i0lcuLeerYuRi0NIYBmjxOZHmxhhin7+mMAKkVjEKLFq2SRmCOcfo0T3rP3sXYwcHGwC2hKb
+	9xuANIgIGEqsO7mMCaSGWeAho8ScmyfYIRp2MEr0/1vEBFLFKRAssW7ZOjBbWMBMou/tQ3YQ
+	m0VAVaLpyVywOK+ArcSus9cZIWxBiR+T77GALGMW0JO4f1ELJMwsIC+xec1bZpCwhIC6xKO/
+	uhA3GEmc/buVBaJERGLfi3eMENMFJL5NPsQCUS4rsekA2CsSApvYJV6eeskG8bCkxMEVN1gm
+	MErMQrJ4FsLiWUgWz0KyYQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2MkBiT2sG4ssHi
+	EKMAB6MSD6/FkdYAIdbEsuLK3EOMEhzMSiK8pvZtAUK8KYmVValF+fFFpTmpxYcYfYAOn8gs
+	JZqcD4z/vJJ4Q2NjEzMTUxNzS1NzUxzCSuK8zR4pAUIC6YklqdmpqQWpRTDjmDg4pRoYc/2D
+	/24yfxT/vGKqQPRJtZnLRJN2NdjMvaLyx7ydxTbyVz7H+Vs6ugGp60K3OnM0vJO8Yr7oYf/R
+	Eg2t/dMYzqcE3/I9vc3VUaQrSvrmcRGLDVcKW1TY9TdoXKjx28K75cbNvLQ3j1Y0LfWas2Lu
+	rF0tCqqrVfWENkldM211VfGJZmzk2C2uxFKckWioxVxUnAgAqLGF2t4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jAd1Kp7YAg38zmSz27D3JYnF51xw2
+	ByaPz5vkAhijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU8hJzU22VXHwC
+	dN0yc4BGKymUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzpp86zFqwnbvi
+	+pFTbA2Mnzm6GDk5JARMJH7+mMAKYYtJXLi3nq2LkYtDSGARo8SqZZOYIZx/jBLds/azdzFy
+	cLAJaEts3m8A0iAiYCix7uQyJpAaZoGHjBJzbp5gh2jYwSjR/28RE0gVp0CwxLpl68BsYQEz
+	ib63D9lBbBYBVYmmJ3PB4rwCthK7zl5nhLAFJX5MvscCsoxZQE/i/kUtkDCzgLzE5jVvmUHC
+	EgLqEo/+6kLcYCRx9u9WFogSEYl9L94xTmAUmoVk0CyEQbOQDJqFpGMBI8sqRtHUguSC4qT0
+	XEO94sTc4tK8dL3k/NxNjOAIfia1g3Flg8UhRgEORiUeXosjrQFCrIllxZW5hxglOJiVRHhN
+	7dsChHhTEiurUovy44tKc1KLDzH6AL05kVlKNDkfmFzySuINjU3MjCyNzCyMTMzNcQgrifM2
+	e6QECAmkJ5akZqemFqQWwYxj4uCUamCU/bZdeH7yGi9mv+OWvyp/P382OdM4oeS1zL4U7r6d
+	acqXdhz/vD7EO/aGRtGqL8rhj8/19DY1beMxcTW77f1Pq1j7g9BRi9mJXllrzh+SZJx/u8JU
+	/cqm98e/mlS+n6QV779QJyvl6eE7b2e+VzD2Tv0nMfOfLtvLKVXtbzb8W3j9reSa6T7blFiK
+	MxINtZiLihMBqmG08A0DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> This adds inode operations for directory, symlink, and special inodes.
->
-> Signed-off-by: Changman Lee <cm224.lee@samsung.com>
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/namei.c |  494 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 494 insertions(+)
->  create mode 100644 fs/f2fs/namei.c
->
-> diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-> new file mode 100644
-> index 0000000..899d144
-> --- /dev/null
-> +++ b/fs/f2fs/namei.c
-> @@ -0,0 +1,494 @@
-> +/**
-> + * fs/f2fs/namei.c
-> + *
-> + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-> + *             http://www.samsung.com/
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/fs.h>
-> +#include <linux/f2fs_fs.h>
-> +#include <linux/pagemap.h>
-> +#include <linux/sched.h>
-> +#include <linux/ctype.h>
-> +
-> +#include "f2fs.h"
-> +#include "xattr.h"
-> +#include "acl.h"
-> +
-> +static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
-> +{
-> +       struct super_block *sb = dir->i_sb;
-> +       struct f2fs_sb_info *sbi = F2FS_SB(sb);
-> +       nid_t ino;
-> +       struct inode *inode;
-> +       bool nid_free = false;
-> +       int err;
-> +
-> +       inode = new_inode(sb);
-> +       if (!inode)
-> +               return ERR_PTR(-ENOMEM);
-> +
-> +       mutex_lock_op(sbi, NODE_NEW);
-> +       if (!alloc_nid(sbi, &ino)) {
-> +               mutex_unlock_op(sbi, NODE_NEW);
-> +               err = -ENOSPC;
-> +               goto fail;
-> +       }
-> +       mutex_unlock_op(sbi, NODE_NEW);
-> +
-> +       inode->i_uid = current_fsuid();
-> +
-> +       if (dir->i_mode & S_ISGID) {
-> +               inode->i_gid = dir->i_gid;
-> +               if (S_ISDIR(mode))
-> +                       mode |= S_ISGID;
-> +       } else {
-> +               inode->i_gid = current_fsgid();
-> +       }
-> +
-> +       inode->i_ino = ino;
-> +       inode->i_mode = mode;
-> +       inode->i_blocks = 0;
-> +       inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
-> +
-> +       err = insert_inode_locked(inode);
-> +       if (err) {
-> +               err = -EINVAL;
-> +               nid_free = true;
-> +               goto out;
-> +       }
-> +
-> +       mark_inode_dirty(inode);
-> +       return inode;
-> +
-> +out:
-> +       clear_nlink(inode);
-> +       unlock_new_inode(inode);
-> +fail:
-> +       iput(inode);
+> 2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> > This adds a header file describing the on-disk layout of f2fs.
+> >
+> > Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+> > Signed-off-by: Chul Lee <chur.lee@samsung.com>
+> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > ---
+> >  include/linux/f2fs_fs.h |  362 +++++++++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 362 insertions(+)
+> >  create mode 100644 include/linux/f2fs_fs.h
+> >
+> > diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+> > new file mode 100644
+> > index 0000000..bd9c217
+> > --- /dev/null
+> > +++ b/include/linux/f2fs_fs.h
+> > @@ -0,0 +1,362 @@
+> > +/**
+> > + * include/linux/f2fs_fs.h
+> 
+> Is this file used by user space?
 
-make_bad_inode here?
+Currently, no.
+But, later, I'll use this file in format and fsck tools.
 
-Marco
+> 
+> > + *
+> > + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+> > + *             http://www.samsung.com/
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +#ifndef _LINUX_F2FS_FS_H
+> > +#define _LINUX_F2FS_FS_H
+> > +
+> > +#include <linux/pagemap.h>
+> > +#include <linux/types.h>
+> > +
+> > +#define F2FS_SUPER_MAGIC       0xF2F52010
+> 
+> In magic.h please.
+
+Ok, thank you.
+
+> 
+> Marco
+
+
+---
+Jaegeuk Kim
+Samsung
+
+
