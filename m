@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab2JWKZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:25:39 -0400
+	id S1753690Ab2JWKZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:25:31 -0400
 Received: from cn.fujitsu.com ([222.73.24.84]:8589 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753681Ab2JWKZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:25:34 -0400
+	id S1752624Ab2JWKZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:25:21 -0400
 X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
-   d="scan'208";a="6052021"
+   d="scan'208";a="6052011"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,28 +19,30 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH v2 10/12] memory-hotplug: memory_hotplug: clear zone when removing the memory
-Date: Tue, 23 Oct 2012 18:30:48 +0800
-Message-Id: <1350988250-31294-11-git-send-email-wency@cn.fujitsu.com>
+Subject: [PATCH v2 04/12] memory-hotplug: remove /sys/firmware/memmap/X sysfs
+Date: Tue, 23 Oct 2012 18:30:42 +0800
+Message-Id: <1350988250-31294-5-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
 References: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:43,
+ 2012/10/23 18:24:42,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:46,
-	Serialize complete at 2012/10/23 18:24:46
+ 2012/10/23 18:24:45,
+	Serialize complete at 2012/10/23 18:24:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-When a memory is added, we update zone's and pgdat's start_pfn and
-spanned_pages in the function __add_zone(). So we should revert them
-when the memory is removed.
+When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+sysfs files are created. But there is no code to remove these files. The patch
+implements the function to remove them.
 
-The patch adds a new function __remove_zone() to do this.
+Note: The code does not free firmware_map_entry which is allocated by bootmem.
+      So the patch makes memory leak. But I think the memory leak size is
+      very samll. And it does not affect the system.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -49,241 +51,228 @@ CC: Christoph Lameter <cl@linux.com>
 Cc: Minchan Kim <minchan.kim@gmail.com>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- mm/memory_hotplug.c |  207 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 207 insertions(+), 0 deletions(-)
+ drivers/firmware/memmap.c    |   98 +++++++++++++++++++++++++++++++++++++++++-
+ include/linux/firmware-map.h |    6 +++
+ mm/memory_hotplug.c          |    5 ++-
+ 3 files changed, 106 insertions(+), 3 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 03153cf..55a228d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -312,10 +312,213 @@ static int __meminit __add_section(int nid, struct zone *zone,
- 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index 90723e6..49be12a 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -21,6 +21,7 @@
+ #include <linux/types.h>
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
++#include <linux/mm.h>
+ 
+ /*
+  * Data types ------------------------------------------------------------------
+@@ -41,6 +42,7 @@ struct firmware_map_entry {
+ 	const char		*type;	/* type of the memory range */
+ 	struct list_head	list;	/* entry for the linked list */
+ 	struct kobject		kobj;   /* kobject for each entry */
++	unsigned int		bootmem:1; /* allocated from bootmem */
+ };
+ 
+ /*
+@@ -79,7 +81,26 @@ static const struct sysfs_ops memmap_attr_ops = {
+ 	.show = memmap_attr_show,
+ };
+ 
++
++static inline struct firmware_map_entry *
++to_memmap_entry(struct kobject *kobj)
++{
++	return container_of(kobj, struct firmware_map_entry, kobj);
++}
++
++static void release_firmware_map_entry(struct kobject *kobj)
++{
++	struct firmware_map_entry *entry = to_memmap_entry(kobj);
++
++	if (entry->bootmem)
++		/* There is no way to free memory allocated from bootmem */
++		return;
++
++	kfree(entry);
++}
++
+ static struct kobj_type memmap_ktype = {
++	.release	= release_firmware_map_entry,
+ 	.sysfs_ops	= &memmap_attr_ops,
+ 	.default_attrs	= def_attrs,
+ };
+@@ -94,6 +115,7 @@ static struct kobj_type memmap_ktype = {
+  * in firmware initialisation code in one single thread of execution.
+  */
+ static LIST_HEAD(map_entries);
++static DEFINE_SPINLOCK(map_entries_lock);
+ 
+ /**
+  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
+@@ -118,11 +140,25 @@ static int firmware_map_add_entry(u64 start, u64 end,
+ 	INIT_LIST_HEAD(&entry->list);
+ 	kobject_init(&entry->kobj, &memmap_ktype);
+ 
++	spin_lock(&map_entries_lock);
+ 	list_add_tail(&entry->list, &map_entries);
++	spin_unlock(&map_entries_lock);
+ 
+ 	return 0;
  }
  
-+/* find the smallest valid pfn in the range [start_pfn, end_pfn) */
-+static int find_smallest_section_pfn(int nid, struct zone *zone,
-+				     unsigned long start_pfn,
-+				     unsigned long end_pfn)
++/**
++ * firmware_map_remove_entry() - Does the real work to remove a firmware
++ * memmap entry.
++ * @entry: removed entry.
++ **/
++static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
 +{
-+	struct mem_section *ms;
++	spin_lock(&map_entries_lock);
++	list_del(&entry->list);
++	spin_unlock(&map_entries_lock);
++}
 +
-+	for (; start_pfn < end_pfn; start_pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(start_pfn);
+ /*
+  * Add memmap entry on sysfs
+  */
+@@ -144,6 +180,35 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+ 	return 0;
+ }
+ 
++/*
++ * Remove memmap entry on sysfs
++ */
++static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
++{
++	kobject_put(&entry->kobj);
++}
 +
-+		if (unlikely(!valid_section(ms)))
-+			continue;
++/*
++ * Search memmap entry
++ */
 +
-+		if (unlikely(pfn_to_nid(start_pfn)) != nid)
-+			continue;
++static struct firmware_map_entry * __meminit
++firmware_map_find_entry(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
 +
-+		if (zone && zone != page_zone(pfn_to_page(start_pfn)))
-+			continue;
++	spin_lock(&map_entries_lock);
++	list_for_each_entry(entry, &map_entries, list)
++		if ((entry->start == start) && (entry->end == end) &&
++		    (!strcmp(entry->type, type))) {
++			spin_unlock(&map_entries_lock);
++			return entry;
++		}
 +
-+		return start_pfn;
-+	}
++	spin_unlock(&map_entries_lock);
++	return NULL;
++}
++
+ /**
+  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+  * memory hotplug.
+@@ -193,9 +258,36 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+ 	if (WARN_ON(!entry))
+ 		return -ENOMEM;
+ 
++	entry->bootmem = 1;
+ 	return firmware_map_add_entry(start, end, type, entry);
+ }
+ 
++/**
++ * firmware_map_remove() - remove a firmware mapping entry
++ * @start: Start of the memory range.
++ * @end:   End of the memory range.
++ * @type:  Type of the memory range.
++ *
++ * removes a firmware mapping entry.
++ *
++ * Returns 0 on success, or -EINVAL if no entry.
++ **/
++int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
++
++	entry = firmware_map_find_entry(start, end - 1, type);
++	if (!entry)
++		return -EINVAL;
++
++	firmware_map_remove_entry(entry);
++
++	/* remove the memmap entry */
++	remove_sysfs_fw_map_entry(entry);
 +
 +	return 0;
 +}
 +
-+/* find the biggest valid pfn in the range [start_pfn, end_pfn). */
-+static int find_biggest_section_pfn(int nid, struct zone *zone,
-+				    unsigned long start_pfn,
-+				    unsigned long end_pfn)
+ /*
+  * Sysfs functions -------------------------------------------------------------
+  */
+@@ -217,8 +309,10 @@ static ssize_t type_show(struct firmware_map_entry *entry, char *buf)
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", entry->type);
+ }
+ 
+-#define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
+-#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
++static inline struct memmap_attribute *to_memmap_attr(struct attribute *attr)
 +{
-+	struct mem_section *ms;
-+	unsigned long pfn;
-+
-+	/* pfn is the end pfn of a memory section. */
-+	pfn = end_pfn - 1;
-+	for (; pfn >= start_pfn; pfn -= PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (unlikely(pfn_to_nid(pfn)) != nid)
-+			continue;
-+
-+		if (zone && zone != page_zone(pfn_to_page(pfn)))
-+			continue;
-+
-+		return pfn;
-+	}
-+
++	return container_of(attr, struct memmap_attribute, attr);
++}
+ 
+ static ssize_t memmap_attr_show(struct kobject *kobj,
+ 				struct attribute *attr, char *buf)
+diff --git a/include/linux/firmware-map.h b/include/linux/firmware-map.h
+index 43fe52f..71d4fa7 100644
+--- a/include/linux/firmware-map.h
++++ b/include/linux/firmware-map.h
+@@ -25,6 +25,7 @@
+ 
+ int firmware_map_add_early(u64 start, u64 end, const char *type);
+ int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
++int firmware_map_remove(u64 start, u64 end, const char *type);
+ 
+ #else /* CONFIG_FIRMWARE_MEMMAP */
+ 
+@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotplug(u64 start, u64 end, const char *type)
+ 	return 0;
+ }
+ 
++static inline int firmware_map_remove(u64 start, u64 end, const char *type)
++{
 +	return 0;
 +}
 +
-+static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
-+			     unsigned long end_pfn)
-+{
-+	unsigned long zone_start_pfn =  zone->zone_start_pfn;
-+	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+	unsigned long pfn;
-+	struct mem_section *ms;
-+	int nid = zone_to_nid(zone);
-+
-+	zone_span_writelock(zone);
-+	if (zone_start_pfn == start_pfn) {
-+		/*
-+		 * If the section is smallest section in the zone, it need
-+		 * shrink zone->zone_start_pfn and zone->zone_spanned_pages.
-+		 * In this case, we find second smallest valid mem_section
-+		 * for shrinking zone.
-+		 */
-+		pfn = find_smallest_section_pfn(nid, zone, end_pfn,
-+						zone_end_pfn);
-+		if (pfn) {
-+			zone->zone_start_pfn = pfn;
-+			zone->spanned_pages = zone_end_pfn - pfn;
-+		}
-+	} else if (zone_end_pfn == end_pfn) {
-+		/*
-+		 * If the section is biggest section in the zone, it need
-+		 * shrink zone->spanned_pages.
-+		 * In this case, we find second biggest valid mem_section for
-+		 * shrinking zone.
-+		 */
-+		pfn = find_biggest_section_pfn(nid, zone, zone_start_pfn,
-+					       start_pfn);
-+		if (pfn)
-+			zone->spanned_pages = pfn - zone_start_pfn + 1;
-+	}
-+
-+	/*
-+	 * The section is not biggest or smallest mem_section in the zone, it
-+	 * only creates a hole in the zone. So in this case, we need not
-+	 * change the zone. But perhaps, the zone has only hole data. Thus
-+	 * it check the zone has only hole or not.
-+	 */
-+	pfn = zone_start_pfn;
-+	for (; pfn < zone_end_pfn; pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (page_zone(pfn_to_page(pfn)) != zone)
-+			continue;
-+
-+		 /* If the section is current section, it continues the loop */
-+		if (start_pfn == pfn)
-+			continue;
-+
-+		/* If we find valid section, we have nothing to do */
-+		zone_span_writeunlock(zone);
-+		return;
-+	}
-+
-+	/* The zone has no valid section */
-+	zone->zone_start_pfn = 0;
-+	zone->spanned_pages = 0;
-+	zone_span_writeunlock(zone);
-+}
-+
-+static void shrink_pgdat_span(struct pglist_data *pgdat,
-+			      unsigned long start_pfn, unsigned long end_pfn)
-+{
-+	unsigned long pgdat_start_pfn =  pgdat->node_start_pfn;
-+	unsigned long pgdat_end_pfn =
-+		pgdat->node_start_pfn + pgdat->node_spanned_pages;
-+	unsigned long pfn;
-+	struct mem_section *ms;
-+	int nid = pgdat->node_id;
-+
-+	if (pgdat_start_pfn == start_pfn) {
-+		/*
-+		 * If the section is smallest section in the pgdat, it need
-+		 * shrink pgdat->node_start_pfn and pgdat->node_spanned_pages.
-+		 * In this case, we find second smallest valid mem_section
-+		 * for shrinking zone.
-+		 */
-+		pfn = find_smallest_section_pfn(nid, NULL, end_pfn,
-+						pgdat_end_pfn);
-+		if (pfn) {
-+			pgdat->node_start_pfn = pfn;
-+			pgdat->node_spanned_pages = pgdat_end_pfn - pfn;
-+		}
-+	} else if (pgdat_end_pfn == end_pfn) {
-+		/*
-+		 * If the section is biggest section in the pgdat, it need
-+		 * shrink pgdat->node_spanned_pages.
-+		 * In this case, we find second biggest valid mem_section for
-+		 * shrinking zone.
-+		 */
-+		pfn = find_biggest_section_pfn(nid, NULL, pgdat_start_pfn,
-+					       start_pfn);
-+		if (pfn)
-+			pgdat->node_spanned_pages = pfn - pgdat_start_pfn + 1;
-+	}
-+
-+	/*
-+	 * If the section is not biggest or smallest mem_section in the pgdat,
-+	 * it only creates a hole in the pgdat. So in this case, we need not
-+	 * change the pgdat.
-+	 * But perhaps, the pgdat has only hole data. Thus it check the pgdat
-+	 * has only hole or not.
-+	 */
-+	pfn = pgdat_start_pfn;
-+	for (; pfn < pgdat_end_pfn; pfn += PAGES_PER_SECTION) {
-+		ms = __pfn_to_section(pfn);
-+
-+		if (unlikely(!valid_section(ms)))
-+			continue;
-+
-+		if (pfn_to_nid(pfn) != nid)
-+			continue;
-+
-+		 /* If the section is current section, it continues the loop */
-+		if (start_pfn == pfn)
-+			continue;
-+
-+		/* If we find valid section, we have nothing to do */
-+		return;
-+	}
-+
-+	/* The pgdat has no valid section */
-+	pgdat->node_start_pfn = 0;
-+	pgdat->node_spanned_pages = 0;
-+}
-+
-+static void __remove_zone(struct zone *zone, unsigned long start_pfn)
-+{
-+	struct pglist_data *pgdat = zone->zone_pgdat;
-+	int nr_pages = PAGES_PER_SECTION;
-+	int zone_type;
-+	unsigned long flags;
-+
-+	zone_type = zone - pgdat->node_zones;
-+
-+	pgdat_resize_lock(zone->zone_pgdat, &flags);
-+	shrink_zone_span(zone, start_pfn, start_pfn + nr_pages);
-+	shrink_pgdat_span(pgdat, start_pfn, start_pfn + nr_pages);
-+	pgdat_resize_unlock(zone->zone_pgdat, &flags);
-+}
-+
- static int __remove_section(struct zone *zone, struct mem_section *ms)
+ #endif /* CONFIG_FIRMWARE_MEMMAP */
+ 
+ #endif /* _LINUX_FIRMWARE_MAP_H */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 80fc70c..050ddb0 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1073,7 +1073,7 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ 	return ret;
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++int __ref remove_memory(u64 start, u64 size)
  {
- 	unsigned long flags;
- 	struct pglist_data *pgdat = zone->zone_pgdat;
-+	unsigned long start_pfn;
-+	int scn_nr;
- 	int ret = -EINVAL;
- 
- 	if (!valid_section(ms))
-@@ -325,6 +528,10 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
- 	if (ret)
+ 	unsigned long start_pfn, end_pfn;
+ 	int ret = 0;
+@@ -1115,6 +1115,9 @@ repeat:
  		return ret;
+ 	}
  
-+	scn_nr = __section_nr(ms);
-+	start_pfn = section_nr_to_pfn(scn_nr);
-+	__remove_zone(zone, start_pfn);
++	/* remove memmap entry */
++	firmware_map_remove(start, start + size, "System RAM");
 +
- 	pgdat_resize_lock(pgdat, &flags);
- 	sparse_remove_one_section(zone, ms);
- 	pgdat_resize_unlock(pgdat, &flags);
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
 -- 
 1.7.1
 
