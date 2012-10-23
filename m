@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab2JWPmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 11:42:32 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:53530 "EHLO mail.x86-64.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754833Ab2JWPma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 11:42:30 -0400
-Date: Tue, 23 Oct 2012 17:42:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Denis Kirjanov <kirjanov@gmail.com>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] check the kzalloc return value
-Message-ID: <20121023154226.GB16140@aftab.osrc.amd.com>
-References: <1350921364-26366-1-git-send-email-kirjanov@gmail.com>
+	id S933171Ab2JWPmz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 11:42:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49849 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932946Ab2JWPmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 11:42:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350921364-26366-1-git-send-email-kirjanov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com>
+References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
+	<CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
+	<50749DE8.7010703@zytor.com>
+	<CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
+	<5074A0AB.8040207@zytor.com>
+	<87d30o7iy6.fsf@rustcorp.com.au>
+	<CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
+	<87ipa8o4mn.fsf@rustcorp.com.au>
+	<CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
+	<87sj97hs5e.fsf@rustcorp.com.au>
+	<CAMOw1v7ySGT2g5s8djEbCGnqTNjqHky_LvaZsGEN6CSLNPMUgw@mail.gmail.com>
+	<CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com>
+	<CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com>
+Date: Tue, 23 Oct 2012 08:42:51 -0700
+X-Google-Sender-Auth: VBxYmdiAEKF8qzuEsTDVPyYMmn8
+Message-ID: <CAGXu5j+2vpA3J4sCUCaNkzCfO0yON2cVwSqFOiXku5u8GMwmmA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
+From: Kees Cook <keescook@chromium.org>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, mtk.manpages@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        jonathon@jonmasters.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 07:56:04PM +0400, Denis Kirjanov wrote:
-> 
+On Mon, Oct 22, 2012 at 9:08 PM, Lucas De Marchi
+<lucas.demarchi@profusion.mobi> wrote:
+> On Tue, Oct 23, 2012 at 1:40 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Mon, Oct 22, 2012 at 7:37 PM, Lucas De Marchi
+>> <lucas.demarchi@profusion.mobi> wrote:
+>>> On Mon, Oct 22, 2012 at 5:39 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>>>>>> FIX: add flags arg to sys_finit_module()
+>>>>>>
+>>>>>> Thanks to Michael Kerrisk for keeping us honest.
+>>>>>
+>>>>> w00t! Thanks, Rusty ;-).
+>>>>>
+>>>>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+>>>>
+>>>> Here's the version I ended up with when I added two flags.
+>>>>
+>>>> Lucas, is this useful to you?
+>>>>
+>>>> BTW Michael: why aren't the syscall man pages in the kernel source?
+>>>>
+>>>> Thanks,
+>>>> Rusty.
+>>>>
+>>>> module: add flags arg to sys_finit_module()
+>>>>
+>>>> Thanks to Michael Kerrisk for keeping us honest.  These flags are actually
+>>>> useful for eliminating the only case where kmod has to mangle a module's
+>>>> internals: for overriding module versioning.
+>>>>
+>>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>>
+>> Acked-by: Kees Cook <keescook@chromium.org>
+>>
+>>> I wonder if we shouldn't get a new init_module2() as well, adding the
+>>> flags parameter. Of course this would be in another patch.
+>>>
+>>> My worries are that for compressed modules we still need to use
+>>> init_module() and then --force won't work with signed modules.
+>>
+>> For those cases, I think it should remain up to userspace to do the
+>> decompress and use init_module(). The code I'd written for patching
+>> module-init-tools basically just kept the fd around if it didn't need
+>> to mangle the module, and it would use finit_module (written before
+>> the flags argument was added):
+>>
+>>         /* request kernel linkage */
+>> -       ret = init_module(module->data, module->len, opts);
+>> +       if (fd < 0)
+>> +               ret = init_module(module->data, module->len, opts);
+>> +       else {
+>> +           ret = finit_module(fd, opts);
+>> +           if (ret != 0 && errno == ENOSYS)
+>> +                   ret = init_module(module->data, module->len, opts);
+>> +       }
+>>         if (ret != 0) {
+>>
+>> (And yes, I realize kmod is what'll actually be getting this logic.
+>> This was for my testing in Chrome OS, which is still using
+>> module-init-tools.)
+>
+> sure... but do you realize this will fail in case kernel is checking
+> module signature and we passed --force to modprobe (therefore mangled
+> the decompressed memory area)?
 
-Needs a commit message.
+Hm, yeah, userspace mangling of a module plus signing would fail.
+Seems like mangling and signing aren't compatible. Doing it in
+kernel-space (as now written for finit_module) solves that, but it
+means that now compression isn't possible if you need both signing and
+mangling.
 
-> Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
-> ---
->  drivers/edac/edac_mc_sysfs.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-> index ed0bc07..55ce016 100644
-> --- a/drivers/edac/edac_mc_sysfs.c
-> +++ b/drivers/edac/edac_mc_sysfs.c
-> @@ -1128,7 +1128,8 @@ int __init edac_mc_sysfs_init(void)
->  	}
->  
->  	mci_pdev = kzalloc(sizeof(*mci_pdev), GFP_KERNEL);
-> -
-> +	if (!mci_pdev)
-> +		return -ENOMEM;
+I'm not a user of signing, compression, or mangling, so I'm probably a
+bit unimaginative here. It seems like the case for needing all three
+is pretty uncommon. (e.g. if you're doing compression, you're probably
+building embedded images, which means you're unlikely to need
+--force.)
 
-This either needs to do
-
-	edac_put_sysfs_subsys();
-
-on the error-out path.
-
->  	mci_pdev->bus = edac_subsys;
->  	mci_pdev->type = &mc_attr_type;
->  	device_initialize(mci_pdev);
-
-Thanks.
+-Kees
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Kees Cook
+Chrome OS Security
