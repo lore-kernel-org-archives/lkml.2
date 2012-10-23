@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab2JWQv2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:51:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27389 "EHLO mx1.redhat.com"
+	id S933201Ab2JWQw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:52:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34476 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932091Ab2JWQv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:51:27 -0400
-Date: Tue, 23 Oct 2012 18:50:40 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 02/11] perf: Do not get values from disabled counters in
- group format read
-Message-ID: <20121023165040.GA7553@krava.brq.redhat.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
- <1350743599-4805-3-git-send-email-jolsa@redhat.com>
- <1351008789.13456.37.camel@twins>
+	id S1757253Ab2JWQw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 12:52:57 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: [patch/rfc/rft] sd: allocate request_queue on device's local numa node
+References: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com>
+	<50863D0A.6040800@acm.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 23 Oct 2012 12:52:49 -0400
+In-Reply-To: <50863D0A.6040800@acm.org> (Bart Van Assche's message of "Tue, 23
+	Oct 2012 08:45:30 +0200")
+Message-ID: <x49fw556sgu.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351008789.13456.37.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 06:13:09PM +0200, Peter Zijlstra wrote:
-> On Sat, 2012-10-20 at 16:33 +0200, Jiri Olsa wrote:
-> > It's possible some of the counters in the group could be
-> > disabled when sampling member of the event group is reading
-> > the rest via PERF_SAMPLE_READ sample type processing. Disabled
-> > counters could then produce wrong numbers.
-> > 
-> > Fixing that by reading only enabled counters for PERF_SAMPLE_READ
-> > sample type processing.
-> > 
-> 
-> However did you run into this?
+Bart Van Assche <bvanassche@acm.org> writes:
 
-yep, with perf record -a
+> On 10/22/12 21:01, Jeff Moyer wrote:
+>> All of the infrastructure is available to allocate a request_queue on a
+>> particular numa node, but it isn't being utilized at all.  Wire up the
+>> sd driver to allocate the request_queue on the HBA's local numa node.
+>>
+>> This is a request for comments and testing (I've built and booted it,
+>> nothing more).  I believe that this should be a performance win, but I
+>> have no numbers to back it up as yet.  Suggestions for workloads to test
+>> are welcome.
+>>
+>> Cheers,
+>> Jeff
+>>
+>> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index da36a3a..7986483 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1664,7 +1664,8 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+>>   	struct request_queue *q;
+>>   	struct device *dev = shost->dma_dev;
+>>
+>> -	q = blk_init_queue(request_fn, NULL);
+>> +	q = blk_init_queue_node(request_fn, NULL,
+>> +				dev_to_node(&shost->shost_dev));
+>>   	if (!q)
+>>   		return NULL;
+>
+> Are you sure this approach will always result in the queue being
+> allocated on the same NUMA node as the HCA ? If e.g. a user triggers
+> LUN scanning via sysfs the above code may be invoked on another NUMA
+> node than the node to which the HCA is connected.
 
-hm, I just checked and we enable/disable event groups atomicaly..
-I haven't checked that before because it seemed obvious :-/
+shost->shost_dev should inherit the numa node from the pci bus to which
+it is attached.  So long as that works, there should be no concern over
+which numa node the probe code is running on.
 
-So, I'm not sure now about the exact code path that triggered it
-in my test..  however you could always disable child event from
-group and hit this issue, but thats not what happened in perf.
+> Also, if you have a look at e.g. scsi_request_fn() or
+> scsi_device_unbusy() you will see that in order to avoid inter-node
+> traffic it's important to allocate the sdev and shost data structures
+> on the same NUMA node.
 
-might be some other bug... I'll check
+Yes, good point.
 
-> 
-> > ---
-> >  kernel/events/core.c | 18 +++++++++++++++---
-> >  1 file changed, 15 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 32aec40..5220d01 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -4012,12 +4012,24 @@ static void perf_output_read_group(struct perf_output_handle *handle,
-> >  	__output_copy(handle, values, n * sizeof(u64));
-> >  
-> >  	list_for_each_entry(sub, &leader->sibling_list, group_entry) {
-> > +		u64 value = 0;
-> >  		n = 0;
-> >  
-> > -		if (sub != event)
-> > -			sub->pmu->read(sub);
-> > +		/*
-> > +		 * We are NOT interested in disabled counters,
-> > +		 * giving us strange values and keeping us from
-> > +		 * good night sleep!!!
-> > +		 */
-> > +		if (sub->state > PERF_EVENT_STATE_OFF) {
-> > +
-> 
-> superfluous whitespace there... ;-)
+> How about the following approach ?
+> - Add a variant of scsi_host_alloc() that allows to specify on which
+>   NUMA node to allocate the shost structure and also that stores the
+>   identity of that node in the shost structure.
+> - Modify __scsi_alloc_queue() such that it allocates the sdev structure
+>   on the same NUMA node as the shost structure.
+> - Modify the SCSI LLD of your choice such that it uses the new
+>   scsi_host_alloc() call. According to what is appropriate the NUMA node
+>   on which to allocate the shost could be specified by the user or could
+>   be identical to the NUMA node of the HCA controlled by the SCSI LLD
+>   (see e.g. /sys/devices/pci*/*/numa_node). Please keep in mind that a
+>   single PCIe bus may have a minimal distance to more than one NUMA
+>   node. See e.g. the diagram at the top of page 8 in
+>
+> http://bizsupport1.austin.hp.com/bc/docs/support/SupportManual/c03261871/c03261871.pdf
+>   for a system diagram of a NUMA system where each PCIe bus has a
+>   minimal distance to two different NUMA nodes.
 
-yea.. v2 ;)
+That's an interesting configuration.  I wonder what the numa_node sysfs
+file contains for such systems--do you know?  I'm not sure how we could
+allow this to be user-controlled at probe time.  Did you have a specific
+mechanism in mind?  Module parameters?  Something else?
 
+Thanks for your input, Bart.
 
-thanks,
-jirka
+Cheers,
+Jeff
