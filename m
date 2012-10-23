@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964950Ab2JWUIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:08:36 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46341 "EHLO smtp.outflux.net"
+	id S1757535Ab2JWUJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:09:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58911 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964929Ab2JWUIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:08:34 -0400
+	id S964887Ab2JWUIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:08:13 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH 063/193] drivers/media: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:16 -0700
-Message-Id: <1351022666-6960-64-git-send-email-keescook@chromium.org>
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 064/193] drivers/media/video/cx25821: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:17 -0700
+Message-Id: <1351022666-6960-65-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -26,36 +27,25 @@ almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
 CC: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/media/Kconfig |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/media/pci/cx25821/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/Kconfig b/drivers/media/Kconfig
-index 4ef0d80..8567a7a 100644
---- a/drivers/media/Kconfig
-+++ b/drivers/media/Kconfig
-@@ -79,8 +79,7 @@ config MEDIA_RC_SUPPORT
- #
+diff --git a/drivers/media/pci/cx25821/Kconfig b/drivers/media/pci/cx25821/Kconfig
+index 5f6b542..4017c94 100644
+--- a/drivers/media/pci/cx25821/Kconfig
++++ b/drivers/media/pci/cx25821/Kconfig
+@@ -18,7 +18,7 @@ config VIDEO_CX25821
  
- config MEDIA_CONTROLLER
--	bool "Media Controller API (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	bool "Media Controller API"
- 	depends on MEDIA_CAMERA_SUPPORT
+ config VIDEO_CX25821_ALSA
+ 	tristate "Conexant 25821 DMA audio support"
+-	depends on VIDEO_CX25821 && SND && EXPERIMENTAL
++	depends on VIDEO_CX25821 && SND
+ 	select SND_PCM
  	---help---
- 	  Enable the media controller API used to query media devices internal
-@@ -100,8 +99,8 @@ config VIDEO_DEV
- 	default y
- 
- config VIDEO_V4L2_SUBDEV_API
--	bool "V4L2 sub-device userspace API (EXPERIMENTAL)"
--	depends on VIDEO_DEV && MEDIA_CONTROLLER && EXPERIMENTAL
-+	bool "V4L2 sub-device userspace API"
-+	depends on VIDEO_DEV && MEDIA_CONTROLLER
- 	---help---
- 	  Enables the V4L2 sub-device pad-level userspace API used to configure
- 	  video format, size and frame rate between hardware blocks.
+ 	  This is a video4linux driver for direct (DMA) audio on
 -- 
 1.7.9.5
 
