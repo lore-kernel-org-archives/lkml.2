@@ -1,137 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab2JWVqN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:46:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41805 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200Ab2JWVqK (ORCPT
+	id S1754927Ab2JWVqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:46:45 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:34651 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736Ab2JWVqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:46:10 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Mike Turquette <mturquette@ti.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [RFC PATCH] dt: describe base reset signal binding
-Date: Tue, 23 Oct 2012 15:45:56 -0600
-Message-Id: <1351028756-22309-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Tue, 23 Oct 2012 17:46:44 -0400
+Date: Wed, 24 Oct 2012 01:46:39 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+Message-ID: <20121023214639.GM7020@moon>
+References: <20121022122934.d2e2fa57.akpm@linux-foundation.org>
+ <5085B1A8.4020609@parallels.com>
+ <20121022205641.GL2303@moon>
+ <20121022213449.GH31440@moon>
+ <20121022145158.53bddfc1.akpm@linux-foundation.org>
+ <20121023061341.GA7020@moon>
+ <20121022233025.09ec2d92.akpm@linux-foundation.org>
+ <20121023063430.GB7020@moon>
+ <20121023071549.GC7020@moon>
+ <20121023143045.183657c4.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023143045.183657c4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Tue, Oct 23, 2012 at 02:30:45PM -0700, Andrew Morton wrote:
+> > 
+> > The data is encoded in a somewhat awkward two letters mnemonic form, to
+> > encourage userspace to be prepared for fields being added or removed in
+> > the future.
+> > 
+> 
+> Wow.  This version generates 1k less kernel bloat than v2!  Gee, and I
+> only sent that email as a late-night joke ;)
 
-This binding is intended to represent the hardware reset signals present
-internally in most IC (SoC, FPGA, ...) designs.
+Cool!
 
-Such a binding would allow the creation of a "reset subsystem", which
-could replace APIs such as the following Tegra-specific API:
+> fs/proc/task_mmu.o with neither patch:
+>    text    data     bss     dec     hex filename
+>   14849     112    5312   20273    4f31 fs/proc/task_mmu.o
+> 
+> fs/proc/task_mmu.o with the v2 patch:
+>   16074     112    5776   21962    55ca fs/proc/task_mmu.o
+> 
+> fs/proc/task_mmu.o with the v3 patch:
+>   15446     112    5368   20926    51be fs/proc/task_mmu.o
+> 
+> fs/proc/task_mmu.o with the v3 patch and the below fix:
+>   15123     112    5352   20587    506b fs/proc/task_mmu.o
+> 
+> So the delta has gone from 1700 bytes down to 300.  Seems that it pays
+> to be anal about these things ;)
 
-void tegra_periph_reset_deassert(struct clk *c);
-void tegra_periph_reset_assert(struct clk *c);
+LOL ;-)
 
-(Note that at present, Tegra couples reset assertion with the clock for
-the affected peripheral module. However, reset and clocking are two
-separate, yet admittedly related, concepts).
+> Don't forget the `static'!  Without it, the compiler will need to
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-What do people think of this? Does it sound like a good idea to go ahead
-with a reset subsystem? Should we simply add a new API to the common clock
-subsystem instead (and assume that reset and clock domains match 1:1).
-Should this be implemented as part of the generic power management domains;
-see include/linux/pm_domain.h instead?
+Yeah, for some reason missed it, thanks!
 
- Documentation/devicetree/bindings/reset/reset.txt |   75 +++++++++++++++++++++
- 1 files changed, 75 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/reset/reset.txt
+> construct the array as a temporary on the stack each time the function
+> is called - it's just terrible.  (There's no reason why the compiler
+> can't insert the static for us as an optimisation, and I think later
+> gcc's may have got smarter about this).
+> 
+> Was there a reason why you added the ".l = " to the initialiser?  My
+> gcc is happy without it.
 
-diff --git a/Documentation/devicetree/bindings/reset/reset.txt b/Documentation/devicetree/bindings/reset/reset.txt
-new file mode 100644
-index 0000000..31db6ff
---- /dev/null
-+++ b/Documentation/devicetree/bindings/reset/reset.txt
-@@ -0,0 +1,75 @@
-+= Reset Signal Device Tree Bindings =
-+
-+This binding is intended to represent the hardware reset signals present
-+internally in most IC (SoC, FPGA, ...) designs. Reset signals for whole
-+standalone chips are most likely better represented as GPIOs, although there
-+are likely to be exceptions to this rule.
-+
-+Hardware blocks typically receive a reset signal. This signal is generated by
-+a reset provider (e.g. power management or clock module) and received by a
-+reset consumer (the module being reset, or a module managing when a sub-
-+ordinate module is reset). This binding exists to represent the provider and
-+consumer, and provide a way to couple the two together.
-+
-+A reset signal is represented by the phandle of the provider, plus a reset
-+specifier - a list of DT cells that represents the reset signal within the
-+provider. The length (number of cells) and semantics of the reset specifier
-+are dictated by the binding of the reset provider, although common schemes
-+are described below.
-+
-+A word on where to place reset signal consumers in device tree: It is possible
-+in hardware for a reset signal to affect multiple logically separate HW blocks
-+at once. In this case, it would be unwise to represent this reset signal in
-+the DT node of each affected HW block, since if activated, an unrelated block
-+may be reset. Instead, reset signals should be represented in the DT node
-+where it makes most sense to control it; this may be a bus node if all
-+children of the bus are affected by the reset signal, or an individual HW
-+block node for dedicated reset signals. The intent of this binding is to give
-+appropriate software access to the reset signals in order to manage the HW,
-+rather than to slavishly enumerate the reset signal that affects each HW
-+block.
-+
-+= Reset providers =
-+
-+Required properties:
-+#reset-cells:	Number of cells in a reset specifier; Typically 0 for nodes
-+		with a single reset output and 1 for nodes with multiple
-+		reset outputs.
-+
-+For example:
-+
-+	rst: reset-controller {
-+		#reset-cells = <1>;
-+	};
-+
-+= Reset consumers =
-+
-+Required properties:
-+resets:		List of phandle and reset specifier pairs, one pair
-+		for each reset signal that affects the device, or that the
-+		device manages. Note: if the reset provider specifies '0' for
-+		#reset-cells, then only the phandle portion of the pair will
-+		appear.
-+
-+Optional properties:
-+reset-names:	List of reset signal name strings sorted in the same order as
-+		the resets property. Consumers drivers will use reset-names to
-+		match reset signal names with reset specifiers.
-+
-+For example:
-+
-+	device {
-+		resets = <&rst 20>;
-+		reset-names = "reset";
-+	};
-+
-+This represents a device with a single reset signal named "reset".
-+
-+	bus {
-+		resets = <&rst 10> <&rst 11> <&rst 12> <&rst 11>;
-+		reset-names = "i2s1", "i2s2", "dma", "mixer";
-+	};
-+
-+This represents a bus that controls the reset signal of each of four sub-
-+ordinate devices. Consider for example a bus that fails to operate unless no
-+child device has reset asserted.
--- 
-1.7.0.4
+Mine either, just as habbit I would say, thanks.
 
+> Also...  what happens if there's an unrecognised bit set in `flags'? 
+> Memory corruption or code skew could cause this.  We emit a couple of
+> NULs into the procfs output, which I guess is an OK response to such a
+> condition.
+
+That's indeed will produce some nil character on the screen. I guess we
+need some designited init here, say
+
+	[0 ... (BITS_PER_LONG-1)] = { {'-', '-'} },
+	...
+	[ilog2(VM_READ)]	= { {'r', 'd'} },
+	...
+	and so on, i'll update on top
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: procfs-add-vmflags-field-in-smaps-output-v3-fix
+> 
+> make mnemonics[] static, remove unneeded init code, tidy whitespace
+> 
