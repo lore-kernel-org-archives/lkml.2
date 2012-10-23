@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab2JWDLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 23:11:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36574 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab2JWDLy (ORCPT
+	id S1752070Ab2JWDPR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 23:15:17 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58200 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2JWDPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 23:11:54 -0400
-Date: Mon, 22 Oct 2012 20:12:22 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: xiaobing.tu@intel.com, ccross@android.com, davej@redhat.com,
-        akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
-        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, di.zhang@intel.com, xindong.ma@intel.com,
-        alex.zuo@intel.com
-Subject: Re: [PATCH 1/2] Staging: android: binder: Fix memory leak on
- thread/process exit
-Message-ID: <20121023031222.GA22095@kroah.com>
-References: <20121015235836.GA3214@kroah.com>
- <1350347562-32643-1-git-send-email-arve@android.com>
- <20121016071136.GB5172@kroah.com>
- <CAMP5XgfVPeN8CRwKxeTv6fL8M0MXV56R+GrWw88caVZrQfu+Vg@mail.gmail.com>
- <20121022200047.GA18175@kroah.com>
- <CAMP5XgeF=_tjPsEoEjAEbWDB7KjFGCGgTG+RkixPV29Df-NJ_Q@mail.gmail.com>
+	Mon, 22 Oct 2012 23:15:14 -0400
+Date: Mon, 22 Oct 2012 20:15:43 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: devel@driverdev.osuosl.org, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] staging: Add firewire-serial driver
+Message-ID: <20121023031543.GA22155@kroah.com>
+References: <1350565015.23730.4.camel@thor>
+ <20121022224505.GD24489@kroah.com>
+ <1350959679.2621.55.camel@thor>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMP5XgeF=_tjPsEoEjAEbWDB7KjFGCGgTG+RkixPV29Df-NJ_Q@mail.gmail.com>
+In-Reply-To: <1350959679.2621.55.camel@thor>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 05:58:08PM -0700, Arve Hj?nnev?g wrote:
-> On Mon, Oct 22, 2012 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Tue, Oct 16, 2012 at 03:45:20PM -0700, Arve Hj?nnev?g wrote:
-> >> On Tue, Oct 16, 2012 at 12:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Mon, Oct 15, 2012 at 05:32:41PM -0700, Arve Hj?nnev?g wrote:
-> >> >> If a thread or process exited while a reply, one-way transaction or
-> >> >> death notification was pending, the struct holding the pending work
-> >> >> was leaked.
-> >> >>
-> >> >> Change-Id: I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7
-> >> >
-> >> > What is this field?  Please don't include this in kernel patches, it
-> >> > forces me to edit the patch by hand :(
-> >> >
-> >>
-> >> It is a tag generated a git hook to uniquely identify a change through
-> >> multiple revisions of that change. If the tag does not already exist
-> >> the hook adds it. I removed it from the reposted patches as you
-> >> requested, but have you considered leaving it in? It is a useful
-> >> search token both for finding different revisions of a patch and for
-> >> finding which branch a change has been cherry-picked into.
-> >
-> > Sorry, I was being facetious, I knew what it really was, but the point
-> > was, why would I?
-> >
+On Mon, Oct 22, 2012 at 10:34:39PM -0400, Peter Hurley wrote:
+> On Mon, 2012-10-22 at 15:45 -0700, Greg Kroah-Hartman wrote:
+> > On Thu, Oct 18, 2012 at 08:56:55AM -0400, Peter Hurley wrote:
+> > > Please consider this serial driver for review for submission to staging.
+> > > The firewire-serial driver implements TTY over IEEE 1394. In its default
+> > > configuration, it creates 4 TTY devices and one loopback device per
+> > > firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
+> > > 
+> > > Currently, the TTY devices auto-connect to every cabled peer (the TODO
+> > > list includes plans for providing a sysfs interface to control virtual
+> > > cabling with whitelist/blacklist support per GUID).
+> > > 
+> > > Efforts are still ongoing for a companion console driver, with plans to
+> > > eventually add early_printk & kgdb support (via additional drivers).
+> > > 
+> > > Some issues did arise with both the TTY and Firewire subsystems which
+> > > are noted in the TODO file. Please review these workarounds.
+> > > 
+> > > Peter Hurley (1):
+> > >   staging: fwserial: Add TTY-over-Firewire serial driver
+> > 
+> > I'd like to get an Ack from Stefan here, before I'll add this to the
+> > staging tree.
 > 
-> So you can use it. If, for instance, you want to see which branches
-> you cherry-picked this change into you can run "git rev-list --all
-> --grep I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7 | xargs -rl git
-> branch -a --contains". If it was more widely used, it would also be
-> useful for finding mailing list discussion of multiple versions of
-> patches (even when the title of the patch changes).
+> Of course.
+> 
+> Jiri's newest series ("TTY buffer in tty_port and other stuff") does
+> break this driver, so I'll need to resubmit to address those changes.
+> Two of the workarounds mentioned in the TODO are related to the
+> tty_buffer interface; specifically,
+> 
+> 1. The ldisc drops the contents of tty_buffer on hangup (rather than
+> waiting for completion). Maybe for other devices this isn't so
+> noticeable because the ldisc can mostly keep up with the device, but on
+> firewire the ldisc lags well behind. Right now, this driver works around
+> this by holding off the hangup until the ldisc empties the tty_buffer.
+> The driver determines how much data is still left in the tty_buffer by
+> walking the flip buffers.
 
-Yes, if you want a unique identifier for a patch in order to try to
-track it through trees, you can do something like that (hint, see Alan
-Stern's patches, he has his own identifier for that.)  But don't use the
-gerrit id for this, it's not useful and it is confusing.  We have
-discussed this in the past, see the lkml archives for details.
+That's not good.  Surely other drivers must see this, as we handle tty
+over ethernet, that should be just as fast as firewire, right?  What do
+those drivers do to handle this issue?
 
-> > As has been stated before, you can include information like this in your
-> > patch, but you MUST reference it properly so that others can be able to
-> > figure out what you mean.  A random Change-Id value means nothing given
-> > that lots of different groups use gerrit.  You need a url, or a pointer
-> > to which gerrit instance this refers to before you can include it.
-> >
-> 
-> There is no single url. The tag was generated by a local git hook
-> before it was uploaded anywhere. While gerrit looks for this tag and
-> use it when it is there, the same change can be uploaded to different
-> gerrit instances. While it would be useful to also include urls to the
-> gerrit instance(s) that a patch was discussed on, the Change-Id is
-> useful by itself.
-> 
-> > Same goes for bugzilla entries, if you look in the kernel changelog, we
-> > reference lots of different ones, but we use urls to determine which one
-> > we are talking about (suse, red hat, kernel.org, etc.)
-> >
-> 
-> Those IDs appear to be local to a specific server, so the id without
-> the url would not be very useful.
+> 2. Because this driver can fill the entire tty_buffer (64K +) before the
+> ldisc even runs once, this driver has to self-throttle when feeding the
+> tty_buffer. So as not to drop data, the driver has to know when a
+> watermark is reached in the tty_buffer, to ensure that in-flight +
+> already-accepted data can safely be moved to what remains avail in the
+> tty_buffer. (The tty_buffer maxs at 64K). Currently, the avail level in
+> the tty_buffer is computed by this driver (in the same manner as
+> tty_buffer_alloc()).
 
-Ok, then I don't recommend it be used at all, as we have a unique
-identifier, the git commit id in Linus's tree.  That id does follow the
-patch around if it goes into any stable kernel tree, so let's stick with
-it.
+I suggest bringing this up on the linux-serial@vger mailing list, Alan
+and Jiri should be able to help you out.
 
 thanks,
 
