@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab2JWGef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:34:35 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33406 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756538Ab2JWGee (ORCPT
+	id S1756608Ab2JWGg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:36:27 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:59520 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab2JWGg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:34:34 -0400
-Date: Tue, 23 Oct 2012 10:34:30 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
-Message-ID: <20121023063430.GB7020@moon>
-References: <20121022191452.785366817@openvz.org>
- <20121022122934.d2e2fa57.akpm@linux-foundation.org>
- <5085B1A8.4020609@parallels.com>
- <20121022205641.GL2303@moon>
- <20121022213449.GH31440@moon>
- <20121022145158.53bddfc1.akpm@linux-foundation.org>
- <20121023061341.GA7020@moon>
- <20121022233025.09ec2d92.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022233025.09ec2d92.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 02:36:26 -0400
+Date: Tue, 23 Oct 2012 08:36:23 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: dmarkh@cfl.rr.com
+Cc: markh@compro.net, linux-kernel@vger.kernel.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: [Intel-gfx] drm_kms_helper problems
+Message-ID: <20121023083623.774f093e@pluto.restena.lu>
+In-Reply-To: <5085C092.8020309@cfl.rr.com>
+References: <508409FC.6080805@cfl.rr.com>
+	<20121021165802.578d6d6b@neptune.home>
+	<50843C83.8040801@cfl.rr.com>
+	<20121021211817.58c6ccaf@neptune.home>
+	<50853121.3040803@cfl.rr.com>
+	<50858513.3070909@compro.net>
+	<5085C092.8020309@cfl.rr.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 11:30:25PM -0700, Andrew Morton wrote:
-...
-> > Yup, but not only that, this kind of trick hides associativity between
-> > VM_ constant and mnemonic, so on changes one would have to figure out
-> > which position some flag has in this foo[] array, so I vote for not
-> > use it :-)
-> 
-> Well you could do
-> 
-> struct {
-> 	char x[2];
-> } y[] = {
-> 	[CLOG2(VM_DONTEXPAND)] =	{ 'd', 'e' },
-> 	[CLOG2(VM_ACCOUNT)] =		{ 'a', 'c' },
-> 	[CLOG2(VM_NORESERVE)] =		{ 'n', 'r' },
-> };
-> 
-> 	...
-> 
-> 	for (i = 0; i < BITS_PER_LONG; i++) {
-> 		if (flags & (1 << i))
-> 			seq_printf("%c%c ", y[i][0], y[i][1]);
-> 	}
-> 
-> where CLOG2() is extracted from the guts of ilog2().
-> 
-> I'll stop now :)
+On Mon, 22 Oct 2012 17:54:26 Mark Hounschell wrote:
+> Another interesting thing. I changed the boot file to only 
+> "video=HDMI-A-1:e" and the monitor on the DVI port complains about the 
+> resolution being to high. I then put the hdmi cable onto my dvi/hdmi 
+> adapter and plug it into the DVI port and wala, a 1920 x 1080 desktop. So I 
+> reboot with it in that configuration  and again comes up good connected to 
+> the DVI connector.
 
-Yup, this one will be a wy better. Letme try it out :)
+So at least the EDID firmware now gets recognized and considered :)
+
+> # xrandr
+> Screen 0: minimum 320 x 200, current 1920 x 1080, maximum 8192 x 8192
+> VGA1 disconnected (normal left inverted right x axis y axis)
+> HDMI1 connected 1920x1080+0+0 (normal left inverted right x axis y axis) 
+> 708mm x 398mm
+>     1920x1080      60.0*+   50.0     25.0     30.0     30.0     24.0
+>     1680x1050      59.9
+>     1680x945       60.0
+>     1400x1050      59.9
+>     1600x900       60.0
+>     1280x1024      75.0     60.0
+>     1440x900       59.9
+>     1280x960       60.0
+>     1366x768       60.0
+>     1360x768       60.0
+>     1280x800       74.9     59.9
+>     1152x864       75.0
+>     1280x768       74.9     60.0
+>     1280x720       50.0     60.0
+>     1024x768       75.1     70.1     60.0
+>     1024x576       60.0
+>     800x600        72.2     75.0     60.3     56.2
+>     720x576        50.0
+>     848x480        60.0
+>     720x480        59.9
+>     640x480        72.8     75.0     60.0     59.9     59.9
+>     720x400        70.1
+> DP1 disconnected (normal left inverted right x axis y axis)
+> HDMI2 disconnected (normal left inverted right x axis y axis)
+> HDMI3 disconnected (normal left inverted right x axis y axis)
+> DP2 disconnected (normal left inverted right x axis y axis)
+> DP3 disconnected (normal left inverted right x axis y axis)
+> 
+> I'm still getting the same messages spewed into the kernel log file. So 
+> this looks to me like the kernel is confused. Again, I ask, why do I have 3 
+> HDMIs and 3 DPs but just one VGA.
+
+Maybe Daniel or Chris can comment on that high quantity of DP/HDMI
+connectors seen by driver. Those are probably also the cause of the
+persistent EDID complaints in kernel log.
+
+
+You could maybe try to disable those outputs in xorg.conf in order to not
+get your log filled with bad EDID complaints for "unused" connectors.
+But as specifying the EDID as firmware it's just a work-around to the
+issue.
+
+Bruno
+
+> Something is just not right here. I'm beginning to think it's not me.
+>
+> Mark
