@@ -1,88 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab2JWWRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:17:39 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:57320 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933379Ab2JWWRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:17:38 -0400
-Subject: Re: [PATCH 18/23] cx18: Replace memcpy with struct assignment
-From: Andy Walls <awalls@md.metrocast.net>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Date: Tue, 23 Oct 2012 18:17:28 -0400
-In-Reply-To: <1351022246-8201-18-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-	 <1351022246-8201-18-git-send-email-elezegarcia@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1351030649.2459.22.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-23_07:2012-10-23,2012-10-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1203120001 definitions=main-1210230289
+	id S933539Ab2JWWTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:19:33 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57086 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754158Ab2JWWTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 18:19:31 -0400
+Date: Tue, 23 Oct 2012 18:19:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121023221913.GC28626@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org,
+	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+	Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 16:57 -0300, Ezequiel Garcia wrote:
-> This kind of memcpy() is error-prone. Its replacement with a struct
-> assignment is prefered because it's type-safe and much easier to read.
+On Tue, Oct 23, 2012 at 09:57:08PM +0100, Nix wrote:
 > 
-> Found by coccinelle. Hand patched and reviewed.
-> Tested by compilation only.
+> It is now quite clear that this is a bug introduced by one or more of
+> the post-3.6.1 ext4 patches (which have all been backported at least to
+> 3.5, so the problem is probably there too).
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
+> [   60.290844] EXT4-fs error (device dm-3): ext4_mb_generate_buddy:741: group 202, 1583 clusters in bitmap, 1675 in gd
+> [   60.291426] JBD2: Spotted dirty metadata buffer (dev = dm-3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
 > 
-> // <smpl>
-> @@
-> identifier struct_name;
-> struct struct_name to;
-> struct struct_name from;
-> expression E;
-> @@
-> -memcpy(&(to), &(from), E);
-> +to = from;
-> // </smpl>
-> 
-> Cc: Andy Walls <awalls@md.metrocast.net>
 
-Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+I think I've found the problem.  I believe the commit at fault is commit
+14b4ed22a6 (upstream commit eeecef0af5e):
 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
->  drivers/media/pci/cx18/cx18-i2c.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/pci/cx18/cx18-i2c.c b/drivers/media/pci/cx18/cx18-i2c.c
-> index 51609d5..930d40f 100644
-> --- a/drivers/media/pci/cx18/cx18-i2c.c
-> +++ b/drivers/media/pci/cx18/cx18-i2c.c
-> @@ -240,15 +240,13 @@ int init_cx18_i2c(struct cx18 *cx)
->  
->  	for (i = 0; i < 2; i++) {
->  		/* Setup algorithm for adapter */
-> -		memcpy(&cx->i2c_algo[i], &cx18_i2c_algo_template,
-> -			sizeof(struct i2c_algo_bit_data));
-> +		cx->i2c_algo[i] = cx18_i2c_algo_template;
->  		cx->i2c_algo_cb_data[i].cx = cx;
->  		cx->i2c_algo_cb_data[i].bus_index = i;
->  		cx->i2c_algo[i].data = &cx->i2c_algo_cb_data[i];
->  
->  		/* Setup adapter */
-> -		memcpy(&cx->i2c_adap[i], &cx18_i2c_adap_template,
-> -			sizeof(struct i2c_adapter));
-> +		cx->i2c_adap[i] = cx18_i2c_adap_template;
->  		cx->i2c_adap[i].algo_data = &cx->i2c_algo[i];
->  		sprintf(cx->i2c_adap[i].name + strlen(cx->i2c_adap[i].name),
->  				" #%d-%d", cx->instance, i);
+    jbd2: don't write superblock when if its empty
+
+which first appeared in v3.6.2.
+
+The reason why the problem happens rarely is that the effect of the
+buggy commit is that if the journal's starting block is zero, we fail
+to truncate the journal when we unmount the file system.  This can
+happen if we mount and then unmount the file system fairly quickly,
+before the log has a chance to wrap.  After the first time this has
+happened, it's not a disaster, since when we replay the journal, we'll
+just replay some extra transactions.  But if this happens twice, the
+oldest valid transaction will still not have gotten updated, but some
+of the newer transactions from the last mount session will have gotten
+written by the very latest transacitons, and when we then try to do
+the extra transaction replays, the metadata blocks can end up getting
+very scrambled indeed.
+
+*Sigh*.  My apologies for not catching this when I reviewed this
+patch.  I believe the following patch should fix the bug; once it's
+reviewed by other ext4 developers, I'll push this to Linus ASAP.
+
+						- Ted
+
+commit 26de1ba5acc39f0ab57ce1ed523cb128e4ad73a4
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Tue Oct 23 18:15:22 2012 -0400
+
+    jbd2: fix a potential fs corrupting bug in jbd2_mark_journal_empty
+    
+    Fix a potential file system corrupting bug which was introduced by
+    commit eeecef0af5ea4efd763c9554cf2bd80fc4a0efd3: jbd2: don't write
+    superblock when if its empty.
+    
+    We should only skip writing the journal superblock if there is nothing
+    to do --- not just when s_start is zero.
+    
+    This has caused users to report file system corruptions in ext4 that
+    look like this:
+    
+    EXT4-fs error (device sdb3): ext4_mb_generate_buddy:741: group 436, 22902 clusters in bitmap, 22901 in gd
+    JBD2: Spotted dirty metadata buffer (dev = sdb3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
+    
+    after the file system has been corrupted.
+    
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+    Cc: stable@vger.kernel.org
+
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index 0f16edd..0064181 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1351,18 +1351,20 @@ void jbd2_journal_update_sb_log_tail(journal_t *journal, tid_t tail_tid,
+ static void jbd2_mark_journal_empty(journal_t *journal)
+ {
+ 	journal_superblock_t *sb = journal->j_superblock;
++	__be32		new_tail_sequence;
+ 
+ 	BUG_ON(!mutex_is_locked(&journal->j_checkpoint_mutex));
+ 	read_lock(&journal->j_state_lock);
+-	/* Is it already empty? */
+-	if (sb->s_start == 0) {
++	new_tail_sequence = cpu_to_be32(journal->j_tail_sequence);
++	/* Nothing to do? */
++	if (sb->s_start == 0 && sb->s_sequence == new_tail_sequence) {
+ 		read_unlock(&journal->j_state_lock);
+ 		return;
+ 	}
+ 	jbd_debug(1, "JBD2: Marking journal as empty (seq %d)\n",
+ 		  journal->j_tail_sequence);
+ 
+-	sb->s_sequence = cpu_to_be32(journal->j_tail_sequence);
++	sb->s_sequence = new_tail_sequence;
+ 	sb->s_start    = cpu_to_be32(0);
+ 	read_unlock(&journal->j_state_lock);
+ 
 
 
