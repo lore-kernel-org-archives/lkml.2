@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab2JWNEC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:04:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41989 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756997Ab2JWNEB convert rfc822-to-8bit (ORCPT
+	id S932816Ab2JWNEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:04:54 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49481
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756796Ab2JWNEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:04:01 -0400
-Message-ID: <1350997423.13456.21.camel@twins>
-Subject: Re: [PATCH 14/34] perf, x86: Avoid checkpointed counters causing
- excessive TSX aborts
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 23 Oct 2012 15:03:43 +0200
-In-Reply-To: <1350602382-12771-15-git-send-email-andi@firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
-	 <1350602382-12771-15-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 23 Oct 2012 09:04:53 -0400
+Date: Tue, 23 Oct 2012 09:04:52 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH v3 00/22] loop: Issue O_DIRECT aio using bio_vec
+Message-ID: <20121023130451.GB21594@infradead.org>
+References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
-> @@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
->  int intel_pmu_save_and_restart(struct perf_event *event)
->  {
->         x86_perf_event_update(event);
-> +       /*
-> +        * For a checkpointed counter always reset back to 0.  This
-> +        * avoids a situation where the counter overflows, aborts the
-> +        * transaction and is then set back to shortly before the
-> +        * overflow, and overflows and aborts again.
-> +        */
-> +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
+On Mon, Oct 22, 2012 at 10:15:00AM -0500, Dave Kleikamp wrote:
+> This is the current version of the patchset I presented at the LSF-MM
+> Summit in San Francisco in April. I apologize for letting it go so
+> long before re-submitting.
+> 
+> This patchset was begun by Zach Brown and was originally submitted for
+> review in October, 2009. Feedback was positive, and I have picked up
+> where he left off, porting his patches to the latest mainline kernel
+> and adding support more file systems.
+> 
+> This patch series adds a kernel interface to fs/aio.c so that kernel code can
+> issue concurrent asynchronous IO to file systems.  It adds an aio command and
+> file system methods which specify io memory with pages instead of userspace
+> addresses.
+> 
+> This series was written to reduce the current overhead loop imposes by
+> performing synchronus buffered file system IO from a kernel thread.  These
+> patches turn loop into a light weight layer that translates bios into iocbs.
+> 
+> The downside of this is that in its current implementation, performance takes
+> a big hit for non-synchonous I/O, since the underlying page cache is bypassed.
+> The tradeoff is that all writes to the loop device make it to the underlying
+> media, making loop-mounted file systems recoverable.
 
-Would an unlikely() make sense there? Most events won't have this set.
+It also seems to still not fully kill thr old aio_read/write codepath.
+At least XFS isn't touched yet.  It also doesn't seem to kill the nasty
+hack for in-kernel direct I/O introduced with the swap over nfs code
+(grep for REQ_KERNEL / KERNEL_READ / KERNEL_WRITE)
 
-> +               /* No race with NMIs because the counter should not be armed */
-> +               wrmsrl(event->hw.event_base, 0);
-> +               local64_set(&event->hw.prev_count, 0);
-> +       }
->         return x86_perf_event_set_period(event);
->  } 
