@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab2JWGeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:34:21 -0400
-Received: from shutemov.name ([176.9.204.213]:59972 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753452Ab2JWGeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:34:20 -0400
-Date: Tue, 23 Oct 2012 09:35:32 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
+	id S1756631Ab2JWGef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:34:35 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:33406 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756538Ab2JWGee (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 02:34:34 -0400
+Date: Tue, 23 Oct 2012 10:34:30 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20121023063532.GA15870@shutemov.name>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
- <20121018164502.b32791e7.akpm@linux-foundation.org>
- <20121018235941.GA32397@shutemov.name>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+Message-ID: <20121023063430.GB7020@moon>
+References: <20121022191452.785366817@openvz.org>
+ <20121022122934.d2e2fa57.akpm@linux-foundation.org>
+ <5085B1A8.4020609@parallels.com>
+ <20121022205641.GL2303@moon>
+ <20121022213449.GH31440@moon>
+ <20121022145158.53bddfc1.akpm@linux-foundation.org>
+ <20121023061341.GA7020@moon>
+ <20121022233025.09ec2d92.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121018235941.GA32397@shutemov.name>
+In-Reply-To: <20121022233025.09ec2d92.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 02:59:41AM +0300, Kirill A. Shutemov wrote:
-> On Thu, Oct 18, 2012 at 04:45:02PM -0700, Andrew Morton wrote:
-> > On Mon, 15 Oct 2012 09:00:59 +0300
-> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > 
-> > > H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> > > after the first allocation. Here's implementation of lockless refcounting
-> > > for huge zero page.
-> > > 
-> > > We have two basic primitives: {get,put}_huge_zero_page(). They
-> > > manipulate reference counter.
-> > > 
-> > > If counter is 0, get_huge_zero_page() allocates a new huge page and
-> > > takes two references: one for caller and one for shrinker. We free the
-> > > page only in shrinker callback if counter is 1 (only shrinker has the
-> > > reference).
-> > > 
-> > > put_huge_zero_page() only decrements counter. Counter is never zero
-> > > in put_huge_zero_page() since shrinker holds on reference.
-> > > 
-> > > Freeing huge zero page in shrinker callback helps to avoid frequent
-> > > allocate-free.
-> > 
-> > I'd like more details on this please.  The cost of freeing then
-> > reinstantiating that page is tremendous, because it has to be zeroed
-> > out again.  If there is any way at all in which the kernel can be made
-> > to enter a high-frequency free/reinstantiate pattern then I expect the
-> > effects would be quite bad.
-> > 
-> > Do we have sufficient mechanisms in there to prevent this from
-> > happening in all cases?  If so, what are they, because I'm not seeing
-> > them?
+On Mon, Oct 22, 2012 at 11:30:25PM -0700, Andrew Morton wrote:
+...
+> > Yup, but not only that, this kind of trick hides associativity between
+> > VM_ constant and mnemonic, so on changes one would have to figure out
+> > which position some flag has in this foo[] array, so I vote for not
+> > use it :-)
 > 
-> We only free huge zero page in shrinker callback if nobody in the system
-> uses it. Never on put_huge_zero_page(). Shrinker runs only under memory
-> pressure or if user asks (drop_caches).
-> Do you think we need an additional protection mechanism?
-
-Andrew?
-
-> > > Refcounting has cost. On 4 socket machine I observe ~1% slowdown on
-> > > parallel (40 processes) read page faulting comparing to lazy huge page
-> > > allocation.  I think it's pretty reasonable for synthetic benchmark.
+> Well you could do
 > 
-> -- 
->  Kirill A. Shutemov
+> struct {
+> 	char x[2];
+> } y[] = {
+> 	[CLOG2(VM_DONTEXPAND)] =	{ 'd', 'e' },
+> 	[CLOG2(VM_ACCOUNT)] =		{ 'a', 'c' },
+> 	[CLOG2(VM_NORESERVE)] =		{ 'n', 'r' },
+> };
+> 
+> 	...
+> 
+> 	for (i = 0; i < BITS_PER_LONG; i++) {
+> 		if (flags & (1 << i))
+> 			seq_printf("%c%c ", y[i][0], y[i][1]);
+> 	}
+> 
+> where CLOG2() is extracted from the guts of ilog2().
+> 
+> I'll stop now :)
 
--- 
- Kirill A. Shutemov
+Yup, this one will be a wy better. Letme try it out :)
