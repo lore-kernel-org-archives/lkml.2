@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933950Ab2JWUKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:10:53 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42516 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933408Ab2JWUKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:10:49 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 171/193] net/l2tp: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:04:04 -0700
-Message-Id: <1351022666-6960-172-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	id S933917Ab2JWU0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:26:16 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58099 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757506Ab2JWU0N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:26:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121024072347.65f3e930@notabene.brown>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	<1351022666-6960-62-git-send-email-keescook@chromium.org>
+	<20121024072347.65f3e930@notabene.brown>
+Date: Tue, 23 Oct 2012 13:26:11 -0700
+X-Google-Sender-Auth: yHKsXxTU56OKKCkj3hKSOlSNpH8
+Message-ID: <CAGXu5j+QqZVjKWZyeSp1nYjP66UCZ9tzARJpeLLeJf9n-BoEhw@mail.gmail.com>
+Subject: Re: [PATCH 061/193] drivers/md: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config item has not carried much meaning for a while now and is
-almost always enabled by default. As agreed during the Linux kernel
-summit, remove it.
+On Tue, Oct 23, 2012 at 1:23 PM, NeilBrown <neilb@suse.de> wrote:
+> On Tue, 23 Oct 2012 13:02:14 -0700 Kees Cook <keescook@chromium.org> wrote:
+>
+>> This config item has not carried much meaning for a while now and is
+>> almost always enabled by default. As agreed during the Linux kernel
+>> summit, remove it.
+>>
+>> CC: Neil Brown <neilb@suse.de>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  drivers/md/Kconfig |   25 ++++++++++++-------------
+>>  1 file changed, 12 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
+>> index 91a02ee..f583e96 100644
+>> --- a/drivers/md/Kconfig
+>> +++ b/drivers/md/Kconfig
+>> @@ -155,10 +155,9 @@ config MD_RAID456
+>>         If unsure, say Y.
+>>
+>>  config MULTICORE_RAID456
+>> -     bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
+>> +     bool "RAID-4/RAID-5/RAID-6 Multicore processing"
+>>       depends on MD_RAID456
+>>       depends on SMP
+>> -     depends on EXPERIMENTAL
+>>       ---help---
+>>         Enable the raid456 module to dispatch per-stripe raid operations to a
+>>         thread pool.
+>
+> I'm happy to remove the "depends on EXPERIMENTAL".
+> I'm not so happy to remove the "(EXPERIMENTAL)" text.  That code really
+> shouldn't be used in production - just for experiments.
 
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- net/l2tp/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+No problem; I've updated the patch to leave the title alone.
 
-diff --git a/net/l2tp/Kconfig b/net/l2tp/Kconfig
-index 147a8fd..adb9843 100644
---- a/net/l2tp/Kconfig
-+++ b/net/l2tp/Kconfig
-@@ -46,8 +46,8 @@ config L2TP_DEBUGFS
- 	  will be called l2tp_debugfs.
- 
- config L2TP_V3
--	bool "L2TPv3 support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && L2TP
-+	bool "L2TPv3 support"
-+	depends on L2TP
- 	help
- 	  Layer Two Tunneling Protocol Version 3
- 
+Thanks!
+
+-Kees
+
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
