@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2JWJbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:31:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:64732 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753027Ab2JWJbQ (ORCPT
+	id S932839Ab2JWJb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:31:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57197 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932768Ab2JWJb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:31:16 -0400
+	Tue, 23 Oct 2012 05:31:56 -0400
+Date: Tue, 23 Oct 2012 10:31:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Tony Prisk <linux@prisktech.co.nz>, devicetree-discuss@lists.ozlabs.org,
+        arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
+Message-ID: <20121023093128.GR21164@n2100.arm.linux.org.uk>
+References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz> <1350643135-13197-2-git-send-email-linux@prisktech.co.nz> <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de> <1350888712.3592.11.camel@gitbox> <1350889747.3592.17.camel@gitbox> <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de> <1350891382.3592.22.camel@gitbox> <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de> <1350981706.20938.7.camel@gitbox> <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-In-Reply-To: <5085ACCD.3040203@wwwdotorg.org>
-References: <1350651909-5337-1-git-send-email-linus.walleij@stericsson.com>
-	<20121019181019.GP4730@atomide.com>
-	<CACRpkdZazjMoSzkr5t15-GeCnQKCJDsZyvT=KVMyw5XhjDybGQ@mail.gmail.com>
-	<5085ACCD.3040203@wwwdotorg.org>
-Date: Tue, 23 Oct 2012 11:31:15 +0200
-Message-ID: <CACRpkdY002gNuy81_XfenQfhZnMVyAxViMhoSd3nNMH5k0=JBQ@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: reserve pins when states are activated
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Jean Nicolas Graux <jean-nicolas.graux@stericsson.com>,
-        Loic Pallardy <loic.pallardy@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 10:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 10/22/2012 02:21 AM, Linus Walleij wrote:
+On Tue, Oct 23, 2012 at 11:22:47AM +0200, Thierry Reding wrote:
+> On Tue, Oct 23, 2012 at 09:41:46PM +1300, Tony Prisk wrote:
+> > Further to the discussion, my preference is still for of_clk_get()
+> > (although I've changed the patch anyway as you saw because it makes no
+> > difference in this case) :)
+> > 
+> > clk_get(x, NULL) and devm_clk_get(x, NULL) both seems like 'hacks' to
+> > allow platforms to convert to DT without having to update all their
+> > drivers first. It only allows the first (default) clock, as your pointed
+> > out. Getting a 2nd... clock relies on an optional property in DT (which
+> > again, seems like it is there to support 'old' drivers) which allows you
+> > to request clocks by name.
+> > 
+> > of_clk_get() on the other hand seems like a properly native DT function.
+> > You don't need to know anything about the clock, as long as the correct
+> > clock is specified in the correct order as documented by the binding.
+> > Relying on 'pre-OF' code for a OF-only driver also seems
+> > counter-intuitive.
+> 
+> I do agree with those arguments. What I was saying is that for drivers
+> which aren't DT only, of_clk_get() is not an option and that maybe
+> others would be encouraged by the example to not use the generic APIs
+> even if their driver could be used in non-DT setups. But maybe I'm
+> worrying needlessly.
+> 
+> That said, maybe somebody with a broader view of things like Arnd
+> (Cc'ed) could share his thoughts.
 
->> If this turns out to be a severe performance bottleneck, I
->> suggest to add some additional constraint API, like
->> pinctrl_set_pinmux_homegeneous_pinsets(true) that will
->> at runtime select whether the pin allocation is done when
->> getting the pinctrl handle instead.
->
-> That API sounds like something system-wide, which seems like it would be
-> rather presumptuous (CPU/SoC support code couldn't execute it, since
-> that would presume a facet of all board designs that could change in the
-> future). Even a driver shouldn't be assuming this; it can't know what
-> boards it gets used in ahead of time.
+As I have already said, the way the DT bindings were done for the clk
+stuff was wrong.  A little thought put into it would've come up with
+a much better solution which wouldn't have needed of_clk_get() at all.
 
-Well, yeah. It should rather be part of the pinctrl descriptor
-then, so it becomes a per-controller runpath simplification.
+How?
 
-> Instead, it seems like the map registration code could easily look at
-> all states defined for a device, and determine if the set of pins/groups
-> used by those states was identical, and switch between up-front or
-> dynamic registration as needed by the specific map entries.
+The arguments for clk_get() are:
+1. the struct device, which you can get the OF-node from.
+2. a _device_ _specific_ _clock_ _input_ _name_ (or NULL if there's only
+   one.)
 
-That kind of constraint-resolution in the kernel scares me,
-soon we will have a prolog runtime ... (but hm maybe that is not
-such a bad idea considering some other constraint things I've
-seen around)
+So, we have something that defines a hardware clock input name, which
+can be used to generate a property name for OF.  So, what _could_ have
+been done is this:
 
-Yours,
-Linus Walleij
+	clock-<input-name> = <&provider-node clk-output-index>;
+
+where the property name is generated by:
+
+	snprintf(prop, sizeof(prop), "clk-%s", name ? name : "default");
+
+So I continue to assert that our current design is wrong - and it will
+cause driver authors to pointlessly have to make a choice at every stage
+between DT and non-DT based systems.
