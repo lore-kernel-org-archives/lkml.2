@@ -1,87 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964776Ab2JWWrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:47:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63098 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab2JWWrd (ORCPT
+	id S933840Ab2JWWro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:47:44 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:59653 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933543Ab2JWWrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:47:33 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Alexandra Chen <alexandra.chen@tw.synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-Date: Tue, 23 Oct 2012 15:47:28 -0700
-Message-ID: <17777387.ePXtLzIJab@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50871C84.9090803@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <20121011082051.GB32175@core.coreip.homeip.net> <50871C84.9090803@synaptics.com>
+	Tue, 23 Oct 2012 18:47:41 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix>
+	<20121023221913.GC28626@thunk.org>
+Emacs: because you deserve a brk today.
+Date: Tue, 23 Oct 2012 23:47:27 +0100
+In-Reply-To: <20121023221913.GC28626@thunk.org> (Theodore Ts'o's message of
+	"Tue, 23 Oct 2012 18:19:13 -0400")
+Message-ID: <87k3ugn6v4.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=11 Fuz1=11 Fuz2=11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 23, 2012 03:39:00 PM Christopher Heiny wrote:
-> On 10/11/2012 01:20 AM, Dmitry Torokhov wrote:
-> > On Fri, Oct 05, 2012 at 09:09:58PM -0700, Christopher Heiny wrote:
-> >> +
-> >> +	int (*write_block)(struct rmi_phys_device *phys, u16 addr, u8 *buf,
-> >> +			   int len);
-> >> +	int (*read_block)(struct rmi_phys_device *phys, u16 addr, u8 *buf,
-> >> +			  int len);
-> >> +
-> > 
-> > If you declare your buffer as [const] void * instead of u8 * I think you
-> > will be able to get rid of most of your unions.
-> 
-> Good point.  We'll explore that.  If you see it in the next patch,
-> you'll know it worked out.
-> 
-> >> + * Helper fn to convert a byte array representing a 16 bit value in the
-> >> RMI + * endian-ness to a 16-bit value in the native processor's specific
-> >> endianness. + * We don't use ntohs/htons here because, well, we're not
-> >> dealing with + * a pair of 16 bit values. Casting dest to u16* wouldn't
-> >> work, because + * that would imply knowing the byte order of u16 in the
-> >> first place.  The + * same applies for using shifts and masks.
-> >> + */
-> >> +static inline u16 batohs(u8 *src)
-> >> +{
-> >> +	return src[1] * 0x100 + src[0];
-> >> +}
-> >> +
-> >> +/**
-> >> + * Helper function to convert a 16 bit value (in host processor
-> >> endianess) to + * a byte array in the RMI endianess for u16s.  See above
-> >> comment for + * why we dont us htons or something like that.
-> >> + */
-> >> +static inline void hstoba(u8 *dest, u16 src)
-> >> +{
-> >> +	dest[0] = src % 0x100;
-> >> +	dest[1] = src / 0x100;
-> >> +}
-> > 
-> > These are not used anymore, right?
-> 
-> There are function drivers that we chose not to include that depend on
-> these.  We'll drop these from rmi.h until we're ready to submit those
-> other function drivers.
+On 23 Oct 2012, Theodore Ts'o said:
 
-OK, in this case, like last time we discussed, your function drivers
-should use cpu_to_le16() and le16_to_cpu() instead.
+> The reason why the problem happens rarely is that the effect of the
+> buggy commit is that if the journal's starting block is zero, we fail
+> to truncate the journal when we unmount the file system.
 
-Thanks.
+Oh dear oh dear.
+
+>                                                           This can
+> happen if we mount and then unmount the file system fairly quickly,
+> before the log has a chance to wrap.
+
+... which is quite likely if you're rebooting frequently to try to track
+down some other kernel bug.
+
+>                                       After the first time this has
+> happened, it's not a disaster, since when we replay the journal, we'll
+> just replay some extra transactions.  But if this happens twice, the
+> oldest valid transaction will still not have gotten updated, but some
+> of the newer transactions from the last mount session will have gotten
+> written by the very latest transacitons, and when we then try to do
+> the extra transaction replays, the metadata blocks can end up getting
+> very scrambled indeed.
+
+Ow. OK, it's a good thing I rebooted fast. :) and only fses that got
+written to, but not too much, will see this. Hence my /usr/src stayed
+intact because it had lots of updates of lots of tiny files, more than
+enough to cause the journal to wrap over and over again, even
+journalling only metadata. But /home doesn't see so many updates, and
+neither does /var...
+
+This seems to explain everything.
+
+It looks like fscking everything will fix it (it'll replay the buggered
+journal, mangling the metadata, but then fix up the scrambled metadata
+and fix the journal's starting block). So I probably don't need to worry
+about latent corruption hiding waiting to pounce. Phew.
+
+> *Sigh*.  My apologies for not catching this when I reviewed this
+> patch.  I believe the following patch should fix the bug; once it's
+> reviewed by other ext4 developers, I'll push this to Linus ASAP.
+
+No problem. This is my first data-corruption bug in more than seventeen
+years of ext* use (it even survived horribly faulty RAM). I call that a
+good record. And it happened one day after a full backup, and was
+immediately highlighted by corruption of .bash_history and input/output
+errors logging in -- and fsck pretty much fixed the problem, with only a
+few missing files, one file full of garbage, and one high-ASCII filename
+in a temporary directory to show for it. I call that luckier than I have
+any right to be.
+
+Plus, my faith in the amazingly fast bugfixing talents of ext4 devs is
+undimmed! :)
+
+> 						- Ted
+>
+> commit 26de1ba5acc39f0ab57ce1ed523cb128e4ad73a4
+> Author: Theodore Ts'o <tytso@mit.edu>
+> Date:   Tue Oct 23 18:15:22 2012 -0400
+>
+>     jbd2: fix a potential fs corrupting bug in jbd2_mark_journal_empty
+
+I'll apply this tomorrow (enough fun with filesystem restoration for
+today) and see what happens. (What could *possibly* go wrong?)
+
+But I might not upgrade to stable kernels quite so often in future :(
+you know what they say: once burnt, twice not upgrading before doing a
+full backup!
 
 -- 
-Dmitry
+NULL && (void)
