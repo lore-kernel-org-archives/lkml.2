@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab2JWMfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:35:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56039 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756903Ab2JWMfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:35:09 -0400
-Message-ID: <50868EED.7050909@ti.com>
-Date: Tue, 23 Oct 2012 18:04:53 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Constantine Shulyupin <const@MakeLinux.com>
-CC: <gregkh@linuxfoundation.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-References: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
-In-Reply-To: <1349702227-24875-1-git-send-email-const@MakeLinux.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1757013Ab2JWMgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:36:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41583 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab2JWMgt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 08:36:49 -0400
+Message-ID: <1350995765.13456.15.camel@twins>
+Subject: Re: [PATCH 06/34] perf, kvm: Support the intx/intx_cp modifiers in
+ KVM arch perfmon emulation v2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>, avi@redhat.com,
+        Gleb Natapov <gleb@redhat.com>
+Date: Tue, 23 Oct 2012 14:36:05 +0200
+In-Reply-To: <1350602382-12771-7-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+	 <1350602382-12771-7-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/8/2012 6:47 PM, Constantine Shulyupin wrote:
-> From: Constantine Shulyupin <const@MakeLinux.com>
+On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly 
-> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST 
-> and set MUSB_OTG configuration by default
-> because this configuration options are removed from Kconfig.
-> 
-> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+> This is not arch perfmon, but older CPUs will just ignore it. This makes
+> it possible to do at least some TSX measurements from a KVM guest
 
-Queuing this patch for v3.8. Since the config options are removed there
-is no use having code which refers to them. The patch has been tested on
-DM644x and DM365 in both host and gadget mode (I will add this
-information to commit text while committing). Without this patch .mode
-seems to be defaulting to MUSB_UNDEFINED which I think is definitely wrong.
+Please, always CC people who wrote the code as well, in this case that's
+Gleb.
 
-Thanks,
-Sekhar
-
->  
+> Cc: avi@redhat.com
+> v2: Various fixes to address review feedback
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  arch/arm/mach-davinci/usb.c |    6 ------
->  1 file changed, 6 deletions(-)
+>  arch/x86/kvm/pmu.c |   15 +++++++++++----
+>  1 files changed, 11 insertions(+), 4 deletions(-)
 > 
-> diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-> index f77b953..34509ff 100644
-> --- a/arch/arm/mach-davinci/usb.c
-> +++ b/arch/arm/mach-davinci/usb.c
-> @@ -42,14 +42,8 @@ static struct musb_hdrc_config musb_config = {
->  };
+> diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+> index cfc258a..81c1632 100644
+> --- a/arch/x86/kvm/pmu.c
+> +++ b/arch/x86/kvm/pmu.c
+
+> @@ -173,6 +173,11 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+>  		.exclude_kernel = exclude_kernel,
+>  		.config = config,
+>  	};
+> +	/* Will be ignored on CPUs that don't support this. */
+> +	if (intx)
+> +		attr.config |= HSW_INTX;
+> +	if (intx_cp)
+> +		attr.config |= HSW_INTX_CHECKPOINTED;
 >  
->  static struct musb_hdrc_platform_data usb_data = {
-> -#if defined(CONFIG_USB_MUSB_OTG)
->  	/* OTG requires a Mini-AB connector */
->  	.mode           = MUSB_OTG,
-> -#elif defined(CONFIG_USB_MUSB_PERIPHERAL)
-> -	.mode           = MUSB_PERIPHERAL,
-> -#elif defined(CONFIG_USB_MUSB_HOST)
-> -	.mode           = MUSB_HOST,
-> -#endif
->  	.clock		= "usb",
->  	.config		= &musb_config,
->  };
-> 
+>  	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+>  
+
+So I forgot how all this worked, but will the KVM emulation not pass
+this straight down to the hardware?
+
+Don't we have a problem where we're emulating arch perfmon v1 on AMD
+hardware? On AMD hardware those bits do have meaning.
+
