@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940Ab2JWUbF (ORCPT <rfc822;w@1wt.eu>);
+	id S934001Ab2JWUbl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:31:41 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:6001 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933939Ab2JWUbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:31:05 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35411 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964812Ab2JWUFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:05:44 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 165/193] net/decnet/netfilter: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:58 -0700
-Message-Id: <1351022666-6960-166-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+Date: Tue, 23 Oct 2012 20:31:03 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Tim Bird <tim.bird@am.sony.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH 1/2] mm/slob: Mark zone page state to get slab usage at
+ /proc/meminfo
+In-Reply-To: <CALF0-+WASdSAT9rnLxx8OmHrNV5tjrDwpBTE9irCRd91QxMkBA@mail.gmail.com>
+Message-ID: <0000013a8f524097-4ebaed3b-0d77-4183-a6ad-f01b8855f9bf-000000@email.amazonses.com>
+References: <1350907434-2202-1-git-send-email-elezegarcia@gmail.com> <0000013a88ebfa65-af0fc24b-13fd-400f-b7fc-32230ca70620-000000@email.amazonses.com> <CALF0-+VqGrcjw16rNPH459YAj7dubQnruzV-zOzYn6feOtQ4tQ@mail.gmail.com>
+ <0000013a8ed646c2-4cc34bd5-19c3-4e99-9fa0-248cdbc24feb-000000@email.amazonses.com> <CALF0-+WASdSAT9rnLxx8OmHrNV5tjrDwpBTE9irCRd91QxMkBA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This config item has not carried much meaning for a while now and is
-almost always enabled by default. As agreed during the Linux kernel
-summit, remove it.
+On Tue, 23 Oct 2012, Ezequiel Garcia wrote:
 
-CC: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Patrick McHardy <kaber@trash.net>
-CC: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- net/decnet/netfilter/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> The issue is: with SLUB large kmallocs don't set NR_SLAB_UNRECLAIMABLE
+> zone item.
+> Thus, they don't show at /proc/meminfo. Is this okey?
 
-diff --git a/net/decnet/netfilter/Kconfig b/net/decnet/netfilter/Kconfig
-index 2f81de5..8d7c109 100644
---- a/net/decnet/netfilter/Kconfig
-+++ b/net/decnet/netfilter/Kconfig
-@@ -3,7 +3,7 @@
- #
- 
- menu "DECnet: Netfilter Configuration"
--	depends on DECNET && NETFILTER && EXPERIMENTAL
-+	depends on DECNET && NETFILTER
- 	depends on NETFILTER_ADVANCED
- 
- config DECNET_NF_GRABULATOR
--- 
-1.7.9.5
+Yes. Other large allocations that are done directly via __get_free_pages()
+etc also do not show up there. Slab allocators are intended for small
+allocation and are not effective for large scale allocs. People will
+use multiple different ways of acquiring large memory areas. So there is
+no consistent accounting for that memory.
+
 
