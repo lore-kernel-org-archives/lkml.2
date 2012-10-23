@@ -1,92 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab2JWXpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:45:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57581 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579Ab2JWXpr (ORCPT
+	id S965327Ab2JWXqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:46:32 -0400
+Received: from us-mx3.synaptics.com ([12.239.217.85]:65274 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933587Ab2JWXqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:45:47 -0400
-Date: Tue, 23 Oct 2012 16:45:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-Id: <20121023164546.747e90f6.akpm@linux-foundation.org>
-In-Reply-To: <20121012125708.GJ10110@dhcp22.suse.cz>
-References: <20121012125708.GJ10110@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 23 Oct 2012 19:46:30 -0400
+Message-ID: <50872C54.4090505@synaptics.com>
+Date: Tue, 23 Oct 2012 16:46:28 -0700
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
+        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Alexandra Chin <alexandra.chin@tw.synaptics.com>
+Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
+References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <1349496603-20775-3-git-send-email-cheiny@synaptics.com> <CACRpkdZ0cQPQHDCYiyQb+Qb_8nGh=4rw2CixKgAFvb-3c1LpSg@mail.gmail.com> <BFABBC009FBA1C43B207B15FD485ABD922C22C06@USW-MAIL1.synaptics-inc.local> <20121011081351.GA32175@core.coreip.homeip.net>
+In-Reply-To: <20121011081351.GA32175@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Oct 2012 14:57:08 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> Hi,
-> I would like to resurrect the following Dave's patch. The last time it
-> has been posted was here https://lkml.org/lkml/2010/9/16/250 and there
-> didn't seem to be any strong opposition. 
-> Kosaki was worried about possible excessive logging when somebody drops
-> caches too often (but then he claimed he didn't have a strong opinion
-> on that) but I would say opposite. If somebody does that then I would
-> really like to know that from the log when supporting a system because
-> it almost for sure means that there is something fishy going on. It is
-> also worth mentioning that only root can write drop caches so this is
-> not an flooding attack vector.
-> I am bringing that up again because this can be really helpful when
-> chasing strange performance issues which (surprise surprise) turn out to
-> be related to artificially dropped caches done because the admin thinks
-> this would help...
-> 
-> I have just refreshed the original patch on top of the current mm tree
-> but I could live with KERN_INFO as well if people think that KERN_NOTICE
-> is too hysterical.
-> ---
-> >From 1f4058be9b089bc9d43d71bc63989335d7637d8d Mon Sep 17 00:00:00 2001
-> From: Dave Hansen <dave@linux.vnet.ibm.com>
-> Date: Fri, 12 Oct 2012 14:30:54 +0200
-> Subject: [PATCH] add some drop_caches documentation and info messsge
-> 
-> There is plenty of anecdotal evidence and a load of blog posts
-> suggesting that using "drop_caches" periodically keeps your system
-> running in "tip top shape".  Perhaps adding some kernel
-> documentation will increase the amount of accurate data on its use.
-> 
-> If we are not shrinking caches effectively, then we have real bugs.
-> Using drop_caches will simply mask the bugs and make them harder
-> to find, but certainly does not fix them, nor is it an appropriate
-> "workaround" to limit the size of the caches.
-> 
-> It's a great debugging tool, and is really handy for doing things
-> like repeatable benchmark runs.  So, add a bit more documentation
-> about it, and add a little KERN_NOTICE.  It should help developers
-> who are chasing down reclaim-related bugs.
-> 
-> ...
+On 10/11/2012 01:13 AM, Dmitry Torokhov wrote:
+> On Thu, Oct 11, 2012 at 04:15:56AM +0000, Christopher Heiny wrote:
+>> On Thursday, October 11, 2012 02:21:53 AM you wrote:
+>>> On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
+>>
+>>>
+>>>> +
+>>>> +/** This is here because all those casts made for some ugly code.
+>>>> + */
+>>>> +static void u8_and(u8 *dest, u8 *target1, u8 *target2, int nbits)
+>>>> +{
+>>>> +       bitmap_and((long unsigned int *) dest,
+>>>> +                  (long unsigned int *) target1,
+>>>> +                  (long unsigned int *) target2,
+>>>> +                  nbits);
+>>>> +}
+>>>
+>>> Hm, getting rid of unreadable casts is a valid case.
+>>>
+>>> I'll be OK with this but maybe the real solution is to introduce such
+>>> helpers into <linux/bitmap.h>?
+>>
+>> Hmmm.  We'll give that some thought.  Thought I'd like to get the RMI4
+>> driver nailed down, just to keep the area of change small.  Once we've
+>> got all the kinks worked out here, we'll look at bitmap.h helpers.
 >
-> +		printk(KERN_NOTICE "%s (%d): dropped kernel caches: %d\n",
-> +			current->comm, task_pid_nr(current), sysctl_drop_caches);
+> The question is why you are using u8 for bitmaps instead of doing
+> DECALRE_BITMAP() and using it instead? Then you would not need silly
+> wrappers around existing APIs.
 
-urgh.  Are we really sure we want to do this?  The system operators who
-are actually using this thing will hate us :(
+OK, we'll look into that.  My big concern is whether the bit-order in 
+bitmask.h will be the same as the bit order in the RMI4 sensor 
+registers.  If that works out OK, we'll switch.
 
 
-More friendly alternatives might be:
+>>> (...)
+>>>
+>>>> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
+>>>> +{
+>>>> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
+>>>> +       struct device *dev = &rmi_dev->dev;
+>>>> +       struct rmi_function_container *entry;
+>>>> +       u8 irq_status[data->num_of_irq_regs];
+>>>
+>>> Looking at this...
+>>>
+>>> What does the data->num_of_irq_regs actually contain?
+>>>
+>>> I just fear that it is something constant like always 2 or always 4,
+>>> so there is actually, in reality, a 16 or 32 bit register hiding in there.
+>>>
+>>> In that case what you should do is to represent it as a u16 or u32 here,
+>>> just or the bits into a status word, and then walk over that status
+>>> word with something like ffs(bitword); ...
+>>
+>> Nope, it's not constant.  In theory, and RMI4 based sensor can have up
+>> to 128 functions (in practice, it's far fewer), and each function can
+>> have as many as 7 interrupts.  So the number of IRQ registers can vary
+>> from RMI4 sensor to RMI4 sensor, and needs to be computed during the
+>> scan of the product descriptor table.
+>
+> Is it a good idea to have it on stack then? Should it be part of
+> rmi_device instead?
 
-- Taint the kernel.  But that will only become apparent with an oops
-  trace or similar.
+It's not coming off the stack.  We're allocating it via devm_kzalloc() 
+in rmi_driver_probe().
 
-- Add a drop_caches counter and make that available in /proc/vmstat,
-  show_mem() output and perhaps other places.
 
-I suspect the /proc/vmstat counter will suffice - if someone is having
-vm issues, we'll be seeing their /proc/vmstat at some stage and if the
-drop_caches counter is high, that's enough to get suspicious?
+>>>> +#define simple_show_union_struct(regtype, propname, fmt)\
+>>>> +static ssize_t tricat(rmi_fn_, FNUM, _##propname##_show)(struct device
+>>>> *dev,\ +                               struct device_attribute *attr,
+>>>> char *buf) {\ +       struct rmi_function_container *fc;\
+>>>> +       struct FUNCTION_DATA *data;\
+>>>> +\
+>>>> +       fc = to_rmi_function_container(dev);\
+>>>> +       data = fc->data;\
+>>>> +\
+>>>> +       return snprintf(buf, PAGE_SIZE, fmt,\
+>>>> +                       data->regtype.propname);\
+>>>> +}
+>>>
+>>> OK I see the point, but is there really no other way to do this than
+>>> to #define huge static inlines like these? Is it really not possible to
+>>> create just generic functions instead of going this far?
+>>>
+>>> (same comment for all)
+>>
+>
+>> We tried generic functions previously, and it wound up really really ugly.  We'd be willing to look at it again, though, since this isn't real beautiful either.  If you've got an example implementation in mind. a pointer would help a great deal.
+>
+> You just need to wrap around a custome structure around struct
+> device_attribute and then you shoudl be able to use generics. If you
+> look into trackpoint.c you should gett the idea.
 
+That looks a lot tidier.  We'll work on it for sysfs (and maybe for 
+debugfs, too).  It might not be applicable in all cases, but it promises 
+to make a lot of things tidier.
+
+Thanks!
