@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab2JWKTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:19:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60184 "EHLO arroyo.ext.ti.com"
+	id S1753658Ab2JWKTg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:19:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60187 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab2JWKTa convert rfc822-to-8bit (ORCPT
+	id S1751637Ab2JWKTd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:19:30 -0400
+	Tue, 23 Oct 2012 06:19:33 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: Peter Korsgaard <jacmet@sunsite.dk>
 CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
@@ -22,16 +22,16 @@ CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
-Thread-Topic: [PATCH 1/4] mtd: nand: omap2: Update nerrors using ecc.strength
-Thread-Index: AQHNqwbV4W1+YLx0nEWLE2X1/J2tgpfGssjw
-Date: Tue, 23 Oct 2012 10:17:55 +0000
+Subject: RE: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
+Thread-Topic: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
+Thread-Index: AQHNqwbqdlAuQrnYe0yMlvLTrfYpApfGss1w
+Date: Tue, 23 Oct 2012 10:18:02 +0000
 Deferred-Delivery: Tue, 23 Oct 2012 10:17:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9D29BE@DBDE01.ent.ti.com>
+Message-ID: <518397C60809E147AF5323E0420B992E3E9D29C8@DBDE01.ent.ti.com>
 References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
-	<1349274589-11389-2-git-send-email-avinashphilip@ti.com>
- <87obk3va1j.fsf@macbook.be.48ers.dk>
-In-Reply-To: <87obk3va1j.fsf@macbook.be.48ers.dk>
+	<1349274589-11389-4-git-send-email-avinashphilip@ti.com>
+ <87vcebvaf5.fsf@macbook.be.48ers.dk>
+In-Reply-To: <87vcebvaf5.fsf@macbook.be.48ers.dk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -44,38 +44,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 00:26:40, Peter Korsgaard wrote:
+On Tue, Oct 16, 2012 at 00:18:30, Peter Korsgaard wrote:
 > >>>>> Philip, Avinash <avinashphilip@ti.com> writes:
 > 
->  > Update number of errors using nand ecc strength.
->  > Also add macro definitions BCH8_ERROR_MAX & BCH4_ERROR_MAX
+>  > Add support for BCH ECC scheme to gpmc driver and also enabling multi
+>  > sector read/write. This helps in doing single shot NAND page read and
+>  > write.
 > 
->  > Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
->  > ---
->  > :100644 100644 5b31386... af511a9... M	drivers/mtd/nand/omap2.c
->  >  drivers/mtd/nand/omap2.c |   12 ++++++++----
->  >  1 files changed, 8 insertions(+), 4 deletions(-)
+>  > ECC engine configurations
+>  > BCH 4 bit support
+>  > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+>  > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+>  > 13 and ecc_size1 as 1.
 > 
->  > diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
->  > index 5b31386..af511a9 100644
->  > --- a/drivers/mtd/nand/omap2.c
->  > +++ b/drivers/mtd/nand/omap2.c
->  > @@ -111,6 +111,9 @@
->  >  #define	ECCCLEAR			0x100
->  >  #define	ECC1				0x1
->  
->  > +#define BCH8_MAX_ERROR		8	/* upto 8 bit coorectable */
->  > +#define BCH4_MAX_ERROR		4	/* upto 4 bit correctable */
+>  > BCH 8 bit support
+>  > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
+>  > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
+>  > 26 and ecc_size1 as 2.
 > 
-> First 'correctable' misspelled.
+>  > Note: For BCH8 ECC bytes set to 14 to make compatible with RBL.
+> 
+> On what device? In the am335x TRM (spruh73f.pdf) figure 26-15 (pg 4273)
+> the rom code is documented to not use any padding on the ECC bytes
+> (E.G. oob 2..53):
+> 
+> http://www.ti.com/litv/pdf/spruh73f
+> 
+> I see the driver in the u-boot-am33x tree (ti81xx_nand.c) seems to use
+> 4x14 bytes as well though, so perhaps that's a bug in the documentation
+> instead?
 
-I will correct it
-
-> 
-> I don't personally think these defines improve readability very much
-> compared to to just using 4/8, though.
-
-Thought of removing magic numbers & provide information also.
+Yes, RBL uses 4x14 bytes.
 
 Thanks
 Avinash
