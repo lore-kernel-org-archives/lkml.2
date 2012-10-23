@@ -1,45 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2JWOqe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:46:34 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:33061 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab2JWOqd (ORCPT
+	id S1757043Ab2JWOqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:46:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34749 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755452Ab2JWOqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:46:33 -0400
-Message-ID: <5086ADC7.7060802@tilera.com>
-Date: Tue, 23 Oct 2012 10:46:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 23 Oct 2012 10:46:49 -0400
+Date: Tue, 23 Oct 2012 10:46:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+In-Reply-To: <CACVXFVMmszZWHaeNS6LSG4nHR4wWBLwM_BvynRwUW8X=nO+JWA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1210231022230.1635-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] tile updates for 3.7-rc2
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, 23 Oct 2012, Ming Lei wrote:
 
-Please pull from:
+> On Mon, Oct 22, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> >
+> > Tail recursion should be implemented as a loop, not as an explicit
+> > recursion.  That is, the function should be:
+> >
+> > void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
+> > {
+> >         do {
+> >                 dev->power.memalloc_noio_resume = enable;
+> >
+> >                 if (!enable) {
+> >                         /*
+> >                          * Don't clear the parent's flag if any of the
+> >                          * parent's children have their flag set.
+> >                          */
+> >                         if (device_for_each_child(dev->parent, NULL,
+> >                                           dev_memalloc_noio))
+> >                                 return;
+> >                 }
+> >                 dev = dev->parent;
+> >         } while (dev);
+> > }
+> 
+> OK, will take the non-recursion implementation for saving kernel
+> stack space.
+> 
+> >
+> > except that you need to add locking, for two reasons:
+> >
+> >         There's a race.  What happens if another child sets the flag
+> >         between the time device_for_each_child() runs and the next loop
+> >         iteration?
+> 
+> Yes, I know the race, and not adding a lock because the function
+> is mostly called in .probe() or .remove() callback and its parent's device
+> lock is held to avoid this race.
+> 
+> Considered that it may be called in async probe() (scsi disk), one lock
+> is needed, the simplest way is to add a global lock. Any suggestion?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
+No.  Because of where you put the new flag, it must be protected by
+dev->power.lock.  And this means the iterative implementation shown
+above can't be used as is.  It will have to be more like this:
 
-This fixes one issue with compiler flags that can cause modules not
-to load, and cleans up some warnings with ELF_R_xxx defines.
+void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
+{
+	spin_lock_irq(&dev->power.lock);
+	dev->power.memalloc_noio_resume = enable;
 
-Chris Metcalf (2):
-      arch/tile: avoid generating .eh_frame information in modules
-      arch/tile: avoid build warnings from duplicate ELF_R_xxx #defines
+	while (dev->parent) {
+		spin_unlock_irq(&dev->power.lock);
+		dev = dev->parent;
 
- arch/tile/Makefile        |    4 ++++
- arch/tile/kernel/module.c |   10 ----------
- 2 files changed, 4 insertions(+), 10 deletions(-)
+		spin_lock_irq(&dev->power.lock);
+		/*
+		 * Don't clear the parent's flag if any of the
+		 * parent's children have their flag set.
+		 */
+		if (!enable && device_for_each_child(dev->parent, NULL,
+				dev_memalloc_noio))
+			break;
+		dev->power.memalloc_noio_resume = enable;
+	}
+	spin_unlock_irq(&dev->power.lock);
+}
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> >         Even without a race, access to bitfields is not SMP-safe
+> >         without locking.
+> 
+> You mean one ancestor device might not be in active when
+> one of its descendants is being probed or removed?
+
+No.  Consider this example:
+
+	struct foo {
+		int a:1;
+		int b:1;
+	} x;
+
+Consider what happens if CPU 0 does "x.a = 1" at the same time as 
+another CPU 1 does "x.b = 1".  The compiler might produce object code 
+looking like this for CPU 0:
+
+	move	x, reg1
+	or	0x1, reg1
+	move	reg1, x
+
+and this for CPU 1:
+
+	move	x, reg2
+	or	0x2, reg2
+	move	reg2, x
+
+With no locking, the two "or" instructions could execute 
+simultaneously.  What will the final value of x be?
+
+The two CPUs will interfere, even though they are touching different 
+bitfields.
+
+Alan Stern
 
