@@ -1,238 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2JWHPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:15:55 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:52767 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab2JWHPy (ORCPT
+	id S1756709Ab2JWHSv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:18:51 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:58047 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756650Ab2JWHSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:15:54 -0400
-Date: Tue, 23 Oct 2012 11:15:49 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
-Message-ID: <20121023071549.GC7020@moon>
-References: <20121022191452.785366817@openvz.org>
- <20121022122934.d2e2fa57.akpm@linux-foundation.org>
- <5085B1A8.4020609@parallels.com>
- <20121022205641.GL2303@moon>
- <20121022213449.GH31440@moon>
- <20121022145158.53bddfc1.akpm@linux-foundation.org>
- <20121023061341.GA7020@moon>
- <20121022233025.09ec2d92.akpm@linux-foundation.org>
- <20121023063430.GB7020@moon>
+	Tue, 23 Oct 2012 03:18:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023063430.GB7020@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+	<20121019160425.GA10175@dhcp22.suse.cz>
+	<CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
+	<CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
+Date: Tue, 23 Oct 2012 15:18:48 +0800
+Message-ID: <CAKWKT+bYOf0cEDuiibf6eV2raMxe481y-D+nrBgPWR3R+53zvg@mail.gmail.com>
+Subject: Re: process hangs on do_exit when oom happens
+From: Qiang Gao <gaoqiangscut@gmail.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 10:34:30AM +0400, Cyrill Gorcunov wrote:
-> On Mon, Oct 22, 2012 at 11:30:25PM -0700, Andrew Morton wrote:
-> ...
-> > > Yup, but not only that, this kind of trick hides associativity between
-> > > VM_ constant and mnemonic, so on changes one would have to figure out
-> > > which position some flag has in this foo[] array, so I vote for not
-> > > use it :-)
-> > 
-> > Well you could do
-> > 
-> > struct {
-> > 	char x[2];
-> > } y[] = {
-> > 	[CLOG2(VM_DONTEXPAND)] =	{ 'd', 'e' },
-> > 	[CLOG2(VM_ACCOUNT)] =		{ 'a', 'c' },
-> > 	[CLOG2(VM_NORESERVE)] =		{ 'n', 'r' },
-> > };
-> > 
-> > 	...
-> > 
-> > 	for (i = 0; i < BITS_PER_LONG; i++) {
-> > 		if (flags & (1 << i))
-> > 			seq_printf("%c%c ", y[i][0], y[i][1]);
-> > 	}
-> > 
-> > where CLOG2() is extracted from the guts of ilog2().
-> > 
-> > I'll stop now :)
-> 
-> Yup, this one will be a wy better. Letme try it out :)
-
-ilog2 works well enough here as well.
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: procfs: add VmFlags field in smaps output v3
-
-During c/r sessions we've found that there is no way at the moment to
-fetch some VMA associated flags, such as mlock() and madvise().
-
-This leads us to a problem -- we don't know if we should call for
-mlock() and/or madvise() after restore on the vma area we're bringing
-back to life.
-
-This patch intorduces a new field into "smaps" output called VmFlags,
-where all set flags associated with the particular VMA is shown as two
-letter mnemonics.
-
-[ Strictly speaking for c/r we only need mlock/madvise bits but it has been
-  said that providing just a few flags looks somehow inconsistent.  So all
-  flags are here now. ]
-
-This feature is made available on CONFIG_CHECKPOINT_RESTORE=n kernels, as
-other applications may start to use these fields.
-
-The data is encoded in a somewhat awkward two letters mnemonic form, to
-encourage userspace to be prepared for fields being added or removed in
-the future.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- Documentation/filesystems/proc.txt |   40 +++++++++++++++++++++++++++-
- fs/proc/task_mmu.c                 |   52 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 90 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -142,7 +142,7 @@ Table 1-1: Process specific entries in /
-  pagemap	Page table
-  stack		Report full stack trace, enable via CONFIG_STACKTRACE
-  smaps		a extension based on maps, showing the memory consumption of
--		each mapping
-+		each mapping and flags associated with it
- ..............................................................................
- 
- For example, to get the status information of a process, all you have to do is
-@@ -415,8 +415,9 @@ Swap:                  0 kB
- KernelPageSize:        4 kB
- MMUPageSize:           4 kB
- Locked:              374 kB
-+VmFlags: rd ex mr mw me de
- 
--The first of these lines shows the same information as is displayed for the
-+the first of these lines shows the same information as is displayed for the
- mapping in /proc/PID/maps.  The remaining lines show the size of the mapping
- (size), the amount of the mapping that is currently resident in RAM (RSS), the
- process' proportional share of this mapping (PSS), the number of clean and
-@@ -430,6 +431,41 @@ and a page is modified, the file page is
- "Swap" shows how much would-be-anonymous memory is also used, but out on
- swap.
- 
-+"VmFlags" field deserves a separate description. This member represents the kernel
-+flags associated with the particular virtual memory area in two letter encoded
-+manner. The codes are the following:
-+    rd  - readable
-+    wr  - writeable
-+    ex  - executable
-+    sh  - shared
-+    mr  - may read
-+    mw  - may write
-+    me  - may execute
-+    ms  - may share
-+    gd  - stack segment growns down
-+    pf  - pure PFN range
-+    dw  - disabled write to the mapped file
-+    lo  - pages are locked in memory
-+    io  - memory mapped I/O area
-+    sr  - sequential read advise provided
-+    rr  - random read advise provided
-+    dc  - do not copy area on fork
-+    de  - do not expand area on remapping
-+    ac  - area is accountable
-+    nr  - swap space is not reserved for the area
-+    ht  - area uses huge tlb pages
-+    nl  - non-linear mapping
-+    ar  - architecture specific flag
-+    dd  - do not include area into core dump
-+    mm  - mixed map area
-+    hg  - huge page advise flag
-+    nh  - no-huge page advise flag
-+    mg  - mergable advise flag
-+
-+Note that there is no guarantee that every flag and associated mnemonic will
-+be present in all further kernel releases. Things get changed, the flags may
-+be vanished or the reverse -- new added.
-+
- This file is only present if the CONFIG_MMU kernel configuration option is
- enabled.
- 
-Index: linux-2.6.git/fs/proc/task_mmu.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/task_mmu.c
-+++ linux-2.6.git/fs/proc/task_mmu.c
-@@ -480,6 +480,56 @@ static int smaps_pte_range(pmd_t *pmd, u
- 	return 0;
- }
- 
-+static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
-+{
-+	/*
-+	 * Don't forget to update Documentation/ on changes.
-+	 */
-+
-+	const struct {
-+		const char l[2];
-+	} mnemonics[BITS_PER_LONG] = {
-+		[ilog2(VM_READ)]	= { .l = {'r', 'd'} },
-+		[ilog2(VM_WRITE)]	= { .l = {'w', 'r'} },
-+		[ilog2(VM_EXEC)]	= { .l = {'e', 'x'} },
-+		[ilog2(VM_SHARED)]	= { .l = {'s', 'h'} },
-+		[ilog2(VM_MAYREAD)]	= { .l = {'m', 'r'} },
-+		[ilog2(VM_MAYWRITE)]	= { .l = {'m', 'w'} },
-+		[ilog2(VM_MAYEXEC)]	= { .l = {'m', 'e'} },
-+		[ilog2(VM_MAYSHARE)]	= { .l = {'m', 's'} },
-+		[ilog2(VM_GROWSDOWN)]	= { .l = {'g', 'd'} },
-+		[ilog2(VM_PFNMAP)]	= { .l = {'p', 'f'} },
-+		[ilog2(VM_DENYWRITE)]	= { .l = {'d', 'w'} },
-+		[ilog2(VM_LOCKED)]	= { .l = {'l', 'o'} },
-+		[ilog2(VM_IO)]		= { .l = {'i', 'o'} },
-+		[ilog2(VM_SEQ_READ)]	= { .l = {'s', 'r'} },
-+		[ilog2(VM_RAND_READ)]	= { .l = {'r', 'r'} },
-+		[ilog2(VM_DONTCOPY)]	= { .l = {'d', 'c'} },
-+		[ilog2(VM_DONTEXPAND)]	= { .l = {'d', 'e'} },
-+		[ilog2(VM_ACCOUNT)]	= { .l = {'a', 'c'} },
-+		[ilog2(VM_NORESERVE)]	= { .l = {'n', 'r'} },
-+		[ilog2(VM_HUGETLB)]	= { .l = {'h', 't'} },
-+		[ilog2(VM_NONLINEAR)]	= { .l = {'n', 'l'} },
-+		[ilog2(VM_ARCH_1)]	= { .l = {'a', 'r'} },
-+		[ilog2(VM_DONTDUMP)]	= { .l = {'d', 'd'} },
-+		[ilog2(VM_MIXEDMAP)]	= { .l = {'m', 'm'} },
-+		[ilog2(VM_HUGEPAGE)]	= { .l = {'h', 'g'} },
-+		[ilog2(VM_NOHUGEPAGE)]	= { .l = {'n', 'h'} },
-+		[ilog2(VM_MERGEABLE)]	= { .l = {'m', 'g'} },
-+	};
-+
-+	size_t i;
-+
-+	seq_puts(m, "VmFlags: ");
-+	for (i = 0; i < BITS_PER_LONG; i++) {
-+		if (vma->vm_flags & (1 << i))
-+			seq_printf(m, "%c%c ",
-+				   mnemonics[i].l[0],
-+				   mnemonics[i].l[1]);
-+	}
-+	seq_putc(m, '\n');
-+}
-+
- static int show_smap(struct seq_file *m, void *v, int is_pid)
- {
- 	struct proc_maps_private *priv = m->private;
-@@ -535,6 +585,8 @@ static int show_smap(struct seq_file *m,
- 		seq_printf(m, "Nonlinear:      %8lu kB\n",
- 				mss.nonlinear >> 10);
- 
-+	show_smap_vma_flags(m, vma);
-+
- 	if (m->count < m->size)  /* vma is copied successfully */
- 		m->version = (vma != get_gate_vma(task->mm))
- 			? vma->vm_start : 0;
+This process was moved to RT-priority  queue when global oom-killer
+happened to boost the recovery
+of the system.. but it wasn't get properily dealt with. I still have
+no idea why where the problem is ..
+On Tue, Oct 23, 2012 at 12:40 PM, Balbir Singh <bsingharora@gmail.com> wrote:
+> On Tue, Oct 23, 2012 at 9:05 AM, Qiang Gao <gaoqiangscut@gmail.com> wrote:
+>> information about the system is in the attach file "information.txt"
+>>
+>> I can not reproduce it in the upstream 3.6.0 kernel..
+>>
+>> On Sat, Oct 20, 2012 at 12:04 AM, Michal Hocko <mhocko@suse.cz> wrote:
+>>> On Wed 17-10-12 18:23:34, gaoqiang wrote:
+>>>> I looked up nothing useful with google,so I'm here for help..
+>>>>
+>>>> when this happens:  I use memcg to limit the memory use of a
+>>>> process,and when the memcg cgroup was out of memory,
+>>>> the process was oom-killed   however,it cannot really complete the
+>>>> exiting. here is the some information
+>>>
+>>> How many tasks are in the group and what kind of memory do they use?
+>>> Is it possible that you were hit by the same issue as described in
+>>> 79dfdacc memcg: make oom_lock 0 and 1 based rather than counter.
+>>>
+>>>> OS version:  centos6.2    2.6.32.220.7.1
+>>>
+>>> Your kernel is quite old and you should be probably asking your
+>>> distribution to help you out. There were many fixes since 2.6.32.
+>>> Are you able to reproduce the same issue with the current vanila kernel?
+>>>
+>>>> /proc/pid/stack
+>>>> ---------------------------------------------------------------
+>>>>
+>>>> [<ffffffff810597ca>] __cond_resched+0x2a/0x40
+>>>> [<ffffffff81121569>] unmap_vmas+0xb49/0xb70
+>>>> [<ffffffff8112822e>] exit_mmap+0x7e/0x140
+>>>> [<ffffffff8105b078>] mmput+0x58/0x110
+>>>> [<ffffffff81061aad>] exit_mm+0x11d/0x160
+>>>> [<ffffffff81061c9d>] do_exit+0x1ad/0x860
+>>>> [<ffffffff81062391>] do_group_exit+0x41/0xb0
+>>>> [<ffffffff81077cd8>] get_signal_to_deliver+0x1e8/0x430
+>>>> [<ffffffff8100a4c4>] do_notify_resume+0xf4/0x8b0
+>>>> [<ffffffff8100b281>] int_signal+0x12/0x17
+>>>> [<ffffffffffffffff>] 0xffffffffffffffff
+>>>
+>>> This looks strange because this is just an exit part which shouldn't
+>>> deadlock or anything. Is this stack stable? Have you tried to take check
+>>> it more times?
+>
+> Looking at information.txt, I found something interesting
+>
+> rt_rq[0]:/1314
+>   .rt_nr_running                 : 1
+>   .rt_throttled                  : 1
+>   .rt_time                       : 0.856656
+>   .rt_runtime                    : 0.000000
+>
+>
+> cfs_rq[0]:/1314
+>   .exec_clock                    : 8738.133429
+>   .MIN_vruntime                  : 0.000001
+>   .min_vruntime                  : 8739.371271
+>   .max_vruntime                  : 0.000001
+>   .spread                        : 0.000000
+>   .spread0                       : -9792.255554
+>   .nr_spread_over                : 1
+>   .nr_running                    : 0
+>   .load                          : 0
+>   .load_avg                      : 7376.722880
+>   .load_period                   : 7.203830
+>   .load_contrib                  : 1023
+>   .load_tg                       : 1023
+>   .se->exec_start                : 282004.715064
+>   .se->vruntime                  : 18435.664560
+>   .se->sum_exec_runtime          : 8738.133429
+>   .se->wait_start                : 0.000000
+>   .se->sleep_start               : 0.000000
+>   .se->block_start               : 0.000000
+>   .se->sleep_max                 : 0.000000
+>   .se->block_max                 : 0.000000
+>   .se->exec_max                  : 77.977054
+>   .se->slice_max                 : 0.000000
+>   .se->wait_max                  : 2.664779
+>   .se->wait_sum                  : 29.970575
+>   .se->wait_count                : 102
+>   .se->load.weight               : 2
+>
+> So 1314 is a real time process and
+>
+> cpu.rt_period_us:
+> 1000000
+> ----------------------
+> cpu.rt_runtime_us:
+> 0
+>
+> When did tt move to being a Real Time process (hint: see nr_running
+> and nr_throttled)?
+>
+> Balbir
