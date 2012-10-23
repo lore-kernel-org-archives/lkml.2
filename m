@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522Ab2JWWdS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:33:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47459 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757443Ab2JWWdN (ORCPT
+	id S933598Ab2JWWgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:36:49 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:52333 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933560Ab2JWWgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:33:13 -0400
-Date: Wed, 24 Oct 2012 00:33:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, peterz@infradead.org,
-        mingo@redhat.com, devel@openvz.org, linux-kernel@vger.kernel.org,
-        xemul@parallels.com
-Subject: Re: [PATCH v5] posix timers: allocate timer id per process
-In-Reply-To: <1351029216.6537.3.camel@edumazet-glaptop>
-Message-ID: <alpine.LFD.2.02.1210240004410.2756@ionos>
-References: <20121023073913.23514.87934.stgit@localhost.localdomain>  <1350978723.8609.1555.camel@edumazet-glaptop>  <alpine.LFD.2.02.1210232345200.2756@ionos> <1351029216.6537.3.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 23 Oct 2012 18:36:47 -0400
+Subject: Re: [PATCH 13/23] tuners/xc2028: Replace memcpy with struct
+ assignment
+From: Andy Walls <awalls@md.metrocast.net>
+To: Ezequiel Garcia <elezegarcia@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Date: Tue, 23 Oct 2012 18:36:37 -0400
+In-Reply-To: <1351022246-8201-13-git-send-email-elezegarcia@gmail.com>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	 <1351022246-8201-13-git-send-email-elezegarcia@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1351031798.2459.31.camel@palomino.walls.org>
+Mime-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-23_07:2012-10-23,2012-10-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1203120001 definitions=main-1210230293
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012, Eric Dumazet wrote:
-
-> On Tue, 2012-10-23 at 23:47 +0200, Thomas Gleixner wrote:
+On Tue, 2012-10-23 at 16:57 -0300, Ezequiel Garcia wrote:
+> This kind of memcpy() is error-prone. Its replacement with a struct
+> assignment is prefered because it's type-safe and much easier to read.
 > 
-> > Not so good to me.
-> >  
-> > > Signed-off-by: Eric Dumazet <edumazet@google.com>
-> > 
-> > And that should be either an Acked-by or a Reviewed-by. You can't sign
-> > off on patches which have not been submitted or transported by you.
+> Found by coccinelle. Hand patched and reviewed.
+> Tested by compilation only.
 > 
-> I actually gave some input, provided a hash function, and so on.
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
 > 
-> So this SOB was valid. I do that all the time.
+> // <smpl>
+> @@
+> identifier struct_name;
+> struct struct_name to;
+> struct struct_name from;
+> expression E;
+> @@
+> -memcpy(&(to), &(from), E);
+> +to = from;
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> ---
+>  drivers/media/tuners/tuner-xc2028.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/tuners/tuner-xc2028.c b/drivers/media/tuners/tuner-xc2028.c
+> index 7bcb6b0..0945173 100644
+> --- a/drivers/media/tuners/tuner-xc2028.c
+> +++ b/drivers/media/tuners/tuner-xc2028.c
+> @@ -870,7 +870,7 @@ check_device:
+>  	}
+>  
+>  read_not_reliable:
+> -	memcpy(&priv->cur_fw, &new_fw, sizeof(priv->cur_fw));
+> +	priv->cur_fw = new_fw;
 
-Not really. I recommend you to read the relevant file in Documentation
-which covers what can have your SOB. 
+This memcpy() can get called almost every time
+tuner-xc2028.c:generic_set_freq() is called.  
 
-Your input is documented in the mail thread, but it does not contain a
-patch - which is Signed-off-by YOU - on which the thing at hand is
-based on. So it's not covered by what SOB actually means.
+This copies a 32 byte (I think) structure on a 32 bit machine.
 
-You can rightfully request the patch author to add a "Suggested-by"
-tag, but you can't rightfully claim authorship of something you did
-not author.
+I am assuming the difference in performance between the memcpy and
+assignment operator is negligible.
 
-> And yes, there are bugs in this patch, as many patches that were merged
-> in linux tree, included by you.
+Regards,
+Andy
 
-That's a totally different issue. We can ack/review/signoff and commit
-totally bogus patches as long as we want.
 
-Though that does not change the meanings of the tags (Acked, Reviewed,
-Signed-off) at all.
+>  	/*
+>  	 * By setting BASE in cur_fw.type only after successfully loading all
 
-Thanks,
 
-	tglx
