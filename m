@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab2JWWKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:10:24 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:24350 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab2JWWKW (ORCPT
+	id S1756879Ab2JWWLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:11:43 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53727 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab2JWWLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:10:22 -0400
-Message-ID: <508715CC.1000600@synaptics.com>
-Date: Tue, 23 Oct 2012 15:10:20 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 23 Oct 2012 18:11:41 -0400
+Message-ID: <50871695.2040904@gmail.com>
+Date: Wed, 24 Oct 2012 00:13:41 +0200
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 01/06] input/rmi4: Public header and documentation
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <1349496603-20775-2-git-send-email-cheiny@synaptics.com> <CACRpkdZb+LOk8v0aNZuPhATjS5jv-h1JJCejoh_9eFZ_fdiZQA@mail.gmail.com> <20121009082719.GC8237@opensource.wolfsonmicro.com> <BFABBC009FBA1C43B207B15FD485ABD922C22BE7@USW-MAIL1.synaptics-inc.local> <20121012051558.GK11726@opensource.wolfsonmicro.com>
-In-Reply-To: <20121012051558.GK11726@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Hongbo Zhang <hongbo.zhang@linaro.org>
+CC: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org,
+        amit.kachhap@linaro.org
+Subject: Re: [PATCH 1/5] Thermal: do bind operation after thermal zone or
+ cooling device register returns.
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com> <1350387889-15324-2-git-send-email-hongbo.zhang@linaro.com> <5083C8E4.7090007@gmail.com> <CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
+In-Reply-To: <CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 10:16 PM, Mark Brown wrote:
-> On Thu, Oct 11, 2012 at 03:56:22AM +0000, Christopher Heiny wrote:
->
-> Fix your mailer to word wrap within paragraphs.
+Hi,
+On 10/23/2012 10:23 AM, Hongbo Zhang wrote:
+> Hi Francesco,
+> I found out more points about this issue.
+> 
+> [1]
+> cdev should be ready when get_max_state callback be called, otherwise
+> parameter cdev is useless, imagine there may be cases that
+> get_max_state call back is shared by more than one cooling devices of
+> same kind, like this:
+> common_get_max_state(*cdev, *state)
+> {
+>     if (cdev == cdev1)  *state = 3;
+>     else if (cdev == cdev)  *state = 5;
+>     else
+> }
+> 
+> [2]
+> In my cpufreq cooling case(in fact cdev is not used to calculate
+> max_state), the cooling_cpufreq_list should be ready when
+> get_max_state call back is called. In this patch I defer the binding
+> when registration finished, but this is not perfect now, see this
+> routine in cpufreq_cooling_register:
+> 
+> thermal_cooling_device_register;
+> at this time: thermal_bind_work -> get_max_state -> get NULL
+> cooling_cpufreq_list
+> and then: list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list)
+> This is due to we cannot know exactly when the bind work is executed.
+> (and this can be fixed by moving mutex_lock(&cooling_cpufreq_lock)
+> aheadof thermal_cooling_device_register and other corresponding
+> modifications, but I found another way as below)
+> 
+> [3]
+> Root cause of this problem is calling get_max_state in register -> bind routine.
+> Better solution is to add another parameter in cooling device register
+> function, also add a max_state member in struct cdev, like:
+> thermal_cooling_device_register(char *type, void *devdata, const
+> struct thermal_cooling_device_ops *ops, unsigned long max_state)
+> and then in the bind function:
+> if(cdev->max_state)
+>     max_state = cdev->max_state;
+> else
+>     cdev->get_max_state(cdev, &max_state)
+> 
+> It is common sense that the cooling driver should know its cooling
+> max_state(ability) before registration, and it can be offered when
+> register.
+> I think this way doesn't change both thermal and cooling layer much,
+> it is more clear.
+> I will update this patch soon.
 
-Sorry - I was on the road and had to use a web interface.  It looked OK 
-during composition.  Is this better?
+I still believe the thermal layer doesn't need any change to work around
+this problem, and I still believe that when a cooling device is being
+registered, all of its ops should be fully functional.
+The problem with the cpufreq cooling device driver is that its callbacks
+use the internal list of devices to retrieve the struct
+cpufreq_cooling_device instance corresponding to a given struct
+thermal_cooling_device. This is not necessary, because the struct
+thermal_cooling_device has a private data pointer (devdata) which in
+this case is exactly a reference to the struct cpufreq_cooling_device
+instance the callbacks are looking for. In fact, I think the
+cooling_cpufreq_list is not necessary at all, and should be removed from
+the cpufreq cooling driver.
+So the 3 callbacks, instead of iterating through the device list, should
+have something like:
+struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+That would do the trick.
 
-
->> >If this feature is a deal-breaker, we can take it out.  In the absence
->> >of a generic GPIO implementation for CS, though, I'd much rather leave
->> >it in.  Once generic GPIO CS arrives, we'll remove it pretty quickly.
- >
-> Why not just implement this at an appropriate level in the SPI
-> subsystem?  One of the great things about Linux is that you can change
-> the core code...
-
-At the moment, we're trying to keep our work focused on just the core 
-RMI4 driver.  It's evident that we've still got a bit to learn, and I'd 
-be more comfortable keeping our learning experiences confined as they 
-are now.
-
-However, a general capability in SPI core is a fine idea for future 
-work, once we get the RMI4 driver ironed out.  Can we agree to defer 
-that for now?
-
-					Thanks,
-						Chris
-
-
+--
+Francesco
