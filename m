@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757243Ab2JWSQX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:16:23 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34880 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756708Ab2JWSQW (ORCPT
+	id S932735Ab2JWSQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:16:45 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:27016 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932081Ab2JWSQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 14:16:22 -0400
-Date: Tue, 23 Oct 2012 14:16:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-In-Reply-To: <CACVXFVN+=XH_f5BmRkXeagTNowz0o0-Pd7GcxCneO0FSq8xqEw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1210231402040.1635-100000@iolanthe.rowland.org>
+	Tue, 23 Oct 2012 14:16:44 -0400
+Date: Tue, 23 Oct 2012 18:16:43 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+In-Reply-To: <508561E0.5000406@parallels.com>
+Message-ID: <0000013a8ed7437d-636573ea-beb9-44fd-8519-3725d2675a50-000000@email.amazonses.com>
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com> <508561E0.5000406@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012, Ming Lei wrote:
+On Mon, 22 Oct 2012, Glauber Costa wrote:
 
-> With the problem of non-SMP-safe bitfields access, the power.lock should
-> be held, but that is not enough to prevent children from being probed or
-> disconnected. Looks another lock is still needed. I think a global lock
-> is OK in the infrequent path.
+> > This results in an additional indirection if tracing is off. Wonder if
+> > there is a performance impact?
+> >
+> if tracing is on, you mean?
 
-Agreed.
-
-> Got it, thanks for your detailed explanation.
-> 
-> Looks the problem is worse than above, not only bitfields are affected, the
-> adjacent fields might be involved too, see:
-> 
->            http://lwn.net/Articles/478657/
-
-Linus made it clear (in various emails at the time) that the kernel
-requires the compiler not to do the sort of things discussed in that
-article.  But even the restrictions he wanted would not prevent
-adjacent bitfields from interfering with each other.
-
-Alan Stern
+Sorry I meant *even* if tracing is off.
 
