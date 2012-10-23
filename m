@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965616Ab2JWVLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:11:13 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37769 "EHLO smtp.outflux.net"
+	id S965669Ab2JWVLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:11:20 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:52747 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933663Ab2JWUFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933658Ab2JWUFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:04 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [PATCH 010/193] arch/cris/arch-v32/drivers: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:01:23 -0700
-Message-Id: <1351022666-6960-11-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [PATCH 028/193] arch/tile/kvm: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:41 -0700
+Message-Id: <1351022666-6960-29-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -27,37 +26,27 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Mikael Starvik <starvik@axis.com>
-CC: Jesper Nilsson <jesper.nilsson@axis.com>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+CC: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/cris/arch-v32/drivers/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/tile/kvm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/cris/arch-v32/drivers/Kconfig b/arch/cris/arch-v32/drivers/Kconfig
-index de43aad..af4a486 100644
---- a/arch/cris/arch-v32/drivers/Kconfig
-+++ b/arch/cris/arch-v32/drivers/Kconfig
-@@ -680,7 +680,7 @@ config ETRAX_SPI_MMC_BOARD
+diff --git a/arch/tile/kvm/Kconfig b/arch/tile/kvm/Kconfig
+index 669fcdb..2298cb1 100644
+--- a/arch/tile/kvm/Kconfig
++++ b/arch/tile/kvm/Kconfig
+@@ -18,7 +18,7 @@ if VIRTUALIZATION
  
- config SPI_ETRAX_SSER
- 	tristate
--	depends on SPI_MASTER && ETRAX_ARCH_V32 && EXPERIMENTAL
-+	depends on SPI_MASTER && ETRAX_ARCH_V32
- 	select SPI_BITBANG
- 	help
- 	  This enables using an synchronous serial (sser) port as a
-@@ -689,7 +689,7 @@ config SPI_ETRAX_SSER
- 
- config SPI_ETRAX_GPIO
- 	tristate
--	depends on SPI_MASTER && ETRAX_ARCH_V32 && EXPERIMENTAL
-+	depends on SPI_MASTER && ETRAX_ARCH_V32
- 	select SPI_BITBANG
- 	help
- 	  This enables using GPIO pins port as a SPI master controller
+ config KVM
+ 	tristate "Kernel-based Virtual Machine (KVM) support"
+-	depends on HAVE_KVM && MODULES && EXPERIMENTAL
++	depends on HAVE_KVM && MODULES
+ 	select PREEMPT_NOTIFIERS
+ 	select ANON_INODES
+ 	---help---
 -- 
 1.7.9.5
 
