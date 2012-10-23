@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934121Ab2JWW7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:59:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57180 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab2JWW7W (ORCPT
+	id S965111Ab2JWW73 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:59:29 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:49011 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932658Ab2JWW70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:59:22 -0400
-Date: Tue, 23 Oct 2012 15:59:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-Id: <20121023155915.7d5ef9d1.akpm@linux-foundation.org>
-In-Reply-To: <20121023070018.GA18381@otc-wbsnb-06>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
-	<20121018164502.b32791e7.akpm@linux-foundation.org>
-	<20121018235941.GA32397@shutemov.name>
-	<20121023063532.GA15870@shutemov.name>
-	<20121022234349.27f33f62.akpm@linux-foundation.org>
-	<20121023070018.GA18381@otc-wbsnb-06>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 18:59:26 -0400
+Message-Id: <201210232301.AA04038@capsicum.lab.ntt.co.jp>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Date: Wed, 24 Oct 2012 08:01:25 +0900
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH 152/193] fs/nilfs2: remove CONFIG_EXPERIMENTAL
+In-Reply-To: <1351022666-6960-153-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-153-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+X-Mailer: AL-Mail32 Version 1.13
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 10:00:18 +0300
-"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+>This config item has not carried much meaning for a while now and is
+>almost always enabled by default. As agreed during the Linux kernel
+>summit, remove it.
+>
+>CC: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+>Signed-off-by: Kees Cook <keescook@chromium.org>
 
-> > Well, how hard is it to trigger the bad behavior?  One can easily
-> > create a situation in which that page's refcount frequently switches
-> > from 0 to 1 and back again.  And one can easily create a situation in
-> > which the shrinkers are being called frequently.  Run both at the same
-> > time and what happens?
-> 
-> If the goal is to trigger bad behavior then:
-> 
-> 1. read from an area where a huge page can be mapped to get huge zero page
->    mapped. hzp is allocated here. refcounter == 2.
-> 2. write to the same page. refcounter == 1.
-> 3. echo 3 > /proc/sys/vm/drop_caches. refcounter == 0 -> free the hzp.
-> 4. goto 1.
-> 
-> But it's unrealistic. /proc/sys/vm/drop_caches is only root-accessible.
+Point taken, thank you.
 
-Yes, drop_caches is uninteresting.
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-> We can trigger shrinker only under memory pressure. But in this, most
-> likely we will get -ENOMEM on hzp allocation and will go to fallback path
-> (4k zero page).
 
-I disagree.  If, for example, there is a large amount of clean
-pagecache being generated then the shrinkers will be called frequently
-and memory reclaim will be running at a 100% success rate.  The
-hugepage allocation will be successful in such a situation?
+Ryusuke Konishi
+
+>---
+> fs/nilfs2/Kconfig |    3 +--
+> 1 file changed, 1 insertion(+), 2 deletions(-)
+>
+>diff --git a/fs/nilfs2/Kconfig b/fs/nilfs2/Kconfig
+>index 251da07..80da8eb 100644
+>--- a/fs/nilfs2/Kconfig
+>+++ b/fs/nilfs2/Kconfig
+>@@ -1,6 +1,5 @@
+> config NILFS2_FS
+>-	tristate "NILFS2 file system support (EXPERIMENTAL)"
+>-	depends on EXPERIMENTAL
+>+	tristate "NILFS2 file system support"
+> 	select CRC32
+> 	help
+> 	  NILFS2 is a log-structured file system (LFS) supporting continuous
+>-- 
+>1.7.9.5
 
