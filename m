@@ -1,348 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab2JWS0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:26:35 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47649 "EHLO
+	id S933399Ab2JWS0e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:26:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47651 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933246Ab2JWSYb (ORCPT
+	with ESMTP id S933251Ab2JWSYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 14:24:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
         stefano.stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
         mukesh.rathor@oracle.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 07/10] xen/pvh: bootup and setup (E820) related changes.
-Date: Tue, 23 Oct 2012 14:12:08 -0400
-Message-Id: <1351015931-16991-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH V5] PVH patches for v3.8.
+Date: Tue, 23 Oct 2012 14:12:01 -0400
+Message-Id: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
+Changelog [since v4]
+ - Mukesh addressed the reviewer's concerns.
+ - Took Mukesh's patches and redid the changelogs.
+ - Added Ack-ed as appropiate.
+ - Fixed PVHVM 32-bit bootup issues.
+ - Did some various cleanups, split some patches up.
 
-In the bootup code for PVH we can trap cpuid via vmexit, so don't
-need to use emulated prefix call. We also check for vector callback
-early on, as it is a required feature. PVH also runs at default kernel
-IOPL.
+The big change is that I've made the xen_remove_from_physmap structure
+be of the same size and offset on 32 and 64 bit builds. Currently PVH 
+only runs with 64-bit guests, but in the future it could run with 32-bit.
+This change will eliminate having to add a compat layer to deal with
+32-bit hypercalls.
 
-In setup.c which deals with E820, in xen_add_extra_mem() we can skip
-updating P2M as it's managed by Xen. PVH maps the entire IO space,
-but only RAM pages need to be repopulated.
+Besides that the patches boot on an normal hypervisor - in
+dom0 (32 or 64bit), PV domU (32 or 64) and PVHVM domU (32 or 64).
+I don't have the PVH hypervisor patches so I could not address the
+change to xen_remove_from_physmap but I hope Mukesh can do that.
 
-Finally, pure PV settings are moved to a separate function that are
-only called for pure PV, ie, pv with pvmmu.
+The patches are also located at:
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/pvh.v5
 
-Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/enlighten.c |   77 ++++++++++++++++++++++++++++++++++-----------
- arch/x86/xen/setup.c     |   64 +++++++++++++++++++++++++++++++-------
- 2 files changed, 110 insertions(+), 31 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index b679f86..bd8f718 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -45,6 +45,7 @@
- #include <xen/hvm.h>
- #include <xen/hvc-console.h>
- #include <xen/acpi.h>
-+#include <xen/features.h>
- 
- #include <asm/paravirt.h>
- #include <asm/apic.h>
-@@ -107,6 +108,9 @@ RESERVE_BRK(shared_info_page_brk, PAGE_SIZE);
- __read_mostly int xen_have_vector_callback;
- EXPORT_SYMBOL_GPL(xen_have_vector_callback);
- 
-+#define xen_pvh_domain() (xen_pv_domain() && \
-+			  xen_feature(XENFEAT_auto_translated_physmap) && \
-+			  xen_have_vector_callback)
- /*
-  * Point at some empty memory to start with. We map the real shared_info
-  * page as soon as fixmap is up and running.
-@@ -219,8 +223,9 @@ static void __init xen_banner(void)
- 	struct xen_extraversion extra;
- 	HYPERVISOR_xen_version(XENVER_extraversion, &extra);
- 
--	printk(KERN_INFO "Booting paravirtualized kernel on %s\n",
--	       pv_info.name);
-+	pr_info("Booting paravirtualized kernel %son %s\n",
-+		xen_feature(XENFEAT_auto_translated_physmap) ?
-+			"with PVH extensions " : "", pv_info.name);
- 	printk(KERN_INFO "Xen version: %d.%d%s%s\n",
- 	       version >> 16, version & 0xffff, extra.extraversion,
- 	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
-@@ -273,12 +278,15 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
- 		break;
- 	}
- 
--	asm(XEN_EMULATE_PREFIX "cpuid"
--		: "=a" (*ax),
--		  "=b" (*bx),
--		  "=c" (*cx),
--		  "=d" (*dx)
--		: "0" (*ax), "2" (*cx));
-+	if (xen_pvh_domain())
-+		native_cpuid(ax, bx, cx, dx);
-+	else
-+		asm(XEN_EMULATE_PREFIX "cpuid"
-+			: "=a" (*ax),
-+			"=b" (*bx),
-+			"=c" (*cx),
-+			"=d" (*dx)
-+			: "0" (*ax), "2" (*cx));
- 
- 	*bx &= maskebx;
- 	*cx &= maskecx;
-@@ -1055,6 +1063,10 @@ void xen_setup_shared_info(void)
- 		HYPERVISOR_shared_info =
- 			(struct shared_info *)__va(xen_start_info->shared_info);
- 
-+	/* PVH TBD/FIXME: vcpu info placement in phase 2 */
-+	if (xen_pvh_domain())
-+		return;
-+
- #ifndef CONFIG_SMP
- 	/* In UP this is as good a place as any to set up shared info */
- 	xen_setup_vcpu_info_placement();
-@@ -1292,6 +1304,11 @@ static const struct machine_ops xen_machine_ops __initconst = {
-  */
- static void __init xen_setup_stackprotector(void)
- {
-+	/* PVH TBD/FIXME: investigate setup_stack_canary_segment */
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		switch_to_new_gdt(0);
-+		return;
-+	}
- 	pv_cpu_ops.write_gdt_entry = xen_write_gdt_entry_boot;
- 	pv_cpu_ops.load_gdt = xen_load_gdt_boot;
- 
-@@ -1302,6 +1319,19 @@ static void __init xen_setup_stackprotector(void)
- 	pv_cpu_ops.load_gdt = xen_load_gdt;
- }
- 
-+static void __init xen_pvh_early_guest_init(void)
-+{
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
-+		xen_have_vector_callback = 1;
-+
-+#ifdef CONFIG_X86_32
-+	if (xen_feature(XENFEAT_auto_translated_physmap)) {
-+		xen_raw_printk("ERROR: 32bit PVH guests are not supported\n");
-+		BUG();
-+	}
-+#endif
-+}
-+
- /* First C function to be called on Xen boot */
- asmlinkage void __init xen_start_kernel(void)
- {
-@@ -1313,13 +1343,18 @@ asmlinkage void __init xen_start_kernel(void)
- 
- 	xen_domain_type = XEN_PV_DOMAIN;
- 
-+	xen_setup_features();
-+	xen_pvh_early_guest_init();
- 	xen_setup_machphys_mapping();
- 
- 	/* Install Xen paravirt ops */
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
--	pv_cpu_ops = xen_cpu_ops;
- 	pv_apic_ops = xen_apic_ops;
-+	if (xen_pvh_domain())
-+		pv_cpu_ops.cpuid = xen_cpuid;
-+	else
-+		pv_cpu_ops = xen_cpu_ops;
- 
- 	x86_init.resources.memory_setup = xen_memory_setup;
- 	x86_init.oem.arch_setup = xen_arch_setup;
-@@ -1351,8 +1386,6 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* Work out if we support NX */
- 	x86_configure_nx();
- 
--	xen_setup_features();
--
- 	/* Get mfn list */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap))
- 		xen_build_dynamic_phys_to_machine();
-@@ -1423,14 +1456,18 @@ asmlinkage void __init xen_start_kernel(void)
- 	/* set the limit of our address space */
- 	xen_reserve_top();
- 
--	/* We used to do this in xen_arch_setup, but that is too late on AMD
--	 * were early_cpu_init (run before ->arch_setup()) calls early_amd_init
--	 * which pokes 0xcf8 port.
--	 */
--	set_iopl.iopl = 1;
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
--	if (rc != 0)
--		xen_raw_printk("physdev_op failed %d\n", rc);
-+	/* PVH: runs at default kernel iopl of 0 */
-+	if (!xen_pvh_domain()) {
-+		/*
-+		 * We used to do this in xen_arch_setup, but that is too late
-+		 * on AMD were early_cpu_init (run before ->arch_setup()) calls
-+		 * early_amd_init which pokes 0xcf8 port.
-+		 */
-+		set_iopl.iopl = 1;
-+		rc = HYPERVISOR_physdev_op(PHYSDEVOP_set_iopl, &set_iopl);
-+		if (rc != 0)
-+			xen_raw_printk("physdev_op failed %d\n", rc);
-+	}
- 
- #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
-@@ -1497,6 +1534,8 @@ asmlinkage void __init xen_start_kernel(void)
- #endif
- }
- 
-+/* Use a pfn in RAM, may move to MMIO before kexec.
-+ * This function also called for PVH dom0 */
- void __ref xen_hvm_init_shared_info(void)
- {
- 	int cpu;
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 8971a26..8cce47b 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -27,6 +27,7 @@
- #include <xen/interface/memory.h>
- #include <xen/interface/physdev.h>
- #include <xen/features.h>
-+#include "mmu.h"
- #include "xen-ops.h"
- #include "vdso.h"
- 
-@@ -78,6 +79,9 @@ static void __init xen_add_extra_mem(u64 start, u64 size)
- 
- 	memblock_reserve(start, size);
- 
-+	if (xen_feature(XENFEAT_auto_translated_physmap))
-+		return;
-+
- 	xen_max_p2m_pfn = PFN_DOWN(start + size);
- 	for (pfn = PFN_DOWN(start); pfn < xen_max_p2m_pfn; pfn++) {
- 		unsigned long mfn = pfn_to_mfn(pfn);
-@@ -100,6 +104,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 		.domid        = DOMID_SELF
- 	};
- 	unsigned long len = 0;
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
- 	unsigned long pfn;
- 	int ret;
- 
-@@ -113,7 +118,7 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 				continue;
- 			frame = mfn;
- 		} else {
--			if (mfn != INVALID_P2M_ENTRY)
-+			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
- 				continue;
- 			frame = pfn;
- 		}
-@@ -230,6 +235,27 @@ static void __init xen_set_identity_and_release_chunk(
- 	*identity += set_phys_range_identity(start_pfn, end_pfn);
- }
- 
-+/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-+ * are released as part of this 1:1 mapping hypercall back to the dom heap.
-+ * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-+ */
-+static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
-+		unsigned long end_pfn, unsigned long *released,
-+		unsigned long *identity, unsigned long max_pfn)
-+{
-+	unsigned long pfn;
-+	int numpfns = 1, add_mapping = 1;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn++)
-+		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
-+
-+	if (start_pfn <= max_pfn) {
-+		unsigned long end = min(max_pfn_mapped, end_pfn);
-+		*released += end - start_pfn;
-+	}
-+	*identity += end_pfn - start_pfn;
-+}
-+
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
- {
-@@ -238,6 +264,7 @@ static unsigned long __init xen_set_identity_and_release(
- 	unsigned long identity = 0;
- 	const struct e820entry *entry;
- 	int i;
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
- 
- 	/*
- 	 * Combine non-RAM regions and gaps until a RAM region (or the
-@@ -259,11 +286,17 @@ static unsigned long __init xen_set_identity_and_release(
- 			if (entry->type == E820_RAM)
- 				end_pfn = PFN_UP(entry->addr);
- 
--			if (start_pfn < end_pfn)
--				xen_set_identity_and_release_chunk(
--					start_pfn, end_pfn, nr_pages,
--					&released, &identity);
--
-+			if (start_pfn < end_pfn) {
-+				if (xlated_phys) {
-+					xen_pvh_identity_map_chunk(start_pfn,
-+						end_pfn, &released, &identity,
-+						nr_pages);
-+				} else {
-+					xen_set_identity_and_release_chunk(
-+						start_pfn, end_pfn, nr_pages,
-+						&released, &identity);
-+				}
-+			}
- 			start = end;
- 		}
- 	}
-@@ -526,16 +559,14 @@ void __cpuinit xen_enable_syscall(void)
- #endif /* CONFIG_X86_64 */
- }
- 
--void __init xen_arch_setup(void)
-+/* Non auto translated PV domain, ie, it's not PVH. */
-+static __init void xen_pvmmu_arch_setup(void)
- {
--	xen_panic_handler_init();
--
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_4gb_segments);
- 	HYPERVISOR_vm_assist(VMASST_CMD_enable, VMASST_TYPE_writable_pagetables);
- 
--	if (!xen_feature(XENFEAT_auto_translated_physmap))
--		HYPERVISOR_vm_assist(VMASST_CMD_enable,
--				     VMASST_TYPE_pae_extended_cr3);
-+	HYPERVISOR_vm_assist(VMASST_CMD_enable,
-+			     VMASST_TYPE_pae_extended_cr3);
- 
- 	if (register_callback(CALLBACKTYPE_event, xen_hypervisor_callback) ||
- 	    register_callback(CALLBACKTYPE_failsafe, xen_failsafe_callback))
-@@ -543,6 +574,15 @@ void __init xen_arch_setup(void)
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
-+}
-+
-+/* This function not called for HVM domain */
-+void __init xen_arch_setup(void)
-+{
-+	xen_panic_handler_init();
-+
-+	if (!xen_feature(XENFEAT_auto_translated_physmap))
-+		xen_pvmmu_arch_setup();
- 
- #ifdef CONFIG_ACPI
- 	if (!(xen_start_info->flags & SIF_INITDOMAIN)) {
--- 
-1.7.7.6
+ arch/x86/include/asm/xen/interface.h |   11 ++-
+ arch/x86/include/asm/xen/page.h      |    3 +
+ arch/x86/xen/Kconfig                 |   10 ++
+ arch/x86/xen/enlighten.c             |   78 ++++++++++++----
+ arch/x86/xen/irq.c                   |    5 +-
+ arch/x86/xen/mmu.c                   |  162 ++++++++++++++++++++++++++++++++--
+ arch/x86/xen/mmu.h                   |    2 +
+ arch/x86/xen/p2m.c                   |    2 +-
+ arch/x86/xen/setup.c                 |   58 +++++++++----
+ arch/x86/xen/smp.c                   |   75 ++++++++++------
+ arch/x86/xen/xen-head.S              |   11 ++-
+ drivers/xen/balloon.c                |   15 ++--
+ drivers/xen/cpu_hotplug.c            |    4 +-
+ drivers/xen/events.c                 |    9 ++-
+ drivers/xen/gntdev.c                 |    3 +-
+ drivers/xen/grant-table.c            |   27 +++++-
+ drivers/xen/privcmd.c                |   72 ++++++++++++++-
+ drivers/xen/xenbus/xenbus_client.c   |    3 +-
+ include/xen/interface/memory.h       |   29 ++++++-
+ include/xen/interface/physdev.h      |   10 ++
+ include/xen/xen-ops.h                |    5 +-
+ 21 files changed, 504 insertions(+), 90 deletions(-)
+
+Konrad Rzeszutek Wilk (4):
+      xen/pvh: Fix PVHVM 32-bit bootup problems.
+      xen/hypercall: Make xen_remove_from_physmap the same on 64/32 builds.
+      xen/smp: Move the common CPU init code a bit to prep for PVH patch.
+      xen/e820: Coalesce the PVH release/populate logic in the generic case.
+
+Mukesh Rathor (6):
+      xen/pvh: Support ParaVirtualized Hardware extensions.
+      xen/pvh: Extend vcpu_guest_context, p2m, event, and XenBus.
+      xen/pvh: Implement MMU changes for PVH.
+      xen/pvh: bootup and setup (E820) related changes.
+      xen/pvh: balloon and grant changes.
+      xen/pvh: /dev/xen/privcmd changes.
 
