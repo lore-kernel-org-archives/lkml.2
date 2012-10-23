@@ -1,145 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab2JWJ4k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:56:40 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58761 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932885Ab2JWJ4h (ORCPT
+	id S932919Ab2JWJ5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:57:08 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57652 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab2JWJ5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:56:37 -0400
-Date: Tue, 23 Oct 2012 11:56:25 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tony Prisk <linux@prisktech.co.nz>, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
-Message-ID: <20121023095625.GA2062@avionic-0098.mockup.avionic-design.de>
-References: <1350643135-13197-2-git-send-email-linux@prisktech.co.nz>
- <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de>
- <1350888712.3592.11.camel@gitbox>
- <1350889747.3592.17.camel@gitbox>
- <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de>
- <1350891382.3592.22.camel@gitbox>
- <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de>
- <1350981706.20938.7.camel@gitbox>
- <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
- <20121023093128.GR21164@n2100.arm.linux.org.uk>
+	Tue, 23 Oct 2012 05:57:05 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <20121023093128.GR21164@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:8U1qQXBU9m7j96UG+yMHXsvaDvRq+d/MadVZiVN/RWJ
- oLv80MBJBjvlLi9OnTz3galLGitd1/JRmXkdhOYRsquyUrGrGp
- el4ymqb4bK2pcQ+HYzQv+EuTk2I/4sjVv2KNGbGSVOK/+F8Pwy
- BHKhZHEI0j1119EvE4sxFLJ1xda64DcMwnL+A65BrLhBENMMwW
- AMVSD4ucJnF84ydY7Soxug9+fl0m7bumOMjvv3gSVC6C31tbQV
- STCekLBBYyKBPUoFKS3EW/G9NX/uKmMgI2A+szbnqxvXytl9ag
- hqWCXpEpUuSvS86rtX/oGAK3u+J5aYPOQjEH9duzpVwjjAJiSH
- /U4fRVeq70z3RTdkYfzURLL1+r5BclGjdaaJXqZxpsP3UcfYDu
- C+H68fa7m9dMapVJ2cT0TAum28Tr/DFMTv1lPzjZdv0wFTP0uU
- xqX8N
+In-Reply-To: <508667E3.4000509@mvista.com>
+References: <1350907972-11256-1-git-send-email-prabhakar.lad@ti.com> <508667E3.4000509@mvista.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 23 Oct 2012 15:26:43 +0530
+Message-ID: <CA+V-a8v8gku5tuF+grBq71ZnxV9m_SYwtpFyh=4KG31+7bBmNQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] ARM: dm365: replace V4L2_OUT_CAP_CUSTOM_TIMINGS
+ with V4L2_OUT_CAP_DV_TIMINGS
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LMML <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sergei,
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 23, 2012 at 3:18 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
+> Hello.
+>
+>
+> On 22-10-2012 16:12, Prabhakar Lad wrote:
+>
+>> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+>
+>
+>> This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
+>> V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
+>> out.
+>
+>
+>> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+>> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+>> Cc: Sekhar Nori <nsekhar@ti.com>
+>> ---
+>>   Resending the patch since, it didn't reach the DLOS mailing list.
+>
+>
+>>   This patch is based on the following patch series,
+>>   ARM: davinci: dm365 EVM: add support for VPBE display
+>>   (https://patchwork.kernel.org/patch/1295071/)
+>
+>
+>>   arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c
+>> b/arch/arm/mach-davinci/board-dm365-evm.c
+>> index 2924d61..771abb5 100644
+>> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+>> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+>> @@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
+>>                         .index          = 1,
+>>                         .name           = "Component",
+>>                         .type           = V4L2_OUTPUT_TYPE_ANALOG,
+>> -                       .capabilities   = V4L2_OUT_CAP_CUSTOM_TIMINGS,
+>> +                       .capabilities   =  V4L2_OUT_CAP_DV_TIMINGS,
+>
+>
+>    Why this extra space after '='?
+>
+My Bad, I'll post a v2 fixing it.
 
-On Tue, Oct 23, 2012 at 10:31:28AM +0100, Russell King - ARM Linux wrote:
-> On Tue, Oct 23, 2012 at 11:22:47AM +0200, Thierry Reding wrote:
-> > On Tue, Oct 23, 2012 at 09:41:46PM +1300, Tony Prisk wrote:
-> > > Further to the discussion, my preference is still for of_clk_get()
-> > > (although I've changed the patch anyway as you saw because it makes no
-> > > difference in this case) :)
-> > >=20
-> > > clk_get(x, NULL) and devm_clk_get(x, NULL) both seems like 'hacks' to
-> > > allow platforms to convert to DT without having to update all their
-> > > drivers first. It only allows the first (default) clock, as your poin=
-ted
-> > > out. Getting a 2nd... clock relies on an optional property in DT (whi=
-ch
-> > > again, seems like it is there to support 'old' drivers) which allows =
-you
-> > > to request clocks by name.
-> > >=20
-> > > of_clk_get() on the other hand seems like a properly native DT functi=
-on.
-> > > You don't need to know anything about the clock, as long as the corre=
-ct
-> > > clock is specified in the correct order as documented by the binding.
-> > > Relying on 'pre-OF' code for a OF-only driver also seems
-> > > counter-intuitive.
-> >=20
-> > I do agree with those arguments. What I was saying is that for drivers
-> > which aren't DT only, of_clk_get() is not an option and that maybe
-> > others would be encouraged by the example to not use the generic APIs
-> > even if their driver could be used in non-DT setups. But maybe I'm
-> > worrying needlessly.
-> >=20
-> > That said, maybe somebody with a broader view of things like Arnd
-> > (Cc'ed) could share his thoughts.
->=20
-> As I have already said, the way the DT bindings were done for the clk
-> stuff was wrong.  A little thought put into it would've come up with
-> a much better solution which wouldn't have needed of_clk_get() at all.
->=20
-> How?
->=20
-> The arguments for clk_get() are:
-> 1. the struct device, which you can get the OF-node from.
-> 2. a _device_ _specific_ _clock_ _input_ _name_ (or NULL if there's only
->    one.)
->=20
-> So, we have something that defines a hardware clock input name, which
-> can be used to generate a property name for OF.  So, what _could_ have
-> been done is this:
->=20
-> 	clock-<input-name> =3D <&provider-node clk-output-index>;
->=20
-> where the property name is generated by:
->=20
-> 	snprintf(prop, sizeof(prop), "clk-%s", name ? name : "default");
+Regards,
+--Prabhakar
 
-But we already have this, only with slightly different syntax:
-
-	clocks =3D <&provider foo-index>, <&provider bar-index>;
-	clock-names =3D "foo", "bar";
-
-> So I continue to assert that our current design is wrong - and it will
-> cause driver authors to pointlessly have to make a choice at every stage
-> between DT and non-DT based systems.
-
-I think the reason that Tony brought this up is that with this API, the
-clock-names property becomes mandatory if you have more than one input
-clock.
-
-Thierry
-
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhmnJAAoJEN0jrNd/PrOh82oP/3rYF+GMTIX/9foqFXmWldyM
-HfRVJgwXIPGDAmFjTaHYqz2QrkshZ5RGcQNapT0sS+YcND2qKfRfUH//QCIJHgmG
-koACjYdgX1vQ1ydKxGUzp7bF/VHWW0JlilfuoH050DBDpjK6S1SKapvALx7OLwwL
-PdVJIXqX1kDhWY8xhUmq8LMGvCA2/BaGsQ17k5LNYzLaZLMeCk14XUPWFfOJWD0j
-6E8EXFoqgpYy90LRfVk/KbgfhVhKxtPL7DETRB5xMVZPvMZG0sDxKWO1mErH8o0/
-Hp9pD474YOZGLiSTQtQW0kcOzuL1cx4lQIVMIzOOXhHfCOydpfLEUbDVPBQKwS/8
-5sftxgX+7E76i34DWdtXflrE4cGYATnQcJsCwAFXcW+egjx4hXPlGFNdEUrHDQbB
-eXnIWjtO6+Z3iw8dAuUzDzJOH90b8lDFtWPEgB1DjZRD++18CzfAefZJHReHx9ht
-jPN8+mzpoQvkg4Lwko+GCtsNp9NduYjNMIvUco2gXTAcjar7FTA4jLLblyh+RDRf
-E1rLXm5b/wQZrJInRolB7HJE1sm1lRVFWrgv+6MjYLlqWq/XHUMTq5bQxD2xaNXv
-AjXcBaZUG7ybErD+s7Kp100e2R+kpG3gKHBEoYMwKiApNN4mMWR4r0zlbzwopgdY
-vpZHaOAnkNupsDHZt11+
-=Vr+q
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
+> WBR, Sergei
+>
