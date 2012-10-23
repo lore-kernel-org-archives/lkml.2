@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab2JWHjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:39:46 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:41713 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450Ab2JWHjp (ORCPT
+	id S932101Ab2JWHn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:43:26 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:45026 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752355Ab2JWHnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:39:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <009b01cdb0f0$6ad18cd0$4074a670$%kim@samsung.com>
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
-	<001801cdb0c6$35bd6430$a1382c90$%kim@samsung.com>
-	<CANGUGtASk=_xd4xz_PXA+ittW2G2Z01DXsRjH67jBgXdpiG82w@mail.gmail.com>
-	<009b01cdb0f0$6ad18cd0$4074a670$%kim@samsung.com>
-Date: Tue, 23 Oct 2012 09:39:44 +0200
-Message-ID: <CANGUGtDCV28y=aO6rrPEbsY+u4hMq_r8+HDVeCdRE_9Yd2i0ow@mail.gmail.com>
-Subject: Re: [PATCH 08/16 v2] f2fs: add file operations
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Oct 2012 03:43:25 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-dd-50864a9b0f3c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Marek Vasut'" <marex@denx.de>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <000a01cdb0d5$9d764970$d862dc50$%han@samsung.com>
+ <201210230934.51274.marex@denx.de>
+In-reply-to: <201210230934.51274.marex@denx.de>
+Subject: Re: [PATCH 2/4] backlight: lms283gf05: add missing const
+Date: Tue, 23 Oct 2012 16:43:23 +0900
+Message-id: <000401cdb0f2$14a515f0$3def41d0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2w8OaJTNqheMgmSSWRnRV4Hm2/8AAAL8qQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd05Xm0BBlcPsllc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MI3s2sxTMY6lYPuEySwPjfOYuRk4OCQETie0bL7JC2GISF+6t
+	ZwOxhQSmM0r8uVHYxcgFZM9mktiydgtYA5uAmsSXL4fZQWwRAUWJNefnM4IUMQssYZSY8/IT
+	kMMB1JEksfiRA0gNp4C+xI+m62wgYWEBR4nDmzNBwiwCqhJzD+8G28srYCtx+fomZghbUOLH
+	5HssIDazgJbE+p3HmSBseYnNa94yg4yREFCXePRXF+ICI4kb744zQ5SISOx78Y5xAqPQLCST
+	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7iZ9I7GFc1WBxiFOBg
+	VOLh7djfGiDEmlhWXJl7iFGCg1lJhNfUvi1AiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+zR0qA
+	kEB6YklqdmpqQWoRTJaJg1OqgTFC4Bfr326Bk1vNf87Sf9Zs7nwikLd1/9WmSZxOUiZaSg7C
+	oqyLF12qejj7bsiLzWwLGtdLZhst3y3gWvTu4psZ57e5/jaXvLDHg8317eTl0ltFT03zt/tw
+	0/7uYYVnXTHWixzipfSUqtUcl9R1zdUrv6LgXLTtVdY8rcpVvNdN6l9e+7JFuUuJpTgj0VCL
+	uag4EQB0tlavXgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> > +void f2fs_truncate(struct inode *inode)
->> > +{
->> > +       if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
->> > +                               S_ISLNK(inode->i_mode)))
->> > +               return;
->> > +
->> > +       if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
->> > +               return;
->>
->> No truncate for an append only file? You call f2fs_truncate from
->> evict_inode, so no block freeing when this kind of inode is deleted.
->
-> Agreed.
->
->>
->> > +
->> > +       if (!truncate_blocks(inode, i_size_read(inode))) {
->> > +               inode->i_mtime = inode->i_ctime = CURRENT_TIME;
->> > +               mark_inode_dirty(inode);
->> > +       }
->> > +
->> > +       f2fs_balance_fs(F2FS_SB(inode->i_sb));
->> > +}
->> > +
->> > +static int f2fs_getattr(struct vfsmount *mnt,
->> > +                        struct dentry *dentry, struct kstat *stat)
->> > +{
->> > +       struct inode *inode = dentry->d_inode;
->> > +       generic_fillattr(inode, stat);
->> > +       stat->blocks <<= 3;
->> > +       return 0;
->> > +}
->> > +
->> > +#ifdef CONFIG_F2FS_FS_POSIX_ACL
->> > +static void __setattr_copy(struct inode *inode, const struct iattr *attr)
->> > +{
->> > +       struct f2fs_inode_info *fi = F2FS_I(inode);
->> > +       unsigned int ia_valid = attr->ia_valid;
->> > +
->> > +       if (ia_valid & ATTR_UID)
->> > +               inode->i_uid = attr->ia_uid;
->> > +       if (ia_valid & ATTR_GID)
->> > +               inode->i_gid = attr->ia_gid;
->> > +       if (ia_valid & ATTR_ATIME)
->> > +               inode->i_atime = timespec_trunc(attr->ia_atime,
->> > +                                               inode->i_sb->s_time_gran);
->> > +       if (ia_valid & ATTR_MTIME)
->> > +               inode->i_mtime = timespec_trunc(attr->ia_mtime,
->> > +                                               inode->i_sb->s_time_gran);
->> > +       if (ia_valid & ATTR_CTIME)
->> > +               inode->i_ctime = timespec_trunc(attr->ia_ctime,
->> > +                                               inode->i_sb->s_time_gran);
->> > +       if (ia_valid & ATTR_MODE) {
->> > +               umode_t mode = attr->ia_mode;
->> > +
->> > +               if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
->> > +                       mode &= ~S_ISGID;
->> > +               set_acl_inode(fi, mode);
->> > +       }
->> > +}
->> > +#else
->> > +#define __setattr_copy setattr_copy
->> > +#endif
->> > +
->> > +int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
->> > +{
->> > +       struct inode *inode = dentry->d_inode;
->> > +       struct f2fs_inode_info *fi = F2FS_I(inode);
->> > +       int err;
->> > +
->> > +       err = inode_change_ok(inode, attr);
->> > +       if (err)
->> > +               return err;
->> > +
->> > +       if ((attr->ia_valid & ATTR_SIZE) &&
->> > +                       attr->ia_size != i_size_read(inode)) {
->> > +               truncate_setsize(inode, attr->ia_size);
->> > +               f2fs_truncate(inode);
->>
->> No need to call truncate_pagecache & co.?
->
-> truncate_setsize() calls truncate_pagecache().
-> Any comment?
+On Tuesday, October 23, 2012 4:35 PM Marek Vasut wrote
+> 
+> Dear Jingoo Han,
+> 
+> > Add 'const' to static array that was missing it in its
+> > definition.
+> 
+> Did you get compiler warning? Still, this is a good pick
 
-Yep, I didn't get my coffee yet :)
+No, I didn't get compiler warning. :)
+Thank you for your reply.
 
-Marco
+> 
+> Acked-by: Marek Vasut <marex@denx.de>
+> 
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Marek Vasut <marek.vasut@gmail.com>
+> > Cc: Richard Purdie <rpurdie@rpsys.net>
+> > ---
+> [...]
+> 
+> Best regards,
+> Marek Vasut
+
