@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab2JWVRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:17:06 -0400
+	id S933655Ab2JWVRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:17:39 -0400
 Received: from mail-ye0-f174.google.com ([209.85.213.174]:40896 "EHLO
 	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933334Ab2JWT64 (ORCPT
+	with ESMTP id S1757479Ab2JWT6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:58:56 -0400
+	Tue, 23 Oct 2012 15:58:51 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>, Mike Isely <isely@pobox.com>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 09/23] zr36067: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:12 -0300
-Message-Id: <1351022246-8201-9-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 07/23] hdpvr: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:10 -0300
+Message-Id: <1351022246-8201-7-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
@@ -42,26 +42,27 @@ expression E;
 +to = from;
 // </smpl>
 
+Cc: Mike Isely <isely@pobox.com>
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/pci/zoran/zoran_card.c |    3 +--
+ drivers/media/usb/hdpvr/hdpvr-i2c.c |    3 +--
  1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/pci/zoran/zoran_card.c b/drivers/media/pci/zoran/zoran_card.c
-index fffc54b..cea325d 100644
---- a/drivers/media/pci/zoran/zoran_card.c
-+++ b/drivers/media/pci/zoran/zoran_card.c
-@@ -708,8 +708,7 @@ static const struct i2c_algo_bit_data zoran_i2c_bit_data_template = {
- static int
- zoran_register_i2c (struct zoran *zr)
- {
--	memcpy(&zr->i2c_algo, &zoran_i2c_bit_data_template,
--	       sizeof(struct i2c_algo_bit_data));
-+	zr->i2c_algo = zoran_i2c_bit_data_template;
- 	zr->i2c_algo.data = zr;
- 	strlcpy(zr->i2c_adapter.name, ZR_DEVNAME(zr),
- 		sizeof(zr->i2c_adapter.name));
+diff --git a/drivers/media/usb/hdpvr/hdpvr-i2c.c b/drivers/media/usb/hdpvr/hdpvr-i2c.c
+index 82e819f..2df60bf 100644
+--- a/drivers/media/usb/hdpvr/hdpvr-i2c.c
++++ b/drivers/media/usb/hdpvr/hdpvr-i2c.c
+@@ -217,8 +217,7 @@ int hdpvr_register_i2c_adapter(struct hdpvr_device *dev)
+ 
+ 	hdpvr_activate_ir(dev);
+ 
+-	memcpy(&dev->i2c_adapter, &hdpvr_i2c_adapter_template,
+-	       sizeof(struct i2c_adapter));
++	dev->i2c_adapter = hdpvr_i2c_adapter_template;
+ 	dev->i2c_adapter.dev.parent = &dev->udev->dev;
+ 
+ 	i2c_set_adapdata(&dev->i2c_adapter, dev);
 -- 
 1.7.4.4
 
