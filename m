@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965722Ab2JWXSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:18:53 -0400
-Received: from honeysuckle.london.02.net ([87.194.255.144]:59025 "EHLO
-	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab2JWXSv convert rfc822-to-8bit (ORCPT
+	id S965742Ab2JWXS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:18:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53740 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965663Ab2JWXSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:18:51 -0400
-From: Matthew Leach <matthew@mattleach.net>
-To: linux-kernel@vger.kernel.org
-Cc: Martin =?utf-8?Q?P=C3=A4rtel?= <martin.partel@gmail.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [REGRESSION] uml: signal.c build errors
-Date: Wed, 24 Oct 2012 00:18:34 +0100
-Message-ID: <87pq48lqut.fsf@mattleach.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	Tue, 23 Oct 2012 19:18:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20121023225919.GB3179@localhost>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-3-git-send-email-keescook@chromium.org>
+	<20121023225919.GB3179@localhost>
+Date: Tue, 23 Oct 2012 16:18:52 -0700
+X-Google-Sender-Auth: gEKKUvlU-2SfDxl_GaMSeE1mMt8
+Message-ID: <CAGXu5jLh0Y69G5ZA1W9A_2aVGoGcEgkcV0HUV5HyocLQKNvssg@mail.gmail.com>
+Subject: Re: [PATCH 002/193] checkpatch: warn about using CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 23, 2012 at 3:59 PM, Andy Whitcroft <apw@canonical.com> wrote:
+> On Tue, Oct 23, 2012 at 01:01:15PM -0700, Kees Cook wrote:
+>> This config item has not carried much meaning for a while now and is
+>> almost always enabled by default. As agreed during the Linux kernel
+>> summit, it is being removed.  This will discourage future addition of
+>> CONFIG_EXPERIMENTAL while it is being phased out.
+>>
+>> Cc: Andy Whitcroft <apw@canonical.com>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>>  scripts/checkpatch.pl |    7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+>> index 21a9f5d..37dc932 100755
+>> --- a/scripts/checkpatch.pl
+>> +++ b/scripts/checkpatch.pl
+>> @@ -1757,6 +1757,13 @@ sub process {
+>>                       #print "is_start<$is_start> is_end<$is_end> length<$length>\n";
+>>               }
+>>
+>> +# Discourage the addition of CONFIG_EXPERIMENTAL in Kconfig.
+>> +             if ($realfile =~ /Kconfig/ &&
+>> +                 $line =~ /.\s*depends on\s+.*\bEXPERIMENTAL\b/) {
+>> +                     WARN("CONFIG_EXPERIMENTAL",
+>> +                          "Use of CONFIG_EXPERIMENTAL is deprecated.\n");
+>> +             }
+>> +
+>
+> Seem reasonable.  Should you suggest how they can mark things
+> experimental?  I assume (EXPERIMENTAL) in the title is now the right
+> way?
 
-When building UML against 3.7-rc2 I encounter the following build error:
+Yeah, there's an escalation that seemed to get agreed on:
+https://lkml.org/lkml/2012/10/23/580
 
-# make ARCH=uml
-scripts/kconfig/conf --silentoldconfig arch/x86/um/Kconfig
-  CHK     include/generated/uapi/linux/version.h
-  UPD     include/generated/uapi/linux/version.h
-  WRAP    arch/um/include/generated/asm/clkdev.h
-  SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
-  SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
-  SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
+I could add a hint to read the above lkml post?
 
-...
+-Kees
 
-  CC      arch/um/os-Linux/signal.o
-arch/um/os-Linux/signal.c:18:8: error: conflicting types for ‘sig_info’
-In file included from arch/um/os-Linux/signal.c:12:0:
-/home/matthew/Development/linux/arch/um/include/shared/as-layout.h:64:15: note: previous declaration of ‘sig_info’ was here
-arch/um/os-Linux/signal.c:19:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:19:2: warning: (near initialization for ‘sig_info[5]’) [enabled by default]
-arch/um/os-Linux/signal.c:20:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:20:2: warning: (near initialization for ‘sig_info[8]’) [enabled by default]
-arch/um/os-Linux/signal.c:21:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:21:2: warning: (near initialization for ‘sig_info[4]’) [enabled by default]
-arch/um/os-Linux/signal.c:22:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:22:2: warning: (near initialization for ‘sig_info[28]’) [enabled by default]
-arch/um/os-Linux/signal.c:23:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:23:2: warning: (near initialization for ‘sig_info[7]’) [enabled by default]
-arch/um/os-Linux/signal.c:24:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:24:2: warning: (near initialization for ‘sig_info[11]’) [enabled by default]
-arch/um/os-Linux/signal.c:25:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:25:2: warning: (near initialization for ‘sig_info[29]’) [enabled by default]
-arch/um/os-Linux/signal.c:26:2: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:26:2: warning: (near initialization for ‘sig_info[26]’) [enabled by default]
-arch/um/os-Linux/signal.c:133:1: warning: initialization from incompatible pointer type [enabled by default]
-arch/um/os-Linux/signal.c:133:1: warning: (near initialization for ‘handlers[26]’) [enabled by default]
-make[1]: *** [arch/um/os-Linux/signal.o] Error 1
-make: *** [arch/um/os-Linux] Error 2
-
-I have tracked this down to [1] where, indeed, the type of sig_info is
-different; the second parameter in signal.c is 'siginfo_t' where as in
-as-layout.h the second parameter's type is declared as 'struct siginfo'.
-
-[1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
-
-Matt
+-- 
+Kees Cook
+Chrome OS Security
