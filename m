@@ -1,56 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359Ab2JWKRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:17:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5843 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375Ab2JWKRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:17:04 -0400
-X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
-   d="scan'208";a="6051966"
-Message-ID: <50866EBB.2010507@cn.fujitsu.com>
-Date: Tue, 23 Oct 2012 18:17:31 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752455Ab2JWKRq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:17:46 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7933 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753Ab2JWKRo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:17:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 23 Oct 2012 03:05:40 -0700
+From: Pavan Kunapuli <pkunapuli@nvidia.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Pavan Kunapuli <pkunapuli@nvidia.com>
+Date: Tue, 23 Oct 2012 15:47:37 +0530
+Subject: RE: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
+Thread-Topic: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
+Thread-Index: Ac2xBsq9Lim+BJGLSoq9bXhyyK7I4gAAHSlA
+Message-ID: <C79B248886DD134989C8FF6B096A91AB7EC6B8C7C9@BGMAIL01.nvidia.com>
+References: <1350976709-19248-1-git-send-email-pkunapuli@nvidia.com>
+ <1350976709-19248-3-git-send-email-pkunapuli@nvidia.com>
+ <50866D29.1040709@samsung.com>
+In-Reply-To: <50866D29.1040709@samsung.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com> <5084AB10.7010807@cn.fujitsu.com> <20121022101442.GB8352@liondog.tnic> <50860711.10807@cn.fujitsu.com> <20121023095234.GA22715@liondog.tnic>
-In-Reply-To: <20121023095234.GA22715@liondog.tnic>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:16:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:16:32,
-	Serialize complete at 2012/10/23 18:16:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On tue, 23 Oct 2012 11:52:34 +0200, Borislav Petkov wrote:
-> On Tue, Oct 23, 2012 at 10:55:13AM +0800, Tang Chen wrote:
->> So, how about warn once, and continue:
->> 	if (cpu == dying) {
->> 		WARN_ON_ONCE(cpu == dying);
->> 		continue;
->> 	}
->>
->> or, use BUG_ON() instead ?
+For platforms where the board can control vmmc or vqmmc, if the regulator supplies registration is not done before sdhci probe, deferring sdhci probe would ensure that the regulators are available the next time around. For platforms where the board can't control vmmc or vqmmc, we can have a dummy regulator to make sure probe will never get deferred.
+
+-----Original Message-----
+From: Jaehoon Chung [mailto:jh80.chung@samsung.com] 
+Sent: 23 October 2012 15:41
+To: Pavan Kunapuli
+Cc: swarren@wwwdotorg.org; linux@arm.linux.org.uk; cjb@laptop.org; linux-kernel@vger.kernel.org; linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 2/2] mmc: sdhci: Defer probe if regulator_get fails
+
+I didn't understand why defer the probe?
+I think that some board can't control vqmmc or vmmc.
+
+Best Regards,
+Jaehoon Chung
+On 10/23/2012 04:18 PM, Pavan Kunapuli wrote:
+> vmmc and vqmmc regulators control the voltage to the host and device. 
+> Defer the probe if either of them is not registered.
 > 
-> Let me ask you again, but I want you to think real hard this time:
+> Signed-off-by: Pavan Kunapuli <pkunapuli@nvidia.com>
+> ---
+>  drivers/mmc/host/sdhci.c |   25 ++++++++++++++++++++++---
+>  1 files changed, 22 insertions(+), 3 deletions(-)
 > 
-> "Why do we need to warn? What good would that bring us?"
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c index 
+> 7922adb..925c403 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2844,11 +2844,17 @@ int sdhci_add_host(struct sdhci_host *host)
+>  	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
+>  		mmc->caps |= MMC_CAP_NEEDS_POLL;
+>  
+> -	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
+> +	/*
+> +	 * If vqmmc regulator and no 1.8V signalling, then there's no UHS.
+> +	 * vqmmc regulator should be present. If it's not present,
+> +	 * assume the regulator driver registration is not yet done and
+> +	 * defer the probe.
+> +	 */
+>  	host->vqmmc = regulator_get(mmc_dev(mmc), "vqmmc");
+>  	if (IS_ERR(host->vqmmc)) {
+> -		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+> +		pr_err("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+>  		host->vqmmc = NULL;
+> +		return -EPROBE_DEFER;
+>  	}
+>  	else if (regulator_is_supported_voltage(host->vqmmc, 1800000, 1800000))
+>  		regulator_enable(host->vqmmc);
+> @@ -2903,10 +2909,17 @@ int sdhci_add_host(struct sdhci_host *host)
+>  
+>  	ocr_avail = 0;
+>  
+> +	/*
+> +	 * vmmc regulator should be present. If it's not present,
+> +	 * assume the regulator driver registration is not yet done
+> +	 * and defer the probe.
+> +	 */
+>  	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
+>  	if (IS_ERR(host->vmmc)) {
+> -		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+> +		pr_err("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+>  		host->vmmc = NULL;
+> +		ret = -EPROBE_DEFER;
+> +		goto vmmc_err;
+>  	} else
+>  		regulator_enable(host->vmmc);
+>  
+> @@ -3121,7 +3134,13 @@ reset:
+>  untasklet:
+>  	tasklet_kill(&host->card_tasklet);
+>  	tasklet_kill(&host->finish_tasklet);
+> +vmmc_err:
+> +	if (host->vqmmc) {
+> +		if (regulator_is_enabled(host->vqmmc))
+> +			regulator_disable(host->vqmmc);
+>  
+> +		regulator_put(host->vqmmc);
+> +	}
+>  	return ret;
+>  }
+>  
 > 
 
-This function is called after a cpu is offline, in other words, it is
-impossible that the cpu is still in cpu_online_mask. otherwise there is
-something wrong in the code.
-
-Thanks
-Miao
