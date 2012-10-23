@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933405Ab2JWTYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:24:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50705 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932223Ab2JWTYv (ORCPT
+	id S933351Ab2JWTZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:25:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51082 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2JWTZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:24:51 -0400
-Date: Tue, 23 Oct 2012 20:24:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
-        perex@perex.cz, tiwai@suse.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 6/6] Add a codec driver for SI476X MFD
-Message-ID: <20121023192448.GB18814@opensource.wolfsonmicro.com>
-References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net>
- <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net>
+	Tue, 23 Oct 2012 15:25:47 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
-Content-Disposition: inline
-In-Reply-To: <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <508600ba.a7fe440a.4c19.fffff64bSMTPIN_ADDED@mx.google.com>
+References: <1350568765-5723-1-git-send-email-weiyang@linux.vnet.ibm.com>
+	<CAFLxGvwfGc_4z1JM=pAb-U4tNVeMZR1zs-neQv7Vz2-6DQT+9Q@mail.gmail.com>
+	<1350624189.14741.1.camel@wall-e>
+	<alpine.LNX.2.00.1210190934010.7523@pobox.suse.cz>
+	<20121022165602.41c4953e.akpm@linux-foundation.org>
+	<508600ba.a7fe440a.4c19.fffff64bSMTPIN_ADDED@mx.google.com>
+Date: Tue, 23 Oct 2012 21:25:46 +0200
+Message-ID: <CAFLxGvyQxdfm9KUcaUSJV5g19zGa71w=a8ma0xxWVuGsrdkzMQ@mail.gmail.com>
+Subject: Re: [PATCH] remove untouched code in kfifo_in
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Kosina <jkosina@suse.cz>,
+        Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 23, 2012 at 4:27 AM, Richard Yang
+<weiyang@linux.vnet.ibm.com> wrote:
+> On Mon, Oct 22, 2012 at 04:56:02PM -0700, Andrew Morton wrote:
+>>On Fri, 19 Oct 2012 09:34:43 +0200 (CEST)
+>>Jiri Kosina <jkosina@suse.cz> wrote:
+>>
+>>> On Fri, 19 Oct 2012, Stefani Seibold wrote:
+>>>
+>>> > > > In kfifo_in marco, one piece of code is arounded by if(0). This code in
+>>> > > > introduced by Stefani Seibold <stefani@seibold.net> to suppress a compiler
+>>> > > > warning. This warning is not there with the upgrade of gcc version.
+>>> > > >
+>>> > > > This patch just remove this code.
+>>> > >
+>>> > > Are you sure?
+>>> > > This code fragment looks like a compiler bomb to detect type mismatch to me...
+>>> >
+>>> > Yes, you are great! That was the reason why i made this peace of code.
+>>> > So don't remove it!
+>>>
+>>> As even you, the author of the code, got confused by it for a while,
+>>> adding an explanatory comment seems appropriate.
+>>>
+>>
+>>include/linux/typecheck.h?
+>
+> Something like this?
+>
+> From f20c316bf87d5db0816a01705b7869526c0b2363 Mon Sep 17 00:00:00 2001
+> From: Wei Yang <weiyang@linux.vnet.ibm.com>
+> Date: Wed, 17 Oct 2012 16:45:49 +0800
+> Subject: [PATCH] Replace the type check code with typecheck() in kfifo_in
+>
+> In kfifo_in marco, one piece of code which is arounded by if(0) will check the
+> type of __tmp->ptr_const and __buf. If they are different type, there will
+> output a warning during compiling. This piece of code is not self explaining
+> and a little bit hard to understand.
+>
+> Based on Andrew Morton's suggestion, this patch replace this with typecheck()
+> which will be easy to understand.
+> ---
+>  include/linux/kfifo.h |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> index 10308c6..b48fe71 100644
+> --- a/include/linux/kfifo.h
+> +++ b/include/linux/kfifo.h
+> @@ -512,10 +512,7 @@ __kfifo_uint_must_check_helper( \
+>         unsigned long __n = (n); \
+>         const size_t __recsize = sizeof(*__tmp->rectype); \
+>         struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -       if (0) { \
+> -               typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> -               __dummy = (typeof(__buf))NULL; \
+> -       } \
+> +       typecheck(typeof(__tmp->ptr_const), __buf);\
+>         (__recsize) ?\
+>         __kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+>         __kfifo_in(__kfifo, __buf, __n); \
 
---LyciRD1jyfeSSjG0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+What about all the other open coded type checks in that file?
 
-On Tue, Oct 23, 2012 at 11:44:32AM -0700, Andrey Smirnov wrote:
-> This commit add a sound codec driver for Silicon Laboratories 476x
-> series of AM/FM radio chips.
-
-I already merged a driver for this.  If there are any changes you should
-send incremental updates rather than a full new driver.
-
---LyciRD1jyfeSSjG0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhu74AAoJELSic+t+oim9ZhIP/1PnsA60QsrOkXOK0fl3hyJQ
-8H3IDs+hKaCKPq9boNH5NWzmRt3cC2d85zHbHhTpdrYlUgeVwqLH53efBDLsvHUY
-7PmroDehG9eQXMS37fqg03gcEDPtn1hwMQpusCb5iasNMVDyJPoW2kANdFaCY5tZ
-fFgqqchoqtKYkG7S8cMUlj//pGoXMtSlHJJmkIjalkG0DD0LbHsUY/9SWExpxaEs
-KC94HRd6J/xKZ4rDSneA7cw7AqgaYD41jcYtAcZaz9tyu37x0tL2ifogGPsEUH8p
-dJMORptLciaX1OEUBHymEeANn2V/UM/kzHg2HgDDrJgT10A8oMRz7gIdx58V5Zik
-aj/7FPwruK1NdmcazlZUa49p8GMNFxapHQIzLsLP+jEDAhjZrZNAZw/ZbdmvHB6d
-CzqnF4Mi7fm31gNlizgirijJ/g+5XjSVS21jgsV4sOV3WJziPVJQx5X/XT/oetKt
-1O8vS3oFOTCbSvQV7ETo4Lj9RJ7EFcs1ep7b9kO1U9CgbdHiN9rosdOU8oYLvH7C
-N/LqdJCZy96yTBj5nYeDXF811lonnZNHD13hnBpE7nIyo3ZfzremTfXZ2VPmNapC
-1TSGmFCbPgcEw21mF/OlDQe4IMn61TJoq+9LiiOkUEUYfa/KhNF5UQ42TlH5fox9
-pZIEz9MxkbBjlYnBIMEC
-=0V4D
------END PGP SIGNATURE-----
-
---LyciRD1jyfeSSjG0--
+-- 
+Thanks,
+//richard
