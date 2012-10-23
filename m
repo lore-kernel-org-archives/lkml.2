@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab2JWWUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:20:39 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:58642 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754158Ab2JWWUh (ORCPT
+	id S933557Ab2JWWWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:22:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34987 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932832Ab2JWWWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:20:37 -0400
-Subject: Re: [PATCH 08/23] cx25840: Replace memcpy with struct assignment
-From: Andy Walls <awalls@md.metrocast.net>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Date: Tue, 23 Oct 2012 18:20:23 -0400
-In-Reply-To: <1351022246-8201-8-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-	 <1351022246-8201-8-git-send-email-elezegarcia@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1351030826.2459.24.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-23_07:2012-10-23,2012-10-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1203120001 definitions=main-1210230289
+	Tue, 23 Oct 2012 18:22:37 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] genirq: provide means to retrigger parent
+Organization: Deep Root Systems, LLC
+References: <1350425269-11489-1-git-send-email-khilman@deeprootsystems.com>
+	<20121016221502.GY28061@n2100.arm.linux.org.uk>
+Date: Tue, 23 Oct 2012 15:23:04 -0700
+In-Reply-To: <20121016221502.GY28061@n2100.arm.linux.org.uk> (Russell King's
+	message of "Tue, 16 Oct 2012 23:15:02 +0100")
+Message-ID: <871ugo7rqv.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 16:57 -0300, Ezequiel Garcia wrote:
-> This kind of memcpy() is error-prone. Its replacement with a struct
-> assignment is prefered because it's type-safe and much easier to read.
-> 
-> Found by coccinelle. Hand patched and reviewed.
-> Tested by compilation only.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> identifier struct_name;
-> struct struct_name to;
-> struct struct_name from;
-> expression E;
-> @@
-> -memcpy(&(to), &(from), E);
-> +to = from;
-> // </smpl>
-> 
+Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
 
-This patch is fine.
+> On Tue, Oct 16, 2012 at 03:07:49PM -0700, Kevin Hilman wrote:
+>> From: Thomas Gleixner <tglx@linutronix.de>
+>> 
+>> Attempts to retrigger nested threaded IRQs currently fail because they
+>> have no primary handler.  In order to support retrigger of nested
+>> IRQs, the parent IRQ needs to be retriggered.
+>> 
+>> To fix, when an IRQ needs to be resent, if the interrupt has a parent
+>> IRQ and runs in the context of the parent IRQ, then resend the parent.
+>> 
+>> Also, handle_nested_irq() needs to clear the replay flag like the
+>> other handlers, otherwise check_irq_resend() will set it and it will
+>> never be cleared.  Without clearing, it results in the first resend
+>> working fine, but check_irq_resend() returning early on subsequent
+>> resends because the replay flag is still set.
+>> 
+>> Problem discovered on ARM/OMAP platforms where a nested IRQ that's
+>> also a wakeup IRQ happens late in suspend and needed to be retriggered
+>> during the resume process.
+>> 
+>> Reported-by: Kevin Hilman <khilman@ti.com>
+>> Tested-by: Kevin Hilman <khilman@ti.com>
+>> [khilman@ti.com: changelog edits, clear IRQS_REPLAY in handle_nested_irq()]
+>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>
+> Umm, we also have the converse situation.  We have platforms where the
+> resend has to be done from the child IRQ, and the parent must not be
+> touched.  I hope that doesn't break those.
 
-Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+I'm assuming the child IRQs you're concerned with are not threaded,
+right?  This patch only addresses nested, threaded IRQs, and these don't
+have a primary handler to run at all, so cannot do any triggering.
 
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
->  drivers/media/i2c/cx25840/cx25840-ir.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/media/i2c/cx25840/cx25840-ir.c b/drivers/media/i2c/cx25840/cx25840-ir.c
-> index 38ce76e..9ae977b 100644
-> --- a/drivers/media/i2c/cx25840/cx25840-ir.c
-> +++ b/drivers/media/i2c/cx25840/cx25840-ir.c
-> @@ -1251,13 +1251,11 @@ int cx25840_ir_probe(struct v4l2_subdev *sd)
->  		cx25840_write4(ir_state->c, CX25840_IR_IRQEN_REG, 0);
->  
->  	mutex_init(&ir_state->rx_params_lock);
-> -	memcpy(&default_params, &default_rx_params,
-> -		       sizeof(struct v4l2_subdev_ir_parameters));
-> +	default_params = default_rx_params;
->  	v4l2_subdev_call(sd, ir, rx_s_parameters, &default_params);
->  
->  	mutex_init(&ir_state->tx_params_lock);
-> -	memcpy(&default_params, &default_tx_params,
-> -		       sizeof(struct v4l2_subdev_ir_parameters));
-> +	default_params = default_tx_params;
->  	v4l2_subdev_call(sd, ir, tx_s_parameters, &default_params);
->  
->  	return 0;
-
+Kevin
 
