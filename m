@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab2JWHon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:44:43 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63378 "EHLO
+	id S1756869Ab2JWHpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:45:39 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50142 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab2JWHok (ORCPT
+	with ESMTP id S1756794Ab2JWHom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:44:40 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-46-50864ae523ca
+	Tue, 23 Oct 2012 03:44:42 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-5f-50864ae7d0b4
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/12] perf header: Add HEADER_GROUP_DESC feature
-Date: Tue, 23 Oct 2012 16:43:56 +0900
-Message-Id: <1350978246-3686-3-git-send-email-namhyung@kernel.org>
+        Stephane Eranian <eranian@google.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [PATCH 10/12] perf report: Show group description when event group is enabled
+Date: Tue, 23 Oct 2012 16:44:04 +0900
+Message-Id: <1350978246-3686-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1350978246-3686-1-git-send-email-namhyung@kernel.org>
 References: <1350978246-3686-1-git-send-email-namhyung@kernel.org>
@@ -27,237 +28,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Save group relationship information so that it can be restored when
-perf report is running.
+When using event group viewer, it's better to show the group
+description rather than the leader information alone.
+
+If a leader did not contain any member, it's a non-group event.
 
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
+Cc: Pekka Enberg <penberg@kernel.org>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-record.c |   3 +
- tools/perf/util/header.c    | 152 ++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/header.h    |   2 +
- 3 files changed, 157 insertions(+)
+ tools/perf/builtin-report.c    | 18 ++++++++++++++++++
+ tools/perf/ui/browsers/hists.c | 31 +++++++++++++++++++++++++++++++
+ tools/perf/ui/gtk/browser.c    | 14 +++++++++++---
+ tools/perf/util/evsel.c        | 25 +++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |  8 ++++++++
+ 5 files changed, 93 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 53c9892e96dd..b508d1d3252a 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -586,6 +586,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 		goto out_delete_session;
- 	}
- 
-+	if (!evsel_list->nr_groups)
-+		perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 6c73d8625829..c6329999ced3 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -300,6 +300,24 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	char unit;
+ 	unsigned long nr_samples = self->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = self->stats.total_period;
++	struct perf_evsel *evsel = hists_2_evsel(self);
++	char buf[512];
++	size_t size = sizeof(buf);
 +
- 	/*
- 	 * perf_session__delete(session) will be called at perf_record__exit()
- 	 */
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7daad237dea5..8969c20986c2 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -1072,6 +1072,41 @@ static int write_pmu_mappings(int fd, struct perf_header *h __maybe_unused,
- }
- 
- /*
-+ * File format:
-+ *
-+ * struct group_descs {
-+ *	u32	nr_groups;
-+ *	struct group_desc {
-+ *		char	name[];
-+ *		u32	leader_idx;
-+ *		u32	nr_members;
-+ *	}[nr_groups];
-+ * };
-+ */
-+static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
-+			    struct perf_evlist *evlist)
-+{
-+	u32 nr_groups = evlist->nr_groups;
-+	struct perf_evsel *evsel;
++	if (symbol_conf.event_group && evsel->nr_members) {
++		int i;
++		struct events_stats *stats;
 +
-+	do_write(fd, &nr_groups, sizeof(nr_groups));
++		perf_evsel__group_desc(evsel, buf, size);
++		evname = buf;
 +
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 0) {
-+			const char *name = evsel->group_name ?: "{anon_group}";
-+			u32 leader_idx = evsel->idx;
-+			u32 nr_members = evsel->nr_members;
++		for (i = 0; i < evsel->nr_members; i++) {
++			stats = &self->group_stats[i];
 +
-+			do_write_string(fd, name);
-+			do_write(fd, &leader_idx, sizeof(leader_idx));
-+			do_write(fd, &nr_members, sizeof(nr_members));
++			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
++			nr_events += stats->total_period;
 +		}
 +	}
-+	return 0;
+ 
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	ret = fprintf(fp, "# Samples: %lu%c", nr_samples, unit);
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index e699973c0581..9bc465eb15d7 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1123,6 +1123,24 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 	const struct thread *thread = hists->thread_filter;
+ 	unsigned long nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 	u64 nr_events = hists->stats.total_period;
++	struct perf_evsel *evsel = hists_2_evsel(hists);
++	char buf[512];
++	size_t buflen = sizeof(buf);
++
++	if (symbol_conf.event_group && evsel->nr_members) {
++		int i;
++		struct events_stats *stats;
++
++		perf_evsel__group_desc(evsel, buf, buflen);
++		ev_name = buf;
++
++		for (i = 0; i < evsel->nr_members; i++) {
++			stats = &hists->group_stats[i];
++
++			nr_samples += stats->nr_events[PERF_RECORD_SAMPLE];
++			nr_events += stats->total_period;
++		}
++	}
+ 
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	printed = scnprintf(bf, size,
+@@ -1469,6 +1487,19 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+ 						       HE_COLORSET_NORMAL);
+ 
++	if (symbol_conf.event_group && evsel->nr_members) {
++		int i;
++		struct events_stats *stats;
++
++		ev_name = perf_evsel__group_name(evsel);
++
++		for (i = 0; i < evsel->nr_members; i++) {
++			stats = &evsel->hists.group_stats[i];
++
++			nr_events += stats->nr_events[PERF_RECORD_SAMPLE];
++		}
++	}
++
+ 	nr_events = convert_unit(nr_events, &unit);
+ 	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
+ 			   unit, unit == ' ' ? "" : " ", ev_name);
+diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
+index ae6b941ef3d4..2c0e3e95dbca 100644
+--- a/tools/perf/ui/gtk/browser.c
++++ b/tools/perf/ui/gtk/browser.c
+@@ -305,10 +305,18 @@ int perf_evlist__gtk_browse_hists(struct perf_evlist *evlist,
+ 		const char *evname = perf_evsel__name(pos);
+ 		GtkWidget *scrolled_window;
+ 		GtkWidget *tab_label;
++		char buf[512];
++		size_t size = sizeof(buf);
+ 
+-		if (symbol_conf.event_group &&
+-		    !perf_evsel__is_group_leader(pos))
+-			continue;
++		if (symbol_conf.event_group) {
++			if (!perf_evsel__is_group_leader(pos))
++				continue;
++
++			if (pos->nr_members) {
++				perf_evsel__group_desc(pos, buf, size);
++				evname = buf;
++			}
++		}
+ 
+ 		scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+ 
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index ffdd94e9c9c3..919b4d2ea799 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -404,6 +404,31 @@ const char *perf_evsel__name(struct perf_evsel *evsel)
+ 	return evsel->name ?: "unknown";
+ }
+ 
++const char *perf_evsel__group_name(struct perf_evsel *evsel)
++{
++	return evsel->group_name ?: "anon group";
 +}
 +
-+/*
-  * default get_cpuid(): nothing gets recorded
-  * actual implementation must be in arch/$(ARCH)/util/header.c
-  */
-@@ -1432,6 +1467,31 @@ error:
- 	fprintf(fp, "# pmu mappings: unable to read\n");
- }
- 
-+static void print_group_desc(struct perf_header *ph, int fd __maybe_unused,
-+			     FILE *fp)
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size)
 +{
-+	struct perf_session *session;
-+	struct perf_evsel *evsel;
-+	u32 nr = 0;
++	int ret;
++	struct perf_evsel *pos;
++	const char *group_name = perf_evsel__group_name(evsel);
 +
-+	session = container_of(ph, struct perf_session, header);
++	ret = scnprintf(buf, size, "%s", group_name);
 +
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (perf_evsel__is_group_leader(evsel) &&
-+		    evsel->nr_members > 0) {
-+			fprintf(fp, "# group: %s{%s", evsel->group_name ?: "",
-+				perf_evsel__name(evsel));
++	ret += scnprintf(buf + ret, size - ret, " { %s",
++			 perf_evsel__name(evsel));
 +
-+			nr = evsel->nr_members;
-+		} else if (nr) {
-+			fprintf(fp, ",%s", perf_evsel__name(evsel));
++	for_each_group_member(pos, evsel)
++		ret += scnprintf(buf + ret, size - ret, ", %s",
++				 perf_evsel__name(pos));
 +
-+			if (--nr == 0)
-+				fprintf(fp, "}\n");
-+		}
-+	}
-+}
-+
- static int __event_process_build_id(struct build_id_event *bev,
- 				    char *filename,
- 				    struct perf_session *session)
-@@ -1946,6 +2006,97 @@ error:
- 	return -1;
- }
- 
-+static int process_group_desc(struct perf_file_section *section __maybe_unused,
-+			      struct perf_header *ph, int fd,
-+			      void *data __maybe_unused)
-+{
-+	size_t ret = -1;
-+	u32 i, nr, nr_groups;
-+	struct perf_session *session;
-+	struct perf_evsel *evsel, *leader = NULL;
-+	struct group_desc {
-+		char *name;
-+		u32 leader_idx;
-+		u32 nr_members;
-+	} *desc;
-+
-+	ret = read(fd, &nr_groups, sizeof(nr_groups));
-+	if (ret != sizeof(nr_groups))
-+		return -1;
-+
-+	if (ph->needs_swap)
-+		nr_groups = bswap_32(nr_groups);
-+
-+	ph->env.nr_groups = nr_groups;
-+	if (!nr_groups) {
-+		pr_debug("group desc not available\n");
-+		return 0;
-+	}
-+
-+	desc = calloc(nr_groups, sizeof(*desc));
-+	if (!desc)
-+		return -1;
-+
-+	for (i = 0; i < nr_groups; i++) {
-+		desc[i].name = do_read_string(fd, ph);
-+		if (!desc[i].name)
-+			goto out_free;
-+
-+		ret = read(fd, &desc[i].leader_idx, sizeof(u32));
-+		if (ret != sizeof(u32))
-+			goto out_free;
-+
-+		ret = read(fd, &desc[i].nr_members, sizeof(u32));
-+		if (ret != sizeof(u32))
-+			goto out_free;
-+
-+		if (ph->needs_swap) {
-+			desc[i].leader_idx = bswap_32(desc[i].leader_idx);
-+			desc[i].nr_members = bswap_32(desc[i].nr_members);
-+		}
-+	}
-+
-+	/*
-+	 * Rebuild group relationship based on the group_desc
-+	 */
-+	session = container_of(ph, struct perf_session, header);
-+	session->evlist->nr_groups = nr_groups;
-+
-+	i = nr = 0;
-+	list_for_each_entry(evsel, &session->evlist->entries, node) {
-+		if (evsel->idx == (int) desc[i].leader_idx) {
-+			evsel->leader = NULL;
-+			/* {anon_group} is a dummy name */
-+			if (strcmp(desc[i].name, "{anon_group}"))
-+				evsel->group_name = desc[i].name;
-+			evsel->nr_members = desc[i].nr_members;
-+
-+			BUG_ON(i >= nr_groups);
-+			BUG_ON(nr > 0);
-+
-+			leader = evsel;
-+			nr = evsel->nr_members;
-+			i++;
-+		} else if (nr) {
-+			/* This is a group member */
-+			evsel->leader = leader;
-+			/* group_idx starts from 0 */
-+			evsel->group_idx = leader->nr_members - nr;
-+			nr--;
-+		}
-+	}
-+
-+	BUG_ON(i != nr_groups);
-+	BUG_ON(nr != 0);
-+
-+out_free:
-+	while ((int) --i >= 0)
-+		free(desc[i].name);
-+	free(desc);
++	ret += scnprintf(buf + ret, size - ret, " }");
 +
 +	return ret;
 +}
 +
- struct feature_ops {
- 	int (*write)(int fd, struct perf_header *h, struct perf_evlist *evlist);
- 	void (*print)(struct perf_header *h, int fd, FILE *fp);
-@@ -1985,6 +2136,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
- 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
- 	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
- 	FEAT_OPP(HEADER_PMU_MAPPINGS,	pmu_mappings),
-+	FEAT_OPP(HEADER_GROUP_DESC,	group_desc),
- };
+ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 			struct perf_evsel *first)
+ {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 039c67297388..8d5937d98887 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -114,6 +114,8 @@ extern const char *perf_evsel__sw_names[PERF_COUNT_SW_MAX];
+ int __perf_evsel__hw_cache_type_op_res_name(u8 type, u8 op, u8 result,
+ 					    char *bf, size_t size);
+ const char *perf_evsel__name(struct perf_evsel *evsel);
++const char *perf_evsel__group_name(struct perf_evsel *evsel);
++int perf_evsel__group_desc(struct perf_evsel *evsel, char *buf, size_t size);
  
- struct header_print_data {
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 99bdd3abce59..f143aa7153a2 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -29,6 +29,7 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 	HEADER_BRANCH_STACK,
- 	HEADER_PMU_MAPPINGS,
-+	HEADER_GROUP_DESC,
- 	HEADER_LAST_FEATURE,
- 	HEADER_FEAT_BITS	= 256,
- };
-@@ -79,6 +80,7 @@ struct perf_session_env {
- 	char			*numa_nodes;
- 	int			nr_pmu_mappings;
- 	char			*pmu_mappings;
-+	int			nr_groups;
- };
- 
- struct perf_header {
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
+@@ -240,4 +242,10 @@ static inline struct perf_evsel *hists_2_evsel(struct hists *hists)
+ {
+ 	return container_of(hists, struct perf_evsel, hists);
+ }
++
++#define for_each_group_member(_evsel, _leader) 					\
++for ((_evsel) = list_entry((_leader)->node.next, struct perf_evsel, node); 	\
++     (_evsel) && (_evsel)->leader == (_leader);					\
++     (_evsel) = list_entry((_evsel)->node.next, struct perf_evsel, node))
++
+ #endif /* __PERF_EVSEL_H */
 -- 
 1.7.11.7
 
