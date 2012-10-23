@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab2JWJza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:55:30 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54388 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2JWJz2 (ORCPT
+	id S932880Ab2JWJ4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:56:32 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49934 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab2JWJ4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:55:28 -0400
-Date: Tue, 23 Oct 2012 10:55:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, arnd@arndb.de
-Subject: Re: [PATCH 2/2] Documentation: Describe Device Tree bindings for
- GPIO Regulator driver
-Message-ID: <20121023095523.GA5609@gmail.com>
-References: <1350307020-5910-1-git-send-email-lee.jones@linaro.org>
- <1350307020-5910-2-git-send-email-lee.jones@linaro.org>
- <20121023094536.GA6576@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121023094536.GA6576@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 05:56:30 -0400
+Date: Tue, 23 Oct 2012 11:01:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Min Zhang <mzhang@mvista.com>
+Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: 8250 check iir rdi in interrupt
+Message-ID: <20121023110133.62bed522@pyramind.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.02.1210221633450.28146@nightowl>
+References: <alpine.LFD.2.02.1210221633450.28146@nightowl>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012, Mark Brown wrote:
+> Added module parameter skip_rdi_check to opt out this workaround.
 
-> On Mon, Oct 15, 2012 at 02:17:00PM +0100, Lee Jones wrote:
-> > Here we specify all non-standard bindings which can be used when
-> > requesting the use of an GPIO controlled regulator from Device Tree.
-> > 
-> > Mark Brown <broonie@opensource.wolfsonmicro.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> The reason I didn't get this patch is that you didn't CC me on it...
-> notice what you've done above.
+NAK. Anything like this should be runtime.
 
-Yes, I saw it and corrected it in the end, hence why you received
-it when I resent - my bad.
+> Tested on Radisys ATCA 46XX which uses FPGA 16550-compatible and
+> other generic 16550 UART. It takes from an hour to days to reproduce by
+> pumping inputs to serial console continously using TeraTerm script:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+You turn this on by default but it's a nasty IRQ latency penalty
+on a lot of x86 platforms with the uarts on the lpc bus.
+
+What I am not clear on from this is
+
+- do you see it on both the ports (the bug that is)
+- if you do see it on both are you sure its not in reality a symptom of
+  some other console/irq handling race ?
+
+Alan
