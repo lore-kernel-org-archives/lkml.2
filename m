@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab2JWTFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:05:41 -0400
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:49793
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab2JWTFk (ORCPT
+	id S1757415Ab2JWTKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:10:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54418 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756922Ab2JWTKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:05:40 -0400
-Date: Tue, 23 Oct 2012 21:05:34 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1216253974.20121023210534@eikelenboom.it>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xensource.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-linus-3.7-rc2-tag for v3.7-rc2
-In-Reply-To: <468189240.20121023193753@eikelenboom.it>
-References: <20121023162707.GA16634@phenom.dumpdata.com> <468189240.20121023193753@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 23 Oct 2012 15:10:06 -0400
+Date: Tue, 23 Oct 2012 12:10:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Denis Kirjanov <kirjanov@gmail.com>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
+Message-Id: <20121023121005.ed33061a.akpm@linux-foundation.org>
+In-Reply-To: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+References: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 22 Oct 2012 19:30:58 +0400
+Denis Kirjanov <kirjanov@gmail.com> wrote:
 
-Tuesday, October 23, 2012, 7:37:53 PM, you wrote:
+> fix buffer overrun if no suitable bandwidth found
+> 
+> Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
+> ---
+>  drivers/edac/amd64_edac.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+> index 5a297a2..d85ad9e 100644
+> --- a/drivers/edac/amd64_edac.c
+> +++ b/drivers/edac/amd64_edac.c
+> @@ -188,6 +188,9 @@ static int __amd64_set_scrub_rate(struct pci_dev *ctl, u32 new_bw, u32 min_rate)
+>  		 * scrubrates array.
+>  		 */
+>  	}
+> +	if (i == ARRAY_SIZE(scrubrates)) {
+> +		i--;
+> +	}
+>  
+>  	scrubval = scrubrates[i].scrubval;
+>  
 
-> Hi Konrad,
+That's pretty strange code in there.
 
-> Did you push the tag ?
-> It doesn't seem to be in your git repo.
+If the comment is to be believed, isn't this a suitable fix?
 
-Ah nevermind, it's there now. Sorry for the noise.
+--- a/drivers/edac/amd64_edac.c~a
++++ a/drivers/edac/amd64_edac.c
+@@ -171,7 +171,7 @@ static int __amd64_set_scrub_rate(struct
+ 	 * bandwidth entry that is greater or equal than the setting requested
+ 	 * and program that. If at last entry, turn off DRAM scrubbing.
+ 	 */
+-	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
++	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
+ 		/*
+ 		 * skip scrub rates which aren't recommended
+ 		 * (see F10 BKDG, F3x58)
+_
 
+Also, I don't think "buffer overrun" is an appropriate description here
+- to me, "buffer overrun" implies writing to memory outside the buffer.
+ I'd call this "array overindexing" or similar.
 
-> --
-> Sander
-
-> Tuesday, October 23, 2012, 6:27:07 PM, you wrote:
-
->> Hey Linus,
-
->> Please git pull the following tag:
-
->>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.7-rc2-tag
-
->> which has bug-fixes. Most of them are just code cleanup to make x86 and ARM code
->> work in unison. There is one serious bug-fix which manifested itself in some
->> applications mysteriously getting SIGKILL. Besides that nothing earth-shattering.
-
->> <copied from the signed tag>:
->>  * Fix mysterious SIGSEGV or SIGKILL in applications due to corrupting
->>    of the %eip when returning from a signal handler.
->>  * Fix various ARM compile issues after the merge fallout.
->>  * Continue on making more of the Xen generic code usable by ARM platform.
->>  * Fix SR-IOV passthrough to mirror multifunction PCI devices.
->>  * Fix various compile warnings.
->>  * Remove hypercalls that don't exist anymore.
->> </copy from signed tag>
-
->>  arch/arm/include/asm/xen/interface.h |   12 +++++++++---
->>  arch/arm/include/asm/xen/page.h      |   13 ++++++++++---
->>  arch/arm/xen/grant-table.c           |    2 +-
->>  arch/x86/include/asm/xen/interface.h |    4 ++--
->>  arch/x86/kernel/entry_32.S           |    8 +++++---
->>  arch/x86/kernel/entry_64.S           |    2 +-
->>  arch/x86/xen/enlighten.c             |    2 --
->>  drivers/xen/balloon.c                |    3 +--
->>  drivers/xen/dbgp.c                   |    2 ++
->>  drivers/xen/events.c                 |    4 ++++
->>  drivers/xen/grant-table.c            |    8 ++++----
->>  drivers/xen/sys-hypervisor.c         |    4 +++-
->>  drivers/xen/xen-pciback/vpci.c       |   14 ++++++++++----
->>  drivers/xen/xenbus/xenbus_xs.c       |    2 ++
->>  include/xen/grant_table.h            |    2 +-
->>  include/xen/interface/grant_table.h  |    2 +-
->>  include/xen/interface/memory.h       |   24 ++----------------------
->>  17 files changed, 58 insertions(+), 50 deletions(-)
-
->> David Vrabel (1):
->>       xen/x86: don't corrupt %eip when returning from a signal handler
-
->> Ian Campbell (11):
->>       xen: xenbus: quirk uses x86 specific cpuid
->>       xen: sysfs: include err.h for PTR_ERR etc
->>       xen: sysfs: fix build warning.
->>       xen: XENMEM_translate_gpfn_list was remove ages ago and is unused.
->>       xen: events: pirq_check_eoi_map is X86 specific
->>       xen: grant: use xen_pfn_t type for frame_list.
->>       xen: balloon: don't include e820.h
->>       xen: arm: make p2m operations NOPs
->>       xen: balloon: use correct type for frame_list
->>       xen: arm: comment on why 64-bit xen_pfn_t is safe even on 32 bit
->>       xen: dbgp: Fix warning when CONFIG_PCI is not enabled.
-
->> Konrad Rzeszutek Wilk (1):
->>       xen/xenbus: Fix compile warning.
-
->> Laszlo Ersek (1):
->>       xen PV passthru: assign SR-IOV virtual functions to separate virtual slots
-
->> Wei Yongjun (1):
->>       xen/x86: remove duplicated include from enlighten.c
-
-
-
-
+Finally, when fixing a bug, please always describe the user-visible
+impact of that bug.  You have cc'ed stable on this patch (using the
+incorrect email address, btw) which implies that the effects are serious,
+but people will want to know specific details about those effects when
+considering the patch.
 
