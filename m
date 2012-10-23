@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933039Ab2JWOIS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:08:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49357 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932992Ab2JWOIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:08:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="209486825"
-Date: Tue, 23 Oct 2012 22:07:49 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH -next] printk: fix broken 'console' kernel parameter
-Message-ID: <20121023140749.GA21823@localhost>
-References: <1350999678-17441-1-git-send-email-ming.lei@canonical.com>
+	id S933042Ab2JWOJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:09:50 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:10742 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932291Ab2JWOJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:09:49 -0400
+Message-ID: <5086A52C.2030009@tilera.com>
+Date: Tue, 23 Oct 2012 10:09:48 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350999678-17441-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] arch/tile: avoid build warnings from duplicate ELF_R_xxx
+ #defines
+References: <201210192039.q9JKdUE5003952@farm-0010.internal.tilera.com> <87vce3i4c4.fsf@rustcorp.com.au>
+In-Reply-To: <87vce3i4c4.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 09:41:18PM +0800, Ming Lei wrote:
-> If CONFIG_A11Y_BRAILLE_CONSOLE is not enabled, _braille_console_setup()
-> should return NULL to parse the parameter further in console_setup().
-> 
-> This patch fixes the broken 'console' kernel parameter, which makes the
-> Pandaboard not boot with 'console=ttyO2'.
+On 10/21/2012 11:16 PM, Rusty Russell wrote:
+> Chris Metcalf <cmetcalf@tilera.com> writes:
+>
+>> These are now provided in <asm-generic/module.h>, so clean up warning
+>> by not re-defining them in module.c.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> This change was in linux-next for quite a while, BTW, so there would
+> have been over a month of warnings...
+>
+> Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Not sure if this is related, but I got an early crash with linux-next and
-the first bad commit is
+Thanks.  Yes, I don't always drill into the results of the builds at
+http://kisskb.ellerman.id.au/kisskb/matrix/, but just go by the "Build OK"
+green light.  I'll remember to keep looking at the details more frequently :-)
 
-commit 10db96eb4942a011a76de8c98aabc4f132a882d9
-Author: Joe Perches <joe@perches.com>
-Date:   Tue Oct 23 13:50:17 2012 +1100
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-    printk: move braille console support into separate braille.[ch]
-    files
-
-Thanks,
-Fengguang
