@@ -1,160 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab2JWQq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:46:29 -0400
-Received: from fieldses.org ([174.143.236.118]:36819 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757110Ab2JWQq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:46:27 -0400
-Date: Tue, 23 Oct 2012 12:46:21 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Nix <nix@esperi.org.uk>
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        linux-nfs@vger.kernel.org,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression?
- (also an unrelated ext4 data loss bug)
-Message-ID: <20121023164621.GC3040@fieldses.org>
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
+	id S1757289Ab2JWQsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:48:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61004 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2JWQs3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 12:48:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874nllxi7e.fsf_-_@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351000104-13015-2-git-send-email-irina.tirdea@intel.com>
+References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
+	<1351000104-13015-2-git-send-email-irina.tirdea@intel.com>
+Date: Tue, 23 Oct 2012 09:48:27 -0700
+X-Google-Sender-Auth: UgsaQbHr6VI8obYcaQIIiwEEEWw
+Message-ID: <CAGXu5jLNyOufoekZCzvc0RyjbqzShAacnMMAuNab5AozTdM+Dw@mail.gmail.com>
+Subject: Re: [PATCH 01/26] pstore: allow for big files
+From: Kees Cook <keescook@chromium.org>
+To: Irina Tirdea <irina.tirdea@intel.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Octavian Purdila <octavian.purdila@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 05:32:21PM +0100, Nix wrote:
-> On 23 Oct 2012, J. Bruce Fields uttered the following:
-> > nfs-utils shouldn't be capable of oopsing the kernel, so from my
-> > (selfish) point of view I'd actually rather you stick with whatever you
-> > have and try to reproduce the oops.
-> 
-> Reproduced in 3.6.3, not in 3.6.1, not tried 3.6.2. Capturing it was
-> rendered somewhat difficult by an ext4/JBD2 bug which leads to data loss
-> in /var on every reboot out of 3.6.1 and on some reboots out of 3.6.3 (I
-> have runs of NULs in my logs now, which keep eating the oopses):
-> 
-> [while in 3.6.1]
-> [   88.565698] JBD2: Spotted dirty metadata buffer (dev = dm-5, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-> [   88.799263] JBD2: Spotted dirty metadata buffer (dev = dm-5, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-> [   89.648152] ------------[ cut here ]------------
-> [   89.648386] WARNING: at fs/inode.c:280 drop_nlink+0x25/0x42()
-> [   89.648614] Hardware name: empty
-> [   89.648833] Modules linked in: firewire_ohci firewire_core [last unloaded: microcode]
-> [   89.649382] Pid: 1484, comm: dhcpd Not tainted 3.6.1-dirty #1
-> [   89.649610] Call Trace:
-> [   89.649832]  [<ffffffff810608c0>] warn_slowpath_common+0x83/0x9b
-> [   89.650063]  [<ffffffff810608f2>] warn_slowpath_null+0x1a/0x1c
-> [   89.650292]  [<ffffffff8112efbf>] drop_nlink+0x25/0x42
-> [   89.650533]  [<ffffffff81187112>] ext4_dec_count+0x26/0x28
-> [   89.650763]  [<ffffffff8118abb8>] ext4_rename+0x4ec/0x7b4
-> [   89.650993]  [<ffffffff81125d81>] ? vfs_rename+0xbe/0x3b7
-> [   89.651224]  [<ffffffff81125f3f>] vfs_rename+0x27c/0x3b7
-> [   89.651454]  [<ffffffff81127a53>] sys_renameat+0x1b1/0x228
-> [   89.651682]  [<ffffffff8114bda1>] ? fsnotify+0x226/0x249
-> [   89.651911]  [<ffffffff81239b75>] ? security_inode_permission+0x1e/0x20
-> [   89.652145]  [<ffffffff8111a240>] ? vfs_write+0x116/0x142
-> [   89.652372]  [<ffffffff81127ae5>] sys_rename+0x1b/0x1e
-> [   89.652601]  [<ffffffff814fffa2>] system_call_fastpath+0x16/0x1b
-> [...]
-> [while having just booted into 3.6.1 after some time in 3.6.3: the FS
->  was clean, and fscked on the previous boot into 3.6.3 after a previous
->  instance of this bug]
-> Oct 23 17:18:26 spindle crit: [   67.625319] EXT4-fs error (device dm-5): mb_free_blocks:1300: group 65, block 2143748:freeing already freed block (bit 13828)
-> 
-> This may well be a 3.6.1-specific bug fixed in 3.6.3, but it's hard to
-> tell since most of my reboots are 3.6.1->3.6.3 or vice versa right now.
-> 
-> 
-> Anyway, here's the NFSv4 oops (not a panic: it helps if I remember to
-> turn off panic_on_oops when I come home from the holidays).
-> 
-> It's a lockd problem, and probably happens during delivery of mail over
-> NFS (my mailserver load soars when it happens):
-> 
-> [  813.110354] ------------[ cut here ]------------
-> [  813.110585] kernel BUG at fs/lockd/mon.c:150!
+On Tue, Oct 23, 2012 at 6:47 AM, Irina Tirdea <irina.tirdea@intel.com> wrote:
+> From: Adrian Hunter <adrian.hunter@intel.com>
+>
+> pstore reads all files into memory at mount time. To allow for back ends
+> that will store arbitrarily large files, enhance pstore also to be able
+> to read from the back end as needed.
+>
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> ---
+>  drivers/acpi/apei/erst.c |   16 +++++++++-------
+>  fs/pstore/inode.c        |   26 ++++++++++++++++++++------
+>  fs/pstore/internal.h     |    5 +++--
+>  fs/pstore/platform.c     |   11 +++++++----
+>  fs/pstore/ram.c          |   15 +++++++--------
+>  include/linux/pstore.h   |    7 +++++--
+>  6 files changed, 51 insertions(+), 29 deletions(-)
+>
+> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+> index e4d9d24..f70ba37 100644
+> --- a/drivers/acpi/apei/erst.c
+> +++ b/drivers/acpi/apei/erst.c
+> @@ -931,9 +931,9 @@ static int erst_check_table(struct acpi_table_erst *erst_tab)
+>
+>  static int erst_open_pstore(struct pstore_info *psi);
+>  static int erst_close_pstore(struct pstore_info *psi);
+> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+> -                          struct timespec *time, char **buf,
+> -                          struct pstore_info *psi);
+> +static int erst_reader(u64 *id, enum pstore_type_id *type,
+> +                      struct timespec *time, char **buf, loff_t *size,
+> +                      struct pstore_info *psi);
+>  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+>                        u64 *id, unsigned int part,
+>                        size_t size, struct pstore_info *psi);
+> @@ -987,9 +987,9 @@ static int erst_close_pstore(struct pstore_info *psi)
+>         return 0;
+>  }
+>
+> -static ssize_t erst_reader(u64 *id, enum pstore_type_id *type,
+> -                          struct timespec *time, char **buf,
+> -                          struct pstore_info *psi)
+> +static int erst_reader(u64 *id, enum pstore_type_id *type,
+> +                      struct timespec *time, char **buf, loff_t *size,
+> +                      struct pstore_info *psi)
+>  {
+>         int rc;
+>         ssize_t len = 0;
+> @@ -1051,7 +1051,9 @@ skip:
+>
+>  out:
+>         kfree(rcd);
+> -       return (rc < 0) ? rc : (len - sizeof(*rcd));
+> +       if (!rc)
+> +               *size = len - sizeof(*rcd);
+> +       return rc;
+>  }
+>
+>  static int erst_writer(enum pstore_type_id type, enum kmsg_dump_reason reason,
+> diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+> index 4ab572e..ff0970f 100644
+> --- a/fs/pstore/inode.c
+> +++ b/fs/pstore/inode.c
+> @@ -49,7 +49,8 @@ struct pstore_private {
+>         struct pstore_info *psi;
+>         enum pstore_type_id type;
+>         u64     id;
+> -       ssize_t size;
+> +       loff_t  size;
+> +       bool    big;
+>         char    data[];
+>  };
+>
+> @@ -65,12 +66,13 @@ static void *pstore_ftrace_seq_start(struct seq_file *s, loff_t *pos)
+>  {
+>         struct pstore_private *ps = s->private;
+>         struct pstore_ftrace_seq_data *data;
+> +       loff_t size = ps->size;
+>
+>         data = kzalloc(sizeof(*data), GFP_KERNEL);
+>         if (!data)
+>                 return NULL;
+>
+> -       data->off = ps->size % REC_SIZE;
+> +       data->off = do_div(size,  REC_SIZE);
 
-So nsm_mon_unmon() is being passed a NULL client.
+This modifies ps->size. I don't think you want that?
 
-There are three container patches between 3.6.1 and 3.6.3:
+-Kees
 
-	lockd: per-net NSM client creation and destruction helpers introduced
-	lockd: use rpc client's cl_nodename for id encoding
-	lockd: create and use per-net NSM RPC clients on MON/UNMON requests
+>         data->off += *pos * REC_SIZE;
+>         if (data->off + REC_SIZE > ps->size) {
+>                 kfree(data);
+> @@ -127,6 +129,12 @@ static ssize_t pstore_file_read(struct file *file, char __user *userbuf,
+>
+>         if (ps->type == PSTORE_TYPE_FTRACE)
+>                 return seq_read(file, userbuf, count, ppos);
+> +       if (ps->big) {
+> +               if (ps->psi->file_read)
+> +                       return ps->psi->file_read(ps->id, ps->type, userbuf,
+> +                                               count, ppos, ps->psi);
+> +               return -EFBIG;
+> +       }
+>         return simple_read_from_buffer(userbuf, count, ppos, ps->data, ps->size);
+>  }
+>
+> @@ -271,8 +279,8 @@ int pstore_is_mounted(void)
+>   * Set the mtime & ctime to the date that this record was originally stored.
+>   */
+>  int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+> -                 char *data, size_t size, struct timespec time,
+> -                 struct pstore_info *psi)
+> +                 char *data, loff_t size, struct timespec time,
+> +                 struct pstore_info *psi, bool big)
+>  {
+>         struct dentry           *root = pstore_sb->s_root;
+>         struct dentry           *dentry;
+> @@ -281,6 +289,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+>         char                    name[PSTORE_NAMELEN];
+>         struct pstore_private   *private, *pos;
+>         unsigned long           flags;
+> +       size_t                  inline_size;
+>
+>         spin_lock_irqsave(&allpstore_lock, flags);
+>         list_for_each_entry(pos, &allpstore, list) {
+> @@ -301,12 +310,17 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+>                 goto fail;
+>         inode->i_mode = S_IFREG | 0444;
+>         inode->i_fop = &pstore_file_operations;
+> -       private = kmalloc(sizeof *private + size, GFP_KERNEL);
+> +       if (big)
+> +               inline_size = 0;
+> +       else
+> +               inline_size = size;
+> +       private = kmalloc(sizeof(*private) + inline_size, GFP_KERNEL);
+>         if (!private)
+>                 goto fail_alloc;
+>         private->type = type;
+>         private->id = id;
+>         private->psi = psi;
+> +       private->big = big;
+>
+>         switch (type) {
+>         case PSTORE_TYPE_DMESG:
+> @@ -336,7 +350,7 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id,
+>         if (IS_ERR(dentry))
+>                 goto fail_lockedalloc;
+>
+> -       memcpy(private->data, data, size);
+> +       memcpy(private->data, data, inline_size);
+>         inode->i_size = private->size = size;
+>
+>         inode->i_private = private;
+> diff --git a/fs/pstore/internal.h b/fs/pstore/internal.h
+> index 4847f58..f840159 100644
+> --- a/fs/pstore/internal.h
+> +++ b/fs/pstore/internal.h
+> @@ -50,8 +50,9 @@ extern struct pstore_info *psinfo;
+>  extern void    pstore_set_kmsg_bytes(int);
+>  extern void    pstore_get_records(int);
+>  extern int     pstore_mkfile(enum pstore_type_id, char *psname, u64 id,
+> -                             char *data, size_t size,
+> -                             struct timespec time, struct pstore_info *psi);
+> +                             char *data, loff_t size,
+> +                             struct timespec time, struct pstore_info *psi,
+> +                             bool big);
+>  extern int     pstore_is_mounted(void);
+>
+>  #endif
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index a40da07..108bd69 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -264,7 +264,7 @@ void pstore_get_records(int quiet)
+>  {
+>         struct pstore_info *psi = psinfo;
+>         char                    *buf = NULL;
+> -       ssize_t                 size;
+> +       loff_t                  size;
+>         u64                     id;
+>         enum pstore_type_id     type;
+>         struct timespec         time;
+> @@ -277,9 +277,12 @@ void pstore_get_records(int quiet)
+>         if (psi->open && psi->open(psi))
+>                 goto out;
+>
+> -       while ((size = psi->read(&id, &type, &time, &buf, psi)) > 0) {
+> -               rc = pstore_mkfile(type, psi->name, id, buf, (size_t)size,
+> -                                 time, psi);
+> +       while (1) {
+> +               rc = psi->read(&id, &type, &time, &buf, &size, psi);
+> +               if (rc && rc != -EFBIG)
+> +                       break;
+> +               rc = pstore_mkfile(type, psi->name, id, buf, size,
+> +                                 time, psi, rc == -EFBIG);
+>                 kfree(buf);
+>                 buf = NULL;
+>                 if (rc && (rc != -EEXIST || !quiet))
+> diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+> index 1a4f6da..dd47a87 100644
+> --- a/fs/pstore/ram.c
+> +++ b/fs/pstore/ram.c
+> @@ -131,12 +131,11 @@ ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
+>         return prz;
+>  }
+>
+> -static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+> +static int ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>                                    struct timespec *time,
+> -                                  char **buf,
+> +                                  char **buf, loff_t *size,
+>                                    struct pstore_info *psi)
+>  {
+> -       ssize_t size;
+>         struct ramoops_context *cxt = psi->data;
+>         struct persistent_ram_zone *prz;
+>
+> @@ -150,19 +149,19 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
+>                 prz = ramoops_get_next_prz(&cxt->fprz, &cxt->ftrace_read_cnt,
+>                                            1, id, type, PSTORE_TYPE_FTRACE, 0);
+>         if (!prz)
+> -               return 0;
+> +               return -EINVAL;
+>
+>         /* TODO(kees): Bogus time for the moment. */
+>         time->tv_sec = 0;
+>         time->tv_nsec = 0;
+>
+> -       size = persistent_ram_old_size(prz);
+> -       *buf = kmalloc(size, GFP_KERNEL);
+> +       *size = persistent_ram_old_size(prz);
+> +       *buf = kmalloc(*size, GFP_KERNEL);
+>         if (*buf == NULL)
+>                 return -ENOMEM;
+> -       memcpy(*buf, persistent_ram_old(prz), size);
+> +       memcpy(*buf, persistent_ram_old(prz), *size);
+>
+> -       return size;
+> +       return 0;
+>  }
+>
+>  static size_t ramoops_write_kmsg_hdr(struct persistent_ram_zone *prz)
+> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+> index ee3034a..3a293ff 100644
+> --- a/include/linux/pstore.h
+> +++ b/include/linux/pstore.h
+> @@ -49,8 +49,11 @@ struct pstore_info {
+>         struct mutex    read_mutex;     /* serialize open/read/close */
+>         int             (*open)(struct pstore_info *psi);
+>         int             (*close)(struct pstore_info *psi);
+> -       ssize_t         (*read)(u64 *id, enum pstore_type_id *type,
+> -                       struct timespec *time, char **buf,
+> +       int             (*read)(u64 *id, enum pstore_type_id *type,
+> +                       struct timespec *time, char **buf, loff_t *size,
+> +                       struct pstore_info *psi);
+> +       ssize_t         (*file_read)(u64 id, enum pstore_type_id type,
+> +                       char __user *userbuf, size_t count, loff_t *ppos,
+>                         struct pstore_info *psi);
+>         int             (*write)(enum pstore_type_id type,
+>                         enum kmsg_dump_reason reason, u64 *id,
+> --
+> 1.7.9.5
+>
 
-and that last does change nsm_monitor's call to nsm_mon_unmon, so that's
-almost certainly it....
 
-Looks like there's some confusion about whether nsm_client_get() returns
-NULL or an error?
 
---b.
-
-> [  813.110878] invalid opcode: 0000 [#1] SMP
-> [  813.111173] Modules linked in: firewire_ohci firewire_core [last unloaded: microcode]
-> [  813.111727] CPU 1
-> [  813.111772] Pid: 1040, comm: lockd Not tainted 3.6.3-dirty #1 empty empty/S7010
-> [  813.112388] RIP: 0010:[<ffffffff8120fbbc>]  [<ffffffff8120fbbc>] nsm_mon_unmon+0x64/0x98
-> [  813.112840] RSP: 0018:ffff88062163dcf0  EFLAGS: 00010246
-> [  813.113069] RAX: ffff88062163dcf8 RBX: 0000000000000000 RCX: 0000000000000000
-> [  813.113303] RDX: ffff88062163dd68 RSI: 0000000000000002 RDI: ffff88062163dd40
-> [  813.113537] RBP: ffff88062163dd50 R08: 0000000000000000 R09: ffffffff8120c463
-> [  813.113771] R10: ffffffff8120c463 R11: 0000000000000001 R12: 0000000000000000
-> [  813.114006] R13: ffff88061f067e40 R14: ffff88059c763a00 R15: ffff88062163de28
-> [  813.114241] FS:  0000000000000000(0000) GS:ffff88063fc40000(0000) knlGS:0000000000000000
-> [  813.114651] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  813.114882] CR2: ffffffffff600400 CR3: 0000000001a0b000 CR4: 00000000000007e0
-> [  813.115116] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  813.115350] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  813.115584] Process lockd (pid: 1040, threadinfo ffff88062163c000, task ffff880621611640)
-> [  813.115994] Stack:
-> [  813.116210]  ffff88062163dd90 ffff8805f4e044b1 00000003000186b5 ffffffff00000010
-> [  813.116761]  ffff8805f4e044c1 000000000000008c 0000000000000000 ffff88062163dcf8
-> [  813.117310]  ffff88062163dd68 0000000000000000 ffff8806200ce088 ffff8805f4e04400
-> [  813.117861] Call Trace:
-> [  813.118083]  [<ffffffff8120fee4>] nsm_monitor+0x100/0x157
-> [  813.118315]  [<ffffffff81211b4a>] nlm4svc_retrieve_args+0x62/0xd7
-> [  813.118547]  [<ffffffff81211f49>] nlm4svc_proc_lock+0x3c/0xb5
-> [  813.118779]  [<ffffffff8121167b>] ? nlm4svc_decode_lockargs+0x47/0xb2
-> [  813.119016]  [<ffffffff814d89ca>] svc_process+0x3bf/0x6a1
-> [  813.119246]  [<ffffffff8120d5f0>] lockd+0x127/0x164
-> [  813.119474]  [<ffffffff8120d4c9>] ? set_grace_period+0x8a/0x8a
-> [  813.119708]  [<ffffffff8107bcbc>] kthread+0x8b/0x93
-> [  813.119938]  [<ffffffff815012f4>] kernel_thread_helper+0x4/0x10
-> [  813.120170]  [<ffffffff8107bc31>] ? kthread_worker_fn+0xe1/0xe1
-> [  813.120401]  [<ffffffff815012f0>] ? gs_change+0xb/0xb
-> [  813.120628] Code: b8 10 00 00 00 48 89 45 c0 48 8d 81 8c 00 00 00 b9 08 00 00 00 48 89 45 c8 89 d8 f3 ab 48 8d 45 a8 48 89 55 e0 48 89 45 d8 75 02 <0f> 0b 89 f6 48 c7 02 00 00 00 00 4c 89 c7 48 6b f6 38 ba 00 04
-> [  813.123627] RIP  [<ffffffff8120fbbc>] nsm_mon_unmon+0x64/0x98
-> [  813.123894]  RSP <ffff88062163dcf0>
-> [  813.124129] ---[ end trace 11eb11a091ffd910 ]---
-> 
-> Aside: I am running with this patch, to prevent mounting of one
-> NFS-mounted directory under another from failing all accesses with a
-> spurious -EBUSY, a 3.6 regression -- but I can't see how this could
-> cause it. I'm running with this in 3.6.1 as well:
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 8086636..649a112 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2404,6 +2404,10 @@ out_unalias:
->  	if (likely(!d_mountpoint(alias))) {
->  		__d_move(alias, dentry);
->  		ret = alias;
-> +	} else {
-> +		printk(KERN_WARNING "VFS: __d_move()ing a d_mountpoint(), uh oh\n");
-> +		__d_move(alias, dentry);
-> +		ret = alias;
->  	}
->  out_err:
->  	spin_unlock(&inode->i_lock);
-> 
+-- 
+Kees Cook
+Chrome OS Security
