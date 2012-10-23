@@ -1,229 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab2JWGn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:43:29 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:49657 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab2JWGn1 (ORCPT
+	id S1756614Ab2JWGoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:44:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46124 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab2JWGoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:43:27 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9N6hJUK031552
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2 net-next 2/2] r8169: update the settings for RTL8111G
-Date: Tue, 23 Oct 2012 14:47:11 +0800
-Message-ID: <1350974831-1438-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.7.11.4
-In-Reply-To: <1350974831-1438-1-git-send-email-hayeswang@realtek.com>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
- <1350974831-1438-1-git-send-email-hayeswang@realtek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 23 Oct 2012 02:44:01 -0400
+Date: Mon, 22 Oct 2012 23:43:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
+Message-Id: <20121022234349.27f33f62.akpm@linux-foundation.org>
+In-Reply-To: <20121023063532.GA15870@shutemov.name>
+References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
+	<1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
+	<20121018164502.b32791e7.akpm@linux-foundation.org>
+	<20121018235941.GA32397@shutemov.name>
+	<20121023063532.GA15870@shutemov.name>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the parameters of RTL8111G
+On Tue, 23 Oct 2012 09:35:32 +0300 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 118 ++++++++++++++++++++++++++++++-----
- 1 file changed, 101 insertions(+), 17 deletions(-)
+> On Fri, Oct 19, 2012 at 02:59:41AM +0300, Kirill A. Shutemov wrote:
+> > On Thu, Oct 18, 2012 at 04:45:02PM -0700, Andrew Morton wrote:
+> > > On Mon, 15 Oct 2012 09:00:59 +0300
+> > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > > 
+> > > > H. Peter Anvin doesn't like huge zero page which sticks in memory forever
+> > > > after the first allocation. Here's implementation of lockless refcounting
+> > > > for huge zero page.
+> > > > 
+> > > > We have two basic primitives: {get,put}_huge_zero_page(). They
+> > > > manipulate reference counter.
+> > > > 
+> > > > If counter is 0, get_huge_zero_page() allocates a new huge page and
+> > > > takes two references: one for caller and one for shrinker. We free the
+> > > > page only in shrinker callback if counter is 1 (only shrinker has the
+> > > > reference).
+> > > > 
+> > > > put_huge_zero_page() only decrements counter. Counter is never zero
+> > > > in put_huge_zero_page() since shrinker holds on reference.
+> > > > 
+> > > > Freeing huge zero page in shrinker callback helps to avoid frequent
+> > > > allocate-free.
+> > > 
+> > > I'd like more details on this please.  The cost of freeing then
+> > > reinstantiating that page is tremendous, because it has to be zeroed
+> > > out again.  If there is any way at all in which the kernel can be made
+> > > to enter a high-frequency free/reinstantiate pattern then I expect the
+> > > effects would be quite bad.
+> > > 
+> > > Do we have sufficient mechanisms in there to prevent this from
+> > > happening in all cases?  If so, what are they, because I'm not seeing
+> > > them?
+> > 
+> > We only free huge zero page in shrinker callback if nobody in the system
+> > uses it. Never on put_huge_zero_page(). Shrinker runs only under memory
+> > pressure or if user asks (drop_caches).
+> > Do you think we need an additional protection mechanism?
+> 
+> Andrew?
+> 
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index cdd46de..3a393f7 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -335,6 +335,7 @@ enum rtl_registers {
- #define	RXCFG_FIFO_SHIFT		13
- 					/* No threshold before first PCI xfer */
- #define	RX_FIFO_THRESH			(7 << RXCFG_FIFO_SHIFT)
-+#define	RX_EARLY_OFF			(1 << 11)
- #define	RXCFG_DMA_SHIFT			8
- 					/* Unlimited maximum PCI burst. */
- #define	RX_DMA_BURST			(7 << RXCFG_DMA_SHIFT)
-@@ -2434,6 +2435,15 @@ static void r8168_aldps_enable_1(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
- }
- 
-+static void r8168_aldps_enable_2(struct rtl8169_private *tp)
-+{
-+	if (!(tp->features & RTL_FEATURE_EXTENDED))
-+		return;
-+
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_w1w0_phy(tp, 0x10, 0x0004, 0x0000);
-+}
-+
- static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3400,29 +3410,57 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const u16 mac_ocp_patch[] = {
- 		0xe008, 0xe01b, 0xe01d, 0xe01f,
--		0xe021, 0xe023, 0xe025, 0xe027,
-+		0xe022, 0xe025, 0xe031, 0xe04d,
- 		0x49d2, 0xf10d, 0x766c, 0x49e2,
- 		0xf00a, 0x1ec0, 0x8ee1, 0xc60a,
--
- 		0x77c0, 0x4870, 0x9fc0, 0x1ea0,
- 		0xc707, 0x8ee1, 0x9d6c, 0xc603,
- 		0xbe00, 0xb416, 0x0076, 0xe86c,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--		0x0000, 0xc602, 0xbe00, 0x0000,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--
--		0x0000, 0x0000, 0x0000, 0x0000
-+		0xc602, 0xbe00, 0xa000, 0xc602,
-+		0xbe00, 0x0000, 0x1b76, 0xc202,
-+		0xba00, 0x059c, 0x1b76, 0xc602,
-+		0xbe00, 0x065a, 0x74e6, 0x1b78,
-+		0x46dc, 0x1300, 0xf005, 0x74f8,
-+		0x48c3, 0x48c4, 0x8cf8, 0x64e7,
-+		0xc302, 0xbb00, 0x06a0, 0x74e4,
-+		0x49c5, 0xf106, 0x49c6, 0xf107,
-+		0x48c8, 0x48c9, 0xe011, 0x48c9,
-+		0x4848, 0xe00e, 0x4848, 0x49c7,
-+		0xf00a, 0x48c9, 0xc60d, 0x1d1f,
-+		0x8dc2, 0x1d00, 0x8dc3, 0x1d11,
-+		0x8dc0, 0xe002, 0x4849, 0x94e5,
-+		0xc602, 0xbe00, 0x01f0, 0xe434,
-+		0x49d9, 0xf01b, 0xc31e, 0x7464,
-+		0x49c4, 0xf114, 0xc31b, 0x6460,
-+		0x14fa, 0xfa02, 0xe00f, 0xc317,
-+		0x7460, 0x49c0, 0xf10b, 0xc311,
-+		0x7462, 0x48c1, 0x9c62, 0x4841,
-+		0x9c62, 0xc30a, 0x1c04, 0x8c60,
-+		0xe004, 0x1c15, 0xc305, 0x8c60,
-+		0xc602, 0xbe00, 0x0384, 0xe434,
-+		0xe030, 0xe61c, 0xe906
- 	};
- 	u32 i;
- 
- 	/* Patch code for GPHY reset */
-+	r8168_mac_ocp_write(tp, 0xfc26, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc28, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc2a, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc2c, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc2e, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc30, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc32, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc34, 0x0000);
-+	r8168_mac_ocp_write(tp, 0xfc36, 0x0000);
- 	for (i = 0; i < ARRAY_SIZE(mac_ocp_patch); i++)
--		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);
-+		r8168_mac_ocp_write(tp, 0xf800 + 2 * i, mac_ocp_patch[i]);
- 	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);
- 	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);
-+	r8168_mac_ocp_write(tp, 0xfc2e, 0x059b);
-+	r8168_mac_ocp_write(tp, 0xfc30, 0x0659);
-+	r8168_mac_ocp_write(tp, 0xfc32, 0x069f);
-+	r8168_mac_ocp_write(tp, 0xfc34, 0x01cd);
-+	r8168_mac_ocp_write(tp, 0xfc36, 0x0303);
- 
- 	rtl_apply_firmware(tp);
- 
-@@ -3436,13 +3474,46 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
- 	else
- 		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x0002);
- 
--	rtl_w1w0_phy_ocp(tp, 0xa442, 0x000c, 0x0000);
--	rtl_w1w0_phy_ocp(tp, 0xa4b2, 0x0004, 0x0000);
-+	/* Enable PHY auto speed down */
-+	rtl_writephy(tp, 0x1f, 0x0a44);
-+	rtl_w1w0_phy(tp, 0x11, 0x000c, 0x0000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0bcc);
-+	rtl_w1w0_phy(tp, 0x14, 0x0100, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a44);
-+	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8084);
-+	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
-+	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
-+
-+	/* EEE auto-fallback function */
-+	rtl_writephy(tp, 0x1f, 0x0a4b);
-+	rtl_w1w0_phy(tp, 0x11, 0x0004, 0x0000);
-+
-+	/* Enable UC LPF tune function */
-+	rtl_writephy(tp, 0x1f, 0x0a43);
-+	rtl_writephy(tp, 0x13, 0x8012);
-+	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
-+
-+	rtl_writephy(tp, 0x1f, 0x0c42);
-+	rtl_w1w0_phy(tp, 0x11, 0x4000, 0x2000);
- 
--	r8168_phy_ocp_write(tp, 0xa436, 0x8012);
--	rtl_w1w0_phy_ocp(tp, 0xa438, 0x8000, 0x0000);
-+	/* Improve SWR Efficiency */
-+	rtl_writephy(tp, 0x1f, 0x0bcd);
-+	rtl_writephy(tp, 0x14, 0x5065);
-+	rtl_writephy(tp, 0x14, 0xd065);
-+	rtl_writephy(tp, 0x1f, 0x0bc8);
-+	rtl_writephy(tp, 0x11, 0x5655);
-+	rtl_writephy(tp, 0x1f, 0x0bcd);
-+	rtl_writephy(tp, 0x14, 0x1065);
-+	rtl_writephy(tp, 0x14, 0x9065);
-+	rtl_writephy(tp, 0x14, 0x1065);
- 
--	rtl_w1w0_phy_ocp(tp, 0xc422, 0x4000, 0x2000);
-+	/* ALDPS enable */
-+	r8168_aldps_enable_2(tp);
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
- }
- 
- static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
-@@ -4047,6 +4118,10 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_33:
- 		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
- 		break;
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x40);
-+		break;
- 	}
- }
- 
-@@ -4064,6 +4139,10 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_33:
- 		RTL_W8(PMCH, RTL_R8(PMCH) | 0x80);
- 		break;
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+		RTL_W8(PMCH, RTL_R8(PMCH) | 0x40);
-+		break;
- 	}
- 
- 	r8168_phy_power_up(tp);
-@@ -4169,6 +4248,10 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_34:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
- 		break;
-+	case RTL_GIGA_MAC_VER_40:
-+	case RTL_GIGA_MAC_VER_41:
-+		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
-+		break;
- 	default:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST);
- 		break;
-@@ -5157,7 +5240,8 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
- 	/* Adjust EEE LED frequency */
- 	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
- 
--	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x02, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
-+	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
- }
- 
- static void rtl_hw_start_8168(struct net_device *dev)
--- 
-1.7.11.4
-
+Well, how hard is it to trigger the bad behavior?  One can easily
+create a situation in which that page's refcount frequently switches
+from 0 to 1 and back again.  And one can easily create a situation in
+which the shrinkers are being called frequently.  Run both at the same
+time and what happens?
