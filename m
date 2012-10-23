@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933134Ab2JWPze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 11:55:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47751 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757185Ab2JWPzd (ORCPT
+	id S932938Ab2JWP7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 11:59:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57601 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab2JWP7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 11:55:33 -0400
-Date: Tue, 23 Oct 2012 10:54:48 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
-        jmorris@namei.org, mtk.manpages@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, paulmck@linux.vnet.ibm.com,
-        sds@tycho.nsa.gov, devel@openvz.org, a.p.zijlstra@chello.nl,
-        cmetcalf@tilera.com, linux-driver@qlogic.com, ron.mercer@qlogic.com,
-        viro@zeniv.linux.org.uk, eparis@parisplace.org, tglx@linutronix.de,
-        jitendra.kalsaria@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        ebiederm@xmission.com, casey@schaufler-ca.com
-Subject: Re: [PATCH v6 01/10] ipc: remove forced assignment of selected
- message
-Message-ID: <20121023155448.GA9755@sergelap>
-References: <20121015155800.28348.23561.stgit@localhost.localdomain>
- <20121015155941.28348.88481.stgit@localhost.localdomain>
+	Tue, 23 Oct 2012 11:59:15 -0400
+Message-ID: <5086BECA.9070502@ti.com>
+Date: Tue, 23 Oct 2012 10:59:06 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121015155941.28348.88481.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap5: Update GPIO with address space
+ and interrupts
+References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com> <1350981432-6750-2-git-send-email-s-guiriec@ti.com> <5086AE8E.60106@ti.com> <5086B316.6000001@ti.com>
+In-Reply-To: <5086B316.6000001@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
-> This is a cleanup patch. The assignment is redundant.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+On 10/23/2012 10:09 AM, Benoit Cousson wrote:
+> On 10/23/2012 04:49 PM, Jon Hunter wrote:
+>> Hi Seb,
+>>
+>> On 10/23/2012 03:37 AM, Sebastien Guiriec wrote:
+>>> Add base address and interrupt line inside Device Tree data for
+>>> OMAP5
+>>>
+>>> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+>>> ---
+>>>  arch/arm/boot/dts/omap5.dtsi |   16 ++++++++++++++++
+>>>  1 file changed, 16 insertions(+)
+>>>
+>>> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+>>> index 42c78be..9e39f9f 100644
+>>> --- a/arch/arm/boot/dts/omap5.dtsi
+>>> +++ b/arch/arm/boot/dts/omap5.dtsi
+>>> @@ -104,6 +104,8 @@
+>>>  
+>>>  		gpio1: gpio@4ae10000 {
+>>>  			compatible = "ti,omap4-gpio";
+>>> +			reg = <0x4ae10000 0x200>;
+>>> +			interrupts = <0 29 0x4>;
+>>>  			ti,hwmods = "gpio1";
+>>>  			gpio-controller;
+>>>  			#gpio-cells = <2>;
+>>
+>> I am wondering if we should add the "interrupt-parent" property to add
+>> nodes in the device-tree source. I know that today the interrupt-parent
+>> is being defined globally, but when device-tree maps an interrupt for a
+>> device it searches for the interrupt-parent starting the current device
+>> node.
+>>
+>> So in other words, for gpio1 it will search the gpio1 binding for
+>> "interrupt-parent" and if not found move up a level and search again. It
+>> will keep doing this until it finds the "interrupt-parent".
+>>
+>> Therefore, I believe it will improve search time and hence, boot time if
+>> we have interrupt-parent defined in each node.
+> 
+> Mmm, I'm not that sure. it will increase the size of the blob, so
+> increase the time to load it and then to parse it. Where in the current
+> case, it is just going up to the parent node using the already
+> un-flatten tree in memory and thus that should not take that much time.
 
-> ---
->  ipc/msg.c |    5 +----
->  1 files changed, 1 insertions(+), 4 deletions(-)
-> 
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index a71af5a..2f272fa 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -793,12 +793,9 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
->  				msg = walk_msg;
->  				if (mode == SEARCH_LESSEQUAL &&
->  						walk_msg->m_type != 1) {
-> -					msg = walk_msg;
->  					msgtyp = walk_msg->m_type - 1;
-> -				} else {
-> -					msg = walk_msg;
-> +				} else
->  					break;
-> -				}
->  			}
->  			tmp = tmp->next;
->  		}
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes it will definitely increase the size, so that could slow things down.
+
+> That being said, it might be interesting to benchmark that to see what
+> is the real impact.
+
+Right, I wonder what the key functions are we need to benchmark to get
+an overall feel for what is best? Right now I am seeing some people add
+the interrupt-parent for device nodes and others not. Ideally we should
+be consistent, but at the same time it is probably something that we can
+easily sort out later. So not a big deal either way.
+
+Cheers
+Jon
