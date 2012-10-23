@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab2JWOMc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:12:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755176Ab2JWOMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:12:30 -0400
-Date: Tue, 23 Oct 2012 16:12:19 +0200
-From: Andrew Jones <drjones@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] perf header: Fix numa topology printing
-Message-ID: <20121023141218.GD2772@turtle.usersys.redhat.com>
-References: <20121023072702.GB2772@turtle.usersys.redhat.com>
- <1350999890-6920-1-git-send-email-namhyung@kernel.org>
+	id S1755361Ab2JWONG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:13:06 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34731 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753717Ab2JWOND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:13:03 -0400
+Date: Tue, 23 Oct 2012 10:13:02 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: gregkh@linuxfoundation.org, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2]staging: "ehci-w90x900" Fix typos.
+In-Reply-To: <1350973342-3868-1-git-send-email-justinmattock@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1210231011450.1635-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350999890-6920-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 10:44:49PM +0900, Namhyung Kim wrote:
-> Andrew reported that the commit 7e94cfcc9d20 ("perf header: Use pre-
-> processed session env when printing") regresses the header output.
-> It was because of a missed string pointer calculation in the loop.
+On Mon, 22 Oct 2012, Justin P. Mattock wrote:
+
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
 > 
-> Reported-by: Andrew Jones <drjones@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
 > ---
->  tools/perf/util/header.c |    2 ++
->  1 file changed, 2 insertions(+)
 > 
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 7daad237dea5..566b84c695c8 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -1378,6 +1378,8 @@ static void print_numa_topology(struct perf_header *ph, int fd __maybe_unused,
+> The below patch fixes a typo in staging: "ehci-w90x900"
+
+What does ehci-w90x900 have to do with staging?
+
+>  drivers/usb/host/ehci-w90x900.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
+> index ec59808..a9c28a0 100644
+> --- a/drivers/usb/host/ehci-w90x900.c
+> +++ b/drivers/usb/host/ehci-w90x900.c
+> @@ -13,7 +13,7 @@
 >  
->  		str = tmp + 1;
->  		fprintf(fp, "# node%u cpu list : %s\n", c, str);
-> +
-> +		str += strlen(str) + 1;
->  	}
->  	return;
->  error:
-> -- 
-> 1.7.9.2
->
+>  #include <linux/platform_device.h>
+>  
+> -/*ebable phy0 and phy1 for w90p910*/
+> +/*enable phy0 and phy1 for w90p910*/
 
-works for me
+Why bother to correct the spelling without also correcting the missing 
+whitespace?
 
-Tested-by: Andrew Jones <drjones@redhat.com> 
+>  #define	ENPHY		(0x01<<8)
+>  #define PHY0_CTR	(0xA4)
+>  #define PHY1_CTR	(0xA8)
+
+Alan Stern
+
