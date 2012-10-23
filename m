@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab2JWGph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:45:37 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:33449 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab2JWGpf (ORCPT
+	id S1756592Ab2JWGrV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:47:21 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48113 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2JWGrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:45:35 -0400
-Message-ID: <50863D0A.6040800@acm.org>
-Date: Tue, 23 Oct 2012 08:45:30 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 23 Oct 2012 02:47:19 -0400
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        SCSI Mailing List <linux-scsi@vger.kernel.org>
-Subject: Re: [patch/rfc/rft] sd: allocate request_queue on device's local
- numa node
-References: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <001201cdb0c5$bdf728f0$39e57ad0$%kim@samsung.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+	<001201cdb0c5$bdf728f0$39e57ad0$%kim@samsung.com>
+Date: Tue, 23 Oct 2012 08:47:18 +0200
+Message-ID: <CANGUGtDLAQxjiRgFDhJww1j7qSEshvJbHFKaD_QwmjyK9rBBmQ@mail.gmail.com>
+Subject: Re: [PATCH 02/16 v2] f2fs: add on-disk layout
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/12 21:01, Jeff Moyer wrote:
-> All of the infrastructure is available to allocate a request_queue on a
-> particular numa node, but it isn't being utilized at all.  Wire up the
-> sd driver to allocate the request_queue on the HBA's local numa node.
+2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> This adds a header file describing the on-disk layout of f2fs.
 >
-> This is a request for comments and testing (I've built and booted it,
-> nothing more).  I believe that this should be a performance win, but I
-> have no numbers to back it up as yet.  Suggestions for workloads to test
-> are welcome.
+> Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+> Signed-off-by: Chul Lee <chur.lee@samsung.com>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>  include/linux/f2fs_fs.h |  362 +++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 362 insertions(+)
+>  create mode 100644 include/linux/f2fs_fs.h
 >
-> Cheers,
-> Jeff
->
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index da36a3a..7986483 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1664,7 +1664,8 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
->   	struct request_queue *q;
->   	struct device *dev = shost->dma_dev;
->
-> -	q = blk_init_queue(request_fn, NULL);
-> +	q = blk_init_queue_node(request_fn, NULL,
-> +				dev_to_node(&shost->shost_dev));
->   	if (!q)
->   		return NULL;
+> diff --git a/include/linux/f2fs_fs.h b/include/linux/f2fs_fs.h
+> new file mode 100644
+> index 0000000..bd9c217
+> --- /dev/null
+> +++ b/include/linux/f2fs_fs.h
+> @@ -0,0 +1,362 @@
+> +/**
+> + * include/linux/f2fs_fs.h
 
-Are you sure this approach will always result in the queue being 
-allocated on the same NUMA node as the HCA ? If e.g. a user triggers LUN 
-scanning via sysfs the above code may be invoked on another NUMA node 
-than the node to which the HCA is connected. Also, if you have a look at 
-e.g. scsi_request_fn() or scsi_device_unbusy() you will see that in 
-order to avoid inter-node traffic it's important to allocate the sdev 
-and shost data structures on the same NUMA node. How about the following 
-approach ?
-- Add a variant of scsi_host_alloc() that allows to specify on which
-   NUMA node to allocate the shost structure and also that stores the
-   identity of that node in the shost structure.
-- Modify __scsi_alloc_queue() such that it allocates the sdev structure
-   on the same NUMA node as the shost structure.
-- Modify the SCSI LLD of your choice such that it uses the new
-   scsi_host_alloc() call. According to what is appropriate the NUMA node
-   on which to allocate the shost could be specified by the user or could
-   be identical to the NUMA node of the HCA controlled by the SCSI LLD
-   (see e.g. /sys/devices/pci*/*/numa_node). Please keep in mind that a
-   single PCIe bus may have a minimal distance to more than one NUMA
-   node. See e.g. the diagram at the top of page 8 in
- 
-http://bizsupport1.austin.hp.com/bc/docs/support/SupportManual/c03261871/c03261871.pdf
-   for a system diagram of a NUMA system where each PCIe bus has a
-   minimal distance to two different NUMA nodes.
+Is this file used by user space?
 
-Bart.
+> + *
+> + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+> + *             http://www.samsung.com/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#ifndef _LINUX_F2FS_FS_H
+> +#define _LINUX_F2FS_FS_H
+> +
+> +#include <linux/pagemap.h>
+> +#include <linux/types.h>
+> +
+> +#define F2FS_SUPER_MAGIC       0xF2F52010
+
+In magic.h please.
+
+Marco
