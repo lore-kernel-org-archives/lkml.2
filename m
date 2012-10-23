@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2JWGoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:44:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46124 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755228Ab2JWGoB (ORCPT
+	id S1756497Ab2JWGph (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:45:37 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:33449 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab2JWGpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:44:01 -0400
-Date: Mon, 22 Oct 2012 23:43:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-Id: <20121022234349.27f33f62.akpm@linux-foundation.org>
-In-Reply-To: <20121023063532.GA15870@shutemov.name>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
-	<20121018164502.b32791e7.akpm@linux-foundation.org>
-	<20121018235941.GA32397@shutemov.name>
-	<20121023063532.GA15870@shutemov.name>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 23 Oct 2012 02:45:35 -0400
+Message-ID: <50863D0A.6040800@acm.org>
+Date: Tue, 23 Oct 2012 08:45:30 +0200
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        SCSI Mailing List <linux-scsi@vger.kernel.org>
+Subject: Re: [patch/rfc/rft] sd: allocate request_queue on device's local
+ numa node
+References: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49pq4axre1.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 09:35:32 +0300 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+On 10/22/12 21:01, Jeff Moyer wrote:
+> All of the infrastructure is available to allocate a request_queue on a
+> particular numa node, but it isn't being utilized at all.  Wire up the
+> sd driver to allocate the request_queue on the HBA's local numa node.
+>
+> This is a request for comments and testing (I've built and booted it,
+> nothing more).  I believe that this should be a performance win, but I
+> have no numbers to back it up as yet.  Suggestions for workloads to test
+> are welcome.
+>
+> Cheers,
+> Jeff
+>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+>
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index da36a3a..7986483 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1664,7 +1664,8 @@ struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+>   	struct request_queue *q;
+>   	struct device *dev = shost->dma_dev;
+>
+> -	q = blk_init_queue(request_fn, NULL);
+> +	q = blk_init_queue_node(request_fn, NULL,
+> +				dev_to_node(&shost->shost_dev));
+>   	if (!q)
+>   		return NULL;
 
-> On Fri, Oct 19, 2012 at 02:59:41AM +0300, Kirill A. Shutemov wrote:
-> > On Thu, Oct 18, 2012 at 04:45:02PM -0700, Andrew Morton wrote:
-> > > On Mon, 15 Oct 2012 09:00:59 +0300
-> > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > > 
-> > > > H. Peter Anvin doesn't like huge zero page which sticks in memory forever
-> > > > after the first allocation. Here's implementation of lockless refcounting
-> > > > for huge zero page.
-> > > > 
-> > > > We have two basic primitives: {get,put}_huge_zero_page(). They
-> > > > manipulate reference counter.
-> > > > 
-> > > > If counter is 0, get_huge_zero_page() allocates a new huge page and
-> > > > takes two references: one for caller and one for shrinker. We free the
-> > > > page only in shrinker callback if counter is 1 (only shrinker has the
-> > > > reference).
-> > > > 
-> > > > put_huge_zero_page() only decrements counter. Counter is never zero
-> > > > in put_huge_zero_page() since shrinker holds on reference.
-> > > > 
-> > > > Freeing huge zero page in shrinker callback helps to avoid frequent
-> > > > allocate-free.
-> > > 
-> > > I'd like more details on this please.  The cost of freeing then
-> > > reinstantiating that page is tremendous, because it has to be zeroed
-> > > out again.  If there is any way at all in which the kernel can be made
-> > > to enter a high-frequency free/reinstantiate pattern then I expect the
-> > > effects would be quite bad.
-> > > 
-> > > Do we have sufficient mechanisms in there to prevent this from
-> > > happening in all cases?  If so, what are they, because I'm not seeing
-> > > them?
-> > 
-> > We only free huge zero page in shrinker callback if nobody in the system
-> > uses it. Never on put_huge_zero_page(). Shrinker runs only under memory
-> > pressure or if user asks (drop_caches).
-> > Do you think we need an additional protection mechanism?
-> 
-> Andrew?
-> 
+Are you sure this approach will always result in the queue being 
+allocated on the same NUMA node as the HCA ? If e.g. a user triggers LUN 
+scanning via sysfs the above code may be invoked on another NUMA node 
+than the node to which the HCA is connected. Also, if you have a look at 
+e.g. scsi_request_fn() or scsi_device_unbusy() you will see that in 
+order to avoid inter-node traffic it's important to allocate the sdev 
+and shost data structures on the same NUMA node. How about the following 
+approach ?
+- Add a variant of scsi_host_alloc() that allows to specify on which
+   NUMA node to allocate the shost structure and also that stores the
+   identity of that node in the shost structure.
+- Modify __scsi_alloc_queue() such that it allocates the sdev structure
+   on the same NUMA node as the shost structure.
+- Modify the SCSI LLD of your choice such that it uses the new
+   scsi_host_alloc() call. According to what is appropriate the NUMA node
+   on which to allocate the shost could be specified by the user or could
+   be identical to the NUMA node of the HCA controlled by the SCSI LLD
+   (see e.g. /sys/devices/pci*/*/numa_node). Please keep in mind that a
+   single PCIe bus may have a minimal distance to more than one NUMA
+   node. See e.g. the diagram at the top of page 8 in
+ 
+http://bizsupport1.austin.hp.com/bc/docs/support/SupportManual/c03261871/c03261871.pdf
+   for a system diagram of a NUMA system where each PCIe bus has a
+   minimal distance to two different NUMA nodes.
 
-Well, how hard is it to trigger the bad behavior?  One can easily
-create a situation in which that page's refcount frequently switches
-from 0 to 1 and back again.  And one can easily create a situation in
-which the shrinkers are being called frequently.  Run both at the same
-time and what happens?
+Bart.
