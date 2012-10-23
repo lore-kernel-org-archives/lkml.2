@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab2JWIg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 04:36:29 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:43780 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751728Ab2JWIg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 04:36:26 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v2] pinctrl/nomadik: use irq_create_mapping()
-Date: Tue, 23 Oct 2012 10:35:39 +0200
-Message-ID: <1350981339-13316-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S1756928Ab2JWIhd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 04:37:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55595 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756883Ab2JWIh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 04:37:27 -0400
+From: Sebastien Guiriec <s-guiriec@ti.com>
+To: Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v2 4/4] ARM: dts: omap5: Update MMC with address space and interrupts
+Date: Tue, 23 Oct 2012 10:37:12 +0200
+Message-ID: <1350981432-6750-5-git-send-email-s-guiriec@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1350981432-6750-1-git-send-email-s-guiriec@ti.com>
+References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Add base address and interrupt line inside Device Tree data for
+OMAP5.
 
-Since in the DT case, the linear domain path will not allocate
-descriptors for the IRQs, we need to use irq_create_mapping()
-for mapping hwirqs to Linux IRQs, so these descriptors get
-created on-the-fly in this case.
-
-ChangeLog v1->v2:
-
-- Just use irq_create_mapping() in the .to_irq function since
-  this is called before unmasking or enabling any interrupt
-  lines, so irq_find_mapping() should be sufficient for the
-  IRQ handler function.
-
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
 ---
- drivers/pinctrl/pinctrl-nomadik.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/omap5.dtsi |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 01aea1c..db5e0b3 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1056,7 +1056,7 @@ static int nmk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 	struct nmk_gpio_chip *nmk_chip =
- 		container_of(chip, struct nmk_gpio_chip, chip);
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 413df94..b643cd3 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -285,6 +285,8 @@
  
--	return irq_find_mapping(nmk_chip->domain, offset);
-+	return irq_create_mapping(nmk_chip->domain, offset);
- }
+ 		mmc1: mmc@4809c000 {
+ 			compatible = "ti,omap4-hsmmc";
++			reg = <0x4809c000 0x400>;
++			interrupts = <0 83 0x4>;
+ 			ti,hwmods = "mmc1";
+ 			ti,dual-volt;
+ 			ti,needs-special-reset;
+@@ -292,24 +294,32 @@
  
- #ifdef CONFIG_DEBUG_FS
+ 		mmc2: mmc@480b4000 {
+ 			compatible = "ti,omap4-hsmmc";
++			reg = <0x480b4000 0x400>;
++			interrupts = <0 86 0x4>;
+ 			ti,hwmods = "mmc2";
+ 			ti,needs-special-reset;
+ 		};
+ 
+ 		mmc3: mmc@480ad000 {
+ 			compatible = "ti,omap4-hsmmc";
++			reg = <0x480ad000 0x400>;
++			interrupts = <0 94 0x4>;
+ 			ti,hwmods = "mmc3";
+ 			ti,needs-special-reset;
+ 		};
+ 
+ 		mmc4: mmc@480d1000 {
+ 			compatible = "ti,omap4-hsmmc";
++			reg = <0x480d1000 0x400>;
++			interrupts = <0 96 0x4>;
+ 			ti,hwmods = "mmc4";
+ 			ti,needs-special-reset;
+ 		};
+ 
+ 		mmc5: mmc@480d5000 {
+ 			compatible = "ti,omap4-hsmmc";
++			reg = <0x480d5000 0x400>;
++			interrupts = <0 59 0x4>;
+ 			ti,hwmods = "mmc5";
+ 			ti,needs-special-reset;
+ 		};
 -- 
-1.7.11.3
+1.7.10.4
 
