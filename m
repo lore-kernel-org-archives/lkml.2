@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab2JWJYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:24:10 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:11188 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932695Ab2JWJYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:24:08 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Arnd Bergmann <arnd@arndb.de>, Jonas Bonn <jonas@southpole.se>
-CC: <linux-arch@vger.kernel.org>, <linux@openrisc.net>,
-        <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-xtensa@linux-xtensa.org>, James Hogan <james.hogan@imgtec.com>,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: [PATCH] asm-generic/io.h: remove asm/cacheflush.h include
-Date: Tue, 23 Oct 2012 10:21:57 +0100
-Message-ID: <1350984117-17369-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.7.7.6
-X-OriginalArrivalTime: 23 Oct 2012 09:23:30.0916 (UTC) FILETIME=[1121DA40:01CDB100]
+	id S932832Ab2JWJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:29:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55758 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932792Ab2JWJ3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 05:29:40 -0400
+Date: Tue, 23 Oct 2012 10:29:27 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] rbtree: include linux/compiler.h for definition of
+ __always_inline
+Message-ID: <20121023092927.GB19167@mudshark.cambridge.arm.com>
+References: <1350925287-15929-1-git-send-email-will.deacon@arm.com>
+ <CANN689HrJMyQSXTjwJtMmyxJvccgMd-9EzRA-JsgDCp+STX6qw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_10_23_10_23_32
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANN689HrJMyQSXTjwJtMmyxJvccgMd-9EzRA-JsgDCp+STX6qw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Including <asm/cacheflush.h> from <asm-generic/io.h> prevents
-cacheflush.h being able to use I/O functions like readl and writel due
-to circular include dependencies. It doesn't appear as if anything from
-cacheflush.h is actually used by the generic io.h, so remove the
-include.
+On Mon, Oct 22, 2012 at 10:56:21PM +0100, Michel Lespinasse wrote:
+> On Mon, Oct 22, 2012 at 10:01 AM, Will Deacon <will.deacon@arm.com> wrote:
+> > rb_erase_augmented is a static function annotated with __always_inline.
+> > This causes a compile failure when attempting to use the rbtree
+> > implementation as a library (e.g. kvm tool):
+> >
+> > rbtree_augmented.h:125:24: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘void’
+> >
+> > This patch includes linux/compiler.h in rbtree_augmented.h so that the
+> > __always_inline macro is resolved correctly.
+> >
+> > Cc: Pekka Enberg <penberg@kernel.org>
+> > Cc: Michel Lespinasse <walken@google.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> 
+> Just curious - what are you going to implement with augmented rbtrees
+> in kvm tool ?
+> 
+> If the basic rbtree or the interval tree implementations are
+> sufficient for your usage, you should try using that (in which case
+> you won't need this header fix).
 
-I've compile tested a defconfig compilation of blackfin, openrisc (which
-needed <asm/pgtable.h> including from it's <asm/io.h> to get the PAGE_*
-definitions), and xtensa.
+kvm tool uses interval rbtrees for things like keeping track of virtual
+devices, although it looks like Ingo implemented the augment callbacks
+while moving to -rc1.
 
-Other architectures which use asm-generic/io.h are score and unicore32,
-and looking at their io.h I don't see any obvious problems.
+> But either way, the header fix is correct and will be required when
+> someone wants to use augmented rbtrees outside of the kernel. I just
+> didn't think that day would come so fast :)
+> 
+> Reviewed-by: Michel Lespinasse <walken@google.com>
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonas Bonn <jonas@southpole.se>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
----
-Any compile testing of score and unicore32 anybody could provide would
-be great.
+Thanks Michel!
 
- arch/openrisc/include/asm/io.h |    1 +
- include/asm-generic/io.h       |    1 -
- 2 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/openrisc/include/asm/io.h b/arch/openrisc/include/asm/io.h
-index 07f5299..7c69139 100644
---- a/arch/openrisc/include/asm/io.h
-+++ b/arch/openrisc/include/asm/io.h
-@@ -30,6 +30,7 @@
- #define PIO_MASK		0
- 
- #include <asm-generic/io.h>
-+#include <asm/pgtable.h>
- 
- extern void __iomem *__ioremap(phys_addr_t offset, unsigned long size,
- 				pgprot_t prot);
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 448303b..616eea5 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -12,7 +12,6 @@
- #define __ASM_GENERIC_IO_H
- 
- #include <asm/page.h> /* I/O is all done through memory accesses */
--#include <asm/cacheflush.h>
- #include <linux/types.h>
- 
- #ifdef CONFIG_GENERIC_IOMAP
--- 
-1.7.7.6
-
-
+Will
