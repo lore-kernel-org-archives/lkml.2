@@ -1,86 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab2JWVua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:50:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56928 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab2JWVu2 (ORCPT
+	id S933484Ab2JWVun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:50:43 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:49975 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932749Ab2JWVum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:50:28 -0400
-Date: Tue, 23 Oct 2012 14:50:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: David Miller <davem@davemloft.net>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        Steve Capper <Steve.Capper@arm.com>
-Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-Id: <20121023145027.40710e7a.akpm@linux-foundation.org>
-In-Reply-To: <20121023101125.GA20210@mudshark.cambridge.arm.com>
-References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
-	<20121002150104.da57fa94.akpm@linux-foundation.org>
-	<20121017130125.GH5973@mudshark.cambridge.arm.com>
-	<20121017.112620.1865348978594874782.davem@davemloft.net>
-	<20121017155401.GJ5973@mudshark.cambridge.arm.com>
-	<20121018150502.3dee7899.akpm@linux-foundation.org>
-	<20121019091016.GA4582@mudshark.cambridge.arm.com>
-	<20121019114955.3a0c2b66.akpm@linux-foundation.org>
-	<20121022103503.GA26619@mudshark.cambridge.arm.com>
-	<20121022111843.4406850d.akpm@linux-foundation.org>
-	<20121023101125.GA20210@mudshark.cambridge.arm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 17:50:42 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lr0M7jF20=
+X-RZG-CLASS-ID: mo00
+Date: Tue, 23 Oct 2012 23:50:32 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: when to switch from early_ioremap to ioremap
+Message-ID: <20121023215032.GA12908@aepfle.de>
+References: <20121023194233.GA23588@aepfle.de>
+ <CAE9FiQV-FF9F7P6s3kMBjuyR3jWZ_VFERt83UVZmc7P37gLeTA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQV-FF9F7P6s3kMBjuyR3jWZ_VFERt83UVZmc7P37gLeTA@mail.gmail.com>
+User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 11:11:25 +0100
-Will Deacon <will.deacon@arm.com> wrote:
+On Tue, Oct 23, Yinghai Lu wrote:
 
-> On Mon, Oct 22, 2012 at 07:18:43PM +0100, Andrew Morton wrote:
-> > On Mon, 22 Oct 2012 11:35:03 +0100
-> > Will Deacon <will.deacon@arm.com> wrote:
-> > 
-> > > On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
-> > > > Ho hum.  I'll drop
-> > > > mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
-> > > > shall assume that you'll sort things out at the appropriate time.
-> > > 
-> > > Happy to sort it out once I work out what's going wrong!
-> > 
-> > The patch "ARM: mm: Transparent huge page support for LPAE systems" is
-> > not present in linux-next, so this patch ("mm: thp: Set the accessed
-> > flag for old pages on access fault") will not compile?
-> 
-> This patch ("mm: thp: Set the accessed flag for old pages on access fault")
-> doesn't depend on "ARM: mm: Transparent huge page support for LPAE systems"
-> because currently transparent huge pages cannot be enabled for ARM in
-> mainline (or linux-next). update_mmu_cache_pmd is only called from
-> mm/huge_memory.c, which depends on CONFIG_TRANSPARENT_HUGEPAGE=y.
-> 
-> As for the new huge_pmd_set_accessed function... there's a similar situation
-> for the do_huge_pmd_wp_page function: it's called from mm/memory.c but is
-> only defined in mm/huge_memory.c. Looks like the compiler optimises those
-> calls away because pmd_trans_huge and friends constant-fold to 0.
+> Also early_ioremap has slot limitation: 4. and you should not hold one
+> slot too long, otherwise other users could
+> have problem to reach the limit.
 
-Ah, OK.
+Thanks. After which init call is ioremap available anymway?
 
-"mm: thp: Set the accessed flag for old pages on access fault" clashes
-in a non-trivial way with linux-next changes, due to the sched-numa
-changes (sigh).  This is a problem for me, because I either need to
-significantly alter your patch (so it isn't applicable to mainline) or
-I need to stage your patch ahead of linux-next, then fix up linux-next
-every day after I've pulled and re-merged it.
-
-I'm unsure what your timing is.  Can you carry "mm: thp: Set the
-accessed flag for old pages on access fault" until either the whole
-patchset is ready to merge or until the sched-numa situation has been
-cleared up?
+Olaf
