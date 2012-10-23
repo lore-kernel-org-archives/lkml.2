@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2JWLEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 07:04:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49414 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688Ab2JWLEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 07:04:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,634,1344236400"; 
-   d="scan'208";a="159311571"
-Message-ID: <50867A2B.5020606@linux.intel.com>
-Date: Tue, 23 Oct 2012 14:06:19 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755896Ab2JWLFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 07:05:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45599 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750979Ab2JWLFJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 07:05:09 -0400
+Date: Tue, 23 Oct 2012 12:05:07 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        David Dajun Chen <dchen@diasemi.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Patch v3 2/7] Regulator: DA9055 Regulator driver
+Message-ID: <20121023110506.GU4477@opensource.wolfsonmicro.com>
+References: <1349950164.7957.23.camel@dhruva>
+ <1350986545.23353.2.camel@dhruva>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] gpiolib: add gpio get direction support
-References: <1350913454-26927-1-git-send-email-mathias.nyman@linux.intel.com> <CACRpkdbxfL+1NQ73ve8Hz4VKaVMzJS-P7H50kSNVODAU9mm7QA@mail.gmail.com>
-In-Reply-To: <CACRpkdbxfL+1NQ73ve8Hz4VKaVMzJS-P7H50kSNVODAU9mm7QA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QOa9dl9wYIBIim/b"
+Content-Disposition: inline
+In-Reply-To: <1350986545.23353.2.camel@dhruva>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 01:23 AM, Linus Walleij wrote:
-> On Mon, Oct 22, 2012 at 3:44 PM, Mathias Nyman
-> <mathias.nyman@linux.intel.com>  wrote:
->
->> If the .get_direction callback is set, then gpiolib will use it
->> for showing correct gpio direction in sysfs and debug. If not set
->> then it will work the old way; e.g. guessing everything is input
->> until direction is set.
->
-> If the driver cannot report the direction setting you *could*
-> cache the result of all calls to gpio_direction_output()
-> and gpio_direction_input() somewhere. But I don't know
-> if it's a good idea.
->
-> Anyway, if the callback is only called internally in the GPIOlib
-> why are you making the function public to the entire
-> kernel
 
-Thought I'd do it the same was as gpio_direction_output() and 
-gpio_direction_input(), but if there is no need for getting the 
-direction outside gpiolob then it can be skipped. Main motivation was to 
-get correct direction values in debug and sysfs after boot.
+--QOa9dl9wYIBIim/b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-gpiolib currently uses cached values of gpio_direction_output/input() in 
-sysfs. If the .get_direction callback exists it is used to refresh the 
-cached values.
+On Tue, Oct 23, 2012 at 03:32:25PM +0530, Ashish Jangam wrote:
+> Does this patch looks good for you?
 
-I'll write a new patch without the public gpio_get_direction().
+Don't top post and don't send contentless pings.  I've not yet read the
+patch and as previously explained nagging like this just means things
+take longer; you'd achieve more with basic stuff like using subject
+lines appropriate to the subsystem you're submitting against.
 
--Mathias
+--QOa9dl9wYIBIim/b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhnnLAAoJELSic+t+oim9XLoP/0bfavjLYSImiQyUjJXIvduT
+xoxYpgNDCFSGOaj8r/BgTJJ5a8RCH+VBXXOdph4JiZfnFRwm+DHUaKeCcp5tjcF1
+Jw4m8dN+B5HLz2gNa2zQNjQUztoSKvLnivpj+3nd+iu1ovxgdFGuLUVHghBWtGZ6
+vmbC+C2V5OSSpoZuO04N3YJIL9UJUkmHopKCm8pk1SG6nh+vmFy0GSF57oOg8rWd
+w3+6HGRyLdFgC2iBJ7Gnza08pP2NGHrpyM0amWaQpIBoPl17/DHp9sWxE0HCETtT
+uephdVlHaOBtWwLw0RcjfSfZXuYuaewaMqQp2+FrPVFrxGlRO7YSKGX4SG8dFfYh
+pXoSXLFOac18f1aG8nDZ/wdpI/4peu7BKtGr7lxYmOJVHo82QZT2lk66TVL+LInQ
+DT/vR8YiYILjbRmHeRQlr4FVT01Ri8M+6ClcJP8FLagw7Sc18WF63ZD1ktA/s5LN
+YUeUhh/2u0xDzfWMmvMyNbSABvHHHjAkjUClovlQquqTHZNIQZaoC9zAs3Q4hO3u
+1wCimKpwYflPw87qrt49s1i+ogzfsDxdbs1iInXeUXBshyBn0r8rLnX6vFZIvK4U
+uJh7Or5zGVq2FBcY8nfYjiqcB3ucRaCJNhh8zS7l3SXdfVgvmh0lqh60IOjuysL1
+LhuBJrTPK9lNyOuOpTLI
+=1Tl2
+-----END PGP SIGNATURE-----
+
+--QOa9dl9wYIBIim/b--
