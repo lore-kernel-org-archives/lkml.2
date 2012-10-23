@@ -1,87 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965746Ab2JWX2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:28:30 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57113 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934083Ab2JWX22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:28:28 -0400
-Date: Tue, 23 Oct 2012 19:28:13 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Nix <nix@esperi.org.uk>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121023232813.GF28626@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Bryan Schumaker <bjschuma@netapp.com>,
-	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
-	gregkh@linuxfoundation.org,
-	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-	Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <20121023221913.GC28626@thunk.org>
- <87bofsn5zm.fsf@spindle.srvr.nix>
+	id S934095Ab2JWXeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:34:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57794 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933587Ab2JWXeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 19:34:07 -0400
+Date: Wed, 24 Oct 2012 00:33:56 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 007/193] arch/arm: remove CONFIG_EXPERIMENTAL
+Message-ID: <20121023233356.GY21164@n2100.arm.linux.org.uk>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org> <1351022666-6960-8-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87bofsn5zm.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1351022666-6960-8-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 12:06:21AM +0100, Nix wrote:
-> I note that the patch is in the latest stable releases of 3.4.x and
-> 3.5.x, which are IIRC end-of-lifed. I'd say that if your patch does
-> indeed fix it, this justifies pushing out new releases of both these
-> stable kernels with just this patch in, just to make sure people taking
-> the latest stable kernel from those releases don't eat their
-> filesystems.
+On Tue, Oct 23, 2012 at 01:01:20PM -0700, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
 
-Eric is in the process of reviewing the bug, and creating a repro case
-so we can definitely show that my theory is sound, and that the bug
-has been fixed by my proposed fix.  We know that my patch definitely
-restores the behaviour previous to commit eeecef0af5, so it can't
-hurt, but we do want to make 100% sure that it really fixes the
-problem.  (I found the potential bug by desk checking the all of the
-commits between v3.6.1 and v3.6.3, and none of the other commits
-triggered my WTF alarm, but we want to have a easy repro case so we
-can be 100% sure it's been fixed.  It's always nice when theory is
-backed up with empircal evidence.  :-)
-
-Until then, it should also be fine to just revert that commit on the
-other stable kernels.
-
-> The bug did really quite a lot of damage to my /home fs in only a few
-> minutes of uptime, given how few files I wrote to it. What it could have
-> done to a more conventional distro install with everything including
-> /home on one filesystem, I shudder to think.
-
-Well, the problem won't show up if the journal has wrapped.  So it
-will only show up if the system has been rebooted twice in fairly
-quick succession.  A full conventional distro install probably
-wouldn't have triggered a bug... although someone who habitually
-reboots their laptop instead of using suspend/resume or hiberbate, or
-someone who is trying to bisect the kernel looking for some other bug
-could easily trip over this --- which I guess is how you got hit by
-it.
-
-Regards,
-
-						- Ted
+I have a patch queued up for -rc which removes a number of these, but
+specifically leaves some which do cause people problems.  So I'd
+appreciate it if we kept some of these (EXPERIMENTAL) tags even if we
+do drop the dependency.
