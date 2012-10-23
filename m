@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab2JWTWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:22:40 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:64673 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756960Ab2JWTWj (ORCPT
+	id S933405Ab2JWTYx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:24:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50705 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932223Ab2JWTYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:22:39 -0400
-Message-ID: <5086EE7C.2080608@tilera.com>
-Date: Tue, 23 Oct 2012 15:22:36 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 23 Oct 2012 15:24:51 -0400
+Date: Tue, 23 Oct 2012 20:24:48 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
+        perex@perex.cz, tiwai@suse.de, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 6/6] Add a codec driver for SI476X MFD
+Message-ID: <20121023192448.GB18814@opensource.wolfsonmicro.com>
+References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net>
+ <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
-References: <20121016223508.GR2616@ZenIV.linux.org.uk> <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com> <20121019213548.GR2616@ZenIV.linux.org.uk> <5082A1F1.3080303@tilera.com> <20121020153401.GT2616@ZenIV.linux.org.uk> <20121020171643.GU2616@ZenIV.linux.org.uk> <5086D432.4070008@tilera.com> <20121023184122.GZ2616@ZenIV.linux.org.uk>
-In-Reply-To: <20121023184122.GZ2616@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LyciRD1jyfeSSjG0"
+Content-Disposition: inline
+In-Reply-To: <1351017872-32488-7-git-send-email-andrey.smirnov@convergeddevices.net>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 2:41 PM, Al Viro wrote:
-> On Tue, Oct 23, 2012 at 01:30:26PM -0400, Chris Metcalf wrote:
->> As you had suggested in an earlier email, I went ahead and eliminated the
->> special pt_regs handling for sigaltstack, rt_sigreturn, and clone.  (Also a
->> tilepro-specific syscall that was also using PTREG_SYSCALL.)  I'll send it
->> separately and you can include it in your tree if you like.
-> OK by me...  Or just pull this arch-tile into a separate branch in your
-> tree, add commit on top of it and I'll pull that.
 
-Done in 
+--LyciRD1jyfeSSjG0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git viro-signal-tile
+On Tue, Oct 23, 2012 at 11:44:32AM -0700, Andrey Smirnov wrote:
+> This commit add a sound codec driver for Silicon Laboratories 476x
+> series of AM/FM radio chips.
 
-Thanks!
+I already merged a driver for this.  If there are any changes you should
+send incremental updates rather than a full new driver.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+--LyciRD1jyfeSSjG0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhu74AAoJELSic+t+oim9ZhIP/1PnsA60QsrOkXOK0fl3hyJQ
+8H3IDs+hKaCKPq9boNH5NWzmRt3cC2d85zHbHhTpdrYlUgeVwqLH53efBDLsvHUY
+7PmroDehG9eQXMS37fqg03gcEDPtn1hwMQpusCb5iasNMVDyJPoW2kANdFaCY5tZ
+fFgqqchoqtKYkG7S8cMUlj//pGoXMtSlHJJmkIjalkG0DD0LbHsUY/9SWExpxaEs
+KC94HRd6J/xKZ4rDSneA7cw7AqgaYD41jcYtAcZaz9tyu37x0tL2ifogGPsEUH8p
+dJMORptLciaX1OEUBHymEeANn2V/UM/kzHg2HgDDrJgT10A8oMRz7gIdx58V5Zik
+aj/7FPwruK1NdmcazlZUa49p8GMNFxapHQIzLsLP+jEDAhjZrZNAZw/ZbdmvHB6d
+CzqnF4Mi7fm31gNlizgirijJ/g+5XjSVS21jgsV4sOV3WJziPVJQx5X/XT/oetKt
+1O8vS3oFOTCbSvQV7ETo4Lj9RJ7EFcs1ep7b9kO1U9CgbdHiN9rosdOU8oYLvH7C
+N/LqdJCZy96yTBj5nYeDXF811lonnZNHD13hnBpE7nIyo3ZfzremTfXZ2VPmNapC
+1TSGmFCbPgcEw21mF/OlDQe4IMn61TJoq+9LiiOkUEUYfa/KhNF5UQ42TlH5fox9
+pZIEz9MxkbBjlYnBIMEC
+=0V4D
+-----END PGP SIGNATURE-----
+
+--LyciRD1jyfeSSjG0--
