@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab2JWMJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:09:09 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49076 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753374Ab2JWMJH (ORCPT
+	id S1756075Ab2JWMKE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:10:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41153 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab2JWMKD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:09:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <50862E02.6020002@intel.com>
-References: <1350886279-6141-1-git-send-email-zheng.z.yan@intel.com>
-	<1350886279-6141-2-git-send-email-zheng.z.yan@intel.com>
-	<1350902138.2768.86.camel@twins>
-	<50862E02.6020002@intel.com>
-Date: Tue, 23 Oct 2012 14:09:05 +0200
-Message-ID: <CABPqkBSzh1K5eDsnmrQdE9=YEkctvqLgfEyQe7wnS9ZbNqt9-Q@mail.gmail.com>
-Subject: Re: [PATCH 1/6] perf, x86: Basic Haswell LBR call stack support
-From: Stephane Eranian <eranian@google.com>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Tue, 23 Oct 2012 08:10:03 -0400
+Message-ID: <1350994159.13456.9.camel@twins>
+Subject: Re: [PATCH 04/34] perf, x86: Support the TSX intx/intx_cp qualifiers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Date: Tue, 23 Oct 2012 14:09:19 +0200
+In-Reply-To: <1350602382-12771-5-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+	 <1350602382-12771-5-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 7:41 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> On 10/22/2012 06:35 PM, Peter Zijlstra wrote:
->> On Mon, 2012-10-22 at 14:11 +0800, Yan, Zheng wrote:
->>> --- a/include/uapi/linux/perf_event.h
->>> +++ b/include/uapi/linux/perf_event.h
->>> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
->>>         PERF_SAMPLE_BRANCH_ABORT        = 1U << 7, /* transaction aborts */
->>>         PERF_SAMPLE_BRANCH_INTX         = 1U << 8, /* in transaction (flag) */
->>>         PERF_SAMPLE_BRANCH_NOTX         = 1U << 9, /* not in transaction (flag) */
->>> +       PERF_SAMPLE_BRANCH_CALL_STACK   = 1U << 10, /* call stack */
->>>
->>> -       PERF_SAMPLE_BRANCH_MAX          = 1U << 10, /* non-ABI */
->>> +       PERF_SAMPLE_BRANCH_MAX          = 1U << 11, /* non-ABI */
->>>  };
->>
->> You add an ABI sample type without mentioning it in your changelog.. I
->> think I'll stop reading here.
->>
-> Ok, I will add the ABI change to the change log. Do you think we should hide this
-> branch sample type from user?
->
-Certainly not. what's the point of this?
-Unless, it is so broken that it does not work at all.
+On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
+> @@ -826,7 +827,8 @@ static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
+>                 return true;
+>  
+>         /* implicit branch sampling to correct PEBS skid */
+> -       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1)
+> +       if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
+> +           x86_pmu.intel_cap.pebs_format < 2)
+>                 return true;
+>  
+>         return false; 
 
-> Regards
-> Yan, Zheng
+This seems unrelated to TSX, I suppose it belongs in the previous patch?
