@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965528Ab2JWVEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:04:52 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40606 "EHLO smtp.outflux.net"
+	id S965465Ab2JWVEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:04:51 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38822 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933690Ab2JWUFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933692Ab2JWUFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:12 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 059/193] drivers/lguest: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:12 -0700
-Message-Id: <1351022666-6960-60-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Andrew Jones <drjones@redhat.com>, Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH 055/193] drivers/input/misc: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:08 -0700
+Message-Id: <1351022666-6960-56-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,24 +28,55 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>
+CC: Ashish Jangam <ashish.jangam@kpitcummins.com>
+CC: Andrew Jones <drjones@redhat.com>
+CC: Donggeun Kim <dg77.kim@samsung.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/lguest/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/misc/Kconfig |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/lguest/Kconfig b/drivers/lguest/Kconfig
-index 34ae49d..6cdcdb0 100644
---- a/drivers/lguest/Kconfig
-+++ b/drivers/lguest/Kconfig
-@@ -1,6 +1,6 @@
- config LGUEST
- 	tristate "Linux hypervisor example code"
--	depends on X86_32 && EXPERIMENTAL && EVENTFD
-+	depends on X86_32 && EVENTFD
- 	select HVC_DRIVER
- 	---help---
- 	  This is a very simple module which allows you to run
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7c0f1ec..a7719a2 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -290,8 +290,7 @@ config INPUT_ATI_REMOTE2
+ 	  called ati_remote2.
+ 
+ config INPUT_KEYSPAN_REMOTE
+-	tristate "Keyspan DMR USB remote control (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Keyspan DMR USB remote control"
+ 	depends on USB_ARCH_HAS_HCD
+ 	select USB
+ 	help
+@@ -340,7 +339,6 @@ config INPUT_POWERMATE
+ 
+ config INPUT_YEALINK
+ 	tristate "Yealink usb-p1k voip phone"
+-	depends on EXPERIMENTAL
+ 	depends on USB_ARCH_HAS_HCD
+ 	select USB
+ 	help
+@@ -356,7 +354,6 @@ config INPUT_YEALINK
+ 
+ config INPUT_CM109
+ 	tristate "C-Media CM109 USB I/O Controller"
+-	depends on EXPERIMENTAL
+ 	depends on USB_ARCH_HAS_HCD
+ 	select USB
+ 	help
+@@ -434,7 +431,7 @@ config INPUT_PCF50633_PMU
+ 
+ config INPUT_PCF8574
+ 	tristate "PCF8574 Keypad input device"
+-	depends on I2C && EXPERIMENTAL
++	depends on I2C
+ 	help
+ 	  Say Y here if you want to support a keypad connected via I2C
+ 	  with a PCF8574.
 -- 
 1.7.9.5
 
