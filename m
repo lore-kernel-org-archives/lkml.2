@@ -1,67 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757164Ab2JWQ1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:27:22 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35163 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab2JWQ1U (ORCPT
+	id S1757248Ab2JWQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:27:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47926 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2JWQ1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:27:20 -0400
-Date: Tue, 23 Oct 2012 17:27:18 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: rwright@hp.com
-Cc: linux-kernel@vger.kernel.org, tmac@hp.com, hpa@zytor.com
-Subject: Re: [PATCH RFC] function probe_roms accessing improper addresses
-Message-ID: <20121023162718.GA32085@srcf.ucam.org>
-References: <20121019153015.GD28212@srcf.ucam.org>
- <201210231605.q9NG51KW022791@filesys1.fc.hp.com>
+	Tue, 23 Oct 2012 12:27:53 -0400
+Date: Tue, 23 Oct 2012 11:27:28 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
+        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
+        jmorris@namei.org, mtk.manpages@gmail.com,
+        kosaki.motohiro@jp.fujitsu.com, paulmck@linux.vnet.ibm.com,
+        sds@tycho.nsa.gov, devel@openvz.org, a.p.zijlstra@chello.nl,
+        cmetcalf@tilera.com, linux-driver@qlogic.com, ron.mercer@qlogic.com,
+        viro@zeniv.linux.org.uk, eparis@parisplace.org, tglx@linutronix.de,
+        jitendra.kalsaria@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        ebiederm@xmission.com, casey@schaufler-ca.com
+Subject: Re: [PATCH v6 04/10] ipc: add new SHM_SET command for sys_shmctl()
+ call
+Message-ID: <20121023162728.GC9755@sergelap>
+References: <20121015155800.28348.23561.stgit@localhost.localdomain>
+ <20121015155956.28348.36765.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201210231605.q9NG51KW022791@filesys1.fc.hp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20121015155956.28348.36765.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 10:05:01AM -0600, Randy Wright wrote:
-
-> On the first: one way to be compliant with such a requirement would be 
-> to design systems that implement softfail in this particular region.   
-> What about a system that hardfails, but on which the resulting machine
-> check can be handled by the kernel machine check handler?  Would
-> appropriate re-ordering of the kernel initialization code to support
-> such systems be acceptable?
-
-Good question. I don't maintain that code, so I can't really answer 
-it...
-
-> Also, let me mention a possible amendment to your first idea: what if
-> the mandate that probing be supported were qualified by some attribute
-> that could be indicated in the UEFI environment?  For example: instead
-> of just a hole in the UEFI memory map, what if this range was
-> specifically present and typed as EfiUnusableMemory?  Another idea for
-> UEFI systems - but one requiring a UEFI specification change - might be
-> adding a UEFI variable that if present, indicates any area not
-> explicitly included and typed in the UEFI memory map (including the
-> legacy adapter region) must be explicitly avoided by an OS.
-
-Yeah, I think if it were marked unusable we could probably justify 
-staying away from it.
-
-> > 2) Don't call probe_roms() by default, but leave it up to the graphics 
-> > drivers. If they can get the rom by any other means then don't call it.
+Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
+> New SHM_SET command will be interpreted exactly as IPC_SET, but also will
+> update key, cuid and cgid values. IOW, it allows to change existent key value.
+> The fact, that key is not used is checked before update. Otherwise -EEXIST is
+> returned.
 > 
-> One the second idea: there are a quite a lot of video drivers in the kernel
-> source tree.  Do you have a suggestion for how to evaluate which ones 
-> rely on the setup performed by probe_roms?
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-Realistically - intel, radeon and nouveau. Basically, anything that 
-calls pci_map_rom() and is under drivers/gpu/drm. I'll look into a patch 
-that does that.
+Looks sane (modulo 'fallsthrough' comment already requested)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+
+> ---
+>  include/uapi/linux/shm.h   |    1 +
+>  ipc/compat.c               |    1 +
+>  ipc/shm.c                  |   13 +++++++++++--
+>  security/selinux/hooks.c   |    1 +
+>  security/smack/smack_lsm.c |    1 +
+>  5 files changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index ec36fa1..d7413fd 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -56,6 +56,7 @@ struct shmid_ds {
+>  /* ipcs ctl commands */
+>  #define SHM_STAT 	13
+>  #define SHM_INFO 	14
+> +#define SHM_SET		15
+>  
+>  /* Obsolete, used only for backwards compatibility */
+>  struct	shminfo {
+> diff --git a/ipc/compat.c b/ipc/compat.c
+> index af30d13..35c750d 100644
+> --- a/ipc/compat.c
+> +++ b/ipc/compat.c
+> @@ -692,6 +692,7 @@ long compat_sys_shmctl(int first, int second, void __user *uptr)
+>  
+>  
+>  	case IPC_SET:
+> +	case SHM_SET:
+>  		if (version == IPC_64) {
+>  			err = get_compat_shmid64_ds(&s64, uptr);
+>  		} else {
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 80b0046..aebc50d 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -636,6 +636,9 @@ copy_shmid_from_user(struct shmid64_ds *out, void __user *buf, int version)
+>  		out->shm_perm.uid	= tbuf_old.shm_perm.uid;
+>  		out->shm_perm.gid	= tbuf_old.shm_perm.gid;
+>  		out->shm_perm.mode	= tbuf_old.shm_perm.mode;
+> +		out->shm_perm.cuid	= tbuf_old.shm_perm.cuid;
+> +		out->shm_perm.cgid	= tbuf_old.shm_perm.cgid;
+> +		out->shm_perm.key	= tbuf_old.shm_perm.key;
+>  
+>  		return 0;
+>  	    }
+> @@ -740,12 +743,13 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+>  	struct shmid_kernel *shp;
+>  	int err;
+>  
+> -	if (cmd == IPC_SET) {
+> +	if (cmd == IPC_SET || cmd == SHM_SET) {
+>  		if (copy_shmid_from_user(&shmid64, buf, version))
+>  			return -EFAULT;
+>  	}
+>  
+> -	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid, cmd,
+> +	ipcp = ipcctl_pre_down(ns, &shm_ids(ns), shmid,
+> +			       (cmd != SHM_SET) ? cmd : IPC_SET,
+>  			       &shmid64.shm_perm, 0);
+>  	if (IS_ERR(ipcp))
+>  		return PTR_ERR(ipcp);
+> @@ -759,6 +763,10 @@ static int shmctl_down(struct ipc_namespace *ns, int shmid, int cmd,
+>  	case IPC_RMID:
+>  		do_shm_rmid(ns, ipcp);
+>  		goto out_up;
+> +	case SHM_SET:
+> +		err = ipc_update_key(&shm_ids(ns), &shmid64.shm_perm, ipcp);
+> +		if (err)
+> +			break;
+>  	case IPC_SET:
+>  		err = ipc_update_perm(&shmid64.shm_perm, ipcp);
+>  		if (err)
+> @@ -938,6 +946,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+>  	}
+>  	case IPC_RMID:
+>  	case IPC_SET:
+> +	case SHM_SET:
+>  		err = shmctl_down(ns, shmid, cmd, buf, version);
+>  		return err;
+>  	default:
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index 24ab414..62b2447 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -5027,6 +5027,7 @@ static int selinux_shm_shmctl(struct shmid_kernel *shp, int cmd)
+>  		perms = SHM__GETATTR | SHM__ASSOCIATE;
+>  		break;
+>  	case IPC_SET:
+> +	case SHM_SET:
+>  		perms = SHM__SETATTR;
+>  		break;
+>  	case SHM_LOCK:
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 38be92c..c7eabc9 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -2121,6 +2121,7 @@ static int smack_shm_shmctl(struct shmid_kernel *shp, int cmd)
+>  		may = MAY_READ;
+>  		break;
+>  	case IPC_SET:
+> +	case SHM_SET:
+>  	case SHM_LOCK:
+>  	case SHM_UNLOCK:
+>  	case IPC_RMID:
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
