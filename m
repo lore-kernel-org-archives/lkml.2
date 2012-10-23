@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965287Ab2JWUte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:49:34 -0400
-Received: from mail.x86-64.org ([217.9.48.20]:56316 "EHLO mail.x86-64.org"
+	id S965238Ab2JWUtT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:49:19 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:41280 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757519Ab2JWUtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:49:32 -0400
-Date: Tue, 23 Oct 2012 22:49:26 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Denis Kirjanov <kirjanov@gmail.com>, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
-Message-ID: <20121023204926.GA20787@aftab.osrc.amd.com>
-References: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
- <20121023121005.ed33061a.akpm@linux-foundation.org>
- <20121023202612.GA20526@aftab.osrc.amd.com>
- <20121023133709.21e9cb72.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023133709.21e9cb72.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933660Ab2JWUFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:23 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 130/193] drivers/video/geode: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:23 -0700
+Message-Id: <1351022666-6960-131-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 01:37:09PM -0700, Andrew Morton wrote:
-> This is still strange. What's the point in having the initial loop
-> even consider the last element in the array if we know we'll be using
-> it anyway?
+This config item has not carried much meaning for a while now and is
+almost always enabled by default. As agreed during the Linux kernel
+summit, remove it.
 
-You're right, yours is better.
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/video/geode/Kconfig |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Now you only need to give me a proper patch with your S-O-B and we're
-ready to go :).
-
-Thanks.
-
+diff --git a/drivers/video/geode/Kconfig b/drivers/video/geode/Kconfig
+index c5d8ba4..21e351a 100644
+--- a/drivers/video/geode/Kconfig
++++ b/drivers/video/geode/Kconfig
+@@ -2,14 +2,14 @@
+ # Geode family framebuffer configuration
+ #
+ config FB_GEODE
+-	bool "AMD Geode family framebuffer support (EXPERIMENTAL)"
+-	depends on FB && PCI && EXPERIMENTAL && X86
++	bool "AMD Geode family framebuffer support"
++	depends on FB && PCI && X86
+ 	---help---
+ 	  Say 'Y' here to allow you to select framebuffer drivers for
+ 	  the AMD Geode family of processors.
+ 
+ config FB_GEODE_LX
+-	tristate "AMD Geode LX framebuffer support (EXPERIMENTAL)"
++	tristate "AMD Geode LX framebuffer support"
+ 	depends on FB && FB_GEODE
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+@@ -24,8 +24,8 @@ config FB_GEODE_LX
+ 	  If unsure, say N.
+ 
+ config FB_GEODE_GX
+-	tristate "AMD Geode GX framebuffer support (EXPERIMENTAL)"
+-	depends on FB && FB_GEODE && EXPERIMENTAL
++	tristate "AMD Geode GX framebuffer support"
++	depends on FB && FB_GEODE
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+@@ -39,8 +39,8 @@ config FB_GEODE_GX
+ 	  If unsure, say N.
+ 
+ config FB_GEODE_GX1
+-	tristate "AMD Geode GX1 framebuffer support (EXPERIMENTAL)"
+-	depends on FB && FB_GEODE && EXPERIMENTAL
++	tristate "AMD Geode GX1 framebuffer support"
++	depends on FB && FB_GEODE
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
 -- 
-Regards/Gruss,
-Boris.
+1.7.9.5
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
