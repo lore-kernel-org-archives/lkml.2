@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917Ab2JWU0Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:26:16 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58099 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757506Ab2JWU0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:26:13 -0400
+	id S933982Ab2JWU0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:26:21 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:55680 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933945Ab2JWU0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:26:17 -0400
+Date: Tue, 23 Oct 2012 22:26:12 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Denis Kirjanov <kirjanov@gmail.com>, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH] edac: fix buffer overrun if no suitable bandwidth found
+Message-ID: <20121023202612.GA20526@aftab.osrc.amd.com>
+References: <1350919858-26202-1-git-send-email-kirjanov@gmail.com>
+ <20121023121005.ed33061a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20121024072347.65f3e930@notabene.brown>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-62-git-send-email-keescook@chromium.org>
-	<20121024072347.65f3e930@notabene.brown>
-Date: Tue, 23 Oct 2012 13:26:11 -0700
-X-Google-Sender-Auth: yHKsXxTU56OKKCkj3hKSOlSNpH8
-Message-ID: <CAGXu5j+QqZVjKWZyeSp1nYjP66UCZ9tzARJpeLLeJf9n-BoEhw@mail.gmail.com>
-Subject: Re: [PATCH 061/193] drivers/md: remove CONFIG_EXPERIMENTAL
-From: Kees Cook <keescook@chromium.org>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023121005.ed33061a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 1:23 PM, NeilBrown <neilb@suse.de> wrote:
-> On Tue, 23 Oct 2012 13:02:14 -0700 Kees Cook <keescook@chromium.org> wrote:
->
->> This config item has not carried much meaning for a while now and is
->> almost always enabled by default. As agreed during the Linux kernel
->> summit, remove it.
->>
->> CC: Neil Brown <neilb@suse.de>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->>  drivers/md/Kconfig |   25 ++++++++++++-------------
->>  1 file changed, 12 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
->> index 91a02ee..f583e96 100644
->> --- a/drivers/md/Kconfig
->> +++ b/drivers/md/Kconfig
->> @@ -155,10 +155,9 @@ config MD_RAID456
->>         If unsure, say Y.
->>
->>  config MULTICORE_RAID456
->> -     bool "RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL)"
->> +     bool "RAID-4/RAID-5/RAID-6 Multicore processing"
->>       depends on MD_RAID456
->>       depends on SMP
->> -     depends on EXPERIMENTAL
->>       ---help---
->>         Enable the raid456 module to dispatch per-stripe raid operations to a
->>         thread pool.
->
-> I'm happy to remove the "depends on EXPERIMENTAL".
-> I'm not so happy to remove the "(EXPERIMENTAL)" text.  That code really
-> shouldn't be used in production - just for experiments.
+On Tue, Oct 23, 2012 at 12:10:05PM -0700, Andrew Morton wrote:
+> That's pretty strange code in there.
+> 
+> If the comment is to be believed, isn't this a suitable fix?
+> 
+> --- a/drivers/edac/amd64_edac.c~a
+> +++ a/drivers/edac/amd64_edac.c
+> @@ -171,7 +171,7 @@ static int __amd64_set_scrub_rate(struct
+>  	 * bandwidth entry that is greater or equal than the setting requested
+>  	 * and program that. If at last entry, turn off DRAM scrubbing.
+>  	 */
+> -	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
+> +	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
+>  		/*
+>  		 * skip scrub rates which aren't recommended
+>  		 * (see F10 BKDG, F3x58)
+> _
+> 
+> Also, I don't think "buffer overrun" is an appropriate description here
+> - to me, "buffer overrun" implies writing to memory outside the buffer.
+>  I'd call this "array overindexing" or similar.
+> 
+> Finally, when fixing a bug, please always describe the user-visible
+> impact of that bug.  You have cc'ed stable on this patch (using the
+> incorrect email address, btw) which implies that the effects are serious,
+> but people will want to know specific details about those effects when
+> considering the patch.
 
-No problem; I've updated the patch to leave the title alone.
+Right, I took it for correctness' sake but after a heavy massaging. And
+this is only a hypothetical case since we're always falling back to the
+last element of scrubrates array which turns off scrubbing, based on the
+supplied bandwidth. Thus no need for stable, IMO.
 
-Thanks!
+Let me know if this is what you had in mind.
 
--Kees
+ [ And yes, maybe I should rewrite this to de-awkwardize it :) ]
+
+--
+>From 70f063eb9aa9674613a21fb8e3f21ec4df0629c7 Mon Sep 17 00:00:00 2001
+From: Denis Kirjanov <kirjanov@gmail.com>
+Date: Mon, 22 Oct 2012 19:30:58 +0400
+Subject: [PATCH] amd64_edac: Fix hypothetical out-of-bounds access
+
+Make sure we stay within scrubrates' array bounds.
+
+Boris: this is a correctness fix only because the loop terminates
+earlier due to us capping scrubbing bandwidth to 0.
+
+Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ drivers/edac/amd64_edac.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index 501bfb938f26..73d9108d6200 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -181,14 +181,16 @@ static int __amd64_set_scrub_rate(struct pci_dev *ctl, u32 new_bw, u32 min_rate)
+ 
+ 		if (scrubrates[i].bandwidth <= new_bw)
+ 			break;
+-
+-		/*
+-		 * if no suitable bandwidth found, turn off DRAM scrubbing
+-		 * entirely by falling back to the last element in the
+-		 * scrubrates array.
+-		 */
+ 	}
+ 
++	/*
++	 * if no suitable bandwidth found, turn off DRAM scrubbing
++	 * entirely by falling back to the last element in the scrubrates
++	 * array.
++	 */
++	if (i == ARRAY_SIZE(scrubrates))
++		i--;
++
+ 	scrubval = scrubrates[i].scrubval;
+ 
+ 	pci_write_bits32(ctl, SCRCTRL, scrubval, 0x001F);
+-- 
+1.8.0
+
+Thanks.
 
 -- 
-Kees Cook
-Chrome OS Security
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
