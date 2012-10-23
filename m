@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2JWNup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:50:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:43748 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab2JWNuo convert rfc822-to-8bit (ORCPT
+	id S933014Ab2JWNuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:50:54 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59574 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757032Ab2JWNuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:50:44 -0400
-MIME-Version: 1.0
-Date: Tue, 23 Oct 2012 09:50:42 -0400
-Message-ID: <CAHFgRy_oKH2iMLC39JfGDaO9sziHwcXOpctuncKHssh5BQM0Cw@mail.gmail.com>
-Subject: GIT 3.7.0-rc2+ -- INFO: suspicious RCU usage -- include/linux/cgroup.h:566
- suspicious rcu_dereference_check() usage!
-From: Miles Lane <miles.lane@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Oct 2012 09:50:50 -0400
+Subject: Re: [Pv-drivers] 3.7-rc2 regression : file copied to CIFS-mounted
+ directory corrupted
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
+        edumazet@google.com, linux-kernel@vger.kernel.org,
+        jongman heo <jongman.heo@samsung.com>
+In-Reply-To: <1103939870.6550404.1350986530909.JavaMail.root@vmware.com>
+References: <1103939870.6550404.1350986530909.JavaMail.root@vmware.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Oct 2012 15:50:46 +0200
+Message-ID: <1351000246.8609.1926.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[    3.110632] [ INFO: suspicious RCU usage. ]
-[    3.110632] 3.7.0-rc2+ #44 Not tainted
-[    3.110632] -------------------------------
-[    3.110632] include/linux/cgroup.h:566 suspicious
-rcu_dereference_check() usage!
-[    3.110632]
-[    3.110632] other info that might help us debug this:
-[    3.110632]
-[    3.110632]
-[    3.110632] rcu_scheduler_active = 1, debug_locks = 1
-[    3.110632] 2 locks held by kdevtmpfs/22:
-[    3.110632]  #0:  (sb_writers){.+.+.+}, at: [<ffffffff810f896e>]
-mnt_want_write+0x1f/0x46
-[    3.110632]  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at:
-[<ffffffff810e9e98>] kern_path_create+0x7e/0x13f
-[    3.110632]
-[    3.110632] stack backtrace:
-[    3.110632] Pid: 22, comm: kdevtmpfs Not tainted 3.7.0-rc2+ #44
-[    3.110632] Call Trace:
-[    3.110632]  [<ffffffff8106b054>] lockdep_rcu_suspicious+0xfc/0x105
-[    3.110632]  [<ffffffff8119a707>] task_subsys_state.constprop.8+0x68/0x70
-[    3.110632]  [<ffffffff8119adbe>] devcgroup_inode_mknod+0x20/0x9e
-[    3.110632]  [<ffffffff81192798>] ? security_capable+0x13/0x15
-[    3.110632]  [<ffffffff81037ce4>] ? ns_capable+0x48/0x60
-[    3.110632]  [<ffffffff810ea36f>] vfs_mknod+0x64/0xb0
-[    3.110632]  [<ffffffff81251468>] handle_create.isra.2+0x13f/0x1b0
-[    3.110632]  [<ffffffff81251582>] ? devtmpfsd+0xa9/0x156
-[    3.110632]  [<ffffffff812515a5>] ? devtmpfsd+0xcc/0x156
-[    3.110632]  [<ffffffff812514d9>] ? handle_create.isra.2+0x1b0/0x1b0
-[    3.110632]  [<ffffffff812515c7>] devtmpfsd+0xee/0x156
-[    3.110632]  [<ffffffff812514d9>] ? handle_create.isra.2+0x1b0/0x1b0
-[    3.110632]  [<ffffffff81047ffb>] kthread+0xac/0xb4
-[    3.110632]  [<ffffffff81047f4f>] ? __kthread_parkme+0x60/0x60
-[    3.110632]  [<ffffffff81363e6c>] ret_from_fork+0x7c/0xb0
-[    3.110632]  [<ffffffff81047f4f>] ? __kthread_parkme+0x60/0x60
+On Tue, 2012-10-23 at 03:02 -0700, Shreyas Bhatewara wrote:
+
+Please dont top post on netdev or lkml
+
+> Well, actually the driver does split large frags into frags of VMXNET3_MAX_TX_BUF_SIZE bytes each.
+> 
+> vmxnet3_drv.c
+>  711         while (len) {
+>  712                 u32 buf_size;
+>  713
+>  714                 if (len < VMXNET3_MAX_TX_BUF_SIZE) {
+>  715                         buf_size = len;
+>  716                         dw2 |= len;
+>  717                 } else {
+>  718                         buf_size = VMXNET3_MAX_TX_BUF_SIZE;
+>  719                         /* spec says that for TxDesc.len, 0 == 2^14 */
+>  720                 }
+>  721
+> ....
+>  743
+>  744                 len -= buf_size;
+>  745                 buf_offset += buf_size;
+>  746         }
+
+Only the skb head is handled in the code you copy/pasted.
+
+You need to generalize that to code in lines ~754
+
+
+Then, the number of estimated descriptors is bad :
+
+/* conservatively estimate # of descriptors to use */
+count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
+	skb_shinfo(skb)->nr_frags + 1;
+
+
+Yes, you need a more precise estimation and vmxnet3_map_pkt() should
+eventually split too big frags.
+
+
+
