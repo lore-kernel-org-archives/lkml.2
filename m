@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014Ab2JWNuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:50:54 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59574 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab2JWNuu (ORCPT
+	id S933063Ab2JWNvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:51:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42894 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932978Ab2JWNvh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:50:50 -0400
-Subject: Re: [Pv-drivers] 3.7-rc2 regression : file copied to CIFS-mounted
- directory corrupted
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Shreyas Bhatewara <sbhatewara@vmware.com>
-Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
-        edumazet@google.com, linux-kernel@vger.kernel.org,
-        jongman heo <jongman.heo@samsung.com>
-In-Reply-To: <1103939870.6550404.1350986530909.JavaMail.root@vmware.com>
-References: <1103939870.6550404.1350986530909.JavaMail.root@vmware.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Oct 2012 15:50:46 +0200
-Message-ID: <1351000246.8609.1926.camel@edumazet-glaptop>
+	Tue, 23 Oct 2012 09:51:37 -0400
+Message-ID: <1351000250.13456.34.camel@twins>
+Subject: Re: [PATCH 05/34] perf, x86: Report PEBS event in a raw format
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Date: Tue, 23 Oct 2012 15:50:50 +0200
+In-Reply-To: <20121023133000.GX16230@one.firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+	 <1350602382-12771-6-git-send-email-andi@firstfloor.org>
+	 <1350995474.13456.12.camel@twins>
+	 <20121023133000.GX16230@one.firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 03:02 -0700, Shreyas Bhatewara wrote:
-
-Please dont top post on netdev or lkml
-
-> Well, actually the driver does split large frags into frags of VMXNET3_MAX_TX_BUF_SIZE bytes each.
+On Tue, 2012-10-23 at 15:30 +0200, Andi Kleen wrote:
+> > Also, there's an alignment issue there, the raw.data is 32bit offset,
+> > the record is u64 aligned, leaving the output stream offset, wrecking
+> > things.
 > 
-> vmxnet3_drv.c
->  711         while (len) {
->  712                 u32 buf_size;
->  713
->  714                 if (len < VMXNET3_MAX_TX_BUF_SIZE) {
->  715                         buf_size = len;
->  716                         dw2 |= len;
->  717                 } else {
->  718                         buf_size = VMXNET3_MAX_TX_BUF_SIZE;
->  719                         /* spec says that for TxDesc.len, 0 == 2^14 */
->  720                 }
->  721
-> ....
->  743
->  744                 len -= buf_size;
->  745                 buf_offset += buf_size;
->  746         }
+> Can you explain more? Not sure I understand.
 
-Only the skb head is handled in the code you copy/pasted.
+PERF_SAMPLE_RAW has a u32 size header and starts the data after that.
+This means you PERF_SAMPLE_RAW output ends up on a u32 aligned end
+address -- assuming the data is a u64 multiple, this is not good.
 
-You need to generalize that to code in lines ~754
+> It appears to work at least.
 
+It would on x86, I'm fairly sure it'll break on things like SPARC. We
+used to have checks in the userspace code to warn for this on x86 as
+well. Not sure if that's still there.
 
-Then, the number of estimated descriptors is bad :
+Hmm, so in kernel/events/core.c:perf_prepare_sample() there's a
+WARN_ON_ONCE() in the PERF_SAMPLE_RAW branch that should trigger with
+this.
 
-/* conservatively estimate # of descriptors to use */
-count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
-	skb_shinfo(skb)->nr_frags + 1;
+> > 
+> > And as with any ABI extension, it should come with useful userspace to
+> > make use of it.
+> 
+> There are already scripts available to use it, see Feng's patchkit.
 
+That's a whole other patchkit, meaning this doesn't belong here.
 
-Yes, you need a more precise estimation and vmxnet3_map_pkt() should
-eventually split too big frags.
+I never can seem to figure out how to use the scripts mess :/ acme, is
+there anything we could do to make that stuff usable? There's a ton of
+crap under scripts/ but I don't even know how to get that stuff to run.
 
+What's more, all that nonsense is in weird languages I don't do either,
+making it less useful than usual.
 
-
+In short, I don't consider script/ to be proper userspace since its
+bloody useless.
