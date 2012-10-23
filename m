@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab2JWNng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:43:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:21045 "EHLO mga01.intel.com"
+	id S933196Ab2JWNn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:43:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57446 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933051Ab2JWNn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:43:28 -0400
+	id S933183Ab2JWNny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:43:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191052"
+   d="scan'208";a="237191353"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 10/26] mmc: panic write: do not msleep
-Date: Tue, 23 Oct 2012 16:48:08 +0300
-Message-Id: <1351000104-13015-11-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 26/26] mmc: sdhci-pci: add panic write support
+Date: Tue, 23 Oct 2012 16:48:24 +0300
+Message-Id: <1351000104-13015-27-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -31,133 +31,32 @@ From: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/core/core.c     |    6 +++---
- drivers/mmc/core/core.h     |    6 ++++--
- drivers/mmc/core/mmc_ops.c  |   10 +++++-----
- drivers/mmc/core/sd_ops.c   |    2 +-
- drivers/mmc/core/sdio_ops.c |    2 +-
- 5 files changed, 14 insertions(+), 12 deletions(-)
+ drivers/mmc/host/sdhci-pci.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 0b904bc..204a9bd 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1331,7 +1331,7 @@ static void mmc_power_up(struct mmc_host *host)
- 	 * This delay should be sufficient to allow the power supply
- 	 * to reach the minimum voltage.
- 	 */
--	mmc_delay(10);
-+	mmc_delay(host, 10);
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 4bb74b0..bee9a45 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -966,6 +966,8 @@ static void sdhci_pci_hw_reset(struct sdhci_host *host)
  
- 	host->ios.clock = host->f_init;
- 
-@@ -1342,7 +1342,7 @@ static void mmc_power_up(struct mmc_host *host)
- 	 * This delay must be at least 74 clock sizes, or 1 ms, or the
- 	 * time required to reach a stable voltage.
- 	 */
--	mmc_delay(10);
-+	mmc_delay(host, 10);
- 
- 	mmc_host_clk_release(host);
- }
-@@ -1378,7 +1378,7 @@ void mmc_power_off(struct mmc_host *host)
- 	 * XO-1.5, require a short delay after poweroff before the card
- 	 * can be successfully turned on again.
- 	 */
--	mmc_delay(1);
-+	mmc_delay(host, 1);
- 
- 	mmc_host_clk_release(host);
- }
-diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
-index 3bdafbc..4cba1f1 100644
---- a/drivers/mmc/core/core.h
-+++ b/drivers/mmc/core/core.h
-@@ -46,9 +46,11 @@ void mmc_set_timing(struct mmc_host *host, unsigned int timing);
- void mmc_set_driver_type(struct mmc_host *host, unsigned int drv_type);
- void mmc_power_off(struct mmc_host *host);
- 
--static inline void mmc_delay(unsigned int ms)
-+static inline void mmc_delay(struct mmc_host *host, unsigned int ms)
- {
--	if (ms < 1000 / HZ) {
-+	if (mmc_am_panic_task(host)) {
-+		mdelay(ms);
-+	} else if (ms < 1000 / HZ) {
- 		cond_resched();
- 		mdelay(ms);
- 	} else {
-diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
-index a0e1720..23eaeab 100644
---- a/drivers/mmc/core/mmc_ops.c
-+++ b/drivers/mmc/core/mmc_ops.c
-@@ -83,7 +83,7 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
- 	 * others) is invalid while the card sleeps.
- 	 */
- 	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
--		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
-+		mmc_delay(host, DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
- 
- 	if (!sleep)
- 		err = mmc_select_card(card);
-@@ -107,7 +107,7 @@ int mmc_go_idle(struct mmc_host *host)
- 	 */
- 	if (!mmc_host_is_spi(host)) {
- 		mmc_set_chip_select(host, MMC_CS_HIGH);
--		mmc_delay(1);
-+		mmc_delay(host, 1);
+ 	if (!gpio_is_valid(rst_n_gpio))
+ 		return;
++	if (mmc_panic_task_active(host->mmc))
++		return;
+ 	gpio_set_value_cansleep(rst_n_gpio, 0);
+ 	/* For eMMC, minimum is 1us but give it 10us for good measure */
+ 	udelay(10);
+@@ -1278,6 +1280,9 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
  	}
  
- 	cmd.opcode = MMC_GO_IDLE_STATE;
-@@ -116,11 +116,11 @@ int mmc_go_idle(struct mmc_host *host)
+ 	host->mmc->pm_caps = MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
++#ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
++	slot->host->mmc->caps2 = MMC_CAP_PANIC_WRITE;
++#endif
  
- 	err = mmc_wait_for_cmd(host, &cmd, 0);
- 
--	mmc_delay(1);
-+	mmc_delay(host, 1);
- 
- 	if (!mmc_host_is_spi(host)) {
- 		mmc_set_chip_select(host, MMC_CS_DONTCARE);
--		mmc_delay(1);
-+		mmc_delay(host, 1);
- 	}
- 
- 	host->use_spi_crc = 0;
-@@ -159,7 +159,7 @@ int mmc_send_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
- 
- 		err = -ETIMEDOUT;
- 
--		mmc_delay(10);
-+		mmc_delay(host, 10);
- 	}
- 
- 	if (rocr && !mmc_host_is_spi(host))
-diff --git a/drivers/mmc/core/sd_ops.c b/drivers/mmc/core/sd_ops.c
-index 274ef00..d4573fb 100644
---- a/drivers/mmc/core/sd_ops.c
-+++ b/drivers/mmc/core/sd_ops.c
-@@ -181,7 +181,7 @@ int mmc_send_app_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
- 
- 		err = -ETIMEDOUT;
- 
--		mmc_delay(10);
-+		mmc_delay(host, 10);
- 	}
- 
- 	if (rocr && !mmc_host_is_spi(host))
-diff --git a/drivers/mmc/core/sdio_ops.c b/drivers/mmc/core/sdio_ops.c
-index d29e206..099908c 100644
---- a/drivers/mmc/core/sdio_ops.c
-+++ b/drivers/mmc/core/sdio_ops.c
-@@ -56,7 +56,7 @@ int mmc_send_io_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr)
- 
- 		err = -ETIMEDOUT;
- 
--		mmc_delay(10);
-+		mmc_delay(host, 10);
- 	}
- 
- 	if (rocr)
+ 	ret = sdhci_add_host(host);
+ 	if (ret)
 -- 
 1.7.9.5
 
