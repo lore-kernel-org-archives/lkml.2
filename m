@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2JWWLn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:11:43 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53727 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab2JWWLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:11:41 -0400
-Message-ID: <50871695.2040904@gmail.com>
-Date: Wed, 24 Oct 2012 00:13:41 +0200
-From: Francesco Lavra <francescolavra.fl@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1757288Ab2JWWMF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:12:05 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:21779 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932832Ab2JWWME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 18:12:04 -0400
+X-IronPort-AV: E=Sophos;i="4.80,637,1344236400"; 
+   d="scan'208";a="703415403"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Kees Cook <keescook@chromium.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 182/193] net/sunrpc: remove CONFIG_EXPERIMENTAL
+Thread-Topic: [PATCH 182/193] net/sunrpc: remove CONFIG_EXPERIMENTAL
+Thread-Index: AQHNsVnDJoRhLW8iBEqpeVsdKM/yBZfH6X0A
+Date: Tue, 23 Oct 2012 22:12:01 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA90928E1A6@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	 <1351022666-6960-183-git-send-email-keescook@chromium.org>
+In-Reply-To: <1351022666-6960-183-git-send-email-keescook@chromium.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <6DCF35D423767C4E85BE694A892CC283@tahoe.netapp.com>
 MIME-Version: 1.0
-To: Hongbo Zhang <hongbo.zhang@linaro.org>
-CC: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org,
-        amit.kachhap@linaro.org
-Subject: Re: [PATCH 1/5] Thermal: do bind operation after thermal zone or
- cooling device register returns.
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com> <1350387889-15324-2-git-send-email-hongbo.zhang@linaro.com> <5083C8E4.7090007@gmail.com> <CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
-In-Reply-To: <CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9NMC91d007181
 
-Hi,
-On 10/23/2012 10:23 AM, Hongbo Zhang wrote:
-> Hi Francesco,
-> I found out more points about this issue.
+On Tue, 2012-10-23 at 13:04 -0700, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
 > 
-> [1]
-> cdev should be ready when get_max_state callback be called, otherwise
-> parameter cdev is useless, imagine there may be cases that
-> get_max_state call back is shared by more than one cooling devices of
-> same kind, like this:
-> common_get_max_state(*cdev, *state)
-> {
->     if (cdev == cdev1)  *state = 3;
->     else if (cdev == cdev)  *state = 5;
->     else
-> }
+> CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+> CC: "J. Bruce Fields" <bfields@fieldses.org>
+> CC: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  net/sunrpc/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> [2]
-> In my cpufreq cooling case(in fact cdev is not used to calculate
-> max_state), the cooling_cpufreq_list should be ready when
-> get_max_state call back is called. In this patch I defer the binding
-> when registration finished, but this is not perfect now, see this
-> routine in cpufreq_cooling_register:
-> 
-> thermal_cooling_device_register;
-> at this time: thermal_bind_work -> get_max_state -> get NULL
-> cooling_cpufreq_list
-> and then: list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list)
-> This is due to we cannot know exactly when the bind work is executed.
-> (and this can be fixed by moving mutex_lock(&cooling_cpufreq_lock)
-> aheadof thermal_cooling_device_register and other corresponding
-> modifications, but I found another way as below)
-> 
-> [3]
-> Root cause of this problem is calling get_max_state in register -> bind routine.
-> Better solution is to add another parameter in cooling device register
-> function, also add a max_state member in struct cdev, like:
-> thermal_cooling_device_register(char *type, void *devdata, const
-> struct thermal_cooling_device_ops *ops, unsigned long max_state)
-> and then in the bind function:
-> if(cdev->max_state)
->     max_state = cdev->max_state;
-> else
->     cdev->get_max_state(cdev, &max_state)
-> 
-> It is common sense that the cooling driver should know its cooling
-> max_state(ability) before registration, and it can be offered when
-> register.
-> I think this way doesn't change both thermal and cooling layer much,
-> it is more clear.
-> I will update this patch soon.
+> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+> index 03d03e3..516fe2c 100644
+> --- a/net/sunrpc/Kconfig
+> +++ b/net/sunrpc/Kconfig
+> @@ -10,7 +10,7 @@ config SUNRPC_BACKCHANNEL
+>  
+>  config SUNRPC_XPRT_RDMA
+>  	tristate
+> -	depends on SUNRPC && INFINIBAND && INFINIBAND_ADDR_TRANS && EXPERIMENTAL
+> +	depends on SUNRPC && INFINIBAND && INFINIBAND_ADDR_TRANS
+>  	default SUNRPC && INFINIBAND
+>  	help
+>  	  This option allows the NFS client and server to support
 
-I still believe the thermal layer doesn't need any change to work around
-this problem, and I still believe that when a cooling device is being
-registered, all of its ops should be fully functional.
-The problem with the cpufreq cooling device driver is that its callbacks
-use the internal list of devices to retrieve the struct
-cpufreq_cooling_device instance corresponding to a given struct
-thermal_cooling_device. This is not necessary, because the struct
-thermal_cooling_device has a private data pointer (devdata) which in
-this case is exactly a reference to the struct cpufreq_cooling_device
-instance the callbacks are looking for. In fact, I think the
-cooling_cpufreq_list is not necessary at all, and should be removed from
-the cpufreq cooling driver.
-So the 3 callbacks, instead of iterating through the device list, should
-have something like:
-struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-That would do the trick.
+Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
---
-Francesco
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
