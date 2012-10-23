@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2JWOfS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:35:18 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63740 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789Ab2JWOfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:35:16 -0400
-Message-ID: <5086AB0B.7070402@gmail.com>
-Date: Tue, 23 Oct 2012 07:34:51 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S932119Ab2JWOfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:35:23 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12890 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754994Ab2JWOfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:35:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
+   d="scan'208";a="239012028"
+Message-ID: <5086A3D1.7080709@linux.intel.com>
+Date: Tue, 23 Oct 2012 07:04:01 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-To: Dwiastika Peppy <dwiastikapeppy@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linux Kernel
-References: <CABTsxV5OCX=P8u-p6K4eoaAyWo-SGNcD0VxHkkFXOQu7r+Vs1g@mail.gmail.com>
-In-Reply-To: <CABTsxV5OCX=P8u-p6K4eoaAyWo-SGNcD0VxHkkFXOQu7r+Vs1g@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] [RESEND 2] Take over futex of dead task only if FUTEX_WAITERS
+ is not set
+References: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com> <1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com>
+In-Reply-To: <1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 04:32 AM, Dwiastika Peppy wrote:
-> Hai Justin. My name is Peppy
-> I wanna ask you about installing Linux Kernel 2.6.27
-> I'm a newbie in Linux user
-> I got problem when installed Linux Kernel and this is the problem :
-> *scripts/unifdef.c:209: error: conflicting types for ‘getline’
-> /usr/include/stdio.h:651: note: previous declaration of ‘getline’ was here
-> make[2]: *** [scripts/unifdef] Error 1
-> make[1]: *** [__headers] Error 2
-> make: *** [vmlinux] Error 2*
->
-> what should i do to solve this problem?
-> maybe you can help me..
-> Thank you before Justin
->
-> Best Regards,
->
->
-> Peppy
+Hi Siddesh,
 
+Thanks for the patch and your work to isolate it in the glibc bug 14076.
 
-from what I remember libc made the change then everything else had to be 
-fixed. this commit is the commit which fixes it:
+On 10/21/2012 08:20 PM, Siddhesh Poyarekar wrote:
+> In futex_lock_pi_atomic, we consider that if the value in the futex
+> variable is 0 with additional flags, then it is safe for takeover
+> since the owner of the futex is dead.  However, when FUTEX_WAITERS is
+> set in the futex value, handle_futex_death calls futex_wake to wake up
+> one task. 
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d15bd1067b1fcb2b7250d22bc0c7c7fea0b759f7
+It shouldn't for PI mutexes. It should just set the FUTEX_OWNER_DIED flag,
+maintaining the FUTEX_WAITERS flag, and exit.
 
-but after thinking this over we probably should have done a
-get_line || getline();
-so old and new can always be working for people using older kernels and 
-in the event of bisecting. but then again we might have more of a 
-bloated kernel if we did this approach to _every_ function definition 
-rename in the kernel.
+int handle_futex_death(...
+...
+		/*
+		 * Wake robust non-PI futexes here. The wakeup of
+		 * PI futexes happens in exit_pi_state():
+		 */
+		if (!pi && (uval & FUTEX_WAITERS))
+			futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
 
-anyway hope this helps with your build experience of the kernel.
+There may still be an issue, as the commentary around exit_pi_state_list()
+doesn't inspire confidence.
 
-Justin P. Mattock
+--
+Darren
+
+> Hence the assumption in futex_lock_pi_atomic is not correct.
+> The correct assumption is that a futex may be considered safe for a
+> takeover if The FUTEX_OWNER_DIED bit is set, the TID bits are 0 and
+> the FUTEX_WAITERS bit is not set.
+> 
+> The race described above can be seen in the reproducer in the
+> following glibc bug report:
+> 
+> http://sourceware.org/bugzilla/show_bug.cgi?id=14076
+> 
+> Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+> ---
+>  kernel/futex.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 3717e7b..9aa2d5a 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -760,9 +760,14 @@ retry:
+>  	 * case. We also do an unconditional take over, when the owner
+>  	 * of the futex died.
+>  	 *
+> +	 * We do not take over the futex if FUTEX_WAITERS is set because we
+> +	 * could end up waking two tasks, the current one and the one that the
+> +	 * futex death event wakes in handle_futex_death.
+> +	 *
+>  	 * This is safe as we are protected by the hash bucket lock !
+>  	 */
+> -	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+> +	if (unlikely(ownerdied ||
+> +			!(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
+>  		/* Keep the OWNER_DIED bit */
+>  		newval = (curval & ~FUTEX_TID_MASK) | vpid;
+>  		ownerdied = 0;
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
