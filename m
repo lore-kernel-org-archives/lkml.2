@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab2JWKeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:34:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61283 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab2JWKeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:34:08 -0400
-X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
-   d="scan'208";a="6052088"
-Message-ID: <508672B9.8010303@cn.fujitsu.com>
-Date: Tue, 23 Oct 2012 18:34:33 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755068Ab2JWKe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:34:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56971 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752973Ab2JWKeJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:34:09 -0400
+Date: Tue, 23 Oct 2012 11:33:52 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "levinsasha928@gmail.com" <levinsasha928@gmail.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "ericvh@gmail.com" <ericvh@gmail.com>
+Subject: Re: [PATCH v2 1/3] mm: highmem: export kmap_to_page for modules
+Message-ID: <20121023103352.GC20210@mudshark.cambridge.arm.com>
+References: <1350651813-8694-1-git-send-email-will.deacon@arm.com>
+ <87objuhxiq.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com> <5084AB10.7010807@cn.fujitsu.com> <20121022101442.GB8352@liondog.tnic> <50860711.10807@cn.fujitsu.com> <20121023095234.GA22715@liondog.tnic> <50866EBB.2010507@cn.fujitsu.com> <20121023102008.GB24656@liondog.tnic>
-In-Reply-To: <20121023102008.GB24656@liondog.tnic>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:33:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:33:36,
-	Serialize complete at 2012/10/23 18:33:36
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87objuhxiq.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On tue, 23 Oct 2012 12:20:08 +0200, Borislav Petkov wrote:
-> On Tue, Oct 23, 2012 at 06:17:31PM +0800, Miao Xie wrote:
->> This function is called after a cpu is offline, in other words, it is
->> impossible that the cpu is still in cpu_online_mask. otherwise there
->> is something wrong in the code.
+On Tue, Oct 23, 2012 at 12:55:57AM +0100, Rusty Russell wrote:
+> Will Deacon <will.deacon@arm.com> writes:
 > 
-> And?
+> > Some virtio device drivers (9p) need to translate high virtual addresses
+> > to physical addresses, which are inserted into the virtqueue for
+> > processing by userspace.
+> >
+> > This patch exports the kmap_to_page symbol, so that the affected drivers
+> > can be compiled as modules.
+> 
+> Thanks Will!
+> 
+> I've applied these, and add cc:stable.  I'll push them to Linus after a
+> little time in linux-next.
 
-So we add this WARN_ON_ONCE(), it can tell the developers that there is
-something wrong in the code if it is triggered.
+Cheers Rusty. Andrew's right about this affecting highmem on x86 too (I
+guess that's what Sasha saw with the 9p memory issues), so stable makes
+sense.
 
-Thanks
-Miao
+Will
