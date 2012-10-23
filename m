@@ -1,87 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab2JWWjI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:39:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48729 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933469Ab2JWWjE (ORCPT
+	id S933820Ab2JWWkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:40:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49390 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933508Ab2JWWkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:39:04 -0400
+	Tue, 23 Oct 2012 18:40:10 -0400
+Date: Tue, 23 Oct 2012 15:40:05 -0700
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org,
+        Dustin Kirkland <dustin.kirkland@gazzang.com>
+Subject: Re: [PATCH 146/193] fs/ecryptfs: remove CONFIG_EXPERIMENTAL
+Message-ID: <20121023224005.GB29213@boyd>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+ <1351022666-6960-147-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <1350615088-14562-2-git-send-email-mporter@ti.com>
-References: <1350615088-14562-1-git-send-email-mporter@ti.com> <1350615088-14562-2-git-send-email-mporter@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 23 Oct 2012 23:38:41 +0100
-X-Google-Sender-Auth: lUyxsajqRLRFb2cEJ4CRL8_jUn4
-Message-ID: <CACxGe6u_oubGQKHJh_GOjty5xe1qxj-i18GnKqmi7ANHa3K_Wg@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
-To: Matt Porter <mporter@ti.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="0eh6TmSyL6TZE2Uz"
+Content-Disposition: inline
+In-Reply-To: <1351022666-6960-147-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 3:51 AM, Matt Porter <mporter@ti.com> wrote:
-> Add a dmaengine API to retrieve per channel capabilities.
-> Currently, only channel ops and SG segment limitations are
-> implemented caps.
->
-> The API is optionally implemented by drivers and when
-> unimplemented will return a NULL pointer. It is intended
-> to be executed after a channel has been requested and, if
-> the channel is intended to be used with slave SG transfers,
-> then it may only be called after dmaengine_slave_config()
-> has executed. The slave driver provides parameters such as
-> burst size and address width which may be necessary for
-> the dmaengine driver to use in order to properly return SG
-> segment limit caps.
->
-> Suggested-by: Vinod Koul <vinod.koul@intel.com>
-> Signed-off-by: Matt Porter <mporter@ti.com>
 
-Looks okay to me. Minor comment below...
+--0eh6TmSyL6TZE2Uz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +/**
-> + * dma_get_channel_caps - flush pending transactions to HW
-> + * @chan: target DMA channel
-> + * @dir: direction of transfer
-> + *
-> + * Get the channel-specific capabilities. If the dmaengine
-> + * driver does not implement per channel capbilities then
-> + * NULL is returned.
-> + */
-> +static inline struct dmaengine_chan_caps
-> +*dma_get_channel_caps(struct dma_chan *chan, enum dma_transfer_direction dir)
+On 2012-10-23 13:03:39, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+>=20
+> CC: Tyler Hicks <tyhicks@canonical.com>
 
-Looks to me like the returned pointer be a const. Ditto for the
-callback prototype in the dma_device structure.
+Kees - Please push this through your tree. Thanks!
 
-> +{
-> +       if (chan->device->device_channel_caps)
-> +               return chan->device->device_channel_caps(chan, dir);
-> +       return NULL;
-> +}
-> +
->  enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
->  #ifdef CONFIG_DMA_ENGINE
->  enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
-> --
+Acked-by: Tyler Hicks <tyhicks@canonical.com>
+
+> CC: Dustin Kirkland <dustin.kirkland@gazzang.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  fs/ecryptfs/Kconfig |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/fs/ecryptfs/Kconfig b/fs/ecryptfs/Kconfig
+> index cc16562..e15ef38 100644
+> --- a/fs/ecryptfs/Kconfig
+> +++ b/fs/ecryptfs/Kconfig
+> @@ -1,6 +1,6 @@
+>  config ECRYPT_FS
+> -	tristate "eCrypt filesystem layer support (EXPERIMENTAL)"
+> -	depends on EXPERIMENTAL && KEYS && CRYPTO && (ENCRYPTED_KEYS || ENCRYPT=
+ED_KEYS=3Dn)
+> +	tristate "eCrypt filesystem layer support"
+> +	depends on KEYS && CRYPTO && (ENCRYPTED_KEYS || ENCRYPTED_KEYS=3Dn)
+>  	select CRYPTO_ECB
+>  	select CRYPTO_CBC
+>  	select CRYPTO_MD5
+> --=20
 > 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>=20
 
+--0eh6TmSyL6TZE2Uz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+iQIcBAEBCgAGBQJQhxzFAAoJENaSAD2qAscKzJEP/j3gWw8jIUUxgPqSGBvCp1F7
+I7bSJHhhaXSawsdwy0AeYOj4VMow6fq5CXrY/RoKYr9N4dmpcnUaRtRuCEvSHqL2
+BynPyl7YwaxRIyfSatj9aa/TmtZdkouHNjnquqMWgSjKuFM1aofP/CiFO2JYsLV7
+nlRNGdEllaTM/II50ov7aGiXB3gRtIqZ+iKuVkiOfkW9X2mANKkRTR58HXYYxzhC
+JJbDBqSGoYzhb5lolKNevLdX0Zb0s6lF75BGeEQY/5rh9a7j5jRXa+PninQM2Jn1
+DT0MRrf+5xugVwGjWMS+lcIjfHeT4ijd3GwZBWQshrMksXQkGw1hje6NWH/UOcyY
+pal7Xg5wPklFaUYptvS1QWvoiaznIxScbL64HkTgtfdYaqxqgKIhh1seCrhvAyZH
+ztR3Bw8oIGBfNzPGiIiTvvVLRxi2YRYbIRef9fLgSPMAoprbc7yBPkhv+H6yybN+
+96uoZcLet/LXjXntgTb7yDWU9YNQMAIAfJLHpirwwNCRdlkdN5hC2JZpf0a/cIKL
+vKUpd6F+IcKT7Tc7uVrYVBrBTYSQ8kDgozUriWKMU+QmzCDsEEf7Ibap/Ee43BYC
+FfBkENaefVcD6/R/FQ/l6HYpbKq28oU5TVxQpKGb/NROeq34scWy6ickKo079YF3
+F16UeS4pUbpG/x98DhsJ
+=yPtE
+-----END PGP SIGNATURE-----
+
+--0eh6TmSyL6TZE2Uz--
