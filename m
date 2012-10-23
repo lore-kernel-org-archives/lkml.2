@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757060Ab2JWOt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:49:26 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28787 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2JWOtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:49:24 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-dd-5086ae35805e
-From: Kukjin Kim <kgene@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined
-Date: Tue, 23 Oct 2012 23:48:21 +0900
-Message-id: <022101cdb12d$724e9650$56ebc2f0$@org>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2xLXI3P/C3hqMMT7KUlEjoOAoFEw==
-Content-language: ko
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zY13TdW0BBle7FSwu75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJa961lLdjLVPFj8U6WBsZmpi5GTg4JAROJSf1/mSFs
-	MYkL99azgdhCAssYJabu1oKpWfLiKVCcCyg+nVHi0eqNjBDOX0aJfbtfsXYxcnCwCShLNDbp
-	gzQIC2hJLNzSxAJiiwhkS/z4NpkFIu4gcbd9EdgCFgFViQW79oDFeQUMJTomrWKFsAUlfky+
-	BxZnBpqzfudxJghbXmLzmrfMIKskBNQlHv3VhRivJ/H35Ep2iBIRiX0v3jFCjBeQ+Db5EAtE
-	uazEpgPMIBdLCHSzS3R8+sUK8ZekxMEVN1gmMIrNQrJ5FpLNs5BsnoVkxQJGllWMoqkFyQXF
-	Sem5RnrFibnFpXnpesn5uZsYIREjvYNxVYPFIUYBDkYlHt6O/a0BQqyJZcWVuYcYJTiYlUR4
-	Te3bAoR4UxIrq1KL8uOLSnNSiw8x+gBdPpFZSjQ5HxjNeSXxhsbGJmYmpibmlqbmpjiElcR5
-	mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUwqu1YUMKSX5fKMfXZRfaj2t81ClNMZuZs+nLu2vyi
-	3/UxfQ+UZqVNXvPyePeUF98TL3En6C4W/GbH5KC+OGujuW3jMd+5+d83L7siu+K1wanKpuYK
-	txMZt3m27W2oCD+5ic05mn2l4k4xI8WNZn1J9f6adwr/mMUyLJ209e+Z1sU6k365ucyQU2Ip
-	zkg01GIuKk4EAH6OwxXFAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jQV3TdW0BBpeXylpc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmtO5by1qwl6ni
-	x+KdLA2MzUxdjJwcEgImEktePGWDsMUkLtxbD2RzcQgJTGeUeLR6IyOE85dRYt/uV6xdjBwc
-	bALKEo1N+iANwgJaEgu3NLGA2CIC2RI/vk1mgYg7SNxtXwQ2lEVAVWLBrj1gcV4BQ4mOSatY
-	IWxBiR+T74HFmYHmrN95nAnClpfYvOYtM8gqCQF1iUd/dSHG60n8PbmSHaJERGLfi3eMExgF
-	ZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnBEPpPewbiqweIQ
-	owAHoxIPb8f+1gAh1sSy4srcQ4wSHMxKIrym9m0BQrwpiZVVqUX58UWlOanFhxh9gB6dyCwl
-	mpwPTBZ5JfGGxiZmRpZGZhZGJubmOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBKNTBuS3cI
-	v9N+OTGURXNr6Q7J+Rd2ed2r8bxTH//2EaORU6oVoytHzArtb6qnTCs0/K85tdSterq/qKh3
-	ubTEsZXfPspdk6mpr3C9bOf+rZHV292MKTflkq3i0SWhxYaHHq58ePhW5ql1zu9+BH80V41N
-	vblD7Z3E65w6TaVT913O7/Q8FBjZvU6JpTgj0VCLuag4EQBT0N7q9QIAAA==
-X-CFilter-Loop: Reflected
+	id S932678Ab2JWOt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:49:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35559 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754731Ab2JWOt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:49:57 -0400
+Message-ID: <5086AE8E.60106@ti.com>
+Date: Tue, 23 Oct 2012 09:49:50 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sebastien Guiriec <s-guiriec@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap5: Update GPIO with address space
+ and interrupts
+References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com> <1350981432-6750-2-git-send-email-s-guiriec@ti.com>
+In-Reply-To: <1350981432-6750-2-git-send-email-s-guiriec@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi Seb,
 
-Now, v3.7-rc2 happens following build error with s3c2410_defconfig...
+On 10/23/2012 03:37 AM, Sebastien Guiriec wrote:
+> Add base address and interrupt line inside Device Tree data for
+> OMAP5
+> 
+> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+> ---
+>  arch/arm/boot/dts/omap5.dtsi |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+> index 42c78be..9e39f9f 100644
+> --- a/arch/arm/boot/dts/omap5.dtsi
+> +++ b/arch/arm/boot/dts/omap5.dtsi
+> @@ -104,6 +104,8 @@
+>  
+>  		gpio1: gpio@4ae10000 {
+>  			compatible = "ti,omap4-gpio";
+> +			reg = <0x4ae10000 0x200>;
+> +			interrupts = <0 29 0x4>;
+>  			ti,hwmods = "gpio1";
+>  			gpio-controller;
+>  			#gpio-cells = <2>;
 
-ERROR: "read_current_timer" [fs/ext4/ext4.ko] undefined!
-make[2]: *** [__modpost] Error 1
-make[1]: *** [modules] Error 2
-make[1]: *** Waiting for unfinished jobs....
+I am wondering if we should add the "interrupt-parent" property to add
+nodes in the device-tree source. I know that today the interrupt-parent
+is being defined globally, but when device-tree maps an interrupt for a
+device it searches for the interrupt-parent starting the current device
+node.
 
-Any idea on this?
+So in other words, for gpio1 it will search the gpio1 binding for
+"interrupt-parent" and if not found move up a level and search again. It
+will keep doing this until it finds the "interrupt-parent".
 
-Thanks.
+Therefore, I believe it will improve search time and hence, boot time if
+we have interrupt-parent defined in each node.
 
-K-Gene <kgene@kernel.org>
-
+Cheers
+Jon
