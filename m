@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab2JWNCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:02:41 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49469
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756999Ab2JWNCk (ORCPT
+	id S932903Ab2JWNEC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:04:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41989 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756997Ab2JWNEB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:02:40 -0400
-Date: Tue, 23 Oct 2012 09:02:38 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/21] ocfs2: drop vmtruncate
-Message-ID: <20121023130237.GA21594@infradead.org>
-References: <508296B4.60508@gmail.com>
- <20121023085448.GM5635@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023085448.GM5635@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 23 Oct 2012 09:04:01 -0400
+Message-ID: <1350997423.13456.21.camel@twins>
+Subject: Re: [PATCH 14/34] perf, x86: Avoid checkpointed counters causing
+ excessive TSX aborts
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        eranian@google.com, Andi Kleen <ak@linux.intel.com>
+Date: Tue, 23 Oct 2012 15:03:43 +0200
+In-Reply-To: <1350602382-12771-15-git-send-email-andi@firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+	 <1350602382-12771-15-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 01:54:48AM -0700, Joel Becker wrote:
-> On Sat, Oct 20, 2012 at 02:19:00PM +0200, Marco Stornelli wrote:
-> > Removed vmtruncate
-> > 
-> > Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> 
-> Acked-by: Joel Becker <jlbec@evilplan.org>
-> 
-> Do you want me to pull this, or are you going to send it with your set?
+On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
+> @@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+>  int intel_pmu_save_and_restart(struct perf_event *event)
+>  {
+>         x86_perf_event_update(event);
+> +       /*
+> +        * For a checkpointed counter always reset back to 0.  This
+> +        * avoids a situation where the counter overflows, aborts the
+> +        * transaction and is then set back to shortly before the
+> +        * overflow, and overflows and aborts again.
+> +        */
+> +       if (event->hw.config & HSW_INTX_CHECKPOINTED) {
 
-Is this really correct?  It now updates i_size before starting a
-transaction.
+Would an unlikely() make sense there? Most events won't have this set.
 
+> +               /* No race with NMIs because the counter should not be armed */
+> +               wrmsrl(event->hw.event_base, 0);
+> +               local64_set(&event->hw.prev_count, 0);
+> +       }
+>         return x86_perf_event_set_period(event);
+>  } 
