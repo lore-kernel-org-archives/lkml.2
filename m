@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab2JWAx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 20:53:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37591 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab2JWAx4 (ORCPT
+	id S932485Ab2JWA6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 20:58:10 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62297 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab2JWA6J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 20:53:56 -0400
-Message-ID: <5085EA94.7000901@oracle.com>
-Date: Mon, 22 Oct 2012 19:53:40 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Mon, 22 Oct 2012 20:58:09 -0400
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH v3 00/22] loop: Issue O_DIRECT aio using bio_vec
-References: <1350918922-6096-1-git-send-email-dave.kleikamp@oracle.com> <20121023000733.GG4291@dastard>
-In-Reply-To: <20121023000733.GG4291@dastard>
-X-Enigmail-Version: 1.4.5
+In-Reply-To: <20121022200047.GA18175@kroah.com>
+References: <20121015235836.GA3214@kroah.com>
+	<1350347562-32643-1-git-send-email-arve@android.com>
+	<20121016071136.GB5172@kroah.com>
+	<CAMP5XgfVPeN8CRwKxeTv6fL8M0MXV56R+GrWw88caVZrQfu+Vg@mail.gmail.com>
+	<20121022200047.GA18175@kroah.com>
+Date: Mon, 22 Oct 2012 17:58:08 -0700
+Message-ID: <CAMP5XgeF=_tjPsEoEjAEbWDB7KjFGCGgTG+RkixPV29Df-NJ_Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: android: binder: Fix memory leak on
+ thread/process exit
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: xiaobing.tu@intel.com, ccross@android.com, davej@redhat.com,
+        akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
+        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, di.zhang@intel.com, xindong.ma@intel.com,
+        alex.zuo@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 07:07 PM, Dave Chinner wrote:
-> On Mon, Oct 22, 2012 at 10:15:00AM -0500, Dave Kleikamp wrote:
->> This is the current version of the patchset I presented at the LSF-MM
->> Summit in San Francisco in April. I apologize for letting it go so
->> long before re-submitting.
+On Mon, Oct 22, 2012 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Tue, Oct 16, 2012 at 03:45:20PM -0700, Arve Hjønnevåg wrote:
+>> On Tue, Oct 16, 2012 at 12:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > On Mon, Oct 15, 2012 at 05:32:41PM -0700, Arve Hjønnevåg wrote:
+>> >> If a thread or process exited while a reply, one-way transaction or
+>> >> death notification was pending, the struct holding the pending work
+>> >> was leaked.
+>> >>
+>> >> Change-Id: I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7
+>> >
+>> > What is this field?  Please don't include this in kernel patches, it
+>> > forces me to edit the patch by hand :(
+>> >
 >>
->> This patchset was begun by Zach Brown and was originally submitted for
->> review in October, 2009. Feedback was positive, and I have picked up
->> where he left off, porting his patches to the latest mainline kernel
->> and adding support more file systems.
->>
->> This patch series adds a kernel interface to fs/aio.c so that kernel code can
->> issue concurrent asynchronous IO to file systems.  It adds an aio command and
->> file system methods which specify io memory with pages instead of userspace
->> addresses.
->>
->> This series was written to reduce the current overhead loop imposes by
->> performing synchronus buffered file system IO from a kernel thread.  These
->> patches turn loop into a light weight layer that translates bios into iocbs.
-> 
-> I note that there is no support for XFS in this patch set. Is there
-> a particular problem that prevents XFS from being converted, or it
-> just hasn't been done?
+>> It is a tag generated a git hook to uniquely identify a change through
+>> multiple revisions of that change. If the tag does not already exist
+>> the hook adds it. I removed it from the reposted patches as you
+>> requested, but have you considered leaving it in? It is a useful
+>> search token both for finding different revisions of a patch and for
+>> finding which branch a change has been cherry-picked into.
+>
+> Sorry, I was being facetious, I knew what it really was, but the point
+> was, why would I?
+>
 
-It just hasn't been done. It wasn't one of the trivial ones so I put it
-off at first, and after that, it's an oversight. I'll follow up with an
-xfs patch for your review.
+So you can use it. If, for instance, you want to see which branches
+you cherry-picked this change into you can run "git rev-list --all
+--grep I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7 | xargs -rl git
+branch -a --contains". If it was more widely used, it would also be
+useful for finding mailing list discussion of multiple versions of
+patches (even when the title of the patch changes).
 
-Thanks,
-Shaggy
+> As has been stated before, you can include information like this in your
+> patch, but you MUST reference it properly so that others can be able to
+> figure out what you mean.  A random Change-Id value means nothing given
+> that lots of different groups use gerrit.  You need a url, or a pointer
+> to which gerrit instance this refers to before you can include it.
+>
 
-> 
-> Cheers,
-> 
-> Dave.
-> 
+There is no single url. The tag was generated by a local git hook
+before it was uploaded anywhere. While gerrit looks for this tag and
+use it when it is there, the same change can be uploaded to different
+gerrit instances. While it would be useful to also include urls to the
+gerrit instance(s) that a patch was discussed on, the Change-Id is
+useful by itself.
+
+> Same goes for bugzilla entries, if you look in the kernel changelog, we
+> reference lots of different ones, but we use urls to determine which one
+> we are talking about (suse, red hat, kernel.org, etc.)
+>
+
+Those IDs appear to be local to a specific server, so the id without
+the url would not be very useful.
+
+-- 
+Arve Hjønnevåg
