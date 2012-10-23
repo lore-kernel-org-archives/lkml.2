@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab2JWUHi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:07:38 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51359 "EHLO smtp.outflux.net"
+	id S933887Ab2JWU1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:27:54 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35074 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933917Ab2JWUHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:07:35 -0400
+	id S964883Ab2JWUGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:06:44 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH 149/193] fs/jffs2: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:42 -0700
-Message-Id: <1351022666-6960-150-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Paul Mundt <lethal@linux-sh.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 027/193] arch/sh: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:40 -0700
+Message-Id: <1351022666-6960-28-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,47 +25,147 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: David Woodhouse <dwmw2@infradead.org>
+CC: Paul Mundt <lethal@linux-sh.org>
+CC: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- fs/jffs2/Kconfig |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/sh/Kconfig     |   29 ++++++++++++++---------------
+ arch/sh/Kconfig.cpu |    3 +--
+ arch/sh/mm/Kconfig  |    4 ++--
+ 3 files changed, 17 insertions(+), 19 deletions(-)
 
-diff --git a/fs/jffs2/Kconfig b/fs/jffs2/Kconfig
-index 6ae169c..d8bb6c4 100644
---- a/fs/jffs2/Kconfig
-+++ b/fs/jffs2/Kconfig
-@@ -50,8 +50,8 @@ config JFFS2_FS_WBUF_VERIFY
- 	  write-buffer, and check for errors.
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index babc2b8..a3427a5 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -647,8 +647,8 @@ menu "Kernel features"
+ source kernel/Kconfig.hz
  
- config JFFS2_SUMMARY
--	bool "JFFS2 summary support (EXPERIMENTAL)"
--	depends on JFFS2_FS && EXPERIMENTAL
-+	bool "JFFS2 summary support"
-+	depends on JFFS2_FS
+ config KEXEC
+-	bool "kexec system call (EXPERIMENTAL)"
+-	depends on SUPERH32 && EXPERIMENTAL && MMU
++	bool "kexec system call"
++	depends on SUPERH32 && MMU
+ 	help
+ 	  kexec is a system call that implements the ability to shutdown your
+ 	  current kernel, and to start another kernel.  It is like a reboot
+@@ -664,8 +664,8 @@ config KEXEC
+ 	  strongly in flux, so no good recommendation can be made.
+ 
+ config CRASH_DUMP
+-	bool "kernel crash dumps (EXPERIMENTAL)"
+-	depends on SUPERH32 && EXPERIMENTAL && BROKEN_ON_SMP
++	bool "kernel crash dumps"
++	depends on SUPERH32 && BROKEN_ON_SMP
+ 	help
+ 	  Generate crash dump after being started by kexec.
+ 	  This should be normally only set in special crash dump kernels
+@@ -678,8 +678,8 @@ config CRASH_DUMP
+ 	  For more details see Documentation/kdump/kdump.txt
+ 
+ config KEXEC_JUMP
+-	bool "kexec jump (EXPERIMENTAL)"
+-	depends on SUPERH32 && KEXEC && HIBERNATION && EXPERIMENTAL
++	bool "kexec jump"
++	depends on SUPERH32 && KEXEC && HIBERNATION
+ 	help
+ 	  Jump between original kernel and kexeced kernel and invoke
+ 	  code via KEXEC
+@@ -712,8 +712,8 @@ config SECCOMP
+ 	  If unsure, say N.
+ 
+ config CC_STACKPROTECTOR
+-	bool "Enable -fstack-protector buffer overflow detection (EXPERIMENTAL)"
+-	depends on SUPERH32 && EXPERIMENTAL
++	bool "Enable -fstack-protector buffer overflow detection"
++	depends on SUPERH32
+ 	help
+ 	  This option turns on the -fstack-protector GCC feature. This
+ 	  feature puts, at the beginning of functions, a canary value on
+@@ -763,8 +763,8 @@ config NR_CPUS
+ 	  approximately eight kilobytes to the kernel image.
+ 
+ config HOTPLUG_CPU
+-	bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
+-	depends on SMP && HOTPLUG && EXPERIMENTAL
++	bool "Support for hot-pluggable CPUs"
++	depends on SMP && HOTPLUG
+ 	help
+ 	  Say Y here to experiment with turning CPUs off and on.  CPUs
+ 	  can be controlled through /sys/devices/system/cpu.
+@@ -786,7 +786,7 @@ config GUSA
+ 	  atomicity implementations exist.
+ 
+ config GUSA_RB
+-	bool "Implement atomic operations by roll-back (gRB) (EXPERIMENTAL)"
++	bool "Implement atomic operations by roll-back (gRB)"
+ 	depends on GUSA && CPU_SH3 || (CPU_SH4 && !CPU_SH4A)
+ 	help
+ 	  Enabling this option will allow the kernel to implement some
+@@ -842,8 +842,8 @@ config ENTRY_OFFSET
+ 	default "0x00000000"
+ 
+ config ROMIMAGE_MMCIF
+-	bool "Include MMCIF loader in romImage (EXPERIMENTAL)"
+-	depends on CPU_SUBTYPE_SH7724 && EXPERIMENTAL
++	bool "Include MMCIF loader in romImage"
++	depends on CPU_SUBTYPE_SH7724
+ 	help
+ 	  Say Y here to include experimental MMCIF loading code in
+ 	  romImage. With this enabled it is possible to write the romImage
+@@ -928,8 +928,7 @@ source "fs/Kconfig.binfmt"
+ 
+ endmenu
+ 
+-menu "Power management options (EXPERIMENTAL)"
+-depends on EXPERIMENTAL
++menu "Power management options"
+ 
+ source "kernel/power/Kconfig"
+ 
+diff --git a/arch/sh/Kconfig.cpu b/arch/sh/Kconfig.cpu
+index 770ff2d..05b518e 100644
+--- a/arch/sh/Kconfig.cpu
++++ b/arch/sh/Kconfig.cpu
+@@ -33,7 +33,7 @@ config SH64_FPU_DENORM_FLUSH
+ config SH_FPU_EMU
+ 	def_bool n
+ 	prompt "FPU emulation support"
+-	depends on !SH_FPU && EXPERIMENTAL
++	depends on !SH_FPU
+ 	help
+ 	  Selecting this option will enable support for software FPU emulation.
+ 	  Most SH-3 users will want to say Y here, whereas most SH-4 users will
+@@ -68,7 +68,6 @@ config SH_STORE_QUEUES
+ 
+ config SPECULATIVE_EXECUTION
+ 	bool "Speculative subroutine return"
+-	depends on EXPERIMENTAL
+ 	depends on CPU_SUBTYPE_SH7780 || CPU_SUBTYPE_SH7785 || CPU_SUBTYPE_SH7786
+ 	help
+ 	  This enables support for a speculative instruction fetch for
+diff --git a/arch/sh/mm/Kconfig b/arch/sh/mm/Kconfig
+index cb8f992..533ccbb 100644
+--- a/arch/sh/mm/Kconfig
++++ b/arch/sh/mm/Kconfig
+@@ -83,7 +83,7 @@ config 32BIT
+ 
+ config PMB
+ 	bool "Support 32-bit physical addressing through PMB"
+-	depends on MMU && EXPERIMENTAL && CPU_SH4A && !CPU_SH4AL_DSP
++	depends on MMU && CPU_SH4A && !CPU_SH4AL_DSP
+ 	select 32BIT
+ 	select UNCACHED_MAPPING
+ 	help
+@@ -110,7 +110,7 @@ config VSYSCALL
+ 
+ config NUMA
+ 	bool "Non Uniform Memory Access (NUMA) Support"
+-	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
++	depends on MMU && SYS_SUPPORTS_NUMA
  	default n
  	help
- 	  This feature makes it possible to use summary information
-@@ -63,8 +63,8 @@ config JFFS2_SUMMARY
- 	  If unsure, say 'N'.
- 
- config JFFS2_FS_XATTR
--	bool "JFFS2 XATTR support (EXPERIMENTAL)"
--	depends on JFFS2_FS && EXPERIMENTAL
-+	bool "JFFS2 XATTR support"
-+	depends on JFFS2_FS
- 	default n
- 	help
- 	  Extended attributes are name:value pairs associated with inodes by
-@@ -173,7 +173,7 @@ config JFFS2_CMODE_PRIORITY
- 	  successful one.
- 
- config JFFS2_CMODE_SIZE
--	bool "size (EXPERIMENTAL)"
-+	bool "size"
- 	help
- 	  Tries all compressors and chooses the one which has the smallest
- 	  result.
+ 	  Some SH systems have many various memories scattered around
 -- 
 1.7.9.5
 
