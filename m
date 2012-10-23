@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab2JWTWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:22:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756960Ab2JWTWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:22:22 -0400
-Date: Tue, 23 Oct 2012 21:23:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
-Message-ID: <20121023192318.GA25872@redhat.com>
-References: <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com>
+	id S933397Ab2JWTWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:22:40 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:64673 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756960Ab2JWTWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 15:22:39 -0400
+Message-ID: <5086EE7C.2080608@tilera.com>
+Date: Tue, 23 Oct 2012 15:22:36 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023165912.GA18712@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
+References: <20121016223508.GR2616@ZenIV.linux.org.uk> <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com> <20121019213548.GR2616@ZenIV.linux.org.uk> <5082A1F1.3080303@tilera.com> <20121020153401.GT2616@ZenIV.linux.org.uk> <20121020171643.GU2616@ZenIV.linux.org.uk> <5086D432.4070008@tilera.com> <20121023184122.GZ2616@ZenIV.linux.org.uk>
+In-Reply-To: <20121023184122.GZ2616@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23, Oleg Nesterov wrote:
->
-> Not really the comment, but the question...
+On 10/23/2012 2:41 PM, Al Viro wrote:
+> On Tue, Oct 23, 2012 at 01:30:26PM -0400, Chris Metcalf wrote:
+>> As you had suggested in an earlier email, I went ahead and eliminated the
+>> special pt_regs handling for sigaltstack, rt_sigreturn, and clone.  (Also a
+>> tilepro-specific syscall that was also using PTREG_SYSCALL.)  I'll send it
+>> separately and you can include it in your tree if you like.
+> OK by me...  Or just pull this arch-tile into a separate branch in your
+> tree, add commit on top of it and I'll pull that.
 
-Damn. And another question.
+Done in 
 
-Mikulas, I am sorry for this (almost) off-topic noise. Let me repeat
-just in case that I am not arguing with your patches.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git viro-signal-tile
 
+Thanks!
 
-
-
-So write_lock/write_unlock needs to call synchronize_sched() 3 times.
-I am wondering if it makes any sense to try to make it a bit heavier
-but faster.
-
-What if we change the reader to use local_irq_disable/enable around
-this_cpu_inc/dec (instead of rcu read lock)? I have to admit, I have
-no idea how much cli/sti is slower compared to preempt_disable/enable.
-
-Then the writer can use
-
-	static void mb_ipi(void *arg)
-	{
-		smp_mb(); /* unneeded ? */
-	}
-
-	static void force_mb_on_each_cpu(void)
-	{
-		smp_mb();
-		smp_call_function(mb_ipi, NULL, 1);
-	}
-
-to a) synchronise with irq_disable and b) to insert the necessary mb's.
-
-Of course smp_call_function() means more work for each CPU, but
-write_lock() should be rare...
-
-This can also wakeup the idle CPU's, but probably we can do
-on_each_cpu_cond(cond_func => !idle_cpu). Perhaps cond_func() can
-also return false if rcu_user_enter() was called...
-
-Actually I was thinking about this from the very beginning, but I do
-not feel this looks like a good idea. Still I'd like to ask what do
-you think.
-
-Oleg.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
