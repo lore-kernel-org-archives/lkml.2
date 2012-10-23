@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab2JWT6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:58:16 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:34920 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab2JWT6O (ORCPT
+	id S933345Ab2JWT6b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:58:31 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62157 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757452Ab2JWT63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:58:14 -0400
+	Tue, 23 Oct 2012 15:58:29 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
         Ezequiel Garcia <elezegarcia@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:04 -0300
-Message-Id: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 02/23] cx231xx: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:05 -0300
+Message-Id: <1351022246-8201-2-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,44 +42,40 @@ expression E;
 +to = from;
 // </smpl>
 
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/media/usb/cx231xx/cx231xx-cards.c |    2 +-
+ drivers/media/usb/cx231xx/cx231xx-video.c |    3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/usb/uvc/uvc_v4l2.c b/drivers/media/usb/uvc/uvc_v4l2.c
-index f00db30..4fc8737 100644
---- a/drivers/media/usb/uvc/uvc_v4l2.c
-+++ b/drivers/media/usb/uvc/uvc_v4l2.c
-@@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming *stream,
- 		goto done;
- 	}
+diff --git a/drivers/media/usb/cx231xx/cx231xx-cards.c b/drivers/media/usb/cx231xx/cx231xx-cards.c
+index b84ebc5..352d676 100644
+--- a/drivers/media/usb/cx231xx/cx231xx-cards.c
++++ b/drivers/media/usb/cx231xx/cx231xx-cards.c
+@@ -705,7 +705,7 @@ void cx231xx_sleep_s5h1432(struct cx231xx *dev)
  
--	memcpy(&stream->ctrl, &probe, sizeof probe);
-+	stream->ctrl = probe;
- 	stream->cur_format = format;
- 	stream->cur_frame = frame;
+ static inline void cx231xx_set_model(struct cx231xx *dev)
+ {
+-	memcpy(&dev->board, &cx231xx_boards[dev->model], sizeof(dev->board));
++	dev->board = cx231xx_boards[dev->model];
+ }
  
-@@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
- 		return -EBUSY;
- 	}
+ /* Since cx231xx_pre_card_setup() requires a proper dev->model,
+diff --git a/drivers/media/usb/cx231xx/cx231xx-video.c b/drivers/media/usb/cx231xx/cx231xx-video.c
+index fedf785..c5109ba 100644
+--- a/drivers/media/usb/cx231xx/cx231xx-video.c
++++ b/drivers/media/usb/cx231xx/cx231xx-video.c
+@@ -2627,8 +2627,7 @@ int cx231xx_register_analog_devices(struct cx231xx *dev)
+ 		     dev->name, video_device_node_name(dev->vdev));
  
--	memcpy(&probe, &stream->ctrl, sizeof probe);
-+	probe = stream->ctrl;
- 	probe.dwFrameInterval =
- 		uvc_try_frame_interval(stream->cur_frame, interval);
+ 	/* Initialize VBI template */
+-	memcpy(&cx231xx_vbi_template, &cx231xx_video_template,
+-	       sizeof(cx231xx_vbi_template));
++	cx231xx_vbi_template = cx231xx_video_template;
+ 	strcpy(cx231xx_vbi_template.name, "cx231xx-vbi");
  
-@@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
- 		return ret;
- 	}
- 
--	memcpy(&stream->ctrl, &probe, sizeof probe);
-+	stream->ctrl = probe;
- 	mutex_unlock(&stream->mutex);
- 
- 	/* Return the actual frame period. */
+ 	/* Allocate and fill vbi video_device struct */
 -- 
 1.7.4.4
 
