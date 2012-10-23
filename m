@@ -1,40 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246Ab2JWT5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:57:22 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:55345 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875Ab2JWT5U (ORCPT
+	id S1757434Ab2JWT6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:58:16 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:34920 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756781Ab2JWT6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:57:20 -0400
-MIME-Version: 1.0
-Date: Tue, 23 Oct 2012 16:57:20 -0300
-Message-ID: <CALF0-+XH4AfJUcNHXdMTwXf-=f24Zpe3VOw_1eQ9WBV1-6ZVjQ@mail.gmail.com>
-Subject: [PATCH 0/23] media: Replace memcpy with struct assignment
+	Tue, 23 Oct 2012 15:58:14 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: linux-media <linux-media@vger.kernel.org>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
+Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 01/23] uvc: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:04 -0300
+Message-Id: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+This kind of memcpy() is error-prone. Its replacement with a struct
+assignment is prefered because it's type-safe and much easier to read.
 
-This is a large patchset that replaces struct memcpy with struct assignment,
-whenever possible at drivers/media.
+Found by coccinelle. Hand patched and reviewed.
+Tested by compilation only.
 
-The patches are hand applied and every change has been thoroughly reviewed.
-However, to avoid regressions and angry users we'd like to have Acks
-from maintainers.
-
-A simplified version of the semantic match that finds
-this problem is as follows: (http://coccinelle.lip6.fr/)
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
 @@
@@ -47,77 +41,44 @@ expression E;
 +to = from;
 // </smpl>
 
-If you're thinking this change is very minor and doesn't worh the pain,
-you might change your opinion reading this report from Dan Carpenter:
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+ drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-http://comments.gmane.org/gmane.linux.drivers.video-input-infrastructure/49553
+diff --git a/drivers/media/usb/uvc/uvc_v4l2.c b/drivers/media/usb/uvc/uvc_v4l2.c
+index f00db30..4fc8737 100644
+--- a/drivers/media/usb/uvc/uvc_v4l2.c
++++ b/drivers/media/usb/uvc/uvc_v4l2.c
+@@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming *stream,
+ 		goto done;
+ 	}
+ 
+-	memcpy(&stream->ctrl, &probe, sizeof probe);
++	stream->ctrl = probe;
+ 	stream->cur_format = format;
+ 	stream->cur_frame = frame;
+ 
+@@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
+ 		return -EBUSY;
+ 	}
+ 
+-	memcpy(&probe, &stream->ctrl, sizeof probe);
++	probe = stream->ctrl;
+ 	probe.dwFrameInterval =
+ 		uvc_try_frame_interval(stream->cur_frame, interval);
+ 
+@@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
+ 		return ret;
+ 	}
+ 
+-	memcpy(&stream->ctrl, &probe, sizeof probe);
++	stream->ctrl = probe;
+ 	mutex_unlock(&stream->mutex);
+ 
+ 	/* Return the actual frame period. */
+-- 
+1.7.4.4
 
-The report clearly shows how copy-paste programming paradigm, combined with
-lack of memcpy type-safety can lead to very strange code.
-
-Not to mention, using struct assignment instead of memcpy
-is by far more readable.
-
-Comments, feedback and flames are welcome. Thanks!
-
-Peter Senna Tschudin, Ezequiel Garcia (23):
- wl128x: Replace memcpy with struct assignment
- radio-wl1273: Replace memcpy with struct assignment
- dvb-frontends: Replace memcpy with struct assignment
- dvb-core: Replace memcpy with struct assignment
- bttv: Replace memcpy with struct assignment
- cx18: Replace memcpy with struct assignment
- cx23885: Replace memcpy with struct assignment
- cx88: Replace memcpy with struct assignment
- ivtv: Replace memcpy with struct assignment
- tuners/tda18271: Replace memcpy with struct assignment
- tuners/xc2028: Replace memcpy with struct assignment
- tuners/xc4000: Replace memcpy with struct assignment
- au0828: Replace memcpy with struct assignment
- dvb-usb/friio-fe: Replace memcpy with struct assignment
- zr36067: Replace memcpy with struct assignment
- cx25840: Replace memcpy with struct assignment
- hdpvr: Replace memcpy with struct assignment
- pvrusb2: Replace memcpy with struct assignment
- pwc: Replace memcpy with struct assignment
- sn9c102: Replace memcpy with struct assignment
- usbvision: Replace memcpy with struct assignment
- cx231xx: Replace memcpy with struct assignment
- uvc: Replace memcpy with struct assignment
-
- drivers/media/dvb-core/dvb_frontend.c        |    2 +-
- drivers/media/dvb-frontends/cx24116.c        |    2 +-
- drivers/media/dvb-frontends/drxd_hard.c      |    5 ++---
- drivers/media/dvb-frontends/stv0299.c        |    2 +-
- drivers/media/i2c/cx25840/cx25840-ir.c       |    6 ++----
- drivers/media/pci/bt8xx/bttv-i2c.c           |    3 +--
- drivers/media/pci/cx18/cx18-i2c.c            |    6 ++----
- drivers/media/pci/cx23885/cx23885-video.c    |    3 +--
- drivers/media/pci/cx23885/cx23888-ir.c       |    6 ++----
- drivers/media/pci/cx88/cx88-cards.c          |    2 +-
- drivers/media/pci/cx88/cx88-i2c.c            |    3 +--
- drivers/media/pci/cx88/cx88-vp3054-i2c.c     |    3 +--
- drivers/media/pci/ivtv/ivtv-i2c.c            |   12 ++++--------
- drivers/media/pci/zoran/zoran_card.c         |    3 +--
- drivers/media/radio/radio-wl1273.c           |    3 +--
- drivers/media/radio/wl128x/fmdrv_common.c    |    3 +--
- drivers/media/tuners/tda18271-maps.c         |    6 ++----
- drivers/media/tuners/tuner-xc2028.c          |    2 +-
- drivers/media/tuners/xc4000.c                |    2 +-
- drivers/media/usb/au0828/au0828-cards.c      |    2 +-
- drivers/media/usb/au0828/au0828-i2c.c        |    9 +++------
- drivers/media/usb/cx231xx/cx231xx-cards.c    |    2 +-
- drivers/media/usb/cx231xx/cx231xx-video.c    |    3 +--
- drivers/media/usb/dvb-usb/friio-fe.c         |    5 ++---
- drivers/media/usb/hdpvr/hdpvr-i2c.c          |    3 +--
- drivers/media/usb/pvrusb2/pvrusb2-encoder.c  |    3 +--
- drivers/media/usb/pvrusb2/pvrusb2-i2c-core.c |    4 ++--
- drivers/media/usb/pvrusb2/pvrusb2-v4l2.c     |    2 +-
- drivers/media/usb/pwc/pwc-if.c               |    2 +-
- drivers/media/usb/sn9c102/sn9c102_core.c     |    4 ++--
- drivers/media/usb/usbvision/usbvision-i2c.c  |    3 +--
- drivers/media/usb/uvc/uvc_v4l2.c             |    6 +++---
- 32 files changed, 47 insertions(+), 75 deletions(-)
-
-
-    Ezequiel
