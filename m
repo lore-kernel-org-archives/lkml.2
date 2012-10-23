@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753105Ab2JWLMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 07:12:13 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:37096 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841Ab2JWLMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 07:12:10 -0400
-Date: Tue, 23 Oct 2012 13:11:56 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: balbi@ti.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Magnus Damm <damm@opensource.se>, Paul Mundt <lethal@linux-sh.org>,
-        Benoit Cousson <b-cousson@ti.com>, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121023131156.13e2d0ae@skate>
-In-Reply-To: <CACRpkdZhUwMTg0suqbZiukN7Se6fzdYP3-0Dspm9WF6qZniNVQ@mail.gmail.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-	<20121022155028.GA13791@core.coreip.homeip.net>
-	<CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com>
-	<508664CA.7000601@ti.com>
-	<CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com>
-	<20121023100333.GA24418@arwen.pp.htv.fi>
-	<20121023122312.56b23e1c@skate>
-	<CACRpkdb+f44jw1vTYvJT0bnMOP8XQe8ztDUHiwtS2JHtPWAGXw@mail.gmail.com>
-	<20121023102903.GA24820@arwen.pp.htv.fi>
-	<CACRpkdZhUwMTg0suqbZiukN7Se6fzdYP3-0Dspm9WF6qZniNVQ@mail.gmail.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753555Ab2JWLbi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 07:31:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:25370 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958Ab2JWLbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 07:31:37 -0400
+X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
+   d="scan'208";a="6052302"
+Message-ID: <50867FCD.9010907@cn.fujitsu.com>
+Date: Tue, 23 Oct 2012 19:30:21 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, tony.luck@intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, miaox@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, x86@kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
+References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com> <5084AB10.7010807@cn.fujitsu.com> <20121022101442.GB8352@liondog.tnic> <50860711.10807@cn.fujitsu.com> <20121023095234.GA22715@liondog.tnic>
+In-Reply-To: <20121023095234.GA22715@liondog.tnic>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 19:30:54,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 19:30:59,
+	Serialize complete at 2012/10/23 19:30:59
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/23/2012 05:52 PM, Borislav Petkov wrote:
+> On Tue, Oct 23, 2012 at 10:55:13AM +0800, Tang Chen wrote:
+>> So, how about warn once, and continue:
+>> 	if (cpu == dying) {
+>> 		WARN_ON_ONCE(cpu == dying);
+>> 		continue;
+>> 	}
+>>
+>> or, use BUG_ON() instead ?
+>
+> Let me ask you again, but I want you to think real hard this time:
+>
+> "Why do we need to warn? What good would that bring us?"
 
-On Tue, 23 Oct 2012 12:45:33 +0200, Linus Walleij wrote:
+Hi,
 
-> Hm so I have had this idea of runtime PM core helping out
-> with pins, so I could add something like
-> 
-> pm_pins_fetch()
-> pm_pins_default()
-> pm_pins_idle()
-> pm_pins_sleep()
-> 
-> So if one is using the pin states defined in
-> <linux/pinctrl/pinctrl-state.h> then the PM core can help out in
-> keeping track of the pins and states, and the driver will just tell
-> the PM core what to do and when.
-> 
-> Would this fit the bill for everyone's code consolidation needs?
-> It would sure work for us...
+First of all, I do think I was answering your question. As I said
+before, if an online cpu == dying here, there must be something wrong.
+Am I right here ?
 
-That surely would work but is kind of non-obvious when reading a
-driver's code: that's the problem with bus notifier, they do things a
-bit "behind your back" without you noticing. Having the driver request
-its own pinctrl state, and switch between states upon suspend/resume is
-a lot more explicit, IMO.
+If so, I think the "good" is obvious. If we don't output anything when
+an online cpu == dying, nobody will know this happens. The kernel is in
+wrong state, but nobody knows that, I don't see any good.
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Actually, I used BUG_ON() in my v1 patch. So I dropped the if statement.
+But Tejun asked me to use WARN_ON_ONCE(). And I forgot to add the if
+statement.
+Please refer to https://lkml.org/lkml/2012/10/16/528
+
+And again, the "good" is inform user the kernel is in wrong state.
+
+Thanks. :)
+
+
+>
+
