@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab2JWN3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:29:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42306 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754639Ab2JWN3m (ORCPT
+	id S1757175Ab2JWNaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:30:03 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59813 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab2JWNaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:29:42 -0400
-Date: Tue, 23 Oct 2012 14:29:39 +0100
-From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/3 v2] firmware: Convert firmware path setup from an
-	array to a list
-Message-ID: <20121023132939.GA10160@opensource.wolfsonmicro.com>
-References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com> <1350996776-17864-2-git-send-email-dp@opensource.wolfsonmicro.com> <CACVXFVOMb3A=9wKm+-wnsg7=dTbjJjU2gZrUPBDK=TROTx_erA@mail.gmail.com>
-MIME-Version: 1.0
+	Tue, 23 Oct 2012 09:30:01 -0400
+Date: Tue, 23 Oct 2012 15:30:00 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 05/34] perf, x86: Report PEBS event in a raw format
+Message-ID: <20121023133000.GX16230@one.firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-6-git-send-email-andi@firstfloor.org> <1350995474.13456.12.camel@twins>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVOMb3A=9wKm+-wnsg7=dTbjJjU2gZrUPBDK=TROTx_erA@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1350995474.13456.12.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 09:08:50PM +0800, Ming Lei wrote:
-> On Tue, Oct 23, 2012 at 8:52 PM, Dimitris Papastamos
-> <dp@opensource.wolfsonmicro.com> wrote:
-> > In preparation to support dynamic listing/updating of firmware
-> > paths via procfs, this patch converts the firmware path configuration
-> > from an array to a list.
-> 
-> I remembered that I have questioned on dynamic listing/updating of
-> firmware via procfs, looks you don't reply, :-(
-> 
->       http://marc.info/?l=linux-kernel&m=134988208617179&w=2
-> 
-> IMO, it is not a good idea to update firmware path dynamically via proc
-> because it may be too late to update a dynamic search path via /proc
-> and drivers need request firmware just after rootfs is mounted.
-> 
-> kernel parameter should be a good way to pass one customerized
-> path.
-> 
-> Thanks,
-> -- 
-> Ming Lei
+> Also, there's an alignment issue there, the raw.data is 32bit offset,
+> the record is u64 aligned, leaving the output stream offset, wrecking
+> things.
 
-Hi sorry for being unclear, I mentioned in the old thread that
-I've not had time to fix this properly (or think about a proper
-fix), Greg requested a rebase on top of linux-next, however, at
-least for firmware path listing.
+Can you explain more? Not sure I understand.
 
-Should I amend the commit description so it is not misleading and
-remove the 'updating' part?
+It appears to work at least.
 
-Thanks,
-Dimitris
+> 
+> And as with any ABI extension, it should come with useful userspace to
+> make use of it.
+
+There are already scripts available to use it, see Feng's patchkit.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
