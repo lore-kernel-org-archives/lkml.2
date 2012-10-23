@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933168Ab2JWNnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:43:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56255 "EHLO mga01.intel.com"
+	id S933198Ab2JWNod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:44:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:57446 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057Ab2JWNnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:43:47 -0400
+	id S933118Ab2JWNnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:43:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191075"
+   d="scan'208";a="237191335"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 13/26] mmc: panic write: trap non panic tasks
-Date: Tue, 23 Oct 2012 16:48:11 +0300
-Message-Id: <1351000104-13015-14-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 25/26] mmc: sdhci: panic write: trap nonpanic tasks
+Date: Tue, 23 Oct 2012 16:48:23 +0300
+Message-Id: <1351000104-13015-26-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -31,73 +31,150 @@ From: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/core/core.c |   10 +++++++++-
- drivers/mmc/core/host.c |    2 ++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/mmc/host/sdhci.c  |   47 +++++++++++++++++++++++++++++++++++++++++----
+ include/linux/mmc/sdhci.h |    1 +
+ 2 files changed, 44 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index d3caa7e..4fd7061 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -252,6 +252,7 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
- 	}
- 	mmc_host_clk_hold(host);
- 	led_trigger_event(host->led, LED_FULL);
-+	mmc_trap_nonpanic_tasks(host);
- 	host->ops->request(host, mrq);
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 9a24417..db12fad 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2204,8 +2204,12 @@ static void sdhci_panic_cleanup(struct mmc_host *mmc)
+ 
+ void sdhci_lock(struct sdhci_host *host)
+ {
+-	if (mmc_am_panic_task(host->mmc))
+-		return;
++	if (mmc_panic_task_active(host->mmc)) {
++		if (mmc_am_panic_task(host->mmc))
++			return;
++		while (mmc_am_nonpanic_task(host->mmc))
++			cpu_relax();
++	}
+ 	spin_lock(&host->lock);
  }
  
-@@ -344,8 +345,10 @@ static void mmc_wait_for_req_done(struct mmc_host *host,
- 
- 	while (1) {
- 		/* Panic task requests must be completed in ->request() */
--		if (!mmc_am_panic_task(host))
-+		if (!mmc_am_panic_task(host)) {
- 			wait_for_completion(&mrq->completion);
-+			mmc_trap_nonpanic_tasks(host);
-+		}
- 
- 		cmd = mrq->cmd;
- 		if (!cmd->error || !cmd->retries ||
-@@ -774,6 +777,8 @@ int __mmc_claim_host(struct mmc_host *host, atomic_t *abort)
- 
- 	if (mmc_am_panic_task(host))
- 		return 0;
-+	else
-+		mmc_trap_nonpanic_tasks(host);
- 
- 	might_sleep();
- 
-@@ -817,6 +822,8 @@ int mmc_try_claim_host(struct mmc_host *host)
- 
- 	if (mmc_am_panic_task(host))
- 		return 1;
-+	else
-+		mmc_trap_nonpanic_tasks(host);
- 
- 	spin_lock_irqsave(&host->lock, flags);
- 	if (!host->claimed || host->claimer == current) {
-@@ -880,6 +887,7 @@ static inline void mmc_set_ios(struct mmc_host *host)
- 
- 	if (ios->clock > 0)
- 		mmc_set_ungated(host);
-+	mmc_trap_nonpanic_tasks(host);
- 	host->ops->set_ios(host, ios);
- }
- 
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 6eda5a1..b76bfc8 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -90,6 +90,8 @@ static void mmc_host_clk_gate_delayed(struct mmc_host *host)
- 	unsigned long freq = host->ios.clock;
+@@ -2219,8 +2223,12 @@ void _sdhci_lock_irqsave(struct sdhci_host *host, unsigned long *flags_ptr)
+ {
  	unsigned long flags;
  
-+	mmc_trap_nonpanic_tasks(host);
+-	if (mmc_am_panic_task(host->mmc))
+-		return;
++	if (mmc_panic_task_active(host->mmc)) {
++		if (mmc_am_panic_task(host->mmc))
++			return;
++		while (mmc_am_nonpanic_task(host->mmc))
++			cpu_relax();
++	}
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	*flags_ptr = flags;
+@@ -2235,6 +2243,16 @@ void sdhci_unlock_irqrestore(struct sdhci_host *host, unsigned long flags)
+ static void sdhci_panic_begin(struct mmc_host *mmc)
+ {
+ 	struct sdhci_host *host = mmc_priv(mmc);
++	int i;
 +
- 	if (!freq) {
- 		pr_debug("%s: frequency set to 0 in disable function, "
- 			 "this means the clock is already disabled.\n",
++	/* Wait a bit for other users to go away */
++	for (i = 0; i < 10000; i++) {
++		if (spin_trylock(&host->lock)) {
++			host->locked = 1;
++			break;
++		}
++		udelay(1);
++	}
+ 
+ 	if (host->runtime_suspended)
+ 		sdhci_runtime_resume_host(host);
+@@ -2250,6 +2268,10 @@ static void sdhci_panic_end(struct mmc_host *mmc)
+ 
+ 	ier = sdhci_readl(host, SDHCI_INT_ENABLE);
+ 	sdhci_writel(host, ier, SDHCI_SIGNAL_ENABLE);
++	if (host->locked) {
++		host->locked = 0;
++		spin_unlock(&host->lock);
++	}
+ }
+ 
+ static const struct mmc_panic_ops sdhci_pops = {
+@@ -2368,6 +2390,9 @@ static void sdhci_timeout_timer(unsigned long data)
+ 
+ 	host = (struct sdhci_host*)data;
+ 
++	if (mmc_am_nonpanic_task(host->mmc))
++		return;
++
+ 	sdhci_lock_irqsave(host, flags);
+ 
+ 	if (host->mrq) {
+@@ -2399,6 +2424,9 @@ static void sdhci_tuning_timer(unsigned long data)
+ 
+ 	host = (struct sdhci_host *)data;
+ 
++	if (mmc_am_nonpanic_task(host->mmc))
++		return;
++
+ 	sdhci_lock_irqsave(host, flags);
+ 
+ 	host->flags |= SDHCI_NEEDS_RETUNING;
+@@ -2596,6 +2624,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+ 	u32 intmask, unexpected = 0;
+ 	int cardint = 0, max_loops = 16;
+ 
++	if (mmc_am_nonpanic_task(host->mmc))
++		return IRQ_HANDLED;
++
+ 	sdhci_lock(host);
+ 
+ 
+@@ -2713,6 +2744,8 @@ int sdhci_suspend_host(struct sdhci_host *host)
+ 	if (host->ops->platform_suspend)
+ 		host->ops->platform_suspend(host);
+ 
++	mmc_trap_nonpanic_tasks(host->mmc);
++
+ 	sdhci_disable_card_detection(host);
+ 
+ 	/* Disable tuning since we are suspending */
+@@ -2745,6 +2778,8 @@ int sdhci_resume_host(struct sdhci_host *host)
+ {
+ 	int ret;
+ 
++	mmc_trap_nonpanic_tasks(host->mmc);
++
+ 	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
+ 		if (host->ops->enable_dma)
+ 			host->ops->enable_dma(host);
+@@ -2820,6 +2855,8 @@ int sdhci_runtime_suspend_host(struct sdhci_host *host)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
++	mmc_trap_nonpanic_tasks(host->mmc);
++
+ 	/* Disable tuning since we are suspending */
+ 	if (host->flags & SDHCI_USING_RETUNING_TIMER) {
+ 		del_timer_sync(&host->tuning_timer);
+@@ -2845,6 +2882,8 @@ int sdhci_runtime_resume_host(struct sdhci_host *host)
+ 	unsigned long flags;
+ 	int ret = 0, host_flags = host->flags;
+ 
++	mmc_trap_nonpanic_tasks(host->mmc);
++
+ 	if (host_flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA)) {
+ 		if (host->ops->enable_dma)
+ 			host->ops->enable_dma(host);
+diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+index 873e41d..13cc598 100644
+--- a/include/linux/mmc/sdhci.h
++++ b/include/linux/mmc/sdhci.h
+@@ -173,6 +173,7 @@ struct sdhci_host {
+ 	struct timer_list	tuning_timer;	/* Timer for tuning */
+ 
+ #ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
++	int			locked;		/* panic task has the lock */
+ 	void			*panic_buf;	/* buffer for panic requests */
+ 	size_t			panic_bufsize;	/* panic buffer size */
+ 	dma_addr_t		panic_dma_addr;	/* panic buffer dma address */
 -- 
 1.7.9.5
 
