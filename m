@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666Ab2JWCdA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 22:33:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48482 "EHLO
+	id S932679Ab2JWCdc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 22:33:32 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48623 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932555Ab2JWCc6 (ORCPT
+	with ESMTP id S932555Ab2JWCda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 22:32:58 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-1f-508601d9526c
+	Mon, 22 Oct 2012 22:33:30 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-cb-508601f969f6
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
@@ -15,452 +15,157 @@ To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         jooyoung.hwang@samsung.com
 References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
 In-reply-to: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
-Subject: [PATCH 15/16 v2] f2fs: add recovery routines for roll-forward
-Date: Tue, 23 Oct 2012 11:32:56 +0900
-Message-id: <001f01cdb0c6$b5fea4b0$21fbee10$%kim@samsung.com>
+Subject: [PATCH 16/16 v2] f2fs: update Kconfig and Makefile
+Date: Tue, 23 Oct 2012 11:33:28 +0900
+Message-id: <002001cdb0c6$c9527550$5bf75ff0$%kim@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2wxSqFSBGNbwToQsqWze4D+LI2xQAAXasg
+Thread-index: Ac2wxSqFSBGNbwToQsqWze4D+LI2xQAAYyaw
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zA92bjG0BBjN2cVrs2XuSxeLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGWsPfKVpeB7REX/rGNMDYw/3LsYOTkkBEwkPt+8xQxh
-	i0lcuLeerYuRi0NIYBmjxKfeQywwRR8/rmSGSExnlHi/ZCFU1T9GiQkdrYxdjBwcbALaEpv3
-	G4DERQQeMkrsf7aUHaRbSMBWYtL/xWArOAXsJJ49usgIYgsLuEmcPdrHAtLLIqAqcWgrG0iY
-	F6j83fS5LBC2oMSPyffAbGYBdYlJ8xYxQ9jyEpvXvGUGaZUAij/6qwsSFhEwkmhau4sVokRE
-	Yt+Ld2CbWAQEJL5NPsQCUS4rsekA2CsSAvPYJT4+/8EI8aOkxMEVN1gmMIrPQrJ5FpLNs5Bs
-	noVkxQJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYIbEkvYNxVYPFIUYBDkYlHt6O/a0B
-	QqyJZcWVuYcYJTiYlUR4lQOAQrwpiZVVqUX58UWlOanFhxh9gC6fyCwlmpwPjPO8knhDY2MT
-	MxNTE3NLU3NTHMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhjtOBL7Pa4v6ncTq99adfzN
-	wa/rvr8Ifdlf7veyQfKjj7O64n41+1Xzg413PN2V9qRu1+Tiw4xls6u/1ylecM04eWBtllvP
-	nM/PJ68LKf7NnmvX9UyQ4bzYjJC5pVsyNrYunRnx/mkd503uXl0jK7ePU1SUzh6ql+7T4j4s
-	eUvcNPbuH43bm/OVWIozEg21mIuKEwFOVY7x0gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHIsWRmVeSWpSXmKPExsVy+t9jQd2bjG0BBlN+MVvs2XuSxeLyrjls
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zfd2fjG0BBpNuS1js2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXcP7WCrWCHbMXWyadYGhhviHcxcnBICJhI7HyZ0MXI
+	CWSKSVy4t56ti5GLQ0hgGaPEm5l7mSASJhI3by5ghkhMZ5T43b4Fquofo8Tj3QcZQSaxCWhL
+	bN5vABIXEXjIKLH/2VJ2kG4hAVuJSf8XM4PYnAJ2Es8eXWQEsYUFrCW+9bWygNgsAqoSc/av
+	YAWxeYHqL088xwRhC0r8mHwPrIZZQF1i0rxFzBC2vMTmNW+ZIT5Ql3j0VxckLCJgJHHm0xEm
+	iBIRiX0v3jFCjBeQ+Db5EAtEuazEpgPMEH8tYpfoOM8JYUtKHFxxg2UCo/gsJItnIVk8C8ni
+	WUg2LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kREknSOxhXNVgcYhTgYFTi4e3Y3xog
+	xJpYVlyZe4hRgoNZSYRXOQAoxJuSWFmVWpQfX1Sak1p8iNEH6PCJzFKiyfnAKM8riTc0NjYx
+	MzE1Mbc0NTfFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgdGe29ff9fRDzktTchTKjdTf
+	L3pjEjj74O6z/893sztz6/3i61Iob/m64vj/ONd2Y7ljS1sV7GoF7Kvuzv64KSBy8Qq97kPv
+	P85Z5HK/t+L13SvvCh822YacXbD1x6S7tpue37pzuJhr+886V9Mj7nsOWKSsap1wY635J9OU
+	X4/bW1xv8X5L8upVYinOSDTUYi4qTgQAjMywsNECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQd2fjG0BBlPOiFjs2XuSxeLyrjls
 	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmrD3ylaXge0RF
-	/6xjTA2MP9y7GDk5JARMJD5+XMkMYYtJXLi3nq2LkYtDSGA6o8T7JQuhnH+MEhM6Whm7GDk4
-	2AS0JTbvNwCJiwg8ZJTY/2wpO0i3kICtxKT/i8EmcQrYSTx7dJERxBYWcJM4e7SPBaSXRUBV
-	4tBWNpAwL1D5u+lzWSBsQYkfk++B2cwC6hKT5i1ihrDlJTavecsM0ioBFH/0VxckLCJgJNG0
-	dhcrRImIxL4X7xgnMArOQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT8
-	3E2M4Eh9Jr2DcVWDxSFGAQ5GJR7ejv2tAUKsiWXFlbmHGCU4mJVEeJUDgEK8KYmVValF+fFF
-	pTmpxYcYfYD+nMgsJZqcD0wieSXxhsYmZkaWRmYWRibm5jiElcR5mz1SAoQE0hNLUrNTUwtS
-	i2DGMXFwSjUwyifUJXPPbO4omv/BUNHye6S99JnQCyUMSw1PGcpcUUhbvlr7gewSx8bT/hYa
-	pv4al7NDHp/+8tmpecs2uRftPz7PquQLT7Y53dz5xsSYtcpLRfqs8r1NPZV3J19ZtuXSoUTh
-	9dvizDbnn+drStOIe75A/IjvzpexVes75hX93aeTndHHlj9PiaU4I9FQi7moOBEAS4XN2gED	AAA=
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm3D+1gq1gh2zF
+	1smnWBoYb4h3MXJySAiYSNy8uYAZwhaTuHBvPVsXIxeHkMB0Ronf7VugnH+MEo93H2TsYuTg
+	YBPQlti83wAkLiLwkFFi/7Ol7CDdQgK2EpP+LwabxClgJ/Hs0UVGEFtYwFriW18rC4jNIqAq
+	MWf/ClYQmxeo/vLEc0wQtqDEj8n3wGqYBdQlJs1bxAxhy0tsXvOWGWSvBFD80V9dkLCIgJHE
+	mU9HmCBKRCT2vXjHOIFRcBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl
+	5+duYgTH6jPpHYyrGiwOMQpwMCrx8Hbsbw0QYk0sK67MPcQowcGsJMKrHAAU4k1JrKxKLcqP
+	LyrNSS0+xOgD9OhEZinR5HxgGskriTc0NjEzsjQyszAyMTfHIawkztvskRIgJJCeWJKanZpa
+	kFoEM46Jg1OqgdHysn9idBXT7U2v8+9zHLuzzPzT0rZlXQs8o8/MTA55uOB91onkHVE6JRs4
+	93XIzY38Xue12z4m2+xoTPDuwxMXPepd+sw+sWD5vXu+6fOOrsu+1scnpR5ZJWY/Jb69yvPU
+	azcuyZX/KtawN+2duj42/treVznvJGKOW0/onfjUdwdzepLosrdKLMUZiYZazEXFiQBwmOnJ
+	AgMAAA==
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds roll-forward routines to recover fsynced data.
-
-- F2FS uses basically roll-back model with checkpointing.
-
-- In order to implement fsync(), there are two approaches as follows.
-
-1. A roll-back model with checkpointing at every fsync()
- : This is a naive method, but suffers from very low performance.
-
-2. A roll-forward model
- : F2FS adopts this model where all the fsynced data should be recovered, which
-   were written after checkpointing was done. In order to figure out the data,
-   F2FS keeps a "fsync" mark in direct node blocks. In addition, F2FS remains
-   the location of next node block in each direct node block for reconstructing
-   the chain of node blocks during the recovery.
-
-- In order to enhance the performance, F2FS keeps a "dentry" mark also in direct
-  node blocks. If this is set during the recovery, F2FS replays adding a dentry.
+This adds Makefile and Kconfig for f2fs, and updates Makefile and Kconfig files
+in the fs directory.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/recovery.c |  375 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 375 insertions(+)
- create mode 100644 fs/f2fs/recovery.c
+ fs/Kconfig       |    1 +
+ fs/Makefile      |    1 +
+ fs/f2fs/Kconfig  |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/f2fs/Makefile |    6 ++++++
+ 4 files changed, 63 insertions(+)
+ create mode 100644 fs/f2fs/Kconfig
+ create mode 100644 fs/f2fs/Makefile
 
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+diff --git a/fs/Kconfig b/fs/Kconfig
+index f95ae3a..e352b37 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -220,6 +220,7 @@ source "fs/pstore/Kconfig"
+ source "fs/sysv/Kconfig"
+ source "fs/ufs/Kconfig"
+ source "fs/exofs/Kconfig"
++source "fs/f2fs/Kconfig"
+ 
+ endif # MISC_FILESYSTEMS
+ 
+diff --git a/fs/Makefile b/fs/Makefile
+index 1d7af79..9d53192 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -123,6 +123,7 @@ obj-$(CONFIG_DEBUG_FS)		+= debugfs/
+ obj-$(CONFIG_OCFS2_FS)		+= ocfs2/
+ obj-$(CONFIG_BTRFS_FS)		+= btrfs/
+ obj-$(CONFIG_GFS2_FS)           += gfs2/
++obj-$(CONFIG_F2FS_FS)		+= f2fs/
+ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+diff --git a/fs/f2fs/Kconfig b/fs/f2fs/Kconfig
 new file mode 100644
-index 0000000..59b6331
+index 0000000..8821c6a
 --- /dev/null
-+++ b/fs/f2fs/recovery.c
-@@ -0,0 +1,375 @@
-+/**
-+ * fs/f2fs/recovery.c
-+ *
-+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
-+ *             http://www.samsung.com/
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/fs.h>
-+#include <linux/f2fs_fs.h>
-+#include "f2fs.h"
-+#include "node.h"
-+#include "segment.h"
++++ b/fs/f2fs/Kconfig
+@@ -0,0 +1,55 @@
++config F2FS_FS
++	tristate "F2FS filesystem support (EXPERIMENTAL)"
++	depends on EXPERIMENTAL
++	help
++	  F2FS is based on Log-structured File System (LFS), which supports
++	  versatile "flash-friendly" features. The design has been focused on
++	  addressing the fundamental issues in LFS, which are snowball effect
++	  of wandering tree and high cleaning overhead.
 +
-+static struct kmem_cache *fsync_entry_slab;
++	  Since flash-based storages show different characteristics according to
++	  the internal geometry or flash memory management schemes aka FTL, F2FS
++	  and tools support various parameters not only for configuring on-disk
++	  layout, but also for selecting allocation and cleaning algorithms.
 +
-+bool space_for_roll_forward(struct f2fs_sb_info *sbi)
-+{
-+	if (sbi->last_valid_block_count + sbi->alloc_valid_block_count
-+			> sbi->user_block_count)
-+		return false;
-+	return true;
-+}
++	  If unsure, say N.
 +
-+static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
-+								nid_t ino)
-+{
-+	struct list_head *this;
-+	struct fsync_inode_entry *entry;
++config F2FS_STAT_FS
++	bool "F2FS Status Information"
++	depends on F2FS_FS
++	default y
++	help
++	  /proc/fs/f2fs/ contains information about partitions mounted as f2fs.
++	  For each partition, a corresponding directory, named as its device
++	  name, is provided with the following proc entries.
 +
-+	list_for_each(this, head) {
-+		entry = list_entry(this, struct fsync_inode_entry, list);
-+		if (entry->inode->i_ino == ino)
-+			return entry;
-+	}
-+	return NULL;
-+}
++	  f2fs_stat	major file system information managed by f2fs currently
++	  f2fs_sit_stat	average SIT information about whole segments
++	  f2fs_mem_stat	current memory footprint consumed by f2fs
 +
-+static int recover_dentry(struct page *ipage, struct inode *inode)
-+{
-+	struct f2fs_node *raw_node = (struct f2fs_node *)kmap(ipage);
-+	struct f2fs_inode *raw_inode = &(raw_node->i);
-+	struct dentry dent, parent;
-+	struct f2fs_dir_entry *de;
-+	struct page *page;
-+	struct inode *dir;
-+	int err = 0;
++	  e.g., in /proc/fs/f2fs/sdb1/
 +
-+	if (!is_dent_dnode(ipage))
-+		goto out;
++config F2FS_FS_XATTR
++	bool "F2FS extended attributes"
++	depends on F2FS_FS
++	default y
++	help
++	  Extended attributes are name:value pairs associated with inodes by
++	  the kernel or by users (see the attr(5) manual page, or visit
++	  <http://acl.bestbits.at/> for details).
 +
-+	dir = f2fs_iget(inode->i_sb, le32_to_cpu(raw_inode->i_pino));
-+	if (IS_ERR(dir)) {
-+		err = -EINVAL;
-+		goto out;
-+	}
++	  If unsure, say N.
 +
-+	parent.d_inode = dir;
-+	dent.d_parent = &parent;
-+	dent.d_name.len = le32_to_cpu(raw_inode->i_namelen);
-+	dent.d_name.name = raw_inode->i_name;
++config F2FS_FS_POSIX_ACL
++	bool "F2FS Access Control Lists"
++	depends on F2FS_FS_XATTR
++	select FS_POSIX_ACL
++	default y
++	help
++	  Posix Access Control Lists (ACLs) support permissions for users and
++	  gourps beyond the owner/group/world scheme.
 +
-+	de = f2fs_find_entry(dir, &dent.d_name, &page);
-+	if (de) {
-+		kunmap(page);
-+		f2fs_put_page(page, 0);
-+	} else {
-+		f2fs_add_link(&dent, inode);
-+	}
-+	iput(dir);
-+out:
-+	kunmap(ipage);
-+	return err;
-+}
++	  To learn more about Access Control Lists, visit the POSIX ACLs for
++	  Linux website <http://acl.bestbits.at/>.
 +
-+static int recover_inode(struct inode *inode, struct page *node_page)
-+{
-+	void *kaddr = page_address(node_page);
-+	struct f2fs_node *raw_node = (struct f2fs_node *)kaddr;
-+	struct f2fs_inode *raw_inode = &(raw_node->i);
++	  If you don't know what Access Control Lists are, say N
+diff --git a/fs/f2fs/Makefile b/fs/f2fs/Makefile
+new file mode 100644
+index 0000000..72fcf9a
+--- /dev/null
++++ b/fs/f2fs/Makefile
+@@ -0,0 +1,6 @@
++obj-$(CONFIG_F2FS_FS) += f2fs.o
 +
-+	inode->i_mode = le32_to_cpu(raw_inode->i_mode);
-+	i_size_write(inode, le64_to_cpu(raw_inode->i_size));
-+	inode->i_atime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-+	inode->i_ctime.tv_sec = le64_to_cpu(raw_inode->i_ctime);
-+	inode->i_mtime.tv_sec = le64_to_cpu(raw_inode->i_mtime);
-+	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
-+	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
-+
-+	return recover_dentry(node_page, inode);
-+}
-+
-+static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
-+{
-+	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
-+	struct curseg_info *curseg;
-+	struct page *page;
-+	block_t blkaddr;
-+	int err = 0;
-+
-+	/* get node pages in the current segment */
-+	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
-+	blkaddr = START_BLOCK(sbi, curseg->segno) + curseg->next_blkoff;
-+
-+	/* read node page */
-+	page = alloc_page(GFP_NOFS | __GFP_ZERO);
-+	if (IS_ERR(page))
-+		return PTR_ERR(page);
-+	lock_page(page);
-+
-+	while (1) {
-+		struct fsync_inode_entry *entry;
-+
-+		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
-+			goto out;
-+
-+		if (cp_ver != cpver_of_node(page))
-+			goto out;
-+
-+		if (!is_fsync_dnode(page))
-+			goto next;
-+
-+		entry = get_fsync_inode(head, ino_of_node(page));
-+		if (entry) {
-+			entry->blkaddr = blkaddr;
-+			if (IS_INODE(page) && is_dent_dnode(page))
-+				set_inode_flag(F2FS_I(entry->inode),
-+							FI_INC_LINK);
-+		} else {
-+			if (IS_INODE(page) && is_dent_dnode(page)) {
-+				if (recover_inode_page(sbi, page)) {
-+					err = -ENOMEM;
-+					goto out;
-+				}
-+			}
-+
-+			/* add this fsync inode to the list */
-+			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
-+			if (!entry) {
-+				err = -ENOMEM;
-+				goto out;
-+			}
-+
-+			INIT_LIST_HEAD(&entry->list);
-+			list_add_tail(&entry->list, head);
-+
-+			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
-+			if (IS_ERR(entry->inode)) {
-+				err = PTR_ERR(entry->inode);
-+				goto out;
-+			}
-+			entry->blkaddr = blkaddr;
-+		}
-+		if (IS_INODE(page)) {
-+			err = recover_inode(entry->inode, page);
-+			if (err)
-+				goto out;
-+		}
-+next:
-+		/* check next segment */
-+		blkaddr = next_blkaddr_of_node(page);
-+		ClearPageUptodate(page);
-+	}
-+out:
-+	unlock_page(page);
-+	__free_pages(page, 0);
-+	return err;
-+}
-+
-+static void destroy_fsync_dnodes(struct f2fs_sb_info *sbi,
-+					struct list_head *head)
-+{
-+	struct list_head *this;
-+	struct fsync_inode_entry *entry;
-+	list_for_each(this, head) {
-+		entry = list_entry(this, struct fsync_inode_entry, list);
-+		iput(entry->inode);
-+		list_del(&entry->list);
-+		kmem_cache_free(fsync_entry_slab, entry);
-+	}
-+}
-+
-+static void check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
-+						block_t blkaddr)
-+{
-+	struct seg_entry *sentry;
-+	unsigned int segno = GET_SEGNO(sbi, blkaddr);
-+	unsigned short blkoff = GET_SEGOFF_FROM_SEG0(sbi, blkaddr) &
-+					(sbi->blocks_per_seg - 1);
-+	struct f2fs_summary sum;
-+	nid_t ino;
-+	void *kaddr;
-+	struct inode *inode;
-+	struct page *node_page;
-+	block_t bidx;
-+	int i;
-+
-+	sentry = get_seg_entry(sbi, segno);
-+	if (!f2fs_test_bit(blkoff, sentry->cur_valid_map))
-+		return;
-+
-+	/* Get the previous summary */
-+	for (i = CURSEG_WARM_DATA; i <= CURSEG_COLD_DATA; i++) {
-+		struct curseg_info *curseg = CURSEG_I(sbi, i);
-+		if (curseg->segno == segno) {
-+			sum = curseg->sum_blk->entries[blkoff];
-+			break;
-+		}
-+	}
-+	if (i > CURSEG_COLD_DATA) {
-+		struct page *sum_page = get_sum_page(sbi, segno);
-+		struct f2fs_summary_block *sum_node;
-+		kaddr = page_address(sum_page);
-+		sum_node = (struct f2fs_summary_block *)kaddr;
-+		sum = sum_node->entries[blkoff];
-+		f2fs_put_page(sum_page, 1);
-+	}
-+
-+	/* Get the node page */
-+	node_page = get_node_page(sbi, le32_to_cpu(sum.nid));
-+	bidx = start_bidx_of_node(ofs_of_node(node_page)) +
-+				le16_to_cpu(sum.ofs_in_node);
-+	ino = ino_of_node(node_page);
-+	f2fs_put_page(node_page, 1);
-+
-+	/* Deallocate previous index in the node page */
-+	inode = f2fs_iget_nowait(sbi->sb, ino);
-+	truncate_hole(inode, bidx, bidx + 1);
-+	iput(inode);
-+}
-+
-+static void do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
-+					struct page *page, block_t blkaddr)
-+{
-+	unsigned int start, end;
-+	struct dnode_of_data dn;
-+	struct f2fs_summary sum;
-+	struct node_info ni;
-+
-+	start = start_bidx_of_node(ofs_of_node(page));
-+	if (IS_INODE(page))
-+		end = start + ADDRS_PER_INODE;
-+	else
-+		end = start + ADDRS_PER_BLOCK;
-+
-+	set_new_dnode(&dn, inode, NULL, NULL, 0);
-+	if (get_dnode_of_data(&dn, start, 0))
-+		return;
-+
-+	wait_on_page_writeback(dn.node_page);
-+
-+	get_node_info(sbi, dn.nid, &ni);
-+	BUG_ON(ni.ino != ino_of_node(page));
-+	BUG_ON(ofs_of_node(dn.node_page) != ofs_of_node(page));
-+
-+	for (; start < end; start++) {
-+		block_t src, dest;
-+
-+		src = datablock_addr(dn.node_page, dn.ofs_in_node);
-+		dest = datablock_addr(page, dn.ofs_in_node);
-+
-+		if (src != dest && dest != NEW_ADDR && dest != NULL_ADDR) {
-+			if (src == NULL_ADDR) {
-+				int err = reserve_new_block(&dn);
-+				/* We should not get -ENOSPC */
-+				BUG_ON(err);
-+			}
-+
-+			/* Check the previous node page having this index */
-+			check_index_in_prev_nodes(sbi, dest);
-+
-+			set_summary(&sum, dn.nid, dn.ofs_in_node, ni.version);
-+
-+			/* write dummy data page */
-+			recover_data_page(sbi, NULL, &sum, src, dest);
-+			update_extent_cache(dest, &dn);
-+		}
-+		dn.ofs_in_node++;
-+	}
-+
-+	/* write node page in place */
-+	set_summary(&sum, dn.nid, 0, 0);
-+	if (IS_INODE(dn.node_page))
-+		sync_inode_page(&dn);
-+
-+	copy_node_footer(dn.node_page, page);
-+	fill_node_footer(dn.node_page, dn.nid, ni.ino,
-+					ofs_of_node(page), false);
-+	set_page_dirty(dn.node_page);
-+
-+	recover_node_page(sbi, dn.node_page, &sum, &ni, blkaddr);
-+	f2fs_put_dnode(&dn);
-+}
-+
-+static void recover_data(struct f2fs_sb_info *sbi,
-+				struct list_head *head, int type)
-+{
-+	unsigned long long cp_ver = le64_to_cpu(sbi->ckpt->checkpoint_ver);
-+	struct curseg_info *curseg;
-+	struct page *page;
-+	block_t blkaddr;
-+
-+	/* get node pages in the current segment */
-+	curseg = CURSEG_I(sbi, type);
-+	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
-+
-+	/* read node page */
-+	page = alloc_page(GFP_NOFS | __GFP_ZERO);
-+	if (IS_ERR(page))
-+		return;
-+	lock_page(page);
-+
-+	while (1) {
-+		struct fsync_inode_entry *entry;
-+
-+		if (f2fs_readpage(sbi, page, blkaddr, READ_SYNC))
-+			goto out;
-+
-+		if (cp_ver != cpver_of_node(page))
-+			goto out;
-+
-+		entry = get_fsync_inode(head, ino_of_node(page));
-+		if (!entry)
-+			goto next;
-+
-+		do_recover_data(sbi, entry->inode, page, blkaddr);
-+
-+		if (entry->blkaddr == blkaddr) {
-+			iput(entry->inode);
-+			list_del(&entry->list);
-+			kmem_cache_free(fsync_entry_slab, entry);
-+		}
-+next:
-+		/* check next segment */
-+		blkaddr = next_blkaddr_of_node(page);
-+		ClearPageUptodate(page);
-+	}
-+out:
-+	unlock_page(page);
-+	__free_pages(page, 0);
-+
-+	allocate_new_segments(sbi);
-+}
-+
-+void recover_fsync_data(struct f2fs_sb_info *sbi)
-+{
-+	struct list_head inode_list;
-+
-+	fsync_entry_slab = f2fs_kmem_cache_create("f2fs_fsync_inode_entry",
-+			sizeof(struct fsync_inode_entry), NULL);
-+	if (unlikely(!fsync_entry_slab))
-+		return;
-+
-+	INIT_LIST_HEAD(&inode_list);
-+
-+	/* step #1: find fsynced inode numbers */
-+	if (find_fsync_dnodes(sbi, &inode_list))
-+		goto out;
-+
-+	if (list_empty(&inode_list))
-+		goto out;
-+
-+	/* step #2: recover data */
-+	sbi->por_doing = 1;
-+	recover_data(sbi, &inode_list, CURSEG_WARM_NODE);
-+	sbi->por_doing = 0;
-+	BUG_ON(!list_empty(&inode_list));
-+out:
-+	destroy_fsync_dnodes(sbi, &inode_list);
-+	kmem_cache_destroy(fsync_entry_slab);
-+	write_checkpoint(sbi, false, false);
-+}
++f2fs-y		:= dir.o file.o inode.o namei.o hash.o super.o
++f2fs-y		+= checkpoint.o gc.o data.o node.o segment.o recovery.o
++f2fs-$(CONFIG_F2FS_FS_XATTR) += xattr.o
++f2fs-$(CONFIG_F2FS_FS_POSIX_ACL) += acl.o
 -- 
 1.7.9.5
 
