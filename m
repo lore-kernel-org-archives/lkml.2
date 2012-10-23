@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab2JWUBx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:01:53 -0400
+	id S1757522Ab2JWUC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:02:26 -0400
 Received: from mail-yh0-f46.google.com ([209.85.213.46]:49915 "EHLO
 	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502Ab2JWT7O (ORCPT
+	with ESMTP id S1756972Ab2JWT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:59:14 -0400
+	Tue, 23 Oct 2012 15:59:12 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
         Ezequiel Garcia <elezegarcia@gmail.com>,
+        Andy Walls <awalls@md.metrocast.net>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 16/23] cx88: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:19 -0300
-Message-Id: <1351022246-8201-16-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 15/23] ivtv: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:18 -0300
+Message-Id: <1351022246-8201-15-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
@@ -42,55 +43,44 @@ expression E;
 +to = from;
 // </smpl>
 
+Cc: Andy Walls <awalls@md.metrocast.net>
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/pci/cx88/cx88-cards.c      |    2 +-
- drivers/media/pci/cx88/cx88-i2c.c        |    3 +--
- drivers/media/pci/cx88/cx88-vp3054-i2c.c |    3 +--
- 3 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/media/pci/ivtv/ivtv-i2c.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/media/pci/cx88/cx88-cards.c b/drivers/media/pci/cx88/cx88-cards.c
-index 0c25524..e2e0b8f 100644
---- a/drivers/media/pci/cx88/cx88-cards.c
-+++ b/drivers/media/pci/cx88/cx88-cards.c
-@@ -3743,7 +3743,7 @@ struct cx88_core *cx88_core_create(struct pci_dev *pci, int nr)
- 		cx88_card_list(core, pci);
+diff --git a/drivers/media/pci/ivtv/ivtv-i2c.c b/drivers/media/pci/ivtv/ivtv-i2c.c
+index d47f41a..27a8466 100644
+--- a/drivers/media/pci/ivtv/ivtv-i2c.c
++++ b/drivers/media/pci/ivtv/ivtv-i2c.c
+@@ -719,13 +719,10 @@ int init_ivtv_i2c(struct ivtv *itv)
+ 		return -ENODEV;
  	}
+ 	if (itv->options.newi2c > 0) {
+-		memcpy(&itv->i2c_adap, &ivtv_i2c_adap_hw_template,
+-		       sizeof(struct i2c_adapter));
++		itv->i2c_adap = ivtv_i2c_adap_hw_template;
+ 	} else {
+-		memcpy(&itv->i2c_adap, &ivtv_i2c_adap_template,
+-		       sizeof(struct i2c_adapter));
+-		memcpy(&itv->i2c_algo, &ivtv_i2c_algo_template,
+-		       sizeof(struct i2c_algo_bit_data));
++		itv->i2c_adap = ivtv_i2c_adap_template;
++		itv->i2c_algo = ivtv_i2c_algo_template;
+ 	}
+ 	itv->i2c_algo.udelay = itv->options.i2c_clock_period / 2;
+ 	itv->i2c_algo.data = itv;
+@@ -735,8 +732,7 @@ int init_ivtv_i2c(struct ivtv *itv)
+ 		itv->instance);
+ 	i2c_set_adapdata(&itv->i2c_adap, &itv->v4l2_dev);
  
--	memcpy(&core->board, &cx88_boards[core->boardnr], sizeof(core->board));
-+	core->board = cx88_boards[core->boardnr];
+-	memcpy(&itv->i2c_client, &ivtv_i2c_client_template,
+-	       sizeof(struct i2c_client));
++	itv->i2c_client = ivtv_i2c_client_template;
+ 	itv->i2c_client.adapter = &itv->i2c_adap;
+ 	itv->i2c_adap.dev.parent = &itv->pdev->dev;
  
- 	if (!core->board.num_frontends && (core->board.mpeg & CX88_MPEG_DVB))
- 		core->board.num_frontends = 1;
-diff --git a/drivers/media/pci/cx88/cx88-i2c.c b/drivers/media/pci/cx88/cx88-i2c.c
-index de0f1af..cf2d696 100644
---- a/drivers/media/pci/cx88/cx88-i2c.c
-+++ b/drivers/media/pci/cx88/cx88-i2c.c
-@@ -139,8 +139,7 @@ int cx88_i2c_init(struct cx88_core *core, struct pci_dev *pci)
- 	if (i2c_udelay<5)
- 		i2c_udelay=5;
- 
--	memcpy(&core->i2c_algo, &cx8800_i2c_algo_template,
--	       sizeof(core->i2c_algo));
-+	core->i2c_algo = cx8800_i2c_algo_template;
- 
- 
- 	core->i2c_adap.dev.parent = &pci->dev;
-diff --git a/drivers/media/pci/cx88/cx88-vp3054-i2c.c b/drivers/media/pci/cx88/cx88-vp3054-i2c.c
-index d77f8ec..deede6e 100644
---- a/drivers/media/pci/cx88/cx88-vp3054-i2c.c
-+++ b/drivers/media/pci/cx88/cx88-vp3054-i2c.c
-@@ -118,8 +118,7 @@ int vp3054_i2c_probe(struct cx8802_dev *dev)
- 		return -ENOMEM;
- 	dev->vp3054 = vp3054_i2c;
- 
--	memcpy(&vp3054_i2c->algo, &vp3054_i2c_algo_template,
--	       sizeof(vp3054_i2c->algo));
-+	vp3054_i2c->algo = vp3054_i2c_algo_template;
- 
- 	vp3054_i2c->adap.dev.parent = &dev->pci->dev;
- 	strlcpy(vp3054_i2c->adap.name, core->name,
 -- 
 1.7.4.4
 
