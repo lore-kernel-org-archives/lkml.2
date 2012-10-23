@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab2JWVro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:47:44 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47284 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab2JWVrk (ORCPT
+	id S933126Ab2JWVua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:50:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56928 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2JWVu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 17:47:40 -0400
-Date: Tue, 23 Oct 2012 23:47:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Stanislav Kinsbursky <skinsbursky@parallels.com>, peterz@infradead.org,
-        mingo@redhat.com, devel@openvz.org, linux-kernel@vger.kernel.org,
-        xemul@parallels.com
-Subject: Re: [PATCH v5] posix timers: allocate timer id per process
-In-Reply-To: <1350978723.8609.1555.camel@edumazet-glaptop>
-Message-ID: <alpine.LFD.2.02.1210232345200.2756@ionos>
-References: <20121023073913.23514.87934.stgit@localhost.localdomain> <1350978723.8609.1555.camel@edumazet-glaptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 23 Oct 2012 17:50:28 -0400
+Date: Tue, 23 Oct 2012 14:50:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "kirill@shutemov.name" <kirill@shutemov.name>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-Id: <20121023145027.40710e7a.akpm@linux-foundation.org>
+In-Reply-To: <20121023101125.GA20210@mudshark.cambridge.arm.com>
+References: <1349197151-19645-1-git-send-email-will.deacon@arm.com>
+	<20121002150104.da57fa94.akpm@linux-foundation.org>
+	<20121017130125.GH5973@mudshark.cambridge.arm.com>
+	<20121017.112620.1865348978594874782.davem@davemloft.net>
+	<20121017155401.GJ5973@mudshark.cambridge.arm.com>
+	<20121018150502.3dee7899.akpm@linux-foundation.org>
+	<20121019091016.GA4582@mudshark.cambridge.arm.com>
+	<20121019114955.3a0c2b66.akpm@linux-foundation.org>
+	<20121022103503.GA26619@mudshark.cambridge.arm.com>
+	<20121022111843.4406850d.akpm@linux-foundation.org>
+	<20121023101125.GA20210@mudshark.cambridge.arm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012, Eric Dumazet wrote:
+On Tue, 23 Oct 2012 11:11:25 +0100
+Will Deacon <will.deacon@arm.com> wrote:
 
-> On Tue, 2012-10-23 at 11:40 +0400, Stanislav Kinsbursky wrote:
-> > This patch is required CRIU project (www.criu.org).
-> > To migrate processes with posix timers we have to make sure, that we can
-> > restore posix timer with proper id.
-> > Currently, this is not true, because timer ids are allocated globally.
-> > So, this is precursor patch and it's purpose is make posix timer id to be
-> > allocated per process.
+> On Mon, Oct 22, 2012 at 07:18:43PM +0100, Andrew Morton wrote:
+> > On Mon, 22 Oct 2012 11:35:03 +0100
+> > Will Deacon <will.deacon@arm.com> wrote:
 > > 
-> > Patch replaces global idr with global hash table for posix timers and
-> > makes timer ids unique not globally, but per process. Next free timer id is
-> > type of integer and stored on signal struct (posix_timer_id). If free timer id
-> > reaches negative value on timer creation, it will be dropped to zero and
-> > -EAGAIN will be returned to user.
+> > > On Fri, Oct 19, 2012 at 07:49:55PM +0100, Andrew Morton wrote:
+> > > > Ho hum.  I'll drop
+> > > > mm-thp-set-the-accessed-flag-for-old-pages-on-access-fault.patch and
+> > > > shall assume that you'll sort things out at the appropriate time.
+> > > 
+> > > Happy to sort it out once I work out what's going wrong!
 > > 
-> > Hash table has 512 slots.
-> > Key is constructed as follows:
-> > key = hash_32(hash_32(current->signal) ^ posix_timer_id));
-> > 
-> > Note: with this patch, id, returned to user, is not the minimal free
-> > amymore. It means, that id, returned to user space in loop, listed below, will
-> > be increasing on each iteration till INT_MAX and then dropped to zero:
-> > 
-> > while(1) {
-> > 	id = timer_create(...);
-> > 	timer_delete(id);
-> > }
-> > 
-> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> > 
-> > ---
+> > The patch "ARM: mm: Transparent huge page support for LPAE systems" is
+> > not present in linux-next, so this patch ("mm: thp: Set the accessed
+> > flag for old pages on access fault") will not compile?
 > 
-> SGTM
+> This patch ("mm: thp: Set the accessed flag for old pages on access fault")
+> doesn't depend on "ARM: mm: Transparent huge page support for LPAE systems"
+> because currently transparent huge pages cannot be enabled for ARM in
+> mainline (or linux-next). update_mmu_cache_pmd is only called from
+> mm/huge_memory.c, which depends on CONFIG_TRANSPARENT_HUGEPAGE=y.
+> 
+> As for the new huge_pmd_set_accessed function... there's a similar situation
+> for the do_huge_pmd_wp_page function: it's called from mm/memory.c but is
+> only defined in mm/huge_memory.c. Looks like the compiler optimises those
+> calls away because pmd_trans_huge and friends constant-fold to 0.
 
-Not so good to me.
- 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+Ah, OK.
 
-And that should be either an Acked-by or a Reviewed-by. You can't sign
-off on patches which have not been submitted or transported by you.
+"mm: thp: Set the accessed flag for old pages on access fault" clashes
+in a non-trivial way with linux-next changes, due to the sched-numa
+changes (sigh).  This is a problem for me, because I either need to
+significantly alter your patch (so it isn't applicable to mainline) or
+I need to stage your patch ahead of linux-next, then fix up linux-next
+every day after I've pulled and re-merged it.
 
-Thanks,
-
-	tglx
-
-
+I'm unsure what your timing is.  Can you carry "mm: thp: Set the
+accessed flag for old pages on access fault" until either the whole
+patchset is ready to merge or until the sched-numa situation has been
+cleared up?
