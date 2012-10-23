@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab2JWUC6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:02:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35336 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933452Ab2JWUCz (ORCPT
+	id S933608Ab2JWUDt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:03:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62157 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933317Ab2JWT7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:02:55 -0400
-Date: Tue, 23 Oct 2012 13:02:49 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121023200249.GA2712@core.coreip.homeip.net>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121022155028.GA13791@core.coreip.homeip.net>
- <508660D4.9030507@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508660D4.9030507@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 15:59:06 -0400
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
+Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH 13/23] tuners/xc2028: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:16 -0300
+Message-Id: <1351022246-8201-13-git-send-email-elezegarcia@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 11:18:12AM +0200, Benoit Cousson wrote:
-> Hi Dimitry,
-> 
-> On 10/22/2012 05:50 PM, Dmitry Torokhov wrote:
-> > Hi Sourav,
-> > 
-> > On Mon, Oct 22, 2012 at 06:43:00PM +0530, Sourav Poddar wrote:
-> >> Adapt keypad to use pinctrl framework.
-> >>
-> >> Tested on omap4430 sdp with 3.7-rc1 kernel.
-> > 
-> > I do not see anything in the driver that would directly use pinctrl. Is
-> > there a better place to select default pin configuration; maybe when
-> > instantiating platform device?
-> 
-> Why?
-> The devm_pinctrl_get_select_default is using the pinctrl.
+This kind of memcpy() is error-prone. Its replacement with a struct
+assignment is prefered because it's type-safe and much easier to read.
 
-No, I guess we ihave different understanding of what "directly use" means.
-This particular driver does directly use interrupts: it requests it and
-performs some actions when interrupt arrives. Same goes for IO memory -
-it gets requested, then we access it. With pinctrl we do not do anything
-- we just ask another layer to configure it and that is it.
+Found by coccinelle. Hand patched and reviewed.
+Tested by compilation only.
 
-I have seen just in a few days 3 or 4 drivers having exactly the same
-change - call to devm_pinctrl_get_select_default(), and I guess I will
-receive the same patches for the rest of input drivers shortly.
-This suggests that the operation is done at the wrong level. Do the
-pin configuration as you parse DT data, the same way you set up i2c
-devices registers in of_i2c.c, and leave the individual drivers that do
-not care about specifics alone.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> That's why it is named "get_select_default" and not "get" only.
-> This API ensure that the pin will be set to the default state, and this
-> is all we need to do during the probe.
+// <smpl>
+@@
+identifier struct_name;
+struct struct_name to;
+struct struct_name from;
+expression E;
+@@
+-memcpy(&(to), &(from), E);
++to = from;
+// </smpl>
 
-Why during the probe and not by default? Realistically, the driver will
-be loaded as long as there is a matching device and pins will need to be
-configured.
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+---
+ drivers/media/tuners/tuner-xc2028.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> There is no point to change the mux if the driver is not probed, because
-> potentially the pin can be use be another driver.
-
-What other driver would use it? Who would chose what driver to load?
-
-Thanks.
-
+diff --git a/drivers/media/tuners/tuner-xc2028.c b/drivers/media/tuners/tuner-xc2028.c
+index 7bcb6b0..0945173 100644
+--- a/drivers/media/tuners/tuner-xc2028.c
++++ b/drivers/media/tuners/tuner-xc2028.c
+@@ -870,7 +870,7 @@ check_device:
+ 	}
+ 
+ read_not_reliable:
+-	memcpy(&priv->cur_fw, &new_fw, sizeof(priv->cur_fw));
++	priv->cur_fw = new_fw;
+ 
+ 	/*
+ 	 * By setting BASE in cur_fw.type only after successfully loading all
 -- 
-Dmitry
+1.7.4.4
+
