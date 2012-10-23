@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965072Ab2JWUoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:44:16 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:15436 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933811Ab2JWUoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:44:11 -0400
-Date: Tue, 23 Oct 2012 20:44:10 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 16/18] slab: propagate tunables values
-In-Reply-To: <5084FA31.4060709@parallels.com>
-Message-ID: <0000013a8f5e3876-25f4d815-cf0a-4574-a321-60ad7a337aa7-000000@email.amazonses.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-17-git-send-email-glommer@parallels.com> <0000013a7a94c439-825659cc-8e6a-4905-909c-db1b230a4086-000000@email.amazonses.com> <5084FA31.4060709@parallels.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	id S964868Ab2JWUok (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:44:40 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40228 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933802Ab2JWUF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:26 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 164/193] net/decnet: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:57 -0700
+Message-Id: <1351022666-6960-165-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Glauber Costa wrote:
+This config item has not carried much meaning for a while now and is
+almost always enabled by default. As agreed during the Linux kernel
+summit, remove it.
 
-> On 10/19/2012 11:51 PM, Christoph Lameter wrote:
-> > On Fri, 19 Oct 2012, Glauber Costa wrote:
-> >
-> >> SLAB allows us to tune a particular cache behavior with tunables.
-> >> When creating a new memcg cache copy, we'd like to preserve any tunables
-> >> the parent cache already had.
-> >
-> > SLAB and SLUB allow tuning. Could you come up with some way to put these
-> > things into slab common and make it flexible so that the tuning could be
-> > used for future allocators (like SLAM etc)?
-> >
-> They do, but they also do it very differently. Like slub uses sysfs,
-> while slab don't.
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ net/decnet/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Well yes that is something that I also want to make more general so that
-all allocators support sysfs style display of status and tuning.
-
-> I of course fully support the integration, I just don't think this
-> should be a blocker for all kinds of work in the allocators. Converting
-> slab to sysfs seems to be a major work, that you are already tackling.
-> Were it simple, I believe it would be done already. Without it, this is
-> pretty much a fake integration...
-
-Well there is quite a bit of infrastructure that needs to be common in
-order to get this done properly. I hope we will get around to that
-someday.
+diff --git a/net/decnet/Kconfig b/net/decnet/Kconfig
+index 7914fd6..f3393e1 100644
+--- a/net/decnet/Kconfig
++++ b/net/decnet/Kconfig
+@@ -25,8 +25,8 @@ config DECNET
+ 	  The module is called decnet.
+ 
+ config DECNET_ROUTER
+-	bool "DECnet: router support (EXPERIMENTAL)"
+-	depends on DECNET && EXPERIMENTAL
++	bool "DECnet: router support"
++	depends on DECNET
+ 	select FIB_RULES
+ 	---help---
+ 	  Add support for turning your DECnet Endnode into a level 1 or 2
+-- 
+1.7.9.5
 
