@@ -1,98 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436Ab2JWS1J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:27:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933264Ab2JWS1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 14:27:01 -0400
-Date: Tue, 23 Oct 2012 20:27:11 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
-Message-ID: <20121023182711.GA24055@redhat.com>
-References: <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com> <20121023180558.GF2585@linux.vnet.ibm.com>
+	id S933416Ab2JWS1H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:27:07 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51214 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933364Ab2JWS1D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 14:27:03 -0400
+Date: Tue, 23 Oct 2012 11:26:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Subject: Re: [PATCH 00/16 v2] f2fs: introduce flash-friendly file system
+Message-ID: <20121023182659.GA6587@kroah.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121023180558.GF2585@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23, Paul E. McKenney wrote:
->
-> On Tue, Oct 23, 2012 at 06:59:12PM +0200, Oleg Nesterov wrote:
-> > Not really the comment, but the question...
-> >
-> > On 10/22, Mikulas Patocka wrote:
-> > >
-> > >  static inline void percpu_down_read(struct percpu_rw_semaphore *p)
-> > >  {
-> > >  	rcu_read_lock();
-> > > @@ -24,22 +27,12 @@ static inline void percpu_down_read(stru
-> > >  	}
-> > >  	this_cpu_inc(*p->counters);
-> > >  	rcu_read_unlock();
-> > > +	light_mb(); /* A, between read of p->locked and read of data, paired with D */
-> > >  }
-> >
-> > rcu_read_unlock() (or even preempt_enable) should have compiler barrier
-> > semantics... But I agree, this adds more documentation for free.
->
-> Although rcu_read_lock() does have compiler-barrier semantics if
-> CONFIG_PREEMPT=y, it does not for CONFIG_PREEMPT=n.  So the
-> light_mb() (which appears to be barrier()) is needed in that case.
+On Tue, Oct 23, 2012 at 11:21:53AM +0900, Jaegeuk Kim wrote:
+> mkfs.f2fs
+> =========
+> 
+> The file system formatting tool, "mkfs.f2fs", is available from the following
+> download page:		http://sourceforge.net/projects/f2fs-tools/
 
-Indeed, I missed this.
+Is there a git tree of this tool somewhere, so I don't have to
+constantly suffer the sf.net download interface every time I want to get
+the latest version?
 
-> > Ignoring the current implementation, according to the documentation
-> > synchronize_sched() has all rights to return immediately if there is
-> > no active rcu_read_lock_sched() section. If this were possible, than
-> > percpu_up_read() lacks mb.
->
-> Even if there happen to be no RCU-sched read-side critical sections
-> at the current instant, synchronize_sched() is required to make sure
-> that everyone agrees that whatever code is executed by the caller after
-> synchronize_sched() returns happens after any of the preceding RCU
-> read-side critical sections.
->
-> So, if we have this, with x==0 initially:
->
-> 	Task 0					Task 1
->
-> 						rcu_read_lock_sched();
-> 						x = 1;
-> 						rcu_read_unlock_sched();
-> 	synchronize_sched();
-> 	r1 = x;
->
-> Then the value of r1 had better be one.
+thanks,
 
-Yes, yes, this too. ("active rcu_read_lock_sched() section" above
-was confusing, I agree).
-
->  * Note that this guarantee implies a further memory-ordering guarantee.
->  * On systems with more than one CPU, when synchronize_sched() returns,
->  * each CPU is guaranteed to have executed a full memory barrier since
->  * the end of its last RCU read-side critical section whose beginning
->  * preceded the call to synchronize_sched().  Note that this guarantee
->  * includes CPUs that are offline, idle, or executing in user mode, as
->  * well as CPUs that are executing in the kernel.  Furthermore, if CPU A
->  * invoked synchronize_sched(), which returned to its caller on CPU B,
->  * then both CPU A and CPU B are guaranteed to have executed a full memory
->  * barrier during the execution of synchronize_sched().
-
-Great!
-
-Thanks Paul.
-
-Oleg.
-
+greg k-h
