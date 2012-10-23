@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960Ab2JWJST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:18:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52514 "EHLO mga09.intel.com"
+	id S932716Ab2JWJS3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:18:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57379 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756899Ab2JWJSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:18:18 -0400
-Message-Id: <6c3329$6sai31@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,634,1344236400"; 
-   d="scan'208";a="231032929"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: drm i915 hangs on heavy io load
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Cc: Norbert Preining <preining@logic.at>
-In-Reply-To: <20121023053830.GA30776@gamma.logic.tuwien.ac.at>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at>
-Date: Tue, 23 Oct 2012 10:17:48 +0100
+	id S932090Ab2JWJS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 05:18:26 -0400
+Message-ID: <508660D4.9030507@ti.com>
+Date: Tue, 23 Oct 2012 11:18:12 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com> <20121022155028.GA13791@core.coreip.homeip.net>
+In-Reply-To: <20121022155028.GA13791@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 14:38:30 +0900, Norbert Preining <preining@logic.at> wrote:
-> Hi everyone,
-> 
-> (please Cc)
-> 
-> I am running 3.7-rc2 and got recently hit a few times (under rc1, too)
-> by hanging drm i915 while doing large io operations.
-[snip]
-> 
-> I captured the i915_error_state and uploaded it here:
-> 	http://www.logic.at/people/preining/drm_i915_error_state.gz
-> 
-> The hangs have been normally initiated on svn up in a very big
-> repository, or git checkout on a very big repository or so.
-> 
-> Other system is Debian/unstable. The above output and error state is
-> from after a reboot without any suspends or other tricks inbetween,
-> uptime 3.5h.
+Hi Dimitry,
 
-Looks like fallout from a missing ILK rc6 workaround - it looks like the
-write to the ring tail never landed and so the command streamer hung.
+On 10/22/2012 05:50 PM, Dmitry Torokhov wrote:
+> Hi Sourav,
+> 
+> On Mon, Oct 22, 2012 at 06:43:00PM +0530, Sourav Poddar wrote:
+>> Adapt keypad to use pinctrl framework.
+>>
+>> Tested on omap4430 sdp with 3.7-rc1 kernel.
+> 
+> I do not see anything in the driver that would directly use pinctrl. Is
+> there a better place to select default pin configuration; maybe when
+> instantiating platform device?
 
-See https://bugs.freedesktop.org/show_bug.cgi?id=55984 and
-http://cgit.freedesktop.org/~danvet/drm/log/?h=ilk-wa-pile of which I
-think
-http://cgit.freedesktop.org/~danvet/drm/commit/?h=ilk-wa-pile&id=0d5fed2de763b49bb1a90140758153481f043757
-is the missing ingredient.
--Chris
+Why?
+The devm_pinctrl_get_select_default is using the pinctrl.
+That's why it is named "get_select_default" and not "get" only.
+This API ensure that the pin will be set to the default state, and this
+is all we need to do during the probe.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+There is no point to change the mux if the driver is not probed, because
+potentially the pin can be use be another driver.
+So probe is the right place to do that for my point of view. Moreover
+with DT we don't have that board static config like we had before to do
+that kind of pin mux init.
+
+But, maybe I'm missing your point.
+
+Regards,
+Benoit
+
+
+> 
+> Thanks.
+> 
+>>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+>> ---
+>> v1->v2
+>> - Added "PROBE_DEFER" check 
+>>  drivers/input/keyboard/omap4-keypad.c |   11 +++++++++++
+>>  1 files changed, 11 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+>> index c05f98c..502b832 100644
+>> --- a/drivers/input/keyboard/omap4-keypad.c
+>> +++ b/drivers/input/keyboard/omap4-keypad.c
+>> @@ -31,6 +31,7 @@
+>>  #include <linux/input.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/pm_runtime.h>
+>> +#include <linux/pinctrl/consumer.h>
+>>  
+>>  #include <linux/platform_data/omap4-keypad.h>
+>>  
+>> @@ -76,6 +77,7 @@ enum {
+>>  
+>>  struct omap4_keypad {
+>>  	struct input_dev *input;
+>> +	struct pinctrl	*pins;
+>>  
+>>  	void __iomem *base;
+>>  	unsigned int irq;
+>> @@ -298,6 +300,15 @@ static int __devinit omap4_keypad_probe(struct platform_device *pdev)
+>>  		goto err_release_mem;
+>>  	}
+>>  
+>> +	keypad_data->pins = devm_pinctrl_get_select_default(&pdev->dev);
+>> +	if (IS_ERR(keypad_data->pins)) {
+>> +		if (PTR_ERR(keypad_data->pins) == -EPROBE_DEFER)
+>> +			return -EPROBE_DEFER;
+>> +
+>> +		dev_warn(&pdev->dev, "did not get pins for keypad error: %li\n",
+>> +					PTR_ERR(keypad_data->pins));
+>> +		keypad_data->pins = NULL;
+>> +	}
+>>  
+>>  	/*
+>>  	 * Enable clocks for the keypad module so that we can read
+>> -- 
+>> 1.7.1
+>>
+> 
+
