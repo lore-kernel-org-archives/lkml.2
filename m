@@ -1,79 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839Ab2JWJb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:31:57 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57197 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768Ab2JWJb4 (ORCPT
+	id S932845Ab2JWJfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:35:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53035 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932768Ab2JWJfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:31:56 -0400
-Date: Tue, 23 Oct 2012 10:31:28 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Tony Prisk <linux@prisktech.co.nz>, devicetree-discuss@lists.ozlabs.org,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 2/3] PWM: vt8500: Update vt8500 PWM driver support
-Message-ID: <20121023093128.GR21164@n2100.arm.linux.org.uk>
-References: <1350643135-13197-1-git-send-email-linux@prisktech.co.nz> <1350643135-13197-2-git-send-email-linux@prisktech.co.nz> <20121022063423.GA17181@avionic-0098.mockup.avionic-design.de> <1350888712.3592.11.camel@gitbox> <1350889747.3592.17.camel@gitbox> <20121022072448.GB30026@avionic-0098.mockup.avionic-design.de> <1350891382.3592.22.camel@gitbox> <20121022080414.GB4931@avionic-0098.mockup.avionic-design.de> <1350981706.20938.7.camel@gitbox> <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
+	Tue, 23 Oct 2012 05:35:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023092247.GA13220@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <00a201cdb0fb$412efa10$c38cee30$%kim@samsung.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+	<001b01cdb0c6$67e386b0$37aa9410$%kim@samsung.com>
+	<CANGUGtC+g22+ohn-QjK+ZQkeoZCk6gsDUn8S=c8jmkJ1tek1AQ@mail.gmail.com>
+	<009c01cdb0f2$812b5f90$83821eb0$%kim@samsung.com>
+	<CANGUGtBtgmWW1VjMP5mEK9qOzLxLUSgD_KvUr1b0+Yi3bHgVBQ@mail.gmail.com>
+	<00a201cdb0fb$412efa10$c38cee30$%kim@samsung.com>
+Date: Tue, 23 Oct 2012 11:35:12 +0200
+Message-ID: <CANGUGtD-X9suBdnx7jGkAcJNauVrYWWtz4ncR84i6RursTNCYA@mail.gmail.com>
+Subject: Re: [PATCH 11/16 v2] f2fs: add inode operations for special inodes
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 11:22:47AM +0200, Thierry Reding wrote:
-> On Tue, Oct 23, 2012 at 09:41:46PM +1300, Tony Prisk wrote:
-> > Further to the discussion, my preference is still for of_clk_get()
-> > (although I've changed the patch anyway as you saw because it makes no
-> > difference in this case) :)
-> > 
-> > clk_get(x, NULL) and devm_clk_get(x, NULL) both seems like 'hacks' to
-> > allow platforms to convert to DT without having to update all their
-> > drivers first. It only allows the first (default) clock, as your pointed
-> > out. Getting a 2nd... clock relies on an optional property in DT (which
-> > again, seems like it is there to support 'old' drivers) which allows you
-> > to request clocks by name.
-> > 
-> > of_clk_get() on the other hand seems like a properly native DT function.
-> > You don't need to know anything about the clock, as long as the correct
-> > clock is specified in the correct order as documented by the binding.
-> > Relying on 'pre-OF' code for a OF-only driver also seems
-> > counter-intuitive.
-> 
-> I do agree with those arguments. What I was saying is that for drivers
-> which aren't DT only, of_clk_get() is not an option and that maybe
-> others would be encouraged by the example to not use the generic APIs
-> even if their driver could be used in non-DT setups. But maybe I'm
-> worrying needlessly.
-> 
-> That said, maybe somebody with a broader view of things like Arnd
-> (Cc'ed) could share his thoughts.
+2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> 2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> >
+>> >> -----Original Message-----
+>> >> From: Marco Stornelli [mailto:marco.stornelli@gmail.com]
+>> >> Sent: Tuesday, October 23, 2012 4:02 PM
+>> >> To: Jaegeuk Kim
+>> >> Cc: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; gregkh@linuxfoundation.org;
+>> >> viro@zeniv.linux.org.uk; arnd@arndb.de; tytso@mit.edu; chur.lee@samsung.com; cm224.lee@samsung.com;
+>> >> jooyoung.hwang@samsung.com
+>> >> Subject: Re: [PATCH 11/16 v2] f2fs: add inode operations for special inodes
+>> >> Importance: High
+>> >>
+>> >> 2012/10/23 Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+>> >> > This adds inode operations for directory, symlink, and special inodes.
+>> >> >
+>> >> > Signed-off-by: Changman Lee <cm224.lee@samsung.com>
+>> >> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+>> >> > ---
+>> >> >  fs/f2fs/namei.c |  494 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>> >> >  1 file changed, 494 insertions(+)
+>> >> >  create mode 100644 fs/f2fs/namei.c
+>> >> >
+>> >> > diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+>> >> > new file mode 100644
+>> >> > index 0000000..899d144
+>> >> > --- /dev/null
+>> >> > +++ b/fs/f2fs/namei.c
+>> >> > @@ -0,0 +1,494 @@
+>> >> > +/**
+>> >> > + * fs/f2fs/namei.c
+>> >> > + *
+>> >> > + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+>> >> > + *             http://www.samsung.com/
+>> >> > + *
+>> >> > + * This program is free software; you can redistribute it and/or modify
+>> >> > + * it under the terms of the GNU General Public License version 2 as
+>> >> > + * published by the Free Software Foundation.
+>> >> > + */
+>> >> > +#include <linux/fs.h>
+>> >> > +#include <linux/f2fs_fs.h>
+>> >> > +#include <linux/pagemap.h>
+>> >> > +#include <linux/sched.h>
+>> >> > +#include <linux/ctype.h>
+>> >> > +
+>> >> > +#include "f2fs.h"
+>> >> > +#include "xattr.h"
+>> >> > +#include "acl.h"
+>> >> > +
+>> >> > +static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
+>> >> > +{
+>> >> > +       struct super_block *sb = dir->i_sb;
+>> >> > +       struct f2fs_sb_info *sbi = F2FS_SB(sb);
+>> >> > +       nid_t ino;
+>> >> > +       struct inode *inode;
+>> >> > +       bool nid_free = false;
+>> >> > +       int err;
+>> >> > +
+>> >> > +       inode = new_inode(sb);
+>> >> > +       if (!inode)
+>> >> > +               return ERR_PTR(-ENOMEM);
+>> >> > +
+>> >> > +       mutex_lock_op(sbi, NODE_NEW);
+>> >> > +       if (!alloc_nid(sbi, &ino)) {
+>> >> > +               mutex_unlock_op(sbi, NODE_NEW);
+>> >> > +               err = -ENOSPC;
+>> >> > +               goto fail;
+>> >> > +       }
+>> >> > +       mutex_unlock_op(sbi, NODE_NEW);
+>> >> > +
+>> >> > +       inode->i_uid = current_fsuid();
+>> >> > +
+>> >> > +       if (dir->i_mode & S_ISGID) {
+>> >> > +               inode->i_gid = dir->i_gid;
+>> >> > +               if (S_ISDIR(mode))
+>> >> > +                       mode |= S_ISGID;
+>> >> > +       } else {
+>> >> > +               inode->i_gid = current_fsgid();
+>> >> > +       }
+>> >> > +
+>> >> > +       inode->i_ino = ino;
+>> >> > +       inode->i_mode = mode;
+>> >> > +       inode->i_blocks = 0;
+>> >> > +       inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+>> >> > +
+>> >> > +       err = insert_inode_locked(inode);
+>> >> > +       if (err) {
+>> >> > +               err = -EINVAL;
+>> >> > +               nid_free = true;
+>> >> > +               goto out;
+>> >> > +       }
+>> >> > +
+>> >> > +       mark_inode_dirty(inode);
+>> >> > +       return inode;
+>> >> > +
+>> >> > +out:
+>> >> > +       clear_nlink(inode);
+>> >> > +       unlock_new_inode(inode);
+>> >> > +fail:
+>> >> > +       iput(inode);
+>> >>
+>> >> make_bad_inode here?
+>> >
+>> > I wanted to call f2fs_evict_inode() at this moment.
+>> > - f2fs_evict_inode()
+>> >  - remove_inode_page()
+>> >    -> check any erroneous conditions.
+>> >
+>> > Got coffee? :)
+>> >
+>>
+>> Not yet, I'm reading my 240 email yet :)
+>> I meant not to replace iput but to add make_bad_inode() before (I
+>> don't know if it was clear). I don't know if it's the right thing to
+>> do. In case of "out" I'd do the "rollback" here.
+>>
+>
+> Sorry, I confused what you said. I need a cup of coffee.
+> IMHO, it seems there is no difference, since f2fs doesn't allow
+> a race condition on inodes with a same inode number.
+> (e.g., one is bad, and the other is newly allocated with the same
+> inode number.)
+>
+>> Marco
+>
 
-As I have already said, the way the DT bindings were done for the clk
-stuff was wrong.  A little thought put into it would've come up with
-a much better solution which wouldn't have needed of_clk_get() at all.
+It was only a suggestion :)
 
-How?
-
-The arguments for clk_get() are:
-1. the struct device, which you can get the OF-node from.
-2. a _device_ _specific_ _clock_ _input_ _name_ (or NULL if there's only
-   one.)
-
-So, we have something that defines a hardware clock input name, which
-can be used to generate a property name for OF.  So, what _could_ have
-been done is this:
-
-	clock-<input-name> = <&provider-node clk-output-index>;
-
-where the property name is generated by:
-
-	snprintf(prop, sizeof(prop), "clk-%s", name ? name : "default");
-
-So I continue to assert that our current design is wrong - and it will
-cause driver authors to pointlessly have to make a choice at every stage
-between DT and non-DT based systems.
+Marco
