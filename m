@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965306Ab2JWUuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:50:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35991 "EHLO smtp.outflux.net"
+	id S965245Ab2JWUua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:50:30 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36231 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933770Ab2JWUFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933772Ab2JWUFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:22 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, David Howells <dhowells@redhat.com>
-Subject: [PATCH 139/193] fs/afs: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:32 -0700
-Message-Id: <1351022666-6960-140-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: [PATCH 053/193] drivers/iio/dac: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:06 -0700
+Message-Id: <1351022666-6960-54-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -24,35 +28,29 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: David Howells <dhowells@redhat.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>
+CC: Lars-Peter Clausen <lars@metafoo.de>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Michael Hennerich <michael.hennerich@analog.com>
+CC: Peter Meerwald <pmeerw@pmeerw.net>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- fs/afs/Kconfig |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/iio/dac/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/afs/Kconfig b/fs/afs/Kconfig
-index 8f975f2..ebba3b1 100644
---- a/fs/afs/Kconfig
-+++ b/fs/afs/Kconfig
-@@ -1,6 +1,6 @@
- config AFS_FS
--	tristate "Andrew File System support (AFS) (EXPERIMENTAL)"
--	depends on INET && EXPERIMENTAL
-+	tristate "Andrew File System support (AFS)"
-+	depends on INET
- 	select AF_RXRPC
- 	select DNS_RESOLVER
- 	help
-@@ -22,8 +22,7 @@ config AFS_DEBUG
- 	  If unsure, say N.
+diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+index b1c0ee5..1f3ce77 100644
+--- a/drivers/iio/dac/Kconfig
++++ b/drivers/iio/dac/Kconfig
+@@ -122,7 +122,7 @@ config AD5686
  
- config AFS_FSCACHE
--	bool "Provide AFS client caching support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	bool "Provide AFS client caching support"
- 	depends on AFS_FS=m && FSCACHE || AFS_FS=y && FSCACHE=y
+ config MAX517
+ 	tristate "Maxim MAX517/518/519 DAC driver"
+-	depends on I2C && EXPERIMENTAL
++	depends on I2C
  	help
- 	  Say Y here if you want AFS data to be cached locally on disk through
+ 	  If you say yes here you get support for the Maxim chips MAX517,
+ 	  MAX518 and MAX519 (I2C 8-Bit DACs with rail-to-rail outputs).
 -- 
 1.7.9.5
 
