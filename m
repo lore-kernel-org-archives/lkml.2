@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab2JWBdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 21:33:02 -0400
-Received: from mga14.intel.com ([143.182.124.37]:57649 "EHLO mga14.intel.com"
+	id S1756493Ab2JWBdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 21:33:50 -0400
+Received: from fieldses.org ([174.143.236.118]:39811 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756320Ab2JWBdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 21:33:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,632,1344236400"; 
-   d="scan'208";a="207739832"
-Date: Tue, 23 Oct 2012 09:32:57 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: linux-kbuild <linux-kbuild@vger.kernel.org>
-Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kbuild: fix xargs error on make distclean
-Message-ID: <20121023013257.GA21775@localhost>
+	id S1756227Ab2JWBds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Oct 2012 21:33:48 -0400
+Date: Mon, 22 Oct 2012 21:33:43 -0400
+To: Nix <nix@esperi.org.uk>
+Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+        gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
+Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server panic: 3.6.2+ regression?
+Message-ID: <20121023013343.GB6370@fieldses.org>
+References: <87objupjlr.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87objupjlr.fsf@spindle.srvr.nix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/usr/bin/xargs: unmatched single quote; by default quotes are special to xargs unless you use the -0 option
+On Mon, Oct 22, 2012 at 05:17:04PM +0100, Nix wrote:
+> I just had a panic/oops on upgrading from 3.6.1 to 3.6.3, after weeks of
+> smooth operation on 3.6.1: one of the NFS changes that went into one of
+> the two latest stable kernels appears to be lethal after around half an
+> hour of uptime. The oops came from NFSv4, IIRC (relying on memory since
+> my camera was recharging and there is no netconsole from that box
+> because it is where the netconsole logs go, so I'll have to reproduce it
+> later today). The machine is an NFSv3 server only at present, with no
+> NFSv4 running (though NFSv4 is built in).
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Note recent clients may try to negotiate NFSv4 by default, so it's
+possible to use it without knowing.
 
-diff --git a/Makefile b/Makefile
-index bb9fff2..e5a64cc 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1033,7 +1033,7 @@ distclean: mrproper
- 		-o -name '*.bak' -o -name '#*#' -o -name '.*.orig' \
- 		-o -name '.*.rej' \
- 		-o -name '*%' -o -name '.*.cmd' -o -name 'core' \) \
--		-type f -print | xargs rm -f
-+		-type f -print0 | xargs -0 rm -f
- 
- 
- # Packaging of the kernel to various formats
--- 
-1.7.10
+You didn't change anything else about your server or clients recently?
 
+> This is just a heads-up, not intended to be sufficient to track it down
+> unless it is instantly obvious: more later, including a .config dump and
+> proper oops report if it turns out to be reproducible. I just have to
+> recover from the usual panic-induced fs corruption and take a backup
+> first.
+
+Thanks.
+
+I don't see an obvious candidate on a quick skim of v3.6.1..v3.6.3
+commits, but of course I could be missing something.
+
+--b.
