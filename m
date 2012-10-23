@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2JWRCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:02:25 -0400
-Received: from rs130.luxsci.com ([72.32.115.17]:33627 "EHLO rs130.luxsci.com"
+	id S933161Ab2JWRD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:03:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12973 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755138Ab2JWRCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:02:23 -0400
-Message-ID: <5086CD91.9070101@firmworks.com>
-Date: Tue, 23 Oct 2012 07:02:09 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1757243Ab2JWRDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:03:54 -0400
+Message-ID: <5086CDF5.3020901@redhat.com>
+Date: Tue, 23 Oct 2012 19:03:49 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com> <20121022155028.GA13791@core.coreip.homeip.net> <CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com> <508664CA.7000601@ti.com> <CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com> <20121023100333.GA24418@arwen.pp.htv.fi>
-In-Reply-To: <20121023100333.GA24418@arwen.pp.htv.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: [GIT PULL] KVM fixes for 3.7-rc2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Lux-Comment: Message q9NH2AMW000634 sent by user #11875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 12:03 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> I much prefer having drivers explicitly manage all their resources,
-> which would mean that pinctrl calls need to be done on probe() and, if
-> necessary, during suspend()/resume().
+Linus, please pull a few KVM fixes from the repo and tag at:
 
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.7-2
 
-Per-driver resource management is certainly convenient when you are
-dealing with a single system, but it becomes difficult to maintain for
-drivers that are shared among many platforms.
+Fixing an oops, IPI misrouting in x2apic mode, and not exiting RCU
+idle state when receiving an async page fault.
 
-The industry trend for many years has been consolidation around a single
-programming model per class of device.  For example, SDHCI, EHCI, ATA.
-This trend will only accelerate, as the cost of developing controller IP
-and associated drivers increases.  Such drivers need to be as
-platform-agnostic as possible.
+----------------------------------------------------------------
+KVM updates for 3.7-rc2
 
+----------------------------------------------------------------
+Gleb Natapov (1):
+      KVM: apic: fix LDR calculation in x2apic mode
+
+Sasha Levin (1):
+      KVM guest: exit idleness when handling KVM_PV_REASON_PAGE_NOT_PRESENT
+
+Xiao Guangrong (1):
+      KVM: MMU: fix release noslot pfn
+
+ arch/x86/kernel/kvm.c | 3 +++
+ arch/x86/kvm/lapic.c  | 2 +-
+ arch/x86/kvm/mmu.c    | 3 +--
+ virt/kvm/kvm_main.c   | 4 +---
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+-- 
+error compiling committee.c: too many arguments to function
