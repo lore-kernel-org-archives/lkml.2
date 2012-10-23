@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964851Ab2JWUbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:31:07 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58705 "EHLO smtp.outflux.net"
+	id S933940Ab2JWUbF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:31:05 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35411 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964811Ab2JWUFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964812Ab2JWUFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:44 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@googlemail.com>
-Subject: [PATCH 049/193] drivers/i2c/busses: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:02 -0700
-Message-Id: <1351022666-6960-50-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 165/193] net/decnet/netfilter: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:58 -0700
+Message-Id: <1351022666-6960-166-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -25,96 +26,27 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Ralf Baechle <ralf@linux-mips.org>
-CC: Manuel Lauss <manuel.lauss@googlemail.com>
+CC: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: Patrick McHardy <kaber@trash.net>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/i2c/busses/Kconfig |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ net/decnet/netfilter/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 65dd599..2a63404 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -22,7 +22,7 @@ config I2C_ALI1535
+diff --git a/net/decnet/netfilter/Kconfig b/net/decnet/netfilter/Kconfig
+index 2f81de5..8d7c109 100644
+--- a/net/decnet/netfilter/Kconfig
++++ b/net/decnet/netfilter/Kconfig
+@@ -3,7 +3,7 @@
+ #
  
- config I2C_ALI1563
- 	tristate "ALI 1563"
--	depends on PCI && EXPERIMENTAL
-+	depends on PCI
- 	help
- 	  If you say yes to this option, support will be included for the SMB
- 	  Host controller on Acer Labs Inc. (ALI) M1563 South Bridges.  The SMB
-@@ -56,7 +56,7 @@ config I2C_AMD756
+ menu "DECnet: Netfilter Configuration"
+-	depends on DECNET && NETFILTER && EXPERIMENTAL
++	depends on DECNET && NETFILTER
+ 	depends on NETFILTER_ADVANCED
  
- config I2C_AMD756_S4882
- 	tristate "SMBus multiplexing on the Tyan S4882"
--	depends on I2C_AMD756 && X86 && EXPERIMENTAL
-+	depends on I2C_AMD756 && X86
- 	help
- 	  Enabling this option will add specific SMBus support for the Tyan
- 	  S4882 motherboard.  On this 4-CPU board, the SMBus is multiplexed
-@@ -165,7 +165,7 @@ config I2C_NFORCE2
- 
- config I2C_NFORCE2_S4985
- 	tristate "SMBus multiplexing on the Tyan S4985"
--	depends on I2C_NFORCE2 && X86 && EXPERIMENTAL
-+	depends on I2C_NFORCE2 && X86
- 	help
- 	  Enabling this option will add specific SMBus support for the Tyan
- 	  S4985 motherboard.  On this 4-CPU board, the SMBus is multiplexed
-@@ -216,7 +216,7 @@ config I2C_SIS96X
- 
- config I2C_VIA
- 	tristate "VIA VT82C586B"
--	depends on PCI && EXPERIMENTAL
-+	depends on PCI
- 	select I2C_ALGOBIT
- 	help
- 	  If you say yes to this option, support will be included for the VIA
-@@ -268,7 +268,7 @@ comment "Mac SMBus host controller drivers"
- 
- config I2C_HYDRA
- 	tristate "CHRP Apple Hydra Mac I/O I2C interface"
--	depends on PCI && PPC_CHRP && EXPERIMENTAL
-+	depends on PCI && PPC_CHRP
- 	select I2C_ALGOBIT
- 	help
- 	  This supports the use of the I2C interface in the Apple Hydra Mac
-@@ -294,7 +294,7 @@ comment "I2C system bus drivers (mostly embedded / system-on-chip)"
- 
- config I2C_AT91
- 	tristate "Atmel AT91 I2C Two-Wire interface (TWI)"
--	depends on ARCH_AT91 && EXPERIMENTAL
-+	depends on ARCH_AT91
- 	help
- 	  This supports the use of the I2C interface on Atmel AT91
- 	  processors.
-@@ -510,7 +510,6 @@ config I2C_NUC900
- 
- config I2C_OCORES
- 	tristate "OpenCores I2C Controller"
--	depends on EXPERIMENTAL
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  OpenCores I2C controller. For details see
-@@ -703,7 +702,7 @@ config I2C_OCTEON
- 
- config I2C_XILINX
- 	tristate "Xilinx I2C Controller"
--	depends on EXPERIMENTAL && HAS_IOMEM
-+	depends on HAS_IOMEM
- 	help
- 	  If you say yes to this option, support will be included for the
- 	  Xilinx I2C controller.
-@@ -794,7 +793,6 @@ config I2C_PARPORT_LIGHT
- 
- config I2C_TAOS_EVM
- 	tristate "TAOS evaluation module"
--	depends on EXPERIMENTAL
- 	select SERIO
- 	select SERIO_SERPORT
- 	default n
+ config DECNET_NF_GRABULATOR
 -- 
 1.7.9.5
 
