@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab2JWUFC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:05:02 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:44247 "EHLO smtp.outflux.net"
+	id S965706Ab2JWVNd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:13:33 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42573 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933556Ab2JWUE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:04:56 -0400
+	id S933647Ab2JWUFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:02 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH 011/193] arch/ia64: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:01:24 -0700
-Message-Id: <1351022666-6960-12-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Tim Waugh <tim@cyberelk.net>
+Subject: [PATCH 039/193] drivers/block/paride: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:52 -0700
+Message-Id: <1351022666-6960-40-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -25,39 +24,27 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
+CC: Tim Waugh <tim@cyberelk.net>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/ia64/Kconfig |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/paride/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 3279646..ceed9a7 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -375,8 +375,8 @@ config NR_CPUS
- 	  performance hit.
+diff --git a/drivers/block/paride/Kconfig b/drivers/block/paride/Kconfig
+index 28cf308..efefb5a 100644
+--- a/drivers/block/paride/Kconfig
++++ b/drivers/block/paride/Kconfig
+@@ -205,8 +205,8 @@ config PARIDE_EPAT
+ 	  support.
  
- config HOTPLUG_CPU
--	bool "Support for hot-pluggable CPUs (EXPERIMENTAL)"
--	depends on SMP && EXPERIMENTAL
-+	bool "Support for hot-pluggable CPUs"
-+	depends on SMP
- 	select HOTPLUG
- 	default n
- 	---help---
-@@ -555,8 +555,8 @@ config IA64_HP_AML_NFW
- source "drivers/sn/Kconfig"
- 
- config KEXEC
--	bool "kexec system call (EXPERIMENTAL)"
--	depends on EXPERIMENTAL && !IA64_HP_SIM && (!SMP || HOTPLUG_CPU)
-+	bool "kexec system call"
-+	depends on !IA64_HP_SIM && (!SMP || HOTPLUG_CPU)
+ config PARIDE_EPATC8
+-	bool "Support c7/c8 chips (EXPERIMENTAL)"
+-	depends on PARIDE_EPAT && EXPERIMENTAL
++	bool "Support c7/c8 chips"
++	depends on PARIDE_EPAT
  	help
- 	  kexec is a system call that implements the ability to shutdown your
- 	  current kernel, and to start another kernel.  It is like a reboot
+ 	  This option enables support for the newer Shuttle EP1284 (aka c7 and
+ 	  c8) chip. You need this if you are using any recent Imation SuperDisk
 -- 
 1.7.9.5
 
