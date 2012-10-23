@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab2JWUC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:02:26 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:49915 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756972Ab2JWT7M (ORCPT
+	id S933566Ab2JWUCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:02:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55621 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab2JWUCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:59:12 -0400
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
-Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 15/23] ivtv: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:18 -0300
-Message-Id: <1351022246-8201-15-git-send-email-elezegarcia@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	Tue, 23 Oct 2012 16:02:35 -0400
+Date: Tue, 23 Oct 2012 13:02:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-Id: <20121023130234.827aa5df.akpm@linux-foundation.org>
+In-Reply-To: <1351021889.7502.55.camel@joe-AO722>
+References: <20121023144221.5ae3061a11766df8175b959d@canb.auug.org.au>
+	<20121023124414.61568323.akpm@linux-foundation.org>
+	<1351021889.7502.55.camel@joe-AO722>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This kind of memcpy() is error-prone. Its replacement with a struct
-assignment is prefered because it's type-safe and much easier to read.
+On Tue, 23 Oct 2012 12:51:29 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Found by coccinelle. Hand patched and reviewed.
-Tested by compilation only.
+> > btw, what's up with printk_syslog.h?  It includes two header files which it
+> > doesn't need but fails to include the two it *does* need: printk_log.h
+> > and types.h.
+> > 
+> > 
+> 
+> printk_syslog.c includes kernel.h (it includes types.h)
+> and printk_log.h.
+> 
+> I think printk_syslog.h doesn't need printk_log.h
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+A general rule is that the header file shouldn't know or care what else
+it's includer has included.  Ideally it shouldn't know or care what
+else its includees have included, either.
 
-// <smpl>
-@@
-identifier struct_name;
-struct struct_name to;
-struct struct_name from;
-expression E;
-@@
--memcpy(&(to), &(from), E);
-+to = from;
-// </smpl>
+A fun test would be
 
-Cc: Andy Walls <awalls@md.metrocast.net>
-Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
----
- drivers/media/pci/ivtv/ivtv-i2c.c |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+for i in *.h
+	echo $i > foo.c
+	make foo.o
+done
 
-diff --git a/drivers/media/pci/ivtv/ivtv-i2c.c b/drivers/media/pci/ivtv/ivtv-i2c.c
-index d47f41a..27a8466 100644
---- a/drivers/media/pci/ivtv/ivtv-i2c.c
-+++ b/drivers/media/pci/ivtv/ivtv-i2c.c
-@@ -719,13 +719,10 @@ int init_ivtv_i2c(struct ivtv *itv)
- 		return -ENODEV;
- 	}
- 	if (itv->options.newi2c > 0) {
--		memcpy(&itv->i2c_adap, &ivtv_i2c_adap_hw_template,
--		       sizeof(struct i2c_adapter));
-+		itv->i2c_adap = ivtv_i2c_adap_hw_template;
- 	} else {
--		memcpy(&itv->i2c_adap, &ivtv_i2c_adap_template,
--		       sizeof(struct i2c_adapter));
--		memcpy(&itv->i2c_algo, &ivtv_i2c_algo_template,
--		       sizeof(struct i2c_algo_bit_data));
-+		itv->i2c_adap = ivtv_i2c_adap_template;
-+		itv->i2c_algo = ivtv_i2c_algo_template;
- 	}
- 	itv->i2c_algo.udelay = itv->options.i2c_clock_period / 2;
- 	itv->i2c_algo.data = itv;
-@@ -735,8 +732,7 @@ int init_ivtv_i2c(struct ivtv *itv)
- 		itv->instance);
- 	i2c_set_adapdata(&itv->i2c_adap, &itv->v4l2_dev);
- 
--	memcpy(&itv->i2c_client, &ivtv_i2c_client_template,
--	       sizeof(struct i2c_client));
-+	itv->i2c_client = ivtv_i2c_client_template;
- 	itv->i2c_client.adapter = &itv->i2c_adap;
- 	itv->i2c_adap.dev.parent = &itv->pdev->dev;
- 
--- 
-1.7.4.4
 
