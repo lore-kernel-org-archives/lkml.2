@@ -1,155 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746Ab2JWMuz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:50:55 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46179 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811Ab2JWMux (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:50:53 -0400
-Message-ID: <508692A8.6090706@suse.cz>
-Date: Tue, 23 Oct 2012 14:50:48 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932835Ab2JWMxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:53:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41527 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757008Ab2JWMxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 08:53:17 -0400
+Date: Tue, 23 Oct 2012 14:53:04 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>, avi@redhat.com
+Subject: Re: [PATCH 06/34] perf, kvm: Support the intx/intx_cp modifiers in
+ KVM arch perfmon emulation v2
+Message-ID: <20121023125304.GA3654@redhat.com>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
+ <1350602382-12771-7-git-send-email-andi@firstfloor.org>
+ <1350995765.13456.15.camel@twins>
 MIME-Version: 1.0
-To: Aristeu Rozanski <aris@redhat.com>
-CC: linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, James Morris <jmorris@namei.org>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, cgroups@vger.kernel.org
-Subject: Re: [PATCH 1/4] cgroup: fix invalid rcu dereference
-References: <20121022134536.172969567@napanee.usersys.redhat.com> <20121022134536.543579196@napanee.usersys.redhat.com>
-In-Reply-To: <20121022134536.543579196@napanee.usersys.redhat.com>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350995765.13456.15.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2012 03:45 PM, Aristeu Rozanski wrote:
-> From: Jiri Slaby <jslaby@suse.cz>
+On Tue, Oct 23, 2012 at 02:36:05PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > This is not arch perfmon, but older CPUs will just ignore it. This makes
+> > it possible to do at least some TSX measurements from a KVM guest
+> 
+> Please, always CC people who wrote the code as well, in this case that's
+> Gleb.
+> 
+Yes, I missed the v2. Thanks Peter.
 
-No, I'm *not* the author of the patch... Or at least I don't remember
-:P. Where did you take it from?
-
-> Commit "device_cgroup: convert device_cgroup internally to policy +
-> exceptions" removed rcu locks which are needed in task_devcgroup
-> called in this chain: devcgroup_inode_mknod OR
-> __devcgroup_inode_permission -> __devcgroup_inode_permission ->
-> task_devcgroup -> task_subsys_state -> task_subsys_state_check.
+> > Cc: avi@redhat.com
+> > v2: Various fixes to address review feedback
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  arch/x86/kvm/pmu.c |   15 +++++++++++----
+> >  1 files changed, 11 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
+> > index cfc258a..81c1632 100644
+> > --- a/arch/x86/kvm/pmu.c
+> > +++ b/arch/x86/kvm/pmu.c
 > 
-> Change the code so that task_devcgroup is safely called with rcu read
-> lock held.
+> > @@ -173,6 +173,11 @@ static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
+> >  		.exclude_kernel = exclude_kernel,
+> >  		.config = config,
+> >  	};
+> > +	/* Will be ignored on CPUs that don't support this. */
+> > +	if (intx)
+> > +		attr.config |= HSW_INTX;
+> > +	if (intx_cp)
+> > +		attr.config |= HSW_INTX_CHECKPOINTED;
+> >  
+> >  	attr.sample_period = (-pmc->counter) & pmc_bitmask(pmc);
+> >  
 > 
-> ===============================
-> [ INFO: suspicious RCU usage. ]
-> 3.6.0-rc5-next-20120913+ #42 Not tainted
-> -------------------------------
-> include/linux/cgroup.h:553 suspicious rcu_dereference_check() usage!
-> 
-> other info that might help us debug this:
-> 
-> rcu_scheduler_active = 1, debug_locks = 0
-> 2 locks held by kdevtmpfs/23:
->  #0:  (sb_writers){.+.+.+}, at: [<ffffffff8116873f>]
-> mnt_want_write+0x1f/0x50
->  #1:  (&sb->s_type->i_mutex_key#3/1){+.+.+.}, at: [<ffffffff811558af>]
-> kern_path_create+0x7f/0x170
-> 
-> stack backtrace:
-> Pid: 23, comm: kdevtmpfs Not tainted 3.6.0-rc5-next-20120913+ #42
-> Call Trace:
->  [<ffffffff810c638d>] lockdep_rcu_suspicious+0xfd/0x130
->  [<ffffffff8121541d>] devcgroup_inode_mknod+0x19d/0x240
->  [<ffffffff8107bf54>] ? ns_capable+0x44/0x80
->  [<ffffffff81156b21>] vfs_mknod+0x71/0xf0
->  [<ffffffff813a8332>] handle_create.isra.2+0x72/0x200
->  [<ffffffff813a85d4>] devtmpfsd+0x114/0x140
->  [<ffffffff813a84c0>] ? handle_create.isra.2+0x200/0x200
->  [<ffffffff81093ad6>] kthread+0xd6/0xe0
->  [<ffffffff81654f24>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8165369d>] ? retint_restore_args+0xe/0xe
->  [<ffffffff81093a00>] ? kthread_create_on_node+0x140/0x140
->  [<ffffffff81654f20>] ? gs_change+0xb/0xb
-> 
-> Cc: Dave Jones <davej@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: James Morris <jmorris@namei.org>
-> Cc: Pavel Emelyanov <xemul@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> 
-> ---
-> 
-> And this should fix it.
-> 
->  security/device_cgroup.c |   15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> --- github.orig/security/device_cgroup.c	2012-10-17 11:11:08.514793906 -0400
-> +++ github/security/device_cgroup.c	2012-10-19 16:35:37.936804289 -0400
-> @@ -533,10 +533,10 @@ struct cgroup_subsys devices_subsys = {
->   *
->   * returns 0 on success, -EPERM case the operation is not permitted
->   */
-> -static int __devcgroup_check_permission(struct dev_cgroup *dev_cgroup,
-> -					short type, u32 major, u32 minor,
-> +static int __devcgroup_check_permission(short type, u32 major, u32 minor,
->  				        short access)
->  {
-> +	struct dev_cgroup *dev_cgroup;
->  	struct dev_exception_item ex;
->  	int rc;
->  
-> @@ -547,6 +547,7 @@ 	memset(&ex, 0, sizeof(ex));
->  	ex.access = access;
->  
->  	rcu_read_lock();
-> +	dev_cgroup = task_devcgroup(current);
->  	rc = may_access(dev_cgroup, &ex);
->  	rcu_read_unlock();
->  
-> @@ -558,7 +559,6 @@ 	return 0;
->  
->  int __devcgroup_inode_permission(struct inode *inode, int mask)
->  {
-> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
->  	short type, access = 0;
->  
->  	if (S_ISBLK(inode->i_mode))
-> @@ -570,13 +570,12 @@ 	short type, access = 0;
->  	if (mask & MAY_READ)
->  		access |= ACC_READ;
->  
-> -	return __devcgroup_check_permission(dev_cgroup, type, imajor(inode),
-> -					    iminor(inode), access);
-> +	return __devcgroup_check_permission(type, imajor(inode), iminor(inode),
-> +			access);
->  }
->  
->  int devcgroup_inode_mknod(int mode, dev_t dev)
->  {
-> -	struct dev_cgroup *dev_cgroup = task_devcgroup(current);
->  	short type;
->  
->  	if (!S_ISBLK(mode) && !S_ISCHR(mode))
-> @@ -587,7 +586,7 @@ 		return 0;
->  	else
->  		type = DEV_CHAR;
->  
-> -	return __devcgroup_check_permission(dev_cgroup, type, MAJOR(dev),
-> -					    MINOR(dev), ACC_MKNOD);
-> +	return __devcgroup_check_permission(type, MAJOR(dev), MINOR(dev),
-> +			ACC_MKNOD);
->  
->  }
-> 
+> So I forgot how all this worked, but will the KVM emulation not pass
+> this straight down to the hardware?
+KVM PMU emulation does not talk to HW directly. It creates perf_event to
+emulate PMU counter. As far as I see those two will be dropped by
+hsw_hw_config() if host HW does not support them.
 
 
--- 
-js
-suse labs
+> 
+> Don't we have a problem where we're emulating arch perfmon v1 on AMD
+> hardware? On AMD hardware those bits do have meaning.
+PMU emulation does not support AMD yet.
+
+--
+			Gleb.
