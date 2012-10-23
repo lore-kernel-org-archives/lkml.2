@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab2JWJIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 05:08:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45740 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab2JWJIr (ORCPT
+	id S932662Ab2JWJKJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 05:10:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:54417 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753450Ab2JWJKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 05:08:47 -0400
+	Tue, 23 Oct 2012 05:10:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1210221023300.1724-100000@iolanthe.rowland.org>
-References: <1350894794-1494-3-git-send-email-ming.lei@canonical.com>
-	<Pine.LNX.4.44L0.1210221023300.1724-100000@iolanthe.rowland.org>
-Date: Tue, 23 Oct 2012 17:08:45 +0800
-Message-ID: <CACVXFVMmszZWHaeNS6LSG4nHR4wWBLwM_BvynRwUW8X=nO+JWA@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-From: Ming Lei <ming.lei@canonical.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
+In-Reply-To: <50865D06.5090605@gmail.com>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+	<20121019160425.GA10175@dhcp22.suse.cz>
+	<CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
+	<50865D06.5090605@gmail.com>
+Date: Tue, 23 Oct 2012 17:10:06 +0800
+Message-ID: <CAKWKT+YJS1cbut2voCDeC18rojcWdQsmopN3b1sCr2g+t_1S1A@mail.gmail.com>
+Subject: Re: process hangs on do_exit when oom happens
+From: Qiang Gao <gaoqiangscut@gmail.com>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, bsingharora@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 10:33 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+global-oom is the right thing to do. but oom-killed-process hanging on
+do_exit is not the normal behavior
+
+On Tue, Oct 23, 2012 at 5:01 PM, Sha Zhengju <handai.szj@gmail.com> wrote:
+> On 10/23/2012 11:35 AM, Qiang Gao wrote:
+>>
+>> information about the system is in the attach file "information.txt"
+>>
+>> I can not reproduce it in the upstream 3.6.0 kernel..
+>>
+>> On Sat, Oct 20, 2012 at 12:04 AM, Michal Hocko<mhocko@suse.cz>  wrote:
+>>>
+>>> On Wed 17-10-12 18:23:34, gaoqiang wrote:
+>>>>
+>>>> I looked up nothing useful with google,so I'm here for help..
+>>>>
+>>>> when this happens:  I use memcg to limit the memory use of a
+>>>> process,and when the memcg cgroup was out of memory,
+>>>> the process was oom-killed   however,it cannot really complete the
+>>>> exiting. here is the some information
+>>>
+>>> How many tasks are in the group and what kind of memory do they use?
+>>> Is it possible that you were hit by the same issue as described in
+>>> 79dfdacc memcg: make oom_lock 0 and 1 based rather than counter.
+>>>
+>>>> OS version:  centos6.2    2.6.32.220.7.1
+>>>
+>>> Your kernel is quite old and you should be probably asking your
+>>> distribution to help you out. There were many fixes since 2.6.32.
+>>> Are you able to reproduce the same issue with the current vanila kernel?
+>>>
+>>>> /proc/pid/stack
+>>>> ---------------------------------------------------------------
+>>>>
+>>>> [<ffffffff810597ca>] __cond_resched+0x2a/0x40
+>>>> [<ffffffff81121569>] unmap_vmas+0xb49/0xb70
+>>>> [<ffffffff8112822e>] exit_mmap+0x7e/0x140
+>>>> [<ffffffff8105b078>] mmput+0x58/0x110
+>>>> [<ffffffff81061aad>] exit_mm+0x11d/0x160
+>>>> [<ffffffff81061c9d>] do_exit+0x1ad/0x860
+>>>> [<ffffffff81062391>] do_group_exit+0x41/0xb0
+>>>> [<ffffffff81077cd8>] get_signal_to_deliver+0x1e8/0x430
+>>>> [<ffffffff8100a4c4>] do_notify_resume+0xf4/0x8b0
+>>>> [<ffffffff8100b281>] int_signal+0x12/0x17
+>>>> [<ffffffffffffffff>] 0xffffffffffffffff
+>>>
+>>> This looks strange because this is just an exit part which shouldn't
+>>> deadlock or anything. Is this stack stable? Have you tried to take check
+>>> it more times?
+>>>
 >
-> Tail recursion should be implemented as a loop, not as an explicit
-> recursion.  That is, the function should be:
+> Does the machine only have about 700M memory? I also find something
+> in the log file:
 >
-> void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
-> {
->         do {
->                 dev->power.memalloc_noio_resume = enable;
+> Node 0 DMA free:2772kB min:72kB low:88kB high:108kB present:15312kB..
+> lowmem_reserve[]: 0 674 674 674
+> Node 0 DMA32 free:*3172kB* min:3284kB low:4104kB high:4924kB
+> present:690712kB ..
+> lowmem_reserve[]: 0 0 0 0
+> 0 pages in swap cache
+> Swap cache stats: add 0, delete 0, find 0/0
+> Free swap  = 0kB
+> Total swap = 0kB
+> 179184 pages RAM  ==>  179184 * 4 / 1024 = *700M*
+> 6773 pages reserved
 >
->                 if (!enable) {
->                         /*
->                          * Don't clear the parent's flag if any of the
->                          * parent's children have their flag set.
->                          */
->                         if (device_for_each_child(dev->parent, NULL,
->                                           dev_memalloc_noio))
->                                 return;
->                 }
->                 dev = dev->parent;
->         } while (dev);
-> }
-
-OK, will take the non-recursion implementation for saving kernel
-stack space.
-
 >
-> except that you need to add locking, for two reasons:
+> Note that the free memory of DMA32(3172KB) is lower than min watermark,
+> which means the global is under pressure now. What's more the swap is off,
+> so the global oom is normal behavior.
 >
->         There's a race.  What happens if another child sets the flag
->         between the time device_for_each_child() runs and the next loop
->         iteration?
-
-Yes, I know the race, and not adding a lock because the function
-is mostly called in .probe() or .remove() callback and its parent's device
-lock is held to avoid this race.
-
-Considered that it may be called in async probe() (scsi disk), one lock
-is needed, the simplest way is to add a global lock. Any suggestion?
-
 >
->         Even without a race, access to bitfields is not SMP-safe
->         without locking.
-
-You mean one ancestor device might not be in active when
-one of its descendants is being probed or removed?
-
-
-Thanks,
---
-Ming Lei
+> Thanks,
+> Sha
