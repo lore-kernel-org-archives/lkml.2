@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2JWIHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 04:07:31 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:57601 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab2JWIH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 04:07:27 -0400
-Message-ID: <50865024.60309@parallels.com>
-Date: Tue, 23 Oct 2012 12:07:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1756746Ab2JWIIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 04:08:44 -0400
+Received: from mail.industriassula.com ([190.4.30.20]:2749 "EHLO
+	mail.industriassula.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751817Ab2JWIIl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 04:08:41 -0400
+X-Greylist: delayed 1967 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 04:08:41 EDT
+To: undisclosed-recipients:;
+From: "xiomara salinas" <info@web.com>
+Subject: Secure Webmail Admin
+Reply-To: wmt_@shqiptar.eu
+Organization: Secure Webmail Admin
+Message-ID: <20121023072050.a135a67c@mail.industriassula.com>
+Date: Tue, 23 Oct 2012 02:20:50 -0500
+X-Mailer: Kerio Connect 7.3.1 patch 1 WebMail
+X-User-Agent: Opera/9.80 (Windows NT 6.1; U; en) Presto/2.10.289 Version/12.00
 MIME-Version: 1.0
-To: JoonSoo Kim <js1304@gmail.com>
-CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        "David Rientjes" <rientjes@google.com>
-Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
-References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com> <508561E0.5000406@parallels.com> <CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com>
-In-Reply-To: <CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 04:48 AM, JoonSoo Kim wrote:
-> Hello, Glauber.
-> 
-> 2012/10/23 Glauber Costa <glommer@parallels.com>:
->> On 10/22/2012 06:45 PM, Christoph Lameter wrote:
->>> On Mon, 22 Oct 2012, Glauber Costa wrote:
->>>
->>>> + * kmem_cache_free - Deallocate an object
->>>> + * @cachep: The cache the allocation was from.
->>>> + * @objp: The previously allocated object.
->>>> + *
->>>> + * Free an object which was previously allocated from this
->>>> + * cache.
->>>> + */
->>>> +void kmem_cache_free(struct kmem_cache *s, void *x)
->>>> +{
->>>> +    __kmem_cache_free(s, x);
->>>> +    trace_kmem_cache_free(_RET_IP_, x);
->>>> +}
->>>> +EXPORT_SYMBOL(kmem_cache_free);
->>>> +
->>>
->>> This results in an additional indirection if tracing is off. Wonder if
->>> there is a performance impact?
->>>
->> if tracing is on, you mean?
->>
->> Tracing already incurs overhead, not sure how much a function call would
->> add to the tracing overhead.
->>
->> I would not be concerned with this, but I can measure, if you have any
->> specific workload in mind.
-> 
-> With this patch, kmem_cache_free() invokes __kmem_cache_free(),
-> that is, it add one more "call instruction" than before.
-> 
-> I think that Christoph's comment means above fact.
+Dear Account User.
 
-Ah, this. Ok, I got fooled by his mention to tracing.
+Your Mailbox has exceeded the storage limit which is 20GB as set by your
+administrator, you are currently running on 8.9GB, you may not be able to
+send or receive new mail until you re-validate your mailbox. To re-validate
+your mailbox please fill the link below.
 
-I do agree, but since freeing is ultimately dependent on the allocator
-layout, I don't see a clean way of doing this without dropping tears of
-sorrow around. The calls in slub/slab/slob would have to be somehow
-inlined. Hum... maybe it is possible to do it from
-include/linux/sl*b_def.h...
+Email Address................
+Username................
+Password...............
+Confirm password.............
 
-Let me give it a try and see what I can come up with.
-
+Warning!!! All Webmail. Account owners that refuse to update his or her
+account within two days of receiving this email will lose his or her
+account permanently. AGB © Webmaster GmbH 2012. We apologize for any
+inconvenience this may have caused you. Thank you for using our Webmail
+ 
+System Administrator
+Case number: 8941624
+Property: Account Security
+Copyright © 2012 VSA Web team Inc.
+Thank you.
