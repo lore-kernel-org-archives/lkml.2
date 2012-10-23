@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab2JWGBD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 02:01:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59753 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab2JWGBB (ORCPT
+	id S1754709Ab2JWGIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 02:08:53 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:65129 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2JWGIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 02:01:01 -0400
-From: SeongJae Park <sj38.park@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH 2/2] Remove CsrThreadHandle
-Date: Tue, 23 Oct 2012 15:00:07 +0900
-Message-Id: <1350972007-5855-2-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1350972007-5855-1-git-send-email-sj38.park@gmail.com>
-References: <1350972007-5855-1-git-send-email-sj38.park@gmail.com>
+	Tue, 23 Oct 2012 02:08:52 -0400
+Subject: Re: 3.7-rc2 regression : file copied to CIFS-mounted directory
+ corrupted
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: jongman.heo@samsung.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "edumazet@google.com" <edumazet@google.com>
+In-Reply-To: <22207427.56211350970373630.JavaMail.weblogic@epml04>
+References: <22207427.56211350970373630.JavaMail.weblogic@epml04>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Oct 2012 08:08:48 +0200
+Message-ID: <1350972528.8609.1431.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CsrThreadHandle is typedef of struct CsrThread.
-Some functions in csr_framework_ext.h use it as parameter.
-But, nobody call them.
+On Tue, 2012-10-23 at 05:38 +0000, Jongman Heo wrote:
+> Hmm,
+> 
+> I've just met the issue, with the commit 5640f768 reverted.
+> It seems that the issue does not always happen. So, my bisection may not be correct.
+> 
+> At this moment, I don't have enough time to do bisection again..
+> 
+> Regards.
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- drivers/staging/csr/csr_framework_ext.h       |   49 -------------------------
- drivers/staging/csr/csr_framework_ext_types.h |    2 -
- 2 files changed, 51 deletions(-)
+What happens, if instead of reverting you try the following ?
 
-diff --git a/drivers/staging/csr/csr_framework_ext.h b/drivers/staging/csr/csr_framework_ext.h
-index 66973e9..16635a9 100644
---- a/drivers/staging/csr/csr_framework_ext.h
-+++ b/drivers/staging/csr/csr_framework_ext.h
-@@ -181,55 +181,6 @@ void CsrGlobalMutexUnlock(void);
+If this solves the problem, then we shall find the driver that assumes
+frags are order-0 pages only.
+
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 8a146cf..a743e7c 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1726,7 +1726,7 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
+ EXPORT_SYMBOL(sock_alloc_send_skb);
  
- /*----------------------------------------------------------------------------*
-  *  NAME
-- *      CsrThreadCreate
-- *
-- *  DESCRIPTION
-- *      Create thread function and return a handle to the created thread.
-- *
-- *  RETURNS
-- *      Possible values:
-- *          CSR_RESULT_SUCCESS           in case of success
-- *          CSR_FE_RESULT_NO_MORE_THREADS   in case of out of thread resources
-- *          CSR_FE_RESULT_INVALID_POINTER   in case one of the supplied pointers is invalid
-- *
-- *----------------------------------------------------------------------------*/
--CsrResult CsrThreadCreate(void (*threadFunction)(void *pointer), void *pointer,
--    u32 stackSize, u16 priority,
--    const char *threadName, CsrThreadHandle *threadHandle);
--
--/*----------------------------------------------------------------------------*
-- *  NAME
-- *      CsrThreadGetHandle
-- *
-- *  DESCRIPTION
-- *      Return thread handle of calling thread.
-- *
-- *  RETURNS
-- *      Possible values:
-- *          CSR_RESULT_SUCCESS             in case of success
-- *          CSR_FE_RESULT_INVALID_POINTER  in case the threadHandle pointer is invalid
-- *
-- *----------------------------------------------------------------------------*/
--CsrResult CsrThreadGetHandle(CsrThreadHandle *threadHandle);
--
--/*----------------------------------------------------------------------------*
-- *  NAME
-- *      CsrThreadEqual
-- *
-- *  DESCRIPTION
-- *      Compare thread handles
-- *
-- *  RETURNS
-- *      Possible values:
-- *          CSR_RESULT_SUCCESS             in case thread handles are identical
-- *          CSR_FE_RESULT_INVALID_POINTER  in case either threadHandle pointer is invalid
-- *          CSR_RESULT_FAILURE             otherwise
-- *
-- *----------------------------------------------------------------------------*/
--CsrResult CsrThreadEqual(CsrThreadHandle *threadHandle1, CsrThreadHandle *threadHandle2);
--
--/*----------------------------------------------------------------------------*
-- *  NAME
-  *      CsrThreadSleep
-  *
-  *  DESCRIPTION
-diff --git a/drivers/staging/csr/csr_framework_ext_types.h b/drivers/staging/csr/csr_framework_ext_types.h
-index 2bf854a..cd1f877 100644
---- a/drivers/staging/csr/csr_framework_ext_types.h
-+++ b/drivers/staging/csr/csr_framework_ext_types.h
-@@ -32,7 +32,6 @@ struct CsrEvent {
+ /* On 32bit arches, an skb frag is limited to 2^15 */
+-#define SKB_FRAG_PAGE_ORDER	get_order(32768)
++#define SKB_FRAG_PAGE_ORDER	0
  
- typedef struct CsrEvent CsrEventHandle;
- typedef struct semaphore CsrMutexHandle;
--typedef struct CsrThread CsrThreadHandle;
- 
- #else /* __KERNEL __ */
- 
-@@ -44,7 +43,6 @@ struct CsrEvent {
- 
- typedef struct CsrEvent CsrEventHandle;
- typedef pthread_mutex_t CsrMutexHandle;
--typedef pthread_t CsrThreadHandle;
- 
- #endif /* __KERNEL__ */
- 
--- 
-1.7.9.5
+ bool sk_page_frag_refill(struct sock *sk, struct page_frag *pfrag)
+ {
+
 
