@@ -1,253 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932993Ab2JWQkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:40:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48096 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab2JWQkM (ORCPT
+	id S933065Ab2JWQnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:43:24 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:51921 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2JWQnW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:40:12 -0400
-Date: Tue, 23 Oct 2012 11:39:48 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: akpm@linux-foundation.org, catalin.marinas@arm.com, will.deacon@arm.com,
-        dhowells@redhat.com, manfred@colorfullife.com, hughd@google.com,
-        jmorris@namei.org, mtk.manpages@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, paulmck@linux.vnet.ibm.com,
-        sds@tycho.nsa.gov, devel@openvz.org, a.p.zijlstra@chello.nl,
-        cmetcalf@tilera.com, linux-driver@qlogic.com, ron.mercer@qlogic.com,
-        viro@zeniv.linux.org.uk, eparis@parisplace.org, tglx@linutronix.de,
-        jitendra.kalsaria@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        ebiederm@xmission.com, casey@schaufler-ca.com
-Subject: Re: [PATCH v6 09/10] IPC: message queue copy feature introduced
-Message-ID: <20121023163948.GG9755@sergelap>
-References: <20121015155800.28348.23561.stgit@localhost.localdomain>
- <20121015160022.28348.60758.stgit@localhost.localdomain>
+	Tue, 23 Oct 2012 12:43:22 -0400
+Date: Tue, 23 Oct 2012 14:42:53 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Gaignard <benjamin.gaignard@stericsson.com>
+Subject: Re: [PATCH resend] genalloc: stop crashing the system when
+ destroying a pool
+Message-ID: <20121023164252.GA21376@oc0268524204.ibm.com>
+References: <1350820392-25815-1-git-send-email-cascardo@linux.vnet.ibm.com>
+ <20121022141854.33f5fcf4.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121015160022.28348.60758.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121022141854.33f5fcf4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102316-2194-0000-0000-00000371C54B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stanislav Kinsbursky (skinsbursky@parallels.com):
-> This patch is required for checkpoint/restore in userspace.
-> IOW, c/r requires some way to get all pending IPC messages without deleting
-> them from the queue (checkpoint can fail and in this case tasks will be resumed,
-> so queue have to be valid).
-> To achive this, new operation flag MSG_COPY for sys_msgrcv() system call was
-> introduced. If this flag was specified, then mtype is interpreted as number of
-> the message to copy.
-> If MSG_COPY is set, then kernel will allocate dummy message with passed size,
-> and then use new copy_msg() helper function to copy desired message (instead of
-> unlinking it from the queue).
+On Mon, Oct 22, 2012 at 02:18:54PM -0700, Andrew Morton wrote:
+> On Sun, 21 Oct 2012 09:52:59 -0200
+> Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com> wrote:
 > 
-> Notes:
-> 1) Return -ENOSYS if MSG_COPY is specified, but CONFIG_CHECKPOINT_RESTORE is
-> not set.
+> > A gen_pool_chunk uses a bitmap to find what addresses ranges it has
+> > allocated and bugs when we destroy the pool and a chunk has some bits
+> > set.
+> > 
+> > There is a problem when it allocates the bitmap. It allocates only the
+> > number of bytes needed for the bits that represent the size it's
+> > allocating. That is, if it needs 16 bits, it will allocate only 2 bytes,
+> > if it needs 31 bits, it will allocate 4 bytes.
+> > 
+> > However, the bitops functions uses long types. And when the gen_pool_add
+> > allocates a bitmap, it only clears the bytes it has allocated. So, it's
+> > possible that we have a long word with the contents 0xffffffffffffffff,
+> > and only the first (most significant) bytes are cleared by memset.
+> > However, the destroy function is going to test for the least significant
+> > bits, which will not be clear as expected.
+> > 
+> 
+> When fixing a bug, please do fully describe that bug.  The oops trace
+> would be nice, but can be avoided if a suitable description is included.
+> 
+> Does the BUG() happen in gen_pool_destroy(), or in gen_pool_free()?  In
+> either case, from your description it sound like the function which is
+> going BUG() is the site which needs fixing because it is checking for
+> non-zero bits outside the correct range?
+> 
 
-How much could it clean things up if a new ipc/cr.c contained
+Sorry if my description sounds like that. I also ignored the oops
+because I thought the description was good enough. If my explanation
+below is good enough, feel free to use it, or just tell me to resend.
+Either way works for me.
 
-#ifdef CONFIG_CHECKPOINT_RESTORE
-struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+The genalloc code uses the bitmap API from include/linux/bitmap.h and
+lib/bitmap.c, which is based on long values. Both bitmap_set from
+lib/bitmap.c and bitmap_set_ll, which is the lockless version from
+genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
+the bitmap.
+
+That one uses (1 << bits) - 1, 0b111, if you are setting the first three
+bits. This means that the API counts from the least significant bits
+(LSB from now on) to the MSB. The LSB in the first long is bit 0, then.
+The same works for the lookup functions.
+
+The genalloc code uses longs for the bitmap, as it should. In
+include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
+bits[0] as its last member. When allocating the struct, genalloc should
+reserve enough space for the bitmap. This should be a proper number of
+longs that can fit the amount of bits in the bitmap.
+
+However, genalloc allocates an integer number of bytes that fit the
+amount of bits, but may not be an integer amount of longs. 9 bytes, for
+example, could be allocated for 70 bits.
+
+This is a problem in itself if the Least Significat Bit in a long is in
+the byte with the largest address, which happens in Big Endian machines.
+This means genalloc is not allocating the byte in which it will try to
+set or check for a bit.
+
+This may end up in memory corruption, where genalloc will try to set the
+bits it has not allocated. In fact, genalloc may not set these bits
+because it may find them already set, because they were not zeroed
+since they were not allocated. And that's what causes a BUG when
+gen_pool_destroy is called and check for any set bits.
+
+What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
+on gen_pool_add_virt. With SLAB and SLUB, this means the whole slab will
+be cleared, not only the requested bytes. Since struct gen_pool_chunk
+has a size that is a multiple of 8, and slab sizes are multiples of 8,
+we get lucky and allocate and clear the right amount of bytes.
+
+Hower, this is not the case with SLOB or with older code that did memset
+after allocating instead of using __GFP_ZERO.
+
+So, a simple module as this (running 3.6.0), will cause a crash when
+rmmod'ed.
+
+[root@phantom-lp2 foo]# cat foo.c
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/genalloc.h>
+
+MODULE_LICENSE("GPL");
+MODULE_VERSION("0.1");
+
+static struct gen_pool *foo_pool;
+
+static __init int foo_init(void)
 {
-...
+        int ret;
+        foo_pool = gen_pool_create(10, -1);
+        if (!foo_pool)
+                return -ENOMEM;
+        ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
+        if (ret) {
+                gen_pool_destroy(foo_pool);
+                return ret;
+        }
+        return 0;
 }
-#else
-struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
+
+static __exit void foo_exit(void)
 {
-	return -ENOSYS;
+        gen_pool_destroy(foo_pool);
 }
-#endif
 
-and you went on from there to try to remove all the new #ifdefs from the
-existing files?
+module_init(foo_init);
+module_exit(foo_exit);
+[root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
+CONFIG_SLOB=y
+[root@phantom-lp2 foo]# insmod ./foo.ko
+[root@phantom-lp2 foo]# rmmod foo
+------------[ cut here ]------------
+kernel BUG at lib/genalloc.c:243!
+cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
+    pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
+    lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
+    sp: c0000000bb0e7be0
+   msr: 8000000000029032
+  current = 0xc0000000bb0e0000
+  paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
+    pid   = 13044, comm = rmmod
+kernel BUG at lib/genalloc.c:243!
+enter ? for help
+[c0000000bb0e7be0] 0000000000000000 (unreliable)
+[c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
+[c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
+[c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
+--- Exception: c00 (System Call) at 000000800753d1a0
+SP (fffd0b0e640) is in userspace
+4:mon>
 
 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  include/uapi/linux/msg.h |    1 +
->  ipc/msg.c                |   50 ++++++++++++++++++++++++++++++++++++++++++++--
->  ipc/msgutil.c            |   38 +++++++++++++++++++++++++++++++++++
->  ipc/util.h               |    1 +
->  4 files changed, 88 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/uapi/linux/msg.h b/include/uapi/linux/msg.h
-> index 76999c9..c1af84a 100644
-> --- a/include/uapi/linux/msg.h
-> +++ b/include/uapi/linux/msg.h
-> @@ -11,6 +11,7 @@
->  /* msgrcv options */
->  #define MSG_NOERROR     010000  /* no error if message is too big */
->  #define MSG_EXCEPT      020000  /* recv any msg except of specified type.*/
-> +#define MSG_COPY        040000  /* copy (not remove) all queue messages */
->  
->  /* Obsolete, used only for backwards compatibility and libc5 compiles */
->  struct msqid_ds {
-> diff --git a/ipc/msg.c b/ipc/msg.c
-> index 9808da8..6f52c6b 100644
-> --- a/ipc/msg.c
-> +++ b/ipc/msg.c
-> @@ -788,19 +788,48 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
->  	struct msg_msg *msg;
->  	int mode;
->  	struct ipc_namespace *ns;
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +	struct msg_msg *copy = NULL;
-> +	unsigned long copy_number = 0;
-> +#endif
->  
->  	if (msqid < 0 || (long) bufsz < 0)
->  		return -EINVAL;
-> +	if (msgflg & MSG_COPY) {
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +
-> +		if (msgflg & MSG_COPY) {
-> +			copy_number = msgtyp;
-> +			msgtyp = 0;
-> +		}
-> +
-> +		/*
-> +		 * Create dummy message to copy real message to.
-> +		 */
-> +		copy = load_msg(buf, bufsz);
-> +		if (IS_ERR(copy))
-> +			return PTR_ERR(copy);
-> +		copy->m_ts = bufsz;
-> +#else
-> +		return -ENOSYS;
-> +#endif
-> +	}
->  	mode = convert_mode(&msgtyp, msgflg);
->  	ns = current->nsproxy->ipc_ns;
->  
->  	msq = msg_lock_check(ns, msqid);
-> -	if (IS_ERR(msq))
-> +	if (IS_ERR(msq)) {
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +		if (msgflg & MSG_COPY)
-> +			free_msg(copy);
-> +#endif
->  		return PTR_ERR(msq);
-> +	}
->  
->  	for (;;) {
->  		struct msg_receiver msr_d;
->  		struct list_head *tmp;
-> +		long msg_counter = 0;
->  
->  		msg = ERR_PTR(-EACCES);
->  		if (ipcperms(ns, &msq->q_perm, S_IRUGO))
-> @@ -820,8 +849,16 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
->  				if (mode == SEARCH_LESSEQUAL &&
->  						walk_msg->m_type != 1) {
->  					msgtyp = walk_msg->m_type - 1;
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +				} else if (msgflg & MSG_COPY) {
-> +					if (copy_number == msg_counter) {
-> +						msg = copy_msg(walk_msg, copy);
-> +						break;
-> +					}
-> +#endif
->  				} else
->  					break;
-> +				msg_counter++;
->  			}
->  			tmp = tmp->next;
->  		}
-> @@ -834,6 +871,10 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
->  				msg = ERR_PTR(-E2BIG);
->  				goto out_unlock;
->  			}
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +			if (msgflg & MSG_COPY)
-> +				goto out_unlock;
-> +#endif
->  			list_del(&msg->m_list);
->  			msq->q_qnum--;
->  			msq->q_rtime = get_seconds();
-> @@ -917,8 +958,13 @@ out_unlock:
->  			break;
->  		}
->  	}
-> -	if (IS_ERR(msg))
-> +	if (IS_ERR(msg)) {
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +		if (msgflg & MSG_COPY)
-> +			free_msg(copy);
-> +#endif
->  		return PTR_ERR(msg);
-> +	}
->  
->  	bufsz = msg_handler(buf, msg, bufsz);
->  	free_msg(msg);
-> diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-> index 26143d3..b281f5c 100644
-> --- a/ipc/msgutil.c
-> +++ b/ipc/msgutil.c
-> @@ -100,7 +100,45 @@ out_err:
->  	free_msg(msg);
->  	return ERR_PTR(err);
->  }
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst)
-> +{
-> +	struct msg_msgseg *dst_pseg, *src_pseg;
-> +	int len = src->m_ts;
-> +	int alen;
-> +
-> +	BUG_ON(dst == NULL);
-> +	if (src->m_ts > dst->m_ts)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	alen = len;
-> +	if (alen > DATALEN_MSG)
-> +		alen = DATALEN_MSG;
-> +
-> +	dst->next = NULL;
-> +	dst->security = NULL;
->  
-> +	memcpy(dst + 1, src + 1, alen);
-> +
-> +	len -= alen;
-> +	dst_pseg = dst->next;
-> +	src_pseg = src->next;
-> +	while (len > 0) {
-> +		alen = len;
-> +		if (alen > DATALEN_SEG)
-> +			alen = DATALEN_SEG;
-> +		memcpy(dst_pseg + 1, src_pseg + 1, alen);
-> +		dst_pseg = dst_pseg->next;
-> +		len -= alen;
-> +		src_pseg = src_pseg->next;
-> +	}
-> +
-> +	dst->m_type = src->m_type;
-> +	dst->m_ts = src->m_ts;
-> +
-> +	return dst;
-> +}
-> +#endif
->  int store_msg(void __user *dest, struct msg_msg *msg, int len)
->  {
->  	int alen;
-> diff --git a/ipc/util.h b/ipc/util.h
-> index 271bded..027f507 100644
-> --- a/ipc/util.h
-> +++ b/ipc/util.h
-> @@ -142,6 +142,7 @@ int ipc_parse_version (int *cmd);
->  
->  extern void free_msg(struct msg_msg *msg);
->  extern struct msg_msg *load_msg(const void __user *src, int len);
-> +extern struct msg_msg *copy_msg(struct msg_msg *src, struct msg_msg *dst);
->  extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
->  
->  extern void recompute_msgmni(struct ipc_namespace *);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
