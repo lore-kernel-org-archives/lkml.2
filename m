@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2JWKZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:25:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:22887 "EHLO song.cn.fujitsu.com"
+	id S1756846Ab2JWK14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:27:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:8589 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752308Ab2JWKZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:25:20 -0400
+	id S1752688Ab2JWKZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:25:25 -0400
 X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
-   d="scan'208";a="6052010"
+   d="scan'208";a="6052015"
 From: wency@cn.fujitsu.com
 To: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
@@ -19,35 +19,30 @@ Cc: rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         minchan.kim@gmail.com, akpm@linux-foundation.org,
         kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
         Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH v2 02/12] memory-hotplug: check whether all memory blocks are offlined or not when removing memory
-Date: Tue, 23 Oct 2012 18:30:40 +0800
-Message-Id: <1350988250-31294-3-git-send-email-wency@cn.fujitsu.com>
+Subject: [PATCH v2 07/12] memory-hotplug: implement register_page_bootmem_info_section of sparse-vmemmap
+Date: Tue, 23 Oct 2012 18:30:45 +0800
+Message-Id: <1350988250-31294-8-git-send-email-wency@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
 References: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:42,
+ 2012/10/23 18:24:43,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/23 18:24:44,
-	Serialize complete at 2012/10/23 18:24:44
+ 2012/10/23 18:24:46,
+	Serialize complete at 2012/10/23 18:24:46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-We remove the memory like this:
-1. lock memory hotplug
-2. offline a memory block
-3. unlock memory hotplug
-4. repeat 1-3 to offline all memory blocks
-5. lock memory hotplug
-6. remove memory(TODO)
-7. unlock memory hotplug
+For removing memmap region of sparse-vmemmap which is allocated bootmem,
+memmap region of sparse-vmemmap needs to be registered by get_page_bootmem().
+So the patch searches pages of virtual mapping and registers the pages by
+get_page_bootmem().
 
-All memory blocks must be offlined before removing memory. But we don't hold
-the lock in the whole operation. So we should check whether all memory blocks
-are offlined before step6. Otherwise, kernel maybe panicked.
+Note: register_page_bootmem_memmap() is not implemented for ia64, ppc, s390,
+and sparc.
 
 CC: David Rientjes <rientjes@google.com>
 CC: Jiang Liu <liuj97@gmail.com>
@@ -59,98 +54,251 @@ CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- drivers/base/memory.c          |    6 +++++
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |   47 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 54 insertions(+), 0 deletions(-)
+ arch/ia64/mm/discontig.c       |    6 ++++
+ arch/powerpc/mm/init_64.c      |    6 ++++
+ arch/s390/mm/vmem.c            |    6 ++++
+ arch/sparc/mm/init_64.c        |    6 ++++
+ arch/x86/mm/init_64.c          |   52 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/memory_hotplug.h |   11 +-------
+ include/linux/mm.h             |    3 +-
+ mm/memory_hotplug.c            |   37 +++++++++++++++++++++++++---
+ 8 files changed, 113 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 86c8821..badb025 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -675,6 +675,12 @@ int offline_memory_block(struct memory_block *mem)
+diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+index c641333..33943db 100644
+--- a/arch/ia64/mm/discontig.c
++++ b/arch/ia64/mm/discontig.c
+@@ -822,4 +822,10 @@ int __meminit vmemmap_populate(struct page *start_page,
+ {
+ 	return vmemmap_populate_basepages(start_page, size, node);
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif
+diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+index 95a4529..6466440 100644
+--- a/arch/powerpc/mm/init_64.c
++++ b/arch/powerpc/mm/init_64.c
+@@ -297,5 +297,11 @@ int __meminit vmemmap_populate(struct page *start_page,
+ 
+ 	return 0;
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+index 387c7c6..4f4803a 100644
+--- a/arch/s390/mm/vmem.c
++++ b/arch/s390/mm/vmem.c
+@@ -236,6 +236,12 @@ out:
  	return ret;
  }
  
-+/* return true if the memory block is offlined, otherwise, return false */
-+bool is_memblock_offlined(struct memory_block *mem)
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
 +{
-+	return mem->state == MEM_OFFLINE;
++	/* TODO */
 +}
 +
  /*
-  * Initialize the sysfs support for memory devices...
-  */
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 95573ec..38675e9 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -236,6 +236,7 @@ extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
- extern int offline_memory_block(struct memory_block *mem);
-+extern bool is_memblock_offlined(struct memory_block *mem);
- extern int remove_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 600e200..f4fdedd 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1061,6 +1061,53 @@ repeat:
- 		goto repeat;
+  * Add memory segment to the segment list if it doesn't overlap with
+  * an already present segment.
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 9e28a11..75a984b 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2231,6 +2231,12 @@ void __meminit vmemmap_populate_print_last(void)
+ 		node_start = 0;
  	}
+ }
++
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	/* TODO */
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
  
-+	lock_memory_hotplug();
-+
-+	/*
-+	 * we have offlined all memory blocks like this:
-+	 *   1. lock memory hotplug
-+	 *   2. offline a memory block
-+	 *   3. unlock memory hotplug
-+	 *
-+	 * repeat step1-3 to offline the memory block. All memory blocks
-+	 * must be offlined before removing memory. But we don't hold the
-+	 * lock in the whole operation. So we should check whether all
-+	 * memory blocks are offlined.
-+	 */
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		section_nr = pfn_to_section_nr(pfn);
-+		if (!present_section_nr(section_nr))
-+			continue;
-+
-+		section = __nr_to_section(section_nr);
-+		/* same memblock? */
-+		if (mem)
-+			if ((section_nr >= mem->start_section_nr) &&
-+			    (section_nr <= mem->end_section_nr))
-+				continue;
-+
-+		mem = find_memory_block_hinted(section, mem);
-+		if (!mem)
-+			continue;
-+
-+		ret = is_memblock_offlined(mem);
-+		if (!ret) {
-+			pr_warn("removing memory fails, because memory "
-+				"[%#010llx-%#010llx] is onlined\n",
-+				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
-+				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
-+
-+			kobject_put(&mem->dev.kobj);
-+			unlock_memory_hotplug();
-+			return ret;
-+		}
-+	}
-+
-+	if (mem)
-+		kobject_put(&mem->dev.kobj);
-+	unlock_memory_hotplug();
-+
+ static void prot_init_common(unsigned long page_none,
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 2309cf0..f1e2c21 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -993,6 +993,58 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
  	return 0;
  }
- #else
+ 
++void register_page_bootmem_memmap(unsigned long section_nr,
++				  struct page *start_page, unsigned long size)
++{
++	unsigned long addr = (unsigned long)start_page;
++	unsigned long end = (unsigned long)(start_page + size);
++	unsigned long next;
++	pgd_t *pgd;
++	pud_t *pud;
++	pmd_t *pmd;
++
++	for (; addr < end; addr = next) {
++		pte_t *pte = NULL;
++
++		pgd = pgd_offset_k(addr);
++		if (pgd_none(*pgd)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pgd_page(*pgd), MIX_SECTION_INFO);
++
++		pud = pud_offset(pgd, addr);
++		if (pud_none(*pud)) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			continue;
++		}
++		get_page_bootmem(section_nr, pud_page(*pud), MIX_SECTION_INFO);
++
++		if (!cpu_has_pse) {
++			next = (addr + PAGE_SIZE) & PAGE_MASK;
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 MIX_SECTION_INFO);
++
++			pte = pte_offset_kernel(pmd, addr);
++			if (pte_none(*pte))
++				continue;
++			get_page_bootmem(section_nr, pte_page(*pte),
++					 SECTION_INFO);
++		} else {
++			next = pmd_addr_end(addr, end);
++
++			pmd = pmd_offset(pud, addr);
++			if (pmd_none(*pmd))
++				continue;
++			get_page_bootmem(section_nr, pmd_page(*pmd),
++					 SECTION_INFO);
++		}
++	}
++}
++
+ void __meminit vmemmap_populate_print_last(void)
+ {
+ 	if (p_start) {
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 191b2d9..d4c4402 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -163,17 +163,10 @@ static inline void arch_refresh_nodedata(int nid, pg_data_t *pgdat)
+ #endif /* CONFIG_NUMA */
+ #endif /* CONFIG_HAVE_ARCH_NODEDATA_EXTENSION */
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-static inline void register_page_bootmem_info_node(struct pglist_data *pgdat)
+-{
+-}
+-static inline void put_page_bootmem(struct page *page)
+-{
+-}
+-#else
+ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+ extern void put_page_bootmem(struct page *page);
+-#endif
++extern void get_page_bootmem(unsigned long ingo, struct page *page,
++			     unsigned long type);
+ 
+ /*
+  * Lock for memory hotplug guarantees 1) all callbacks for memory hotplug
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index fa06804..8e5a56f 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1640,7 +1640,8 @@ int vmemmap_populate_basepages(struct page *start_page,
+ 						unsigned long pages, int node);
+ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+ void vmemmap_populate_print_last(void);
+-
++void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
++				  unsigned long size);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 66a79a7..db9806c 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -91,9 +91,8 @@ static void release_memory_resource(struct resource *res)
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
+-#ifndef CONFIG_SPARSEMEM_VMEMMAP
+-static void get_page_bootmem(unsigned long info,  struct page *page,
+-			     unsigned long type)
++void get_page_bootmem(unsigned long info,  struct page *page,
++		      unsigned long type)
+ {
+ 	page->lru.next = (struct list_head *) type;
+ 	SetPagePrivate(page);
+@@ -127,6 +126,7 @@ void __ref put_page_bootmem(struct page *page)
+ 
+ }
+ 
++#ifndef CONFIG_SPARSEMEM_VMEMMAP
+ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ {
+ 	unsigned long *usemap, mapsize, section_nr, i;
+@@ -160,6 +160,36 @@ static void register_page_bootmem_info_section(unsigned long start_pfn)
+ 		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
+ 
+ }
++#else
++static void register_page_bootmem_info_section(unsigned long start_pfn)
++{
++	unsigned long *usemap, mapsize, section_nr, i;
++	struct mem_section *ms;
++	struct page *page, *memmap;
++
++	if (!pfn_valid(start_pfn))
++		return;
++
++	section_nr = pfn_to_section_nr(start_pfn);
++	ms = __nr_to_section(section_nr);
++
++	memmap = sparse_decode_mem_map(ms->section_mem_map, section_nr);
++
++	page = virt_to_page(memmap);
++	mapsize = sizeof(struct page) * PAGES_PER_SECTION;
++	mapsize = PAGE_ALIGN(mapsize) >> PAGE_SHIFT;
++
++	register_page_bootmem_memmap(section_nr, memmap, PAGES_PER_SECTION);
++
++	usemap = __nr_to_section(section_nr)->pageblock_flags;
++	page = virt_to_page(usemap);
++
++	mapsize = PAGE_ALIGN(usemap_size()) >> PAGE_SHIFT;
++
++	for (i = 0; i < mapsize; i++, page++)
++		get_page_bootmem(section_nr, page, MIX_SECTION_INFO);
++}
++#endif
+ 
+ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ {
+@@ -202,7 +232,6 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ 			register_page_bootmem_info_section(pfn);
+ 	}
+ }
+-#endif /* !CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void grow_zone_span(struct zone *zone, unsigned long start_pfn,
+ 			   unsigned long end_pfn)
 -- 
 1.7.1
 
