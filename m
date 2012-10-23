@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965558Ab2JWVDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:03:10 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40867 "EHLO smtp.outflux.net"
+	id S965537Ab2JWVDI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:03:08 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57858 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933699Ab2JWUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933702Ab2JWUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:13 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        Hiroshi DOYU <hdoyu@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Jiri Kosina <jkosina@suse.cz>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 056/193] drivers/iommu: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:09 -0700
-Message-Id: <1351022666-6960-57-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>
+Subject: [PATCH 087/193] drivers/net/ethernet/racal: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:40 -0700
+Message-Id: <1351022666-6960-88-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -27,42 +24,26 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Joerg Roedel <joerg.roedel@amd.com>
-CC: Hiroshi DOYU <hdoyu@nvidia.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>
-CC: Jiri Kosina <jkosina@suse.cz>
-CC: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/iommu/Kconfig |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/racal/Kconfig |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index e39f9db..0106898 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -65,8 +65,8 @@ config AMD_IOMMU_STATS
- 	  If unsure, say N.
+diff --git a/drivers/net/ethernet/racal/Kconfig b/drivers/net/ethernet/racal/Kconfig
+index 01969e0..53c6af1 100644
+--- a/drivers/net/ethernet/racal/Kconfig
++++ b/drivers/net/ethernet/racal/Kconfig
+@@ -19,8 +19,8 @@ config NET_VENDOR_RACAL
+ if NET_VENDOR_RACAL
  
- config AMD_IOMMU_V2
--	tristate "AMD IOMMU Version 2 driver (EXPERIMENTAL)"
--	depends on AMD_IOMMU && PROFILING && EXPERIMENTAL
-+	tristate "AMD IOMMU Version 2 driver"
-+	depends on AMD_IOMMU && PROFILING
- 	select MMU_NOTIFIER
+ config NI5010
+-	tristate "NI5010 support (EXPERIMENTAL)"
+-	depends on ISA && EXPERIMENTAL && BROKEN_ON_SMP
++	tristate "NI5010 support"
++	depends on ISA && BROKEN_ON_SMP
  	---help---
- 	  This option enables support for the AMD IOMMUv2 features of the IOMMU
-@@ -119,8 +119,8 @@ config INTEL_IOMMU_FLOPPY_WA
- 	  16MiB to make floppy (an ISA device) work.
- 
- config IRQ_REMAP
--	bool "Support for Interrupt Remapping (EXPERIMENTAL)"
--	depends on X86_64 && X86_IO_APIC && PCI_MSI && ACPI && EXPERIMENTAL
-+	bool "Support for Interrupt Remapping"
-+	depends on X86_64 && X86_IO_APIC && PCI_MSI && ACPI
- 	select DMAR_TABLE
- 	---help---
- 	  Supports Interrupt remapping for IO-APIC and MSI devices.
+ 	  If you have a network (Ethernet) card of this type, say Y and read
+ 	  the Ethernet-HOWTO, available from
 -- 
 1.7.9.5
 
