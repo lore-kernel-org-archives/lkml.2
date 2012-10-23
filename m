@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933894Ab2JWXDk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:03:40 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:40265 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab2JWXDj (ORCPT
+	id S933963Ab2JWXGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:06:34 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:56849 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933464Ab2JWXGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:03:39 -0400
-Message-ID: <50872243.1050308@candelatech.com>
-Date: Tue, 23 Oct 2012 16:03:31 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 23 Oct 2012 19:06:32 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        Eric Sandeen <sandeen@redhat.com>, stable@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix>
+	<20121023221913.GC28626@thunk.org>
+Emacs: a real time environment for simulating molasses-based life forms.
+Date: Wed, 24 Oct 2012 00:06:21 +0100
+In-Reply-To: <20121023221913.GC28626@thunk.org> (Theodore Ts'o's message of
+	"Tue, 23 Oct 2012 18:19:13 -0400")
+Message-ID: <87bofsn5zm.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, cardoe@cardoe.com, kaber@trash.net,
-        netdev@vger.kernel.org, systemd-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vlan: set sysfs device_type to 'vlan'
-References: <1350885237-12998-1-git-send-email-cardoe@cardoe.com>  <20121023.023647.2164665243829038911.davem@davemloft.net>  <5086C256.20202@candelatech.com> <1351032742.5283.69.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1351032742.5283.69.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=11 Fuz1=11 Fuz2=11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 03:52 PM, Ben Hutchings wrote:
-> On Tue, 2012-10-23 at 09:14 -0700, Ben Greear wrote:
->> On 10/22/2012 11:36 PM, David Miller wrote:
->>> From: Doug Goldstein <cardoe@cardoe.com>
->>> Date: Mon, 22 Oct 2012 00:53:57 -0500
->>>
->>>> Sets the sysfs device_type to 'vlan' for udev. This makes it easier for
->>>> applications that query network information via udev to identify vlans
->>>> instead of using strrchr().
->>>>
->>>> Signed-off-by: Doug Goldstein <cardoe@cardoe.com>
->>>
->>> You're extremely misguided.  This change, in fact, makes it ten times
->>> harder for such applications to query such devices.
->>
->> If the application doesn't care, it can use the old way (which at least
->> for me, involves string-comparing the driver name ethtool returns, which
->> sucks at best).
->
-> The 'old way' that has only worked since Linux 2.6.29 (3.5 years)?
->
-> The 'right way' seems to be to query for VLAN information through
-> netlink.  But that has only worked since Linux 2.6.23 (5 years ago).
-> The real 'old way' is to use SIOCGIFVLAN. :-/
+On 23 Oct 2012, Theodore Ts'o verbalised:
+> *Sigh*.  My apologies for not catching this when I reviewed this
+> patch.  I believe the following patch should fix the bug; once it's
+> reviewed by other ext4 developers, I'll push this to Linus ASAP.
 
-Oh, I have the SIOCGIFVLAN fallback in place too.
+I note that the patch is in the latest stable releases of 3.4.x and
+3.5.x, which are IIRC end-of-lifed. I'd say that if your patch does
+indeed fix it, this justifies pushing out new releases of both these
+stable kernels with just this patch in, just to make sure people taking
+the latest stable kernel from those releases don't eat their
+filesystems.
 
-But none of this is easy from a shell script, where reading a sysfs
-file is quite easy.
+The bug did really quite a lot of damage to my /home fs in only a few
+minutes of uptime, given how few files I wrote to it. What it could have
+done to a more conventional distro install with everything including
+/home on one filesystem, I shudder to think.
 
-Thanks,
-Ben
+(I've posted a note to the LWN thread announcing 3.6.3, just in case
+that saves someone's fs.)
 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+NULL && (void)
