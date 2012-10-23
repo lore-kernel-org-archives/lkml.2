@@ -1,80 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab2JWOaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:30:25 -0400
-Received: from fieldses.org ([174.143.236.118]:60286 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab2JWOaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:30:24 -0400
-Date: Tue, 23 Oct 2012 10:30:19 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Nix <nix@esperi.org.uk>
-Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
-        gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server panic: 3.6.2+ regression?
-Message-ID: <20121023143019.GA3040@fieldses.org>
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
+	id S1755203Ab2JWOe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:34:26 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:27367 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751745Ab2JWOeZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:34:25 -0400
+Date: Tue, 23 Oct 2012 14:34:24 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Glauber Costa <glommer@parallels.com>
+cc: JoonSoo Kim <js1304@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+In-Reply-To: <5086A678.7010403@parallels.com>
+Message-ID: <0000013a8e0bbaa7-b28d2d03-5bab-403d-8960-00d4a119743e-000000@email.amazonses.com>
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com> <508561E0.5000406@parallels.com>
+ <CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com> <50865024.60309@parallels.com> <0000013a8df775ea-2411bbc8-8025-4514-8b58-ef007d11beef-000000@email.amazonses.com> <5086A678.7010403@parallels.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87mwzdnuww.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 03:07:59PM +0100, Nix wrote:
-> On 23 Oct 2012, J. Bruce Fields uttered the following:
-> 
-> > On Mon, Oct 22, 2012 at 05:17:04PM +0100, Nix wrote:
-> >> I just had a panic/oops on upgrading from 3.6.1 to 3.6.3, after weeks of
-> >> smooth operation on 3.6.1: one of the NFS changes that went into one of
-> >> the two latest stable kernels appears to be lethal after around half an
-> >> hour of uptime. The oops came from NFSv4, IIRC (relying on memory since
-> >> my camera was recharging and there is no netconsole from that box
-> >> because it is where the netconsole logs go, so I'll have to reproduce it
-> >> later today). The machine is an NFSv3 server only at present, with no
-> >> NFSv4 running (though NFSv4 is built in).
-> >
-> > Note recent clients may try to negotiate NFSv4 by default, so it's
-> > possible to use it without knowing.
-> 
-> Every NFS import from all this server's clients has 'vers=3' forced on
-> (for now, until I get around to figuring out what if anything needs to
-> be done to move to NFSv4: it may be the answer is 'nothing' but I tread
-> quite carefully with this server, since my $HOME is there).
-> 
-> /proc/fs/nfsfs/volumes on the clients confirms that everything is v3.
-> 
-> > You didn't change anything else about your server or clients recently?
-> 
-> Nope (other than upgrading the clients to 3.6.3 in concert). Running
-> 3.6.1 here on that server now and 3.6.3 on all the clients, and no crash
-> in over a day.
-> 
-> nfs-utils is a bit old, 1.2.6-rc6, I should probably upgrade it...
+On Tue, 23 Oct 2012, Glauber Costa wrote:
 
-nfs-utils shouldn't be capable of oopsing the kernel, so from my
-(selfish) point of view I'd actually rather you stick with whatever you
-have and try to reproduce the oops.
+> I don't know what exactly do you have in mind, but since the cache
+> layouts are very different, this is quite hard to do without incurring
+> without function calls anyway.
 
-(It's unlikely to make any difference anyway.)
+True. Sigh.
 
---b.
-
-> > I don't see an obvious candidate on a quick skim of v3.6.1..v3.6.3
-> > commits, but of course I could be missing something.
-> 
-> I'll try rebooting into it again soon, and get an oops report if it
-> should happen again (and hopefully less filesystem corruption this time,
-> right after a reboot into a new kernel was clearly the wrong time to
-> move a bunch of directories around).
-> 
-> Sorry for the continuing lack of useful information... I'll try to fix
-> that shortly (once with a report of a false alarm, since I really want
-> this stable kernel: my server is affected by the tx stalls fixed by
-> 3468e9d and I'm getting tired of the frequent 1s lags talking to it: I
-> could just apply that one fix, but I'd rather track this down properly).
