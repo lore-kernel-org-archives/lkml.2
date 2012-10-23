@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814Ab2JWUGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:06:10 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54816 "EHLO smtp.outflux.net"
+	id S933912Ab2JWUG1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:06:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54731 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964858Ab2JWUGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:06:02 -0400
+	id S933380Ab2JWUGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:06:24 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Russell King <linux@arm.linux.org.uk>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 121/193] drivers/scsi/arm: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:14 -0700
-Message-Id: <1351022666-6960-122-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Len Brown <lenb@kernel.org>
+Subject: [PATCH 035/193] drivers/acpi: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:01:48 -0700
+Message-Id: <1351022666-6960-36-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -25,42 +24,59 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Russell King <linux@arm.linux.org.uk>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
+CC: Len Brown <lenb@kernel.org>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/scsi/arm/Kconfig |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/acpi/Kconfig |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/arm/Kconfig b/drivers/scsi/arm/Kconfig
-index a8587f1..cfd172a 100644
---- a/drivers/scsi/arm/Kconfig
-+++ b/drivers/scsi/arm/Kconfig
-@@ -64,19 +64,19 @@ config SCSI_POWERTECSCSI
- 	  you have one of these, say Y. If unsure, say N.
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 119d58d..ad2a291 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -176,7 +176,6 @@ config ACPI_FAN
  
- comment "The following drivers are not fully supported"
--	depends on ARCH_ACORN && EXPERIMENTAL
-+	depends on ARCH_ACORN
- 
- config SCSI_CUMANA_1
--	tristate "CumanaSCSI I support (EXPERIMENTAL)"
--	depends on ARCH_ACORN && EXPERIMENTAL && SCSI
-+	tristate "CumanaSCSI I support"
-+	depends on ARCH_ACORN && SCSI
- 	select SCSI_SPI_ATTRS
+ config ACPI_DOCK
+ 	bool "Dock"
+-	depends on EXPERIMENTAL
  	help
- 	  This enables support for the Cumana SCSI I card. If you have an
- 	  Acorn system with one of these, say Y. If unsure, say N.
- 
- config SCSI_OAK1
--	tristate "Oak SCSI support (EXPERIMENTAL)"
--	depends on ARCH_ACORN && EXPERIMENTAL && SCSI
-+	tristate "Oak SCSI support"
-+	depends on ARCH_ACORN && SCSI
- 	select SCSI_SPI_ATTRS
+ 	  This driver supports ACPI-controlled docking stations and removable
+ 	  drive bays such as the IBM Ultrabay and the Dell Module Bay.
+@@ -196,7 +195,7 @@ config ACPI_PROCESSOR
+ 	  the module will be called processor.
+ config ACPI_IPMI
+ 	tristate "IPMI"
+-	depends on EXPERIMENTAL && IPMI_SI && IPMI_HANDLER
++	depends on IPMI_SI && IPMI_HANDLER
+ 	default n
  	help
- 	  This enables support for the Oak SCSI card. If you have an Acorn
+ 	  This driver enables the ACPI to access the BMC controller. And it
+@@ -208,14 +207,13 @@ config ACPI_IPMI
+ 
+ config ACPI_HOTPLUG_CPU
+ 	bool
+-	depends on EXPERIMENTAL && ACPI_PROCESSOR && HOTPLUG_CPU
++	depends on ACPI_PROCESSOR && HOTPLUG_CPU
+ 	select ACPI_CONTAINER
+ 	default y
+ 
+ config ACPI_PROCESSOR_AGGREGATOR
+ 	tristate "Processor Aggregator"
+ 	depends on ACPI_PROCESSOR
+-	depends on EXPERIMENTAL
+ 	depends on X86
+ 	help
+ 	  ACPI 4.0 defines processor Aggregator, which enables OS to perform
+@@ -322,8 +320,7 @@ config X86_PM_TIMER
+ 	  systems require this timer. 
+ 
+ config ACPI_CONTAINER
+-	tristate "Container and Module Devices (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "Container and Module Devices"
+ 	default (ACPI_HOTPLUG_MEMORY || ACPI_HOTPLUG_CPU || ACPI_HOTPLUG_IO)
+ 	help
+ 	  This driver supports ACPI Container and Module devices (IDs
 -- 
 1.7.9.5
 
