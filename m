@@ -1,91 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933320Ab2JWRgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:36:45 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:54891 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab2JWRgm (ORCPT
+	id S1757370Ab2JWRiE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:38:04 -0400
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:49640
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab2JWRiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:36:42 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Schumaker\, Bryan" <Bryan.Schumaker@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression? (also an unrelated ext4 data loss bug)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<20121023164621.GC3040@fieldses.org>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
-	<87vce1w241.fsf@spindle.srvr.nix>
-Emacs: because extension languages should come with the editor built in.
-Date: Tue, 23 Oct 2012 18:36:15 +0100
-In-Reply-To: <87vce1w241.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
-	"Tue, 23 Oct 2012 18:05:18 +0100")
-Message-ID: <87r4opw0og.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 23 Oct 2012 13:38:01 -0400
+Date: Tue, 23 Oct 2012 19:37:53 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <468189240.20121023193753@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [GIT PULL] (xen) stable/for-linus-3.7-rc2-tag for v3.7-rc2
+In-Reply-To: <20121023162707.GA16634@phenom.dumpdata.com>
+References: <20121023162707.GA16634@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=9 Fuz1=9 Fuz2=9
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 Oct 2012, nix@esperi.org.uk uttered the following:
+Hi Konrad,
 
-> On 23 Oct 2012, Trond Myklebust spake thusly:
->> On Tue, 2012-10-23 at 12:46 -0400, J. Bruce Fields wrote:
->>> Looks like there's some confusion about whether nsm_client_get() returns
->>> NULL or an error?
->>
->> nsm_client_get() looks extremely racy in the case where ln->nsm_users ==
->> 0.  Since we never recheck the value of ln->nsm_users after taking
->> nsm_create_mutex, what is stopping 2 different threads from both setting
->> ln->nsm_clnt and re-initialising ln->nsm_users?
->
-> Yep. At the worst possible time:
->
-> 	spin_lock(&ln->nsm_clnt_lock);
-> 	if (ln->nsm_users) {
-> 		if (--ln->nsm_users)
-> 			ln->nsm_clnt = NULL;
-> (1)		shutdown = !ln->nsm_users;
-> 	}
-> 	spin_unlock(&ln->nsm_clnt_lock);
->
-> If a thread reinitializes nsm_users at point (1), after the assignment,
-> we could well end up with ln->nsm_clnt NULL and shutdown false. A bit
-> later, nsm_mon_unmon gets called with a NULL clnt, and boom.
+Did you push the tag ?
+It doesn't seem to be in your git repo.
 
-Possible fix if so, utterly untested so far (will test when I can face
-yet another reboot and fs-corruption-recovery-hell cycle, in a few
-hours), may ruin performance, violate locking hierarchies, and consume
-kittens:
+--
+Sander
 
-diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index e4fb3ba..da91cdf 100644
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -98,7 +98,6 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
- 		spin_unlock(&ln->nsm_clnt_lock);
- 		goto out;
- 	}
--	spin_unlock(&ln->nsm_clnt_lock);
- 
- 	mutex_lock(&nsm_create_mutex);
- 	clnt = nsm_create(net);
-@@ -108,6 +107,7 @@ static struct rpc_clnt *nsm_client_get(struct net *net)
- 		ln->nsm_users = 1;
- 	}
- 	mutex_unlock(&nsm_create_mutex);
-+	spin_unlock(&ln->nsm_clnt_lock);
- out:
- 	return clnt;
- }
+Tuesday, October 23, 2012, 6:27:07 PM, you wrote:
+
+> Hey Linus,
+
+> Please git pull the following tag:
+
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-linus-3.7-rc2-tag
+
+> which has bug-fixes. Most of them are just code cleanup to make x86 and ARM code
+> work in unison. There is one serious bug-fix which manifested itself in some
+> applications mysteriously getting SIGKILL. Besides that nothing earth-shattering.
+
+> <copied from the signed tag>:
+>  * Fix mysterious SIGSEGV or SIGKILL in applications due to corrupting
+>    of the %eip when returning from a signal handler.
+>  * Fix various ARM compile issues after the merge fallout.
+>  * Continue on making more of the Xen generic code usable by ARM platform.
+>  * Fix SR-IOV passthrough to mirror multifunction PCI devices.
+>  * Fix various compile warnings.
+>  * Remove hypercalls that don't exist anymore.
+> </copy from signed tag>
+
+>  arch/arm/include/asm/xen/interface.h |   12 +++++++++---
+>  arch/arm/include/asm/xen/page.h      |   13 ++++++++++---
+>  arch/arm/xen/grant-table.c           |    2 +-
+>  arch/x86/include/asm/xen/interface.h |    4 ++--
+>  arch/x86/kernel/entry_32.S           |    8 +++++---
+>  arch/x86/kernel/entry_64.S           |    2 +-
+>  arch/x86/xen/enlighten.c             |    2 --
+>  drivers/xen/balloon.c                |    3 +--
+>  drivers/xen/dbgp.c                   |    2 ++
+>  drivers/xen/events.c                 |    4 ++++
+>  drivers/xen/grant-table.c            |    8 ++++----
+>  drivers/xen/sys-hypervisor.c         |    4 +++-
+>  drivers/xen/xen-pciback/vpci.c       |   14 ++++++++++----
+>  drivers/xen/xenbus/xenbus_xs.c       |    2 ++
+>  include/xen/grant_table.h            |    2 +-
+>  include/xen/interface/grant_table.h  |    2 +-
+>  include/xen/interface/memory.h       |   24 ++----------------------
+>  17 files changed, 58 insertions(+), 50 deletions(-)
+
+> David Vrabel (1):
+>       xen/x86: don't corrupt %eip when returning from a signal handler
+
+> Ian Campbell (11):
+>       xen: xenbus: quirk uses x86 specific cpuid
+>       xen: sysfs: include err.h for PTR_ERR etc
+>       xen: sysfs: fix build warning.
+>       xen: XENMEM_translate_gpfn_list was remove ages ago and is unused.
+>       xen: events: pirq_check_eoi_map is X86 specific
+>       xen: grant: use xen_pfn_t type for frame_list.
+>       xen: balloon: don't include e820.h
+>       xen: arm: make p2m operations NOPs
+>       xen: balloon: use correct type for frame_list
+>       xen: arm: comment on why 64-bit xen_pfn_t is safe even on 32 bit
+>       xen: dbgp: Fix warning when CONFIG_PCI is not enabled.
+
+> Konrad Rzeszutek Wilk (1):
+>       xen/xenbus: Fix compile warning.
+
+> Laszlo Ersek (1):
+>       xen PV passthru: assign SR-IOV virtual functions to separate virtual slots
+
+> Wei Yongjun (1):
+>       xen/x86: remove duplicated include from enlighten.c
+
 
