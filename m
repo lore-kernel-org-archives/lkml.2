@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934129Ab2JWXPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:15:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55199 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933615Ab2JWXPg (ORCPT
+	id S934144Ab2JWXPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:15:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65508 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934100Ab2JWXPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:15:36 -0400
+	Tue, 23 Oct 2012 19:15:38 -0400
+Date: Tue, 23 Oct 2012 16:15:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kees Cook <keescook@chromium.org>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@novell.com>, Mel Gorman <mel@csn.ul.ie>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>
+Subject: Re: [PATCH 158/193] mm: remove CONFIG_EXPERIMENTAL
+In-Reply-To: <CAGXu5j+5m+Gj9aYJpkxA+GsRm3rg-RohD5n88amRbn634P=epw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1210231613300.3408@chino.kir.corp.google.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org> <1351022666-6960-159-git-send-email-keescook@chromium.org> <alpine.DEB.2.00.1210231545030.1221@chino.kir.corp.google.com>
+ <CAGXu5j+5m+Gj9aYJpkxA+GsRm3rg-RohD5n88amRbn634P=epw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210231541350.1221@chino.kir.corp.google.com>
-References: <CAGPN=9Qx1JAr6CGO-JfoR2ksTJG_CLLZY_oBA_TFMzA_OSfiFg@mail.gmail.com>
-	<20121022173315.7b0da762@ilfaris>
-	<20121022214502.0fde3adc@ilfaris>
-	<20121022170452.cc8cc629.akpm@linux-foundation.org>
-	<alpine.LNX.2.00.1210222059120.1136@eggly.anvils>
-	<20121023110434.021d100b@ilfaris>
-	<CAJL_dMvUktOx9BqFm5jn2JbWbL_RWH412rdU+=rtDUvkuaPRUw@mail.gmail.com>
-	<alpine.DEB.2.00.1210231541350.1221@chino.kir.corp.google.com>
-Date: Wed, 24 Oct 2012 02:15:34 +0300
-Message-ID: <CAJL_dMtS-rc1b3s9YZ+9Eapc21vF06aCT23GV8eMp13ZxURvBA@mail.gmail.com>
-Subject: Re: Major performance regressions in 3.7rc1/2
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Julian Wollrath <jwollrath@web.de>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Patrik Kullman <patrik.kullman@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 1:42 AM, David Rientjes <rientjes@google.com> wrote:
-> On Tue, 23 Oct 2012, Anca Emanuel wrote:
->
->> I have the same problem.
->> Reverting
->> https://github.com/torvalds/linux/commit/957f822a0ab95e88b146638bad6209bbc315bedd
->> solves the problem for me.
->>
->
-> If you don't revert anything and do
->
->         echo 0 > /proc/sys/vm/zone_reclaim_mode
->
-> after boot, does this also fix the issue?
+On Tue, 23 Oct 2012, Kees Cook wrote:
 
-Yes.
-http://imgur.com/JJwiJ
+> > This makes ARCH_SELECT_MEMORY_MODEL pointless, why keep it around?
+> 
+> Good point. This seems to trigger much deeper changes. All of these
+> and their logic go away:
+> 
+> arch/arm/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/arm/mach-clps711x/Kconfig: select ARCH_SELECT_MEMORY_MODEL
+> arch/arm64/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/ia64/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/parisc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/powerpc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/s390/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/sh/mm/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/sparc/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> arch/x86/Kconfig:config ARCH_SELECT_MEMORY_MODEL
+> 
+> Along with mm/Kconfig:config SELECT_MEMORY_MODEL and associated logic.
+> 
+> How about we handle this as a phase 2, and for phase 1, I just drop
+> EXPERIMENTAL?
+> 
+
+Yeah, sounds like a good idea.  If anybody complains because they were 
+allowed to select their memory model because CONFIG_EXPERIMENTAL=y and not 
+because ARCH_SELECT_MEMORY_MODEL, then we should be able to fix the option 
+for their arch.
