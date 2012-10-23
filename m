@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933964Ab2JWUdL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:33:11 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49910 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933855Ab2JWUdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:33:08 -0400
-Date: Tue, 23 Oct 2012 13:32:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
-Message-ID: <20121023203254.GA3410@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121018162409.GA28504@redhat.com>
- <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com>
- <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
- <20121023165912.GA18712@redhat.com>
- <20121023180558.GF2585@linux.vnet.ibm.com>
- <20121023184123.GB24055@redhat.com>
- <20121023202902.GJ2585@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023202902.GJ2585@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102320-7282-0000-0000-00000E32F69F
+	id S964816Ab2JWUcU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:32:20 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56323 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964796Ab2JWUFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:05:42 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Steve French <sfrench@samba.org>
+Subject: [PATCH 144/193] fs/cifs: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:37 -0700
+Message-Id: <1351022666-6960-145-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 01:29:02PM -0700, Paul E. McKenney wrote:
-> On Tue, Oct 23, 2012 at 08:41:23PM +0200, Oleg Nesterov wrote:
-> > On 10/23, Paul E. McKenney wrote:
-> > >
-> > >  * Note that this guarantee implies a further memory-ordering guarantee.
-> > >  * On systems with more than one CPU, when synchronize_sched() returns,
-> > >  * each CPU is guaranteed to have executed a full memory barrier since
-> > >  * the end of its last RCU read-side critical section
-> >          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > 
-> > Ah wait... I misread this comment.
-> 
-> And I miswrote it.  It should say "since the end of its last RCU-sched
-> read-side critical section."  So, for example, RCU-sched need not force
-> a CPU that is idle, offline, or (eventually) executing in user mode to
-> execute a memory barrier.  Fixed this.
+This config item has not carried much meaning for a while now and is
+almost always enabled by default. As agreed during the Linux kernel
+summit, remove it.
 
-And I should hasten to add that for synchronize_sched(), disabling
-preemption (including disabling irqs, further including NMI handlers)
-acts as an RCU-sched read-side critical section.  (This is in the
-comment header for synchronize_sched() up above my addition to it.)
-	
-							Thanx, Paul
+CC: Steve French <sfrench@samba.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/cifs/Kconfig |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> > But this patch needs more? Or I misunderstood. There is no RCU unlock
-> > in percpu_up_read().
-> > 
-> > IOW. Suppose the code does
-> > 
-> > 	percpu_down_read();
-> > 	x = PROTECTED_BY_THIS_RW_SEM;
-> > 	percpu_up_read();
-> > 
-> > Withoit mb() the load above can be reordered with this_cpu_dec() in
-> > percpu_up_read().
-> > 
-> > However, we do not care if we can guarantee that the next
-> > percpu_down_write() can not return (iow, the next "write" section can
-> > not start) until this load is complete.
-> > 
-> > And I _think_ that another synchronize_sched() in percpu_down_write()
-> > added by this patch should work.
-> > 
-> > But, "since the end of its last  RCU read-side critical section"
-> > does not look enough.
-> > 
-> > Or I misundersood you/Mikulas/both ?
-> 
-> I clearly need to look more carefully at Mikulas's code...
-> 
-> 							Thanx, Paul
+diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
+index 2075ddf..8a354d1 100644
+--- a/fs/cifs/Kconfig
++++ b/fs/cifs/Kconfig
+@@ -147,14 +147,14 @@ config CIFS_DFS_UPCALL
+ 	    points. If unsure, say N.
+ 
+ config CIFS_NFSD_EXPORT
+-	  bool "Allow nfsd to export CIFS file system (EXPERIMENTAL)"
+-	  depends on CIFS && EXPERIMENTAL && BROKEN
++	  bool "Allow nfsd to export CIFS file system"
++	  depends on CIFS && BROKEN
+ 	  help
+ 	   Allows NFS server to export a CIFS mounted share (nfsd over cifs)
+ 
+ config CIFS_SMB2
+-	bool "SMB2 network file system support (EXPERIMENTAL)"
+-	depends on CIFS && EXPERIMENTAL && INET
++	bool "SMB2 network file system support"
++	depends on CIFS && INET
+ 	select NLS
+ 	select KEYS
+ 	select FSCACHE
+-- 
+1.7.9.5
 
