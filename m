@@ -1,244 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab2JWHak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:30:40 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59591 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab2JWHaj (ORCPT
+	id S1756731Ab2JWHbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:31:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:36548 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab2JWHbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:30:39 -0400
-Date: Tue, 23 Oct 2012 00:30:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mischa Jonker <mischa.jonker@synopsys.com>
-Cc: m.d.s.x.jonker@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arc-linux-dev@synopsys.com
-Subject: Re: [PATCH v4 1/1] Input: serio - Add ARC PS/2 driver
-Message-ID: <20121023073033.GA19595@core.coreip.homeip.net>
-References: <1350552538-24343-1-git-send-email-mischa.jonker@synopsys.com>
- <1350552538-24343-2-git-send-email-mischa.jonker@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350552538-24343-2-git-send-email-mischa.jonker@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 03:31:31 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-9c-508647d1fbb6
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: "'Marco Stornelli'" <marco.stornelli@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+ <001801cdb0c6$35bd6430$a1382c90$%kim@samsung.com>
+ <CANGUGtASk=_xd4xz_PXA+ittW2G2Z01DXsRjH67jBgXdpiG82w@mail.gmail.com>
+In-reply-to: <CANGUGtASk=_xd4xz_PXA+ittW2G2Z01DXsRjH67jBgXdpiG82w@mail.gmail.com>
+Subject: RE: [PATCH 08/16 v2] f2fs: add file operations
+Date: Tue, 23 Oct 2012 16:31:29 +0900
+Message-id: <009b01cdb0f0$6ad18cd0$4074a670$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2w6+IO7k/5q8poQFaRx7Dshw9s+wAA3Kww
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zfd2L7m0BBteWmFns2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGW8OTWZrWCBRMXLbfeYGxj383cxcnJICJhIfHxwnAXC
+	FpO4cG89WxcjF4eQwDJGieZLN1hhii7f3MwEkVjEKHFi2RtmCOcfo8S86Q1A7RwcbALaEpv3
+	G4A0iAgYSqw7uQysgVngIaPEnJsn2CEadjBK7Ln0nR2kilMgWOLuhWlgu4UFzCXO3T3HBGKz
+	CKhKnFyylxHE5hWwlfixcC6ULSjxY/I9sGXMAnoS9y9qgYSZBeQlNq95ywwSlhBQl3j0Vxfi
+	BiOJhts3mSFKRCT2vXjHCDFdQOLb5EMsEOWyEpsOgL0iIbCJXWLehpeMEA9LShxccYNlAqPE
+	LCSLZyEsnoVk8SwkGxYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECIkx6R2MqxosDjEK
+	cDAq8fB27G8NEGJNLCuuzD3EKMHBrCTCa2rfFiDEm5JYWZValB9fVJqTWnyI0Qfo8InMUqLJ
+	+cD4zyuJNzQ2NjEzMTUxtzQ1N8UhrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qBcfr/37pn
+	7ORDHkbfDLohl+nB/3DJP//G58t3qc3o887c/8jr4c5L3/68ktVYscvg05UVjoIeaXPet5iI
+	CFyc/VvQ9Ede2MzA2I2dK1I0J8glyuVzZW/rmfNkw8JsroVfn1lfX7F02XJvFuEZ5/sfr93x
+	4darsK7yy1JFP32F2T6KezlP9LygnajEUpyRaKjFXFScCADrwRbC3gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t9jAd2L7m0BBq+fGVrs2XuSxeLyrjls
+	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmvDk1ma1ggUTF
+	y233mBsY9/N3MXJySAiYSFy+uZkJwhaTuHBvPVsXIxeHkMAiRokTy94wQzj/GCXmTW9g6WLk
+	4GAT0JbYvN8ApEFEwFBi3cllTCA1zAIPGSXm3DzBDtGwg1Fiz6Xv7CBVnALBEncvTGMBsYUF
+	zCXO3T0Hto5FQFXi5JK9jCA2r4CtxI+Fc6FsQYkfk++BLWMW0JO4f1ELJMwsIC+xec1bZpCw
+	hIC6xKO/uhA3GEk03L7JDFEiIrHvxTvGCYxCs5AMmoUwaBaSQbOQdCxgZFnFKJpakFxQnJSe
+	a6RXnJhbXJqXrpecn7uJERzBz6R3MK5qsDjEKMDBqMTD27G/NUCINbGsuDL3EKMEB7OSCK+p
+	fVuAEG9KYmVValF+fFFpTmrxIUYfoDcnMkuJJucDk0teSbyhsYmZkaWRmYWRibk5DmElcd5m
+	j5QAIYH0xJLU7NTUgtQimHFMHJxSDYxOSiuS2I1iJx6ZkXzwXv/H5C279m9w+d3+5z9feMJh
+	STabr4/SDtf9neA3U93ltzJ/FK/v3cvq2Vs08h095h3JNFsjWl5+5KGsyLmXG6dyJzds+zK7
+	79TURFX7WtFYQ/ObraxVixa9WKtvaF88ZU/lvpbr+36YuD5e3tqZaDvJ2PnZm9mH/JYpsRRn
+	JBpqMRcVJwIArtG5mA0DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 11:28:58AM +0200, Mischa Jonker wrote:
-> This adds support for the PS/2 block that is used in various ARC FPGA
-> platforms.
+> > +void f2fs_truncate(struct inode *inode)
+> > +{
+> > +       if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
+> > +                               S_ISLNK(inode->i_mode)))
+> > +               return;
+> > +
+> > +       if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
+> > +               return;
+> 
+> No truncate for an append only file? You call f2fs_truncate from
+> evict_inode, so no block freeing when this kind of inode is deleted.
 
-Applied with minor edits, please take a look at my 'next' branch and
-holler if you see something wrong.
+Agreed.
 
-BTW, does the patch below work for you?
+> 
+> > +
+> > +       if (!truncate_blocks(inode, i_size_read(inode))) {
+> > +               inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+> > +               mark_inode_dirty(inode);
+> > +       }
+> > +
+> > +       f2fs_balance_fs(F2FS_SB(inode->i_sb));
+> > +}
+> > +
+> > +static int f2fs_getattr(struct vfsmount *mnt,
+> > +                        struct dentry *dentry, struct kstat *stat)
+> > +{
+> > +       struct inode *inode = dentry->d_inode;
+> > +       generic_fillattr(inode, stat);
+> > +       stat->blocks <<= 3;
+> > +       return 0;
+> > +}
+> > +
+> > +#ifdef CONFIG_F2FS_FS_POSIX_ACL
+> > +static void __setattr_copy(struct inode *inode, const struct iattr *attr)
+> > +{
+> > +       struct f2fs_inode_info *fi = F2FS_I(inode);
+> > +       unsigned int ia_valid = attr->ia_valid;
+> > +
+> > +       if (ia_valid & ATTR_UID)
+> > +               inode->i_uid = attr->ia_uid;
+> > +       if (ia_valid & ATTR_GID)
+> > +               inode->i_gid = attr->ia_gid;
+> > +       if (ia_valid & ATTR_ATIME)
+> > +               inode->i_atime = timespec_trunc(attr->ia_atime,
+> > +                                               inode->i_sb->s_time_gran);
+> > +       if (ia_valid & ATTR_MTIME)
+> > +               inode->i_mtime = timespec_trunc(attr->ia_mtime,
+> > +                                               inode->i_sb->s_time_gran);
+> > +       if (ia_valid & ATTR_CTIME)
+> > +               inode->i_ctime = timespec_trunc(attr->ia_ctime,
+> > +                                               inode->i_sb->s_time_gran);
+> > +       if (ia_valid & ATTR_MODE) {
+> > +               umode_t mode = attr->ia_mode;
+> > +
+> > +               if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+> > +                       mode &= ~S_ISGID;
+> > +               set_acl_inode(fi, mode);
+> > +       }
+> > +}
+> > +#else
+> > +#define __setattr_copy setattr_copy
+> > +#endif
+> > +
+> > +int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
+> > +{
+> > +       struct inode *inode = dentry->d_inode;
+> > +       struct f2fs_inode_info *fi = F2FS_I(inode);
+> > +       int err;
+> > +
+> > +       err = inode_change_ok(inode, attr);
+> > +       if (err)
+> > +               return err;
+> > +
+> > +       if ((attr->ia_valid & ATTR_SIZE) &&
+> > +                       attr->ia_size != i_size_read(inode)) {
+> > +               truncate_setsize(inode, attr->ia_size);
+> > +               f2fs_truncate(inode);
+> 
+> No need to call truncate_pagecache & co.?
 
-Thanks.
+truncate_setsize() calls truncate_pagecache().
+Any comment?
 
--- 
-Dmitry
+> 
+> Marco
 
 
-Input: arc_ps2 - switch to using managed resources
 
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
+Jaegeuk Kim
+Samsung
 
- drivers/input/serio/arc_ps2.c |  123 ++++++++++++++++++++---------------------
- 1 file changed, 59 insertions(+), 64 deletions(-)
-
-
-diff --git a/drivers/input/serio/arc_ps2.c b/drivers/input/serio/arc_ps2.c
-index f8c026a..89ad763 100644
---- a/drivers/input/serio/arc_ps2.c
-+++ b/drivers/input/serio/arc_ps2.c
-@@ -38,8 +38,6 @@ struct arc_ps2_port {
- 
- struct arc_ps2_data {
- 	struct arc_ps2_port port[ARC_PS2_PORTS];
--	struct resource *iomem_res;
--	int irq;
- 	void __iomem *addr;
- 	unsigned int frame_error;
- 	unsigned int buf_overflow;
-@@ -125,6 +123,32 @@ static void arc_ps2_close(struct serio *io)
- 		  port->status_addr);
- }
- 
-+static void __iomem * __devinit arc_ps2_calc_addr(struct arc_ps2_data *arc_ps2,
-+						  int index, bool status)
-+{
-+	void __iomem *addr;
-+
-+	addr = arc_ps2->addr + 4 + 4 * index;
-+	if (status)
-+		addr += ARC_PS2_PORTS * 4;
-+
-+	return addr;
-+}
-+
-+static void __devinit arc_ps2_inhibit_ports(struct arc_ps2_data *arc_ps2)
-+{
-+	void __iomem *addr;
-+	u32 val;
-+	int i;
-+
-+	for (i = 0; i < ARC_PS2_PORTS; i++) {
-+		addr = arc_ps2_calc_addr(arc_ps2, i, true);
-+		val = ioread32(addr);
-+		val &= ~(PS2_STAT_RX_INT_EN | PS2_STAT_TX_INT_EN);
-+		iowrite32(val, addr);
-+	}
-+}
-+
- static int __devinit arc_ps2_create_port(struct platform_device *pdev,
- 					 struct arc_ps2_data *arc_ps2,
- 					 int index)
-@@ -146,8 +170,8 @@ static int __devinit arc_ps2_create_port(struct platform_device *pdev,
- 
- 	port->io = io;
- 
--	port->data_addr = arc_ps2->addr + 4 + index * 4;
--	port->status_addr = arc_ps2->addr + 4 + ARC_PS2_PORTS * 4 + index * 4;
-+	port->data_addr = arc_ps2_calc_addr(arc_ps2, index, false);
-+	port->status_addr = arc_ps2_calc_addr(arc_ps2, index, true);
- 
- 	dev_dbg(&pdev->dev, "port%d is allocated (data = 0x%p, status = 0x%p)\n",
- 		index, port->data_addr, port->status_addr);
-@@ -159,85 +183,63 @@ static int __devinit arc_ps2_create_port(struct platform_device *pdev,
- static int __devinit arc_ps2_probe(struct platform_device *pdev)
- {
- 	struct arc_ps2_data *arc_ps2;
-+	struct resource *res;
-+	int irq;
- 	int error, id, i;
- 
--	arc_ps2 = kzalloc(sizeof(struct arc_ps2_data), GFP_KERNEL);
--	if (!arc_ps2) {
--		dev_err(&pdev->dev, "out of memory\n");
--		return -ENOMEM;
--	}
--
--	arc_ps2->iomem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!arc_ps2->iomem_res) {
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
- 		dev_err(&pdev->dev, "no IO memory defined\n");
--		error = -EINVAL;
--		goto err_free_mem;
-+		return -EINVAL;
- 	}
- 
--	arc_ps2->irq = platform_get_irq_byname(pdev, "arc_ps2_irq");
--	if (arc_ps2->irq < 0) {
-+	irq = platform_get_irq_byname(pdev, "arc_ps2_irq");
-+	if (irq < 0) {
- 		dev_err(&pdev->dev, "no IRQ defined\n");
--		error = -EINVAL;
--		goto err_free_mem;
-+		return -EINVAL;
- 	}
- 
--	if (!request_mem_region(arc_ps2->iomem_res->start,
--	    resource_size(arc_ps2->iomem_res), pdev->name)) {
--		dev_err(&pdev->dev, "memory region allocation failed for %pR\n",
--			arc_ps2->iomem_res);
--
--		error = -EBUSY;
--		goto err_free_mem;
-+	arc_ps2 = devm_kzalloc(&pdev->dev, sizeof(struct arc_ps2_data),
-+				GFP_KERNEL);
-+	if (!arc_ps2) {
-+		dev_err(&pdev->dev, "out of memory\n");
-+		return -ENOMEM;
- 	}
- 
--	arc_ps2->addr = ioremap_nocache(arc_ps2->iomem_res->start,
--					resource_size(arc_ps2->iomem_res));
--	if (!arc_ps2->addr) {
--		dev_err(&pdev->dev, "memory mapping failed\n");
--		error = -ENOMEM;
--		goto err_release_region;
--	}
-+	arc_ps2->addr = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!arc_ps2->addr)
-+		return -EBUSY;
- 
- 	dev_info(&pdev->dev, "irq = %d, address = 0x%p, ports = %i\n",
--		 arc_ps2->irq, arc_ps2->addr, ARC_PS2_PORTS);
-+		 irq, arc_ps2->addr, ARC_PS2_PORTS);
- 
- 	id = ioread32(arc_ps2->addr);
- 	if (id != ARC_ARC_PS2_ID) {
- 		dev_err(&pdev->dev, "device id does not match\n");
--		error = -ENXIO;
--		goto err_unmap;
-+		return -ENXIO;
- 	}
- 
--	for (i = 0; i < ARC_PS2_PORTS; i++) {
--		error = arc_ps2_create_port(pdev, arc_ps2, i);
--		if (error)
--			goto err_unregister_ports;
--	}
-+	arc_ps2_inhibit_ports(arc_ps2);
- 
--	error = request_irq(arc_ps2->irq, arc_ps2_interrupt, 0,
--			    "arc_ps2", arc_ps2);
-+	error = devm_request_irq(&pdev->dev, irq, arc_ps2_interrupt,
-+				 0, "arc_ps2", arc_ps2);
- 	if (error) {
- 		dev_err(&pdev->dev, "Could not allocate IRQ\n");
--		goto err_unregister_ports;
-+		return error;
-+	}
-+
-+	for (i = 0; i < ARC_PS2_PORTS; i++) {
-+		error = arc_ps2_create_port(pdev, arc_ps2, i);
-+		if (error) {
-+			while (--i >= 0)
-+				serio_unregister_port(arc_ps2->port[i].io);
-+			return error;
-+		}
- 	}
- 
- 	platform_set_drvdata(pdev, arc_ps2);
- 
- 	return 0;
--
--err_unregister_ports:
--	for (i = 0; i < ARC_PS2_PORTS; i++) {
--		if (arc_ps2->port[i].io)
--			serio_unregister_port(arc_ps2->port[i].io);
--	}
--err_unmap:
--	iounmap(arc_ps2->addr);
--err_release_region:
--	release_mem_region(arc_ps2->iomem_res->start,
--			   resource_size(arc_ps2->iomem_res));
--err_free_mem:
--	kfree(arc_ps2);
--	return error;
- }
- 
- static int __devexit arc_ps2_remove(struct platform_device *pdev)
-@@ -248,18 +250,11 @@ static int __devexit arc_ps2_remove(struct platform_device *pdev)
- 	for (i = 0; i < ARC_PS2_PORTS; i++)
- 		serio_unregister_port(arc_ps2->port[i].io);
- 
--	free_irq(arc_ps2->irq, arc_ps2);
--	iounmap(arc_ps2->addr);
--	release_mem_region(arc_ps2->iomem_res->start,
--			   resource_size(arc_ps2->iomem_res));
--
- 	dev_dbg(&pdev->dev, "interrupt count = %i\n", arc_ps2->total_int);
- 	dev_dbg(&pdev->dev, "frame error count = %i\n", arc_ps2->frame_error);
- 	dev_dbg(&pdev->dev, "buffer overflow count = %i\n",
- 		arc_ps2->buf_overflow);
- 
--	kfree(arc_ps2);
--
- 	return 0;
- }
- 
