@@ -1,127 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab2JWQZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:25:39 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:39339 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab2JWQZi (ORCPT
+	id S1755763Ab2JWQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:26:50 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:41140 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2JWQ0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:25:38 -0400
+	Tue, 23 Oct 2012 12:26:49 -0400
+Date: Tue, 23 Oct 2012 11:26:41 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH v2 2/4] zynq: move static peripheral mappings
+Message-ID: <20121023162641.GG20593@beefymiracle.amer.corp.natinst.com>
+References: <20121022211219.GC31538@beefymiracle.amer.corp.natinst.com>
+ <201210231450.11540.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+2vpA3J4sCUCaNkzCfO0yON2cVwSqFOiXku5u8GMwmmA@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
- <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
- <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
- <87sj97hs5e.fsf@rustcorp.com.au> <CAMOw1v7ySGT2g5s8djEbCGnqTNjqHky_LvaZsGEN6CSLNPMUgw@mail.gmail.com>
- <CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com>
- <CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com> <CAGXu5j+2vpA3J4sCUCaNkzCfO0yON2cVwSqFOiXku5u8GMwmmA@mail.gmail.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Tue, 23 Oct 2012 14:25:17 -0200
-Message-ID: <CAMOw1v4KOcH+OckoFzWEr68aUweKD-6gH83BHmBm-1c7PqhCpQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: Kees Cook <keescook@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, mtk.manpages@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        jonathon@jonmasters.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <201210231450.11540.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 11:26:36 AM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 11:26:37 AM,
+	Serialize complete at 10/23/2012 11:26:37 AM
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YkJPYEFdoxh/AXLE"
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-23_05:2012-10-23,2012-10-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 1:42 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Oct 22, 2012 at 9:08 PM, Lucas De Marchi
-> <lucas.demarchi@profusion.mobi> wrote:
->> On Tue, Oct 23, 2012 at 1:40 AM, Kees Cook <keescook@chromium.org> wrote:
->>> On Mon, Oct 22, 2012 at 7:37 PM, Lucas De Marchi
->>> <lucas.demarchi@profusion.mobi> wrote:
->>>> On Mon, Oct 22, 2012 at 5:39 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>>>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
->>>>>>> FIX: add flags arg to sys_finit_module()
->>>>>>>
->>>>>>> Thanks to Michael Kerrisk for keeping us honest.
->>>>>>
->>>>>> w00t! Thanks, Rusty ;-).
->>>>>>
->>>>>> Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
->>>>>
->>>>> Here's the version I ended up with when I added two flags.
->>>>>
->>>>> Lucas, is this useful to you?
->>>>>
->>>>> BTW Michael: why aren't the syscall man pages in the kernel source?
->>>>>
->>>>> Thanks,
->>>>> Rusty.
->>>>>
->>>>> module: add flags arg to sys_finit_module()
->>>>>
->>>>> Thanks to Michael Kerrisk for keeping us honest.  These flags are actually
->>>>> useful for eliminating the only case where kmod has to mangle a module's
->>>>> internals: for overriding module versioning.
->>>>>
->>>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->>>
->>> Acked-by: Kees Cook <keescook@chromium.org>
->>>
->>>> I wonder if we shouldn't get a new init_module2() as well, adding the
->>>> flags parameter. Of course this would be in another patch.
->>>>
->>>> My worries are that for compressed modules we still need to use
->>>> init_module() and then --force won't work with signed modules.
->>>
->>> For those cases, I think it should remain up to userspace to do the
->>> decompress and use init_module(). The code I'd written for patching
->>> module-init-tools basically just kept the fd around if it didn't need
->>> to mangle the module, and it would use finit_module (written before
->>> the flags argument was added):
->>>
->>>         /* request kernel linkage */
->>> -       ret = init_module(module->data, module->len, opts);
->>> +       if (fd < 0)
->>> +               ret = init_module(module->data, module->len, opts);
->>> +       else {
->>> +           ret = finit_module(fd, opts);
->>> +           if (ret != 0 && errno == ENOSYS)
->>> +                   ret = init_module(module->data, module->len, opts);
->>> +       }
->>>         if (ret != 0) {
->>>
->>> (And yes, I realize kmod is what'll actually be getting this logic.
->>> This was for my testing in Chrome OS, which is still using
->>> module-init-tools.)
->>
->> sure... but do you realize this will fail in case kernel is checking
->> module signature and we passed --force to modprobe (therefore mangled
->> the decompressed memory area)?
->
-> Hm, yeah, userspace mangling of a module plus signing would fail.
-> Seems like mangling and signing aren't compatible. Doing it in
-> kernel-space (as now written for finit_module) solves that, but it
-> means that now compression isn't possible if you need both signing and
-> mangling.
->
-> I'm not a user of signing, compression, or mangling, so I'm probably a
-> bit unimaginative here. It seems like the case for needing all three
-> is pretty uncommon. (e.g. if you're doing compression, you're probably
-> building embedded images, which means you're unlikely to need
-> --force.)
 
+--YkJPYEFdoxh/AXLE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some desktop distros ship compressed modules by default. I received
-feedback from distros some months ago that this is basically because
-of the disk space, not performance.  However some measurements I did
-in a regular laptop with spinning disk showed a small advantage
-performance-wise, too  (with SSD is another story and uncompressed
-wins by a large margin)
+Hey Arnd-
 
-Since this only affects users of --force option, I think it only
-affects module developers, who could uncompress the module, call
-depmod again, and modprobe it. ( Mixing compressed and uncompressed
-modules used not to work in module-init-tools and earlier versions of
-kmod wrt dependencies, but now it should be a seamless operation )
+Thanks for the review/suggestions.
 
+On Tue, Oct 23, 2012 at 02:50:11PM +0000, Arnd Bergmann wrote:
+> On Monday 22 October 2012, Josh Cartwright wrote:
+> > Shifting them up into the vmalloc region prevents the following warning,
+> > when booting a zynq qemu target with more than 512mb of RAM:
+> >=20
+> >   BUG: mapping for 0xe0000000 at 0xe0000000 out of vmalloc space
+> >=20
+> > In addition, it allows for reuse of these mappings when the proper
+> > drivers issue requests via ioremap().
+> >=20
+> > Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+>=20
+> This looks like a bug fix that should be backported to older kernels,
+> so it would be good to add 'Cc: stable@vger.kernel.org' below your
+> Signed-off-by.
 
-Lucas De Marchi
+Will-do, thanks.
+
+> > diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach=
+-zynq/include/mach/zynq_soc.h
+> > index d0d3f8f..ae3b236 100644
+> > --- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> > +++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+> > @@ -15,33 +15,37 @@
+> >  #ifndef __MACH_XILINX_SOC_H__
+> >  #define __MACH_XILINX_SOC_H__
+> > =20
+> > +#include <asm/pgtable.h>
+> > +
+> >  #define PERIPHERAL_CLOCK_RATE		2500000
+> > =20
+> > -/* For now, all mappings are flat (physical =3D virtual)
+> > +/* Static peripheral mappings are mapped at the top of the
+> > + * vmalloc region
+> >   */
+> > -#define UART0_PHYS			0xE0000000
+> > -#define UART0_VIRT			UART0_PHYS
+> > +#define UART0_PHYS		0xE0000000
+> > +#define UART0_SIZE		SZ_4K
+> > +#define UART0_VIRT		(VMALLOC_END - UART0_SIZE)
+>=20
+> There are plans to move the uart location into a fixed virtual
+> address in the future, but it hasn't been decided yet.
+> It will still need a fixed mapping though, just to a different
+> address.
+>=20
+> > -#define TTC0_PHYS			0xF8001000
+> > -#define TTC0_VIRT			TTC0_PHYS
+> > +#define TTC0_PHYS		0xF8001000
+> > +#define TTC0_SIZE		SZ_4K
+> > +#define TTC0_VIRT		(UART0_VIRT - TTC0_SIZE)
+>=20
+> It's quite likely that this does not have to be a fixed mapping
+> any more. Just have a look at how drivers/clocksource/dw_apb_timer_of.c
+> calls of_iomap() to get the address.
+
+Yes, this is already on my list of plans.  The in-tree TTC driver
+unfortunately doesn't yet support device tree bindings.  Are you
+comfortable waiting on the DT-ification of the TTC in a follow-up
+patchset?
+
+> > -#define PL310_L2CC_PHYS			0xF8F02000
+> > -#define PL310_L2CC_VIRT			PL310_L2CC_PHYS
+> > +#define PL310_L2CC_PHYS		0xF8F02000
+> > +#define PL310_L2CC_SIZE		SZ_4K
+> > +#define PL310_L2CC_VIRT		(TTC0_VIRT - PL310_L2CC_SIZE)
+>=20
+> This address would not need a fixed mapping by calling l2x0_of_init
+> rather than l2x0_init.
+
+Great, I'll take care of this.
+
+> > -#define SCU_PERIPH_PHYS			0xF8F00000
+> > -#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
+> > +#define SCU_PERIPH_PHYS		0xF8F00000
+> > +#define SCU_PERIPH_SIZE		SZ_8K
+> > +#define SCU_PERIPH_VIRT		(PL310_L2CC_VIRT - SCU_PERIPH_SIZE)
+>=20
+> And your patch 3 already obsoletes this mapping.
+
+I'll spin up a reordered patchset to eliminate this odd state.
+
+Thanks again,
+
+  Josh
+
+--YkJPYEFdoxh/AXLE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQhsVBAAoJEEef0niEbw+l8dAQAI+pO3+1g/aR1ynTkJCgsQ84
+ecC4nuUG5JHi/o8vYsS2N0WUKSkwKMkk7wFxWmKrIZ79L4voYU+uaHmy0faimPrO
+VGr1QzOJxLNweNgeUb8SK47/T4HImhQHmhLKkyLlGY0fVeL1Q81TI4p1b/1iQnL8
+q5uFFwid5NFgS4d5yFYNgxJPQkeel6+SNeLIOX+vqlUU4Su2AuvhYg/Q0APtXSYh
+pTLET9dYLqWiFaDBQfQ9sRnfRePnsKZtBmQE17C1pEPx/ey01GN+GbjHKRurdu4N
+goLlAMmkwN9zFEM3qTjVyQo9MZKCoSPGMOw+zxlfUvvqtjAwHkhNAedEe5bsOK11
+JFsQL9GiXuNQLBwg3LApnwpz4RMLeEFs5WjCircQD/DS+Cudcztk2KsnDjL79rTl
+WcCHPUldYz64Hb8g1hG176VglQ55odsjVIwtifNEV1d4/rET5fCFTX6Szd17+XDw
+6R/Akx3LRPzevpsH0DiJhzaSO+McNx5Xvm8NMtCX09/37dqaoZmfmxlBaQu563WW
+vrT+wRVJ3l8NZK9ztQvpuuuYZLAedJtvW8O/Q4ikS8tcm5dTaYZiIq5wP/AxxXvI
+tOhwHufcjKN4b4yYiucj3aOBSHnc8e3YWSoyJLpg6C4MpczhXbvIfkjMyGllnmAM
+5d37ljLJvYmb3OP3BEr2
+=1KaH
+-----END PGP SIGNATURE-----
+
+--YkJPYEFdoxh/AXLE--
