@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2JWQAt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:00:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:46168 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab2JWQAq (ORCPT
+	id S1757147Ab2JWQFH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 12:05:07 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:17622 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab2JWQFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:00:46 -0400
+	Tue, 23 Oct 2012 12:05:05 -0400
+From: Randy Wright <rwright@filesys1.fc.hp.com>
+Message-Id: <201210231605.q9NG51KW022791@filesys1.fc.hp.com>
+Subject: Re: [PATCH RFC] function probe_roms accessing improper addresses
+To: mjg@redhat.com (Matthew Garrett)
+Date: Tue, 23 Oct 2012 10:05:01 -0600 (MDT)
+Cc: rwright@hp.com, linux-kernel@vger.kernel.org, tmac@hp.com, hpa@zytor.com,
+        mjg59@srcf.ucam.org
+Reply-To: rwright@hp.com
+In-Reply-To: <20121019153015.GD28212@srcf.ucam.org> from "Matthew Garrett" at Oct 19, 2012 04:30:15 pm
+Organization: Hewlett-Packard/Mission Critical Open Source Development Lab
+X-Mailer: ELM [version 2.4 PL25]
 MIME-Version: 1.0
-In-Reply-To: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 23 Oct 2012 10:00:25 -0600
-Message-ID: <CAErSpo5QESO0J8LfzvvzCm4pTG=+9dOb0eYfsphoE7+mb2-MeA@mail.gmail.com>
-Subject: Re: [PATCH v2] Fix a hard coding style when determining if a device
- is a container.
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: lenb@kernel.org, yinghai@kernel.org, jiang.liu@huawei.com,
-        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 12, 2012 at 6:31 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
-> container_device_ids[], so use it, but not the hard coding style.
->
-> Also, introduce a new api is_container_device() to determine if a
-> device is a container device.
->
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Hi Matthew,
+ 
+You made some interesting suggestions:
 
-Looks good to me, but is_container_device() should be of type "bool",
-not type "int".
+> 1) Declare that any x86 hardware supported by Linux *must* support 
+> probing in this address region
 
-With that change,
+On the first: one way to be compliant with such a requirement would be 
+to design systems that implement softfail in this particular region.   
+What about a system that hardfails, but on which the resulting machine
+check can be handled by the kernel machine check handler?  Would
+appropriate re-ordering of the kernel initialization code to support
+such systems be acceptable?
 
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Also, let me mention a possible amendment to your first idea: what if
+the mandate that probing be supported were qualified by some attribute
+that could be indicated in the UEFI environment?  For example: instead
+of just a hole in the UEFI memory map, what if this range was
+specifically present and typed as EfiUnusableMemory?  Another idea for
+UEFI systems - but one requiring a UEFI specification change - might be
+adding a UEFI variable that if present, indicates any area not
+explicitly included and typed in the UEFI memory map (including the
+legacy adapter region) must be explicitly avoided by an OS.
 
-> ---
->  drivers/acpi/container.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-> index 1f9f7d7..ffd76ee 100644
-> --- a/drivers/acpi/container.c
-> +++ b/drivers/acpi/container.c
-> @@ -92,6 +92,19 @@ static int is_device_present(acpi_handle handle)
->         return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
->  }
->
-> +static int is_container_device(const char *hid)
-> +{
-> +       const struct acpi_device_id *container_id;
-> +
-> +       for (container_id = container_device_ids;
-> +            container_id->id[0]; container_id++) {
-> +               if (!strcmp((char *)container_id->id, hid))
-> +                       return 1;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
->  /*******************************************************************/
->  static int acpi_container_add(struct acpi_device *device)
->  {
-> @@ -232,10 +245,8 @@ container_walk_namespace_cb(acpi_handle handle,
->                 goto end;
->         }
->
-> -       if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
-> -           strcmp(hid, "PNP0A06")) {
-> +       if (!is_container_device(hid))
->                 goto end;
-> -       }
->
->         switch (*action) {
->         case INSTALL_NOTIFY_HANDLER:
-> --
-> 1.7.1
->
+> 2) Don't call probe_roms() by default, but leave it up to the graphics 
+> drivers. If they can get the rom by any other means then don't call it.
+
+One the second idea: there are a quite a lot of video drivers in the kernel
+source tree.  Do you have a suggestion for how to evaluate which ones 
+rely on the setup performed by probe_roms?
+
+-- 
+Randy Wright            Hewlett-Packard Company
+Phone: (970) 898-0998   Mail: rwright@hp.com
