@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab2JWESm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 00:18:42 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:23561 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986Ab2JWESl (ORCPT
+	id S1754048Ab2JWETn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 00:19:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64364 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056Ab2JWETk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 00:18:41 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-df-50861a9f217e
+	Tue, 23 Oct 2012 00:19:40 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-25-50861ada859e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Ashish Jangam'" <ashish.jangam@kpitcummins.com>,
+        "'Marek Vasut'" <marek.vasut@gmail.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/4] backlight: da9052: add missing const
-Date: Tue, 23 Oct 2012 13:18:39 +0900
-Message-id: <000901cdb0d5$7aa097c0$6fe1c740$%han@samsung.com>
+References: 
+In-reply-to: 
+Subject: [PATCH 2/4] backlight: lms283gf05: add missing const
+Date: Tue, 23 Oct 2012 13:19:37 +0900
+Message-id: <000a01cdb0d5$9d764970$d862dc50$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2w1XpVbfPt/OpOQ+KIRjYTosJjAA==
+Thread-index: Ac2w1XpVbfPt/OpOQ+KIRjYTosJjAAAAAizg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jQd35Um0BBp1ndC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGyqutjAUfWSt27b/C2MD4g6WLkZNDQsBEYtmWX6wQtpjEhXvr
-	2boYuTiEBKYzSny48RTKmc0k0bZ1HSNIFZuAmsSXL4fZQWwRgQiJ5hmzmEGKmAUaGSVWXtzD
-	DJIQFrCUOHh1I9gKFgFViUtHXoA18ArYSlx61MwMYQtK/Jh8D6yGWUBLYv3O40wQtrzE5jVv
-	gWo4gE5Sl3j0Vxdil57ElH9NUCUiEvtevGOcwCgwC8mkWUgmzUIyaRaSlgWMLKsYRVMLkguK
-	k9JzDfWKE3OLS/PS9ZLzczcxgkPzmdQOxpUNFocYBTgYlXh4LY60BgixJpYVV+YeYpTgYFYS
-	4VUOAArxpiRWVqUW5ccXleakFh9ilOZgURLnbfZICRASSE8sSc1OTS1ILYLJMnFwSjUw7g5+
-	ar72xZcHuVvuGTK2ZM5fFK3BMf/gb6WVUWbXnQQ+vbNu2cd/NGf6GdkJOVP3ead2KF0yKNff
-	L5kjLS1dP73qFbvqF7vQWYZmije7215eXhPwaF+7qsZ0nYDfN6vnyd09HlwX66QhHpTR6bnk
-	rkbwum1Tz1xla1y8P/NKXtX8qN3uFqEOSizFGYmGWsxFxYkAHQhHd0kCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t9jQd1bUm0BBhNn8llc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M1veXmArucVV8aGlgbmC8ydHFyMkhIWAi8eXHWhYIW0ziwr31
+	bF2MXBxCAtMZJT7fe8IO4cxmkvi49SYbSBWbgJrEly+H2UFsEYEIieYZs5hBbGaBUoltqw8B
+	2RxADdwSq5uDQMKcAjwS6/50gpUIC9hK7Hh+gQnEZhFQlTjzbREriM0LFF/V/40dwhaU+DH5
+	HgvESC2J9TuPM0HY8hKb17wFGy8hoC7x6K8uxAVGEr9PLIQqEZHY9+Id4wRGoVlIJs1CMmkW
+	kkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcxs+kdzCuarA4xCjAwajEw9ux
+	vzVAiDWxrLgy9xCjBAezkgivcgBQiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+zR0qAkEB6Yklq
+	dmpqQWoRTJaJg1OqgbEuxMns0DnH+KcuRz59EXgSeLqJ88GHlq/Put2Dn11eqtd2Wtj+oUpY
+	hGSkVqAi0/alj4LnLOm8n+TjHm65SL03Y9e+34ze/vXSSreKrSdOvSP9svoPf+ESziXvK3of
+	9rlGzv/ro3fJ+vhfiegnby53i7xUnJEUIxevoH5VWfbD5h+R0i6JLEosxRmJhlrMRcWJAKv4
+	9wVfAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -41,25 +44,43 @@ Add 'const' to static array that was missing it in its
 definition.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Marek Vasut <marek.vasut@gmail.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- drivers/video/backlight/da9052_bl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/video/backlight/lms283gf05.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/backlight/da9052_bl.c b/drivers/video/backlight/da9052_bl.c
-index ac19618..842da5a 100644
---- a/drivers/video/backlight/da9052_bl.c
-+++ b/drivers/video/backlight/da9052_bl.c
-@@ -34,7 +34,7 @@ enum {
- 	DA9052_TYPE_WLED3,
+diff --git a/drivers/video/backlight/lms283gf05.c b/drivers/video/backlight/lms283gf05.c
+index ea43f22..151f0da 100644
+--- a/drivers/video/backlight/lms283gf05.c
++++ b/drivers/video/backlight/lms283gf05.c
+@@ -31,7 +31,7 @@ struct lms283gf05_seq {
  };
  
--static unsigned char wled_bank[] = {
-+static const unsigned char wled_bank[] = {
- 	DA9052_LED1_CONF_REG,
- 	DA9052_LED2_CONF_REG,
- 	DA9052_LED3_CONF_REG,
+ /* Magic sequences supplied by manufacturer, for details refer to datasheet */
+-static struct lms283gf05_seq disp_initseq[] = {
++static const struct lms283gf05_seq disp_initseq[] = {
+ 	/* REG, VALUE, DELAY */
+ 	{ 0x07, 0x0000, 0 },
+ 	{ 0x13, 0x0000, 10 },
+@@ -78,7 +78,7 @@ static struct lms283gf05_seq disp_initseq[] = {
+ 	{ 0x22, 0x0000, 0 }
+ };
+ 
+-static struct lms283gf05_seq disp_pdwnseq[] = {
++static const struct lms283gf05_seq disp_pdwnseq[] = {
+ 	{ 0x07, 0x0016, 30 },
+ 
+ 	{ 0x07, 0x0004, 0 },
+@@ -104,7 +104,7 @@ static void lms283gf05_reset(unsigned long gpio, bool inverted)
+ }
+ 
+ static void lms283gf05_toggle(struct spi_device *spi,
+-			struct lms283gf05_seq *seq, int sz)
++				const struct lms283gf05_seq *seq, int sz)
+ {
+ 	char buf[3];
+ 	int i;
 -- 
 1.7.1
 
