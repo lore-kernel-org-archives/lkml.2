@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab2JWNMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:12:53 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49532
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753273Ab2JWNMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:12:51 -0400
-Date: Tue, 23 Oct 2012 09:12:48 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Yaakov Selkowitz <yselkowitz@gmail.com>
-Subject: Re: [PATCH] kconfig/menuconfig: use TAILQ instead of CIRCLEQ
-Message-ID: <20121023131248.GA4289@infradead.org>
-References: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+	id S932988Ab2JWNNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:13:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32368 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932337Ab2JWNNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:13:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
+   d="scan'208";a="207949279"
+Date: Tue, 23 Oct 2012 21:13:04 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [CPU hotplug, cpuidle_disable_device] BUG: unable to handle
+ kernel NULL pointer dereference at (null)
+Message-ID: <20121023131304.GA18718@localhost>
+References: <20121023124856.GA17692@localhost>
+ <5086971A.1070009@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350581625-23153-1-git-send-email-yann.morin.1998@free.fr>
+In-Reply-To: <5086971A.1070009@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 07:33:45PM +0200, Yann E. MORIN wrote:
-> Some systems (eg. Cygwin, FreeBSD) are missing the CIRCLEQ macros.
-> They were removed in Y2000 from FreeBSD:
->     http://svnweb.freebsd.org/base?view=revision&revision=70469
+On Tue, Oct 23, 2012 at 03:09:46PM +0200, Daniel Lezcano wrote:
+> On 10/23/2012 02:48 PM, Fengguang Wu wrote:
 > 
-> The reason was that TAILQ are perfectly capable of doing the exact
-> same things:
->     http://www.mavetju.org/mail/view_thread.php?list=freebsd-arch&id=915145&thread=yes
+> Hi Fengguang,
 > 
-> (Thank Yaakov for the pointers!)
-> 
-> So, switch to using TAILQ instead, which are more portable.
+> I believe this bug has been fixed by https://lkml.org/lkml/2012/10/8/87
 
-Why not use the kernels list.h?
+Yeah, I just confirmed that linux-next works fine.
 
+Thanks,
+Fengguang
