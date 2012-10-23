@@ -1,138 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965327Ab2JWXqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 19:46:32 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:65274 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587Ab2JWXqa (ORCPT
+	id S934192Ab2JWXyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 19:54:01 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51865 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933864Ab2JWXyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 19:46:30 -0400
-Message-ID: <50872C54.4090505@synaptics.com>
-Date: Tue, 23 Oct 2012 16:46:28 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 23 Oct 2012 19:54:00 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <1349496603-20775-3-git-send-email-cheiny@synaptics.com> <CACRpkdZ0cQPQHDCYiyQb+Qb_8nGh=4rw2CixKgAFvb-3c1LpSg@mail.gmail.com> <BFABBC009FBA1C43B207B15FD485ABD922C22C06@USW-MAIL1.synaptics-inc.local> <20121011081351.GA32175@core.coreip.homeip.net>
-In-Reply-To: <20121011081351.GA32175@core.coreip.homeip.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20121023224706.GR4291@dastard>
+References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
+	<20121023224706.GR4291@dastard>
+Date: Wed, 24 Oct 2012 07:53:59 +0800
+Message-ID: <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+From: YingHang Zhu <casualfisher@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2012 01:13 AM, Dmitry Torokhov wrote:
-> On Thu, Oct 11, 2012 at 04:15:56AM +0000, Christopher Heiny wrote:
->> On Thursday, October 11, 2012 02:21:53 AM you wrote:
->>> On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> wrote:
->>
->>>
->>>> +
->>>> +/** This is here because all those casts made for some ugly code.
->>>> + */
->>>> +static void u8_and(u8 *dest, u8 *target1, u8 *target2, int nbits)
->>>> +{
->>>> +       bitmap_and((long unsigned int *) dest,
->>>> +                  (long unsigned int *) target1,
->>>> +                  (long unsigned int *) target2,
->>>> +                  nbits);
->>>> +}
->>>
->>> Hm, getting rid of unreadable casts is a valid case.
->>>
->>> I'll be OK with this but maybe the real solution is to introduce such
->>> helpers into <linux/bitmap.h>?
->>
->> Hmmm.  We'll give that some thought.  Thought I'd like to get the RMI4
->> driver nailed down, just to keep the area of change small.  Once we've
->> got all the kinks worked out here, we'll look at bitmap.h helpers.
+Hi Dave,
+On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
+>> Hi,
+>>   Recently we ran into the bug that an opened file's ra_pages does not
+>> synchronize with it's backing device's when the latter is changed
+>> with blockdev --setra, the application needs to reopen the file
+>> to know the change,
 >
-> The question is why you are using u8 for bitmaps instead of doing
-> DECALRE_BITMAP() and using it instead? Then you would not need silly
-> wrappers around existing APIs.
-
-OK, we'll look into that.  My big concern is whether the bit-order in 
-bitmask.h will be the same as the bit order in the RMI4 sensor 
-registers.  If that works out OK, we'll switch.
-
-
->>> (...)
->>>
->>>> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
->>>> +{
->>>> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
->>>> +       struct device *dev = &rmi_dev->dev;
->>>> +       struct rmi_function_container *entry;
->>>> +       u8 irq_status[data->num_of_irq_regs];
->>>
->>> Looking at this...
->>>
->>> What does the data->num_of_irq_regs actually contain?
->>>
->>> I just fear that it is something constant like always 2 or always 4,
->>> so there is actually, in reality, a 16 or 32 bit register hiding in there.
->>>
->>> In that case what you should do is to represent it as a u16 or u32 here,
->>> just or the bits into a status word, and then walk over that status
->>> word with something like ffs(bitword); ...
->>
->> Nope, it's not constant.  In theory, and RMI4 based sensor can have up
->> to 128 functions (in practice, it's far fewer), and each function can
->> have as many as 7 interrupts.  So the number of IRQ registers can vary
->> from RMI4 sensor to RMI4 sensor, and needs to be computed during the
->> scan of the product descriptor table.
+> or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
+> window to the (new) bdi default.
 >
-> Is it a good idea to have it on stack then? Should it be part of
-> rmi_device instead?
-
-It's not coming off the stack.  We're allocating it via devm_kzalloc() 
-in rmi_driver_probe().
-
-
->>>> +#define simple_show_union_struct(regtype, propname, fmt)\
->>>> +static ssize_t tricat(rmi_fn_, FNUM, _##propname##_show)(struct device
->>>> *dev,\ +                               struct device_attribute *attr,
->>>> char *buf) {\ +       struct rmi_function_container *fc;\
->>>> +       struct FUNCTION_DATA *data;\
->>>> +\
->>>> +       fc = to_rmi_function_container(dev);\
->>>> +       data = fc->data;\
->>>> +\
->>>> +       return snprintf(buf, PAGE_SIZE, fmt,\
->>>> +                       data->regtype.propname);\
->>>> +}
->>>
->>> OK I see the point, but is there really no other way to do this than
->>> to #define huge static inlines like these? Is it really not possible to
->>> create just generic functions instead of going this far?
->>>
->>> (same comment for all)
->>
+>> which is inappropriate under our circumstances.
 >
->> We tried generic functions previously, and it wound up really really ugly.  We'd be willing to look at it again, though, since this isn't real beautiful either.  If you've got an example implementation in mind. a pointer would help a great deal.
+> Which are? We don't know your circumstances, so you need to tell us
+> why you need this and why existing methods of handling such changes
+> are insufficient...
 >
-> You just need to wrap around a custome structure around struct
-> device_attribute and then you shoudl be able to use generics. If you
-> look into trackpoint.c you should gett the idea.
-
-That looks a lot tidier.  We'll work on it for sysfs (and maybe for 
-debugfs, too).  It might not be applicable in all cases, but it promises 
-to make a lot of things tidier.
-
-Thanks!
+> Optimal readahead windows tend to be a physical property of the
+> storage and that does not tend to change dynamically. Hence block
+> device readahead should only need to be set up once, and generally
+> that can be done before the filesystem is mounted and files are
+> opened (e.g. via udev rules). Hence you need to explain why you need
+> to change the default block device readahead on the fly, and why
+> fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
+> windows to the new defaults.
+Our system is a fuse-based file system, fuse creates a
+pseudo backing device for the user space file systems, the default readahead
+size is 128KB and it can't fully utilize the backing storage's read ability,
+so we should tune it.
+The above third-party application using our file system maintains
+some long-opened files, we does not have any chances
+to force them to call fadvise(POSIX_FADV_NORMAL). :(
+Thanks,
+      Ying Zhu
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
