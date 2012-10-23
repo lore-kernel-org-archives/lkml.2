@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2JWKLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:11:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39464 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948Ab2JWKLu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:11:50 -0400
-Message-ID: <1350987096.2768.108.camel@twins>
-Subject: Re: [PATCH 1/6] perf, x86: Basic Haswell LBR call stack support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, ak@linux.intel.com
-Date: Tue, 23 Oct 2012 12:11:36 +0200
-In-Reply-To: <50862E02.6020002@intel.com>
-References: <1350886279-6141-1-git-send-email-zheng.z.yan@intel.com>
-	  <1350886279-6141-2-git-send-email-zheng.z.yan@intel.com>
-	 <1350902138.2768.86.camel@twins> <50862E02.6020002@intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754273Ab2JWKPF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:15:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49767 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab2JWKPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 06:15:03 -0400
+Date: Tue, 23 Oct 2012 12:15:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Qiang Gao <gaoqiangscut@gmail.com>
+Cc: Balbir Singh <bsingharora@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: process hangs on do_exit when oom happens
+Message-ID: <20121023101500.GE15397@dhcp22.suse.cz>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+ <20121019160425.GA10175@dhcp22.suse.cz>
+ <CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
+ <CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
+ <CAKWKT+bYOf0cEDuiibf6eV2raMxe481y-D+nrBgPWR3R+53zvg@mail.gmail.com>
+ <20121023095028.GD15397@dhcp22.suse.cz>
+ <CAKWKT+b2s4E7Nne5d0UJwfLGiCXqAUgrCzuuZi6ZPdjszVSmWg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKWKT+b2s4E7Nne5d0UJwfLGiCXqAUgrCzuuZi6ZPdjszVSmWg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 13:41 +0800, Yan, Zheng wrote:
-> On 10/22/2012 06:35 PM, Peter Zijlstra wrote:
-> > On Mon, 2012-10-22 at 14:11 +0800, Yan, Zheng wrote:
-> >> --- a/include/uapi/linux/perf_event.h
-> >> +++ b/include/uapi/linux/perf_event.h
-> >> @@ -160,8 +160,9 @@ enum perf_branch_sample_type {
-> >>         PERF_SAMPLE_BRANCH_ABORT        = 1U << 7, /* transaction aborts */
-> >>         PERF_SAMPLE_BRANCH_INTX         = 1U << 8, /* in transaction (flag) */
-> >>         PERF_SAMPLE_BRANCH_NOTX         = 1U << 9, /* not in transaction (flag) */
-> >> +       PERF_SAMPLE_BRANCH_CALL_STACK   = 1U << 10, /* call stack */
-> >>  
-> >> -       PERF_SAMPLE_BRANCH_MAX          = 1U << 10, /* non-ABI */
-> >> +       PERF_SAMPLE_BRANCH_MAX          = 1U << 11, /* non-ABI */
-> >>  }; 
-> > 
-> > You add an ABI sample type without mentioning it in your changelog.. I
-> > think I'll stop reading here.
-> > 
-> Ok, I will add the ABI change to the change log. Do you think we should hide this
-> branch sample type from user?
+On Tue 23-10-12 18:10:33, Qiang Gao wrote:
+> On Tue, Oct 23, 2012 at 5:50 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Tue 23-10-12 15:18:48, Qiang Gao wrote:
+> >> This process was moved to RT-priority queue when global oom-killer
+> >> happened to boost the recovery of the system..
+> >
+> > Who did that? oom killer doesn't boost the priority (scheduling class)
+> > AFAIK.
+> >
+> >> but it wasn't get properily dealt with. I still have no idea why where
+> >> the problem is ..
+> >
+> > Well your configuration says that there is no runtime reserved for the
+> > group.
+> > Please refer to Documentation/scheduler/sched-rt-group.txt for more
+> > information.
+> >
+[...]
+> maybe this is not a upstream-kernel bug. the centos/redhat kernel
+> would boost the process to RT prio when the process was selected
+> by oom-killer.
 
-Possibly not, I haven't really thought about it. But never hide an ABI
-change. Explicitly mention it and preferably explain why you felt it
-needed to extend the ABI.
+This still looks like your cpu controller is misconfigured. Even if the
+task is promoted to be realtime.
+-- 
+Michal Hocko
+SUSE Labs
