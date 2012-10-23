@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab2JWMCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 08:02:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41043 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752688Ab2JWMCP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 08:02:15 -0400
-Message-ID: <1350993710.13456.8.camel@twins>
-Subject: Re: [PATCH 03/34] perf, x86: Basic Haswell PEBS support v2
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, acme@redhat.com,
-        eranian@google.com, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 23 Oct 2012 14:01:50 +0200
-In-Reply-To: <1350602382-12771-4-git-send-email-andi@firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org>
-	 <1350602382-12771-4-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754786Ab2JWMG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 08:06:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26914 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254Ab2JWMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 08:06:28 -0400
+X-IronPort-AV: E=Sophos;i="4.80,635,1344182400"; 
+   d="scan'208";a="6052469"
+Message-ID: <508687FB.9080701@cn.fujitsu.com>
+Date: Tue, 23 Oct 2012 20:05:15 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: bhelgaas@google.com, lenb@kernel.org, yinghai@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Fix a hard coding style when determining if a device
+ is a container.
+References: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1350045098-7232-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 20:05:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/23 20:05:49,
+	Serialize complete at 2012/10/23 20:05:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-18 at 16:19 -0700, Andi Kleen wrote:
-> +struct event_constraint intel_hsw_pebs_event_constraints[] = {
-> +       INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
-> +       INTEL_UEVENT_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
-> +       INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
-> +       INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-> +       INTEL_EVENT_CONSTRAINT(0x01c5, 0xf),  /* BR_MISP_RETIRED.CONDITIONAL */
-> +       INTEL_EVENT_CONSTRAINT(0x04c5, 0xf),  /* BR_MISP_RETIRED.ALL_BRANCHES */
-> +       INTEL_EVENT_CONSTRAINT(0x20c5, 0xf),  /* BR_MISP_RETIRED.NEAR_TAKEN */
-> +       INTEL_EVENT_CONSTRAINT(0xcd, 0x8),    /* MEM_TRANS_RETIRED.* */
-> +       INTEL_UEVENT_CONSTRAINT(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
-> +       INTEL_UEVENT_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
-> +       INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf), /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
-> +       INTEL_UEVENT_CONSTRAINT(0x02d3, 0xf), /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
-> +       INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+Hi,
+
+Would somebody give some comments ?
+
+Thanks. :)
+
+On 10/12/2012 08:31 PM, Tang Chen wrote:
+> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
+> container_device_ids[], so use it, but not the hard coding style.
+>
+> Also, introduce a new api is_container_device() to determine if a
+> device is a container device.
+>
+> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> ---
+>   drivers/acpi/container.c |   17 ++++++++++++++---
+>   1 files changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+> index 1f9f7d7..ffd76ee 100644
+> --- a/drivers/acpi/container.c
+> +++ b/drivers/acpi/container.c
+> @@ -92,6 +92,19 @@ static int is_device_present(acpi_handle handle)
+>   	return ((sta&  ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
+>   }
+>
+> +static int is_container_device(const char *hid)
+> +{
+> +	const struct acpi_device_id *container_id;
 > +
-> +       EVENT_CONSTRAINT_END
-> +}; 
+> +	for (container_id = container_device_ids;
+> +	     container_id->id[0]; container_id++) {
+> +		if (!strcmp((char *)container_id->id, hid))
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   /*******************************************************************/
+>   static int acpi_container_add(struct acpi_device *device)
+>   {
+> @@ -232,10 +245,8 @@ container_walk_namespace_cb(acpi_handle handle,
+>   		goto end;
+>   	}
+>
+> -	if (strcmp(hid, "ACPI0004")&&  strcmp(hid, "PNP0A05")&&
+> -	    strcmp(hid, "PNP0A06")) {
+> +	if (!is_container_device(hid))
+>   		goto end;
+> -	}
+>
+>   	switch (*action) {
+>   	case INSTALL_NOTIFY_HANDLER:
 
-ISTR asking this before, but I cannot find an answer in the previous
-threads just now.
-
-Do things like the 0xd0 event really need all the UEVENT things spelled
-out? And 0x22d0 (LOCK_STORES) still appears missing going by the pattern
-in there.
-
-Also, it looks like the 0xc5 things want to be UEVENT, the current EVENT
-thing will mask the umask.
