@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965115Ab2JWUm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:42:28 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36332 "EHLO smtp.outflux.net"
+	id S965091Ab2JWUm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:42:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39875 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933812Ab2JWUF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933813Ab2JWUF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:29 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH 112/193] drivers/pcmcia: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:03:05 -0700
-Message-Id: <1351022666-6960-113-git-send-email-keescook@chromium.org>
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 174/193] net/mac802154: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:04:07 -0700
+Message-Id: <1351022666-6960-175-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -29,31 +27,26 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Russell King <rmk+kernel@arm.linux.org.uk>
-CC: Manuel Lauss <manuel.lauss@googlemail.com>
-CC: Dominik Brodowski <linux@dominikbrodowski.net>
-CC: Ralf Baechle <ralf@linux-mips.org>
-CC: Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
+CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/pcmcia/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac802154/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pcmcia/Kconfig b/drivers/pcmcia/Kconfig
-index 8fd255f..b90f85b 100644
---- a/drivers/pcmcia/Kconfig
-+++ b/drivers/pcmcia/Kconfig
-@@ -36,8 +36,8 @@ config PCMCIA
- 	   If unsure, say Y.
- 
- config PCMCIA_LOAD_CIS
--	bool "Load CIS updates from userspace (EXPERIMENTAL)"
--	depends on PCMCIA && EXPERIMENTAL
-+	bool "Load CIS updates from userspace"
-+	depends on PCMCIA
- 	select FW_LOADER
- 	default y
- 	help
+diff --git a/net/mac802154/Kconfig b/net/mac802154/Kconfig
+index a967dda..b33dd76 100644
+--- a/net/mac802154/Kconfig
++++ b/net/mac802154/Kconfig
+@@ -1,6 +1,6 @@
+ config MAC802154
+ 	tristate "Generic IEEE 802.15.4 Soft Networking Stack (mac802154)"
+-	depends on IEEE802154 && EXPERIMENTAL
++	depends on IEEE802154
+ 	select CRC_CCITT
+ 	---help---
+ 	  This option enables the hardware independent IEEE 802.15.4
 -- 
 1.7.9.5
 
