@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475Ab2JWTyS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:54:18 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:49223 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756884Ab2JWTyR (ORCPT
+	id S933246Ab2JWT5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:57:22 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:55345 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2JWT5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:54:17 -0400
-Date: Tue, 23 Oct 2012 21:33:04 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 net-next 1/2] r8169: enable ALDPS for power saving
-Message-ID: <20121023193304.GB10463@electric-eye.fr.zoreil.com>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <1350974831-1438-1-git-send-email-hayeswang@realtek.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350974831-1438-1-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Tue, 23 Oct 2012 15:57:20 -0400
+MIME-Version: 1.0
+Date: Tue, 23 Oct 2012 16:57:20 -0300
+Message-ID: <CALF0-+XH4AfJUcNHXdMTwXf-=f24Zpe3VOw_1eQ9WBV1-6ZVjQ@mail.gmail.com>
+Subject: [PATCH 0/23] media: Replace memcpy with struct assignment
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: linux-media <linux-media@vger.kernel.org>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> Enable ALDPS function to save power when link down. Note that the
-> feature should be set after the other PHY settings. And the firmware
-> is necessary. Don't enable it without loading the firmware.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-[...]
+Hello everyone,
 
-Please see my just sent answer in yesterday's thread.
+This is a large patchset that replaces struct memcpy with struct assignment,
+whenever possible at drivers/media.
 
-> +static void r810x_aldps_disable(struct rtl8169_private *tp)
-> +{
-> +	rtl_writephy(tp, 0x1f, 0x0000);
-> +	rtl_writephy(tp, 0x18, 0x0310);
-> +	msleep(100);
-> +}
+The patches are hand applied and every change has been thoroughly reviewed.
+However, to avoid regressions and angry users we'd like to have Acks
+from maintainers.
 
-rtl8402_hw_phy_config used a msleep(20). Meguesses it won't hurt, right ?
+A simplified version of the semantic match that finds
+this problem is as follows: (http://coccinelle.lip6.fr/)
 
-[...]
-> +
-> +	/* ALDPS enable */
-> +	r8168_aldps_enable_1(tp);
+// <smpl>
+@@
+identifier struct_name;
+struct struct_name to;
+struct struct_name from;
+expression E;
+@@
+-memcpy(&(to), &(from), E);
++to = from;
+// </smpl>
 
-The functions are literate enough: you can remove the comment.
+If you're thinking this change is very minor and doesn't worh the pain,
+you might change your opinion reading this report from Dan Carpenter:
 
-[...]
-> @@ -6391,6 +6431,8 @@ static void rtl8169_net_suspend(struct net_device *dev)
->  {
->  	struct rtl8169_private *tp = netdev_priv(dev);
->  
-> +	tp->features &= ~RTL_FEATURE_EXTENDED;
-> +
->  	if (!netif_running(dev))
->  		return;
+http://comments.gmane.org/gmane.linux.drivers.video-input-infrastructure/49553
 
-No (as previously stated).
+The report clearly shows how copy-paste programming paradigm, combined with
+lack of memcpy type-safety can lead to very strange code.
 
--- 
-Ueimor
+Not to mention, using struct assignment instead of memcpy
+is by far more readable.
+
+Comments, feedback and flames are welcome. Thanks!
+
+Peter Senna Tschudin, Ezequiel Garcia (23):
+ wl128x: Replace memcpy with struct assignment
+ radio-wl1273: Replace memcpy with struct assignment
+ dvb-frontends: Replace memcpy with struct assignment
+ dvb-core: Replace memcpy with struct assignment
+ bttv: Replace memcpy with struct assignment
+ cx18: Replace memcpy with struct assignment
+ cx23885: Replace memcpy with struct assignment
+ cx88: Replace memcpy with struct assignment
+ ivtv: Replace memcpy with struct assignment
+ tuners/tda18271: Replace memcpy with struct assignment
+ tuners/xc2028: Replace memcpy with struct assignment
+ tuners/xc4000: Replace memcpy with struct assignment
+ au0828: Replace memcpy with struct assignment
+ dvb-usb/friio-fe: Replace memcpy with struct assignment
+ zr36067: Replace memcpy with struct assignment
+ cx25840: Replace memcpy with struct assignment
+ hdpvr: Replace memcpy with struct assignment
+ pvrusb2: Replace memcpy with struct assignment
+ pwc: Replace memcpy with struct assignment
+ sn9c102: Replace memcpy with struct assignment
+ usbvision: Replace memcpy with struct assignment
+ cx231xx: Replace memcpy with struct assignment
+ uvc: Replace memcpy with struct assignment
+
+ drivers/media/dvb-core/dvb_frontend.c        |    2 +-
+ drivers/media/dvb-frontends/cx24116.c        |    2 +-
+ drivers/media/dvb-frontends/drxd_hard.c      |    5 ++---
+ drivers/media/dvb-frontends/stv0299.c        |    2 +-
+ drivers/media/i2c/cx25840/cx25840-ir.c       |    6 ++----
+ drivers/media/pci/bt8xx/bttv-i2c.c           |    3 +--
+ drivers/media/pci/cx18/cx18-i2c.c            |    6 ++----
+ drivers/media/pci/cx23885/cx23885-video.c    |    3 +--
+ drivers/media/pci/cx23885/cx23888-ir.c       |    6 ++----
+ drivers/media/pci/cx88/cx88-cards.c          |    2 +-
+ drivers/media/pci/cx88/cx88-i2c.c            |    3 +--
+ drivers/media/pci/cx88/cx88-vp3054-i2c.c     |    3 +--
+ drivers/media/pci/ivtv/ivtv-i2c.c            |   12 ++++--------
+ drivers/media/pci/zoran/zoran_card.c         |    3 +--
+ drivers/media/radio/radio-wl1273.c           |    3 +--
+ drivers/media/radio/wl128x/fmdrv_common.c    |    3 +--
+ drivers/media/tuners/tda18271-maps.c         |    6 ++----
+ drivers/media/tuners/tuner-xc2028.c          |    2 +-
+ drivers/media/tuners/xc4000.c                |    2 +-
+ drivers/media/usb/au0828/au0828-cards.c      |    2 +-
+ drivers/media/usb/au0828/au0828-i2c.c        |    9 +++------
+ drivers/media/usb/cx231xx/cx231xx-cards.c    |    2 +-
+ drivers/media/usb/cx231xx/cx231xx-video.c    |    3 +--
+ drivers/media/usb/dvb-usb/friio-fe.c         |    5 ++---
+ drivers/media/usb/hdpvr/hdpvr-i2c.c          |    3 +--
+ drivers/media/usb/pvrusb2/pvrusb2-encoder.c  |    3 +--
+ drivers/media/usb/pvrusb2/pvrusb2-i2c-core.c |    4 ++--
+ drivers/media/usb/pvrusb2/pvrusb2-v4l2.c     |    2 +-
+ drivers/media/usb/pwc/pwc-if.c               |    2 +-
+ drivers/media/usb/sn9c102/sn9c102_core.c     |    4 ++--
+ drivers/media/usb/usbvision/usbvision-i2c.c  |    3 +--
+ drivers/media/usb/uvc/uvc_v4l2.c             |    6 +++---
+ 32 files changed, 47 insertions(+), 75 deletions(-)
+
+
+    Ezequiel
