@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965022Ab2JWUgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:36:38 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60441 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964982Ab2JWUgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 16:36:23 -0400
-Date: Tue, 23 Oct 2012 21:36:20 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+	id S965024Ab2JWUhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:37:00 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:42218 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933836Ab2JWUg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 16:36:56 -0400
+Date: Tue, 23 Oct 2012 13:29:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
- GENERIC_KERNEL_EXECVE
-Message-ID: <20121023203620.GA2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
- <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
- <20121019213548.GR2616@ZenIV.linux.org.uk>
- <5082A1F1.3080303@tilera.com>
- <20121020153401.GT2616@ZenIV.linux.org.uk>
- <20121020171643.GU2616@ZenIV.linux.org.uk>
- <5086D432.4070008@tilera.com>
- <20121023184122.GZ2616@ZenIV.linux.org.uk>
- <5086EE7C.2080608@tilera.com>
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
+Message-ID: <20121023202902.GJ2585@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com>
+ <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
+ <20121023165912.GA18712@redhat.com>
+ <20121023180558.GF2585@linux.vnet.ibm.com>
+ <20121023184123.GB24055@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5086EE7C.2080608@tilera.com>
+In-Reply-To: <20121023184123.GB24055@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102320-5930-0000-0000-00000D5F98AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 03:22:36PM -0400, Chris Metcalf wrote:
-> On 10/23/2012 2:41 PM, Al Viro wrote:
-> > On Tue, Oct 23, 2012 at 01:30:26PM -0400, Chris Metcalf wrote:
-> >> As you had suggested in an earlier email, I went ahead and eliminated the
-> >> special pt_regs handling for sigaltstack, rt_sigreturn, and clone.  (Also a
-> >> tilepro-specific syscall that was also using PTREG_SYSCALL.)  I'll send it
-> >> separately and you can include it in your tree if you like.
-> > OK by me...  Or just pull this arch-tile into a separate branch in your
-> > tree, add commit on top of it and I'll pull that.
+On Tue, Oct 23, 2012 at 08:41:23PM +0200, Oleg Nesterov wrote:
+> On 10/23, Paul E. McKenney wrote:
+> >
+> >  * Note that this guarantee implies a further memory-ordering guarantee.
+> >  * On systems with more than one CPU, when synchronize_sched() returns,
+> >  * each CPU is guaranteed to have executed a full memory barrier since
+> >  * the end of its last RCU read-side critical section
+>          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 > 
-> Done in 
+> Ah wait... I misread this comment.
+
+And I miswrote it.  It should say "since the end of its last RCU-sched
+read-side critical section."  So, for example, RCU-sched need not force
+a CPU that is idle, offline, or (eventually) executing in user mode to
+execute a memory barrier.  Fixed this.
+
+> But this patch needs more? Or I misunderstood. There is no RCU unlock
+> in percpu_up_read().
 > 
->   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git viro-signal-tile
+> IOW. Suppose the code does
+> 
+> 	percpu_down_read();
+> 	x = PROTECTED_BY_THIS_RW_SEM;
+> 	percpu_up_read();
+> 
+> Withoit mb() the load above can be reordered with this_cpu_dec() in
+> percpu_up_read().
+> 
+> However, we do not care if we can guarantee that the next
+> percpu_down_write() can not return (iow, the next "write" section can
+> not start) until this load is complete.
+> 
+> And I _think_ that another synchronize_sched() in percpu_down_write()
+> added by this patch should work.
+> 
+> But, "since the end of its last  RCU read-side critical section"
+> does not look enough.
+> 
+> Or I misundersood you/Mikulas/both ?
 
-Argh...  That's exactly the reason why I would like to get amending commits -
-you've done that commit on top of the identical tree, but without your
-Acked-by on the last commit.  Result: merge conflict ;-/
+I clearly need to look more carefully at Mikulas's code...
 
-Could you test the following on top of your patch?  It gets rid of
-regs use in sys_clone() *and* of the regs argument in copy_thread().
-If that work (including SMP - note that it changes the path taken
-by copy_thread() when called by fork_idle()), that should be all
-we'll need in arch/tile for killing idle_regs() and killing the pt_regs
-passing to do_fork()/copy_process()/copy_thread().
+							Thanx, Paul
 
-diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
-index 6e7fb4e..1c20029 100644
---- a/arch/tile/kernel/process.c
-+++ b/arch/tile/kernel/process.c
-@@ -158,7 +158,7 @@ static void save_arch_state(struct thread_struct *t);
- 
- int copy_thread(unsigned long clone_flags, unsigned long sp,
- 		unsigned long arg,
--		struct task_struct *p, struct pt_regs *regs)
-+		struct task_struct *p, struct pt_regs *unused)
- {
- 	struct pt_regs *childregs = task_pt_regs(p);
- 	unsigned long ksp;
-@@ -184,7 +184,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 	/* Record the pid of the task that created this one. */
- 	p->thread.creator_pid = current->pid;
- 
--	if (unlikely(!regs)) {
-+	if (unlikely(p->flags & PF_KTHREAD)) {
- 		/* kernel thread */
- 		memset(childregs, 0, sizeof(struct pt_regs));
- 		memset(&callee_regs[2], 0,
-@@ -208,25 +208,26 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 	 */
- 	task_thread_info(p)->step_state = NULL;
- 
--	/* Save user stack top pointer so we can ID the stack vm area later. */
--	p->thread.usp0 = sp;
--
- 	/*
- 	 * Copy the registers onto the kernel stack so the
- 	 * return-from-interrupt code will reload it into registers.
- 	 */
--	*childregs = *regs;
-+	*childregs = *current_pt_regs();
- 	childregs->regs[0] = 0;         /* return value is zero */
--	childregs->sp = sp;  /* override with new user stack pointer */
--	memcpy(callee_regs, &regs->regs[CALLEE_SAVED_FIRST_REG],
-+	if (sp)
-+		childregs->sp = sp;  /* override with new user stack pointer */
-+	memcpy(callee_regs, &childregs->regs[CALLEE_SAVED_FIRST_REG],
- 	       CALLEE_SAVED_REGS_COUNT * sizeof(unsigned long));
- 
-+	/* Save user stack top pointer so we can ID the stack vm area later. */
-+	p->thread.usp0 = childregs->sp;
-+
- 	/*
- 	 * If CLONE_SETTLS is set, set "tp" in the new task to "r4",
- 	 * which is passed in as arg #5 to sys_clone().
- 	 */
- 	if (clone_flags & CLONE_SETTLS)
--		childregs->tp = regs->regs[4];
-+		childregs->tp = childregs->regs[4];
- 
- 
- #if CHIP_HAS_TILE_DMA()
-@@ -587,10 +588,7 @@ int do_work_pending(struct pt_regs *regs, u32 thread_info_flags)
- SYSCALL_DEFINE4(clone, unsigned long, clone_flags, unsigned long, newsp,
- 		void __user *, parent_tidptr, void __user *, child_tidptr)
- {
--	struct pt_regs *regs = current_pt_regs();
--	if (!newsp)
--		newsp = regs->sp;
--	return do_fork(clone_flags, newsp, regs, 0,
-+	return do_fork(clone_flags, newsp, current_pt_regs(), 0,
- 		       parent_tidptr, child_tidptr);
- }
- 
