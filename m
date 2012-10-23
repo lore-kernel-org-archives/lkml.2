@@ -1,194 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933862Ab2JWWmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 18:42:15 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48591 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933719Ab2JWWmN (ORCPT
+	id S933945Ab2JWWmW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 18:42:22 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61780 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933543Ab2JWWmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 18:42:13 -0400
+	Tue, 23 Oct 2012 18:42:19 -0400
+Date: Tue, 23 Oct 2012 15:42:17 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Anca Emanuel <anca.emanuel@gmail.com>
+cc: Julian Wollrath <jwollrath@web.de>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Patrik Kullman <patrik.kullman@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: Major performance regressions in 3.7rc1/2
+In-Reply-To: <CAJL_dMvUktOx9BqFm5jn2JbWbL_RWH412rdU+=rtDUvkuaPRUw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1210231541350.1221@chino.kir.corp.google.com>
+References: <CAGPN=9Qx1JAr6CGO-JfoR2ksTJG_CLLZY_oBA_TFMzA_OSfiFg@mail.gmail.com> <20121022173315.7b0da762@ilfaris> <20121022214502.0fde3adc@ilfaris> <20121022170452.cc8cc629.akpm@linux-foundation.org> <alpine.LNX.2.00.1210222059120.1136@eggly.anvils>
+ <20121023110434.021d100b@ilfaris> <CAJL_dMvUktOx9BqFm5jn2JbWbL_RWH412rdU+=rtDUvkuaPRUw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1350615088-14562-4-git-send-email-mporter@ti.com>
-References: <1350615088-14562-1-git-send-email-mporter@ti.com> <1350615088-14562-4-git-send-email-mporter@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 23 Oct 2012 23:41:53 +0100
-X-Google-Sender-Auth: EarQXUK61yLQlvJuL1lKjMV2ChU
-Message-ID: <CACxGe6sY7AuSBgyKj2B_O8mFMq3peMFYirtgH7OQ_S8zBUVRZg@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] mmc: davinci: get SG segment limits with dma_get_channel_caps()
-To: Matt Porter <mporter@ti.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 3:51 AM, Matt Porter <mporter@ti.com> wrote:
-> Replace the hardcoded values used to set max_segs/max_seg_size with
-> a dma_get_channel_caps() query to the dmaengine driver.
->
-> Signed-off-by: Matt Porter <mporter@ti.com>
+On Tue, 23 Oct 2012, Anca Emanuel wrote:
 
-Series looks reasonable to me.
+> I have the same problem.
+> Reverting
+> https://github.com/torvalds/linux/commit/957f822a0ab95e88b146638bad6209bbc315bedd
+> solves the problem for me.
+> 
 
-Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+If you don't revert anything and do
 
-> ---
->  drivers/mmc/host/davinci_mmc.c            |   66 +++++++++--------------------
->  include/linux/platform_data/mmc-davinci.h |    3 --
->  2 files changed, 21 insertions(+), 48 deletions(-)
->
-> diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-> index f5d46ea..d1efacc 100644
-> --- a/drivers/mmc/host/davinci_mmc.c
-> +++ b/drivers/mmc/host/davinci_mmc.c
-> @@ -145,18 +145,6 @@
->  /* MMCSD Init clock in Hz in opendrain mode */
->  #define MMCSD_INIT_CLOCK               200000
->
-> -/*
-> - * One scatterlist dma "segment" is at most MAX_CCNT rw_threshold units,
-> - * and we handle up to MAX_NR_SG segments.  MMC_BLOCK_BOUNCE kicks in only
-> - * for drivers with max_segs == 1, making the segments bigger (64KB)
-> - * than the page or two that's otherwise typical. nr_sg (passed from
-> - * platform data) == 16 gives at least the same throughput boost, using
-> - * EDMA transfer linkage instead of spending CPU time copying pages.
-> - */
-> -#define MAX_CCNT       ((1 << 16) - 1)
-> -
-> -#define MAX_NR_SG      16
-> -
->  static unsigned rw_threshold = 32;
->  module_param(rw_threshold, uint, S_IRUGO);
->  MODULE_PARM_DESC(rw_threshold,
-> @@ -217,8 +205,6 @@ struct mmc_davinci_host {
->         u8 version;
->         /* for ns in one cycle calculation */
->         unsigned ns_in_one_cycle;
-> -       /* Number of sg segments */
-> -       u8 nr_sg;
->  #ifdef CONFIG_CPU_FREQ
->         struct notifier_block   freq_transition;
->  #endif
-> @@ -422,16 +408,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
->         int ret = 0;
->
->         if (host->data_dir == DAVINCI_MMC_DATADIR_WRITE) {
-> -               struct dma_slave_config dma_tx_conf = {
-> -                       .direction = DMA_MEM_TO_DEV,
-> -                       .dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
-> -                       .dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> -                       .dst_maxburst =
-> -                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-> -               };
->                 chan = host->dma_tx;
-> -               dmaengine_slave_config(host->dma_tx, &dma_tx_conf);
-> -
->                 desc = dmaengine_prep_slave_sg(host->dma_tx,
->                                 data->sg,
->                                 host->sg_len,
-> @@ -444,16 +421,7 @@ static int mmc_davinci_send_dma_request(struct mmc_davinci_host *host,
->                         goto out;
->                 }
->         } else {
-> -               struct dma_slave_config dma_rx_conf = {
-> -                       .direction = DMA_DEV_TO_MEM,
-> -                       .src_addr = host->mem_res->start + DAVINCI_MMCDRR,
-> -                       .src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> -                       .src_maxburst =
-> -                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-> -               };
->                 chan = host->dma_rx;
-> -               dmaengine_slave_config(host->dma_rx, &dma_rx_conf);
-> -
->                 desc = dmaengine_prep_slave_sg(host->dma_rx,
->                                 data->sg,
->                                 host->sg_len,
-> @@ -1166,6 +1134,7 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->         struct resource *r, *mem = NULL;
->         int ret = 0, irq = 0;
->         size_t mem_size;
-> +       struct dmaengine_chan_caps *dma_chan_caps;
->
->         /* REVISIT:  when we're fully converted, fail if pdata is NULL */
->
-> @@ -1215,12 +1184,6 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->
->         init_mmcsd_host(host);
->
-> -       if (pdata->nr_sg)
-> -               host->nr_sg = pdata->nr_sg - 1;
-> -
-> -       if (host->nr_sg > MAX_NR_SG || !host->nr_sg)
-> -               host->nr_sg = MAX_NR_SG;
-> -
->         host->use_dma = use_dma;
->         host->mmc_irq = irq;
->         host->sdio_irq = platform_get_irq(pdev, 1);
-> @@ -1249,14 +1212,27 @@ static int __init davinci_mmcsd_probe(struct platform_device *pdev)
->                 mmc->caps |= pdata->caps;
->         mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
->
-> -       /* With no iommu coalescing pages, each phys_seg is a hw_seg.
-> -        * Each hw_seg uses one EDMA parameter RAM slot, always one
-> -        * channel and then usually some linked slots.
-> -        */
-> -       mmc->max_segs           = MAX_NR_SG;
-> +       {
-> +               struct dma_slave_config dma_txrx_conf = {
-> +                       .src_addr = host->mem_res->start + DAVINCI_MMCDRR,
-> +                       .src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +                       .src_maxburst =
-> +                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +                       .dst_addr = host->mem_res->start + DAVINCI_MMCDXR,
-> +                       .dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +                       .dst_maxburst =
-> +                               rw_threshold / DMA_SLAVE_BUSWIDTH_4_BYTES,
-> +               };
-> +               dmaengine_slave_config(host->dma_tx, &dma_txrx_conf);
-> +               dmaengine_slave_config(host->dma_rx, &dma_txrx_conf);
-> +       }
->
-> -       /* EDMA limit per hw segment (one or two MBytes) */
-> -       mmc->max_seg_size       = MAX_CCNT * rw_threshold;
-> +       /* Just check one channel for the DMA SG limits */
-> +       dma_chan_caps = dma_get_channel_caps(host->dma_tx, DMA_MEM_TO_DEV);
-> +       if (dma_chan_caps) {
-> +               mmc->max_segs = dma_chan_caps->seg_nr;
-> +               mmc->max_seg_size = dma_chan_caps->seg_len;
-> +       }
->
->         /* MMC/SD controller limits for multiblock requests */
->         mmc->max_blk_size       = 4095;  /* BLEN is 12 bits */
-> diff --git a/include/linux/platform_data/mmc-davinci.h b/include/linux/platform_data/mmc-davinci.h
-> index 5ba6b22..6910209 100644
-> --- a/include/linux/platform_data/mmc-davinci.h
-> +++ b/include/linux/platform_data/mmc-davinci.h
-> @@ -25,9 +25,6 @@ struct davinci_mmc_config {
->
->         /* Version of the MMC/SD controller */
->         u8      version;
-> -
-> -       /* Number of sg segments */
-> -       u8      nr_sg;
->  };
->  void davinci_setup_mmc(int module, struct davinci_mmc_config *config);
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	echo 0 > /proc/sys/vm/zone_reclaim_mode
 
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+after boot, does this also fix the issue?
