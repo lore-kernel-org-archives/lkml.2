@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2JWOpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:45:39 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52149 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754331Ab2JWOph (ORCPT
+	id S1755992Ab2JWOqe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:46:34 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:33061 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752880Ab2JWOqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:45:37 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: stern@rowland.harvard.edu
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH v2]usb: "ehci-w90x900" Fix a typo and add some whitespace.
-Date: Tue, 23 Oct 2012 07:45:01 -0700
-Message-Id: <1351003501-4949-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 23 Oct 2012 10:46:33 -0400
+Message-ID: <5086ADC7.7060802@tilera.com>
+Date: Tue, 23 Oct 2012 10:46:31 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] tile updates for 3.7-rc2
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+Linus,
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Please pull from:
 
----
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
 
-The below patch fixes a typo in usb: ehci-w90x900.c as well as adding whitespace to the comment.
-NOTE: this is a resend due to a typo creating a new typo as well as revision to the original.
+This fixes one issue with compiler flags that can cause modules not
+to load, and cleans up some warnings with ELF_R_xxx defines.
 
- drivers/usb/host/ehci-w90x900.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Chris Metcalf (2):
+      arch/tile: avoid generating .eh_frame information in modules
+      arch/tile: avoid build warnings from duplicate ELF_R_xxx #defines
 
-diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
-index ec59808..fdd7c48 100644
---- a/drivers/usb/host/ehci-w90x900.c
-+++ b/drivers/usb/host/ehci-w90x900.c
-@@ -13,7 +13,7 @@
- 
- #include <linux/platform_device.h>
- 
--/*ebable phy0 and phy1 for w90p910*/
-+/* enable phy0 and phy1 for w90p910 */
- #define	ENPHY		(0x01<<8)
- #define PHY0_CTR	(0xA4)
- #define PHY1_CTR	(0xA8)
+ arch/tile/Makefile        |    4 ++++
+ arch/tile/kernel/module.c |   10 ----------
+ 2 files changed, 4 insertions(+), 10 deletions(-)
+
 -- 
-1.7.10.4
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
