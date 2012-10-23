@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932101Ab2JWHn0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:43:26 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45026 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355Ab2JWHnZ (ORCPT
+	id S1756856Ab2JWHoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:44:46 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:46570 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756666Ab2JWHon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:43:25 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-dd-50864a9b0f3c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Marek Vasut'" <marex@denx.de>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000a01cdb0d5$9d764970$d862dc50$%han@samsung.com>
- <201210230934.51274.marex@denx.de>
-In-reply-to: <201210230934.51274.marex@denx.de>
-Subject: Re: [PATCH 2/4] backlight: lms283gf05: add missing const
-Date: Tue, 23 Oct 2012 16:43:23 +0900
-Message-id: <000401cdb0f2$14a515f0$3def41d0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2w8OaJTNqheMgmSSWRnRV4Hm2/8AAAL8qQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd05Xm0BBlcPsllc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MI3s2sxTMY6lYPuEySwPjfOYuRk4OCQETie0bL7JC2GISF+6t
-	ZwOxhQSmM0r8uVHYxcgFZM9mktiydgtYA5uAmsSXL4fZQWwRAUWJNefnM4IUMQssYZSY8/IT
-	kMMB1JEksfiRA0gNp4C+xI+m62wgYWEBR4nDmzNBwiwCqhJzD+8G28srYCtx+fomZghbUOLH
-	5HssIDazgJbE+p3HmSBseYnNa94yg4yREFCXePRXF+ICI4kb744zQ5SISOx78Y5xAqPQLCST
-	ZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECA7iZ9I7GFc1WBxiFOBg
-	VOLh7djfGiDEmlhWXJl7iFGCg1lJhNfUvi1AiDclsbIqtSg/vqg0J7X4EKM0B4uSOG+zR0qA
-	kEB6YklqdmpqQWoRTJaJg1OqgTFC4Bfr326Bk1vNf87Sf9Zs7nwikLd1/9WmSZxOUiZaSg7C
-	oqyLF12qejj7bsiLzWwLGtdLZhst3y3gWvTu4psZ57e5/jaXvLDHg8317eTl0ltFT03zt/tw
-	0/7uYYVnXTHWixzipfSUqtUcl9R1zdUrv6LgXLTtVdY8rcpVvNdN6l9e+7JFuUuJpTgj0VCL
-	uag4EQB0tlavXgIAAA==
+	Tue, 23 Oct 2012 03:44:43 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-67-50864ae7b6e5
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 12/12] perf report: Add report.group config option
+Date: Tue, 23 Oct 2012 16:44:06 +0900
+Message-Id: <1350978246-3686-13-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1350978246-3686-1-git-send-email-namhyung@kernel.org>
+References: <1350978246-3686-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 23, 2012 4:35 PM Marek Vasut wrote
-> 
-> Dear Jingoo Han,
-> 
-> > Add 'const' to static array that was missing it in its
-> > definition.
-> 
-> Did you get compiler warning? Still, this is a good pick
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-No, I didn't get compiler warning. :)
-Thank you for your reply.
+Add report.group config option for setting default value of event
+group view.  It affects the report output only if perf.data contains
+event group info.
 
-> 
-> Acked-by: Marek Vasut <marex@denx.de>
-> 
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > Cc: Marek Vasut <marek.vasut@gmail.com>
-> > Cc: Richard Purdie <rpurdie@rpsys.net>
-> > ---
-> [...]
-> 
-> Best regards,
-> Marek Vasut
+A user can write .perfconfig file like below to enable group view by
+default:
+
+  $ cat ~/.perfconfig
+  [report]
+  group = true
+
+And it can be disabled through command line:
+
+  $ perf report --no-group
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 65bec09dc875..1798e534057f 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -8,6 +8,7 @@
+ #include "builtin.h"
+ 
+ #include "util/util.h"
++#include "util/cache.h"
+ 
+ #include "util/annotate.h"
+ #include "util/color.h"
+@@ -55,6 +56,16 @@ struct perf_report {
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
+ 
++static int perf_report_config(const char *var, const char *value, void *cb)
++{
++	if (!strcmp(var, "report.group")) {
++		symbol_conf.event_group = perf_config_bool(var, value);
++		return 0;
++	}
++
++	return perf_default_config(var, value, cb);
++}
++
+ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 					struct addr_location *al,
+ 					struct perf_sample *sample,
+@@ -674,6 +685,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_END()
+ 	};
+ 
++	perf_config(perf_report_config, NULL);
++
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
+ 
+ 	if (report.use_stdio)
+-- 
+1.7.11.7
 
