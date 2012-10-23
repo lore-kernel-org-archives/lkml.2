@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933256Ab2JWRG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:06:26 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:54802 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056Ab2JWRGX (ORCPT
+	id S1757302Ab2JWRHQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:07:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36403 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab2JWRHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:06:23 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Myklebust\, Trond" <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, "Ted Ts'o" <tytso@mit.edu>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Schumaker\, Bryan" <Bryan.Schumaker@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server oops: 3.6.2+ regression? (also an unrelated ext4 data loss bug)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<20121023164621.GC3040@fieldses.org>
-	<4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
-Emacs: a real time environment for simulating molasses-based life forms.
-Date: Tue, 23 Oct 2012 18:05:18 +0100
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90928CA6F@SACEXCMBX04-PRD.hq.netapp.com>
-	(Trond Myklebust's message of "Tue, 23 Oct 2012 16:56:00 +0000")
-Message-ID: <87vce1w241.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Tue, 23 Oct 2012 13:07:14 -0400
+Message-ID: <5086CEAC.2000804@gmail.com>
+Date: Tue, 23 Oct 2012 10:06:52 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=9 Fuz1=9 Fuz2=9
+To: dri-devel@lists.freedesktop.org
+CC: linux-kernel@vger.kernel.org, airlied@linux.ie
+Subject: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU
+ hung
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 Oct 2012, Trond Myklebust spake thusly:
-> On Tue, 2012-10-23 at 12:46 -0400, J. Bruce Fields wrote:
->> Looks like there's some confusion about whether nsm_client_get() returns
->> NULL or an error?
->
-> nsm_client_get() looks extremely racy in the case where ln->nsm_users ==
-> 0.  Since we never recheck the value of ln->nsm_users after taking
-> nsm_create_mutex, what is stopping 2 different threads from both setting
-> ln->nsm_clnt and re-initialising ln->nsm_users?
+This is happening both with MAINLINE and NEXT.
 
-Yep. At the worst possible time:
+basically system is running fine, then under load system becomes really 
+sluggish and unresponsive. I was able to get dmesg of the error..:
 
-	spin_lock(&ln->nsm_clnt_lock);
-	if (ln->nsm_users) {
-		if (--ln->nsm_users)
-			ln->nsm_clnt = NULL;
-(1)		shutdown = !ln->nsm_users;
-	}
-	spin_unlock(&ln->nsm_clnt_lock);
+[ 7745.007008] ath9k 0000:05:00.0 wlan0: disabling VHT as WMM/QoS is not 
+supported by the AP
+[ 7745.007736] wlan0: associate with 68:7f:74:b8:05:82 (try 1/3)
+[ 7745.011456] wlan0: RX AssocResp from 68:7f:74:b8:05:82 (capab=0x411 
+status=0 aid=5)
+[ 7745.011529] wlan0: associated
+[ 8120.812482] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer 
+elapsed... GPU hung
+[ 8120.812642] [drm] capturing error event; look for more information in 
+/debug/dri/0/i915_error_state
+[ 8122.328682] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer 
+elapsed... GPU hung
+[ 8122.328845] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring 
+wedged!
+[ 8122.328850] [drm:i915_reset] *ERROR* Failed to reset chip.
 
-If a thread reinitializes nsm_users at point (1), after the assignment,
-we could well end up with ln->nsm_clnt NULL and shutdown false. A bit
-later, nsm_mon_unmon gets called with a NULL clnt, and boom.
+full log is here: http://fpaste.org/7xH8/
 
-This seems particularly likely if there is only one nsm_user (which is
-true in my case, since I have only one active network namespace).
+as for good kernels from what I remember 3.6.0-rc1. I can try a bisect 
+on this once I get the time. or if anybody has a patch I can test.
 
--- 
-NULL && (void)
+Justin P. Mattock
