@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933285Ab2JWQ6m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 12:58:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14985 "EHLO mx1.redhat.com"
+	id S1757295Ab2JWRCZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:02:25 -0400
+Received: from rs130.luxsci.com ([72.32.115.17]:33627 "EHLO rs130.luxsci.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933203Ab2JWQ6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 12:58:41 -0400
-Date: Tue, 23 Oct 2012 18:59:12 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
-Message-ID: <20121023165912.GA18712@redhat.com>
-References: <20121015191018.GA4816@redhat.com> <CA+55aFwV-WOUx8MSr145f+HSrtmZ=nXHq0VLhtPyH=FNBFwmQg@mail.gmail.com> <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
+	id S1755138Ab2JWRCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:02:23 -0400
+Message-ID: <5086CD91.9070101@firmworks.com>
+Date: Tue, 23 Oct 2012 07:02:09 -1000
+From: Mitch Bradley <wmb@firmworks.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: balbi@ti.com
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com> <20121022155028.GA13791@core.coreip.homeip.net> <CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com> <508664CA.7000601@ti.com> <CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com> <20121023100333.GA24418@arwen.pp.htv.fi>
+In-Reply-To: <20121023100333.GA24418@arwen.pp.htv.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Lux-Comment: Message q9NH2AMW000634 sent by user #11875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not really the comment, but the question...
-
-On 10/22, Mikulas Patocka wrote:
->
->  static inline void percpu_down_read(struct percpu_rw_semaphore *p)
->  {
->  	rcu_read_lock();
-> @@ -24,22 +27,12 @@ static inline void percpu_down_read(stru
->  	}
->  	this_cpu_inc(*p->counters);
->  	rcu_read_unlock();
-> +	light_mb(); /* A, between read of p->locked and read of data, paired with D */
->  }
-
-rcu_read_unlock() (or even preempt_enable) should have compiler barrier
-semantics... But I agree, this adds more documentation for free.
-
->  static inline void percpu_up_read(struct percpu_rw_semaphore *p)
->  {
-> -	/*
-> -	 * On X86, write operation in this_cpu_dec serves as a memory unlock
-> -	 * barrier (i.e. memory accesses may be moved before the write, but
-> -	 * no memory accesses are moved past the write).
-> -	 * On other architectures this may not be the case, so we need smp_mb()
-> -	 * there.
-> -	 */
-> -#if defined(CONFIG_X86) && (!defined(CONFIG_X86_PPRO_FENCE) && !defined(CONFIG_X86_OOSTORE))
-> -	barrier();
-> -#else
-> -	smp_mb();
-> -#endif
-> +	light_mb(); /* B, between read of the data and write to p->counter, paired with C */
->  	this_cpu_dec(*p->counters);
->  }
->
-> @@ -61,11 +54,12 @@ static inline void percpu_down_write(str
->  	synchronize_rcu();
->  	while (__percpu_count(p->counters))
->  		msleep(1);
-> -	smp_rmb(); /* paired with smp_mb() in percpu_sem_up_read() */
-> +	heavy_mb(); /* C, between read of p->counter and write to data, paired with B */
-
-I _think_ this is correct.
+On 10/23/2012 12:03 AM, Felipe Balbi wrote:
+> Hi,
+> 
+> I much prefer having drivers explicitly manage all their resources,
+> which would mean that pinctrl calls need to be done on probe() and, if
+> necessary, during suspend()/resume().
 
 
-Just I am wondering if this is strongly correct in theory, I would
-really like to know what Paul thinks.
+Per-driver resource management is certainly convenient when you are
+dealing with a single system, but it becomes difficult to maintain for
+drivers that are shared among many platforms.
 
-Ignoring the current implementation, according to the documentation
-synchronize_sched() has all rights to return immediately if there is
-no active rcu_read_lock_sched() section. If this were possible, than
-percpu_up_read() lacks mb.
-
-So _perhaps_ it makes sense to document that synchronize_sched() also
-guarantees that all pending loads/stores on other CPUs should be
-completed upon return? Or I misunderstood the patch?
-
-Oleg.
+The industry trend for many years has been consolidation around a single
+programming model per class of device.  For example, SDHCI, EHCI, ATA.
+This trend will only accelerate, as the cost of developing controller IP
+and associated drivers increases.  Such drivers need to be as
+platform-agnostic as possible.
 
