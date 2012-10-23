@@ -1,65 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab2JWTPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 15:15:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43958 "EHLO mx2.suse.de"
+	id S933337Ab2JWTTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 15:19:19 -0400
+Received: from warmcat.com ([87.106.134.80]:35030 "EHLO warmcat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932144Ab2JWTPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:15:49 -0400
-Message-ID: <5086ECDE.4030300@suse.com>
-Date: Tue, 23 Oct 2012 21:15:42 +0200
-From: Andreas Jaeger <aj@suse.com>
-Organization: =?ISO-8859-1?Q?SUSE_Linux_Products_GmbH=2C_Nuernber?=
- =?ISO-8859-1?Q?g=2C_GF=3A_Jeff_Hawn=2C_Jennifer_Guild=2C_Fel?=
- =?ISO-8859-1?Q?ix_Imend=F6rffer=2C_HRB_16746_=28AG_Nuernberg=29?=
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S932144Ab2JWTTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 15:19:18 -0400
+X-Greylist: delayed 1734 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Oct 2012 15:19:17 EDT
+Message-ID: <5086E6D6.8000208@linaro.org>
+Date: Tue, 23 Oct 2012 20:49:58 +0200
+From: Andy Green <andy.green@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120918 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: "Paton J. Lewis" <palewis@adobe.com>
-Cc: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
- app.
-References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <5086D27F.1000007@adobe.com>
-In-Reply-To: <5086D27F.1000007@adobe.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+References: <1351013449.9070.5.camel@hornet>
+In-Reply-To: <1351013449.9070.5.camel@hornet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 07:23 PM, Paton J. Lewis wrote:
-> [Re-sending without HTML formatting; all vger.kernel.org destination
-> addresses bounced my original response.]
+On 10/23/12 19:30, the mail apparently from Pawel Moll included:
+> Greetings All,
 >
-> On 10/16/12 8:12 AM, Michael Kerrisk (man-pages) wrote:
->> [CC += linux-api@]
+> More and more of people are getting interested in the subject of power
+> (energy) consumption monitoring. We have some external tools like
+> "battery simulators", energy probes etc., but some targets can measure
+> their power usage on their own.
 >
-> Thank you; is this sufficient to coordinate the required changes to the
-> glibc version of epoll.h?
+> Traditionally such data should be exposed to the user via hwmon sysfs
+> interface, and that's exactly what I did for "my" platform - I have
+> a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
+> enough to draw pretty graphs in userspace. Everyone was happy...
+>
+> Now I am getting new requests to do more with this data. In particular
+> I'm asked how to add such information to ftrace/perf output. The second
+> most frequent request is about providing it to a "energy aware"
+> cpufreq governor.
+>
+> I've came up with three (non-mutually exclusive) options. I will
+> appreciate any other ideas and comments (including "it makes not sense
+> whatsoever" ones, with justification). Of course I am more than willing
+> to spend time on prototyping anything that seems reasonable and propose
+> patches.
+>
+>
+>
+> === Option 1: Trace event ===
+>
+> This seems to be the "cheapest" option. Simply defining a trace event
+> that can be generated by a hwmon (or any other) driver makes the
+> interesting data immediately available to any ftrace/perf user. Of
+> course it doesn't really help with the cpufreq case, but seems to be
+> a good place to start with.
+>
+> The question is how to define it... I've came up with two prototypes:
+>
+> = Generic hwmon trace event =
+>
+> This one allows any driver to generate a trace event whenever any
+> "hwmon attribute" (measured value) gets updated. The rate at which the
+> updates happen can be controlled by already existing "update_interval"
+> attribute.
+>
+> 8<-------------------------------------------
+> TRACE_EVENT(hwmon_attr_update,
+> 	TP_PROTO(struct device *dev, struct attribute *attr, long long input),
+> 	TP_ARGS(dev, attr, input),
+>
+> 	TP_STRUCT__entry(
+> 		__string(       dev,		dev_name(dev))
+> 		__string(	attr,		attr->name)
+> 		__field(	long long,	input)
+> 	),
+>
+> 	TP_fast_assign(
+> 		__assign_str(dev, dev_name(dev));
+> 		__assign_str(attr, attr->name);
+> 		__entry->input = input;
+> 	),
+>
+> 	TP_printk("%s %s %lld", __get_str(dev), __get_str(attr), __entry->input)
+> );
+> 8<-------------------------------------------
+>
+> It generates such ftrace message:
+>
+> <...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
+>
+> One issue with this is that some external knowledge is required to
+> relate a number to a processor core. Or maybe it's not an issue at all
+> because it should be left for the user(space)?
+>
+> = CPU power/energy/temperature trace event =
+>
+> This one is designed to emphasize the relation between the measured
+> value (whether it is energy, temperature or any other physical
+> phenomena, really) and CPUs, so it is quite specific (too specific?)
+>
+> 8<-------------------------------------------
+> TRACE_EVENT(cpus_environment,
+> 	TP_PROTO(const struct cpumask *cpus, long long value, char unit),
+> 	TP_ARGS(cpus, value, unit),
+>
+> 	TP_STRUCT__entry(
+> 		__array(	unsigned char,	cpus,	sizeof(struct cpumask))
+> 		__field(	long long,	value)
+> 		__field(	char,		unit)
+> 	),
+>
+> 	TP_fast_assign(
+> 		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
+> 		__entry->value = value;
+> 		__entry->unit = unit;
+> 	),
+>
+> 	TP_printk("cpus %s %lld[%c]",
+> 		__print_cpumask((struct cpumask *)__entry->cpus),
+> 		__entry->value, __entry->unit)
+> );
+> 8<-------------------------------------------
+>
+> And the equivalent ftrace message is:
+>
+> <...>127.063107: cpus_environment: cpus 0,1,2,3 34361[C]
+>
+> It's a cpumask, not just single cpu id, because the sensor may measure
+> the value per set of CPUs, eg. a temperature of the whole silicon die
+> (so all the cores) or an energy consumed by a subset of cores (this
+> is my particular use case - two meters monitor a cluster of two
+> processors and a cluster of three processors, all working as a SMP
+> system).
+>
+> Of course the cpus __array could be actually a special __cpumask field
+> type (I've just hacked the __print_cpumask so far). And I've just
+> realised that the unit field should actually be a string to allow unit
+> prefixes to be specified (the above should obviously be "34361[mC]"
+> not "[C]"). Also - excuse the "cpus_environment" name - this was the
+> best I was able to come up with at the time and I'm eager to accept
+> any alternative suggestions :-)
 
-Paton, we normally review the diffs between kernel versions but noticing 
-us via libc-alpha is great.
+A thought on that... from an SoC perspective there are other interesting 
+power rails than go to just the CPU core.  For example DDR power and 
+rails involved with other IP units on the SoC such as 3D graphics unit. 
+  So tying one number to specifically a CPU core does not sound like 
+it's enough.
 
-So, you ask to get this added to <sys/epoll.h>?
+> === Option 2: hwmon perf PMU ===
+>
+> Although the trace event makes it possible to obtain interesting
+> information using perf, the user wouldn't be able to treat the
+> energy meter as a normal data source. In particular there would
+> be no way of creating a group of events consisting eg. of a
+> "normal" leader (eg. cache miss event) triggering energy meter
+> read. The only way to get this done is to implement a perf PMU
+> backend providing "environmental data" to the user.
 
-#define EPOLL_CTL_DISABLE 4
+In terms of like perf top don't think it'll be possible to know when to 
+sample the acquisition hardware to tie the result to a particular line 
+of code, even if it had the bandwidth to do that.  Power readings are 
+likely to lag activities on the cpu somewhat, considering sub-ns core 
+clocks, especially if it's actually measuring the input side of a regulator.
 
-Once 3.7 is out and contains it, we will add it. A friendly reminder 
-once the patch is in would be nice so that we don't miss it during the 
-review.
+> = High-level hwmon API and PMU =
+>
+> Current hwmon subsystem does not provide any abstraction for the
+> measured values and requires particular drivers to create specified
+> sysfs attributes than used by userspace libsensors. This makes
+> the framework ultimately flexible and ultimately hard to access
+> from within the kernel...
+>
+> What could be done here is some (simple) API to register the
+> measured values with the hwmon core which would result in creating
+> equivalent sysfs attributes automagically, but also allow a
+> in-kernel API for values enumeration and access. That way the core
+> could also register a "hwmon PMU" with the perf framework providing
+> data from all "compliant" drivers.
+>
+> = A driver-specific PMU =
+>
+> Of course a particular driver could register its own perf PMU on its
+> own. It's certainly an option, just very suboptimal in my opinion.
+> Or maybe not? Maybe the task is so specialized that it makes sense?
+>
+>
+>
+> === Option 3: CPU power(energy) monitoring framework ===
+>
+> And last but not least, maybe the problem deserves some dedicated
+> API? Something that would take providers and feed their data into
+> interested parties, in particular a perf PMU implementation and
+> cpufreq governors?
+>
+> Maybe it could be an extension to the thermal framework? It already
+> gives some meaning to a physical phenomena. Adding other, related ones
+> like energy, and relating it to cpu cores could make some sense.
 
-thanks,
-Andreas
+If you turn the problem upside down to solve the representation question 
+first, maybe there's a way forward defining the "power tree" in terms of 
+regulators, and then adding something in struct regulator that spams 
+readers with timestamped results if the regulator has a power monitoring 
+capability.
+
+Then you can map the regulators in the power tree to real devices by the 
+names or the supply stuff.  Just a thought.
+
+-Andy
+
 -- 
-  Andreas Jaeger aj@{suse.com,opensuse.org} Twitter/Identica: jaegerandi
-   SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-    GF: Jeff Hawn,Jennifer Guild,Felix Imendörffer,HRB16746 (AG Nürnberg)
-     GPG fingerprint = 93A3 365E CE47 B889 DF7F  FED1 389A 563C C272 A126
+Andy Green | TI Landing Team Leader
+Linaro.org â”‚ Open source software for ARM SoCs | Follow Linaro
+http://facebook.com/pages/Linaro/155974581091106  - 
+http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
