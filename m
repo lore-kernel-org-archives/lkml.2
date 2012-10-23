@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab2JWNrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:47:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:19320 "EHLO mga01.intel.com"
+	id S932991Ab2JWNnd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:43:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2524 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933130Ab2JWNns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:43:48 -0400
+	id S933081Ab2JWNn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:43:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191307"
+   d="scan'208";a="237191065"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 21/26] mmc: sdhci: panic write: poll interrupts
-Date: Tue, 23 Oct 2012 16:48:19 +0300
-Message-Id: <1351000104-13015-22-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 12/26] mmc: panic write: bypass regulators
+Date: Tue, 23 Oct 2012 16:48:10 +0300
+Message-Id: <1351000104-13015-13-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -31,81 +31,23 @@ From: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/host/sdhci.c |   33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ drivers/mmc/core/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index e096526..d85e9d5 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -131,6 +131,8 @@ static void sdhci_clear_set_irqs(struct sdhci_host *host, u32 clear, u32 set)
- 	ier &= ~clear;
- 	ier |= set;
- 	sdhci_writel(host, ier, SDHCI_INT_ENABLE);
-+	if (mmc_panic_task_active(host->mmc))
-+		ier = 0;
- 	sdhci_writel(host, ier, SDHCI_SIGNAL_ENABLE);
- }
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index f7552af..d3caa7e 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1128,6 +1128,9 @@ int mmc_regulator_set_ocr(struct mmc_host *mmc,
+ 	int			result = 0;
+ 	int			min_uV, max_uV;
  
-@@ -1267,6 +1269,8 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
-  *                                                                           *
- \*****************************************************************************/
- 
-+static irqreturn_t sdhci_irq(int irq, void *dev_id);
++	if (mmc_am_panic_task(mmc))
++		return 0;
 +
- static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- {
- 	struct sdhci_host *host;
-@@ -1347,6 +1351,11 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 
- 	mmiowb();
- 	sdhci_unlock_irqrestore(host, flags);
-+
-+	if (mmc_am_panic_task(host->mmc)) {
-+		while (host->mrq)
-+			sdhci_irq(0, host);
-+	}
- }
- 
- static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
-@@ -2066,6 +2075,27 @@ void sdhci_unlock_irqrestore(struct sdhci_host *host, unsigned long flags)
- 		spin_unlock_irqrestore(&host->lock, flags);
- }
- 
-+static void sdhci_panic_begin(struct mmc_host *mmc)
-+{
-+	struct sdhci_host *host = mmc_priv(mmc);
-+
-+	sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
-+}
-+
-+static void sdhci_panic_end(struct mmc_host *mmc)
-+{
-+	struct sdhci_host *host = mmc_priv(mmc);
-+	u32 ier;
-+
-+	ier = sdhci_readl(host, SDHCI_INT_ENABLE);
-+	sdhci_writel(host, ier, SDHCI_SIGNAL_ENABLE);
-+}
-+
-+static const struct mmc_panic_ops sdhci_pops = {
-+	.begin		= sdhci_panic_begin,
-+	.end		= sdhci_panic_end,
-+};
-+
- #endif
- 
- /*****************************************************************************\
-@@ -2854,6 +2884,9 @@ int sdhci_add_host(struct sdhci_host *host)
- 	 * Set host parameters.
- 	 */
- 	mmc->ops = &sdhci_ops;
-+#ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
-+	mmc->pops = &sdhci_pops;
-+#endif
- 	mmc->f_max = host->max_clk;
- 	if (host->ops->get_min_clock)
- 		mmc->f_min = host->ops->get_min_clock(host);
+ 	if (vdd_bit) {
+ 		int		tmp;
+ 		int		voltage;
 -- 
 1.7.9.5
 
