@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab2JWLAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 07:00:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43172 "EHLO
+	id S1755224Ab2JWLBt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 07:01:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43199 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab2JWLAr (ORCPT
+	with ESMTP id S1751969Ab2JWLBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 07:00:47 -0400
-Date: Tue, 23 Oct 2012 04:00:21 -0700
-From: tip-bot for Rik van Riel <riel@redhat.com>
-Message-ID: <tip-b3c01da073d82c8aaf3aa12f6214b64d2d1d83f8@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, riel@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, riel@redhat.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <20121018172021.0b1f6e3d@cuia.bos.redhat.com>
-References: <20121018172021.0b1f6e3d@cuia.bos.redhat.com>
+	Tue, 23 Oct 2012 07:01:47 -0400
+Date: Tue, 23 Oct 2012 04:01:21 -0700
+From: tip-bot for Ingo Molnar <mingo@kernel.org>
+Message-ID: <tip-9d6800cb12d36964a6fd4e68da06cd0c5c8d1ca0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, riel@redhat.com,
+        akpm@linux-foundation.org, aarcange@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        aarcange@redhat.com, tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] numa, mm:
-  Rename the PROT_NONE fault handling functions to *_numa()
-Git-Commit-ID: b3c01da073d82c8aaf3aa12f6214b64d2d1d83f8
+Subject: [tip:numa/core] numa, mm, sched: Use down_write()
+  in task_numa_work()
+Git-Commit-ID: 9d6800cb12d36964a6fd4e68da06cd0c5c8d1ca0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,162 +30,139 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 23 Oct 2012 04:00:27 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 23 Oct 2012 04:01:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b3c01da073d82c8aaf3aa12f6214b64d2d1d83f8
-Gitweb:     http://git.kernel.org/tip/b3c01da073d82c8aaf3aa12f6214b64d2d1d83f8
-Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Thu, 18 Oct 2012 17:20:21 -0400
+Commit-ID:  9d6800cb12d36964a6fd4e68da06cd0c5c8d1ca0
+Gitweb:     http://git.kernel.org/tip/9d6800cb12d36964a6fd4e68da06cd0c5c8d1ca0
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Sat, 20 Oct 2012 23:06:00 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 23 Oct 2012 11:53:51 +0200
+CommitDate: Tue, 23 Oct 2012 11:53:53 +0200
 
-numa, mm: Rename the PROT_NONE fault handling functions to *_numa()
+numa, mm, sched: Use down_write() in task_numa_work()
 
-Having the function name indicate what the function is used
-for makes the code a little easier to read.  Furthermore,
-the fault handling code largely consists of do_...._page
-functions.
+change_protection() needs to be called with the mmap_sem write-locked,
+like the mprotect() variants do it.
 
-Rename the NUMA working set sampling fault handling functions
-to _numa() names, to indicate what they are used for.
+With that in place we can avoid the intrusive (and partially
+incorrect) page locking changes in the:
 
-This separates the naming from the regular PROT_NONE namings.
+   "numa, mm: Fix 4K migration races"
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: aarcange@redhat.com
-Cc: a.p.zijlstra@chello.nl
-Link: http://lkml.kernel.org/r/20121018172021.0b1f6e3d@cuia.bos.redhat.com
-[ Converted two more usage sites ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+patch, because the down_write() will properly serialize with the
+down_read() page fault path.
+
+Keep the cleanups and debug code removal.
+
+In theory calling change_protection() with just down_read()
+should work, but in practice it seems messy.
+
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Link: http://lkml.kernel.org/n/tip-g3xyfmqqmmpubhcdww2TrbLc@git.kernel.org
 ---
- include/linux/huge_mm.h |    8 ++++----
- mm/huge_memory.c        |    4 ++--
- mm/memory.c             |   22 ++++++++++++----------
- 3 files changed, 18 insertions(+), 16 deletions(-)
+ kernel/sched/fair.c |    4 ++--
+ mm/huge_memory.c    |    6 ------
+ mm/memory.c         |   12 +++++++-----
+ 3 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index bcbe467..4f0f948 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -160,9 +160,9 @@ static inline struct page *compound_trans_head(struct page *page)
- 	return page;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9f7406e..f8b3539 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -937,7 +937,7 @@ void task_numa_work(struct callback_head *work)
+ 	length = sysctl_sched_numa_scan_size;
+ 	length <<= 20;
+ 
+-	down_read(&mm->mmap_sem);
++	down_write(&mm->mmap_sem);
+ 	vma = find_vma(mm, offset);
+ again:
+ 	if (!vma) {
+@@ -964,7 +964,7 @@ again:
+ 		goto again;
+ 	}
+ 	mm->numa_scan_offset = offset;
+-	up_read(&mm->mmap_sem);
++	up_write(&mm->mmap_sem);
+ 
  }
  
--extern bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd);
-+extern bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd);
- 
--extern void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+extern void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				  unsigned long address, pmd_t *pmd,
- 				  unsigned int flags, pmd_t orig_pmd);
- 
-@@ -203,12 +203,12 @@ static inline int pmd_trans_huge_lock(pmd_t *pmd,
- 	return 0;
- }
- 
--static inline bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
-+static inline bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
- {
- 	return false;
- }
- 
--static inline void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+static inline void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 				  unsigned long address, pmd_t *pmd,
- 				  unsigned int flags, pmd_t orig_pmd)
- {
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index e62d3c5..bcba184 100644
+index bcba184..4767200 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -726,7 +726,7 @@ out:
- 	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
- }
+@@ -781,10 +781,6 @@ unlock:
+ 	return;
  
--bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
-+bool pmd_numa(struct vm_area_struct *vma, pmd_t pmd)
- {
- 	/*
- 	 * See pte_prot_none().
-@@ -737,7 +737,7 @@ bool pmd_prot_none(struct vm_area_struct *vma, pmd_t pmd)
- 	return pmd_same(pmd, pmd_modify(pmd, vma_prot_none(vma)));
- }
+ migrate:
+-	WARN_ON(!(((unsigned long)page->mapping & PAGE_MAPPING_ANON)));
+-	WARN_ON((((unsigned long)page->mapping & PAGE_MAPPING_KSM)));
+-	BUG_ON(PageSwapCache(page));
+-
+ 	spin_unlock(&mm->page_table_lock);
  
--void do_huge_pmd_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			   unsigned long address, pmd_t *pmd,
- 			   unsigned int flags, pmd_t entry)
- {
+ 	lock_page(page);
+@@ -801,8 +797,6 @@ migrate:
+ 	    (GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT,
+ 	    HPAGE_PMD_ORDER);
+ 
+-	WARN_ON(PageLRU(new_page));
+-
+ 	if (!new_page)
+ 		goto alloc_fail;
+ 
 diff --git a/mm/memory.c b/mm/memory.c
-index b609354..7ff1905 100644
+index 7ff1905..2c17d82 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -1471,11 +1471,13 @@ int zap_vma_ptes(struct vm_area_struct *vma, unsigned long address,
- }
- EXPORT_SYMBOL_GPL(zap_vma_ptes);
- 
--static bool pte_prot_none(struct vm_area_struct *vma, pte_t pte)
-+static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
- {
- 	/*
--	 * If we have the normal vma->vm_page_prot protections we're not a
--	 * 'special' PROT_NONE page.
-+	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
-+	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
-+	 * VMAs should never get here, because the fault handling code
-+	 * will notice that the VMA has no read or write permissions.
- 	 *
- 	 * This means we cannot get 'special' PROT_NONE faults from genuine
- 	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
-@@ -1543,7 +1545,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
- 		goto out;
- 	}
--	if ((flags & FOLL_NUMA) && pmd_prot_none(vma, *pmd))
-+	if ((flags & FOLL_NUMA) && pmd_numa(vma, *pmd))
- 		goto no_page_table;
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
-@@ -1574,7 +1576,7 @@ split_fallthrough:
- 	pte = *ptep;
- 	if (!pte_present(pte))
- 		goto no_page;
--	if ((flags & FOLL_NUMA) && pte_prot_none(vma, pte))
-+	if ((flags & FOLL_NUMA) && pte_numa(vma, pte))
- 		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
-@@ -3476,7 +3478,7 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
--static int do_prot_none(struct mm_struct *mm, struct vm_area_struct *vma,
-+static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pmd_t *pmd,
- 			unsigned int flags, pte_t entry)
- {
-@@ -3573,8 +3575,8 @@ int handle_pte_fault(struct mm_struct *mm,
- 					pte, pmd, flags, entry);
- 	}
- 
--	if (pte_prot_none(vma, entry))
--		return do_prot_none(mm, vma, address, pte, pmd, flags, entry);
-+	if (pte_numa(vma, entry))
-+		return do_numa_page(mm, vma, address, pte, pmd, flags, entry);
- 
+@@ -3489,7 +3489,7 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
  	ptl = pte_lockptr(mm, pmd);
  	spin_lock(ptl);
-@@ -3644,8 +3646,8 @@ retry:
+ 	if (unlikely(!pte_same(*ptep, entry)))
+-		goto unlock;
++		goto out_unlock;
  
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
--			if (pmd_prot_none(vma, orig_pmd)) {
--				do_huge_pmd_prot_none(mm, vma, address, pmd,
-+			if (pmd_numa(vma, orig_pmd)) {
-+				do_huge_pmd_numa_page(mm, vma, address, pmd,
- 						      flags, orig_pmd);
- 			}
+ 	page = vm_normal_page(vma, address, entry);
+ 	if (page) {
+@@ -3500,16 +3500,18 @@ static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			goto migrate;
+ 	}
  
+-fixup:
++out_pte_upgrade_unlock:
+ 	flush_cache_page(vma, address, pte_pfn(entry));
+ 
+ 	ptep_modify_prot_start(mm, address, ptep);
+ 	entry = pte_modify(entry, vma->vm_page_prot);
+ 	ptep_modify_prot_commit(mm, address, ptep, entry);
+ 
++	/* No TLB flush needed because we upgraded the PTE */
++
+ 	update_mmu_cache(vma, address, ptep);
+ 
+-unlock:
++out_unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+ out:
+ 	if (page) {
+@@ -3531,10 +3533,10 @@ migrate:
+ 	if (!pte_same(*ptep, entry)) {
+ 		put_page(page);
+ 		page = NULL;
+-		goto unlock;
++		goto out_unlock;
+ 	}
+ 
+-	goto fixup;
++	goto out_pte_upgrade_unlock;
+ }
+ 
+ /*
