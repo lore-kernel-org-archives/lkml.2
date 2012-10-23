@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2JWORa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:17:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38886 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753904Ab2JWOR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:17:29 -0400
-Date: Tue, 23 Oct 2012 16:17:27 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in
- cmci_rediscover().
-Message-ID: <20121023141727.GB26756@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tang Chen <tangchen@cn.fujitsu.com>, tony.luck@intel.com,
-	tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-	miaox@cn.fujitsu.com, laijs@cn.fujitsu.com, wency@cn.fujitsu.com,
-	x86@kernel.org, linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com>
- <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com>
- <20121019164045.GE11958@aftab.osrc.amd.com>
- <5084AB10.7010807@cn.fujitsu.com>
- <20121022101442.GB8352@liondog.tnic>
- <50860711.10807@cn.fujitsu.com>
- <20121023095234.GA22715@liondog.tnic>
- <50867FCD.9010907@cn.fujitsu.com>
+	id S1755323Ab2JWOUN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:20:13 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:26627 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab2JWOUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:20:11 -0400
+Date: Tue, 23 Oct 2012 10:07:53 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        mukesh.rathor@oracle.com, Ian.Campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com
+Subject: Re: [PATCH 1/6] xen/pvh: Support ParaVirtualized Hardware extensions.
+Message-ID: <20121023140753.GB14100@phenom.dumpdata.com>
+References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
+ <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50867FCD.9010907@cn.fujitsu.com>
+In-Reply-To: <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 07:30:21PM +0800, Tang Chen wrote:
-> First of all, I do think I was answering your question. As I said
-> before, if an online cpu == dying here, there must be something wrong.
-> Am I right here ?
+> +/*
+> + * Unmaps the page appearing at a particular GPFN from the specified guest's
+> + * pseudophysical address space.
+> + * arg == addr of xen_remove_from_physmap_t.
+> + */
+> +#define XENMEM_remove_from_physmap      15
+> +struct xen_remove_from_physmap {
+> +    /* Which domain to change the mapping for. */
+> +    domid_t domid;
+> +
+> +    /* GPFN of the current mapping of the page. */
+> +    xen_pfn_t gpfn;
+> +};
 
-Please read the code. We're skipping the cpu == dying case.
+I just realized that this a bit of unfortunate. We end up
+with on 64-bit with this layout:
 
--- 
-Regards/Gruss,
-Boris.
+{
+  0->1 [domid]
+  2->7 [nothing]
+  8->16 [gpfn]
+
+}
+
+which if one were to do a 32-bit build you would get:
+{
+ 0->1 [domid]
+ 2->3 [nothing]
+ 4->7 [gpfn]
+}
+which means another compat layer in Xen.
+
+So I think it makes sense to modify this to be 32 and 64-bit
+clean, something like this:
+
+{
+	domid_t	domid;
+	u8	pad[6];
+	xen_pfn_t gpfn;
+	/* xen_pfn_t under 32-bit x86 is 4 bytes, so extend it */
+#ifdef CONFIG_X86_32
+	__u8	pad1[4];
+#endif
+}
+
+that way the structure is exactly the same size and the offsets
+align.
+
+Mukesh, you OK with that?
