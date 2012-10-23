@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933868Ab2JWUbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:31:09 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:50301 "EHLO smtp.outflux.net"
+	id S964851Ab2JWUbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:31:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58705 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964793Ab2JWUFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964811Ab2JWUFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:44 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 175/193] net/netfilter: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:04:08 -0700
-Message-Id: <1351022666-6960-176-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>
+Subject: [PATCH 049/193] drivers/i2c/busses: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:02 -0700
+Message-Id: <1351022666-6960-50-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -26,98 +25,96 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Patrick McHardy <kaber@trash.net>
-CC: "David S. Miller" <davem@davemloft.net>
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Manuel Lauss <manuel.lauss@googlemail.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- net/netfilter/Kconfig |   24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+ drivers/i2c/busses/Kconfig |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index fefa514..2e2d896 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -125,8 +125,7 @@ config NF_CONNTRACK_TIMESTAMP
- 	  If unsure, say `N'.
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 65dd599..2a63404 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -22,7 +22,7 @@ config I2C_ALI1535
  
- config NF_CT_PROTO_DCCP
--	tristate 'DCCP protocol connection tracking support (EXPERIMENTAL)'
--	depends on EXPERIMENTAL
-+	tristate 'DCCP protocol connection tracking support'
- 	depends on NETFILTER_ADVANCED
- 	default IP_DCCP
+ config I2C_ALI1563
+ 	tristate "ALI 1563"
+-	depends on PCI && EXPERIMENTAL
++	depends on PCI
  	help
-@@ -139,8 +138,7 @@ config NF_CT_PROTO_GRE
- 	tristate
+ 	  If you say yes to this option, support will be included for the SMB
+ 	  Host controller on Acer Labs Inc. (ALI) M1563 South Bridges.  The SMB
+@@ -56,7 +56,7 @@ config I2C_AMD756
  
- config NF_CT_PROTO_SCTP
--	tristate 'SCTP protocol connection tracking support (EXPERIMENTAL)'
--	depends on EXPERIMENTAL
-+	tristate 'SCTP protocol connection tracking support'
- 	depends on NETFILTER_ADVANCED
- 	default IP_SCTP
+ config I2C_AMD756_S4882
+ 	tristate "SMBus multiplexing on the Tyan S4882"
+-	depends on I2C_AMD756 && X86 && EXPERIMENTAL
++	depends on I2C_AMD756 && X86
  	help
-@@ -281,8 +279,7 @@ config NF_CONNTRACK_PPTP
- 	  To compile it as a module, choose M here.  If unsure, say N.
+ 	  Enabling this option will add specific SMBus support for the Tyan
+ 	  S4882 motherboard.  On this 4-CPU board, the SMBus is multiplexed
+@@ -165,7 +165,7 @@ config I2C_NFORCE2
  
- config NF_CONNTRACK_SANE
--	tristate "SANE protocol support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "SANE protocol support"
- 	depends on NETFILTER_ADVANCED
+ config I2C_NFORCE2_S4985
+ 	tristate "SMBus multiplexing on the Tyan S4985"
+-	depends on I2C_NFORCE2 && X86 && EXPERIMENTAL
++	depends on I2C_NFORCE2 && X86
  	help
- 	  SANE is a protocol for remote access to scanners as implemented
-@@ -409,8 +406,7 @@ endif # NF_CONNTRACK
+ 	  Enabling this option will add specific SMBus support for the Tyan
+ 	  S4985 motherboard.  On this 4-CPU board, the SMBus is multiplexed
+@@ -216,7 +216,7 @@ config I2C_SIS96X
  
- # transparent proxy support
- config NETFILTER_TPROXY
--	tristate "Transparent proxying support (EXPERIMENTAL)"
--	depends on EXPERIMENTAL
-+	tristate "Transparent proxying support"
- 	depends on IP_NF_MANGLE
- 	depends on NETFILTER_ADVANCED
+ config I2C_VIA
+ 	tristate "VIA VT82C586B"
+-	depends on PCI && EXPERIMENTAL
++	depends on PCI
+ 	select I2C_ALGOBIT
  	help
-@@ -711,8 +707,7 @@ config NETFILTER_XT_TARGET_TEE
- 	this clone be rerouted to another nexthop.
+ 	  If you say yes to this option, support will be included for the VIA
+@@ -268,7 +268,7 @@ comment "Mac SMBus host controller drivers"
  
- config NETFILTER_XT_TARGET_TPROXY
--	tristate '"TPROXY" target support (EXPERIMENTAL)'
--	depends on EXPERIMENTAL
-+	tristate '"TPROXY" target support'
- 	depends on NETFILTER_TPROXY
- 	depends on NETFILTER_XTABLES
- 	depends on NETFILTER_ADVANCED
-@@ -776,8 +771,7 @@ config NETFILTER_XT_TARGET_TCPMSS
- 	  To compile it as a module, choose M here.  If unsure, say N.
- 
- config NETFILTER_XT_TARGET_TCPOPTSTRIP
--	tristate '"TCPOPTSTRIP" target support (EXPERIMENTAL)'
--	depends on EXPERIMENTAL
-+	tristate '"TCPOPTSTRIP" target support'
- 	depends on IP_NF_MANGLE || IP6_NF_MANGLE
- 	depends on NETFILTER_ADVANCED
+ config I2C_HYDRA
+ 	tristate "CHRP Apple Hydra Mac I/O I2C interface"
+-	depends on PCI && PPC_CHRP && EXPERIMENTAL
++	depends on PCI && PPC_CHRP
+ 	select I2C_ALGOBIT
  	help
-@@ -1138,8 +1132,7 @@ config NETFILTER_XT_MATCH_RECENT
- 	Official Website: <http://snowman.net/projects/ipt_recent/>
+ 	  This supports the use of the I2C interface in the Apple Hydra Mac
+@@ -294,7 +294,7 @@ comment "I2C system bus drivers (mostly embedded / system-on-chip)"
  
- config NETFILTER_XT_MATCH_SCTP
--	tristate  '"sctp" protocol match support (EXPERIMENTAL)'
--	depends on EXPERIMENTAL
-+	tristate  '"sctp" protocol match support'
- 	depends on NETFILTER_ADVANCED
- 	default IP_SCTP
+ config I2C_AT91
+ 	tristate "Atmel AT91 I2C Two-Wire interface (TWI)"
+-	depends on ARCH_AT91 && EXPERIMENTAL
++	depends on ARCH_AT91
  	help
-@@ -1151,8 +1144,7 @@ config NETFILTER_XT_MATCH_SCTP
- 	  <file:Documentation/kbuild/modules.txt>.  If unsure, say `N'.
+ 	  This supports the use of the I2C interface on Atmel AT91
+ 	  processors.
+@@ -510,7 +510,6 @@ config I2C_NUC900
  
- config NETFILTER_XT_MATCH_SOCKET
--	tristate '"socket" match support (EXPERIMENTAL)'
+ config I2C_OCORES
+ 	tristate "OpenCores I2C Controller"
 -	depends on EXPERIMENTAL
-+	tristate '"socket" match support'
- 	depends on NETFILTER_TPROXY
- 	depends on NETFILTER_XTABLES
- 	depends on NETFILTER_ADVANCED
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  OpenCores I2C controller. For details see
+@@ -703,7 +702,7 @@ config I2C_OCTEON
+ 
+ config I2C_XILINX
+ 	tristate "Xilinx I2C Controller"
+-	depends on EXPERIMENTAL && HAS_IOMEM
++	depends on HAS_IOMEM
+ 	help
+ 	  If you say yes to this option, support will be included for the
+ 	  Xilinx I2C controller.
+@@ -794,7 +793,6 @@ config I2C_PARPORT_LIGHT
+ 
+ config I2C_TAOS_EVM
+ 	tristate "TAOS evaluation module"
+-	depends on EXPERIMENTAL
+ 	select SERIO
+ 	select SERIO_SERPORT
+ 	default n
 -- 
 1.7.9.5
 
