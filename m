@@ -1,590 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab2JWHJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 03:09:48 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52191 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab2JWHJo (ORCPT
+	id S1756692Ab2JWHPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 03:15:55 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:52767 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab2JWHPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 03:09:44 -0400
-Message-ID: <50864297.9010708@gmail.com>
-Date: Tue, 23 Oct 2012 15:09:11 +0800
-From: wujianguo <wujianguo106@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 23 Oct 2012 03:15:54 -0400
+Date: Tue, 23 Oct 2012 11:15:49 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+Message-ID: <20121023071549.GC7020@moon>
+References: <20121022191452.785366817@openvz.org>
+ <20121022122934.d2e2fa57.akpm@linux-foundation.org>
+ <5085B1A8.4020609@parallels.com>
+ <20121022205641.GL2303@moon>
+ <20121022213449.GH31440@moon>
+ <20121022145158.53bddfc1.akpm@linux-foundation.org>
+ <20121023061341.GA7020@moon>
+ <20121022233025.09ec2d92.akpm@linux-foundation.org>
+ <20121023063430.GB7020@moon>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, cl@linux.com, minchan.kim@gmail.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        wujianguo@huawei.com, qiuxishi@huawei.com, jiang.liu@huawei.com
-Subject: Re: [PATCH 8/10] memory-hotplug : remove page table of x86_64 architecture
-References: <506E43E0.70507@jp.fujitsu.com> <506E4799.30407@jp.fujitsu.com> <5073DFC0.3010400@gmail.com> <5084F195.6030908@cn.fujitsu.com>
-In-Reply-To: <5084F195.6030908@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023063430.GB7020@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-22 15:11, Wen Congyang wrote:
-> Hi, Wu
+On Tue, Oct 23, 2012 at 10:34:30AM +0400, Cyrill Gorcunov wrote:
+> On Mon, Oct 22, 2012 at 11:30:25PM -0700, Andrew Morton wrote:
+> ...
+> > > Yup, but not only that, this kind of trick hides associativity between
+> > > VM_ constant and mnemonic, so on changes one would have to figure out
+> > > which position some flag has in this foo[] array, so I vote for not
+> > > use it :-)
+> > 
+> > Well you could do
+> > 
+> > struct {
+> > 	char x[2];
+> > } y[] = {
+> > 	[CLOG2(VM_DONTEXPAND)] =	{ 'd', 'e' },
+> > 	[CLOG2(VM_ACCOUNT)] =		{ 'a', 'c' },
+> > 	[CLOG2(VM_NORESERVE)] =		{ 'n', 'r' },
+> > };
+> > 
+> > 	...
+> > 
+> > 	for (i = 0; i < BITS_PER_LONG; i++) {
+> > 		if (flags & (1 << i))
+> > 			seq_printf("%c%c ", y[i][0], y[i][1]);
+> > 	}
+> > 
+> > where CLOG2() is extracted from the guts of ilog2().
+> > 
+> > I'll stop now :)
 > 
-> Sorry for late reply.
-> 
-> At 10/09/2012 04:26 PM, wujianguo Wrote:
->> Hi Congyang,
->> 	I think we should also free pages which are used by page tables after removing
->> page tables of the memory.
-> 
-> It is OK to do it.
-> 
->>
->> From: Jianguo Wu <wujianguo@huawei.com>
->>
->> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> ---
->>  arch/x86/mm/init_64.c |  110 +++++++++++++++++++++++++++++++++++++++---------
->>  1 files changed, 89 insertions(+), 21 deletions(-)
->>
->> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->> index 5596dfa..81f9c3b 100644
->> --- a/arch/x86/mm/init_64.c
->> +++ b/arch/x86/mm/init_64.c
->> @@ -675,6 +675,74 @@ int arch_add_memory(int nid, u64 start, u64 size)
->>  }
->>  EXPORT_SYMBOL_GPL(arch_add_memory);
->>
->> +static inline void free_pagetable(struct page *page)
->> +{
->> +	struct zone *zone;
->> +
->> +	__ClearPageReserved(page);
->> +	__free_page(page);
->> +
->> +	zone = page_zone(page);
->> +	zone_span_writelock(zone);
->> +	zone->present_pages++;
->> +	zone_span_writeunlock(zone);
->> +	totalram_pages++;
-> 
-> Why do you update zone and totalram_pages here?
-Sorry, I made a mistake here. Only if the page was allocated at booting, we should update
-zone and totalram_pages(zone->present_pages and totalram_pages mean pages which are
-managed by buddy system).
+> Yup, this one will be a wy better. Letme try it out :)
 
-How about:
-static inline void free_pagetable(struct page *page)
-{
-	struct zone *zone;
-	bool bootmem = false;
+ilog2 works well enough here as well.
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: procfs: add VmFlags field in smaps output v3
 
-	/* bootmem page has reserved flag */
-	if (PageReserved(page)) {
-		__ClearPageReserved(page);
-		bootmem = true;
-	}
+During c/r sessions we've found that there is no way at the moment to
+fetch some VMA associated flags, such as mlock() and madvise().
 
-	__free_page(page);
-	
-	if (bootmem) {
-		zone = page_zone(page);
-		zone_span_writelock(zone);
-		zone->present_pages++;
-		zone_span_writeunlock(zone);
-		totalram_pages++;
-	}
-}
+This leads us to a problem -- we don't know if we should call for
+mlock() and/or madvise() after restore on the vma area we're bringing
+back to life.
 
-> 
->> +}
->> +
->> +static void free_pte_table(pte_t *pte_start, pmd_t *pmd)
->> +{
->> +	pte_t *pte;
->> +	int i;
->> +
->> +	for (i = 0; i < PTRS_PER_PTE; i++) {
->> +		pte = pte_start + i;
->> +		if (pte_val(*pte))
->> +			break;
->> +	}
->> +
->> +	/* free a pte talbe */
->> +	if (i == PTRS_PER_PTE) {
->> +		free_pagetable(pmd_page(*pmd));
-> 
-> The memory may be allocated at booting. So it is very dangerous to
-> free it without any check.
-The page is only used by page table, so is safe to free it when all the page table
-entries have been cleared, right?
+This patch intorduces a new field into "smaps" output called VmFlags,
+where all set flags associated with the particular VMA is shown as two
+letter mnemonics.
 
-> 
->> +		pmd_clear(pmd);
->> +	}
->> +}
->> +
->> +static void free_pmd_table(pmd_t *pmd_start, pud_t *pud)
->> +{
->> +	pmd_t *pmd;
->> +	int i;
->> +
->> +	for (i = 0; i < PTRS_PER_PMD; i++) {
->> +		pmd = pmd_start + i;
->> +		if (pmd_val(*pmd))
->> +			break;
->> +	}
->> +
->> +	/* free a pmd talbe */
->> +	if (i == PTRS_PER_PMD) {
->> +		free_pagetable(pud_page(*pud));
->> +		pud_clear(pud);
->> +	}
->> +}
->> +
->> +static void free_pud_table(pud_t *pud_start, pgd_t *pgd)
->> +{
->> +	pud_t *pud;
->> +	int i;
->> +
->> +	for (i = 0; i < PTRS_PER_PUD; i++) {
->> +		pud = pud_start + i;
->> +		if (pud_val(*pud))
->> +			break;
->> +	}
->> +
->> +	/* free a pud table */
->> +	if (i == PTRS_PER_PUD) {
->> +		free_pagetable(pgd_page(*pgd));
->> +		pgd_clear(pgd);
->> +	}
->> +}
->> +
->>  static void __meminit
->>  phys_pte_remove(pte_t *pte_page, unsigned long addr, unsigned long end)
->>  {
->> @@ -704,21 +772,19 @@ phys_pmd_remove(pmd_t *pmd_page, unsigned long addr, unsigned long end)
->>  	unsigned long pages = 0, next;
->>  	int i = pmd_index(addr);
->>
->> -	for (; i < PTRS_PER_PMD; i++, addr = next) {
->> +	for (; i < PTRS_PER_PMD && addr < end; i++, addr = next) {
->>  		unsigned long pte_phys;
->>  		pmd_t *pmd = pmd_page + pmd_index(addr);
->>  		pte_t *pte;
->>
->> -		if (addr >= end)
->> -			break;
->> -
->> -		next = (addr & PMD_MASK) + PMD_SIZE;
->> +		next = pmd_addr_end(addr, end);
->>
->>  		if (!pmd_present(*pmd))
->>  			continue;
->>
->>  		if (pmd_large(*pmd)) {
->> -			if ((addr & ~PMD_MASK) == 0 && next <= end) {
->> +			if (IS_ALIGNED(addr, PMD_SIZE) &&
->> +			    IS_ALIGNED(next, PMD_SIZE)) {
->>  				set_pmd(pmd, __pmd(0));
->>  				pages++;
->>  				continue;
->> @@ -729,7 +795,8 @@ phys_pmd_remove(pmd_t *pmd_page, unsigned long addr, unsigned long end)
->>  			 * so split 2M page to 4K page.
->>  			 */
->>  			pte = alloc_low_page(&pte_phys);
->> -			__split_large_page((pte_t *)pmd, addr, pte);
->> +			__split_large_page((pte_t *)pmd,
->> +					   (unsigned long)__va(addr), pte);
->>
->>  			spin_lock(&init_mm.page_table_lock);
->>  			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
->> @@ -738,7 +805,8 @@ phys_pmd_remove(pmd_t *pmd_page, unsigned long addr, unsigned long end)
->>
->>  		spin_lock(&init_mm.page_table_lock);
->>  		pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
->> -		phys_pte_remove(pte, addr, end);
->> +		phys_pte_remove(pte, addr, next);
->> +		free_pte_table(pte, pmd);
->>  		unmap_low_page(pte);
->>  		spin_unlock(&init_mm.page_table_lock);
->>  	}
->> @@ -751,21 +819,19 @@ phys_pud_remove(pud_t *pud_page, unsigned long addr, unsigned long end)
->>  	unsigned long pages = 0, next;
->>  	int i = pud_index(addr);
->>
->> -	for (; i < PTRS_PER_PUD; i++, addr = next) {
->> +	for (; i < PTRS_PER_PUD && addr < end; i++, addr = next) {
->>  		unsigned long pmd_phys;
->>  		pud_t *pud = pud_page + pud_index(addr);
->>  		pmd_t *pmd;
->>
->> -		if (addr >= end)
->> -			break;
->> -
->> -		next = (addr & PUD_MASK) + PUD_SIZE;
->> +		next = pud_addr_end(addr, end);
->>
->>  		if (!pud_present(*pud))
->>  			continue;
->>
->>  		if (pud_large(*pud)) {
->> -			if ((addr & ~PUD_MASK) == 0 && next <= end) {
->> +			if (IS_ALIGNED(addr, PUD_SIZE) &&
->> +			    IS_ALIGNED(next, PUD_SIZE)) {
->>  				set_pud(pud, __pud(0));
->>  				pages++;
->>  				continue;
->> @@ -776,15 +842,18 @@ phys_pud_remove(pud_t *pud_page, unsigned long addr, unsigned long end)
->>  			 * so split 1G page to 2M page.
->>  			 */
->>  			pmd = alloc_low_page(&pmd_phys);
->> -			__split_large_page((pte_t *)pud, addr, (pte_t *)pmd);
->> +			__split_large_page((pte_t *)pud,
->> +					   (unsigned long)__va(addr),
->> +					   (pte_t *)pmd);
->>
->>  			spin_lock(&init_mm.page_table_lock);
->>  			pud_populate(&init_mm, pud, __va(pmd_phys));
->>  			spin_unlock(&init_mm.page_table_lock);
->>  		}
->>
->> -		pmd = map_low_page(pmd_offset(pud, 0));
->> -		phys_pmd_remove(pmd, addr, end);
->> +		pmd = map_low_page((pmd_t *)pud_page_vaddr(*pud));
-> 
-> Hmm, pmd_offset(pud, 0) is equal to (pmd_t *)pud_page_vaddr(*pud).
-> 
-> Is it OK to merge your patch into my patch?
-> 
-Yes, sure.
+[ Strictly speaking for c/r we only need mlock/madvise bits but it has been
+  said that providing just a few flags looks somehow inconsistent.  So all
+  flags are here now. ]
 
-Thanks,
-Jianguo Wu
+This feature is made available on CONFIG_CHECKPOINT_RESTORE=n kernels, as
+other applications may start to use these fields.
 
-> Thanks
-> Wen Congyang
-> 
->> +		phys_pmd_remove(pmd, addr, next);
->> +		free_pmd_table(pmd, pud);
->>  		unmap_low_page(pmd);
->>  		__flush_tlb_all();
->>  	}
->> @@ -805,15 +874,14 @@ kernel_physical_mapping_remove(unsigned long start, unsigned long end)
->>  		pgd_t *pgd = pgd_offset_k(start);
->>  		pud_t *pud;
->>
->> -		next = (start + PGDIR_SIZE) & PGDIR_MASK;
->> -		if (next > end)
->> -			next = end;
->> +		next = pgd_addr_end(start, end);
->>
->>  		if (!pgd_present(*pgd))
->>  			continue;
->>
->>  		pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
->> -		phys_pud_remove(pud, __pa(start), __pa(end));
->> +		phys_pud_remove(pud, __pa(start), __pa(next));
->> +		free_pud_table(pud, pgd);
->>  		unmap_low_page(pud);
->>  	}
->>
->> -- 1.7.6.1 .
->>
->>
->> On 2012-10-5 10:36, Yasuaki Ishimatsu wrote:
->>> From: Wen Congyang <wency@cn.fujitsu.com>
->>>
->>> For hot removing memory, we sholud remove page table about the memory.
->>> So the patch searches a page table about the removed memory, and clear
->>> page table.
->>>
->>> CC: David Rientjes <rientjes@google.com>
->>> CC: Jiang Liu <liuj97@gmail.com>
->>> CC: Len Brown <len.brown@intel.com>
->>> CC: Christoph Lameter <cl@linux.com>
->>> Cc: Minchan Kim <minchan.kim@gmail.com>
->>> CC: Andrew Morton <akpm@linux-foundation.org>
->>> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->>> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>> ---
->>>  arch/x86/include/asm/pgtable_types.h |    1 
->>>  arch/x86/mm/init_64.c                |  147 +++++++++++++++++++++++++++++++++++
->>>  arch/x86/mm/pageattr.c               |   47 +++++------
->>>  3 files changed, 173 insertions(+), 22 deletions(-)
->>>
->>> Index: linux-3.6/arch/x86/mm/init_64.c
->>> ===================================================================
->>> --- linux-3.6.orig/arch/x86/mm/init_64.c	2012-10-04 18:30:21.171698416 +0900
->>> +++ linux-3.6/arch/x86/mm/init_64.c	2012-10-04 18:30:27.317704652 +0900
->>> @@ -675,6 +675,151 @@ int arch_add_memory(int nid, u64 start, 
->>>  }
->>>  EXPORT_SYMBOL_GPL(arch_add_memory);
->>>  
->>> +static void __meminit
->>> +phys_pte_remove(pte_t *pte_page, unsigned long addr, unsigned long end)
->>> +{
->>> +	unsigned pages = 0;
->>> +	int i = pte_index(addr);
->>> +
->>> +	pte_t *pte = pte_page + pte_index(addr);
->>> +
->>> +	for (; i < PTRS_PER_PTE; i++, addr += PAGE_SIZE, pte++) {
->>> +
->>> +		if (addr >= end)
->>> +			break;
->>> +
->>> +		if (!pte_present(*pte))
->>> +			continue;
->>> +
->>> +		pages++;
->>> +		set_pte(pte, __pte(0));
->>> +	}
->>> +
->>> +	update_page_count(PG_LEVEL_4K, -pages);
->>> +}
->>> +
->>> +static void __meminit
->>> +phys_pmd_remove(pmd_t *pmd_page, unsigned long addr, unsigned long end)
->>> +{
->>> +	unsigned long pages = 0, next;
->>> +	int i = pmd_index(addr);
->>> +
->>> +	for (; i < PTRS_PER_PMD; i++, addr = next) {
->>> +		unsigned long pte_phys;
->>> +		pmd_t *pmd = pmd_page + pmd_index(addr);
->>> +		pte_t *pte;
->>> +
->>> +		if (addr >= end)
->>> +			break;
->>> +
->>> +		next = (addr & PMD_MASK) + PMD_SIZE;
->>> +
->>> +		if (!pmd_present(*pmd))
->>> +			continue;
->>> +
->>> +		if (pmd_large(*pmd)) {
->>> +			if ((addr & ~PMD_MASK) == 0 && next <= end) {
->>> +				set_pmd(pmd, __pmd(0));
->>> +				pages++;
->>> +				continue;
->>> +			}
->>> +
->>> +			/*
->>> +			 * We use 2M page, but we need to remove part of them,
->>> +			 * so split 2M page to 4K page.
->>> +			 */
->>> +			pte = alloc_low_page(&pte_phys);
->>> +			__split_large_page((pte_t *)pmd, addr, pte);
->>> +
->>> +			spin_lock(&init_mm.page_table_lock);
->>> +			pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
->>> +			spin_unlock(&init_mm.page_table_lock);
->>> +		}
->>> +
->>> +		spin_lock(&init_mm.page_table_lock);
->>> +		pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
->>> +		phys_pte_remove(pte, addr, end);
->>> +		unmap_low_page(pte);
->>> +		spin_unlock(&init_mm.page_table_lock);
->>> +	}
->>> +	update_page_count(PG_LEVEL_2M, -pages);
->>> +}
->>> +
->>> +static void __meminit
->>> +phys_pud_remove(pud_t *pud_page, unsigned long addr, unsigned long end)
->>> +{
->>> +	unsigned long pages = 0, next;
->>> +	int i = pud_index(addr);
->>> +
->>> +	for (; i < PTRS_PER_PUD; i++, addr = next) {
->>> +		unsigned long pmd_phys;
->>> +		pud_t *pud = pud_page + pud_index(addr);
->>> +		pmd_t *pmd;
->>> +
->>> +		if (addr >= end)
->>> +			break;
->>> +
->>> +		next = (addr & PUD_MASK) + PUD_SIZE;
->>> +
->>> +		if (!pud_present(*pud))
->>> +			continue;
->>> +
->>> +		if (pud_large(*pud)) {
->>> +			if ((addr & ~PUD_MASK) == 0 && next <= end) {
->>> +				set_pud(pud, __pud(0));
->>> +				pages++;
->>> +				continue;
->>> +			}
->>> +
->>> +			/*
->>> +			 * We use 1G page, but we need to remove part of them,
->>> +			 * so split 1G page to 2M page.
->>> +			 */
->>> +			pmd = alloc_low_page(&pmd_phys);
->>> +			__split_large_page((pte_t *)pud, addr, (pte_t *)pmd);
->>> +
->>> +			spin_lock(&init_mm.page_table_lock);
->>> +			pud_populate(&init_mm, pud, __va(pmd_phys));
->>> +			spin_unlock(&init_mm.page_table_lock);
->>> +		}
->>> +
->>> +		pmd = map_low_page(pmd_offset(pud, 0));
->>> +		phys_pmd_remove(pmd, addr, end);
->>> +		unmap_low_page(pmd);
->>> +		__flush_tlb_all();
->>> +	}
->>> +	__flush_tlb_all();
->>> +
->>> +	update_page_count(PG_LEVEL_1G, -pages);
->>> +}
->>> +
->>> +void __meminit
->>> +kernel_physical_mapping_remove(unsigned long start, unsigned long end)
->>> +{
->>> +	unsigned long next;
->>> +
->>> +	start = (unsigned long)__va(start);
->>> +	end = (unsigned long)__va(end);
->>> +
->>> +	for (; start < end; start = next) {
->>> +		pgd_t *pgd = pgd_offset_k(start);
->>> +		pud_t *pud;
->>> +
->>> +		next = (start + PGDIR_SIZE) & PGDIR_MASK;
->>> +		if (next > end)
->>> +			next = end;
->>> +
->>> +		if (!pgd_present(*pgd))
->>> +			continue;
->>> +
->>> +		pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
->>> +		phys_pud_remove(pud, __pa(start), __pa(end));
->>> +		unmap_low_page(pud);
->>> +	}
->>> +
->>> +	__flush_tlb_all();
->>> +}
->>> +
->>>  #ifdef CONFIG_MEMORY_HOTREMOVE
->>>  int __ref arch_remove_memory(u64 start, u64 size)
->>>  {
->>> @@ -687,6 +832,8 @@ int __ref arch_remove_memory(u64 start, 
->>>  	ret = __remove_pages(zone, start_pfn, nr_pages);
->>>  	WARN_ON_ONCE(ret);
->>>  
->>> +	kernel_physical_mapping_remove(start, start + size);
->>> +
->>>  	return ret;
->>>  }
->>>  #endif
->>> Index: linux-3.6/arch/x86/include/asm/pgtable_types.h
->>> ===================================================================
->>> --- linux-3.6.orig/arch/x86/include/asm/pgtable_types.h	2012-10-04 18:26:51.925486954 +0900
->>> +++ linux-3.6/arch/x86/include/asm/pgtable_types.h	2012-10-04 18:30:27.322704656 +0900
->>> @@ -334,6 +334,7 @@ static inline void update_page_count(int
->>>   * as a pte too.
->>>   */
->>>  extern pte_t *lookup_address(unsigned long address, unsigned int *level);
->>> +extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
->>>  
->>>  #endif	/* !__ASSEMBLY__ */
->>>  
->>> Index: linux-3.6/arch/x86/mm/pageattr.c
->>> ===================================================================
->>> --- linux-3.6.orig/arch/x86/mm/pageattr.c	2012-10-04 18:26:51.923486952 +0900
->>> +++ linux-3.6/arch/x86/mm/pageattr.c	2012-10-04 18:30:27.328704662 +0900
->>> @@ -501,21 +501,13 @@ out_unlock:
->>>  	return do_split;
->>>  }
->>>  
->>> -static int split_large_page(pte_t *kpte, unsigned long address)
->>> +int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
->>>  {
->>>  	unsigned long pfn, pfninc = 1;
->>>  	unsigned int i, level;
->>> -	pte_t *pbase, *tmp;
->>> +	pte_t *tmp;
->>>  	pgprot_t ref_prot;
->>> -	struct page *base;
->>> -
->>> -	if (!debug_pagealloc)
->>> -		spin_unlock(&cpa_lock);
->>> -	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
->>> -	if (!debug_pagealloc)
->>> -		spin_lock(&cpa_lock);
->>> -	if (!base)
->>> -		return -ENOMEM;
->>> +	struct page *base = virt_to_page(pbase);
->>>  
->>>  	spin_lock(&pgd_lock);
->>>  	/*
->>> @@ -523,10 +515,11 @@ static int split_large_page(pte_t *kpte,
->>>  	 * up for us already:
->>>  	 */
->>>  	tmp = lookup_address(address, &level);
->>> -	if (tmp != kpte)
->>> -		goto out_unlock;
->>> +	if (tmp != kpte) {
->>> +		spin_unlock(&pgd_lock);
->>> +		return 1;
->>> +	}
->>>  
->>> -	pbase = (pte_t *)page_address(base);
->>>  	paravirt_alloc_pte(&init_mm, page_to_pfn(base));
->>>  	ref_prot = pte_pgprot(pte_clrhuge(*kpte));
->>>  	/*
->>> @@ -579,17 +572,27 @@ static int split_large_page(pte_t *kpte,
->>>  	 * going on.
->>>  	 */
->>>  	__flush_tlb_all();
->>> +	spin_unlock(&pgd_lock);
->>>  
->>> -	base = NULL;
->>> +	return 0;
->>> +}
->>>  
->>> -out_unlock:
->>> -	/*
->>> -	 * If we dropped out via the lookup_address check under
->>> -	 * pgd_lock then stick the page back into the pool:
->>> -	 */
->>> -	if (base)
->>> +static int split_large_page(pte_t *kpte, unsigned long address)
->>> +{
->>> +	pte_t *pbase;
->>> +	struct page *base;
->>> +
->>> +	if (!debug_pagealloc)
->>> +		spin_unlock(&cpa_lock);
->>> +	base = alloc_pages(GFP_KERNEL | __GFP_NOTRACK, 0);
->>> +	if (!debug_pagealloc)
->>> +		spin_lock(&cpa_lock);
->>> +	if (!base)
->>> +		return -ENOMEM;
->>> +
->>> +	pbase = (pte_t *)page_address(base);
->>> +	if (__split_large_page(kpte, address, pbase))
->>>  		__free_page(base);
->>> -	spin_unlock(&pgd_lock);
->>>  
->>>  	return 0;
->>>  }
->>>
->>> --
->>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->>> the body to majordomo@kvack.org.  For more info on Linux MM,
->>> see: http://www.linux-mm.org/ .
->>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->>>
->>
->>
-> 
-> 
+The data is encoded in a somewhat awkward two letters mnemonic form, to
+encourage userspace to be prepared for fields being added or removed in
+the future.
 
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ Documentation/filesystems/proc.txt |   40 +++++++++++++++++++++++++++-
+ fs/proc/task_mmu.c                 |   52 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 90 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.git/Documentation/filesystems/proc.txt
+===================================================================
+--- linux-2.6.git.orig/Documentation/filesystems/proc.txt
++++ linux-2.6.git/Documentation/filesystems/proc.txt
+@@ -142,7 +142,7 @@ Table 1-1: Process specific entries in /
+  pagemap	Page table
+  stack		Report full stack trace, enable via CONFIG_STACKTRACE
+  smaps		a extension based on maps, showing the memory consumption of
+-		each mapping
++		each mapping and flags associated with it
+ ..............................................................................
+ 
+ For example, to get the status information of a process, all you have to do is
+@@ -415,8 +415,9 @@ Swap:                  0 kB
+ KernelPageSize:        4 kB
+ MMUPageSize:           4 kB
+ Locked:              374 kB
++VmFlags: rd ex mr mw me de
+ 
+-The first of these lines shows the same information as is displayed for the
++the first of these lines shows the same information as is displayed for the
+ mapping in /proc/PID/maps.  The remaining lines show the size of the mapping
+ (size), the amount of the mapping that is currently resident in RAM (RSS), the
+ process' proportional share of this mapping (PSS), the number of clean and
+@@ -430,6 +431,41 @@ and a page is modified, the file page is
+ "Swap" shows how much would-be-anonymous memory is also used, but out on
+ swap.
+ 
++"VmFlags" field deserves a separate description. This member represents the kernel
++flags associated with the particular virtual memory area in two letter encoded
++manner. The codes are the following:
++    rd  - readable
++    wr  - writeable
++    ex  - executable
++    sh  - shared
++    mr  - may read
++    mw  - may write
++    me  - may execute
++    ms  - may share
++    gd  - stack segment growns down
++    pf  - pure PFN range
++    dw  - disabled write to the mapped file
++    lo  - pages are locked in memory
++    io  - memory mapped I/O area
++    sr  - sequential read advise provided
++    rr  - random read advise provided
++    dc  - do not copy area on fork
++    de  - do not expand area on remapping
++    ac  - area is accountable
++    nr  - swap space is not reserved for the area
++    ht  - area uses huge tlb pages
++    nl  - non-linear mapping
++    ar  - architecture specific flag
++    dd  - do not include area into core dump
++    mm  - mixed map area
++    hg  - huge page advise flag
++    nh  - no-huge page advise flag
++    mg  - mergable advise flag
++
++Note that there is no guarantee that every flag and associated mnemonic will
++be present in all further kernel releases. Things get changed, the flags may
++be vanished or the reverse -- new added.
++
+ This file is only present if the CONFIG_MMU kernel configuration option is
+ enabled.
+ 
+Index: linux-2.6.git/fs/proc/task_mmu.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/task_mmu.c
++++ linux-2.6.git/fs/proc/task_mmu.c
+@@ -480,6 +480,56 @@ static int smaps_pte_range(pmd_t *pmd, u
+ 	return 0;
+ }
+ 
++static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
++{
++	/*
++	 * Don't forget to update Documentation/ on changes.
++	 */
++
++	const struct {
++		const char l[2];
++	} mnemonics[BITS_PER_LONG] = {
++		[ilog2(VM_READ)]	= { .l = {'r', 'd'} },
++		[ilog2(VM_WRITE)]	= { .l = {'w', 'r'} },
++		[ilog2(VM_EXEC)]	= { .l = {'e', 'x'} },
++		[ilog2(VM_SHARED)]	= { .l = {'s', 'h'} },
++		[ilog2(VM_MAYREAD)]	= { .l = {'m', 'r'} },
++		[ilog2(VM_MAYWRITE)]	= { .l = {'m', 'w'} },
++		[ilog2(VM_MAYEXEC)]	= { .l = {'m', 'e'} },
++		[ilog2(VM_MAYSHARE)]	= { .l = {'m', 's'} },
++		[ilog2(VM_GROWSDOWN)]	= { .l = {'g', 'd'} },
++		[ilog2(VM_PFNMAP)]	= { .l = {'p', 'f'} },
++		[ilog2(VM_DENYWRITE)]	= { .l = {'d', 'w'} },
++		[ilog2(VM_LOCKED)]	= { .l = {'l', 'o'} },
++		[ilog2(VM_IO)]		= { .l = {'i', 'o'} },
++		[ilog2(VM_SEQ_READ)]	= { .l = {'s', 'r'} },
++		[ilog2(VM_RAND_READ)]	= { .l = {'r', 'r'} },
++		[ilog2(VM_DONTCOPY)]	= { .l = {'d', 'c'} },
++		[ilog2(VM_DONTEXPAND)]	= { .l = {'d', 'e'} },
++		[ilog2(VM_ACCOUNT)]	= { .l = {'a', 'c'} },
++		[ilog2(VM_NORESERVE)]	= { .l = {'n', 'r'} },
++		[ilog2(VM_HUGETLB)]	= { .l = {'h', 't'} },
++		[ilog2(VM_NONLINEAR)]	= { .l = {'n', 'l'} },
++		[ilog2(VM_ARCH_1)]	= { .l = {'a', 'r'} },
++		[ilog2(VM_DONTDUMP)]	= { .l = {'d', 'd'} },
++		[ilog2(VM_MIXEDMAP)]	= { .l = {'m', 'm'} },
++		[ilog2(VM_HUGEPAGE)]	= { .l = {'h', 'g'} },
++		[ilog2(VM_NOHUGEPAGE)]	= { .l = {'n', 'h'} },
++		[ilog2(VM_MERGEABLE)]	= { .l = {'m', 'g'} },
++	};
++
++	size_t i;
++
++	seq_puts(m, "VmFlags: ");
++	for (i = 0; i < BITS_PER_LONG; i++) {
++		if (vma->vm_flags & (1 << i))
++			seq_printf(m, "%c%c ",
++				   mnemonics[i].l[0],
++				   mnemonics[i].l[1]);
++	}
++	seq_putc(m, '\n');
++}
++
+ static int show_smap(struct seq_file *m, void *v, int is_pid)
+ {
+ 	struct proc_maps_private *priv = m->private;
+@@ -535,6 +585,8 @@ static int show_smap(struct seq_file *m,
+ 		seq_printf(m, "Nonlinear:      %8lu kB\n",
+ 				mss.nonlinear >> 10);
+ 
++	show_smap_vma_flags(m, vma);
++
+ 	if (m->count < m->size)  /* vma is copied successfully */
+ 		m->version = (vma != get_gate_vma(task->mm))
+ 			? vma->vm_start : 0;
