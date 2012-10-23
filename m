@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab2JWKe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:34:28 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56971 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752973Ab2JWKeJ (ORCPT
+	id S1755830Ab2JWKeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:34:37 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46881 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab2JWKed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:34:09 -0400
-Date: Tue, 23 Oct 2012 11:33:52 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "levinsasha928@gmail.com" <levinsasha928@gmail.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "ericvh@gmail.com" <ericvh@gmail.com>
-Subject: Re: [PATCH v2 1/3] mm: highmem: export kmap_to_page for modules
-Message-ID: <20121023103352.GC20210@mudshark.cambridge.arm.com>
-References: <1350651813-8694-1-git-send-email-will.deacon@arm.com>
- <87objuhxiq.fsf@rustcorp.com.au>
+	Tue, 23 Oct 2012 06:34:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87objuhxiq.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121023.023647.2164665243829038911.davem@davemloft.net>
+References: <1350885237-12998-1-git-send-email-cardoe@cardoe.com> <20121023.023647.2164665243829038911.davem@davemloft.net>
+From: Kay Sievers <kay@vrfy.org>
+Date: Tue, 23 Oct 2012 12:34:11 +0200
+Message-ID: <CAPXgP10EhtdCT5Bus2+Prfrk0LU3tEeBJq8qq4hK4k=TdiS5qQ@mail.gmail.com>
+Subject: Re: [PATCH] vlan: set sysfs device_type to 'vlan'
+To: David Miller <davem@davemloft.net>
+Cc: cardoe@cardoe.com, kaber@trash.net, netdev@vger.kernel.org,
+        systemd-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 12:55:57AM +0100, Rusty Russell wrote:
-> Will Deacon <will.deacon@arm.com> writes:
-> 
-> > Some virtio device drivers (9p) need to translate high virtual addresses
-> > to physical addresses, which are inserted into the virtqueue for
-> > processing by userspace.
-> >
-> > This patch exports the kmap_to_page symbol, so that the affected drivers
-> > can be compiled as modules.
-> 
-> Thanks Will!
-> 
-> I've applied these, and add cc:stable.  I'll push them to Linus after a
-> little time in linux-next.
+On Tue, Oct 23, 2012 at 8:36 AM, David Miller <davem@davemloft.net> wrote:
+> From: Doug Goldstein <cardoe@cardoe.com>
+> Date: Mon, 22 Oct 2012 00:53:57 -0500
+>
+>> Sets the sysfs device_type to 'vlan' for udev. This makes it easier for
+>> applications that query network information via udev to identify vlans
+>> instead of using strrchr().
+>>
+>> Signed-off-by: Doug Goldstein <cardoe@cardoe.com>
+>
+> You're extremely misguided.  This change, in fact, makes it ten times
+> harder for such applications to query such devices.
 
-Cheers Rusty. Andrew's right about this affecting highmem on x86 too (I
-guess that's what Sasha saw with the 9p memory issues), so stable makes
-sense.
+That makes not much sense, really. Every new interface would fall into
+that category. At least I can't see any mis-guidance here. The other
+devtypes for the major netif types are not that much older.
 
-Will
+> Because now the application has to decide whether it wants to support
+> EVERY EXISTING SYSTEM OUT THERE or not.  Hundreds of millions of Linux
+> systems do not provide this attribute.
+>
+> Applications have to handle the case of not having the 'vlan' device
+> type available attribute essentially forever.
+
+Which is an entirely separate issue, and not a technical reason not to
+add new interfaces which are already in use for most other types of
+netifs.
+
+> So providing it in new kernels provides zero value whatsoever.
+
+It sure does provide a value. The kernel can efficiently filter
+uevents in the socket with this available. All other major types of
+netdevs support that too, it's just a matter of completeness. For that
+reason, it looks useful to me.
+
+> I'm not applying this patch, sorry.
+
+That's just sad. Not that I really care about that functionality, but
+your reasoning is absolutely not transparent.
+
+Kay
