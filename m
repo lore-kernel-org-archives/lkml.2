@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932451Ab2JWAAo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 20:00:44 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35141 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932102Ab2JWAAn (ORCPT
+	id S932462Ab2JWABE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 20:01:04 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:43356 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab2JWABC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 20:00:43 -0400
-Date: Tue, 23 Oct 2012 01:00:34 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: minyard@acm.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
-        Corey Minyard <cminyard@mvista.com>
-Subject: Re: [PATCH 2/5] ACPI: Reorder IPMI driver before any other ACPI
- drivers
-Message-ID: <20121023000033.GA11756@srcf.ucam.org>
-References: <1350420820-7156-1-git-send-email-minyard@acm.org>
- <1350420820-7156-3-git-send-email-minyard@acm.org>
- <20121022164538.3b707397.akpm@linux-foundation.org>
+	Mon, 22 Oct 2012 20:01:02 -0400
+Message-ID: <5085DE38.6030906@gmail.com>
+Date: Mon, 22 Oct 2012 20:00:56 -0400
+From: Daniel Hazelton <dshadowwolf@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022164538.3b707397.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        fengguang.wu@intel.com, kosaki.motohiro@jp.fujitsu.com,
+        drepper@gmail.com, paulmck@linux.vnet.ibm.com
+Subject: tools/vm build fails
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 04:45:38PM -0700, Andrew Morton wrote:
+After doing any build in the kernel (last attempt was an allmodconfig) 
+I've tried to build the 'vm' tool in tools/vm and the build fails - 
+looks to be fallout from the uapi header work.
 
-> Relying upon link ordering is the old-fashioned way of doing things,
-> and I have vague memories that it only works by luck - that there's no
-> hard-and-fast rule that the linker has to obey what we think we asked
-> it to do.
-> 
-> The usual way of doing this sort of thing is to use the initcall
-> priority levels - core_initcall(), postcore_initcall(), etc.  Can that
-> be done here?
+[madman@localhost tools]$ make V=1 vm
+make -C vm/
+make[1]: Entering directory `/home/madman/sources/linux-2.6/tools/vm'
+gcc -Wall -Wextra -o page-types page-types.c
+In file included from page-types.c:38:0:
+../../include/linux/kernel-page-flags.h:4:42: fatal error: 
+uapi/linux/kernel-page-flags.h: No such file or directory
+compilation terminated.
+make[1]: *** [page-types] Error 1
+make[1]: Leaving directory `/home/madman/sources/linux-2.6/tools/vm'
+make: *** [vm] Error 2
 
-Not really - some of this code can be built as modules, so it's mostly 
-module_init rather than anything from the initcall family.
+I'm not a kernel developer (I've tried and been unable to wrap my head 
+around any part that I was going to try working on :( )and was just 
+trying bits in tools/ at random to see what, exactly, they were and this 
+kept happening, no matter the state of the tree.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I updated my git tree about 3 hours ago to mirror the latest Linus from 
+git.kernel.org after having run into this error yesterday and deciding I 
+must have done something wrong. This looks like it might be a missing -I 
+or similar since the file does exist and is at that exact path from the 
+file that is directly including it.
+
+DRH
