@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab2JWNpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:45:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57446 "EHLO mga01.intel.com"
+	id S933176Ab2JWNrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:47:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19320 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933136Ab2JWNns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933130Ab2JWNns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 09:43:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191312"
+   d="scan'208";a="237191307"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
         Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
@@ -16,9 +16,9 @@ To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
 Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         Octavian Purdila <octavian.purdila@intel.com>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 22/26] mmc: sdhci: panic write: no dma mapping
-Date: Tue, 23 Oct 2012 16:48:20 +0300
-Message-Id: <1351000104-13015-23-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH 21/26] mmc: sdhci: panic write: poll interrupts
+Date: Tue, 23 Oct 2012 16:48:19 +0300
+Message-Id: <1351000104-13015-22-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
 References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
@@ -31,226 +31,81 @@ From: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 ---
- drivers/mmc/host/sdhci.c  |  158 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/mmc/sdhci.h |    8 +++
- 2 files changed, 164 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index d85e9d5..ab3f5ce 100644
+index e096526..d85e9d5 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -649,6 +649,69 @@ static void sdhci_adma_table_post(struct sdhci_host *host,
- 		data->sg_len, direction);
+@@ -131,6 +131,8 @@ static void sdhci_clear_set_irqs(struct sdhci_host *host, u32 clear, u32 set)
+ 	ier &= ~clear;
+ 	ier |= set;
+ 	sdhci_writel(host, ier, SDHCI_INT_ENABLE);
++	if (mmc_panic_task_active(host->mmc))
++		ier = 0;
+ 	sdhci_writel(host, ier, SDHCI_SIGNAL_ENABLE);
  }
  
-+#ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
+@@ -1267,6 +1269,8 @@ static int sdhci_set_power(struct sdhci_host *host, unsigned short power)
+  *                                                                           *
+ \*****************************************************************************/
+ 
++static irqreturn_t sdhci_irq(int irq, void *dev_id);
 +
-+static void sdhci_panic_dma_pre(struct sdhci_host *host, struct mmc_data *data)
-+{
-+	struct scatterlist *sg;
-+	int i, len;
-+	dma_addr_t addr;
-+	u8 *desc;
-+
-+	if (host->flags & SDHCI_USE_ADMA) {
-+		if (data->sg_len != 1) {
-+			WARN_ON(1);
-+			host->flags &= ~SDHCI_REQ_USE_DMA;
-+			return;
-+		}
-+		desc = host->panic_adma_desc;
-+		for_each_sg(data->sg, sg, 1, i) {
-+			addr = host->panic_dma_addr;
-+			len = sg->length;
-+			sdhci_set_adma_desc(desc, addr, len, 0x21);
-+			desc += 8;
-+		}
-+		if (host->quirks & SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC) {
-+			if (desc != host->panic_adma_desc) {
-+				desc -= 8;
-+				desc[0] |= 0x2;
-+			}
-+		} else {
-+			sdhci_set_adma_desc(desc, 0, 0, 0x3);
-+		}
-+		sdhci_writel(host, host->panic_adma_addr, SDHCI_ADMA_ADDRESS);
-+	} else {
-+		sdhci_writel(host, host->panic_dma_addr, SDHCI_DMA_ADDRESS);
-+	}
-+
-+	if (data->flags & MMC_DATA_WRITE) {
-+		sg_copy_to_buffer(data->sg, data->sg_len, host->panic_buf,
-+				  host->panic_bufsize);
-+	}
-+}
-+
-+static void sdhci_panic_dma_post(struct sdhci_host *host, struct mmc_data *data)
-+{
-+	if (data->flags & MMC_DATA_READ) {
-+		sg_copy_from_buffer(data->sg, data->sg_len, host->panic_buf,
-+				    host->panic_bufsize);
-+	}
-+}
-+
-+#else
-+
-+static inline void sdhci_panic_dma_pre(struct sdhci_host *host,
-+				       struct mmc_data *data)
-+{
-+}
-+
-+static inline void sdhci_panic_dma_post(struct sdhci_host *host,
-+					struct mmc_data *data)
-+{
-+}
-+
-+#endif
-+
- static u8 sdhci_calc_timeout(struct sdhci_host *host, struct mmc_command *cmd)
+ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
  {
- 	u8 count;
-@@ -810,7 +873,9 @@ static void sdhci_prepare_data(struct sdhci_host *host, struct mmc_command *cmd)
- 	}
+ 	struct sdhci_host *host;
+@@ -1347,6 +1351,11 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
  
- 	if (host->flags & SDHCI_REQ_USE_DMA) {
--		if (host->flags & SDHCI_USE_ADMA) {
-+		if (mmc_am_panic_task(host->mmc)) {
-+			sdhci_panic_dma_pre(host, data);
-+		} else if (host->flags & SDHCI_USE_ADMA) {
- 			ret = sdhci_adma_table_pre(host, data);
- 			if (ret) {
- 				/*
-@@ -937,7 +1002,9 @@ static void sdhci_finish_data(struct sdhci_host *host)
- 	host->data = NULL;
+ 	mmiowb();
+ 	sdhci_unlock_irqrestore(host, flags);
++
++	if (mmc_am_panic_task(host->mmc)) {
++		while (host->mrq)
++			sdhci_irq(0, host);
++	}
+ }
  
- 	if (host->flags & SDHCI_REQ_USE_DMA) {
--		if (host->flags & SDHCI_USE_ADMA)
-+		if (mmc_am_panic_task(host->mmc))
-+			sdhci_panic_dma_post(host, data);
-+		else if (host->flags & SDHCI_USE_ADMA)
- 			sdhci_adma_table_post(host, data);
- 		else {
- 			dma_unmap_sg(mmc_dev(host->mmc), data->sg,
-@@ -2045,6 +2112,91 @@ static const struct mmc_host_ops sdhci_ops = {
+ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
+@@ -2066,6 +2075,27 @@ void sdhci_unlock_irqrestore(struct sdhci_host *host, unsigned long flags)
+ 		spin_unlock_irqrestore(&host->lock, flags);
+ }
  
- #ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
- 
-+/*
-+ * Arbitrary maximum DMA buffer size and hence maximum request size when using
-+ * DMA.
-+ */
-+#define SDHCI_PANIC_DMA_BUFSIZE (32 * 1024)
-+
-+/*
-+ * We DMA at most one segment which is aligned. Plus we need an end descriptor.
-+ * We allow for a 8 byte (32-bit address) descriptor size.
-+ */
-+#define SDHCI_PANIC_ADMA_DESC_SZ ((1 + 1) * 12)
-+
-+static void sdhci_panic_dma_cleanup(struct sdhci_host *host)
-+{
-+	if (host->panic_adma_desc) {
-+		dma_free_coherent(mmc_dev(host->mmc), SDHCI_PANIC_ADMA_DESC_SZ,
-+				  host->panic_adma_desc, host->panic_adma_addr);
-+		host->panic_adma_desc = NULL;
-+	}
-+
-+	if (host->panic_buf) {
-+		dma_free_coherent(mmc_dev(host->mmc), host->panic_bufsize,
-+				  host->panic_buf, host->panic_dma_addr);
-+		host->panic_buf = NULL;
-+	}
-+}
-+
-+static int sdhci_panic_dma_init(struct sdhci_host *host)
-+{
-+	size_t size;
-+
-+	size = min_t(size_t, SDHCI_PANIC_DMA_BUFSIZE, host->mmc->max_seg_size);
-+	while (size > PAGE_SIZE) {
-+		host->panic_buf = dma_alloc_coherent(mmc_dev(host->mmc), size,
-+						     &host->panic_dma_addr,
-+						     GFP_KERNEL | __GFP_NOWARN);
-+		if (host->panic_buf)
-+			break;
-+		size >>= 1;
-+	}
-+	if (!host->panic_buf) {
-+		host->panic_buf = dma_alloc_coherent(mmc_dev(host->mmc), size,
-+						     &host->panic_dma_addr,
-+						     GFP_KERNEL);
-+	}
-+	if (!host->panic_buf)
-+		return -ENOMEM;
-+
-+	host->panic_bufsize = size;
-+	host->mmc->panic_max_size = size;
-+
-+	if (host->flags & SDHCI_USE_ADMA) {
-+		size = SDHCI_PANIC_ADMA_DESC_SZ;
-+		host->panic_adma_desc = dma_alloc_coherent(mmc_dev(host->mmc),
-+							size,
-+							&host->panic_adma_addr,
-+							GFP_KERNEL);
-+		if (!host->panic_adma_desc) {
-+			sdhci_panic_dma_cleanup(host);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int sdhci_panic_init(struct mmc_host *mmc)
++static void sdhci_panic_begin(struct mmc_host *mmc)
 +{
 +	struct sdhci_host *host = mmc_priv(mmc);
 +
-+	mmc->panic_max_size = mmc->max_seg_size;
-+
-+	if (host->flags & (SDHCI_USE_SDMA | SDHCI_USE_ADMA))
-+		return sdhci_panic_dma_init(host);
-+
-+	return 0;
++	sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
 +}
 +
-+static void sdhci_panic_cleanup(struct mmc_host *mmc)
++static void sdhci_panic_end(struct mmc_host *mmc)
 +{
 +	struct sdhci_host *host = mmc_priv(mmc);
++	u32 ier;
 +
-+	sdhci_panic_dma_cleanup(host);
++	ier = sdhci_readl(host, SDHCI_INT_ENABLE);
++	sdhci_writel(host, ier, SDHCI_SIGNAL_ENABLE);
 +}
 +
- void sdhci_lock(struct sdhci_host *host)
- {
- 	if (mmc_am_panic_task(host->mmc))
-@@ -2092,6 +2244,8 @@ static void sdhci_panic_end(struct mmc_host *mmc)
- }
- 
- static const struct mmc_panic_ops sdhci_pops = {
-+	.init		= sdhci_panic_init,
-+	.cleanup	= sdhci_panic_cleanup,
- 	.begin		= sdhci_panic_begin,
- 	.end		= sdhci_panic_end,
- };
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index fa8529a..873e41d 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -172,6 +172,14 @@ struct sdhci_host {
- #define SDHCI_TUNING_MODE_1	0
- 	struct timer_list	tuning_timer;	/* Timer for tuning */
- 
-+#ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
-+	void			*panic_buf;	/* buffer for panic requests */
-+	size_t			panic_bufsize;	/* panic buffer size */
-+	dma_addr_t		panic_dma_addr;	/* panic buffer dma address */
-+	u8			*panic_adma_desc;	/* adma desc buffer */
-+	dma_addr_t		panic_adma_addr;	/* adma desc address */
-+#endif
++static const struct mmc_panic_ops sdhci_pops = {
++	.begin		= sdhci_panic_begin,
++	.end		= sdhci_panic_end,
++};
 +
- 	unsigned long private[0] ____cacheline_aligned;
- };
- #endif /* LINUX_MMC_SDHCI_H */
+ #endif
+ 
+ /*****************************************************************************\
+@@ -2854,6 +2884,9 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	 * Set host parameters.
+ 	 */
+ 	mmc->ops = &sdhci_ops;
++#ifdef CONFIG_MMC_BLOCK_PANIC_WRITE
++	mmc->pops = &sdhci_pops;
++#endif
+ 	mmc->f_max = host->max_clk;
+ 	if (host->ops->get_min_clock)
+ 		mmc->f_min = host->ops->get_min_clock(host);
 -- 
 1.7.9.5
 
