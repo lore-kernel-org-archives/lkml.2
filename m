@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab2JWDIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Oct 2012 23:08:05 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56436 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab2JWDIC (ORCPT
+	id S1751997Ab2JWDLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Oct 2012 23:11:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36574 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab2JWDLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Oct 2012 23:08:02 -0400
+	Mon, 22 Oct 2012 23:11:54 -0400
+Date: Mon, 22 Oct 2012 20:12:22 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: xiaobing.tu@intel.com, ccross@android.com, davej@redhat.com,
+        akpm@linux-foundation.org, mingo@elte.hu, rusty@rustcorp.com.au,
+        a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, di.zhang@intel.com, xindong.ma@intel.com,
+        alex.zuo@intel.com
+Subject: Re: [PATCH 1/2] Staging: android: binder: Fix memory leak on
+ thread/process exit
+Message-ID: <20121023031222.GA22095@kroah.com>
+References: <20121015235836.GA3214@kroah.com>
+ <1350347562-32643-1-git-send-email-arve@android.com>
+ <20121016071136.GB5172@kroah.com>
+ <CAMP5XgfVPeN8CRwKxeTv6fL8M0MXV56R+GrWw88caVZrQfu+Vg@mail.gmail.com>
+ <20121022200047.GA18175@kroah.com>
+ <CAMP5XgeF=_tjPsEoEjAEbWDB7KjFGCGgTG+RkixPV29Df-NJ_Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121023025304.GA21810@kroah.com>
-References: <1350287745-14442-1-git-send-email-sj38.park@gmail.com>
- <507D08FE.4070902@bluegiga.com> <20121022205626.GA4368@kroah.com>
- <CAEjAshoH2CJpnq-mt1TB6XB3i22QM+UeTKzr__ZgjHNUts3odA@mail.gmail.com>
- <CAEjAshqiVPA86fYNehmAEqiiZt0tGBvhu3ntFy+7XA4oLZKtRg@mail.gmail.com> <20121023025304.GA21810@kroah.com>
-From: SeongJae Park <sj38.park@gmail.com>
-Date: Tue, 23 Oct 2012 12:07:41 +0900
-Message-ID: <CAEjAshq-u8P1JLF=t4_A7tn-oxKCL0_QrAAeYwQA1D0Kh2hm9A@mail.gmail.com>
-Subject: Re: [PATCH] staging: csr: fix coding style
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP5XgeF=_tjPsEoEjAEbWDB7KjFGCGgTG+RkixPV29Df-NJ_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for fast reply, Greg.
+On Mon, Oct 22, 2012 at 05:58:08PM -0700, Arve Hj?nnev?g wrote:
+> On Mon, Oct 22, 2012 at 1:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Oct 16, 2012 at 03:45:20PM -0700, Arve Hj?nnev?g wrote:
+> >> On Tue, Oct 16, 2012 at 12:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Mon, Oct 15, 2012 at 05:32:41PM -0700, Arve Hj?nnev?g wrote:
+> >> >> If a thread or process exited while a reply, one-way transaction or
+> >> >> death notification was pending, the struct holding the pending work
+> >> >> was leaked.
+> >> >>
+> >> >> Change-Id: I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7
+> >> >
+> >> > What is this field?  Please don't include this in kernel patches, it
+> >> > forces me to edit the patch by hand :(
+> >> >
+> >>
+> >> It is a tag generated a git hook to uniquely identify a change through
+> >> multiple revisions of that change. If the tag does not already exist
+> >> the hook adds it. I removed it from the reposted patches as you
+> >> requested, but have you considered leaving it in? It is a useful
+> >> search token both for finding different revisions of a patch and for
+> >> finding which branch a change has been cherry-picked into.
+> >
+> > Sorry, I was being facetious, I knew what it really was, but the point
+> > was, why would I?
+> >
+> 
+> So you can use it. If, for instance, you want to see which branches
+> you cherry-picked this change into you can run "git rev-list --all
+> --grep I2eaafaba1c0ecda3ec0872d449dc16d0721c21e7 | xargs -rl git
+> branch -a --contains". If it was more widely used, it would also be
+> useful for finding mailing list discussion of multiple versions of
+> patches (even when the title of the patch changes).
 
-I was very impressed by your session at Linux Forum,
-sent linux kernel patch, made a document about your session(write and
-submit your first Linux kernel patch) in Korean, and my patch merged,
-have discussion with Linux kernel guys...
+Yes, if you want a unique identifier for a patch in order to try to
+track it through trees, you can do something like that (hint, see Alan
+Stern's patches, he has his own identifier for that.)  But don't use the
+gerrit id for this, it's not useful and it is confusing.  We have
+discussed this in the past, see the lkml archives for details.
 
-These whole thing about my first kernel patch were fantastic and great
-experience.
+> > As has been stated before, you can include information like this in your
+> > patch, but you MUST reference it properly so that others can be able to
+> > figure out what you mean.  A random Change-Id value means nothing given
+> > that lots of different groups use gerrit.  You need a url, or a pointer
+> > to which gerrit instance this refers to before you can include it.
+> >
+> 
+> There is no single url. The tag was generated by a local git hook
+> before it was uploaded anywhere. While gerrit looks for this tag and
+> use it when it is there, the same change can be uploaded to different
+> gerrit instances. While it would be useful to also include urls to the
+> gerrit instance(s) that a patch was discussed on, the Change-Id is
+> useful by itself.
+> 
+> > Same goes for bugzilla entries, if you look in the kernel changelog, we
+> > reference lots of different ones, but we use urls to determine which one
+> > we are talking about (suse, red hat, kernel.org, etc.)
+> >
+> 
+> Those IDs appear to be local to a specific server, so the id without
+> the url would not be very useful.
 
-I think I got realized meaning & fun of F/OSS a little bit ;)
-So, I would never stop contributing to Linux in any ways.
+Ok, then I don't recommend it be used at all, as we have a unique
+identifier, the git commit id in Linus's tree.  That id does follow the
+patch around if it goes into any stable kernel tree, so let's stick with
+it.
 
-Thank you very much, Greg, and whole kernel people.
+thanks,
 
-Thanks and Best Regards.
-SeongJae Park.
-
-On Tue, Oct 23, 2012 at 11:53 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Oct 23, 2012 at 11:41:06AM +0900, SeongJae Park wrote:
->> Hello,
->>
->>
->> I think it was my mistake.
->>
->> CsrThread is enclosed by macro #ifdef __KERNEL__
->> and it used by csr_framework_ext.h as CsrThreadHandle type(typedef
->> used at csr_framework_ext_types.h).
->>
->> I think that's why I didn't see build failure.
->
-> When building the driver __KERNEL__ is defined :)
->
->> So, I think I should not remove CsrThread.
->> If there is anything I missed or wrong, Please let me know.
->
-> No, you are right, this can't be removed just yet, so all is good.
->
-> If you want to send more patches cleaning stuff up like this one, that
-> would be great.
->
-> thanks,
->
-> greg k-h
+greg k-h
