@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab2JWKC5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:02:57 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:8973 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932557Ab2JWKC4 (ORCPT
+	id S932935Ab2JWKDs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:03:48 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:52090
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932557Ab2JWKDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:02:56 -0400
+	Tue, 23 Oct 2012 06:03:46 -0400
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
 X-SpamScore: 1
 X-BigFish: VPS1(zz98dI936eI1432Ic8kzz1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504hbe9i1155h)
-Subject: Re: [Patch v3 2/7] Regulator: DA9055 Regulator driver
+Subject: Re: [Patch v3 3/7] RTC: DA9055 RTC driver
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <1349950164.7957.23.camel@dhruva>
-References: <1349950164.7957.23.camel@dhruva>
+To: <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
+        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>
+In-Reply-To: <1349952025.9228.3.camel@dhruva>
+References: <1349952025.9228.3.camel@dhruva>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Oct 2012 15:32:25 +0530
-Message-ID: <1350986545.23353.2.camel@dhruva>
+Date: Tue, 23 Oct 2012 15:33:13 +0530
+Message-ID: <1350986593.23353.3.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -29,766 +30,482 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Does this patch looks good for you?
-On Thu, 2012-10-11 at 15:39 +0530, Ashish Jangam wrote:
-> This is the Regulator patch for the DA9055 PMIC and has got dependency on
+Does this patch looks good?
+On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
+> This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
 > the DA9055 MFD core.
 > 
-> This patch support all of the DA9055 regulators. The output voltages are
-> fully programmable through I2C interface only. The platform data with regulation
-> constraints is passed down from the board to the regulator.
-> 
-> This patch is functionally tested on SMDK6410 board. DA9055 Evaluation board
-> was connected to the SMDK6410 board.
+> This patch is functionally tested on Samsung SMDKV6410.
 > 
 > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 > ---
 > changes since version v3:
-> - Use of regulator framework API regulator_map_voltage_linear()
->    and regulator_list_voltage_linear().
-> - Remove struct members min and max from the struct da9055_regulator_info.
-> - Modify comments to indicate GPIO pins are muxed.
-> - Get the GPIO number from platform data.
-> changes since v2:
-> - restructuring of GPIO regulator initialization code.
+> - use of module_platform_driver macro
+> - add the regmap virtual irq map API.
+> changes since version v2:
+> - Use of devm_request_threaded_irq API
 > ---
->  drivers/regulator/Kconfig            |   10 +
->  drivers/regulator/Makefile           |    1 +
->  drivers/regulator/da9055-regulator.c |  654 ++++++++++++++++++++++++++++++++++
->  include/linux/mfd/da9055/pdata.h     |   27 ++-
->  4 files changed, 689 insertions(+), 3 deletions(-)
->  create mode 100644 drivers/regulator/da9055-regulator.c
+>  drivers/rtc/Kconfig      |   10 +
+>  drivers/rtc/Makefile     |    1 +
+>  drivers/rtc/rtc-da9055.c |  413 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 424 insertions(+), 0 deletions(-)
+>  mode change 100644 => 100755 drivers/rtc/Kconfig
+>  create mode 100644 drivers/rtc/rtc-da9055.c
 > 
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index 129c827..0bd6db1 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -109,6 +109,16 @@ config REGULATOR_DA9052
->  	  This driver supports the voltage regulators of DA9052-BC and
->  	  DA9053-AA/Bx PMIC.
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> old mode 100644
+> new mode 100755
+> index fabc99a..6050f8b
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -571,6 +571,16 @@ config RTC_DRV_DA9052
+>  	  Say y here to support the RTC driver for Dialog Semiconductor
+>  	  DA9052-BC and DA9053-AA/Bx PMICs.
 >  
-> +config REGULATOR_DA9055
-> +	tristate "Dialog Semiconductor DA9055 regulators"
+> +config RTC_DRV_DA9055
+> +	tristate "Dialog Semiconductor DA9055 RTC"
 > +	depends on MFD_DA9055
 > +	help
-> +	  Say y here to support the BUCKs and LDOs regulators found on
-> +	  Dialog Semiconductor DA9055 PMIC.
+> +	  If you say yes here you will get support for the
+> +	  RTC of the Dialog DA9055 PMIC.
 > +
 > +	  This driver can also be built as a module. If so, the module
-> +	  will be called da9055-regulator.
+> +	  will be called rtc-da9055
 > +
->  config REGULATOR_ANATOP
->  	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
->  	depends on MFD_ANATOP
-> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-> index 3a0dbc5..950b38b 100644
-> --- a/drivers/regulator/Makefile
-> +++ b/drivers/regulator/Makefile
-> @@ -18,6 +18,7 @@ obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
->  obj-$(CONFIG_REGULATOR_ARIZONA) += arizona-micsupp.o arizona-ldo1.o
->  obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
->  obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
-> +obj-$(CONFIG_REGULATOR_DA9055)	+= da9055-regulator.o
->  obj-$(CONFIG_REGULATOR_DBX500_PRCMU) += dbx500-prcmu.o
->  obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
->  obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
-> diff --git a/drivers/regulator/da9055-regulator.c b/drivers/regulator/da9055-regulator.c
+>  config RTC_DRV_EFI
+>  	tristate "EFI RTC"
+>  	depends on IA64
+> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> index 0d5b2b6..b4c162f 100644
+> --- a/drivers/rtc/Makefile
+> +++ b/drivers/rtc/Makefile
+> @@ -29,6 +29,7 @@ obj-$(CONFIG_RTC_DRV_BQ4802)	+= rtc-bq4802.o
+>  obj-$(CONFIG_RTC_DRV_CMOS)	+= rtc-cmos.o
+>  obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+>  obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+> +obj-$(CONFIG_RTC_DRV_DA9055)	+= rtc-da9055.o
+>  obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
+>  obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+>  obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+> diff --git a/drivers/rtc/rtc-da9055.c b/drivers/rtc/rtc-da9055.c
 > new file mode 100644
-> index 0000000..a5da4f7
+> index 0000000..2304647
 > --- /dev/null
-> +++ b/drivers/regulator/da9055-regulator.c
-> @@ -0,0 +1,654 @@
+> +++ b/drivers/rtc/rtc-da9055.c
+> @@ -0,0 +1,413 @@
 > +/*
-> +* Regulator driver for DA9055 PMIC
-> +*
-> +* Copyright(c) 2012 Dialog Semiconductor Ltd.
-> +*
-> +* Author: David Dajun Chen <dchen@diasemi.com>
-> +*
-> +* This program is free software; you can redistribute it and/or modify
-> +* it under the terms of the GNU General Public License as published by
-> +* the Free Software Foundation; either version 2 of the License, or
-> +* (at your option) any later version.
-> +*
-> +*/
+> + * Real time clock driver for DA9055
+> + *
+> + * Copyright(c) 2012 Dialog Semiconductor Ltd.
+> + *
+> + * Author: Dajun Dajun Chen <dajun.chen@diasemi.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
 > +
 > +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/err.h>
-> +#include <linux/gpio.h>
 > +#include <linux/platform_device.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/machine.h>
+> +#include <linux/rtc.h>
 > +
 > +#include <linux/mfd/da9055/core.h>
 > +#include <linux/mfd/da9055/reg.h>
 > +#include <linux/mfd/da9055/pdata.h>
 > +
-> +#define DA9055_MIN_UA		0
-> +#define DA9055_MAX_UA		3
-> +
-> +#define DA9055_LDO_MODE_SYNC	0
-> +#define DA9055_LDO_MODE_SLEEP	1
-> +
-> +#define DA9055_BUCK_MODE_SLEEP	1
-> +#define DA9055_BUCK_MODE_SYNC	2
-> +#define DA9055_BUCK_MODE_AUTO	3
-> +
-> +/* DA9055 REGULATOR IDs */
-> +#define DA9055_ID_BUCK1	0
-> +#define DA9055_ID_BUCK2	1
-> +#define DA9055_ID_LDO1		2
-> +#define DA9055_ID_LDO2		3
-> +#define DA9055_ID_LDO3		4
-> +#define DA9055_ID_LDO4		5
-> +#define DA9055_ID_LDO5		6
-> +#define DA9055_ID_LDO6		7
-> +
-> +/* DA9055 BUCK current limit */
-> +static const int da9055_current_limits[] = { 500000, 600000, 700000, 800000 };
-> +
-> +struct da9055_conf_reg {
-> +	int reg;
-> +	int sel_mask;
-> +	int en_mask;
-> +};
-> +
-> +struct da9055_volt_reg {
-> +	int reg_a;
-> +	int reg_b;
-> +	int sl_shift;
-> +	int v_offset;
-> +	int v_mask;
-> +	int v_shift;
-> +};
-> +
-> +struct da9055_mode_reg {
-> +	int reg;
-> +	int mask;
-> +	int shift;
-> +};
-> +
-> +struct da9055_regulator_info {
-> +	struct regulator_desc reg_desc;
-> +	struct da9055_conf_reg conf;
-> +	struct da9055_volt_reg volt;
-> +	struct da9055_mode_reg mode;
-> +};
-> +
-> +struct da9055_regulator {
+> +struct da9055_rtc {
+> +	struct rtc_device *rtc;
 > +	struct da9055 *da9055;
-> +	struct da9055_regulator_info *info;
-> +	struct regulator_dev *rdev;
-> +	enum gpio_select reg_rselect;
+> +	int alarm_enable;
 > +};
 > +
-> +static unsigned int da9055_buck_get_mode(struct regulator_dev *rdev)
+> +static int da9055_rtc_enable_alarm(struct da9055_rtc *rtc, bool enable)
 > +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret, mode = 0;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, info->mode.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	switch ((ret & info->mode.mask) >> info->mode.shift) {
-> +	case DA9055_BUCK_MODE_SYNC:
-> +		mode = REGULATOR_MODE_FAST;
-> +		break;
-> +	case DA9055_BUCK_MODE_AUTO:
-> +		mode = REGULATOR_MODE_NORMAL;
-> +		break;
-> +	case DA9055_BUCK_MODE_SLEEP:
-> +		mode = REGULATOR_MODE_STANDBY;
-> +		break;
-> +	}
-> +
-> +	return mode;
-> +}
-> +
-> +static int da9055_buck_set_mode(struct regulator_dev *rdev,
-> +					unsigned int mode)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int val = 0;
-> +
-> +	switch (mode) {
-> +	case REGULATOR_MODE_FAST:
-> +		val = DA9055_BUCK_MODE_SYNC << info->mode.shift;
-> +		break;
-> +	case REGULATOR_MODE_NORMAL:
-> +		val = DA9055_BUCK_MODE_AUTO << info->mode.shift;
-> +		break;
-> +	case REGULATOR_MODE_IDLE:
-> +	case REGULATOR_MODE_STANDBY:
-> +		val = DA9055_BUCK_MODE_SLEEP << info->mode.shift;
-> +		break;
-> +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, info->mode.reg,
-> +				 info->mode.mask, val);
-> +}
-> +
-> +static unsigned int da9055_ldo_get_mode(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
 > +	int ret;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, info->volt.reg_b);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (ret >> info->volt.sl_shift)
-> +		return REGULATOR_MODE_STANDBY;
-> +	else
-> +		return REGULATOR_MODE_NORMAL;
-> +}
-> +
-> +static int da9055_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	struct da9055_volt_reg volt = info->volt;
-> +	int val = 0;
-> +
-> +	switch (mode) {
-> +	case REGULATOR_MODE_NORMAL:
-> +	case REGULATOR_MODE_FAST:
-> +		val = DA9055_LDO_MODE_SYNC;
-> +		break;
-> +	case REGULATOR_MODE_IDLE:
-> +	case REGULATOR_MODE_STANDBY:
-> +		val = DA9055_LDO_MODE_SLEEP;
+> +	if (enable) {
+> +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
+> +					DA9055_RTC_ALM_EN,
+> +					DA9055_RTC_ALM_EN);
+> +		if (ret != 0)
+> +			dev_err(rtc->da9055->dev, "Failed to enable ALM: %d\n",
+> +				ret);
+> +		rtc->alarm_enable = 1;
+> +	} else {
+> +		ret = da9055_reg_update(rtc->da9055, DA9055_REG_ALARM_Y,
+> +					DA9055_RTC_ALM_EN, 0);
+> +		if (ret != 0)
+> +			dev_err(rtc->da9055->dev,
+> +				"Failed to disable ALM: %d\n", ret);
+> +		rtc->alarm_enable = 0;
 > +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, volt.reg_b,
-> +				 1 << volt.sl_shift,
-> +				 val << volt.sl_shift);
-> +}
-> +
-> +static int da9055_buck_get_current_limit(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	ret = da9055_reg_read(regulator->da9055, DA9055_REG_BUCK_LIM);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->mode.mask;
-> +	return da9055_current_limits[ret >> info->mode.shift];
-> +}
-> +
-> +static int da9055_buck_set_current_limit(struct regulator_dev *rdev, int min_uA,
-> +					 int max_uA)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int i, val = 0;
-> +
-> +	if (min_uA > da9055_current_limits[DA9055_MAX_UA] ||
-> +	    max_uA < da9055_current_limits[DA9055_MIN_UA])
-> +		return -EINVAL;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(da9055_current_limits); i++) {
-> +		if (min_uA <= da9055_current_limits[i]) {
-> +			val = i;
-> +			break;
-> +		}
-> +	}
-> +
-> +	return da9055_reg_update(regulator->da9055, DA9055_REG_BUCK_LIM,
-> +				info->mode.mask, val << info->mode.shift);
-> +}
-> +
-> +static int da9055_regulator_get_voltage_sel(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	struct da9055_volt_reg volt = info->volt;
-> +	int ret, sel;
-> +
-> +	/*
-> +	 * There are two voltage register set A & B for voltage ramping but
-> +	 * either one of then can be active therefore we first determine
-> +	 * the active register set.
-> +	 */
-> +	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->conf.sel_mask;
-> +
-> +	/* Get the voltage for the activer register set A/B */
-> +	if (ret == DA9055_REGUALTOR_SET_A)
-> +		ret = da9055_reg_read(regulator->da9055, volt.reg_a);
-> +	else
-> +		ret = da9055_reg_read(regulator->da9055, volt.reg_b);
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	sel = ((ret & volt.v_mask) - volt.v_offset);
-> +
-> +	return sel;
-> +}
-> +
-> +static int da9055_regulator_set_voltage_bits(struct regulator_dev *rdev,
-> +					     unsigned int reg,
-> +					     unsigned int selector)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Takes care of voltage range that does not start with 0 offset. */
-> +	selector += info->volt.v_offset;
-> +
-> +	/* Set the voltage */
-> +	return da9055_reg_update(regulator->da9055, reg, info->volt.v_mask,
-> +				 selector);
-> +
-> +}
-> +
-> +static int da9055_regulator_set_voltage_sel(struct regulator_dev *rdev,
-> +					    unsigned int selector)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	/*
-> +	 * Regulator register set A/B is not selected through GPIO therefore
-> +	 * we use default register set A for voltage ramping.
-> +	 */
-> +	if (regulator->reg_rselect == NO_GPIO) {
-> +		/* Select register set A */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					info->conf.sel_mask, DA9055_SEL_REG_A);
-> +		if (ret < 0)
-> +			return ret;
-> +
-> +		/* Set the voltage */
-> +		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
-> +							 selector);
-> +	}
-> +
-> +	/*
-> +	 * Here regulator register set A/B is selected through GPIO.
-> +	 * Therefore we first determine the selected register set A/B and
-> +	 * then set the desired voltage for that register set A/B.
-> +	 */
-> +	ret = da9055_reg_read(regulator->da9055, info->conf.reg);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= info->conf.sel_mask;
-> +
-> +	/* Set the voltage */
-> +	if (ret == DA9055_REGUALTOR_SET_A)
-> +		return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_a,
-> +							 selector);
-> +
-> +	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b,
-> +						 selector);
-> +}
-> +
-> +static int da9055_regulator_set_suspend_voltage(struct regulator_dev *rdev,
-> +						int uV)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret;
-> +
-> +	/* Select register set B for suspend voltage ramping. */
-> +	ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_B);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = regulator_map_voltage_linear(rdev, uV, uV);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return da9055_regulator_set_voltage_bits(rdev, info->volt.reg_b, ret);
-> +}
-> +
-> +static int da9055_suspend_enable(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Select register set B for voltage ramping. */
-> +	return da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_B);
-> +}
-> +
-> +static int da9055_suspend_disable(struct regulator_dev *rdev)
-> +{
-> +	struct da9055_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9055_regulator_info *info = regulator->info;
-> +
-> +	/* Diselect register set B. */
-> +	return da9055_reg_update(regulator->da9055, info->conf.reg,
-> +				info->conf.sel_mask, DA9055_SEL_REG_A);
-> +}
-> +
-> +static struct regulator_ops da9055_buck_ops = {
-> +	.get_mode = da9055_buck_get_mode,
-> +	.set_mode = da9055_buck_set_mode,
-> +
-> +	.get_current_limit = da9055_buck_get_current_limit,
-> +	.set_current_limit = da9055_buck_set_current_limit,
-> +
-> +	.get_voltage_sel = da9055_regulator_get_voltage_sel,
-> +	.set_voltage_sel = da9055_regulator_set_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +	.map_voltage = regulator_map_voltage_linear,
-> +	.is_enabled = regulator_is_enabled_regmap,
-> +	.enable = regulator_enable_regmap,
-> +	.disable = regulator_disable_regmap,
-> +
-> +	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
-> +	.set_suspend_enable = da9055_suspend_enable,
-> +	.set_suspend_disable = da9055_suspend_disable,
-> +	.set_suspend_mode = da9055_buck_set_mode,
-> +};
-> +
-> +static struct regulator_ops da9055_ldo_ops = {
-> +	.get_mode = da9055_ldo_get_mode,
-> +	.set_mode = da9055_ldo_set_mode,
-> +
-> +	.get_voltage_sel = da9055_regulator_get_voltage_sel,
-> +	.set_voltage_sel = da9055_regulator_set_voltage_sel,
-> +	.list_voltage = regulator_list_voltage_linear,
-> +	.map_voltage = regulator_map_voltage_linear,
-> +	.is_enabled = regulator_is_enabled_regmap,
-> +	.enable = regulator_enable_regmap,
-> +	.disable = regulator_disable_regmap,
-> +
-> +	.set_suspend_voltage = da9055_regulator_set_suspend_voltage,
-> +	.set_suspend_enable = da9055_suspend_enable,
-> +	.set_suspend_disable = da9055_suspend_disable,
-> +	.set_suspend_mode = da9055_ldo_set_mode,
-> +
-> +};
-> +
-> +#define DA9055_LDO(_id, step, min, max, vbits, voffset) \
-> +{\
-> +	.reg_desc = {\
-> +		.name = #_id,\
-> +		.ops = &da9055_ldo_ops,\
-> +		.type = REGULATOR_VOLTAGE,\
-> +		.id = DA9055_ID_##_id,\
-> +		.n_voltages = (max - min) / step + 1, \
-> +		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.enable_mask = 1, \
-> +		.min_uV = (min) * 1000,\
-> +		.uV_step = (step) * 1000,\
-> +		.owner = THIS_MODULE,\
-> +	},\
-> +	.conf = {\
-> +		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.sel_mask = (1 << 4),\
-> +		.en_mask = 1,\
-> +	},\
-> +	.volt = {\
-> +		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
-> +		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
-> +		.sl_shift = 7,\
-> +		.v_offset = (voffset),\
-> +		.v_mask = (1 << (vbits)) - 1,\
-> +		.v_shift = (vbits),\
-> +	},\
-> +}
-> +
-> +#define DA9055_BUCK(_id, step, min, max, vbits, voffset, mbits, sbits) \
-> +{\
-> +	.reg_desc = {\
-> +		.name = #_id,\
-> +		.ops = &da9055_buck_ops,\
-> +		.type = REGULATOR_VOLTAGE,\
-> +		.id = DA9055_ID_##_id,\
-> +		.n_voltages = (max - min) / step + 1, \
-> +		.enable_reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.enable_mask = 1,\
-> +		.min_uV = (min) * 1000,\
-> +		.uV_step = (step) * 1000,\
-> +		.owner = THIS_MODULE,\
-> +	},\
-> +	.conf = {\
-> +		.reg = DA9055_REG_BCORE_CONT + DA9055_ID_##_id, \
-> +		.sel_mask = (1 << 4),\
-> +		.en_mask = 1,\
-> +	},\
-> +	.volt = {\
-> +		.reg_a = DA9055_REG_VBCORE_A + DA9055_ID_##_id, \
-> +		.reg_b = DA9055_REG_VBCORE_B + DA9055_ID_##_id, \
-> +		.sl_shift = 7,\
-> +		.v_offset = (voffset),\
-> +		.v_mask = (1 << (vbits)) - 1,\
-> +		.v_shift = (vbits),\
-> +	},\
-> +	.mode = {\
-> +		.reg = DA9055_REG_BCORE_MODE,\
-> +		.mask = (mbits),\
-> +		.shift = (sbits),\
-> +	},\
-> +}
-> +
-> +static struct da9055_regulator_info da9055_regulator_info[] = {
-> +	DA9055_BUCK(BUCK1, 25, 725, 2075, 6, 9, 0xc, 2),
-> +	DA9055_BUCK(BUCK2, 25, 925, 2500, 6, 0, 3, 0),
-> +	DA9055_LDO(LDO1, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO2, 50, 900, 3300, 6, 3),
-> +	DA9055_LDO(LDO3, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO4, 50, 900, 3300, 6, 2),
-> +	DA9055_LDO(LDO5, 50, 900, 2750, 6, 2),
-> +	DA9055_LDO(LDO6, 20, 900, 3300, 7, 0),
-> +};
-> +
-> +/*
-> + * Configures regulator to be controlled either through GPIO 1 or 2.
-> + * GPIO can control regulator state and/or select the regulator register
-> + * set A/B for voltage ramping.
-> + */
-> +static __devinit int da9055_gpio_init(struct da9055_regulator *regulator,
-> +				      struct regulator_config *config,
-> +				      struct da9055_pdata *pdata, int id)
-> +{
-> +	struct da9055_regulator_info *info = regulator->info;
-> +	int ret = 0;
-> +
-> +	if (pdata->gpio_ren && pdata->gpio_ren[id]) {
-> +		char name[18];
-> +		int gpio_mux = pdata->gpio_ren[id];
-> +
-> +		config->ena_gpio = pdata->ena_gpio[id];
-> +		config->ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
-> +		config->ena_gpio_invert = 1;
-> +
-> +		/*
-> +		 * GPI pin is muxed with regulator to control the
-> +		 * regulator state.
-> +		 */
-> +		sprintf(name, "DA9055 GPI %d", gpio_mux);
-> +		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
-> +					    name);
-> +		if (ret < 0)
-> +			goto err;
-> +
-> +		/*
-> +		 * Let the regulator know that its state is controlled
-> +		 * through GPI.
-> +		 */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					DA9055_E_GPI_MASK,
-> +					pdata->reg_ren[id]
-> +					<< DA9055_E_GPI_SHIFT);
-> +		if (ret < 0)
-> +			goto err;
-> +	}
-> +
-> +	if (pdata->gpio_rsel && pdata->gpio_ren[id]) {
-> +		char name[18];
-> +		int gpio_mux = pdata->gpio_rsel[id];
-> +
-> +		regulator->reg_rselect = pdata->reg_rsel[id];
-> +
-> +		/*
-> +		 * GPI pin is muxed with regulator to select the
-> +		 * regulator register set A/B for voltage ramping.
-> +		 */
-> +		sprintf(name, "DA9055 GPI %d", gpio_mux);
-> +		ret = devm_gpio_request_one(config->dev, gpio_mux, GPIOF_DIR_IN,
-> +					    name);
-> +		if (ret < 0)
-> +			goto err;
-> +
-> +		/*
-> +		 * Let the regulator know that its register set A/B
-> +		 * will be selected through GPI for voltage ramping.
-> +		 */
-> +		ret = da9055_reg_update(regulator->da9055, info->conf.reg,
-> +					DA9055_V_GPI_MASK,
-> +					pdata->reg_rsel[id]
-> +					<< DA9055_V_GPI_SHIFT);
-> +	}
-> +
-> +err:
 > +	return ret;
 > +}
 > +
-> +static irqreturn_t da9055_ldo5_6_oc_irq(int irq, void *data)
+> +static irqreturn_t da9055_rtc_alm_irq(int irq, void *data)
 > +{
-> +	struct da9055_regulator *regulator = data;
+> +	struct da9055_rtc *rtc = data;
 > +
-> +	regulator_notifier_call_chain(regulator->rdev,
-> +				      REGULATOR_EVENT_OVER_CURRENT, NULL);
+> +	da9055_rtc_enable_alarm(rtc, 0);
+> +	rtc_update_irq(rtc->rtc, 1, RTC_IRQF | RTC_AF);
 > +
 > +	return IRQ_HANDLED;
 > +}
 > +
-> +static inline struct da9055_regulator_info *find_regulator_info(int id)
+> +static int da9055_read_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
 > +{
-> +	struct da9055_regulator_info *info;
-> +	int i;
+> +	int ret;
+> +	uint8_t v[5];
 > +
-> +	for (i = 0; i < ARRAY_SIZE(da9055_regulator_info); i++) {
-> +		info = &da9055_regulator_info[i];
-> +		if (info->reg_desc.id == id)
-> +			return info;
-> +		}
-> +
-> +	return NULL;
-> +}
-> +
-> +static int __devinit da9055_regulator_probe(struct platform_device *pdev)
-> +{
-> +	struct regulator_config config = { };
-> +	struct da9055_regulator *regulator;
-> +	struct da9055 *da9055 = dev_get_drvdata(pdev->dev.parent);
-> +	struct da9055_pdata *pdata = da9055->dev->platform_data;
-> +	int ret, irq;
-> +
-> +	if (pdata == NULL || pdata->regulators[pdev->id] == NULL)
-> +		return -ENODEV;
-> +
-> +	regulator = devm_kzalloc(&pdev->dev, sizeof(struct da9055_regulator),
-> +				 GFP_KERNEL);
-> +	if (!regulator)
-> +		return -ENOMEM;
-> +
-> +	regulator->info = find_regulator_info(pdev->id);
-> +	if (regulator->info == NULL) {
-> +		dev_err(&pdev->dev, "invalid regulator ID specified\n");
-> +		return -EINVAL;
+> +	ret = da9055_group_read(da9055, DA9055_REG_ALARM_MI, 5, v);
+> +	if (ret != 0) {
+> +		dev_err(da9055->dev, "Failed to group read ALM: %d\n", ret);
+> +		return ret;
 > +	}
 > +
-> +	regulator->da9055 = da9055;
-> +	config.dev = &pdev->dev;
-> +	config.driver_data = regulator;
-> +	config.regmap = da9055->regmap;
+> +	rtc_tm->tm_year = (v[4] & DA9055_RTC_ALM_YEAR) + 100;
+> +	rtc_tm->tm_mon  = (v[3] & DA9055_RTC_ALM_MONTH) - 1;
+> +	rtc_tm->tm_mday = v[2] & DA9055_RTC_ALM_DAY;
+> +	rtc_tm->tm_hour = v[1] & DA9055_RTC_ALM_HOUR;
+> +	rtc_tm->tm_min  = v[0] & DA9055_RTC_ALM_MIN;
 > +
-> +	if (pdata && pdata->regulators)
-> +		config.init_data = pdata->regulators[pdev->id];
+> +	return rtc_valid_tm(rtc_tm);
+> +}
 > +
-> +	ret = da9055_gpio_init(regulator, &config, pdata, pdev->id);
+> +static int da9055_set_alarm(struct da9055 *da9055, struct rtc_time *rtc_tm)
+> +{
+> +	int ret;
+> +	uint8_t v[2];
+> +
+> +	rtc_tm->tm_year -= 100;
+> +	rtc_tm->tm_mon += 1;
+> +
+> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MI,
+> +				DA9055_RTC_ALM_MIN, rtc_tm->tm_min);
+> +	if (ret != 0) {
+> +		dev_err(da9055->dev, "Failed to write ALRM MIN: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	v[0] = rtc_tm->tm_hour;
+> +	v[1] = rtc_tm->tm_mday;
+> +
+> +	ret = da9055_group_write(da9055, DA9055_REG_ALARM_H, 2, v);
 > +	if (ret < 0)
 > +		return ret;
 > +
-> +	regulator->rdev = regulator_register(&regulator->info->reg_desc,
-> +					     &config);
-> +	if (IS_ERR(regulator->rdev)) {
-> +		dev_err(&pdev->dev, "Failed to register regulator %s\n",
-> +			regulator->info->reg_desc.name);
-> +		ret = PTR_ERR(regulator->rdev);
-> +		return ret;
-> +	}
+> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
+> +				DA9055_RTC_ALM_MONTH, rtc_tm->tm_mon);
+> +	if (ret < 0)
+> +		dev_err(da9055->dev, "Failed to write ALM Month:%d\n", ret);
 > +
-> +	/* Only LDO 5 and 6 has got the over current interrupt */
-> +	if (pdev->id == DA9055_ID_LDO5 || pdev->id ==  DA9055_ID_LDO6) {
-> +		irq = platform_get_irq_byname(pdev, "REGULATOR");
-> +		irq = regmap_irq_get_virq(da9055->irq_data, irq);
-> +		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-> +						da9055_ldo5_6_oc_irq,
-> +						IRQF_TRIGGER_HIGH |
-> +						IRQF_ONESHOT |
-> +						IRQF_PROBE_SHARED,
-> +						pdev->name, regulator);
-> +		if (ret != 0) {
-> +			if (ret != -EBUSY) {
-> +				dev_err(&pdev->dev,
-> +				"Failed to request Regulator IRQ %d: %d\n",
-> +				irq, ret);
-> +				goto err_regulator;
-> +			}
-> +		}
-> +	}
+> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_Y,
+> +				DA9055_RTC_ALM_YEAR, rtc_tm->tm_year);
+> +	if (ret < 0)
+> +		dev_err(da9055->dev, "Failed to write ALM Year:%d\n", ret);
 > +
-> +	platform_set_drvdata(pdev, regulator);
-> +
-> +	return 0;
-> +
-> +err_regulator:
-> +	regulator_unregister(regulator->rdev);
 > +	return ret;
 > +}
 > +
-> +static int __devexit da9055_regulator_remove(struct platform_device *pdev)
+> +static int da9055_rtc_get_alarm_status(struct da9055 *da9055)
 > +{
-> +	struct da9055_regulator *regulator = platform_get_drvdata(pdev);
+> +	int ret;
 > +
-> +	regulator_unregister(regulator->rdev);
+> +	ret = da9055_reg_read(da9055, DA9055_REG_ALARM_Y);
+> +	if (ret < 0) {
+> +		dev_err(da9055->dev, "Failed to read ALM: %d\n", ret);
+> +		return ret;
+> +	}
+> +	ret &= DA9055_RTC_ALM_EN;
+> +	return (ret > 0) ? 1 : 0;
+> +}
+> +
+> +static int da9055_rtc_read_time(struct device *dev, struct rtc_time *rtc_tm)
+> +{
+> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> +	uint8_t v[6];
+> +	int ret;
+> +
+> +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_COUNT_S);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/*
+> +	 * Registers are only valid when RTC_READ
+> +	 * status bit is asserted
+> +	 */
+> +	if (!(ret & DA9055_RTC_READ))
+> +		return -EBUSY;
+> +
+> +	ret = da9055_group_read(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
+> +	if (ret < 0) {
+> +		dev_err(rtc->da9055->dev, "Failed to read RTC time : %d\n",
+> +				ret);
+> +		return ret;
+> +	}
+> +
+> +	rtc_tm->tm_year = (v[5] & DA9055_RTC_YEAR) + 100;
+> +	rtc_tm->tm_mon  = (v[4] & DA9055_RTC_MONTH) - 1;
+> +	rtc_tm->tm_mday = v[3] & DA9055_RTC_DAY;
+> +	rtc_tm->tm_hour = v[2] & DA9055_RTC_HOUR;
+> +	rtc_tm->tm_min  = v[1] & DA9055_RTC_MIN;
+> +	rtc_tm->tm_sec  = v[0] & DA9055_RTC_SEC;
+> +
+> +	return rtc_valid_tm(rtc_tm);
+> +}
+> +
+> +static int da9055_rtc_set_time(struct device *dev, struct rtc_time *tm)
+> +{
+> +	struct da9055_rtc *rtc;
+> +	uint8_t v[6];
+> +
+> +	rtc = dev_get_drvdata(dev);
+> +
+> +	v[0] = tm->tm_sec;
+> +	v[1] = tm->tm_min;
+> +	v[2] = tm->tm_hour;
+> +	v[3] = tm->tm_mday;
+> +	v[4] = tm->tm_mon + 1;
+> +	v[5] = tm->tm_year - 100;
+> +
+> +	return da9055_group_write(rtc->da9055, DA9055_REG_COUNT_S, 6, v);
+> +}
+> +
+> +static int da9055_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+> +{
+> +	int ret;
+> +	struct rtc_time *tm = &alrm->time;
+> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> +
+> +	ret = da9055_read_alarm(rtc->da9055, tm);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	alrm->enabled = da9055_rtc_get_alarm_status(rtc->da9055);
 > +
 > +	return 0;
 > +}
 > +
-> +static struct platform_driver da9055_regulator_driver = {
-> +	.probe = da9055_regulator_probe,
-> +	.remove = __devexit_p(da9055_regulator_remove),
+> +static int da9055_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+> +{
+> +	int ret;
+> +	struct rtc_time *tm = &alrm->time;
+> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> +
+> +	ret = da9055_rtc_enable_alarm(rtc, 0);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = da9055_set_alarm(rtc->da9055, tm);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = da9055_rtc_enable_alarm(rtc, 1);
+> +
+> +	return ret;
+> +}
+> +
+> +static int da9055_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
+> +{
+> +	struct da9055_rtc *rtc = dev_get_drvdata(dev);
+> +
+> +	return da9055_rtc_enable_alarm(rtc, enabled);
+> +}
+> +
+> +static const struct rtc_class_ops da9055_rtc_ops = {
+> +	.read_time	= da9055_rtc_read_time,
+> +	.set_time	= da9055_rtc_set_time,
+> +	.read_alarm	= da9055_rtc_read_alarm,
+> +	.set_alarm	= da9055_rtc_set_alarm,
+> +	.alarm_irq_enable = da9055_rtc_alarm_irq_enable,
+> +};
+> +
+> +static int __init da9055_rtc_device_init(struct da9055 *da9055,
+> +				  struct da9055_pdata *pdata)
+> +{
+> +	int ret;
+> +
+> +	/* Enable RTC and the internal Crystal */
+> +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> +				DA9055_RTC_EN, DA9055_RTC_EN);
+> +	if (ret < 0)
+> +		return ret;
+> +	ret = da9055_reg_update(da9055, DA9055_REG_EN_32K,
+> +				DA9055_CRYSTAL_EN, DA9055_CRYSTAL_EN);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* Enable RTC in Power Down mode */
+> +	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> +				DA9055_RTC_MODE_PD, DA9055_RTC_MODE_PD);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* Enable RTC in Reset mode */
+> +	if (pdata && pdata->reset_enable) {
+> +		ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_B,
+> +					DA9055_RTC_MODE_SD,
+> +					DA9055_RTC_MODE_SD <<
+> +					DA9055_RTC_MODE_SD_SHIFT);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	/* Disable the RTC TICK ALM */
+> +	ret = da9055_reg_update(da9055, DA9055_REG_ALARM_MO,
+> +				DA9055_RTC_TICK_WAKE_MASK, 0);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static int __devinit da9055_rtc_probe(struct platform_device *pdev)
+> +{
+> +	struct da9055_rtc *rtc;
+> +	struct da9055_pdata *pdata = NULL;
+> +	int ret, alm_irq;
+> +
+> +	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9055_rtc), GFP_KERNEL);
+> +	if (!rtc)
+> +		return -ENOMEM;
+> +
+> +	rtc->da9055 = dev_get_drvdata(pdev->dev.parent);
+> +	pdata = rtc->da9055->dev->platform_data;
+> +	platform_set_drvdata(pdev, rtc);
+> +
+> +	ret = da9055_rtc_device_init(rtc->da9055, pdata);
+> +	if (ret < 0)
+> +		goto err_rtc;
+> +
+> +	ret = da9055_reg_read(rtc->da9055, DA9055_REG_ALARM_Y);
+> +	if (ret < 0)
+> +		goto err_rtc;
+> +
+> +	if (ret & DA9055_RTC_ALM_EN)
+> +		rtc->alarm_enable = 1;
+> +
+> +	device_init_wakeup(&pdev->dev, 1);
+> +
+> +	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
+> +				       &da9055_rtc_ops, THIS_MODULE);
+> +	if (IS_ERR(rtc->rtc)) {
+> +		ret = PTR_ERR(rtc->rtc);
+> +		goto err_rtc;
+> +	}
+> +
+> +	alm_irq = platform_get_irq_byname(pdev, "ALM");
+> +	alm_irq = regmap_irq_get_virq(rtc->da9055->irq_data, alm_irq);
+> +	ret = devm_request_threaded_irq(&pdev->dev, alm_irq, NULL,
+> +					da9055_rtc_alm_irq,
+> +					IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+> +					"ALM", rtc);
+> +	if (ret != 0)
+> +		dev_err(rtc->da9055->dev, "irq registration failed: %d\n", ret);
+> +
+> +err_rtc:
+> +	return ret;
+> +
+> +}
+> +
+> +static int __devexit da9055_rtc_remove(struct platform_device *pdev)
+> +{
+> +	struct da9055_rtc *rtc = pdev->dev.platform_data;
+> +
+> +	rtc_device_unregister(rtc->rtc);
+> +	platform_set_drvdata(pdev, NULL);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +/* Turn off the alarm if it should not be a wake source. */
+> +static int da9055_rtc_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> +	int ret;
+> +
+> +	if (!device_may_wakeup(&pdev->dev)) {
+> +		/* Disable the ALM IRQ */
+> +		ret = da9055_rtc_enable_alarm(rtc, 0);
+> +		if (ret < 0)
+> +			dev_err(&pdev->dev, "Failed to disable RTC ALM\n");
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Enable the alarm if it should be enabled (in case it was disabled to
+> + * prevent use as a wake source).
+> + */
+> +static int da9055_rtc_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> +	int ret;
+> +
+> +	if (!device_may_wakeup(&pdev->dev)) {
+> +		if (rtc->alarm_enable) {
+> +			ret = da9055_rtc_enable_alarm(rtc, 1);
+> +			if (ret < 0)
+> +				dev_err(&pdev->dev,
+> +						"Failed to restart RTC ALM\n");
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Unconditionally disable the alarm */
+> +static int da9055_rtc_freeze(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct da9055_rtc *rtc = dev_get_drvdata(&pdev->dev);
+> +	int ret;
+> +
+> +	ret = da9055_rtc_enable_alarm(rtc, 0);
+> +	if (ret < 0)
+> +		dev_err(&pdev->dev, "Failed to freeze RTC ALMs\n");
+> +
+> +	return 0;
+> +
+> +}
+> +#else
+> +#define da9055_rtc_suspend NULL
+> +#define da9055_rtc_resume NULL
+> +#define da9055_rtc_freeze NULL
+> +#endif
+> +
+> +static const struct dev_pm_ops da9055_rtc_pm_ops = {
+> +	.suspend = da9055_rtc_suspend,
+> +	.resume = da9055_rtc_resume,
+> +
+> +	.freeze = da9055_rtc_freeze,
+> +	.thaw = da9055_rtc_resume,
+> +	.restore = da9055_rtc_resume,
+> +
+> +	.poweroff = da9055_rtc_suspend,
+> +};
+> +
+> +static struct platform_driver da9055_rtc_driver = {
+> +	.probe	= da9055_rtc_probe,
+> +	.remove	= __devexit_p(da9055_rtc_remove),
 > +	.driver = {
-> +		.name = "da9055-regulator",
-> +		.owner = THIS_MODULE,
+> +		.name	= "da9055-rtc",
+> +		.owner	= THIS_MODULE,
+> +		.pm = &da9055_rtc_pm_ops,
 > +	},
 > +};
 > +
-> +static int __init da9055_regulator_init(void)
-> +{
-> +	return platform_driver_register(&da9055_regulator_driver);
-> +}
-> +subsys_initcall(da9055_regulator_init);
-> +
-> +static void __exit da9055_regulator_exit(void)
-> +{
-> +	platform_driver_unregister(&da9055_regulator_driver);
-> +}
-> +module_exit(da9055_regulator_exit);
+> +module_platform_driver(da9055_rtc_driver);
 > +
 > +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("Power Regulator driver for Dialog DA9055 PMIC");
+> +MODULE_DESCRIPTION("RTC driver for Dialog DA9055 PMIC");
 > +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9055-regulator");
-> diff --git a/include/linux/mfd/da9055/pdata.h b/include/linux/mfd/da9055/pdata.h
-> index 147293b..f87a6c1 100644
-> --- a/include/linux/mfd/da9055/pdata.h
-> +++ b/include/linux/mfd/da9055/pdata.h
-> @@ -25,8 +25,29 @@ struct da9055_pdata {
->  	int gpio_base;
->  
->  	struct regulator_init_data *regulators[DA9055_MAX_REGULATORS];
-> -	bool reset_enable;		/* Enable RTC in RESET Mode */
-> -	enum gpio_select *gpio_rsel;	/* Select regulator set thru GPIO 1/2 */
-> -	enum gpio_select *gpio_ren;	/* Enable regulator thru GPIO 1/2 */
-> +	/* Enable RTC in RESET Mode */
-> +	bool reset_enable;
-> +	/*
-> +	 * GPI muxed pin to control
-> +	 * regulator state A/B, 0 if not available.
-> +	 */
-> +	int *gpio_ren;
-> +	/*
-> +	 * GPI muxed pin to control
-> +	 * regulator set, 0 if not available.
-> +	 */
-> +	int *gpio_rsel;
-> +	/*
-> +	 * Regulator mode control bits value (GPI offset) that
-> +	 * that controls the regulator state, 0 if not available.
-> +	 */
-> +	enum gpio_select *reg_ren;
-> +	/*
-> +	 * Regulator mode control bits value (GPI offset) that
-> +	 * controls the regulator set A/B, 0 if  not available.
-> +	 */
-> +	enum gpio_select *reg_rsel;
-> +	/* GPIOs to enable regulator, 0 if not available */
-> +	int *ena_gpio;
->  };
->  #endif /* __DA9055_PDATA_H */
+> +MODULE_ALIAS("platform:da9055-rtc");
 
 
