@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab2JWNnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:43:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:56255 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933051Ab2JWNnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:43:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191298"
-From: Irina Tirdea <irina.tirdea@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 18/26] mmc: sdhci: panic write: no timeout timer
-Date: Tue, 23 Oct 2012 16:48:16 +0300
-Message-Id: <1351000104-13015-19-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
-References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
+	id S1757109Ab2JWNpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:45:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59873 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab2JWNpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:45:06 -0400
+Date: Tue, 23 Oct 2012 15:45:05 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
+        x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 05/34] perf, x86: Report PEBS event in a raw format
+Message-ID: <20121023134505.GD16230@one.firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-6-git-send-email-andi@firstfloor.org> <1350995474.13456.12.camel@twins> <CABPqkBQ4WkVb8cUdrACG8sFH7PDe96devv5_FiRSfDrxFMB8Zg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQ4WkVb8cUdrACG8sFH7PDe96devv5_FiRSfDrxFMB8Zg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+> I believe we can use a similar approach to PERF_SAMPLE_REGS to expose
+> the PEBS machine state. We need to add PERF_SAMPLE_IREGS and then
+> return interrupt machine registers with regular sampling and the PEBS machine
+> registers in precise mode. A while back I wrote a patch to do just this. Once my
+> PEBS-LL patch is out, I will get back to it.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- drivers/mmc/host/sdhci.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+But why not just use raw? That's far simpler and works fine and is
+already supported by perf script.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index ff72e98..3653494 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1012,7 +1012,8 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 		mdelay(1);
- 	}
- 
--	mod_timer(&host->timer, jiffies + 10 * HZ);
-+	if (!mmc_am_panic_task(host->mmc))
-+		mod_timer(&host->timer, jiffies + 10 * HZ);
- 
- 	host->cmd = cmd;
- 
-@@ -2117,7 +2118,8 @@ static void sdhci_tasklet_finish(unsigned long param)
- 		return;
- 	}
- 
--	del_timer(&host->timer);
-+	if (!mmc_am_panic_task(host->mmc))
-+		del_timer(&host->timer);
- 
- 	mrq = host->mrq;
- 
--- 
-1.7.9.5
-
+-andi
