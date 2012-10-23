@@ -1,74 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365Ab2JWK3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:29:36 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62025 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478Ab2JWK3c (ORCPT
+	id S1754164Ab2JWKaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:30:20 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:57067 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2JWKaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:29:32 -0400
+	Tue, 23 Oct 2012 06:30:15 -0400
+Message-ID: <508671AD.6000704@gmail.com>
+Date: Tue, 23 Oct 2012 18:30:05 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121023122312.56b23e1c@skate>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-	<20121022155028.GA13791@core.coreip.homeip.net>
-	<CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com>
-	<508664CA.7000601@ti.com>
-	<CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com>
-	<20121023100333.GA24418@arwen.pp.htv.fi>
-	<20121023122312.56b23e1c@skate>
-Date: Tue, 23 Oct 2012 12:29:28 +0200
-Message-ID: <CACRpkdb+f44jw1vTYvJT0bnMOP8XQe8ztDUHiwtS2JHtPWAGXw@mail.gmail.com>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Magnus Damm <damm@opensource.se>,
-        Paul Mundt <lethal@linux-sh.org>
-Cc: balbi@ti.com, Benoit Cousson <b-cousson@ti.com>, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Sourav Poddar <sourav.poddar@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: wency@cn.fujitsu.com
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH v2 00/12] memory-hotplug: hot-remove physical memory
+References: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 12:23 PM, Thomas Petazzoni
-<thomas.petazzoni@free-electrons.com> wrote:
+On 10/23/2012 06:30 PM, wency@cn.fujitsu.com wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+
+The patchset doesn't support kernel memory hot-remove, correct? If the 
+answer is yes, you should point out in your patchset changelog.
+
 >
-> On Tue, 23 Oct 2012 13:03:33 +0300, Felipe Balbi wrote:
+> The patch-set was divided from following thread's patch-set.
 >
->> > But it appears that shmobile prefer to get all resources using
->> > bus notifiers.
->> >
->> > So we need to form some kind of consensus ... or live with
->> > the fact that different systems do it different ways. Which will
->> > explode the day we need to use a driver on two systems,
->> > each using the other approach :-)
->>
->> I much prefer having drivers explicitly manage all their resources,
->> which would mean that pinctrl calls need to be done on probe() and, if
->> necessary, during suspend()/resume().
->>
->> Using bus notifiers for that is quite a hack IMHO.
+> https://lkml.org/lkml/2012/9/5/201
 >
-> Agreed. Just like drivers do their ioremap, request_irq and others,
-> they should also request their pin resources using the pinctrl API.
-> Hiding this behind a bus notifier is not nice.
+> The last version of this patchset:
+> https://lkml.org/lkml/2012/10/5/469
+>
+> If you want to know the reason, please read following thread.
+>
+> https://lkml.org/lkml/2012/10/2/83
+>
+> The patch-set has only the function of kernel core side for physical
+> memory hot remove. So if you use the patch, please apply following
+> patches.
+>
+> - bug fix for memory hot remove
+>    https://lkml.org/lkml/2012/10/19/56
+>    
+> - acpi framework
+>    https://lkml.org/lkml/2012/10/19/156
+>
+> The patches can free/remove the following things:
+>
+>    - /sys/firmware/memmap/X/{end, start, type} : [PATCH 2/10]
+>    - mem_section and related sysfs files       : [PATCH 3-4/10]
+>    - memmap of sparse-vmemmap                  : [PATCH 5-7/10]
+>    - page table of removed memory              : [RFC PATCH 8/10]
+>    - node and related sysfs files              : [RFC PATCH 9-10/10]
+>
+> * [PATCH 2/10] checks whether the memory can be removed or not.
+>
+> If you find lack of function for physical memory hot-remove, please let me
+> know.
+>
+> How to test this patchset?
+> 1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
+>     ACPI_HOTPLUG_MEMORY must be selected.
+> 2. load the module acpi_memhotplug
+> 3. hotplug the memory device(it depends on your hardware)
+>     You will see the memory device under the directory /sys/bus/acpi/devices/.
+>     Its name is PNP0C80:XX.
+> 4. online/offline pages provided by this memory device
+>     You can write online/offline to /sys/devices/system/memory/memoryX/state to
+>     online/offline pages provided by this memory device
+> 5. hotremove the memory device
+>     You can hotremove the memory device by the hardware, or writing 1 to
+>     /sys/bus/acpi/devices/PNP0C80:XX/eject.
+>
+> Note: if the memory provided by the memory device is used by the kernel, it
+> can't be offlined. It is not a bug.
+>
+> Known problems:
+> 1. hotremoving memory device may cause kernel panicked
+>     This bug will be fixed by Liu Jiang's patch:
+>     https://lkml.org/lkml/2012/7/3/1
+>
+>
+> Changelogs from v1 to v2:
+>   Patch1: new patch, offline memory twice. 1st iterate: offline every non primary
+>           memory block. 2nd iterate: offline primary (i.e. first added) memory
+>           block.
+>
+>   Patch3: new patch, no logical change, just remove reduntant codes.
+>
+>   Patch9: merge the patch from wujianguo into this patch. flush tlb on all cpu
+>           after the pagetable is changed.
+>
+>   Patch12: new patch, free node_data when a node is offlined
+>
+> Wen Congyang (6):
+>    memory-hotplug: try to offline the memory twice to avoid dependence
+>    memory-hotplug: remove redundant codes
+>    memory-hotplug: introduce new function arch_remove_memory() for
+>      removing page table depends on architecture
+>    memory-hotplug: remove page table of x86_64 architecture
+>    memory-hotplug: remove sysfs file of node
+>    memory-hotplug: free node_data when a node is offlined
+>
+> Yasuaki Ishimatsu (6):
+>    memory-hotplug: check whether all memory blocks are offlined or not
+>      when removing memory
+>    memory-hotplug: remove /sys/firmware/memmap/X sysfs
+>    memory-hotplug: unregister memory section on SPARSEMEM_VMEMMAP
+>    memory-hotplug: implement register_page_bootmem_info_section of
+>      sparse-vmemmap
+>    memory-hotplug: remove memmap of sparse-vmemmap
+>    memory-hotplug: memory_hotplug: clear zone when removing the memory
+>
+>   arch/ia64/mm/discontig.c             |   14 ++
+>   arch/ia64/mm/init.c                  |   18 ++
+>   arch/powerpc/mm/init_64.c            |   14 ++
+>   arch/powerpc/mm/mem.c                |   12 +
+>   arch/s390/mm/init.c                  |   12 +
+>   arch/s390/mm/vmem.c                  |   14 ++
+>   arch/sh/mm/init.c                    |   17 ++
+>   arch/sparc/mm/init_64.c              |   14 ++
+>   arch/tile/mm/init.c                  |    8 +
+>   arch/x86/include/asm/pgtable_types.h |    1 +
+>   arch/x86/mm/init_32.c                |   12 +
+>   arch/x86/mm/init_64.c                |  409 ++++++++++++++++++++++++++++++++++
+>   arch/x86/mm/pageattr.c               |   47 ++--
+>   drivers/acpi/acpi_memhotplug.c       |    8 +-
+>   drivers/base/memory.c                |    6 +
+>   drivers/firmware/memmap.c            |   98 ++++++++-
+>   include/linux/firmware-map.h         |    6 +
+>   include/linux/memory_hotplug.h       |   15 +-
+>   include/linux/mm.h                   |    5 +-
+>   mm/memory_hotplug.c                  |  409 ++++++++++++++++++++++++++++++++--
+>   mm/sparse.c                          |    5 +-
+>   21 files changed, 1087 insertions(+), 57 deletions(-)
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-So the biggest implementation of the notifier approach to resource
-handling is the SH clock thing:
-drivers/base/power/clock_ops.c
-
-It's made to be generic but AFAICT only SH is using this.
-
-So according to that paradigm most device resources should
-be handled that way if I understand correctly the basic idea.
-
-So let's get Rafael, Paul and Magnus in here to beat us up
-a bit :-)
-
-Yours,
-Linus Walleij
