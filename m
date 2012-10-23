@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab2JWIvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 04:51:53 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:2749 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756715Ab2JWIvv (ORCPT
+	id S932622Ab2JWIxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 04:53:21 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63340 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932520Ab2JWIxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 04:51:51 -0400
-X-IronPort-AV: E=Sophos;i="4.80,634,1344211200"; 
-   d="scan'208";a="15326913"
-Message-ID: <1350982301.2237.6.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH V3 1/6]: PVH: basic and header changes,
- elfnote changes, ...
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Oct 2012 09:51:41 +0100
-In-Reply-To: <20121019131707.GG26830@phenom.dumpdata.com>
-References: <20121017172642.349b2aae@mantra.us.oracle.com>
-	 <alpine.DEB.2.02.1210181150250.2689@kaball.uk.xensource.com>
-	 <20121019131707.GG26830@phenom.dumpdata.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Tue, 23 Oct 2012 04:53:19 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Kelvin Cheung <keguang.zhang@gmail.com>
+Cc: stern@rowland.harvard.edu, linux-usb@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/32 v4] MIPS: Loongson 1B: use ehci-platform instead of ehci-ls1x.
+Date: Tue, 23 Oct 2012 01:53:17 -0700 (PDT)
+Message-ID: <10090450.q3VbTvBDPg@flexo>
+Organization: OpenWrt
+User-Agent: KMail/4.8.5 (Linux/3.2.0-24-generic; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <36521520.iGJ91Agxac@flexo>
+References: <1349701906-16481-1-git-send-email-florian@openwrt.org> <CAJhJPsV5mFmOgU38ZpnYqUTNuOPmvRXjsf31XdFUqNOzsd_Edg@mail.gmail.com> <36521520.iGJ91Agxac@flexo>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-19 at 14:17 +0100, Konrad Rzeszutek Wilk wrote:
-> > > +config XEN_X86_PVH
-> > > +	bool "Support for running as a PVH guest (EXPERIMENTAL)"
-> > > +	depends on X86_64 && XEN && EXPERIMENTAL
-> > > +	default n
-> > > +	help
-> > > +	   This option enables support for running as a PVH guest (PV guest
-> > > +	   using hardware extensions) under a suitably capable hypervisor.
-> > > +	   This option is EXPERIMENTAL because the hypervisor interfaces
-> > > +	   which it uses are not yet considered stable therefore backwards and
-> > > +	   forwards compatibility is not yet guaranteed.  If unsure, say N.
-> > 
-> > Do we really need the kconfig symbol? Why can't we have it always
+On Tuesday 23 October 2012 10:46:50 Florian Fainelli wrote:
+> Hi Kelvin,
 > 
-> Yes for right now. That is to make sure that we can test for regressions
-> PV guests on a hypervisor without PVH extensions - or vice-versa:
-> PVH hypervisors with an normal PV guest.
+> On Tuesday 23 October 2012 16:13:01 Kelvin Cheung wrote:
+> > Thank Florian.
+> > It looks great.
+> > However, you forget to remove corresponding section in
+> > drivers/usb/host/ehci-hcd.c
+> > ...
+> > #ifdef CONFIG_MACH_LOONGSON1
+> > #include "ehci-ls1x.c"
+> > #define PLATFORM_DRIVER         ehci_ls1x_driver
+> > #endif
+> 
+> Indeed, my bad I will follow up with some fixes for this patchset anyway.
+> Thank you!
 
-Also the "depends on X86_64" bit is currently quite important...
-
-Ian.
-
+Looks like I hit reply too quickly, the patch entitled
+"USB: EHCI: remove Loongson 1B EHCI driver" actually removes this bit from
+ehci-hcd.c.
+--
+Florian
