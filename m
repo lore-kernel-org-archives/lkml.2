@@ -1,145 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab2JWS0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 14:26:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:39131 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933271Ab2JWSYc (ORCPT
+	id S933424Ab2JWS0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 14:26:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47648 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933243Ab2JWSYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 14:24:32 -0400
+	Tue, 23 Oct 2012 14:24:31 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
         stefano.stabellini@eu.citrix.com, Ian.Campbell@citrix.com,
         mukesh.rathor@oracle.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 08/10] xen/e820: Coalesce the PVH release/populate logic in the generic case.
-Date: Tue, 23 Oct 2012 14:12:09 -0400
-Message-Id: <1351015931-16991-9-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 01/10] xen/pvh: Support ParaVirtualized Hardware extensions.
+Date: Tue, 23 Oct 2012 14:12:02 -0400
+Message-Id: <1351015931-16991-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
 References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Squash the PVH specific case in xen_set_identity_and_release_chunk
-and make the 'if (PVH..)' case within xen_do_chunk and
-xen_set_identity_and_release_chunk function.
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
 
+PVH allows PV linux guest to utilize hardware extended capabilities, such
+as running MMU updates in a HVM container.
+
+This patch allows it to be configured and enabled. Also, basic header file
+changes to add new subcalls to physmap hypercall.
+
+Lastly, mfn_to_local_pfn must return mfn for paging mode translate
+(since we let the hypervisor - or CPU - do them for us).
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Mukesh Rathor <mukesh.rathor@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-[v2: Remove the extra xlated_phys since it is no longer in use]
 ---
- arch/x86/xen/setup.c |   60 +++++++++++++++++++------------------------------
- 1 files changed, 23 insertions(+), 37 deletions(-)
+ arch/x86/include/asm/xen/page.h |    3 +++
+ arch/x86/xen/Kconfig            |   10 ++++++++++
+ arch/x86/xen/xen-head.S         |   11 ++++++++++-
+ include/xen/interface/memory.h  |   24 +++++++++++++++++++++++-
+ include/xen/interface/physdev.h |   10 ++++++++++
+ 5 files changed, 56 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 8cce47b..78c5622 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -114,9 +114,15 @@ static unsigned long __init xen_do_chunk(unsigned long start,
- 
- 		if (release) {
- 			/* Make sure pfn exists to start with */
--			if (mfn == INVALID_P2M_ENTRY || mfn_to_pfn(mfn) != pfn)
-+			if (mfn == INVALID_P2M_ENTRY || (!xlated_phys && (mfn_to_pfn(mfn) != pfn)))
- 				continue;
- 			frame = mfn;
-+			/* The hypercall PHYSDEVOP_map_iomem to release memory has already
-+			 * happend, so we just do a nop here. */
-+			if (xlated_phys) {
-+				len++;
-+				continue;
-+			}
- 		} else {
- 			if (!xlated_phys && mfn != INVALID_P2M_ENTRY)
- 				continue;
-@@ -219,15 +225,24 @@ static void __init xen_set_identity_and_release_chunk(
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index 472b9b7..6af440d 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -159,6 +159,9 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
+ static inline unsigned long mfn_to_local_pfn(unsigned long mfn)
  {
- 	unsigned long pfn;
- 
-+	/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-+	 * are released as part of this 1:1 mapping hypercall back to the dom heap.
-+	 * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-+	 */
-+	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
+ 	unsigned long pfn = mfn_to_pfn(mfn);
 +
- 	/*
- 	 * If the PFNs are currently mapped, the VA mapping also needs
- 	 * to be updated to be 1:1.
- 	 */
--	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++)
--		(void)HYPERVISOR_update_va_mapping(
--			(unsigned long)__va(pfn << PAGE_SHIFT),
--			mfn_pte(pfn, PAGE_KERNEL_IO), 0);
--
-+	for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn; pfn++) {
-+		if (xlated_phys)
-+			xen_set_clr_mmio_pvh_pte(pfn, pfn, 1 /* one pfn */, 1 /* add mapping */);
-+		else
-+			(void)HYPERVISOR_update_va_mapping(
-+				(unsigned long)__va(pfn << PAGE_SHIFT),
-+				mfn_pte(pfn, PAGE_KERNEL_IO), 0);
-+	}
- 	if (start_pfn < nr_pages)
- 		*released += xen_release_chunk(
- 			start_pfn, min(end_pfn, nr_pages));
-@@ -235,27 +250,6 @@ static void __init xen_set_identity_and_release_chunk(
- 	*identity += set_phys_range_identity(start_pfn, end_pfn);
- }
++	if (xen_feature(XENFEAT_auto_translated_physmap))
++		return mfn;
+ 	if (get_phys_to_machine(pfn) != mfn)
+ 		return -1; /* force !pfn_valid() */
+ 	return pfn;
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index fdce49c..c9660bf 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -50,3 +50,13 @@ config XEN_DEBUG_FS
+ 	  Enable statistics output and various tuning options in debugfs.
+ 	  Enabling this option may incur a significant performance overhead.
  
--/* For PVH, the pfns [0..MAX] are mapped to mfn's in the EPT/NPT. The mfns
-- * are released as part of this 1:1 mapping hypercall back to the dom heap.
-- * Also, we map the entire IO space, ie, beyond max_pfn_mapped.
-- */
--static void __init xen_pvh_identity_map_chunk(unsigned long start_pfn,
--		unsigned long end_pfn, unsigned long *released,
--		unsigned long *identity, unsigned long max_pfn)
--{
--	unsigned long pfn;
--	int numpfns = 1, add_mapping = 1;
--
--	for (pfn = start_pfn; pfn < end_pfn; pfn++)
--		xen_set_clr_mmio_pvh_pte(pfn, pfn, numpfns, add_mapping);
--
--	if (start_pfn <= max_pfn) {
--		unsigned long end = min(max_pfn_mapped, end_pfn);
--		*released += end - start_pfn;
--	}
--	*identity += end_pfn - start_pfn;
--}
--
- static unsigned long __init xen_set_identity_and_release(
- 	const struct e820entry *list, size_t map_size, unsigned long nr_pages)
- {
-@@ -264,7 +258,6 @@ static unsigned long __init xen_set_identity_and_release(
- 	unsigned long identity = 0;
- 	const struct e820entry *entry;
- 	int i;
--	int xlated_phys = xen_feature(XENFEAT_auto_translated_physmap);
++config XEN_X86_PVH
++	bool "Support for running as a PVH guest (EXPERIMENTAL)"
++	depends on X86_64 && XEN && EXPERIMENTAL
++	default n
++	help
++	   This option enables support for running as a PVH guest (PV guest
++	   using hardware extensions) under a suitably capable hypervisor.
++	   This option is EXPERIMENTAL because the hypervisor interfaces
++	   which it uses is not yet considered stable therefore backwards and
++	   forwards compatibility is not yet guaranteed.  If unsure, say N.
+diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
+index 7faed58..1a6bca1 100644
+--- a/arch/x86/xen/xen-head.S
++++ b/arch/x86/xen/xen-head.S
+@@ -13,6 +13,15 @@
+ #include <xen/interface/elfnote.h>
+ #include <asm/xen/interface.h>
  
- 	/*
- 	 * Combine non-RAM regions and gaps until a RAM region (or the
-@@ -286,17 +279,10 @@ static unsigned long __init xen_set_identity_and_release(
- 			if (entry->type == E820_RAM)
- 				end_pfn = PFN_UP(entry->addr);
++#ifdef CONFIG_XEN_X86_PVH
++#define FEATURES_PVH "|writable_descriptor_tables" \
++		     "|auto_translated_physmap" \
++		     "|supervisor_mode_kernel" \
++		     "|hvm_callback_vector"
++#else
++#define FEATURES_PVH /* Not supported */
++#endif
++
+ 	__INIT
+ ENTRY(startup_xen)
+ 	cld
+@@ -95,7 +104,7 @@ NEXT_HYPERCALL(arch_6)
+ #endif
+ 	ELFNOTE(Xen, XEN_ELFNOTE_ENTRY,          _ASM_PTR startup_xen)
+ 	ELFNOTE(Xen, XEN_ELFNOTE_HYPERCALL_PAGE, _ASM_PTR hypercall_page)
+-	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb")
++	ELFNOTE(Xen, XEN_ELFNOTE_FEATURES,       .asciz "!writable_page_tables|pae_pgdir_above_4gb"FEATURES_PVH)
+ 	ELFNOTE(Xen, XEN_ELFNOTE_PAE_MODE,       .asciz "yes")
+ 	ELFNOTE(Xen, XEN_ELFNOTE_LOADER,         .asciz "generic")
+ 	ELFNOTE(Xen, XEN_ELFNOTE_L1_MFN_VALID,
+diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+index b66d04c..8beebdb 100644
+--- a/include/xen/interface/memory.h
++++ b/include/xen/interface/memory.h
+@@ -169,7 +169,13 @@ struct xen_add_to_physmap {
+     /* Source mapping space. */
+ #define XENMAPSPACE_shared_info 0 /* shared info page */
+ #define XENMAPSPACE_grant_table 1 /* grant table page */
+-    unsigned int space;
++#define XENMAPSPACE_gmfn        2 /* GMFN */
++#define XENMAPSPACE_gmfn_range  3 /* GMFN range */
++#define XENMAPSPACE_gmfn_foreign 4 /* GMFN from another guest */
++    uint16_t space;
++    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
++
++#define XENMAPIDX_grant_table_status 0x80000000
  
--			if (start_pfn < end_pfn) {
--				if (xlated_phys) {
--					xen_pvh_identity_map_chunk(start_pfn,
--						end_pfn, &released, &identity,
--						nr_pages);
--				} else {
--					xen_set_identity_and_release_chunk(
-+			if (start_pfn < end_pfn)
-+				xen_set_identity_and_release_chunk(
- 						start_pfn, end_pfn, nr_pages,
- 						&released, &identity);
--				}
--			}
- 			start = end;
- 		}
- 	}
+     /* Index into source mapping space. */
+     xen_ulong_t idx;
+@@ -237,4 +243,20 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_memory_map);
+  * during a driver critical region.
+  */
+ extern spinlock_t xen_reservation_lock;
++
++/*
++ * Unmaps the page appearing at a particular GPFN from the specified guest's
++ * pseudophysical address space.
++ * arg == addr of xen_remove_from_physmap_t.
++ */
++#define XENMEM_remove_from_physmap      15
++struct xen_remove_from_physmap {
++    /* Which domain to change the mapping for. */
++    domid_t domid;
++
++    /* GPFN of the current mapping of the page. */
++    xen_pfn_t gpfn;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
++
+ #endif /* __XEN_PUBLIC_MEMORY_H__ */
+diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+index 1844d31..83050d3 100644
+--- a/include/xen/interface/physdev.h
++++ b/include/xen/interface/physdev.h
+@@ -274,6 +274,16 @@ struct physdev_dbgp_op {
+     } u;
+ };
+ 
++#define PHYSDEVOP_map_iomem        30
++struct physdev_map_iomem {
++    /* IN */
++    uint64_t first_gfn;
++    uint64_t first_mfn;
++    uint32_t nr_mfns;
++    uint32_t add_mapping; /* 1 == add mapping;  0 == unmap */
++
++};
++
+ /*
+  * Notify that some PIRQ-bound event channels have been unmasked.
+  * ** This command is obsolete since interface version 0x00030202 and is **
 -- 
 1.7.7.6
 
