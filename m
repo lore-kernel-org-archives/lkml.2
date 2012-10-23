@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964881Ab2JWUGo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 16:06:44 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:56536 "EHLO smtp.outflux.net"
+	id S933913Ab2JWUGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 16:06:41 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:45947 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933473Ab2JWUGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933893Ab2JWUGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:06:08 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Subject: [PATCH 169/193] net/ipv4/netfilter: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:04:02 -0700
-Message-Id: <1351022666-6960-170-git-send-email-keescook@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 120/193] drivers/scsi: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:03:13 -0700
+Message-Id: <1351022666-6960-121-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -29,32 +25,69 @@ This config item has not carried much meaning for a while now and is
 almost always enabled by default. As agreed during the Linux kernel
 summit, remove it.
 
-CC: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: Patrick McHardy <kaber@trash.net>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-CC: James Morris <jmorris@namei.org>
-CC: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- net/ipv4/netfilter/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/Kconfig |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/net/ipv4/netfilter/Kconfig b/net/ipv4/netfilter/Kconfig
-index d8d6f2a..ce2d43e 100644
---- a/net/ipv4/netfilter/Kconfig
-+++ b/net/ipv4/netfilter/Kconfig
-@@ -241,8 +241,8 @@ config IP_NF_MANGLE
- 	  To compile it as a module, choose M here.  If unsure, say N.
+diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+index 74bf1aa..e2c33d3 100644
+--- a/drivers/scsi/Kconfig
++++ b/drivers/scsi/Kconfig
+@@ -42,7 +42,7 @@ config SCSI_DMA
  
- config IP_NF_TARGET_CLUSTERIP
--	tristate "CLUSTERIP target support (EXPERIMENTAL)"
--	depends on IP_NF_MANGLE && EXPERIMENTAL
-+	tristate "CLUSTERIP target support"
-+	depends on IP_NF_MANGLE
- 	depends on NF_CONNTRACK_IPV4
- 	depends on NETFILTER_ADVANCED
- 	select NF_CONNTRACK_MARK
+ config SCSI_TGT
+ 	tristate "SCSI target support"
+-	depends on SCSI && EXPERIMENTAL
++	depends on SCSI
+ 	---help---
+ 	  If you want to use SCSI target mode drivers enable this option.
+ 	  If you choose M, the module will be called scsi_tgt.
+@@ -1391,8 +1391,8 @@ config SCSI_SYM53C416
+ 	  module will be called sym53c416.
+ 
+ config SCSI_DC395x
+-	tristate "Tekram DC395(U/UW/F) and DC315(U) SCSI support (EXPERIMENTAL)"
+-	depends on PCI && SCSI && EXPERIMENTAL
++	tristate "Tekram DC395(U/UW/F) and DC315(U) SCSI support"
++	depends on PCI && SCSI
+ 	---help---
+ 	  This driver supports PCI SCSI host adapters based on the ASIC
+ 	  TRM-S1040 chip, e.g Tekram DC395(U/UW/F) and DC315(U) variants.
+@@ -1617,8 +1617,8 @@ config GVP11_SCSI
+ 	  module will be called gvp11.
+ 
+ config SCSI_A4000T
+-	tristate "A4000T NCR53c710 SCSI support (EXPERIMENTAL)"
+-	depends on AMIGA && SCSI && EXPERIMENTAL
++	tristate "A4000T NCR53c710 SCSI support"
++	depends on AMIGA && SCSI
+ 	select SCSI_SPI_ATTRS
+ 	help
+ 	  If you have an Amiga 4000T and have SCSI devices connected to the
+@@ -1628,8 +1628,8 @@ config SCSI_A4000T
+ 	  module will be called a4000t.
+ 
+ config SCSI_ZORRO7XX
+-	tristate "Zorro NCR53c710 SCSI support (EXPERIMENTAL)"
+-	depends on ZORRO && SCSI && EXPERIMENTAL
++	tristate "Zorro NCR53c710 SCSI support"
++	depends on ZORRO && SCSI
+ 	select SCSI_SPI_ATTRS
+ 	help
+ 	  Support for various NCR53c710-based SCSI controllers on Zorro
+@@ -1806,8 +1806,8 @@ config SCSI_BFA_FC
+ 	  be called bfa.
+ 
+ config SCSI_VIRTIO
+-	tristate "virtio-scsi support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL && VIRTIO
++	tristate "virtio-scsi support"
++	depends on VIRTIO
+ 	help
+           This is the virtual HBA driver for virtio.  If the kernel will
+           be used in a virtual machine, say Y or M.
 -- 
 1.7.9.5
 
