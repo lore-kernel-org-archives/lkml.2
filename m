@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab2JWNTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:19:05 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59786 "EHLO
+	id S1757072Ab2JWNUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:20:41 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59794 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756921Ab2JWNTD (ORCPT
+	with ESMTP id S1753273Ab2JWNUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:19:03 -0400
-Date: Tue, 23 Oct 2012 15:19:01 +0200
+	Tue, 23 Oct 2012 09:20:40 -0400
+Date: Tue, 23 Oct 2012 15:20:39 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, a.p.zijlstra@chello.nl, x86@kernel.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 15/34] perf, core: Add a concept of a weightened sample
-Message-ID: <20121023131901.GU16230@one.firstfloor.org>
-References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-16-git-send-email-andi@firstfloor.org> <1350998032.13456.25.camel@twins>
+        Andi Kleen <ak@linux.intel.com>, avi@redhat.com
+Subject: Re: [06/34] perf, kvm: Support the intx/intx_cp modifiers in KVM arch perfmon emulation v2
+Message-ID: <20121023132039.GV16230@one.firstfloor.org>
+References: <1350602382-12771-7-git-send-email-andi@firstfloor.org> <20121023130509.GB3654@redhat.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350998032.13456.25.camel@twins>
+In-Reply-To: <20121023130509.GB3654@redhat.com>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 03:13:52PM +0200, Peter Zijlstra wrote:
-> > @@ -562,6 +565,7 @@ enum perf_event_type {
-> >          *      { u64                   stream_id;} && PERF_SAMPLE_STREAM_ID
-> >          *      { u32                   cpu, res; } && PERF_SAMPLE_CPU
-> >          *      { u64                   period;   } && PERF_SAMPLE_PERIOD
-> > +        *      { u64                   weight;   } && PERF_SAMPLE_WEIGHT
-> >          *
-> >          *      { struct read_format    values;   } && PERF_SAMPLE_READ
-> >          * 
+On Tue, Oct 23, 2012 at 03:05:09PM +0200, Gleb Natapov wrote:
+> On Thu, Oct 18, 2012 at 11:19:14PM -0000, Andi Kleen wrote:
+> >  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+> > @@ -400,7 +407,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+> >  		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+> >  			if (data == pmc->eventsel)
+> >  				return 0;
+> > -			if (!(data & 0xffffffff00200000ull)) {
+> > +			if (!(data & 0xfffffffc00200000ull)) {
+> >  				reprogram_gp_counter(pmc, data);
+> >  				return 0;
+> >  			}
 > 
-> So the only issues I have are that his makes every sample more expensive
-> by having to 0 out that weight data and the sample placement.
+> Mask should depend on cpuid bits provided to a guest. SDM says TSX is
+> available if CPUID.(EAX=7, ECX=0):RTM[bit 11]=1, or  if
+> CPUID.07H.EBX.HLE [bit 4] = 1, so we need to check for this in
+> kvm_pmu_cpuid_update() and initialize mask accordingly.
 
-It's only reported when explicitely enabled (-W). So most users
-shouldn't see any overhead (except two untaken if()s or so)
+I think it will still error out or do nothing.
+So I have doubts the explicit check is worth it.
+That should be near enough the hardware.
+
+BTW does the PMU feature still work? I couldn't get it to work at all
+with the latest kernel, just when I originally wrote it.
 
 -Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
