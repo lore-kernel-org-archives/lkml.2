@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab2JWVRj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:17:39 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:40896 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479Ab2JWT6v (ORCPT
+	id S933632Ab2JWVSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:18:15 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61542 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756875Ab2JWT6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 15:58:51 -0400
+	Tue, 23 Oct 2012 15:58:44 -0400
 From: Ezequiel Garcia <elezegarcia@gmail.com>
 To: <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>
 Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>, Mike Isely <isely@pobox.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
         Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: [PATCH 07/23] hdpvr: Replace memcpy with struct assignment
-Date: Tue, 23 Oct 2012 16:57:10 -0300
-Message-Id: <1351022246-8201-7-git-send-email-elezegarcia@gmail.com>
+Subject: [PATCH 04/23] sn9c102: Replace memcpy with struct assignment
+Date: Tue, 23 Oct 2012 16:57:07 -0300
+Message-Id: <1351022246-8201-4-git-send-email-elezegarcia@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
 References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
@@ -42,27 +42,34 @@ expression E;
 +to = from;
 // </smpl>
 
-Cc: Mike Isely <isely@pobox.com>
 Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
 ---
- drivers/media/usb/hdpvr/hdpvr-i2c.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/media/usb/sn9c102/sn9c102_core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/usb/hdpvr/hdpvr-i2c.c b/drivers/media/usb/hdpvr/hdpvr-i2c.c
-index 82e819f..2df60bf 100644
---- a/drivers/media/usb/hdpvr/hdpvr-i2c.c
-+++ b/drivers/media/usb/hdpvr/hdpvr-i2c.c
-@@ -217,8 +217,7 @@ int hdpvr_register_i2c_adapter(struct hdpvr_device *dev)
+diff --git a/drivers/media/usb/sn9c102/sn9c102_core.c b/drivers/media/usb/sn9c102/sn9c102_core.c
+index 5bfc8e2..4cae6f8 100644
+--- a/drivers/media/usb/sn9c102/sn9c102_core.c
++++ b/drivers/media/usb/sn9c102/sn9c102_core.c
+@@ -2824,7 +2824,7 @@ sn9c102_vidioc_querybuf(struct sn9c102_device* cam, void __user * arg)
+ 	    b.index >= cam->nbuffers || cam->io != IO_MMAP)
+ 		return -EINVAL;
  
- 	hdpvr_activate_ir(dev);
+-	memcpy(&b, &cam->frame[b.index].buf, sizeof(b));
++	b = cam->frame[b.index].buf;
  
--	memcpy(&dev->i2c_adapter, &hdpvr_i2c_adapter_template,
--	       sizeof(struct i2c_adapter));
-+	dev->i2c_adapter = hdpvr_i2c_adapter_template;
- 	dev->i2c_adapter.dev.parent = &dev->udev->dev;
+ 	if (cam->frame[b.index].vma_use_count)
+ 		b.flags |= V4L2_BUF_FLAG_MAPPED;
+@@ -2927,7 +2927,7 @@ sn9c102_vidioc_dqbuf(struct sn9c102_device* cam, struct file* filp,
  
- 	i2c_set_adapdata(&dev->i2c_adapter, dev);
+ 	f->state = F_UNUSED;
+ 
+-	memcpy(&b, &f->buf, sizeof(b));
++	b = f->buf;
+ 	if (f->vma_use_count)
+ 		b.flags |= V4L2_BUF_FLAG_MAPPED;
+ 
 -- 
 1.7.4.4
 
