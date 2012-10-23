@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab2JWOIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 10:08:11 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:59777 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932638Ab2JWOIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 10:08:09 -0400
-From: Nix <nix@esperi.org.uk>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
-        Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
-        gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
-Subject: Re: Heads-up: 3.6.2 / 3.6.3 NFS server panic: 3.6.2+ regression?
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org>
-Emacs: a Lisp interpreter masquerading as ... a Lisp interpreter!
-Date: Tue, 23 Oct 2012 15:07:59 +0100
-In-Reply-To: <20121023013343.GB6370@fieldses.org> (J. Bruce Fields's message
-	of "Mon, 22 Oct 2012 21:33:43 -0400")
-Message-ID: <87mwzdnuww.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S933039Ab2JWOIS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 10:08:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49357 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932992Ab2JWOIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 10:08:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
+   d="scan'208";a="209486825"
+Date: Tue, 23 Oct 2012 22:07:49 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH -next] printk: fix broken 'console' kernel parameter
+Message-ID: <20121023140749.GA21823@localhost>
+References: <1350999678-17441-1-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: spindle 1245; Body=7 Fuz1=7 Fuz2=7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350999678-17441-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 Oct 2012, J. Bruce Fields uttered the following:
+On Tue, Oct 23, 2012 at 09:41:18PM +0800, Ming Lei wrote:
+> If CONFIG_A11Y_BRAILLE_CONSOLE is not enabled, _braille_console_setup()
+> should return NULL to parse the parameter further in console_setup().
+> 
+> This patch fixes the broken 'console' kernel parameter, which makes the
+> Pandaboard not boot with 'console=ttyO2'.
 
-> On Mon, Oct 22, 2012 at 05:17:04PM +0100, Nix wrote:
->> I just had a panic/oops on upgrading from 3.6.1 to 3.6.3, after weeks of
->> smooth operation on 3.6.1: one of the NFS changes that went into one of
->> the two latest stable kernels appears to be lethal after around half an
->> hour of uptime. The oops came from NFSv4, IIRC (relying on memory since
->> my camera was recharging and there is no netconsole from that box
->> because it is where the netconsole logs go, so I'll have to reproduce it
->> later today). The machine is an NFSv3 server only at present, with no
->> NFSv4 running (though NFSv4 is built in).
->
-> Note recent clients may try to negotiate NFSv4 by default, so it's
-> possible to use it without knowing.
+Not sure if this is related, but I got an early crash with linux-next and
+the first bad commit is
 
-Every NFS import from all this server's clients has 'vers=3' forced on
-(for now, until I get around to figuring out what if anything needs to
-be done to move to NFSv4: it may be the answer is 'nothing' but I tread
-quite carefully with this server, since my $HOME is there).
+commit 10db96eb4942a011a76de8c98aabc4f132a882d9
+Author: Joe Perches <joe@perches.com>
+Date:   Tue Oct 23 13:50:17 2012 +1100
 
-/proc/fs/nfsfs/volumes on the clients confirms that everything is v3.
+    printk: move braille console support into separate braille.[ch]
+    files
 
-> You didn't change anything else about your server or clients recently?
-
-Nope (other than upgrading the clients to 3.6.3 in concert). Running
-3.6.1 here on that server now and 3.6.3 on all the clients, and no crash
-in over a day.
-
-nfs-utils is a bit old, 1.2.6-rc6, I should probably upgrade it...
-
-> I don't see an obvious candidate on a quick skim of v3.6.1..v3.6.3
-> commits, but of course I could be missing something.
-
-I'll try rebooting into it again soon, and get an oops report if it
-should happen again (and hopefully less filesystem corruption this time,
-right after a reboot into a new kernel was clearly the wrong time to
-move a bunch of directories around).
-
-Sorry for the continuing lack of useful information... I'll try to fix
-that shortly (once with a report of a false alarm, since I really want
-this stable kernel: my server is affected by the tx stalls fixed by
-3468e9d and I'm getting tired of the frequent 1s lags talking to it: I
-could just apply that one fix, but I'd rather track this down properly).
+Thanks,
+Fengguang
