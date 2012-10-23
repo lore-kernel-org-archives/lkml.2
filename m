@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab2JWKTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 06:19:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60187 "EHLO arroyo.ext.ti.com"
+	id S1754709Ab2JWKTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 06:19:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50671 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab2JWKTd convert rfc822-to-8bit (ORCPT
+	id S1751829Ab2JWKTi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 06:19:33 -0400
+	Tue, 23 Oct 2012 06:19:38 -0400
 From: "Philip, Avinash" <avinashphilip@ti.com>
 To: Peter Korsgaard <jacmet@sunsite.dk>
 CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
@@ -17,21 +17,26 @@ CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
         "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Rob Landley <rob@landley.net>,
         "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>,
         "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
-Thread-Topic: [PATCH 3/4] ARM: OMAP2: gpmc: Add support for BCH ECC scheme
-Thread-Index: AQHNqwbqdlAuQrnYe0yMlvLTrfYpApfGss1w
-Date: Tue, 23 Oct 2012 10:18:02 +0000
+Subject: RE: [PATCH 2/4] mtd: devices: elm: Add support for ELM error
+ correction
+Thread-Topic: [PATCH 2/4] mtd: devices: elm: Add support for ELM error
+ correction
+Thread-Index: AQHNqw3zJstUoBASxkW32ofAwayOX5fGsshg
+Date: Tue, 23 Oct 2012 10:17:58 +0000
 Deferred-Delivery: Tue, 23 Oct 2012 10:17:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3E9D29C8@DBDE01.ent.ti.com>
+Message-ID: <518397C60809E147AF5323E0420B992E3E9D29C3@DBDE01.ent.ti.com>
 References: <1349274589-11389-1-git-send-email-avinashphilip@ti.com>
-	<1349274589-11389-4-git-send-email-avinashphilip@ti.com>
- <87vcebvaf5.fsf@macbook.be.48ers.dk>
-In-Reply-To: <87vcebvaf5.fsf@macbook.be.48ers.dk>
+	<1349274589-11389-3-git-send-email-avinashphilip@ti.com>
+ <87hapvv800.fsf@macbook.be.48ers.dk>
+In-Reply-To: <87hapvv800.fsf@macbook.be.48ers.dk>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -44,43 +49,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 00:18:30, Peter Korsgaard wrote:
+On Tue, Oct 16, 2012 at 01:10:47, Peter Korsgaard wrote:
 > >>>>> Philip, Avinash <avinashphilip@ti.com> writes:
 > 
->  > Add support for BCH ECC scheme to gpmc driver and also enabling multi
->  > sector read/write. This helps in doing single shot NAND page read and
->  > write.
+>  > Platforms containing the ELM module can be used to correct errors
+>  > reported by BCH 4, 8 & 16 bit ECC scheme. For now only 4 & 8 bit
+>  > support is added.
 > 
->  > ECC engine configurations
->  > BCH 4 bit support
->  > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
->  > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
->  > 13 and ecc_size1 as 1.
+> This sounds odd to me. What about something like:
 > 
->  > BCH 8 bit support
->  > 1. write => ECC engine configured in wrap mode 6 and with ecc_size0 as 32.
->  > 2. read  => ECC engine configured in wrap mode 1 and with ecc_size0 as
->  > 26 and ecc_size1 as 2.
+> The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
+> error correction.
 > 
->  > Note: For BCH8 ECC bytes set to 14 to make compatible with RBL.
-> 
-> On what device? In the am335x TRM (spruh73f.pdf) figure 26-15 (pg 4273)
-> the rom code is documented to not use any padding on the ECC bytes
-> (E.G. oob 2..53):
-> 
-> http://www.ti.com/litv/pdf/spruh73f
-> 
-> I see the driver in the u-boot-am33x tree (ti81xx_nand.c) seems to use
-> 4x14 bytes as well though, so perhaps that's a bug in the documentation
-> instead?
+> For now only 4 & 8 bit support is added.
 
-Yes, RBL uses 4x14 bytes.
+Ok I will correct it.
+
+> 
+> 
+>  > +++ b/drivers/mtd/devices/Makefile
+>  > @@ -17,8 +17,10 @@ obj-$(CONFIG_MTD_LART)		+= lart.o
+>  >  obj-$(CONFIG_MTD_BLOCK2MTD)	+= block2mtd.o
+>  >  obj-$(CONFIG_MTD_DATAFLASH)	+= mtd_dataflash.o
+>  >  obj-$(CONFIG_MTD_M25P80)	+= m25p80.o
+>  > +obj-$(CONFIG_MTD_NAND_OMAP2)	+= elm.o
+> 
+> You seem to only use it in 4/4 if CONFIG_MTD_NAND_OMAP_BCH is set, so it
+> probably makes more sense to use that symbol to not needlessly include
+> it if it won't be used.
+
+Ok. This been good.
+
+> 
+> 
+>  > +static void elm_write_reg(void *offset, u32 val)
+>  > +{
+>  > +	writel(val, offset);
+>  > +}
+>  > +
+>  > +static u32 elm_read_reg(void *offset)
+>  > +{
+>  > +	return readl(offset);
+>  > +}
+> 
+> As written these read/write wrappers don't add anything. How about
+> passing struct elm_info and offset as an integer so you can drop
+> elm_base from all call sites, E.G.:
+> 
+> static void elm_write_reg(struct elm_info *info, int offset, u32 val)
+> {
+>         writel(val, info->elm_base + offset);
+> }
+>
+
+Ok, this helps to reduce some indentation levels also.
+ 
+> 
+>  > +void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
+>  > +		struct elm_errorvec *err_vec)
+>  > +{
+>  > +	int i;
+>  > +	u8 syndrome[BCH_MAX_ECC_BYTES_PER_SECTOR] = {0}, *syn_p;
+> 
+> 
+> Why do you need to keep the entire syndrome around? You seem to only use
+> it between elm_reverse_eccdata() and elm_load_syndrome(), so it could as
+> well be BCH8_ECC_OOB_BYTES long (or rather a multiple of sizeof(u32).
+> 
+> It would also be good to do the shuffeling directly in elm_load_syndrome
+> so you don't need the extra copy.
+
+I will check.
+
+> 
+> 
+>  > + */
+>  > +
+>  > +#ifndef __ELM_H
+>  > +#define __ELM_H
+>  > +
+>  > +enum bch_ecc {
+>  > +	BCH4_ECC = 0,
+>  > +	BCH8_ECC,
+>  > +	BCH16_ECC,
+> 
+> It probably makes more sense to not provide the enum value for BCH16 as
+> you don't support it.
+> 
+
+Ok I will remove.
+
+> 
+>  > +};
+>  > +
 
 Thanks
 Avinash
 
-> 
-> -- 
-> Bye, Peter Korsgaard
-> 
 
