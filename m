@@ -1,151 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab2JWNxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 09:53:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44667 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757147Ab2JWNxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 09:53:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,635,1344236400"; 
-   d="scan'208";a="237191183"
-From: Irina Tirdea <irina.tirdea@intel.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Octavian Purdila <octavian.purdila@intel.com>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH 17/26] mmc: sdhci: panic write: call tasklets inline
-Date: Tue, 23 Oct 2012 16:48:15 +0300
-Message-Id: <1351000104-13015-18-git-send-email-irina.tirdea@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
-References: <1351000104-13015-1-git-send-email-irina.tirdea@intel.com>
+	id S932729Ab2JWN52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 09:57:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59913 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932722Ab2JWN51 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 09:57:27 -0400
+Date: Tue, 23 Oct 2012 15:57:26 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 05/34] perf, x86: Report PEBS event in a raw format
+Message-ID: <20121023135726.GG16230@one.firstfloor.org>
+References: <1350602382-12771-1-git-send-email-andi@firstfloor.org> <1350602382-12771-6-git-send-email-andi@firstfloor.org> <1350995474.13456.12.camel@twins> <20121023133000.GX16230@one.firstfloor.org> <1351000250.13456.34.camel@twins>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351000250.13456.34.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Tue, Oct 23, 2012 at 03:50:50PM +0200, Peter Zijlstra wrote:
+> PERF_SAMPLE_RAW has a u32 size header and starts the data after that.
+> This means you PERF_SAMPLE_RAW output ends up on a u32 aligned end
+> address -- assuming the data is a u64 multiple, this is not good.
+> 
+> > It appears to work at least.
+> 
+> It would on x86, I'm fairly sure it'll break on things like SPARC. We
+> used to have checks in the userspace code to warn for this on x86 as
+> well. Not sure if that's still there.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
----
- drivers/mmc/host/sdhci.c |   31 +++++++++++++++++++++----------
- 1 file changed, 21 insertions(+), 10 deletions(-)
+Ok this is x86 specific code.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 827e34f..ff72e98 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -914,6 +914,17 @@ static void sdhci_set_transfer_mode(struct sdhci_host *host,
- 	sdhci_writew(host, mode, SDHCI_TRANSFER_MODE);
- }
- 
-+static void sdhci_tasklet_card(unsigned long param);
-+static void sdhci_tasklet_finish(unsigned long param);
-+
-+#define sdhci_sched_tasklet(host, name)				\
-+{								\
-+	if (mmc_am_panic_task(host->mmc))			\
-+		sdhci_tasklet_##name((unsigned long)host);	\
-+	else							\
-+		tasklet_schedule(&host->name##_tasklet);	\
-+}
-+
- static void sdhci_finish_data(struct sdhci_host *host)
- {
- 	struct mmc_data *data;
-@@ -965,7 +976,7 @@ static void sdhci_finish_data(struct sdhci_host *host)
- 
- 		sdhci_send_command(host, data->stop);
- 	} else
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- }
- 
- static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
-@@ -994,7 +1005,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 				"inhibit bit(s).\n", mmc_hostname(host->mmc));
- 			sdhci_dumpregs(host);
- 			cmd->error = -EIO;
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 			return;
- 		}
- 		timeout--;
-@@ -1015,7 +1026,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
- 		pr_err("%s: Unsupported response type!\n",
- 			mmc_hostname(host->mmc));
- 		cmd->error = -EINVAL;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 		return;
- 	}
- 
-@@ -1076,7 +1087,7 @@ static void sdhci_finish_command(struct sdhci_host *host)
- 			sdhci_finish_data(host);
- 
- 		if (!host->cmd->data)
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 
- 		host->cmd = NULL;
- 	}
-@@ -1303,7 +1314,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 
- 	if (!present || host->flags & SDHCI_DEVICE_DEAD) {
- 		host->mrq->cmd->error = -ENOMEDIUM;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 	} else {
- 		u32 present_state;
- 
-@@ -2079,7 +2090,7 @@ static void sdhci_tasklet_card(unsigned long param)
- 		sdhci_reset(host, SDHCI_RESET_DATA);
- 
- 		host->mrq->cmd->error = -ENOMEDIUM;
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 	}
- 
- 	sdhci_unlock_irqrestore(host, flags);
-@@ -2174,7 +2185,7 @@ static void sdhci_timeout_timer(unsigned long data)
- 			else
- 				host->mrq->cmd->error = -ETIMEDOUT;
- 
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 		}
- 	}
- 
-@@ -2221,7 +2232,7 @@ static void sdhci_cmd_irq(struct sdhci_host *host, u32 intmask)
- 		host->cmd->error = -EILSEQ;
- 
- 	if (host->cmd->error) {
--		tasklet_schedule(&host->finish_tasklet);
-+		sdhci_sched_tasklet(host, finish);
- 		return;
- 	}
- 
-@@ -2429,7 +2440,7 @@ again:
- 		sdhci_writel(host, intmask & (SDHCI_INT_CARD_INSERT |
- 			     SDHCI_INT_CARD_REMOVE), SDHCI_INT_STATUS);
- 		intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
--		tasklet_schedule(&host->card_tasklet);
-+		sdhci_sched_tasklet(host, card);
- 	}
- 
- 	if (intmask & SDHCI_INT_CMD_MASK) {
-@@ -3192,7 +3203,7 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 				" transfer!\n", mmc_hostname(host->mmc));
- 
- 			host->mrq->cmd->error = -ENOMEDIUM;
--			tasklet_schedule(&host->finish_tasklet);
-+			sdhci_sched_tasklet(host, finish);
- 		}
- 
- 		sdhci_unlock_irqrestore(host, flags);
+> 
+> Hmm, so in kernel/events/core.c:perf_prepare_sample() there's a
+> WARN_ON_ONCE() in the PERF_SAMPLE_RAW branch that should trigger with
+> this.
+
+Haven't seen this this warning so far.
+
+If I added padding the perf userland would need to learn about it too,
+I suspect it would need all the ugly macros like NETLINK. I always hated
+those.
+
+-Andi
 -- 
-1.7.9.5
-
+ak@linux.intel.com -- Speaking for myself only.
