@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab2JWR00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 13:26:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:32950 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313Ab2JWR0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 13:26:25 -0400
-Date: Tue, 23 Oct 2012 20:20:35 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mitch Bradley <wmb@firmworks.com>
-CC: <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        Sourav Poddar <sourav.poddar@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121023172035.GB32167@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121022155028.GA13791@core.coreip.homeip.net>
- <CACRpkdaQ1WfRWrx=RXMVkeFtwdERJsOpVa3DaXBTU2KZdgqhRQ@mail.gmail.com>
- <508664CA.7000601@ti.com>
- <CACRpkdbhCS-Vb0DtbTZQ_Zw_8SOh3Bqutme3Y2-QrxNqvMiNNw@mail.gmail.com>
- <20121023100333.GA24418@arwen.pp.htv.fi>
- <5086CD91.9070101@firmworks.com>
+	id S933268Ab2JWRac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 13:30:32 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:25501 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab2JWRaa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 13:30:30 -0400
+Message-ID: <5086D432.4070008@tilera.com>
+Date: Tue, 23 Oct 2012 13:30:26 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aM3YZ0Iwxop3KEKx"
-Content-Disposition: inline
-In-Reply-To: <5086CD91.9070101@firmworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
+References: <20121016223508.GR2616@ZenIV.linux.org.uk> <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com> <20121019213548.GR2616@ZenIV.linux.org.uk> <5082A1F1.3080303@tilera.com> <20121020153401.GT2616@ZenIV.linux.org.uk> <20121020171643.GU2616@ZenIV.linux.org.uk>
+In-Reply-To: <20121020171643.GU2616@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---aM3YZ0Iwxop3KEKx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/20/2012 1:16 PM, Al Viro wrote:
+> On Sat, Oct 20, 2012 at 04:34:01PM +0100, Al Viro wrote:
+>> On Sat, Oct 20, 2012 at 09:06:57AM -0400, Chris Metcalf wrote:
+>>> First, the compat_sys_execve() declaration provided in
+>>> arch/tile/include/asm/compat.h isn't right, so I deleted that (you had only
+>>> deleted the PTREGS_SYSCALL trampoline declaration, _compat_sys_execve).
+>>>
+>>> However, then arch/tile/kernel/compat.c failed to build, because
+>>> <linux/compat.h> is included before <asm/unistd.h>, and <asm/unistd.h>
+>>> provides __ARCH_WANT_SYS_EXECVE, and so we end up with no declaration at
+>>> all for compat_sys_execve.  For most platforms this is no big deal, but on
+>>> tile we use the __SYSCALL #define to provide the actual syscall table, and
+>>> for that to work we need a declaration in scope for each syscall at the
+>>> time we create the table.
+>>>
+>>> The best solution seems likely to be to copy the other place in
+>>> <linux/compat.h> where we need to do something configurable (that is,
+>>> CONFIG_ARCH_WANT_OLD_COMPAT_IPC), and just convert __ARCH_WANT_SYS_EXECVE
+>>> to be a Kconfig option.
+>> Frankly, I hope to get rid of the damn thing completely.  By now we have
+>> at least some variant of execve conversions for just about everything;
+>> I certainly hope that by the beginning of the next cycle we'll have it
+>> defined on everything.  And put unconditional declarations in syscalls.h
+>> and compat.h
+>>
+>> Actually, we can make the declaration in linux/compat.h unconditional
+>> right now.  The only obstacle is the situation on arm64; there the mainline
+>> has C variant of that sucker (with struct pt_regs * in arguments) in
+>> arch/arm64/kernel/sys_compat.c.  So we could ask Linus to pull
+>> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64 execve
+>> and then do the following in one patch:
+>> 	introduce current_pt_regs() on tile (from your commit)
+>> 	get rid of pt_regs * argument in tile compat_sys_execve(), making it
+>> use current_pt_regs(); kill its wrapper
+>> 	kill the declarations of compat_sys_execve()/_compat_sys_execve()
+>> in tile asm/compat.h
+>> 	make declaration in linux/compat.h unconditional
+>> Note that this does *not* depend on kernel_thread/kernel_execve patch -
+>> kernel_execve() is never going to hit compat_sys_execve(), since it's
+>> only called from kernel threads and those are not going to be 32bit.
+>> After that we can do kernel_thread/kernel_execve commit and
+>> sys_execve() conversion with nothing outside of arch/tile touched.
+> Another possible variant is for you to merge that branch from arm64 tree
+> (only 3 commits it it) and then do as described above.  I.e. on top of
+> that apply the thing below, followed by your kernel_thread()/kernel_execve()
+> patch (sans current_pt_regs() part), followed by obviously massaged parts
+> of generic sys_execve for tile patch I've sent.  FWIW, I've put the
+> whole series (based at the end of arm64 branch) in signal.git#arch-tile.
+> Comments?
 
-HI,
+I fetched the series from your arch-tile branch and built it, and it works
+fine.  It looks good from my inspection:
 
-On Tue, Oct 23, 2012 at 07:02:09AM -1000, Mitch Bradley wrote:
-> On 10/23/2012 12:03 AM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > I much prefer having drivers explicitly manage all their resources,
-> > which would mean that pinctrl calls need to be done on probe() and, if
-> > necessary, during suspend()/resume().
->=20
->=20
-> Per-driver resource management is certainly convenient when you are
-> dealing with a single system, but it becomes difficult to maintain for
-> drivers that are shared among many platforms.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-why ? look at drivers/usb/dwc3/, we're using that on OMAP, exynos, PCIe
-and a couple of different FPGA implementations inside TI. Not to mention
-what other licensees of that IP core might have internally.
+As you had suggested in an earlier email, I went ahead and eliminated the
+special pt_regs handling for sigaltstack, rt_sigreturn, and clone.  (Also a
+tilepro-specific syscall that was also using PTREG_SYSCALL.)  I'll send it
+separately and you can include it in your tree if you like.
 
-So far no problesm with resources at all.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-We have frameworks exactly to hide the differences.
-
-> The industry trend for many years has been consolidation around a single
-> programming model per class of device.  For example, SDHCI, EHCI, ATA.
-> This trend will only accelerate, as the cost of developing controller IP
-> and associated drivers increases.  Such drivers need to be as
-> platform-agnostic as possible.
-
-that's why we have pinctrl framework to abstract the details about pin
-muxing.
-
---=20
-balbi
-
---aM3YZ0Iwxop3KEKx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQhtHjAAoJEIaOsuA1yqRERJEP/R6cAsvh0r9QFsWN82uTznoV
-D2NSMKDmLN4cxWRorxC4zgUwNHfzvf3YsGtyYS4fZzZkU0kLL6c167qOywQaYa9R
-hO502+sQuYxa4zY4+9Fb4hdT75zLxh1mRjC4KrX+qf1pHk3mhBS8GS9XLGYwwmtj
-R1HXk8cu4zm1MxUkOTFjsf0hgOv6KwPH6p56qY5to0W9yt4PrHyg5C1pePhHzIv1
-JK8YtKgJkVLoI/uPfrVUW1RyiuOURK7cQQuEn4Ym0j42GsUsblmAYHx6vvLs17B5
-RPs+q9WcJf7s4RF21CWcbHMvXnMe1NiZuKe4l++bG0wxb+8nm6rAIrAN8NE6xxwt
-PDithANABIM7fOhpVyBpA+swpSGG4wAr1i4cgNfnoQtHxY+Wi1lAg/lHaPfQKItM
-mYny9/6u51xZJTX8VkTF3wiLBpbDKbBSpYms8akw/rLSfnn6zshizpriR45iasF9
-hR+q3yQc4JU1gHyxBIzq480ggxrckp40vBt5lSDYOl7v0HFPKflJiAwiCB5Kd4ot
-bJGwP2FWSnN/6rSJy0RJ4RAe6jxZVXFiveZqb/UvznOQx1beYMUy4kwtMfXwbx5t
-rglHz0YTEMLhQuYiTmF/Sn8VuMz7v8JLYbiBrVem7Qe2mZII0pg6+qhCeAbx306H
-6f7SBn9e7iN2eTJgVc6h
-=+NdR
------END PGP SIGNATURE-----
-
---aM3YZ0Iwxop3KEKx--
