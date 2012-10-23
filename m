@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965517Ab2JWVDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 17:03:07 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54064 "EHLO smtp.outflux.net"
+	id S965493Ab2JWVDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 17:03:05 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56528 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933700Ab2JWUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933564Ab2JWUFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Oct 2012 16:05:13 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: Kees Cook <keescook@chromium.org>
-Subject: [PATCH 092/193] drivers/net/ethernet/sun: remove CONFIG_EXPERIMENTAL
-Date: Tue, 23 Oct 2012 13:02:45 -0700
-Message-Id: <1351022666-6960-93-git-send-email-keescook@chromium.org>
+Subject: [PATCH 089/193] drivers/net/ethernet/seeq: remove CONFIG_EXPERIMENTAL
+Date: Tue, 23 Oct 2012 13:02:42 -0700
+Message-Id: <1351022666-6960-90-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351022666-6960-1-git-send-email-keescook@chromium.org>
 References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
@@ -26,24 +26,31 @@ summit, remove it.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/net/ethernet/sun/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/seeq/Kconfig |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/sun/Kconfig b/drivers/net/ethernet/sun/Kconfig
-index 57bfd85..ae3a355 100644
---- a/drivers/net/ethernet/sun/Kconfig
-+++ b/drivers/net/ethernet/sun/Kconfig
-@@ -32,8 +32,8 @@ config HAPPYMEAL
- 	  will be called sunhme.
- 
- config SUNBMAC
--	tristate "Sun BigMAC 10/100baseT support (EXPERIMENTAL)"
--	depends on SBUS && EXPERIMENTAL
-+	tristate "Sun BigMAC 10/100baseT support"
-+	depends on SBUS
- 	select CRC32
+diff --git a/drivers/net/ethernet/seeq/Kconfig b/drivers/net/ethernet/seeq/Kconfig
+index 29f1853..2366fa0 100644
+--- a/drivers/net/ethernet/seeq/Kconfig
++++ b/drivers/net/ethernet/seeq/Kconfig
+@@ -6,7 +6,6 @@ config NET_VENDOR_SEEQ
+ 	bool "SEEQ devices"
+ 	default y
+ 	depends on HAS_IOMEM
+-	depends on (ARM && ARCH_ACORN) || SGI_HAS_SEEQ || EXPERIMENTAL
  	---help---
- 	  This driver supports the "be" interface available as an Sbus option.
+ 	  If you have a network (Ethernet) card belonging to this class, say Y
+ 	  and read the Ethernet-HOWTO, available from
+@@ -27,8 +26,7 @@ config ARM_ETHER3
+ 	  should say Y to this option if you wish to use it with Linux.
+ 
+ config SEEQ8005
+-	tristate "SEEQ8005 support (EXPERIMENTAL)"
+-	depends on EXPERIMENTAL
++	tristate "SEEQ8005 support"
+ 	---help---
+ 	  This is a driver for the SEEQ 8005 network (Ethernet) card.  If this
+ 	  is for you, read the Ethernet-HOWTO, available from
 -- 
 1.7.9.5
 
