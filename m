@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab2JXAdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:33:00 -0400
-Received: from us-mx3.synaptics.com ([12.239.217.85]:63726 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933546Ab2JXAc7 (ORCPT
+	id S964828Ab2JXAeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:34:03 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:54222 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933546Ab2JXAeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:32:59 -0400
-Message-ID: <50873739.9030500@synaptics.com>
-Date: Tue, 23 Oct 2012 17:32:57 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Tue, 23 Oct 2012 20:34:01 -0400
+Date: Tue, 23 Oct 2012 19:33:53 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>,
+        Nick Bowler <nbowler@elliptictech.com>
+Subject: [PATCH v3 1/5] zynq: use GIC device tree bindings
+Message-ID: <20121024003353.GB31625@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <20121011081351.GA32175@core.coreip.homeip.net> <50872C54.4090505@synaptics.com> <5515083.K7EXLgnYa6@dtor-d630.eng.vmware.com>
-In-Reply-To: <5515083.K7EXLgnYa6@dtor-d630.eng.vmware.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20121024003218.GA31625@beefymiracle.amer.corp.natinst.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 07:33:49 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 07:33:49 PM,
+	Serialize complete at 10/23/2012 07:33:49 PM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-23_09:2012-10-23,2012-10-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 05:11 PM, Dmitry Torokhov wrote:
-> On Tuesday, October 23, 2012 04:46:28 PM Christopher Heiny wrote:
->> On 10/11/2012 01:13 AM, Dmitry Torokhov wrote:
->>> On Thu, Oct 11, 2012 at 04:15:56AM +0000, Christopher Heiny wrote:
->>>> On Thursday, October 11, 2012 02:21:53 AM you wrote:
->>>>> On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com>
-> wrote:
+The Zynq uses the cortex-a9-gic.  This eliminates the need to hardcode
+register addresses.
 
-[snip]
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+Cc: John Linn <john.linn@xilinx.com>
+---
+ arch/arm/boot/dts/zynq-ep107.dts           | 8 +++++---
+ arch/arm/mach-zynq/common.c                | 7 ++++++-
+ arch/arm/mach-zynq/include/mach/zynq_soc.h | 2 --
+ 3 files changed, 11 insertions(+), 6 deletions(-)
 
->>>>>> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
->>>>>> +{
->>>>>> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
->>>>>> +       struct device *dev = &rmi_dev->dev;
->>>>>> +       struct rmi_function_container *entry;
->>>>>> +       u8 irq_status[data->num_of_irq_regs];
->>>>>
->>>>> Looking at this...
->>>>>
->>>>> What does the data->num_of_irq_regs actually contain?
->>>>>
->>>>> I just fear that it is something constant like always 2 or always 4,
->>>>> so there is actually, in reality, a 16 or 32 bit register hiding in
->>>>> there.
->>>>>
->>>>> In that case what you should do is to represent it as a u16 or u32 here,
->>>>> just or the bits into a status word, and then walk over that status
->>>>> word with something like ffs(bitword); ...
->>>>
->>>> Nope, it's not constant.  In theory, and RMI4 based sensor can have up
->>>> to 128 functions (in practice, it's far fewer), and each function can
->>>> have as many as 7 interrupts.  So the number of IRQ registers can vary
->>>> from RMI4 sensor to RMI4 sensor, and needs to be computed during the
->>>> scan of the product descriptor table.
->>>
->>> Is it a good idea to have it on stack then? Should it be part of
->>> rmi_device instead?
->>
->> It's not coming off the stack.  We're allocating it via devm_kzalloc()
->> in rmi_driver_probe().
->
-> No, look at the part of the code that was quoted. "u8 irq_status[data-
-> num_of_irq_regs];" is on stack.
+diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-ep107.dts
+index 37ca192..7bfff4a 100644
+--- a/arch/arm/boot/dts/zynq-ep107.dts
++++ b/arch/arm/boot/dts/zynq-ep107.dts
+@@ -36,10 +36,12 @@
+ 		ranges;
+ 
+ 		intc: interrupt-controller@f8f01000 {
++			compatible = "arm,cortex-a9-gic";
++			#interrupt-cells = <3>;
++			#address-cells = <1>;
+ 			interrupt-controller;
+-			compatible = "arm,gic";
+-			reg = <0xF8F01000 0x1000>;
+-			#interrupt-cells = <2>;
++			reg = <0xF8F01000 0x1000>,
++			      <0xF8F00100 0x100>;
+ 		};
+ 
+ 		uart0: uart@e0000000 {
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index ab5cfdd..d73963b 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -55,12 +55,17 @@ static void __init xilinx_init_machine(void)
+ 	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
+ }
+ 
++static struct of_device_id irq_match[] __initdata = {
++	{ .compatible = "arm,cortex-a9-gic", .data = gic_of_init, },
++	{ }
++};
++
+ /**
+  * xilinx_irq_init() - Interrupt controller initialization for the GIC.
+  */
+ static void __init xilinx_irq_init(void)
+ {
+-	gic_init(0, 29, SCU_GIC_DIST_BASE, SCU_GIC_CPU_BASE);
++	of_irq_init(irq_match);
+ }
+ 
+ /* The minimum devices needed to be mapped before the VM system is up and
+diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+index d0d3f8f..3d1c6a6 100644
+--- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
++++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
+@@ -35,8 +35,6 @@
+ 
+ #define TTC0_BASE			IOMEM(TTC0_VIRT)
+ #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
+-#define SCU_GIC_CPU_BASE		(SCU_PERIPH_BASE + 0x100)
+-#define SCU_GIC_DIST_BASE		(SCU_PERIPH_BASE + 0x1000)
+ #define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
+ 
+ /*
+-- 
+1.8.0
 
-Sorry - I thought you were referring to data->num_of_irq_regs rather 
-than irq_status.  We'll move that.
