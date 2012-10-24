@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab2JXJtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:49:06 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:32888 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab2JXJtC (ORCPT
+	id S934573Ab2JXJtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:49:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40629 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755529Ab2JXJtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:49:02 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="15353004"
-Message-ID: <1351072140.2237.135.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH 05/10] xen/pvh: Extend vcpu_guest_context, p2m, event,
- and XenBus.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>
-Date: Wed, 24 Oct 2012 10:49:00 +0100
-In-Reply-To: <1351015931-16991-6-git-send-email-konrad.wilk@oracle.com>
-References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-	 <1351015931-16991-6-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 24 Oct 2012 05:49:49 -0400
+Date: Wed, 24 Oct 2012 11:49:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86, add hypervisor name to dump_stack()
+Message-ID: <20121024094944.GB4814@gmail.com>
+References: <1349879268-3573-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349879268-3573-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 19:12 +0100, Konrad Rzeszutek Wilk wrote:
-[...]
-> +		/* GUEST_GDTR_BASE and */
-> +		ctxt->u.pvh.gdtaddr = (unsigned long)gdt;
-> +		/* GUEST_GDTR_LIMIT in the VMCS. */
-> +		ctxt->u.pvh.gdtsz = (unsigned long)(GDT_SIZE - 1);
-> +
-> [...]
-> -		ctxt->gdt_frames[0] = gdt_mfn;
-> -		ctxt->gdt_ents      = GDT_ENTRIES;
-> +		ctxt->u.pv.gdt_frames[0] = gdt_mfn;
-> +		ctxt->u.pv.gdt_ents      = GDT_ENTRIES;
 
-I guess I've been told and forgotten but why does this need to differ
-between PV and PVH? Can the hypervisor not take the gfn in gdt_frames[0]
-= gdt_mfn and figure out the gdtaddr from it? Is this because n the PV
-case the H/V loads the GDT with the address of its own mapping of the
-gdt_frames but in the PVH case we have no such mapping because the
-pagetables don't have a Xen region in them?
+* Prarit Bhargava <prarit@redhat.com> wrote:
 
-It's worthy of a comment in any case.
+> Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
+> bare-metal boots can get difficult very quickly.  While there are ways to
+> decipher the output and determine if the output is from a virtual guest,
+> the in-kernel hypervisors now have a single registration point and set
+> x86_hyper.  We can use this to output a single extra line on virtual
+> machines that indicates the hypervisor type.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Marcelo Tostatti <mtosatti@redhat.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: x86@kernel.org
+> ---
+>  arch/x86/kernel/dumpstack.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index ae42418b..75a635e 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/sysfs.h>
+>  
+>  #include <asm/stacktrace.h>
+> +#include <asm/hypervisor.h>
+>  
+>  
+>  int panic_on_unrecovered_nmi;
+> @@ -193,6 +194,8 @@ void dump_stack(void)
+>  		init_utsname()->release,
+>  		(int)strcspn(init_utsname()->version, " "),
+>  		init_utsname()->version);
+> +	if (x86_hyper && x86_hyper->name)
+> +		printk("Hypervisor: %s\n",  x86_hyper->name);
+>  	show_trace(NULL, NULL, &stack, bp);
 
-[...]
-> +	/* PVH TBD/FIXME: future work */
-[...]
-> +		/* PVH: TBD/FIXME: debug and fix eio map to work with pvh */
+Looks useful, but please don't waste a full new line on it but 
+embedd it in the already existing status line that prints 
+details like release and version.
 
-Do we really need these TODOs inline in the code? Especially in generic
-code.
+Thanks,
 
-Ian.
-
+	Ingo
