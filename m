@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935200Ab2JXQbI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:31:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:36037 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757502Ab2JXQbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:31:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
-   d="scan'208";a="208535900"
-Message-ID: <508817C9.2080604@intel.com>
-Date: Wed, 24 Oct 2012 09:31:05 -0700
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S935191Ab2JXQb7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:31:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40656 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932242Ab2JXQb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 12:31:58 -0400
+Date: Wed, 24 Oct 2012 17:31:55 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca
+Subject: Re: [PATCH v2 2/4] gpio: add viperboard gpio driver
+Message-ID: <20121024163155.GH18814@opensource.wolfsonmicro.com>
+References: <20120925085559.GL28670@sortiz-mobl>
+ <201210161538.29571.poeschel@lemonage.de>
+ <CACRpkdauWR-ndvPA4Q5k_boh1OvYpPWMcfSkCdvRTK9wjHLo3Q@mail.gmail.com>
+ <201210231724.33927.poeschel@lemonage.de>
+ <CACRpkdZ3=VFOHqmo=XbyDGUKoxFaG+PpzDUsBQTQ1O3F-DhTvg@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: Improve 64 bit __phys_addr call performance
-References: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com> <20121024102533.GA10447@gmail.com>
-In-Reply-To: <20121024102533.GA10447@gmail.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X+8siUETKMkW99st"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ3=VFOHqmo=XbyDGUKoxFaG+PpzDUsBQTQ1O3F-DhTvg@mail.gmail.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 03:25 AM, Ingo Molnar wrote:
-> * Alexander Duyck <alexander.h.duyck@intel.com> wrote:
->
->> This patch is meant to improve overall system performance when 
->> making use of the __phys_addr call on 64 bit x86 systems.  To 
->> do this I have implemented several changes.
->>
->> First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is 
->> made an inline, similar to how this is currently handled in 32 
->> bit.  However in order to do this it is required to export 
->> phys_base so that it is available if __phys_addr is used in 
->> kernel modules.
->>
->> The second change was to streamline the code by making use of 
->> the carry flag on an add operation instead of performing a 
->> compare on a 64 bit value.  The advantage to this is that it 
->> allows us to reduce the overall size of the call. On my Xeon 
->> E5 system the entire __phys_addr inline call consumes 30 bytes 
->> and 5 instructions.  I also applied similar logic to the debug 
->> version of the function.  My testing shows that the debug 
->> version of the function with this patch applied is slightly 
->> faster than the non-debug version without the patch.
->>
->> Finally, when building the kernel with the first two changes 
->> applied I saw build warnings about __START_KERNEL_map and 
->> PAGE_OFFSET constants not fitting in their type.  In order to 
->> resolve the build warning I changed their type from UL to ULL.
->>
->> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
->> ---
->>
->>  arch/x86/include/asm/page_64_types.h |   16 ++++++++++++++--
->>  arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
->>  arch/x86/mm/physaddr.c               |   20 ++++++++++++++------
->>  3 files changed, 31 insertions(+), 8 deletions(-)
->> +#ifdef CONFIG_DEBUG_VIRTUAL
->>  extern unsigned long __phys_addr(unsigned long);
->> +#else
->> +static inline unsigned long __phys_addr(unsigned long x)
->> +{
->> +	unsigned long y = x - __START_KERNEL_map;
->> +
->> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
->> +	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
->> +
->> +	return x;
->> +}
-> This is a rather frequently used primitive. By how much does 
-> this patch increase a 'make defconfig' kernel's vmlinux, as 
-> measured via 'size vmlinux'?
->
-> Thanks,
->
-> 	Ingo
 
-Here is the before and after:
+--X+8siUETKMkW99st
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Before
-    text    data     bss      dec    hex filename
-10368528 1047480 1122304 12538312 bf51c8 vmlinux
+On Wed, Oct 24, 2012 at 09:53:06AM +0200, Linus Walleij wrote:
+> On Tue, Oct 23, 2012 at 5:24 PM, Lars Poeschel <poeschel@lemonage.de> wrote:
 
-After
-    text    data     bss      dec    hex filename
-10372216 1047480 1122304 12542000 bf6030 vmlinux
+> > Ok, I tried to implement it (at least for the gpioa part of the driver).
+> > It does not work. I got stuck. There are three problems I could not solve:
 
-I also have some patches are going into the swiotlb.  With them in it
-reduces the size a bit but still doesn't get us back to the original size:
+> So I'm looping in Mark Brown to get some hints whether the following
+> can be resolved easily or needs to be given up on...
 
-After SWIOTLB
-    text    data     bss      dec    hex filename
-10371860 1047480 1122304 12541644 bf5ecc vmlinux
+Some context would've been enormously useful for working out what the
+discussion is all about...  this is *very* verbose and not at all clear.
 
-The total increase in size amounts to about 3.6K without the SWIOTLB
-changes, and about 3.3K with.
+> > Setting the direction to output is an atomic set direction and set value.
+> > The register number is different from setting the value only. So after a
+> > successful call, I want to update the cache of output value using
+> > regcache_write. This is also not publicy available api. The only thing I could
+> > do is invalidate the whole cache using regcache_mark_dirty. (3rd problem)
 
-Thanks,
+> Same thing.
 
-Alex
+The above doesn't sound like marking the register as dirty is going to
+be helpful...  at most you'd want to discard the cache which is already
+supported per register.  Marking the register as dirty would leave the
+existing (presumably wrong if there's a problem) value in place in the
+cache.  It's not at all clear to me that a cache is even useful for
+these registers.
+
+> > I attach my current working state here. This is NOT WORKING and only as
+> > reference.
+
+> So if you want to do this with regmap, I suggest the way forward would
+> be to go solve it at the root by implementing something like
+> drivers/base/regmap/regmap-usb-ctrl.c with your desired semantics
+> and using that.
+
+So the issue is that we're trying to use regmap for some USB device?
+
+--X+8siUETKMkW99st
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQiBfzAAoJELSic+t+oim9mLgQAJnejXNwc1SjCeKIOGH5v3M2
+9B9L7Ntg7EA4f8UyR2UaHKxG+eoYtJxgj/oatohKdnXLglDsKwXgy23FsOagSLni
+1EM+uRBQPl21pIIdrwjbSwo1Ns3CmCqnoPUzscXM4dhfI9AJTBH0V85aQQEe4JFJ
+U5YW4mX8Ctjkm+7NV4wcYdxY1o5EiK3WsM4coGuhUUVqm4eR9O7laoTwhBu4MeYH
+HxB5i5rmrrwnZiy0UyspkWYbMPcmtGKukacHSSI9m5md45qQzNuSFySKgAsXdPFX
+jFeVEI7J9nMmDYH0EnsFdVaz+y51KIrnQ5y7XUCR6zOxxGU2Dx/ScpjjbU6WPj81
+KHGC1PWwIXK+jEco2swTjIi5wW+VpHI8uioh0g8tzBrsOkmM+V6Fhhi7Xw0GYwlp
+kKx9bpT4uM4oNyNwYVXTP7AK+BKEKcRzX4vDLbPAeNVcY6bCkuia1NWwkaHa7Ur7
+v+PsLeG0nL7SO2m63R2FrL5LrliYaDpKhAVXdLFPDLZOFbPMs/dMJZPmtUfEJ6HG
+zUsyVjaGK0TUc+P2RpsnMLulPh2E536gT5TV0n1xvE5BBtQi5YrmeAPJ3jF6VRm5
+o2EiX1lRfjHr2KI5tHfi49nVQD088+eEiwWs4jSLZNlTT9hsXbsDZGy2WdoW09ng
+Ho3z97yZ9kqOYen2EJ94
+=qmTD
+-----END PGP SIGNATURE-----
+
+--X+8siUETKMkW99st--
