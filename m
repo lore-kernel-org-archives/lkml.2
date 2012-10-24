@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935231Ab2JXTW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:22:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41110 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623Ab2JXTWz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:22:55 -0400
-Date: Wed, 24 Oct 2012 12:22:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-Id: <20121024122253.5ecea992.akpm@linux-foundation.org>
-In-Reply-To: <20121023233801.GA21591@shutemov.name>
-References: <1350280859-18801-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1350280859-18801-11-git-send-email-kirill.shutemov@linux.intel.com>
-	<20121018164502.b32791e7.akpm@linux-foundation.org>
-	<20121018235941.GA32397@shutemov.name>
-	<20121023063532.GA15870@shutemov.name>
-	<20121022234349.27f33f62.akpm@linux-foundation.org>
-	<20121023070018.GA18381@otc-wbsnb-06>
-	<20121023155915.7d5ef9d1.akpm@linux-foundation.org>
-	<20121023233801.GA21591@shutemov.name>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1161027Ab2JXTZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:25:04 -0400
+Received: from plane.gmane.org ([80.91.229.3]:39271 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932145Ab2JXTZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:25:02 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Jannis Achstetter <jannis_achstetter@web.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Date: Wed, 24 Oct 2012 21:13:01 +0200
+Message-ID: <k69ejs$vt2$1@ger.gmane.org>
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <20121023221913.GC28626@thunk.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p4ff5ad8e.dip.t-dialin.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
+In-Reply-To: <20121023221913.GC28626@thunk.org>
+Cc: linux-ext4@vger.kernel.org, stable@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 02:38:01 +0300
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+Am 24.10.2012 00:19, schrieb Theodore Ts'o:
+> [...]
+> The reason why the problem happens rarely is that the effect of the
+> buggy commit is that if the journal's starting block is zero, we fail
+> to truncate the journal when we unmount the file system.  This can
+> happen if we mount and then unmount the file system fairly quickly,
+> before the log has a chance to wrap.  After the first time this has
+> happened, it's not a disaster, since when we replay the journal, we'll
+> just replay some extra transactions.  But if this happens twice, the
+> oldest valid transaction will still not have gotten updated, but some
+> of the newer transactions from the last mount session will have gotten
+> written by the very latest transacitons, and when we then try to do
+> the extra transaction replays, the metadata blocks can end up getting
+> very scrambled indeed.
+> [...]
 
-> On Tue, Oct 23, 2012 at 03:59:15PM -0700, Andrew Morton wrote:
-> > On Tue, 23 Oct 2012 10:00:18 +0300
-> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > 
-> > > > Well, how hard is it to trigger the bad behavior?  One can easily
-> > > > create a situation in which that page's refcount frequently switches
-> > > > from 0 to 1 and back again.  And one can easily create a situation in
-> > > > which the shrinkers are being called frequently.  Run both at the same
-> > > > time and what happens?
-> > > 
-> > > If the goal is to trigger bad behavior then:
-> > > 
-> > > 1. read from an area where a huge page can be mapped to get huge zero page
-> > >    mapped. hzp is allocated here. refcounter == 2.
-> > > 2. write to the same page. refcounter == 1.
-> > > 3. echo 3 > /proc/sys/vm/drop_caches. refcounter == 0 -> free the hzp.
-> > > 4. goto 1.
-> > > 
-> > > But it's unrealistic. /proc/sys/vm/drop_caches is only root-accessible.
-> > 
-> > Yes, drop_caches is uninteresting.
-> > 
-> > > We can trigger shrinker only under memory pressure. But in this, most
-> > > likely we will get -ENOMEM on hzp allocation and will go to fallback path
-> > > (4k zero page).
-> > 
-> > I disagree.  If, for example, there is a large amount of clean
-> > pagecache being generated then the shrinkers will be called frequently
-> > and memory reclaim will be running at a 100% success rate.  The
-> > hugepage allocation will be successful in such a situation?
-> 
-> Yes.
-> 
-> Shrinker callbacks are called from shrink_slab() which happens after page
-> cache reclaim, so on next reclaim round page cache will reclaim first and
-> we will avoid frequent alloc-free pattern.
+As a "normal linux user" I'm interested in the practical things to do
+now to avoid data loss. I'm running several systems with 3.6.2 and ext4.
+Fearing loss of data:
+- Is there a way to see whether the journal of a specific partition has
+been wrapped (since mounting) so that umounting and mounting (or doing a
+reboot to downgrade the kernel) is safe?
+- Is there a way to "force" a journal-wrap? Run any
+filesystem-benchmark? Which one with what parameters? Or is it unwise
+since I might even further corrupt data if I hit the case already?
+- Is it wise to umount now and run e2fsck or might I corrupt my files
+just by umounting now if the journal hasn't wrapped yet?
+- How do you define "fairly quickly"? Of course servers run 24/7 but I
+might be using my PC 2-5 hrs a day... Is that a "reboot to soon after
+booting"?
+- Any more advice you can give to the ordinary user to avoid
+fs-corruption? Don't shut down machines for some days? Better down- or
+upgrade the kernel?
 
-I don't understand this.  If reclaim is running continuously (which can
-happen pretty easily: "dd if=/fast-disk/large-file") then the zero page
-will be whipped away very shortly after its refcount has fallen to
-zero.
+Best regards,
+	Jannis Achstetter
 
-> One more thing we can do: increase shrinker->seeks to something like
-> DEFAULT_SEEKS * 4. In this case shrink_slab() will call our callback after
-> callbacks with DEFAULT_SEEKS.
-
-It would be useful if you could try to make this scenario happen.  If
-for some reason it doesn't happen then let's understand *why* it
-doesn't happen.
-
-I'm thinking that such a workload would be the above dd in parallel
-with a small app which touches the huge page and then exits, then gets
-executed again.  That "small app" sounds realistic to me.  Obviously
-one could exercise the zero page's refcount at higher frequency with a
-tight map/touch/unmap loop, but that sounds less realistic.  It's worth
-trying that exercise as well though.
-
-Or do something else.  But we should try to probe this code's
-worst-case behaviour, get an understanding of its effects and then
-decide whether any such workload is realisic enough to worry about.
 
