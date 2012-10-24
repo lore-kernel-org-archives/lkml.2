@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612Ab2JXMqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:46:37 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20502 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932517Ab2JXMqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:46:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="239487530"
-Message-ID: <5087E323.3020501@intel.com>
-Date: Wed, 24 Oct 2012 20:46:27 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Andi Kleen <ak@linux.intel.com>, LKML <linux-kernel@vger.kernel.org>,
+	id S933622Ab2JXMr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:47:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50968 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab2JXMrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 08:47:25 -0400
+Date: Wed, 24 Oct 2012 23:47:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
-References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com> <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com> <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com> <5087CF96.7010406@intel.com> <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com> <5087D678.1080905@intel.com> <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com> <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com> <20121024123124.GU2095@tassilo.jf.intel.com> <CABPqkBQ7dOFpGOLu_Dbyr=HPeBj6mC8Roov7ZpD6v6qUO2JsFA@mail.gmail.com>
-In-Reply-To: <CABPqkBQ7dOFpGOLu_Dbyr=HPeBj6mC8Roov7ZpD6v6qUO2JsFA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH -mm] procfs: add VmFlags field in smaps output v3
+Message-Id: <20121024234714.03b516f6fcb32eb5a27eed1b@canb.auug.org.au>
+In-Reply-To: <20121024122730.GO30983@moon>
+References: <20121024122730.GO30983@moon>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 08:36 PM, Stephane Eranian wrote:
-> On Wed, Oct 24, 2012 at 2:31 PM, Andi Kleen <ak@linux.intel.com> wrote:
->> On Wed, Oct 24, 2012 at 02:21:43PM +0200, Stephane Eranian wrote:
->>> But still, if I do:
->>> $  perf record -g -e cpu/cycles/k ........
->>>
->>> Looks like your code will activate LBR cstack for user stack even
->>> though I don't use it.
->>> I know it won't generate any user samples (theoretically) but you are
->>> still commandeering
->>> the LBR resource which other events may want to use.
->>
->> You can disable it in sysfs. LBR is a power user feature and they will
->> know how to do this.
->>
-> But isn't the whole point of the patch to hide LBR cstack from users so they
-> won't know they're using it for user cstack?
-> 
-> To disable it in sysfs, I need to know it's being used in the first place.
-> You're saying, I need to know it is used only for user cstack and if I don't
-> need it then I need to disable it explicitly. I also suspect using it
-> for nothing
-> may have some performance implication because you are saving/restoring
-> on ctxsw, for instance.
-> 
-> I think in x86_pmu_hw_config(), you could simply check the priv level
-> restrictions on the event. If exclude_user is set, then don't active LBR cstack
-> and that's it. That's what I was trying to get to...
-> 
+--Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I will add that check
+Hi Cyrill,
 
-Thanks
-Yan, Zheng
+On Wed, 24 Oct 2012 16:27:30 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wr=
+ote:
+>
+> +static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struc=
+t *vma)
+> +{
+> +	/*
+> +	 * Don't forget to update Documentation/ on changes.
+> +	 */
+> +	static const char mnemonics[BITS_PER_LONG][2] =3D {
+> +		/*
+> +		 * In case if we meet a flag we don't know about.
+> +		 */
+> +		[0 ... (BITS_PER_LONG-1)] =3D { "??" },
 
+Sorry to be picky, but the braces above are unnecessary,
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQh+NSAAoJEECxmPOUX5FEk4IP/12Gz9x5Xa6cQ+Cs0Qjglxxk
+2e6EvjTb9o0swIrFQ8PZVa4Ba3Xgrvk6eoxSPwgNagv7UHV4Yn02v6EmhnYaJpZD
+dUfRma6/hpBk6YKfhn5vI4VOT+DGs1iZ6avXeF3up64TP1Id4Xo3VBPh3whhXYEi
+5y/0rW6+O+dcgYsUNA4/omBDeuAMkpkx5ZqS3HlLmbxI6n2kaBbGXSuXj/2HOavb
+Bc2nxSnkspw9tspcOcEHFgsU5x+bkj2p0NQQrbtg1dz2yUCRk5alMSs/uYdzAIh7
+aIagTKKiiPmlDtPhE0B+6ozQYG/+u9XOeLPGktqwd6hw0ft5gwDT3E8a8uMFsa1n
+Ib4o+0EKTGpYW6Eoi73fmrgbr4w2hk4/yDfV9feaOwXIDkNj9ZWUCe3y5yeFyxaT
+beCQ8ldm4NBTVBbdFKrgq8Zx7DUPnWXI8D7ttexW3cvOBPF64ZzWQFDMTgvYmfgz
+1mySHal5wV9htML5EcvmZ4nxSsHeOqwl+tU+0zk1nB30pkQXEGzDgpKHCaSmvu+m
+VK1JJKLTQxhCfzQ1EJUtHW7+F+XY1YQq0EJkU+NtN1Q3MjQZMJ2eTYhO/RDs8Shb
+tawy5g3UTLP3CyocRYf5dSNCfEHuJJTy1apNufPg0UvzNYFDyJgxaSuhXWoFQRvL
+aWeX0QLgDxqZPZW3wgqg
+=qlLK
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2--
