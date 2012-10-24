@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934480Ab2JXTyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:54:47 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:60245 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2JXTyn (ORCPT
+	id S935366Ab2JXTyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:54:52 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932117Ab2JXTyt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:54:43 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-Emacs: don't cry -- it won't help.
-Date: Wed, 24 Oct 2012 20:54:32 +0100
-In-Reply-To: <878vavveee.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
-	"Wed, 24 Oct 2012 20:49:45 +0100")
-Message-ID: <87wqyftzlz.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
+	Wed, 24 Oct 2012 15:54:49 -0400
+Date: Wed, 24 Oct 2012 21:54:45 +0200
+From: Richard Weinberger <richard@nod.at>
+To: Matthew Leach <matthew@mattleach.net>
+Cc: linux-kernel@vger.kernel.org,
+        Martin =?UTF-8?B?UMOkcnRlbA==?= <martin.partel@gmail.com>
+Subject: Re: [REGRESSION] uml: signal.c build errors
+Message-ID: <20121024215445.04d53d0d@spider.haslach.nod.at>
+In-Reply-To: <87objr3b2z.fsf@mattleach.net>
+References: <87pq48lqut.fsf@mattleach.net>
+	<20121024213919.5543e90b@spider.haslach.nod.at>
+	<87objr3b2z.fsf@mattleach.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 Oct 2012, nix@esperi.org.uk uttered the following:
-> So, the net effect of this is that normally I get no journal recovery on
-> anything at all -- but sometimes, if umounting takes longer than a few
-> seconds, I reboot with not everything unmounted, and journal recovery
-> kicks in on reboot. My post-test fscks this time suggest that only when
-> journal recovery kicks in after rebooting out of 2.6.3 do I see
-> corruption. So this is indeed an unclean shutdown journal-replay
-> situation: it just happens that I routinely have one or two fses
-> uncleanly unmounted when all the rest are cleanly unmounted. This
-> perhaps explains the scattershot nature of the corruption I see, and why
-> most of my ext4 filesystems get off scot-free.
+Am Wed, 24 Oct 2012 20:48:52 +0100
+schrieb Matthew Leach <matthew@mattleach.net>:
 
-Note that two umounts are not required: fsck found corruption on /var
-after a single boot+shutdown round in 3.6.3+this patch. (It did do a
-journal replay on /var first.)
+> 
+> Richard Weinberger <richard@nod.at> writes:
+> > Am Wed, 24 Oct 2012 00:18:34 +0100
+> >> I have tracked this down to [1] where, indeed, the type of
+> >> sig_info is different; the second parameter in signal.c is
+> >> 'siginfo_t' where as in as-layout.h the second parameter's type is
+> >> declared as 'struct siginfo'.
+> >> 
+> >> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
+> >
+> > Looks like we have to revert that commit.
+> > Moving everything to siginfo_t requires a non-trivial header cleanup
+> > and may introduce new regressions.
+> >
+> > Matthew, does the attached revert patch help?
+> 
+> The revert did remove the errors for the compilation of signal.c, so
+> that seems fine. I still get the following errors, however:
+> 
+>   CC      arch/um/os-Linux/sigio.o
+>   CC      arch/um/os-Linux/signal.o
+>   CC      arch/um/os-Linux/start_up.o
+> arch/um/os-Linux/start_up.c: In function ‘check_coredump_limit’:
+> arch/um/os-Linux/start_up.c:338:16: error: storage size of ‘lim’
+> isn’t known arch/um/os-Linux/start_up.c:339:2: error: implicit
+> declaration of function
+> ‘getrlimit’ [-Werror=implicit-function-declaration]
+> arch/um/os-Linux/start_up.c:339:22: error: ‘RLIMIT_CORE’ undeclared
+> (first use in this function) arch/um/os-Linux/start_up.c:339:22:
+> note: each undeclared identifier is reported only once for each
+> function it appears in arch/um/os-Linux/start_up.c:347:22: error:
+> ‘RLIM_INFINITY’ undeclared (first use in this function)
+> arch/um/os-Linux/start_up.c:338:16: warning: unused variable
+> ‘lim’ [-Wunused-variable] cc1: some warnings being treated as errors
+> make[1]: *** [arch/um/os-Linux/start_up.o] Error 1 make: ***
+> [arch/um/os-Linux] Error 2
 
--- 
-NULL && (void)
+Does adding
+#include <sys/time.h>
+#include <sys/resource.h>
+
+to arch/um/os-Linux/start_up.c help?
+
+Thanks,
+//richard
