@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758632Ab2JXU0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:26:47 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:53114 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab2JXU0p (ORCPT
+	id S1758725Ab2JXU2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:28:39 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:60927 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755477Ab2JXU2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:26:45 -0400
-Date: Wed, 24 Oct 2012 22:05:25 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: hayeswang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 1/2] r8169: enable ALDPS for power saving
-Message-ID: <20121024200525.GB6347@electric-eye.fr.zoreil.com>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <20121022192748.GA16370@electric-eye.fr.zoreil.com> <D81B36B929404E28AE7007B7E21B9D46@realtek.com.tw> <20121023193146.GA10463@electric-eye.fr.zoreil.com> <B3B61E0990514F28A8203537EB9D047A@realtek.com.tw>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <B3B61E0990514F28A8203537EB9D047A@realtek.com.tw>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Wed, 24 Oct 2012 16:28:37 -0400
+Message-ID: <50884F63.8030606@linux.vnet.ibm.com>
+Date: Wed, 24 Oct 2012 13:28:19 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+References: <20121012125708.GJ10110@dhcp22.suse.cz> <20121023164546.747e90f6.akpm@linux-foundation.org> <20121024062938.GA6119@dhcp22.suse.cz> <20121024125439.c17a510e.akpm@linux-foundation.org>
+In-Reply-To: <20121024125439.c17a510e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102420-2876-0000-0000-00000154F125
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hayeswang <hayeswang@realtek.com> :
->  Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> [...]
-> > It would be nice to state these things in the commit message, namely:
-> > - ALDPS should never be enabled for the RTL8105e
-> > - none of the firmware-free chipsets support ALDPS
-> > - neither do the RTL8168d/8111d
-> 
-> Excuse me. I don't understand why the RTL8105e shouldn't enable ALDPS.
+On 10/24/2012 12:54 PM, Andrew Morton wrote:
+> hmpf.  This patch worries me.  If there are people out there who are
+> regularly using drop_caches because the VM sucks, it seems pretty
+> obnoxious of us to go dumping stuff into their syslog.  What are they
+> supposed to do?  Stop using drop_caches?
 
-I'd appreciate to see such a statement if ALDPS can be enabled with the
-RTL8105e !
+People use drop_caches because they _think_ the VM sucks, or they
+_think_ they're "tuning" their system.  _They_ are supposed to stop
+using drop_caches. :)
 
-You have sent ALDPS related patches for some specific chipsets. Now
-would be a sensible time to check if ALDPS is correctly handled for
-_all_ supported chipsets. I don't have access to your authoritative
-resources. I can only outline something strange in the code wrt
-ALDPS and the 8105e.
+What kind of interface _is_ it in the first place?  Is it really a
+production-level thing that we expect users to be poking at?  Or, is it
+a rarely-used debugging and benchmarking knob which is fair game for us
+to tweak like this?
 
-/me returns to 8169b RxOverflow oddities...
+Do we have any valid uses of drop_caches where the printk() would truly
+_be_ disruptive?  Are those cases where we _also_ have real kernel bugs
+or issues that we should be working?  If it disrupts them and they go to
+their vendor or the community directly, it gives us at least a shot at
+fixing the real problems (or fixing the "invalid" use).
 
--- 
-Ueimor
+Adding taint, making this a single-shot printk, or adding vmstat
+counters are all good ideas.  I guess I think the disruption is a
+feature because I hope it will draw some folks out of the woodwork.
+
