@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260Ab2JXCtZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 22:49:25 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:6717 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934056Ab2JXCtY (ORCPT
+	id S934277Ab2JXCtu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 22:49:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62743 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056Ab2JXCts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 22:49:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AooYAA9Wh1B5LNyp/2dsb2JhbABEhSu2VIRyAoEQgQmCHgEBBAE6HCMFCwgDGC4UJQMhE4d+BbsZFItMIIFihFwDkkCDMZA6gwOBRx8
-Date: Wed, 24 Oct 2012 13:49:20 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jaegeuk Kim <jaegeuk.kim@gmail.com>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, viro@zeniv.linux.org.uk,
-        "'Theodore Ts'o'" <tytso@mit.edu>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-Subject: Re: [PATCH 11/16] f2fs: add inode operations for special inodes
-Message-ID: <20121024024920.GS4291@dastard>
-References: <001201cda2f1$633db960$29b92c20$%kim@samsung.com>
- <20121016204412.GF2864@dastard>
- <1350426621.1958.119.camel@kjgkr>
- <201210171250.12130.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201210171250.12130.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 22:49:48 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 1/2] firmware loader: document kernel direct loading
+Date: Wed, 24 Oct 2012 10:49:33 +0800
+Message-Id: <1351046973-2178-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 17, 2012 at 12:50:11PM +0000, Arnd Bergmann wrote:
-> On Tuesday 16 October 2012, Jaegeuk Kim wrote:
-> > > IIRC, fs2fs uses 4k inodes, so IMO per-inode xattr tress with
-> > > internal storage before spilling to an external block is probably
-> > > the best approach to take...
-> > 
-> > Yes, indeed this is the best approach to f2fs's xattr.
-> > Apart from giving fs hints, it is worth enough to optimize later.
-> 
-> I've thought a bit more about how this could be represented efficiently
-> in 4KB nodes. This would require a significant change of the way you
-> represent inodes, but can improve a number of things at the same time.
-> 
-> The idea is to replace the fixed area in the inode that contains block
-> pointers with an extensible TLV (type/length/value) list that can contain
-> multiple variable-length fields, like this.
+This patch adds description on recently introduced direct firmware
+loading by Linus.
 
-You've just re-invented inode forks... ;)
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ Documentation/firmware_class/README |   26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-> All TLVs together with the
-> fixed-length inode data can fill a 4KB block.
-> 
-> The obvious types would be:
-> 
-> * Direct file contents if the file is less than a block
-> * List of block pointers, as before, minimum 1, maximum until the end
->   of the block
-> * List of indirect pointers, now also a variable length, similar to the
->   list of block pointers
-> * List of double-indirect block pointers
-> * direct xattr: zero-terminated attribute name followed by contents
-> * indirect xattr: zero-terminated attribute name followed by up to
->   16 block pointers to store a maximum of 64KB sized xattrs
-> 
-> This could be extended later to cover additional types, e.g. a list
-> of erase block pointers, triple-indirect blocks or extents.
-
-An inode fork doesn't care about the data in it - it's just an
-independent block mapping index. i.e. inline, direct,
-indirect, double indirect. The data in the fork is managed
-externally to the format of the fork. e.g. XFS has two forks - one
-for storing data (file data, directory contents, etc) and the other
-for storing attributes.
-
-The main issue with supporting an arbitrary number of forks is space
-management of the inode literal area.  e.g. one fork is in inline
-format (e.g.  direct file contents) and then we add an attribute.
-The attribute won't fit inline, nor will an extent form fork header,
-so the inline data fork has to be converted to extent format before
-the xattr can be added. Now scale that problem up to an arbitrary
-number of forks....
-
-> As a variation of this, it would also be nice to turn around the order
-> in which the pointers are walked, to optimize for space and for growing
-> files, rather than for reading the beginning of a file. With this, you
-> can represent a 9 KB file using a list of two block pointers, and 1KB
-> of direct data, all in the inode. When the user adds another byte, you
-> only need to rewrite the inode. Similarly, a 5 MB file would have a
-> single indirect node (covering block pointers for 4 MB), plus 256
-> separate block pointers (covering the last megabyte), and a 5 GB file
-> can be represented using 1 double-indirect node and 256 indirect nodes,
-> and each of them can still be followed by direct "tail" data and
-> extended attributes.
-
-I'm not sure that the resultant code complexity is worth saving an
-extra block here and there.
-
-Cheers,
-
-Dave.
+diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
+index 7eceaff..815b711 100644
+--- a/Documentation/firmware_class/README
++++ b/Documentation/firmware_class/README
+@@ -18,32 +18,40 @@
+  High level behavior (mixed):
+  ============================
+ 
+- kernel(driver): calls request_firmware(&fw_entry, $FIRMWARE, device)
+-
+- userspace:
++ 1), kernel(driver):
++	- calls request_firmware(&fw_entry, $FIRMWARE, device)
++	- kernel searchs the fimware image with name $FIRMWARE directly
++	in the below search path of root filesystem:
++		"/lib/firmware/updates/" UTS_RELEASE,
++		"/lib/firmware/updates",
++		"/lib/firmware/" UTS_RELEASE,
++		"/lib/firmware"
++	- If found, goto 7), else goto 2)
++
++ 2), userspace:
+  	- /sys/class/firmware/xxx/{loading,data} appear.
+ 	- hotplug gets called with a firmware identifier in $FIRMWARE
+ 	  and the usual hotplug environment.
+ 		- hotplug: echo 1 > /sys/class/firmware/xxx/loading
+ 
+- kernel: Discard any previous partial load.
++ 3), kernel: Discard any previous partial load.
+ 
+- userspace:
++ 4), userspace:
+ 		- hotplug: cat appropriate_firmware_image > \
+ 					/sys/class/firmware/xxx/data
+ 
+- kernel: grows a buffer in PAGE_SIZE increments to hold the image as it
++ 5), kernel: grows a buffer in PAGE_SIZE increments to hold the image as it
+ 	 comes in.
+ 
+- userspace:
++ 6), userspace:
+ 		- hotplug: echo 0 > /sys/class/firmware/xxx/loading
+ 
+- kernel: request_firmware() returns and the driver has the firmware
++ 7), kernel: request_firmware() returns and the driver has the firmware
+ 	 image in fw_entry->{data,size}. If something went wrong
+ 	 request_firmware() returns non-zero and fw_entry is set to
+ 	 NULL.
+ 
+- kernel(driver): Driver code calls release_firmware(fw_entry) releasing
++ 8), kernel(driver): Driver code calls release_firmware(fw_entry) releasing
+ 		 the firmware image and any related resource.
+ 
+  High level behavior (driver code):
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
