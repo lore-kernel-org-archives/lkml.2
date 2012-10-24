@@ -1,176 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935179Ab2JXPfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:35:20 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:11192 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964999Ab2JXPep (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:34:45 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <nicolas.ferre@atmel.com>, <voice.shen@atmel.com>,
-        <marek.belisko@open-nandra.com>, <ivan.shugov@gmail.com>,
-        <josh.wu@atmel.com>
-Subject: [PATCH 7/8] ARM: at91/i2c: change id to let i2c-at91 work
-Date: Wed, 24 Oct 2012 17:33:56 +0200
-Message-ID: <55320d29feb80bb5da64dcb82518a56174da7ce4.1351092432.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <cover.1351092432.git.nicolas.ferre@atmel.com>
-References: <cover.1351092432.git.nicolas.ferre@atmel.com>
+	id S1758639Ab2JXPfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:35:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:16561 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758577Ab2JXPfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 11:35:51 -0400
+Subject: [RFC PATCH v8 0/5] IPC: checkpoint/restore in userspace enhancements
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: serge.hallyn@canonical.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, xemul@parallels.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, jmorris@namei.org,
+        cmetcalf@tilera.com, joe.korty@ccur.com, dhowells@redhat.com,
+        dledford@redhat.com, viro@zeniv.linux.org.uk,
+        kosaki.motohiro@jp.fujitsu.com, linux-api@vger.kernel.org,
+        serue@us.ibm.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        devel@openvz.org, mtk.manpages@gmail.com
+Date: Wed, 24 Oct 2012 19:34:51 +0400
+Message-ID: <20121024151555.5642.79086.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bo Shen <voice.shen@atmel.com>
+v8:
+This respin of the patch set was significantly reworked. Most part of new API
+was replaced by sysctls (by one per messages, semaphores and shared memory),
+allowing to preset desired id for next new IPC object.
 
-The i2c core driver will turn the platform device ID to busnum
-When using platfrom device ID as -1, it means dynamically assigned
-the busnum. When writing code, we need to make sure the busnum,
-and call i2c_register_board_info(int busnum, ...) to register device
-if using -1, we do not know the value of busnum
+This patch set is aimed to provide additional functionality for all IPC
+objects, which is required for migration of these objects by user-space
+checkpoint/restore utils (CRIU).
 
-In order to solve this issue, set the platform device ID as a fix number
-Here using 0 to match the busnum used in i2c_regsiter_board_info()
+The main problem here was impossibility to set up object id. This patch set
+solves the problem by adding new sysctls for preset of desired id for new IPC
+object.
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Another problem was to peek messages from queues without deleting them.
+This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
+MSG_COPY flag is set, then msgtyp is interpreted as message number.
+
+The following series implements...
+
 ---
- arch/arm/mach-at91/at91rm9200.c          | 2 +-
- arch/arm/mach-at91/at91rm9200_devices.c  | 2 +-
- arch/arm/mach-at91/at91sam9260.c         | 4 ++--
- arch/arm/mach-at91/at91sam9260_devices.c | 2 +-
- arch/arm/mach-at91/at91sam9261.c         | 4 ++--
- arch/arm/mach-at91/at91sam9261_devices.c | 2 +-
- arch/arm/mach-at91/at91sam9263.c         | 2 +-
- arch/arm/mach-at91/at91sam9263_devices.c | 2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c  | 2 +-
- 9 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index b4f0565..5269825 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -187,7 +187,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91rm9200", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91rm9200.0", &twi_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
-diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
-index 7cd8053..1e122bc 100644
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -512,7 +512,7 @@ static struct resource twi_resources[] = {
- 
- static struct platform_device at91rm9200_twi_device = {
- 	.name		= "i2c-at91rm9200",
--	.id		= -1,
-+	.id		= 0,
- 	.resource	= twi_resources,
- 	.num_resources	= ARRAY_SIZE(twi_resources),
- };
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index ad29f93..f820261 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -211,8 +211,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("t1_clk", "atmel_tcb.1", &tc4_clk),
- 	CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.1", &tc5_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260", &twi_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g20.0", &twi_clk),
- 	/* more usart lookup table for DT entries */
- 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
- 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
-diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
-index 44385a4..aa1e587 100644
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -421,7 +421,7 @@ static struct resource twi_resources[] = {
- };
- 
- static struct platform_device at91sam9260_twi_device = {
--	.id		= -1,
-+	.id		= 0,
- 	.resource	= twi_resources,
- 	.num_resources	= ARRAY_SIZE(twi_resources),
- };
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 8d999eb..04295c0 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -178,8 +178,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &hck0),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9261", &twi_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g10", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9261.0", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9g10.0", &twi_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
- 	CLKDEV_CON_ID("pioB", &pioB_clk),
- 	CLKDEV_CON_ID("pioC", &pioC_clk),
-diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-index 0256a00..b948769 100644
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -317,7 +317,7 @@ static struct resource twi_resources[] = {
- };
- 
- static struct platform_device at91sam9261_twi_device = {
--	.id		= -1,
-+	.id		= 0,
- 	.resource	= twi_resources,
- 	.num_resources	= ARRAY_SIZE(twi_resources),
- };
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index 6a01d03..d6f9c23 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -193,7 +193,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
--	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260", &twi_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "i2c-at91sam9260.0", &twi_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
-diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
-index 23b6384..cb85da2 100644
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -600,7 +600,7 @@ static struct resource twi_resources[] = {
- 
- static struct platform_device at91sam9263_twi_device = {
- 	.name		= "i2c-at91sam9260",
--	.id		= -1,
-+	.id		= 0,
- 	.resource	= twi_resources,
- 	.num_resources	= ARRAY_SIZE(twi_resources),
- };
-diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
-index 3d2c81d..5047bdc 100644
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -347,7 +347,7 @@ static struct resource twi_resources[] = {
- 
- static struct platform_device at91sam9rl_twi_device = {
- 	.name		= "i2c-at91sam9g20",
--	.id		= -1,
-+	.id		= 0,
- 	.resource	= twi_resources,
- 	.num_resources	= ARRAY_SIZE(twi_resources),
- };
--- 
-1.7.11.3
+Stanislav Kinsbursky (5):
+      ipc: remove forced assignment of selected message
+      ipc: add sysctl to specify desired next object id
+      ipc: message queue receive cleanup
+      ipc: message queue copy feature introduced
+      test: IPC message queue copy feture test
+
+
+ include/linux/ipc_namespace.h        |    1 
+ include/linux/msg.h                  |    5 -
+ include/uapi/linux/msg.h             |    1 
+ ipc/compat.c                         |   45 +++----
+ ipc/ipc_sysctl.c                     |   28 ++++
+ ipc/msg.c                            |   99 +++++++++++----
+ ipc/msgutil.c                        |   38 ++++++
+ ipc/util.c                           |   16 ++
+ ipc/util.h                           |    2 
+ tools/testing/selftests/ipc/Makefile |   25 ++++
+ tools/testing/selftests/ipc/msgque.c |  231 ++++++++++++++++++++++++++++++++++
+ 11 files changed, 432 insertions(+), 59 deletions(-)
+ create mode 100644 tools/testing/selftests/ipc/Makefile
+ create mode 100644 tools/testing/selftests/ipc/msgque.c
 
