@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2JXIHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:07:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14282 "EHLO mga02.intel.com"
+	id S1758029Ab2JXIIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:08:44 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757412Ab2JXIHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:07:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="231520583"
-Subject: sched: correct the comments for tick_sched_timer()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com, fei.li@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Oct 2012 01:07:35 +0800
-Message-ID: <1351098455.15558.1421.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757951Ab2JXIIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:08:40 -0400
+Message-ID: <5087A203.4060505@nod.at>
+Date: Wed, 24 Oct 2012 10:08:35 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: Matthew Leach <matthew@mattleach.net>
+CC: linux-kernel@vger.kernel.org,
+        =?UTF-8?B?TWFydGluIFDDpHJ0ZWw=?= <martin.partel@gmail.com>
+Subject: Re: [REGRESSION] uml: signal.c build errors
+References: <87pq48lqut.fsf@mattleach.net>
+In-Reply-To: <87pq48lqut.fsf@mattleach.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24.10.2012 01:18, Matthew Leach wrote:
+> Hi,
+>
+> When building UML against 3.7-rc2 I encounter the following build error:
+>
+> # make ARCH=uml
+> scripts/kconfig/conf --silentoldconfig arch/x86/um/Kconfig
+>    CHK     include/generated/uapi/linux/version.h
+>    UPD     include/generated/uapi/linux/version.h
+>    WRAP    arch/um/include/generated/asm/clkdev.h
+>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
+>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
+>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
+>
+> ...
+>
+>    CC      arch/um/os-Linux/signal.o
+> arch/um/os-Linux/signal.c:18:8: error: conflicting types for ‘sig_info’
+> In file included from arch/um/os-Linux/signal.c:12:0:
+> /home/matthew/Development/linux/arch/um/include/shared/as-layout.h:64:15: note: previous declaration of ‘sig_info’ was here
+> arch/um/os-Linux/signal.c:19:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:19:2: warning: (near initialization for ‘sig_info[5]’) [enabled by default]
+> arch/um/os-Linux/signal.c:20:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:20:2: warning: (near initialization for ‘sig_info[8]’) [enabled by default]
+> arch/um/os-Linux/signal.c:21:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:21:2: warning: (near initialization for ‘sig_info[4]’) [enabled by default]
+> arch/um/os-Linux/signal.c:22:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:22:2: warning: (near initialization for ‘sig_info[28]’) [enabled by default]
+> arch/um/os-Linux/signal.c:23:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:23:2: warning: (near initialization for ‘sig_info[7]’) [enabled by default]
+> arch/um/os-Linux/signal.c:24:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:24:2: warning: (near initialization for ‘sig_info[11]’) [enabled by default]
+> arch/um/os-Linux/signal.c:25:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:25:2: warning: (near initialization for ‘sig_info[29]’) [enabled by default]
+> arch/um/os-Linux/signal.c:26:2: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:26:2: warning: (near initialization for ‘sig_info[26]’) [enabled by default]
+> arch/um/os-Linux/signal.c:133:1: warning: initialization from incompatible pointer type [enabled by default]
+> arch/um/os-Linux/signal.c:133:1: warning: (near initialization for ‘handlers[26]’) [enabled by default]
+> make[1]: *** [arch/um/os-Linux/signal.o] Error 1
+> make: *** [arch/um/os-Linux] Error 2
+>
+> I have tracked this down to [1] where, indeed, the type of sig_info is
+> different; the second parameter in signal.c is 'siginfo_t' where as in
+> as-layout.h the second parameter's type is declared as 'struct siginfo'.
+>
+> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
 
-In the comments of function tick_sched_timer(), the sentence
-"timer->base->cpu_base->lock held" is not right.
+Does this patch fix the issue?
+Are you using glibc 2.17?
 
-In function __run_hrtimer(), before call timer->function(),
-the cpu_base->lock has been unlocked.
+Thanks,
+//richard
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 ---
- kernel/time/tick-sched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+diff --git a/arch/um/include/shared/as-layout.h b/arch/um/include/shared/as-layout.h
+index 694c792..48fcbb0 100644
+--- a/arch/um/include/shared/as-layout.h
++++ b/arch/um/include/shared/as-layout.h
+@@ -60,9 +60,6 @@ extern unsigned long host_task_size;
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index a402608..2bc73d3 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -794,7 +794,7 @@ void tick_check_idle(int cpu)
- #ifdef CONFIG_HIGH_RES_TIMERS
- /*
-  * We rearm the timer until we get disabled by the idle code.
-- * Called with interrupts disabled and timer->base->cpu_base->lock held.
-+ * Called with interrupts disabled.
-  */
- static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- {
--- 
-1.7.0.4
+  extern int linux_main(int argc, char **argv);
 
+-struct siginfo;
+-extern void (*sig_info[])(int, struct siginfo *si, struct uml_pt_regs *);
+-
+  #endif
 
+  #endif
+diff --git a/arch/um/os-Linux/skas/process.c b/arch/um/os-Linux/skas/process.c
+index 4625949..3a72936 100644
+--- a/arch/um/os-Linux/skas/process.c
++++ b/arch/um/os-Linux/skas/process.c
+@@ -23,6 +23,9 @@
+  #include <skas_ptrace.h>
+  #include <sysdep/stub.h>
+
++#include <signal.h>
++extern void (*sig_info[NSIG])(int, siginfo_t *, struct uml_pt_regs *);
++
+  int is_skas_winch(int pid, int fd, void *data)
+  {
+  	return pid == getpgrp();
 
