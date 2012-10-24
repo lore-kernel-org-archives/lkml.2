@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935484Ab2JXSjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:39:09 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57286 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934943Ab2JXSjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:39:07 -0400
-Date: Wed, 24 Oct 2012 14:39:04 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: "'Steven J. Magnani'" <steve@digidescorp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.6.0 kernel - ext4 corruption, or?
-Message-ID: <20121024183904.GB6142@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Justin Piszcz <jpiszcz@lucidpixels.com>,
-	"'Steven J. Magnani'" <steve@digidescorp.com>,
-	linux-kernel@vger.kernel.org
-References: <1351085817.2362.2.camel@iscandar>
- <002101cdb1e1$47972c60$d6c58520$@lucidpixels.com>
- <20121024144025.GA30955@thunk.org>
- <009201cdb1ff$c33d8c60$49b8a520$@lucidpixels.com>
+	id S935378Ab2JXSmU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:42:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933429Ab2JXSmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:42:19 -0400
+Date: Wed, 24 Oct 2012 20:43:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
+Message-ID: <20121024184311.GA5025@redhat.com>
+References: <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com> <20121024161638.GA2465@linux.vnet.ibm.com> <20121024171855.GA22371@redhat.com> <20121024182005.GF2465@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <009201cdb1ff$c33d8c60$49b8a520$@lucidpixels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20121024182005.GF2465@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 11:53:47AM -0400, Justin Piszcz wrote:
+On 10/24, Paul E. McKenney wrote:
 >
-> The problem which we are currently trying to investigate was
-> reportedly introduced in v3.6.1.  So far that's about how we know; we
-> have two users who have reported it, but I and other ext4 developers
-> haven't been able to reproduce it yet.
+> On Wed, Oct 24, 2012 at 07:18:55PM +0200, Oleg Nesterov wrote:
+> > On 10/24, Paul E. McKenney wrote:
+> > >
+> > > static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> > > {
+> > > 	/*
+> > > 	 * Decrement our count, but protected by RCU-sched so that
+> > > 	 * the writer can force proper serialization.
+> > > 	 */
+> > > 	rcu_read_lock_sched();
+> > > 	this_cpu_dec(*p->counters);
+> > > 	rcu_read_unlock_sched();
+> > > }
+> >
+> > Yes, the explicit lock/unlock makes the new assumptions about
+> > synchronize_sched && barriers unnecessary. And iiuc this could
+> > even written as
+> >
+> > 	rcu_read_lock_sched();
+> > 	rcu_read_unlock_sched();
+> >
+> > 	this_cpu_dec(*p->counters);
 >
-> Got it.
+> But this would lose the memory barrier that is inserted by
+> synchronize_sched() after the CPU's last RCU-sched read-side critical
+> section.
 
-Sorry, typo, we believe that it was introduced in v3.6.2; there were
-no ext4-related changes between v3.6 and v3.6.1.
+How? Afaics there is no need to synchronize with this_cpu_dec(), its
+result was already seen before the 2nd synchronize_sched() was called
+in percpu_down_write().
 
-                                         - Ted
+IOW, this memory barrier is only needed to synchronize with memory
+changes inside down_read/up_read.
+
+To clarify, of course I do not suggest to write is this way. I am just
+trying to check my understanding.
+
+Oleg.
+
