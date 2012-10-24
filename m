@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161161Ab2JXU6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:58:06 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35386 "EHLO ogre.sisk.pl"
+	id S1758761Ab2JXU6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:58:44 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58235 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab2JXU6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:58:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [BUGFIX 2/2] PCI/PM: Resume device before shutdown
-Date: Wed, 24 Oct 2012 23:01:55 +0200
-Message-ID: <3990336.eisiEt4Bt9@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1351061654-8339-2-git-send-email-ying.huang@intel.com>
-References: <1351061654-8339-1-git-send-email-ying.huang@intel.com> <1351061654-8339-2-git-send-email-ying.huang@intel.com>
+	id S1751447Ab2JXU6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 16:58:43 -0400
+Date: Wed, 24 Oct 2012 13:57:56 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>
+Subject: [RESEND][PATCH] gen_init_cpio: avoid stack overflow when expanding
+Message-ID: <20121024205756.GA12419@www.outflux.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 of October 2012 14:54:14 Huang Ying wrote:
-> Some actions during shutdown need device to be in D0 state, such as
-> MSI shutdown etc, so resume device before shutdown.
-> 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+Fix possible overflow of the buffer used for expanding environment
+variables when building file list.
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+$ cat usr/crash.list
+file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
+$ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
+*** buffer overflow detected ***: ./usr/gen_init_cpio terminated
 
-> ---
->  drivers/pci/pci-driver.c |   12 ++----------
->  1 file changed, 2 insertions(+), 10 deletions(-)
-> 
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -398,6 +398,8 @@ static void pci_device_shutdown(struct d
->  	struct pci_dev *pci_dev = to_pci_dev(dev);
->  	struct pci_driver *drv = pci_dev->driver;
->  
-> +	pm_runtime_resume(dev);
-> +
->  	if (drv && drv->shutdown)
->  		drv->shutdown(pci_dev);
->  	pci_msi_shutdown(pci_dev);
-> @@ -408,16 +410,6 @@ static void pci_device_shutdown(struct d
->  	 * continue to do DMA
->  	 */
->  	pci_disable_device(pci_dev);
-> -
-> -	/*
-> -	 * Devices may be enabled to wake up by runtime PM, but they need not
-> -	 * be supposed to wake up the system from its "power off" state (e.g.
-> -	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
-> -	 * supposed to wake up the system at this point.  The state argument
-> -	 * will be ignored by pci_enable_wake().
-> -	 */
-> -	if (!device_may_wakeup(dev))
-> -		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
->  }
->  
->  #ifdef CONFIG_PM
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+This also replaces the space-indenting with tabs.
+
+Patch based on existing fix extracted from grsecurity.
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: stable@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ usr/gen_init_cpio.c |   43 +++++++++++++++++++++++--------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
+
+diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
+index af0f22f..aca6edc 100644
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -303,7 +303,7 @@ static int cpio_mkfile(const char *name, const char *location,
+ 	int retval;
+ 	int rc = -1;
+ 	int namesize;
+-	int i;
++	unsigned int i;
+ 
+ 	mode |= S_IFREG;
+ 
+@@ -381,25 +381,28 @@ error:
+ 
+ static char *cpio_replace_env(char *new_location)
+ {
+-       char expanded[PATH_MAX + 1];
+-       char env_var[PATH_MAX + 1];
+-       char *start;
+-       char *end;
+-
+-       for (start = NULL; (start = strstr(new_location, "${")); ) {
+-               end = strchr(start, '}');
+-               if (start < end) {
+-                       *env_var = *expanded = '\0';
+-                       strncat(env_var, start + 2, end - start - 2);
+-                       strncat(expanded, new_location, start - new_location);
+-                       strncat(expanded, getenv(env_var), PATH_MAX);
+-                       strncat(expanded, end + 1, PATH_MAX);
+-                       strncpy(new_location, expanded, PATH_MAX);
+-               } else
+-                       break;
+-       }
+-
+-       return new_location;
++	char expanded[PATH_MAX + 1];
++	char env_var[PATH_MAX + 1];
++	char *start;
++	char *end;
++
++	for (start = NULL; (start = strstr(new_location, "${")); ) {
++		end = strchr(start, '}');
++		if (start < end) {
++			*env_var = *expanded = '\0';
++			strncat(env_var, start + 2, end - start - 2);
++			strncat(expanded, new_location, start - new_location);
++			strncat(expanded, getenv(env_var),
++				PATH_MAX - strlen(expanded));
++			strncat(expanded, end + 1,
++				PATH_MAX - strlen(expanded));
++			strncpy(new_location, expanded, PATH_MAX);
++			new_location[PATH_MAX] = 0;
++		} else
++			break;
++	}
++
++	return new_location;
+ }
+ 
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
