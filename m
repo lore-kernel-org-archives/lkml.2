@@ -1,121 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965110Ab2JXHIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:08:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53036 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934374Ab2JXHH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 03:07:29 -0400
-From: Sebastien Guiriec <s-guiriec@ti.com>
-To: Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <b-cousson@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v3 1/4] ARM: dts: omap5: Update GPIO with address space and interrupts
-Date: Wed, 24 Oct 2012 09:07:11 +0200
-Message-ID: <1351062434-22514-2-git-send-email-s-guiriec@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1351062434-22514-1-git-send-email-s-guiriec@ti.com>
-References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S934406Ab2JXHNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:13:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47359 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934390Ab2JXHNa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 24 Oct 2012 03:13:30 -0400
+Message-Id: <5087B13402000078000A3CBB@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 24 Oct 2012 08:13:24 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <mukesh.rathor@oracle.com>
+Cc: <Ian.Campbell@citrix.com>, <stefano.stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH V5] PVH patches for v3.8.
+References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add base address and interrupt line inside Device Tree data for
-OMAP5
+>>> On 23.10.12 at 20:12, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
----
- arch/arm/boot/dts/omap5.dtsi |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+Do you really want to target 3.8 for these, without any hypervisor
+side review having happened? In particular,
 
-diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
-index 42c78be..737a536 100644
---- a/arch/arm/boot/dts/omap5.dtsi
-+++ b/arch/arm/boot/dts/omap5.dtsi
-@@ -104,6 +104,9 @@
- 
- 		gpio1: gpio@4ae10000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x4ae10000 0x200>;
-+			interrupts = <0 29 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio1";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -113,6 +116,9 @@
- 
- 		gpio2: gpio@48055000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x48055000 0x200>;
-+			interrupts = <0 30 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio2";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -122,6 +128,9 @@
- 
- 		gpio3: gpio@48057000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x48057000 0x200>;
-+			interrupts = <0 31 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio3";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -131,6 +140,9 @@
- 
- 		gpio4: gpio@48059000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x48059000 0x200>;
-+			interrupts = <0 32 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio4";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -140,6 +152,9 @@
- 
- 		gpio5: gpio@4805b000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x4805b000 0x200>;
-+			interrupts = <0 33 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio5";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -149,6 +164,9 @@
- 
- 		gpio6: gpio@4805d000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x4805d000 0x200>;
-+			interrupts = <0 34 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio6";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -158,6 +176,9 @@
- 
- 		gpio7: gpio@48051000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x48051000 0x200>;
-+			interrupts = <0 35 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio7";
- 			gpio-controller;
- 			#gpio-cells = <2>;
-@@ -167,6 +188,9 @@
- 
- 		gpio8: gpio@48053000 {
- 			compatible = "ti,omap4-gpio";
-+			reg = <0x48053000 0x200>;
-+			interrupts = <0 121 0x4>;
-+			interrupt-parent = <&gic>;
- 			ti,hwmods = "gpio8";
- 			gpio-controller;
- 			#gpio-cells = <2>;
--- 
-1.7.10.4
+> Changelog [since v4]
+>  - Mukesh addressed the reviewer's concerns.
+>  - Took Mukesh's patches and redid the changelogs.
+>  - Added Ack-ed as appropiate.
+>  - Fixed PVHVM 32-bit bootup issues.
+>  - Did some various cleanups, split some patches up.
+> 
+> The big change is that I've made the xen_remove_from_physmap structure
+> be of the same size and offset on 32 and 64 bit builds. Currently PVH 
+> only runs with 64-bit guests, but in the future it could run with 32-bit.
+> This change will eliminate having to add a compat layer to deal with
+> 32-bit hypercalls.
+> 
+> Besides that the patches boot on an normal hypervisor - in
+> dom0 (32 or 64bit), PV domU (32 or 64) and PVHVM domU (32 or 64).
+> I don't have the PVH hypervisor patches so I could not address the
+> change to xen_remove_from_physmap but I hope Mukesh can do that.
+> 
+> The patches are also located at:
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/pvh.v5
+> 
+> 
+>  arch/x86/include/asm/xen/interface.h |   11 ++-
+>  arch/x86/include/asm/xen/page.h      |    3 +
+>  arch/x86/xen/Kconfig                 |   10 ++
+>  arch/x86/xen/enlighten.c             |   78 ++++++++++++----
+>  arch/x86/xen/irq.c                   |    5 +-
+>  arch/x86/xen/mmu.c                   |  162 ++++++++++++++++++++++++++++++++--
+>  arch/x86/xen/mmu.h                   |    2 +
+>  arch/x86/xen/p2m.c                   |    2 +-
+>  arch/x86/xen/setup.c                 |   58 +++++++++----
+>  arch/x86/xen/smp.c                   |   75 ++++++++++------
+>  arch/x86/xen/xen-head.S              |   11 ++-
+>  drivers/xen/balloon.c                |   15 ++--
+>  drivers/xen/cpu_hotplug.c            |    4 +-
+>  drivers/xen/events.c                 |    9 ++-
+>  drivers/xen/gntdev.c                 |    3 +-
+>  drivers/xen/grant-table.c            |   27 +++++-
+>  drivers/xen/privcmd.c                |   72 ++++++++++++++-
+>  drivers/xen/xenbus/xenbus_client.c   |    3 +-
+>  include/xen/interface/memory.h       |   29 ++++++-
+>  include/xen/interface/physdev.h      |   10 ++
+
+... any changes to the hypervisor interface (didn't look in detail
+what is being changed in these two headers) should first be in
+at least -unstable before being consumed in any official release
+imo.
+
+Jan
+
+>  include/xen/xen-ops.h                |    5 +-
+>  21 files changed, 504 insertions(+), 90 deletions(-)
+> 
+> Konrad Rzeszutek Wilk (4):
+>       xen/pvh: Fix PVHVM 32-bit bootup problems.
+>       xen/hypercall: Make xen_remove_from_physmap the same on 64/32 builds.
+>       xen/smp: Move the common CPU init code a bit to prep for PVH patch.
+>       xen/e820: Coalesce the PVH release/populate logic in the generic case.
+> 
+> Mukesh Rathor (6):
+>       xen/pvh: Support ParaVirtualized Hardware extensions.
+>       xen/pvh: Extend vcpu_guest_context, p2m, event, and XenBus.
+>       xen/pvh: Implement MMU changes for PVH.
+>       xen/pvh: bootup and setup (E820) related changes.
+>       xen/pvh: balloon and grant changes.
+>       xen/pvh: /dev/xen/privcmd changes.
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org 
+> http://lists.xen.org/xen-devel 
+
+
 
