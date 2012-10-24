@@ -1,101 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab2JXPq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:46:26 -0400
-Received: from 5.mo3.mail-out.ovh.net ([87.98.178.36]:41990 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750932Ab2JXPqY (ORCPT
+	id S1757520Ab2JXPr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:47:57 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:12442 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab2JXPry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:46:24 -0400
-Date: Wed, 24 Oct 2012 17:44:07 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: ludovic.desroches@atmel.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, voice.shen@atmel.com,
-        marek.belisko@open-nandra.com, ivan.shugov@gmail.com,
-        josh.wu@atmel.com
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 0/8] at91: 3.7 fixes patch series
-Message-ID: <20121024154407.GH18964@game.jcrosoft.org>
-References: <cover.1351092432.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1351092432.git.nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 958140822856379244
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrtdeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+	Wed, 24 Oct 2012 11:47:54 -0400
+Message-ID: <1351093667.1205.11.camel@MikesLinux.fc.hp.com>
+Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
+From: Mike Yoknis <mike.yoknis@hp.com>
+Reply-To: mike.yoknis@hp.com
+To: Mel Gorman <mgorman@suse.de>
+Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
+        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Wed, 24 Oct 2012 09:47:47 -0600
+In-Reply-To: <20121020082858.GA2698@suse.de>
+References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+	 <20121008151656.GM29125@suse.de>
+	 <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
+	 <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
+	 <20121020082858.GA2698@suse.de>
+Organization: Hewlett-Packard
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On Sat, 2012-10-20 at 09:29 +0100, Mel Gorman wrote:
+> On Fri, Oct 19, 2012 at 01:53:18PM -0600, Mike Yoknis wrote:
+> > On Tue, 2012-10-09 at 08:56 -0600, Mike Yoknis wrote:
+> > > On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
+> > > > On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
+> > > > > memmap_init_zone() loops through every Page Frame Number (pfn),
+> > > > > including pfn values that are within the gaps between existing
+> > > > > memory sections.  The unneeded looping will become a boot
+> > > > > performance issue when machines configure larger memory ranges
+> > > > > that will contain larger and more numerous gaps.
+> > > > > 
+> > > > > The code will skip across invalid sections to reduce the
+> > > > > number of loops executed.
+> > > > > 
+> > > > > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+> > > > 
+> > > > I do not see the need for
+> > > > the additional complexity unless you can show it makes a big difference
+> > > > to boot times.
+> > > > 
+> > > 
+> > > Mel,
+> > > 
+> > > Let me pass along the numbers I have.  We have what we call an
+> > > "architectural simulator".  It is a computer program that pretends that
+> > > it is a computer system.  We use it to test the firmware before real
+> > > hardware is available.  We have booted Linux on our simulator.  As you
+> > > would expect it takes longer to boot on the simulator than it does on
+> > > real hardware.
+> > > 
+> > > With my patch - boot time 41 minutes
+> > > Without patch - boot time 94 minutes
+> > > 
+> > > These numbers do not scale linearly to real hardware.  But indicate to
+> > > me a place where Linux can be improved.
+> > > 
+> > > Mike Yoknis
+> > > 
+> > Mel,
+> > I finally got access to prototype hardware.  
+> > It is a relatively small machine with only 64GB of RAM.
+> >  
+> > I put in a time measurement by reading the TSC register.
+> > I booted both with and without my patch -
+> >  
+> > Without patch -
+> > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
+> > [    0.000000] memmap_init_zone() enter 1404184834218
+> > [    0.000000] memmap_init_zone() exit  1411174884438  diff = 6990050220
+> >  
+> > With patch -
+> > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
+> > [    0.000000] memmap_init_zone() enter 1555530050778
+> > [    0.000000] memmap_init_zone() exit  1559379204643  diff = 3849153865
+> >  
+> > This shows that without the patch the routine spends 45% 
+> > of its time spinning unnecessarily.
+> >  
+> 
+> I'm travelling at the moment so apologies that I have not followed up on
+> this. My problem is still the same with the patch - it changes more
+> headers than is necessary and it is sparsemem specific. At minimum, try
+> the suggestion of 
+> 
+> if (!early_pfn_valid(pfn)) {
+>       pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
+>       continue;
+> }
+> 
+> and see how much it gains you as it should work on all memory models. If
+> it turns out that you really need to skip whole sections then the strice
+> could MAX_ORDER_NR_PAGES on all memory models except sparsemem where the
+> stride would be PAGES_PER_SECTION
+> 
+Mel,
+I tried your suggestion.  I re-ran all 3 methods on our latest firmware.
 
-Best Regards,
-J.
-On 17:33 Wed 24 Oct     , Nicolas Ferre wrote:
-> 
-> Hi all,
-> I am posting this patch series just before sending a pull-request to Arnd and
-> Olof.
-> There are 2 new patches that I have just cooked today about external IRQ
-> handling: please review.
-> I would like you to double check that I have not made any mistake while
-> collecting the other patches...
-> 
-> Thanks, best regards,
-> 
-> 
-> Bo Shen (2):
->   ARM: at91/i2c: change id to let i2c-gpio work
->   ARM: at91/i2c: change id to let i2c-at91 work
-> 
-> Ivan Shugov (1):
->   ARM: at91: at91sam9g10: fix SOC type detection
-> 
-> Jean-Christophe PLAGNIOL-VILLARD (1):
->   ARM: at91: drop duplicated config SOC_AT91SAM9 entry
-> 
-> Josh Wu (1):
->   ARM: at91/tc: fix typo in the DT document
-> 
-> Marek Belisko (1):
->   ARM: at91/dts: at91sam9g20ek_common: Fix typos in buttons labels.
-> 
-> Nicolas Ferre (2):
->   ARM: at91: fix external interrupts in non-DT case
->   ARM: at91: fix external interrupt specification in board code
-> 
->  Documentation/devicetree/bindings/arm/atmel-at91.txt |  2 +-
->  arch/arm/boot/dts/at91sam9g20ek_common.dtsi          |  4 ++--
->  arch/arm/mach-at91/Kconfig                           | 10 ++--------
->  arch/arm/mach-at91/at91rm9200.c                      |  2 +-
->  arch/arm/mach-at91/at91rm9200_devices.c              |  4 ++--
->  arch/arm/mach-at91/at91sam9260.c                     |  4 ++--
->  arch/arm/mach-at91/at91sam9260_devices.c             |  4 ++--
->  arch/arm/mach-at91/at91sam9261.c                     |  4 ++--
->  arch/arm/mach-at91/at91sam9261_devices.c             |  4 ++--
->  arch/arm/mach-at91/at91sam9263.c                     |  2 +-
->  arch/arm/mach-at91/at91sam9263_devices.c             |  4 ++--
->  arch/arm/mach-at91/at91sam9rl_devices.c              |  4 ++--
->  arch/arm/mach-at91/board-neocore926.c                |  2 +-
->  arch/arm/mach-at91/board-sam9261ek.c                 |  2 +-
->  arch/arm/mach-at91/board-sam9263ek.c                 |  2 +-
->  arch/arm/mach-at91/generic.h                         |  3 ++-
->  arch/arm/mach-at91/irq.c                             |  9 +++++++--
->  arch/arm/mach-at91/setup.c                           |  4 ++--
->  18 files changed, 35 insertions(+), 35 deletions(-)
-> 
-> -- 
-> 1.7.11.3
-> 
+The following are TSC difference numbers (*10^6) to execute
+memmap_init_zone() -
+
+No patch   - 7010
+Mel's patch- 3918
+My patch   - 3847
+
+The incremental improvement of my method is not significant vs. yours.
+
+If you believe your suggested change is worthwhile I will create a v2
+patch.
+Mike Y
+
+
