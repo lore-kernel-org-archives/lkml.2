@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259Ab2JXLTr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:19:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59126 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2JXLTq (ORCPT
+	id S1758270Ab2JXLUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:20:06 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:53046 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab2JXLUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:19:46 -0400
-Subject: Re: [PATCH] pch_dma: use module_pci_driver to simplify the code
-From: Vinod Koul <vkoul@infradead.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: vinod.koul@intel.com, djbw@fb.com, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAPgLHd9EpvEuFp4wtL+-BJRyd4t26qh9yzfbAvb5M+OPUttjCQ@mail.gmail.com>
-References: <CAPgLHd9EpvEuFp4wtL+-BJRyd4t26qh9yzfbAvb5M+OPUttjCQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Oct 2012 16:36:13 +0530
-Message-ID: <1351076773.5263.59.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 07:20:04 -0400
+Date: Wed, 24 Oct 2012 13:19:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/2] x86: Provide a comment in uapi/asm/hw_breakpoint.h
+Message-ID: <20121024111959.GD13010@gmail.com>
+References: <20121024103559.GB10691@gmail.com>
+ <20121022120558.14413.78980.stgit@warthog.procyon.org.uk>
+ <22333.1351077173@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <22333.1351077173@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-10 at 21:04 +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Use the module_pci_driver() macro to make the code simpler
-> by eliminating module_init and module_exit calls.
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/dma/pch_dma.c | 13 +------------
->  1 file changed, 1 insertion(+), 12 deletions(-)
-> 
-> diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-> index 987ab5c..b405916 100644
-> --- a/drivers/dma/pch_dma.c
-> +++ b/drivers/dma/pch_dma.c
-> @@ -1029,18 +1029,7 @@ static struct pci_driver pch_dma_driver = {
->  #endif
->  };
->  
-> -static int __init pch_dma_init(void)
-> -{
-> -	return pci_register_driver(&pch_dma_driver);
-> -}
-> -
-> -static void __exit pch_dma_exit(void)
-> -{
-> -	pci_unregister_driver(&pch_dma_driver);
-> -}
-> -
-> -module_init(pch_dma_init);
-> -module_exit(pch_dma_exit);
-> +module_pci_driver(pch_dma_driver);
->  
->  MODULE_DESCRIPTION("Intel EG20T PCH / LAPIS Semicon ML7213/ML7223/ML7831 IOH "
->  		   "DMA controller driver");
-> 
-> 
-Applied thanks
 
--- 
-Vinod Koul
-Intel Corp.
+* David Howells <dhowells@redhat.com> wrote:
 
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > Just wondering, have the tools/perf/ issues been solved in your 
+> > tree, are the x86 UAPI disintegration changes pullable?
+> 
+> Did you have a look at the set of five patches I sent?  I 
+> think those should fix up perf and building tools with O=, but 
+> I'm not sure whether we want the last two.  From commits 
+> already made, I'm guessing that at least patch #4 should be 
+> made.
+> 
+> Note that the disintegrate-x86 branch does not include any 
+> perf fixes.  I can regenerate that with some or all of them, 
+> once I know what they will be.
+
+Just wanted to inquire about the current status of it, as I'd 
+rather not pull anything that introduces breakages and is still 
+work in progress. Once it's all sorted out I'll have a look.
+
+Arnaldo, what's your take on David's perf Makefile changes?
+
+Thanks,
+
+	Ingo
