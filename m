@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab2JXQlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:41:18 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46145 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab2JXQlP (ORCPT
+	id S932859Ab2JXQll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:41:41 -0400
+Received: from nm12-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.126]:44033
+	"EHLO nm12-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935256Ab2JXQkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:41:15 -0400
-Date: Wed, 24 Oct 2012 09:41:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anil Nair <anilcoll90@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: Re: usbview 2.0 release
-Message-ID: <20121024164112.GA2499@kroah.com>
-References: <20121022162140.GA10021@kroah.com>
- <CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
- <1350927423.4238.5.camel@iscandar.digidescorp.com>
- <20121022175907.GA19113@kroah.com>
- <CAHkwNTnH-qx5rUZhVwB9cW-4wVOa-TEuO3=A158XZ7T+Y7LOPw@mail.gmail.com>
- <CAHkwNTniuL-G11c25FV5k5F_yyhOR-++OBhOahBugjeFqWzFng@mail.gmail.com>
- <20121022185004.GA19645@kroah.com>
- <CAHkwNTmqVkjnZBi01RkY3McSOHYFOvb4m82Lfrc_dVSxSoBWDg@mail.gmail.com>
- <20121024030002.GB7982@kroah.com>
- <CAHkwNTnkEANzDe9mUCtrTgE3LLphtr0XENQfC9-J02ygH=-VEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHkwNTnkEANzDe9mUCtrTgE3LLphtr0XENQfC9-J02ygH=-VEA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Oct 2012 12:40:07 -0400
+X-Yahoo-Newman-Id: 308485.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Oq9_brwVM1lD3O40xOQolVzI9gImCtw1fjOYV5Mmy5wdko0
+ HygpJ59c.T..RNEF1AO32TAa.VQitfdLTsZshPRoJQPmB4bErIOmi9fUmu_Z
+ WP982X1BLptVaBIgZ8JZH8qYwr_AnfisC1TMqiGUpQMX0EtI6pjSWNsXfSKe
+ oU0b8uUPcQ.M3CGWZ6czcLO.dB3Pbtt4E1QbFusdEaNOMwQF2e.tc6T06_9O
+ RoZTRMhDclfQjz0FMDiCOS14kSO8I6JYAUND9nWL_pIaPcN3LVlpGROVvxKX
+ cMFO5o2k70E0yC6L4lTRG2fuOkTl6vll2MM3UIRuBmIz2hrLeVvbQQCc0qr7
+ lpY2PuMIEXbJgd22Bs74VS_C1okycUA3dcVYlDgyAhzJtDDOdQc.obo.HkT3
+ x_7jh4vBib.Boab7MPMWiq05.rnpAyxSilkc8PdvpNQC1ij37eaUgsvNpJbJ
+ kboQpN6ESGHyw2u_jKworBUYHwO7N5Q--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+From: danielfsantos@att.net
+To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v3 01/10] compiler-gcc4.h: Reorder macros based upon gcc ver
+Date: Wed, 24 Oct 2012 11:33:52 -0500
+Message-Id: <1351096441-12388-1-git-send-email-daniel.santos@pobox.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
+References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:05:48PM +0530, Anil Nair wrote:
-> Hello Greg,
-> 
-> > Look at how the lsusb tool walks the list of all USB devices in the
-> > system, using libusb, and port that code over to usbview, replacing the
-> > big "walk and parse the devices file" functionality.
-> >
-> 
-> You meant to say replace the functions calling or using debugfs by
-> API's of libusb?
+This helps to keep the file from getting confusing, removes one
+duplicate version check and should encourage future editors to put new
+macros where they belong.
 
-Yes.  But note, the debugfs "usage" is just reading a single file and
-parsing the structure of that file and filling out an internal "tree" of
-USB devices.  So moving that to use libusb should be pretty simple.
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/compiler-gcc4.h |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
 
-> Well i will try working on it, but i can't say a sure time when it
-> will be completed..... i know working of USB just need to go through
-> libusb API's and some examples.
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 412bc6c..8914293 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -13,6 +13,10 @@
+ #define __must_check 		__attribute__((warn_unused_result))
+ #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+ 
++#if __GNUC_MINOR__ > 0
++# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
++#endif
++
+ #if __GNUC_MINOR__ >= 3
+ /* Mark functions as cold. gcc will assume any path leading to a call
+    to them will be unlikely.  This means a lot of manual unlikely()s
+@@ -31,6 +35,12 @@
+ 
+ #define __linktime_error(message) __attribute__((__error__(message)))
+ 
++#ifndef __CHECKER__
++# define __compiletime_warning(message) __attribute__((warning(message)))
++# define __compiletime_error(message) __attribute__((error(message)))
++#endif /* __CHECKER__ */
++#endif /* __GNUC_MINOR__ >= 3 */
++
+ #if __GNUC_MINOR__ >= 5
+ /*
+  * Mark a position in code as unreachable.  This can be used to
+@@ -46,8 +56,7 @@
+ /* Mark a function definition as prohibited from being cloned. */
+ #define __noclone	__attribute__((__noclone__))
+ 
+-#endif
+-#endif
++#endif /* __GNUC_MINOR__ >= 5 */
+ 
+ #if __GNUC_MINOR__ >= 6
+ /*
+@@ -56,10 +65,3 @@
+ #define __visible __attribute__((externally_visible))
+ #endif
+ 
+-#if __GNUC_MINOR__ > 0
+-#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+-#endif
+-#if __GNUC_MINOR__ >= 3 && !defined(__CHECKER__)
+-#define __compiletime_warning(message) __attribute__((warning(message)))
+-#define __compiletime_error(message) __attribute__((error(message)))
+-#endif
+-- 
+1.7.3.4
 
-Again, look at the usbutils source code, it does most of this for you
-already, and you can take the code from there since the license is the
-same.
-
-good luck,
-
-greg k-h
