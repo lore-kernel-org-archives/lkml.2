@@ -1,173 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934800Ab2JXUEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:04:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32865 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933792Ab2JXUEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:04:06 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201210242156.43233.linux@rainbow-software.org>
-References: <201210240847.52417.linux@rainbow-software.org> <450396555.xT2D53NWjT@vostro.rjw.lan> <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com> <201210242156.43233.linux@rainbow-software.org>
+	id S965380Ab2JXUEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:04:32 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:45602 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965352Ab2JXUEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 16:04:08 -0400
+Date: Wed, 24 Oct 2012 15:04:07 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH v4 3/5] zynq: remove use of CLKDEV_LOOKUP
+Message-ID: <20121024200407.GD6713@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 24 Oct 2012 13:03:35 -0700
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <bb2a995e-86b7-4926-9ced-2adf5e28f597@email.android.com>
+In-Reply-To: <20121024200222.GA6713@beefymiracle.amer.corp.natinst.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 03:04:03 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 03:04:03 PM,
+	Serialize complete at 10/24/2012 03:04:03 PM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-24_05:2012-10-24,2012-10-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probably should.
+The Zynq support in mainline does not (yet) make use of any of the
+generic clk or clk lookup functionality.  Remove what is upstream for
+now, until the out-of-tree implementation is in suitable form for
+merging.
 
-Ondrej Zary <linux@rainbow-software.org> wrote:
+An important side effect of this patch is that it allows the building of
+a Zynq kernel without running into unresolved symbol problems:
 
->On Wednesday 24 October 2012 21:36:04 H. Peter Anvin wrote:
->> Minor concern: it should do the wait for ready before sending each
->command.
->
->It was a hack and then I forgot to add the waits... Should I redo the
->patch? 
->I'll not be able to test it as I have to return the machine.
->
->> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->> >On Wednesday 24 of October 2012 08:47:52 Ondrej Zary wrote:
->> >> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
->> >
->> >enable A20
->> >
->> >> line but resume code assumes that KBC was used.
->> >> The laptop will not resume from S3 otherwise but powers off after
->a
->> >
->> >while
->> >
->> >> and then powers on again stuck with a blank screen.
->> >>
->> >> Fix it by enabling A20 using KBC. Affected laptop list and DMI
->data
->> >
->> >are from
->> >
->> >> bug reports at Ubuntu Launchpad.
->> >>
->> >> Tested with EX600 and PR200.
->> >>
->> >> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
->> >>
->> >> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->> >
->> >Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> >> --- a/arch/x86/kernel/acpi/boot.c
->> >> +++ b/arch/x86/kernel/acpi/boot.c
->> >> @@ -1349,6 +1349,20 @@ static int __init
->> >
->> >dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
->> >
->> >>  }
->> >>
->> >>  /*
->> >> + * Enable A20 line using KBC even if it's already enabled using
->> >
->> >other method.
->> >
->> >> + * This is needed for some MSI laptops to resume from S3.
->> >> + */
->> >> +static int __init a20_enable_kbc(const struct dmi_system_id *d)
->> >> +{
->> >> +	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n",
->> >
->> >d->ident);
->> >
->> >> +	outb(0xd1, 0x64);	/* Command write */
->> >> +	outb(0xdf, 0x60);	/* A20 on */
->> >> +	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
->> >> +
->> >> +	return 0;
->> >> +}
->> >> +
->> >> +/*
->> >>   * If your system is blacklisted here, but you find that
->acpi=force
->> >>   * works for you, please contact linux-acpi@vger.kernel.org
->> >>   */
->> >> @@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata
->> >
->> >acpi_dmi_table[] = {
->> >
->> >>  		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
->> >>  		     },
->> >>  	 },
->> >> +	/*
->> >> +	 * Some MSI laptop BIOSes are broken - INT 15h code uses port
->92h
->> >
->> >to
->> >
->> >> +	 * enable A20 line but resume code assumes that KBC was used.
->> >> +	 * The laptop will not resume from S3 otherwise but powers off
->> >> +	 * after a while and then powers on again stuck with a blank
->> >
->> >screen.
->> >
->> >> +	 */
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI EX600 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
->> >> +		     },
->> >> +	 },
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI EX700 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
->> >> +		     },
->> >> +	 },
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI GX700 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
->> >> +		     },
->> >> +	 },
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI VR201 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
->> >> +		     },
->> >> +	 },
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI VR601 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
->> >> +		     },
->> >> +	 },
->> >> +	{
->> >> +	 .callback = a20_enable_kbc,
->> >> +	 .ident = "MSI PR200 Laptop",
->> >> +	 .matches = {
->> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
->> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
->> >> +		     },
->> >> +	 },
->> >>  	{}
->> >>  };
+   drivers/built-in.o: In function `amba_get_enable_pclk':
+   clkdev.c:(.text+0x444): undefined reference to `clk_enable'
+   drivers/built-in.o: In function `amba_remove':
+   clkdev.c:(.text+0x488): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `amba_probe':
+   clkdev.c:(.text+0x540): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `amba_device_add':
+   clkdev.c:(.text+0x77c): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `enable_clock':
+   clkdev.c:(.text+0x29738): undefined reference to `clk_enable'
+   drivers/built-in.o: In function `disable_clock':
+   clkdev.c:(.text+0x29778): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `__pm_clk_remove':
+   clkdev.c:(.text+0x297f8): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `pm_clk_suspend':
+   clkdev.c:(.text+0x29bc8): undefined reference to `clk_disable'
+   drivers/built-in.o: In function `pm_clk_resume':
+   clkdev.c:(.text+0x29c28): undefined reference to `clk_enable'
+   make[2]: *** [vmlinux] Error 1
+   make[1]: *** [sub-make] Error 2
+   make: *** [all] Error 2
 
+In addition, eliminate Zynq's "use" of the versatile platform, as it is
+no longer needed.  As Nick Bowler points out:
+
+   For the record, I think this was introduced by commit 56a34b03ff427
+   ("ARM: versatile: Make plat-versatile clock optional") which forgot to
+   select PLAT_VERSATILE_CLOCK on Zynq.  This is not all that surprising,
+   because the fact that Zynq "uses" PLAT_VERSATILE is secretly hidden in
+   the Makefile.
+
+   Nevertheless, the only feature from versatile that Zynq needed was the
+   clock support, so this patch should *also* delete the secret use of
+   plat-versatile by removing this line from arch/arm/Makefile:
+
+      plat-$(CONFIG_ARCH_ZYNQ)      += versatile
+
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+Cc: John Linn <john.linn@xilinx.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ arch/arm/Kconfig                         |  1 -
+ arch/arm/Makefile                        |  1 -
+ arch/arm/mach-zynq/common.c              |  1 -
+ arch/arm/mach-zynq/include/mach/clkdev.h | 32 --------------------------------
+ 4 files changed, 35 deletions(-)
+ delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index cce4f8d..de70d99 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -946,7 +946,6 @@ config ARCH_ZYNQ
+ 	bool "Xilinx Zynq ARM Cortex A9 Platform"
+ 	select ARM_AMBA
+ 	select ARM_GIC
+-	select CLKDEV_LOOKUP
+ 	select CPU_V7
+ 	select GENERIC_CLOCKEVENTS
+ 	select ICST
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 451757d..8dbab2d 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -197,7 +197,6 @@ machine-$(CONFIG_ARCH_ZYNQ)		+= zynq
+ # by CONFIG_* macro name.
+ plat-$(CONFIG_ARCH_OMAP)	+= omap
+ plat-$(CONFIG_ARCH_S3C64XX)	+= samsung
+-plat-$(CONFIG_ARCH_ZYNQ)	+= versatile
+ plat-$(CONFIG_PLAT_IOP)		+= iop
+ plat-$(CONFIG_PLAT_NOMADIK)	+= nomadik
+ plat-$(CONFIG_PLAT_ORION)	+= orion
+diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
+index 056091a..ba48f06 100644
+--- a/arch/arm/mach-zynq/common.c
++++ b/arch/arm/mach-zynq/common.c
+@@ -31,7 +31,6 @@
+ #include <asm/hardware/cache-l2x0.h>
+ 
+ #include <mach/zynq_soc.h>
+-#include <mach/clkdev.h>
+ #include "common.h"
+ 
+ static struct of_device_id zynq_of_bus_ids[] __initdata = {
+diff --git a/arch/arm/mach-zynq/include/mach/clkdev.h b/arch/arm/mach-zynq/include/mach/clkdev.h
+deleted file mode 100644
+index c6e73d8..0000000
+--- a/arch/arm/mach-zynq/include/mach/clkdev.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * arch/arm/mach-zynq/include/mach/clkdev.h
+- *
+- *  Copyright (C) 2011 Xilinx, Inc.
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef __MACH_CLKDEV_H__
+-#define __MACH_CLKDEV_H__
+-
+-#include <plat/clock.h>
+-
+-struct clk {
+-	unsigned long		rate;
+-	const struct clk_ops	*ops;
+-	const struct icst_params *params;
+-	void __iomem		*vcoreg;
+-};
+-
+-#define __clk_get(clk) ({ 1; })
+-#define __clk_put(clk) do { } while (0)
+-
+-#endif
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.8.0
+
