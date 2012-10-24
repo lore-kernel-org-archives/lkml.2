@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934449Ab2JXTm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:42:26 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35205 "EHLO ogre.sisk.pl"
+	id S1030208Ab2JXTmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:42:32 -0400
+Received: from fieldses.org ([174.143.236.118]:36353 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933818Ab2JXTmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:42:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: zhanglong <longzhax@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        yanmin_zhang@linux.intel.com, Alan Stern <stern@rowland.harvard.edu>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH v2] drivers-core: move the calling to device_pm_remove behind the calling to bus_remove_device
-Date: Wed, 24 Oct 2012 21:46:19 +0200
-Message-ID: <1871387.QctMb7gSFB@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <507D7D08.7010903@intel.com>
-References: <507D7D08.7010903@intel.com>
+	id S933818Ab2JXTm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:42:27 -0400
+Date: Wed, 24 Oct 2012 15:42:24 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: ycnian@gmail.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] nfs: fix wrong object type in lockowner_slab
+Message-ID: <20121024194224.GB6697@fieldses.org>
+References: <1351061059-29318-1-git-send-email-ycnian@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351061059-29318-1-git-send-email-ycnian@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 of October 2012 23:28:08 zhanglong wrote:
-> We hit an hang issue when removing a mmc device on Medfield Android phone by sysfs interface.
+On Wed, Oct 24, 2012 at 02:44:19PM +0800, ycnian@gmail.com wrote:
+> From: Yanchuan Nian <ycnian@gmail.com>
 > 
-> device_pm_remove will call pm_runtime_remove which would disable
-> runtime PM of the device. After that pm_runtime_get* or
-> pm_runtime_put* will be ignored. So if we disable the runtime PM
-> before device really be removed, drivers' _remove callback may
-> access HW even pm_runtime_get* fails. That is bad.
+> The object type in the cache of lockowner_slab is wrong, and it is better to fix it.
 > 
-> Consider below call sequence when removing a device:
-> device_del => device_pm_remove
->              => class_intf->remove_dev(dev, class_intf)  => pm_runtime_get_sync/put_sync
->              => bus_remove_device => device_release_driver => pm_runtime_get_sync/put_sync
-> 
-> remove_dev might call pm_runtime_get_sync/put_sync.
-> Then, generic device_release_driver also calls pm_runtime_get_sync/put_sync.
-> Since device_del => device_pm_remove firstly, later _get_sync wouldn't really wake up the device. 
-> 
-> I git log -p to find the patch which moves the calling to device_pm_remove ahead.
-> It's below patch:
-> 
-> commit  775b64d2b6ca37697de925f70799c710aab5849a
-> Author: Rafael J. Wysocki <rjw@sisk.pl>
-> Date:   Sat Jan 12 20:40:46 2008 +0100
-> 
->      PM: Acquire device locks on suspend
-> 
->      This patch reorganizes the way suspend and resume notifications are
->      sent to drivers.  The major changes are that now the PM core acquires
->      every device semaphore before calling the methods, and calls to
->      device_add() during suspends will fail, while calls to device_del()
->      during suspends will block.
-> 
->      It also provides a way to safely remove a suspended device with the
->      help of the PM core, by using the device_pm_schedule_removal() callback
->      introduced specifically for this purpose, and updates two drivers (msr
->      and cpuid) that need to use it. 
-> 
-> 
-> As device_pm_schedule_removal is deleted by another patch, we need also revert other parts of the patch,
-> i.e. move the calling of device_pm_remove after the calling to bus_remove_device.
-> 
-> Signed-off-by: LongX Zhang <longx.zhang@intel.com>
-
-Greg, do you see any potential problems with this patch?
-
-Rafael
-
-
+> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
 > ---
->  drivers/base/core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  fs/nfsd/nfs4state.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index abea76c..150a415 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1180,7 +1180,6 @@ void device_del(struct device *dev)
->         if (dev->bus)
->                 blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
->                                              BUS_NOTIFY_DEL_DEVICE, dev);
-> -       device_pm_remove(dev);
->         dpm_sysfs_remove(dev);
->         if (parent)
->                 klist_del(&dev->p->knode_parent);
-> @@ -1205,6 +1204,7 @@ void device_del(struct device *dev)
->         device_remove_file(dev, &uevent_attr);
->         device_remove_attrs(dev);
->         bus_remove_device(dev);
-> +       device_pm_remove(dev);
->         driver_deferred_probe_del(dev);
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index cc894ed..1609eb2 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -2325,7 +2325,7 @@ nfsd4_init_slabs(void)
+>  	if (openowner_slab == NULL)
+>  		goto out_nomem;
+>  	lockowner_slab = kmem_cache_create("nfsd4_lockowners",
+> -			sizeof(struct nfs4_openowner), 0, 0, NULL);
+> +			sizeof(struct nfs4_lockowner), 0, 0, NULL);
+
+Thanks!
+
+The first three fields of each are the same, the rest is:
+
+	struct nfs4_openowner {
+		...
+		pointer
+		time_t
+		unsigned char
+	}
+
+	struct nfs4_lockowner {
+		...
+		struct list_head
+	}
+
+Is it always true that
+
+	sizeof(struct nfs4_openowner) >= sizeof9struct nfs4_lockowner)
+
+?  I think so, in which case this isn't urgent.... Applying for 3.8.
+
+--b.
+
+>  	if (lockowner_slab == NULL)
+>  		goto out_nomem;
+>  	file_slab = kmem_cache_create("nfsd4_files",
+> -- 
+> 1.7.4.4
 > 
->         /* Notify the platform of the removal, in case they
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
