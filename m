@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758019Ab2JXIFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:05:24 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56529 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757464Ab2JXIFO (ORCPT
+	id S1757959Ab2JXIEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:04:30 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:46324 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757462Ab2JXIEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:05:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350748093-7868-1-git-send-email-js1304@gmail.com>
-References: <1350748093-7868-1-git-send-email-js1304@gmail.com>
-Date: Wed, 24 Oct 2012 11:05:13 +0300
-X-Google-Sender-Auth: bhmFpUGULs_76RCn1GIjIKqYOVg
-Message-ID: <CAOJsxLFay=KhhsuTho3focQ5V90k4sBCNNpyP1v29STsmDG=7Q@mail.gmail.com>
-Subject: Re: [PATCH for-v3.7 1/2] slub: optimize poorly inlined kmalloc* functions
-From: Pekka Enberg <penberg@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Oct 2012 04:04:23 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] Add hardware I/O coherency support for Armada 370/XP
+Date: Wed, 24 Oct 2012 10:03:59 +0200
+Message-Id: <1351065841-18654-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 6:48 PM, Joonsoo Kim <js1304@gmail.com> wrote:
-> kmalloc() and kmalloc_node() is always inlined into generic code.
-> However, there is a mistake in implemention of the SLUB.
->
-> In kmalloc() and kmalloc_node() of the SLUB,
-> we try to compare kmalloc_caches[index] with NULL.
-> As it cannot be known at compile time,
-> this comparison is inserted into generic code invoking kmalloc*.
-> This may decrease system performance, so we should fix it.
->
-> Below is the result of "size vmlinux"
-> text size is decreased roughly 20KB
->
-> Before:
->    text    data     bss     dec     hex filename
-> 10044177        1443168 5722112 17209457        1069871 vmlinux
-> After:
->    text    data     bss     dec     hex filename
-> 10022627        1443136 5722112 17187875        1064423 vmlinux
->
-> Cc: Christoph Lameter <cl@linux.com>
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> ---
-> With Christoph's patchset(common kmalloc caches:
-> '[15/15] Common Kmalloc cache determination') which is not merged into mainline yet,
-> this issue will be fixed.
-> As it takes some time, I send this patch for v3.7
->
-> This patch is based on v3.7-rc1
+Hello,
 
-Looks reasonable to me. Christoph, any objections?
+The purpose of this patch set is to add hardware I/O Coherency support
+for Armada 370 and Armada XP. Theses SoCs come with an unit called
+coherency fabric. A beginning of the support for this unit have been
+introduced with the SMP patch set. This series extend this support:
+the coherency fabric unit allows to use the Armada XP and the Armada
+370 as nearly coherent architectures.
 
->
-> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-> index df448ad..4c75f2b 100644
-> --- a/include/linux/slub_def.h
-> +++ b/include/linux/slub_def.h
-> @@ -271,9 +271,10 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
->                         return kmalloc_large(size, flags);
->
->                 if (!(flags & SLUB_DMA)) {
-> -                       struct kmem_cache *s = kmalloc_slab(size);
-> +                       int index = kmalloc_index(size);
-> +                       struct kmem_cache *s = kmalloc_caches[index];
->
-> -                       if (!s)
-> +                       if (!index)
->                                 return ZERO_SIZE_PTR;
->
->                         return kmem_cache_alloc_trace(s, flags, size);
-> @@ -304,9 +305,10 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
->  {
->         if (__builtin_constant_p(size) &&
->                 size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
-> -                       struct kmem_cache *s = kmalloc_slab(size);
-> +               int index = kmalloc_index(size);
-> +               struct kmem_cache *s = kmalloc_caches[index];
->
-> -               if (!s)
-> +               if (!index)
->                         return ZERO_SIZE_PTR;
->
->                 return kmem_cache_alloc_node_trace(s, flags, node, size);
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+The second patches enables this new feature and register our own set
+of DMA ops, to benefit this hardware enhancement.
+
+The first patch introduces a new flag for the address decoding
+configuration in order to be able to set the memory windows as
+shared memory.
+
+This series depend on the SMP patch set posted on Monday
+(http://thread.gmane.org/gmane.linux.ports.arm.kernel/194901).
+
+Regards,
+
+Gregory
+
+Gregory CLEMENT (2):
+  arm: plat-orion: Add coherency attribute when setup mbus target
+  arm: mvebu: Add hardware I/O Coherency support
+
+ arch/arm/boot/dts/armada-370-xp.dtsi        |    3 +-
+ arch/arm/mach-mvebu/addr-map.c              |    3 +
+ arch/arm/mach-mvebu/armada-370-xp.c         |    1 +
+ arch/arm/mach-mvebu/coherency.c             |   87 +++++++++++++++++++++++++++
+ arch/arm/mach-mvebu/common.h                |    2 +
+ arch/arm/plat-orion/addr-map.c              |    4 ++
+ arch/arm/plat-orion/include/plat/addr-map.h |    1 +
+ 7 files changed, 100 insertions(+), 1 deletion(-)
+
+-- 
+1.7.9.5
+
