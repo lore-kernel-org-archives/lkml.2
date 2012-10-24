@@ -1,155 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab2JXIlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:41:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50842 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932832Ab2JXIlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:41:04 -0400
-Message-ID: <5087A999.8090802@canonical.com>
-Date: Wed, 24 Oct 2012 10:40:57 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S933711Ab2JXIm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:42:29 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:33495 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932832Ab2JXIm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:42:26 -0400
+Message-ID: <5087A9E1.2030405@parallels.com>
+Date: Wed, 24 Oct 2012 12:42:09 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: matt@console-pimps.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        marko.kohtala@gmail.com, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH v2] x86: efi: Turn off efi_enabled after setup on mixed
- fw/kernel
-References: <1349706500.15966.165.camel@mfleming-mobl1.ger.corp.intel.com> <1351059878-28795-1-git-send-email-olof@lixom.net>
-In-Reply-To: <1351059878-28795-1-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: JoonSoo Kim <js1304@gmail.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 06/18] consider a memcg parameter in kmem_create_cache
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-7-git-send-email-glommer@parallels.com> <CAAmzW4OJGSpEO2_p3v1MZJrh6G=+NSS5UoGqFDvxeaQ0qryvpw@mail.gmail.com>
+In-Reply-To: <CAAmzW4OJGSpEO2_p3v1MZJrh6G=+NSS5UoGqFDvxeaQ0qryvpw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 24-10-12 08:24, Olof Johansson schreef:
-> When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
-> efi_enabled once setup is done. Beyond setup, it is normally used to
-> determine if runtime services are available and we will have none.
->
-> This will resolve issues stemming from efivars modprobe panicking on a
-> 32/64-bit setup, as well as some reboot issues on similar setups.
->
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45991
->
-> Reported-by: Marko Kohtala <marko.kohtala@gmail.com>
-> Reported-by: Maxim Kammerer <mk@dee.su>
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Cc: stable@kernel.org # 3.4 - 3.6
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-> ---
->
-> v2: rebase due to context diffs, and simplified efi_is_native() logic.
->
->  arch/x86/kernel/setup.c     | 11 +++++++++++
->  arch/x86/platform/efi/efi.c | 16 +++++++++-------
->  2 files changed, 20 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 468e98d..ea2c587 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1048,6 +1048,17 @@ void __init setup_arch(char **cmdline_p)
->  	arch_init_ideal_nops();
->  
->  	register_refined_jiffies(CLOCK_TICK_RATE);
-> +
-> +#ifdef CONFIG_EFI
-> +	/* Once setup is done above, disable efi_enabled on mismatched
-> +	 * firmware/kernel archtectures since there is no support for
-> +	 * runtime services.
-> +	 */
-> +	if (IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
-> +		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
-> +		efi_enabled = 0;
-> +	}
-> +#endif
->  }
+On 10/23/2012 09:50 PM, JoonSoo Kim wrote:
+> 2012/10/19 Glauber Costa <glommer@parallels.com>:
+> 
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 6a1e096..59f6d54 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -339,6 +339,12 @@ struct mem_cgroup {
+>>  #if defined(CONFIG_MEMCG_KMEM) && defined(CONFIG_INET)
+>>         struct tcp_memcontrol tcp_mem;
+>>  #endif
+>> +#if defined(CONFIG_MEMCG_KMEM)
+>> +       /* analogous to slab_common's slab_caches list. per-memcg */
+>> +       struct list_head memcg_slab_caches;
+>> +       /* Not a spinlock, we can take a lot of time walking the list */
+>> +       struct mutex slab_caches_mutex;
+>> +#endif
+>>  };
+> 
+> It is better to change name of "slab_caches_mutex to something
+> representing slab cache mutex of memcg.
+> 
 
-Won't this give a spurious warning if it's already disabled?
+Why do you think so? I particularly think keeping the same name is
+better, because it shows us that this is a memcg version of the global
+mutex, and wraps all caches. One is unlikely to confuse between them,
+because one of them is a global name, and the other is always inside a
+struct.
 
-And it should probably be moved to before the vga con setup, else it seems you
-might not get a vga console when efifb is not used. Unless that's intentional,
-but in that case please change the commit message to reflect that. :-)
+>> +int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s)
+>> +{
+>> +       size_t size = sizeof(struct memcg_cache_params);
+>> +
+>> +       if (!memcg_kmem_enabled())
+>> +               return 0;
+>> +
+>> +       s->memcg_params = kzalloc(size, GFP_KERNEL);
+>> +       if (!s->memcg_params)
+>> +               return -ENOMEM;
+>> +
+>> +       if (memcg)
+>> +               s->memcg_params->memcg = memcg;
+>> +       return 0;
+>> +}
+> 
+> Now, I don't read full-patchset and I have not enough knowledge about cgroup.
+> So I have a question.
+> When memcg_kmem_enable, creation kmem_cache of normal user(not
+> included in cgroup) also allocate memcg_params.
+> Is it right behavior?
+>
+Yes. I would even add that *specially* the normal kmem cache gets this.
+This is where it will hold the vector of memcg caches.
 
-With those issues fixed in next version.
+Also note this only happens when a memcg becomes kmem-limited, so people
+not using memcg at all won't pay this price.
 
-Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+This should be documented over struct memcg_params.
 
->  
->  #ifdef CONFIG_X86_32
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index aded2a9..6e620f1 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -70,11 +70,15 @@ EXPORT_SYMBOL(efi);
->  struct efi_memory_map memmap;
->  
->  bool efi_64bit;
-> -static bool efi_native;
->  
->  static struct efi efi_phys __initdata;
->  static efi_system_table_t efi_systab __initdata;
->  
-> +static inline bool efi_is_native(void)
-> +{
-> +	return IS_ENABLED(CONFIG_X86_64) == efi_64bit;
-> +}
-> +
->  static int __init setup_noefi(char *arg)
->  {
->  	efi_enabled = 0;
-> @@ -432,7 +436,7 @@ void __init efi_free_boot_services(void)
->  {
->  	void *p;
->  
-> -	if (!efi_native)
-> +	if (!efi_is_native())
->  		return;
->  
->  	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-> @@ -684,12 +688,10 @@ void __init efi_init(void)
->  		return;
->  	}
->  	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
-> -	efi_native = !efi_64bit;
->  #else
->  	efi_phys.systab = (efi_system_table_t *)
->  			  (boot_params.efi_info.efi_systab |
->  			  ((__u64)boot_params.efi_info.efi_systab_hi<<32));
-> -	efi_native = efi_64bit;
->  #endif
->  
->  	if (efi_systab_init(efi_phys.systab)) {
-> @@ -723,7 +725,7 @@ void __init efi_init(void)
->  	 * that doesn't match the kernel 32/64-bit mode.
->  	 */
->  
-> -	if (!efi_native)
-> +	if (!efi_is_native())
->  		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
->  	else if (efi_runtime_init()) {
->  		efi_enabled = 0;
-> @@ -735,7 +737,7 @@ void __init efi_init(void)
->  		return;
->  	}
->  #ifdef CONFIG_X86_32
-> -	if (efi_native) {
-> +	if (efi_is_native()) {
->  		x86_platform.get_wallclock = efi_get_time;
->  		x86_platform.set_wallclock = efi_set_rtc_mmss;
->  	}
-> @@ -834,7 +836,7 @@ void __init efi_enter_virtual_mode(void)
->  	 * non-native EFI
->  	 */
->  
-> -	if (!efi_native) {
-> +	if (!efi_is_native()) {
->  		efi_unmap_memmap();
->  		return;
->  	}
+
+>> +static inline bool cache_match_memcg(struct kmem_cache *cachep,
+>> +                                    struct mem_cgroup *memcg)
+>> +{
+>> +       return (is_root_cache(cachep) && !memcg) ||
+>> +               (cachep->memcg_params->memcg == memcg);
+>> +}
+> 
+> When cachep->memcg_params == NULL and memcg is not NULL, NULL pointer
+> deref may be occurred.
+> Is there no situation like above?
+> 
+
+is_root_cache already test for this, so if this is the case, we'll exit
+the conditional on that test.
+
+Every cache without a valid memcg_params pointer is a root cache.
+
+If memcg != NULL, and memcg_params == NULL, this is a serious bug.
+I just didn't BUG(), because I really didn't see the point. It is just
+added instructions, and we're unlikely to make that far in that case.
+
+>>                         dump_stack();
+>> @@ -66,7 +68,8 @@ static int kmem_cache_sanity_check(const char *name, size_t size)
+>>         return 0;
+>>  }
+>>  #else
+>> -static inline int kmem_cache_sanity_check(const char *name, size_t size)
+>> +static inline int kmem_cache_sanity_check(struct mem_cgroup *memcg,
+>> +                                         const char *name, size_t size)
+>>  {
+>>         return 0;
+>>  }
+>> @@ -97,8 +100,9 @@ static inline int kmem_cache_sanity_check(const char *name, size_t size)
+>>   * as davem.
+>>   */
+>>
+>> -struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align,
+>> -               unsigned long flags, void (*ctor)(void *))
+>> +struct kmem_cache *
+>> +kmem_cache_create_memcg(struct mem_cgroup *memcg, const char *name, size_t size,
+>> +                       size_t align, unsigned long flags, void (*ctor)(void *))
+>>  {
+>>         struct kmem_cache *s = NULL;
+>>         int err = 0;
+>> @@ -106,7 +110,7 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size, size_t align
+>>         get_online_cpus();
+>>         mutex_lock(&slab_mutex);
+>>
+>> -       if (!kmem_cache_sanity_check(name, size) == 0)
+>> +       if (!kmem_cache_sanity_check(memcg, name, size) == 0)
+>>                 goto out_locked;
+> 
+> This compare is somewhat ugly.
+> How about "if(kmem_cache_sanity_check(memcg, name, size))"?
+> 
+
+Well, the check was already there =)
+At least it becomes clear that the only thing I am changing is that i
+know pass a memcg pointer.
+
+As for the proposed change, it gives the impression that if you succeed
+in the check, you will exit the function.
+
+At least this way, it becomes clear that you exit when you fail a
+sanity_check. So taking the semantics into consideration, I don't really
+dislike it.
+
+>>  {
+>> @@ -3916,17 +3917,20 @@ static struct kmem_cache *find_mergeable(size_t size,
+>>                 if (s->size - size >= sizeof(void *))
+>>                         continue;
+>>
+>> +               if (!cache_match_memcg(s, memcg))
+>> +                       continue;
+>>                 return s;
+>>         }
+>>         return NULL;
+>>  }
+>>
+>> -struct kmem_cache *__kmem_cache_alias(const char *name, size_t size,
+>> -               size_t align, unsigned long flags, void (*ctor)(void *))
+>> +struct kmem_cache *
+>> +__kmem_cache_alias(struct mem_cgroup *memcg, const char *name, size_t size,
+>> +                  size_t align, unsigned long flags, void (*ctor)(void *))
+>>  {
+>>         struct kmem_cache *s;
+>>
+>> -       s = find_mergeable(size, align, flags, name, ctor);
+>> +       s = find_mergeable(memcg, size, align, flags, name, ctor);
+>>         if (s) {
+>>                 s->refcount++;
+>>                 /*
+> 
+> If your intention is that find_mergeable() works for memcg-slab-caches properly,
+> it cannot works properly with this code.
+> When memcg is not NULL, slab cache is only added to memcg's slab cache list.
+> find_mergeable() only interate on original-slab-cache list.
+> So memcg slab cache never be mergeable.
+> 
+
+Damn, you're right. In earlier submissions, we had a single list =(
+I'll have to adapt this code, thanks for spotting this!
 
