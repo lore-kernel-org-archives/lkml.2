@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab2JXMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:49:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37187 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932517Ab2JXMt6 (ORCPT
+	id S933975Ab2JXMuM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:50:12 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43970 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab2JXMuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:49:58 -0400
-Date: Wed, 24 Oct 2012 13:49:55 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/10] drivers/mfd/sta2x11-mfd: add regmap support
-Message-ID: <20121024124955.GF18814@opensource.wolfsonmicro.com>
-References: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com>
- <1350917441-4478-3-git-send-email-ciminaghi@gnudd.com>
- <20121023171837.GE4477@opensource.wolfsonmicro.com>
- <20121024123118.GD26622@mail.gnudd.com>
+	Wed, 24 Oct 2012 08:50:08 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V4b9U9vrdWczvw78"
-Content-Disposition: inline
-In-Reply-To: <20121024123118.GD26622@mail.gnudd.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <87y5iwoh8i.fsf@rustcorp.com.au>
+References: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com>
+ <87txu17lss.fsf@rustcorp.com.au> <CAKgNAkib2RZaHWP9bM0hC62=Nm5sBisQf_D9BAKNomjEPvCWbA@mail.gmail.com>
+ <CAKgNAkghLrh61FvxcuQ3xKfX7=o-PhV390RN+9Ni+3fgJzMFJA@mail.gmail.com> <87y5iwoh8i.fsf@rustcorp.com.au>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Wed, 24 Oct 2012 14:49:47 +0200
+Message-ID: <CAKgNAkiyet9ZN1bLXmHjf2hrY7GtPiVD+9fKZ8WR089=xNTTHg@mail.gmail.com>
+Subject: Re: [Request for review] Revised delete_module(2) manual page
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-man <linux-man@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jon Masters <jonathan@jonmasters.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 24, 2012 at 2:18 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> writes:
+>
+>> Ping!
+>>
+>> Rusty (et al.) I'm pretty sure the new page text is okay, but I would
+>> like someone knowledgeable to confirm.
+>
+> Yes, sorry, I did read it, and had nothing to add.
+>
+> Ack,
 
---V4b9U9vrdWczvw78
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Oct 24, 2012 at 02:31:18PM +0200, Davide Ciminaghi wrote:
-> On Tue, Oct 23, 2012 at 06:18:38PM +0100, Mark Brown wrote:
-
-> > This and most of your other readable/writable things look like a
-> > framework feature waiting to be written - something data driven which
-> > takes a table of register ranges and goes and does the
-> > __reg_within_range() check on them.  Seems like it'd be really useful
-> > for devices like this.
-
-> I was looking at other drivers with regmap support, and it actually looks
-> like this __reg_within_range (or similar) thing is fairly common.
-
-Yes, that's exactly what I'm saying - lots of people need it so it
-should get factored out.
-
-> My opinion is that passing function pointers for
-> readable/writeable/precious/volatile methods could still be useful when
-> registers' features or access properties can change at runtime (for instance a
-
-This is essential for sparse register maps, really.
-
---V4b9U9vrdWczvw78
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQh+PsAAoJELSic+t+oim91sMP/3rDbJ5zhAGTb/HDMNZhmV5N
-4su4TI5UmKIOhum5ovUo+Qzo+sZXIzobSeLEX9853DOIPC6jsZl65adO++G2NhqX
-JYQYSvrOZ/3U7Bl2oBR0P+Ao/7IN55axSCBtXZ8wW9JkffMGZJgLH378pzKbhos8
-J8DzhqCYnIjW2tKqsi3lBn1YXyeQ49hnNXIGQpdiJJRhvqP6JG5NtxOmmzxNSKn/
-MjeHTb9jfaiCyNhNa/4TCLEJ+00FCxJxQbnL1T8ljuN0QDhZxjOhArkpLENjlI03
-8fo1avJl0uraJzfHEUGjeCBSTaosIVqVB9w5JPOHQIQ6GcR4jnnBgMpFSJnamosS
-Ca+tpo7TZhAAbUU/5vmCP6+SK2kN0NP86tnL2C0wVPimciZkhTt8fg2OqrV8BZHy
-u7f/pxqjzdRHw80dJ4N8c5mGTiwdgRBZX7Toryw++5sw5p8d9OOz9vSPybVeJUtM
-cCCbzzOWT2iBTwUcNX1Cf5h7otcQLa8A5Yhn1Mlbl+WOVPBLR8ID9p1IhWjvRo6E
-Sewhw3KGk0NFR3bQXB0y92tjvmaD5glfbwAM3BpxS5U4JptJNntuiQ07pN672OY+
-MccO9HLpvRF0xjCd4WhzUooD4Czul/8w8CjZi+mpRnQt5JSuH4UWM5pH0Wt8+Fv3
-VMRcRVxk0J6deCPHbbSK
-=LQ2r
------END PGP SIGNATURE-----
-
---V4b9U9vrdWczvw78--
+Thanks Rusty.
