@@ -1,216 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934658Ab2JXJrD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:47:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54880 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934576Ab2JXJrA (ORCPT
+	id S934671Ab2JXJsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:48:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52020 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933581Ab2JXJr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:47:00 -0400
-Date: Wed, 24 Oct 2012 02:45:45 -0700
-From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-2dac754e10a5d41d94d2d2365c0345d4f215a266@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-In-Reply-To: <20120823141506.514678907@google.com>
-References: <20120823141506.514678907@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Aggregate load contributed by task entities on parenting cfs_rq
-Git-Commit-ID: 2dac754e10a5d41d94d2d2365c0345d4f215a266
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:45:51 -0700 (PDT)
+	Wed, 24 Oct 2012 05:47:59 -0400
+Date: Wed, 24 Oct 2012 20:47:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: akpm@linux-foundation.org, a.p.zijlstra@chello.nl, xemul@parallels.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + procfs-add-vmflags-field-in-smaps-output-v3-fix-2.patch added
+ to -mm tree
+Message-Id: <20121024204746.8a8c0fa14b6495b5d5013db4@canb.auug.org.au>
+In-Reply-To: <20121024084515.GB30983@moon>
+References: <20121023220300.1185C200057@hpza10.eem.corp.google.com>
+	<20121024084515.GB30983@moon>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__24_Oct_2012_20_47_46_+1100_oB_utr0uCmFqsvrW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2dac754e10a5d41d94d2d2365c0345d4f215a266
-Gitweb:     http://git.kernel.org/tip/2dac754e10a5d41d94d2d2365c0345d4f215a266
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 4 Oct 2012 13:18:30 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:21 +0200
+--Signature=_Wed__24_Oct_2012_20_47_46_+1100_oB_utr0uCmFqsvrW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-sched: Aggregate load contributed by task entities on parenting cfs_rq
+Hi Cyrill,
 
-For a given task t, we can compute its contribution to load as:
+On Wed, 24 Oct 2012 12:45:15 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wr=
+ote:
+>
+>  static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struc=
+t *vma)
+>  {
+> +#define __VM_FLAG(_f, _s)	[ilog2(_f)] =3D {(const char [2]){_s}}
 
-  task_load(t) = runnable_avg(t) * weight(t)
+I really don't think you need the cast (and it may hide bad usages) or
+the second set of braces.  Thus:
 
-On a parenting cfs_rq we can then aggregate:
+#define __VM_FLAG(_f, _s)	[ilog2(_f)] =3D {_s}
 
-  runnable_load(cfs_rq) = \Sum task_load(t), for all runnable children t
+> +
+>  	/*
+>  	 * Don't forget to update Documentation/ on changes.
+>  	 */
+> @@ -491,46 +493,49 @@ static void show_smap_vma_flags(struct s
+>  		/*
+>  		 * In case if we meet a flag we don't know about.
+>  		 */
+> -		[0 ... (BITS_PER_LONG-1)] =3D { {'?', '?'} },
+> +		[0 ... (BITS_PER_LONG-1)] =3D { (const char [2]){"??"} },
 
-Maintain this bottom up, with task entities adding their contributed load to
-the parenting cfs_rq sum.  When a task entity's load changes we add the same
-delta to the maintained sum.
+And here.
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120823141506.514678907@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h |    1 +
- kernel/sched/debug.c  |    3 ++
- kernel/sched/fair.c   |   51 +++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched/sched.h  |   10 ++++++++-
- 4 files changed, 60 insertions(+), 5 deletions(-)
+Further is there any reason for the struct?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 418fc6d..81d8b1b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1103,6 +1103,7 @@ struct sched_avg {
- 	 */
- 	u32 runnable_avg_sum, runnable_avg_period;
- 	u64 last_runnable_update;
-+	unsigned long load_avg_contrib;
- };
- 
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 4240abc..c953a89 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -94,6 +94,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
- #ifdef CONFIG_SMP
- 	P(se->avg.runnable_avg_sum);
- 	P(se->avg.runnable_avg_period);
-+	P(se->avg.load_avg_contrib);
- #endif
- #undef PN
- #undef P
-@@ -224,6 +225,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->load_contribution);
- 	SEQ_printf(m, "  .%-30s: %d\n", "load_tg",
- 			atomic_read(&cfs_rq->tg->load_weight));
-+	SEQ_printf(m, "  .%-30s: %lld\n", "runnable_load_avg",
-+			cfs_rq->runnable_load_avg);
- #endif
- 
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8c5468f..77af759 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1081,20 +1081,63 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 	return decayed;
- }
- 
-+/* Compute the current contribution to load_avg by se, return any delta */
-+static long __update_entity_load_avg_contrib(struct sched_entity *se)
-+{
-+	long old_contrib = se->avg.load_avg_contrib;
-+
-+	if (!entity_is_task(se))
-+		return 0;
-+
-+	se->avg.load_avg_contrib = div64_u64(se->avg.runnable_avg_sum *
-+					     se->load.weight,
-+					     se->avg.runnable_avg_period + 1);
-+
-+	return se->avg.load_avg_contrib - old_contrib;
-+}
-+
- /* Update a sched_entity's runnable average */
- static inline void update_entity_load_avg(struct sched_entity *se)
- {
--	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
--				     se->on_rq);
-+	struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+	long contrib_delta;
-+
-+	if (!__update_entity_runnable_avg(rq_of(cfs_rq)->clock_task, &se->avg,
-+					  se->on_rq))
-+		return;
-+
-+	contrib_delta = __update_entity_load_avg_contrib(se);
-+	if (se->on_rq)
-+		cfs_rq->runnable_load_avg += contrib_delta;
- }
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
- 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
- }
-+
-+/* Add the load generated by se into cfs_rq's child load-average */
-+static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se)
-+{
-+	update_entity_load_avg(se);
-+	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
-+}
-+
-+/* Remove se's load from this cfs_rq child load-average */
-+static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se)
-+{
-+	update_entity_load_avg(se);
-+	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
-+}
- #else
- static inline void update_entity_load_avg(struct sched_entity *se) {}
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable) {}
-+static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se) {}
-+static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
-+						  struct sched_entity *se) {}
- #endif
- 
- static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
-@@ -1223,7 +1266,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 */
- 	update_curr(cfs_rq);
- 	update_cfs_load(cfs_rq, 0);
--	update_entity_load_avg(se);
-+	enqueue_entity_load_avg(cfs_rq, se);
- 	account_entity_enqueue(cfs_rq, se);
- 	update_cfs_shares(cfs_rq);
- 
-@@ -1298,7 +1341,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	update_entity_load_avg(se);
-+	dequeue_entity_load_avg(cfs_rq, se);
- 
- 	update_stats_dequeue(cfs_rq, se);
- 	if (flags & DEQUEUE_SLEEP) {
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 14b5719..e653973 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -222,6 +222,15 @@ struct cfs_rq {
- 	unsigned int nr_spread_over;
- #endif
- 
-+#ifdef CONFIG_SMP
-+	/*
-+	 * CFS Load tracking
-+	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
-+	 * This allows for the description of both thread and group usage (in
-+	 * the FAIR_GROUP_SCHED case).
-+	 */
-+	u64 runnable_load_avg;
-+#endif
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
- 
-@@ -1214,4 +1223,3 @@ static inline u64 irq_time_read(int cpu)
- }
- #endif /* CONFIG_64BIT */
- #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
--
+#define __VM_FLAG(_f, _s)	[ilog2(_f)] =3D _s
+
+static const char mnemonics[BITS_PER_LONG][2] =3D {
+...
+};
+
+>  	seq_puts(m, "VmFlags: ");
+>  	for (i =3D 0; i < BITS_PER_LONG; i++) {
+> -		if (vma->vm_flags & (1 << i))
+> +		if (vma->vm_flags & (1ul << i)) {
+>  			seq_printf(m, "%c%c ",
+>  				   mnemonics[i].l[0],
+>  				   mnemonics[i].l[1]);
+
+				   mnemonics[i][0], mnemonics[i][1]
+
+/me looks for another bike shed :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__24_Oct_2012_20_47_46_+1100_oB_utr0uCmFqsvrW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQh7lCAAoJEECxmPOUX5FEWlAP/j++DACL1paQJjRkNImLADA3
+HrH2TFKZPymgzDr40oqISF3JzuL6dVo8ZpBM692Sc+w9VYXd0+EPzHBk9/KdubHk
+WNLotzDYP9Wdor/tKBwAgpKNeBJ/kMNI9qEi8bg8kzMoyZvLOH0pniVjWXx2Qid1
+0fJCCrdHR4V5Q5d5NZatHfjeeiN3GAmzuVPQkSwFZV0SVvX0CyyIVMcaevu87L+0
+lUVNrlPxJrezkiGHIu2q4+s40EOJL8RX7kQzunbVN/1CGO3gc7/Kzm/7YqQ5J77S
+TRioNmEMOkMCoElPr6ibiILLFcdx7az281vvpYcVvs516kTTR5z2DBTa+InnbKHG
+iqtPtoGNhRTyq1Jk4HFOp9bEEUnPiTv+mPORVR1uxJKX81ltwsCb3omtn9kfEla4
+hNC14HYs9MRIUsfx0R1LJOWi++JFx3xSB8Ia0rDHO4ybU6njeo0a8YKCW1HNwtb0
+Yl4lVJX6gXM5OySGdntV7ULVuM8uAu+N3F893MfJDfm04+Yc5iVv6Nt0Mk9Ohz6y
+WnQ7KN9sS4jwPu3vG9hYO4G2KgSmSh5LAv2MMYiTYjNiosGiZ5pvXFbplymnJt8E
+3Z47JJ3O/Ea2eiprYU4JxXegUHYbSZ7xlX1yvhn9jgpvkfOURT/1kxN6MARhh23H
+bLTt1wZI57qFoUrxxhrM
+=kNmG
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__24_Oct_2012_20_47_46_+1100_oB_utr0uCmFqsvrW--
