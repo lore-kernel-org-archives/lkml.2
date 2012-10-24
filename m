@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933622Ab2JXMr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:47:26 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50968 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab2JXMrZ (ORCPT
+	id S933700Ab2JXMsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:48:08 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:48681 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab2JXMsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:47:25 -0400
-Date: Wed, 24 Oct 2012 23:47:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH -mm] procfs: add VmFlags field in smaps output v3
-Message-Id: <20121024234714.03b516f6fcb32eb5a27eed1b@canb.auug.org.au>
-In-Reply-To: <20121024122730.GO30983@moon>
-References: <20121024122730.GO30983@moon>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2"
+	Wed, 24 Oct 2012 08:48:06 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <CAKi4VA+tW30=8c18kNXVrw+v2x9=kQEYoF7Yjck6C98wHpNs0A@mail.gmail.com>
+References: <CAKgNAkgp1er3-3nvge9_aVObuuxBatGRur8DtiTzyWK4w+4hrA@mail.gmail.com>
+ <87txu17lss.fsf@rustcorp.com.au> <CAKgNAkib2RZaHWP9bM0hC62=Nm5sBisQf_D9BAKNomjEPvCWbA@mail.gmail.com>
+ <CAKgNAkghLrh61FvxcuQ3xKfX7=o-PhV390RN+9Ni+3fgJzMFJA@mail.gmail.com> <CAKi4VA+tW30=8c18kNXVrw+v2x9=kQEYoF7Yjck6C98wHpNs0A@mail.gmail.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Wed, 24 Oct 2012 14:47:43 +0200
+Message-ID: <CAKgNAki5NbXWU8i7DtCEqAt=3pG+OtZe9E+Wm3xjJGD-sDbO6Q@mail.gmail.com>
+Subject: Re: [Request for review] Revised delete_module(2) manual page
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-man <linux-man@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Jon Masters <jonathan@jonmasters.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Lucas,
 
-Hi Cyrill,
-
-On Wed, 24 Oct 2012 16:27:30 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wr=
-ote:
+On Wed, Oct 24, 2012 at 7:27 AM, Lucas De Marchi
+<lucas.de.marchi@gmail.com> wrote:
+> Hi Michael,
 >
-> +static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struc=
-t *vma)
-> +{
-> +	/*
-> +	 * Don't forget to update Documentation/ on changes.
-> +	 */
-> +	static const char mnemonics[BITS_PER_LONG][2] =3D {
-> +		/*
-> +		 * In case if we meet a flag we don't know about.
-> +		 */
-> +		[0 ... (BITS_PER_LONG-1)] =3D { "??" },
+>
+> On Sun, Oct 21, 2012 at 5:36 AM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> Ping!
+>>
+>> Rusty (et al.) I'm pretty sure the new page text is okay, but I would
+>> like someone knowledgeable to confirm.
+>
+> One more thing:
+>
+>> .SH "SEE ALSO"
+>> .BR create_module (2),
+>> .BR init_module (2),
+>> .BR query_module (2),
+>> .BR lsmod (8),
+>> .BR rmmod (8)
+>
+> Shouldn't we remove the reference to query_module(2) and
+> create_module(2)? They don't exist anymore (and I miss a bigger
+> warning on their man pages).
 
-Sorry to be picky, but the braces above are unnecessary,
+I think the SEE ALSO links should be kept, but you are right that the
+warnings that query_module(2) and create_module(2) no longer exist
+should be more prominent on those pages. By chance, I'd already made
+that change.
 
---=20
+> Last, I think there should be a ref here to modprobe (because of -r
+> flag), not lsmod. The rest looks good.
+
+I'll add modprobe(8); I think lsmod(8) is worth keeping.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2
-Content-Type: application/pgp-signature
+Michael
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQh+NSAAoJEECxmPOUX5FEk4IP/12Gz9x5Xa6cQ+Cs0Qjglxxk
-2e6EvjTb9o0swIrFQ8PZVa4Ba3Xgrvk6eoxSPwgNagv7UHV4Yn02v6EmhnYaJpZD
-dUfRma6/hpBk6YKfhn5vI4VOT+DGs1iZ6avXeF3up64TP1Id4Xo3VBPh3whhXYEi
-5y/0rW6+O+dcgYsUNA4/omBDeuAMkpkx5ZqS3HlLmbxI6n2kaBbGXSuXj/2HOavb
-Bc2nxSnkspw9tspcOcEHFgsU5x+bkj2p0NQQrbtg1dz2yUCRk5alMSs/uYdzAIh7
-aIagTKKiiPmlDtPhE0B+6ozQYG/+u9XOeLPGktqwd6hw0ft5gwDT3E8a8uMFsa1n
-Ib4o+0EKTGpYW6Eoi73fmrgbr4w2hk4/yDfV9feaOwXIDkNj9ZWUCe3y5yeFyxaT
-beCQ8ldm4NBTVBbdFKrgq8Zx7DUPnWXI8D7ttexW3cvOBPF64ZzWQFDMTgvYmfgz
-1mySHal5wV9htML5EcvmZ4nxSsHeOqwl+tU+0zk1nB30pkQXEGzDgpKHCaSmvu+m
-VK1JJKLTQxhCfzQ1EJUtHW7+F+XY1YQq0EJkU+NtN1Q3MjQZMJ2eTYhO/RDs8Shb
-tawy5g3UTLP3CyocRYf5dSNCfEHuJJTy1apNufPg0UvzNYFDyJgxaSuhXWoFQRvL
-aWeX0QLgDxqZPZW3wgqg
-=qlLK
------END PGP SIGNATURE-----
-
---Signature=_Wed__24_Oct_2012_23_47_14_+1100_zr/6siix3p8ocXD2--
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
