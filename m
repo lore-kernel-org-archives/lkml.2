@@ -1,139 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757859Ab2JXQDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:03:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41214 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab2JXQDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:03:10 -0400
-Date: Thu, 25 Oct 2012 00:02:53 +0800
-From: Tekkaman Ninja <tekkamanninja@gmail.com>
-To: Harry Wei <harryxiyou@gmail.com>
-Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel@vger.linux-kernel.cn, Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH]Documentation:Chinese translation of
- Documentation/arm64/memory.txt
-Message-ID: <20121024160253.GB6567@Super-MAGI>
+	id S1757779Ab2JXQEV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:04:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757489Ab2JXQET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 12:04:19 -0400
+Date: Wed, 24 Oct 2012 18:03:44 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 02/11] perf: Do not get values from disabled counters in
+ group format read
+Message-ID: <20121024160344.GC5582@krava.brq.redhat.com>
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+ <1350743599-4805-3-git-send-email-jolsa@redhat.com>
+ <1351008789.13456.37.camel@twins>
+ <20121023165040.GA7553@krava.brq.redhat.com>
+ <1351080078.13456.60.camel@twins>
+ <20121024121406.GA5582@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121024121406.GA5582@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a Chinese translated version of
-Documentation/arm64/memory.txt
+On Wed, Oct 24, 2012 at 02:14:06PM +0200, Jiri Olsa wrote:
+> On Wed, Oct 24, 2012 at 02:01:18PM +0200, Peter Zijlstra wrote:
 
-Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+SNIP
+
+> > Right, so I don't object to the patch per-se, I was just curious how you
+> > ran into it, because ISTR what you just said, we enable all this stuff
+> > together.
+> > 
+> > Also, why would disabled counters give strange values? They'd simply
+> > return the same old value time after time, right?
+> 
+> well, x86_pmu_read calls x86_perf_event_update, which expects the event
+> is active.. if it's not it'll update the count from whatever left in
+> event.hw.idx counter.. could be uninitialized or used by others..
+> 
+> I can easily reproduce this one, so let's see.. ;)
+
+ok, the problem code path is like this:
+
+- running "perf record -e '{cycles,cache-misses}:S' -a sleep 1"
+  which creates group of counters, that are enabled by perf via ioctl
+
+- within the __perf_event_enable function the __perf_event_mark_enabled only
+  change state for leader, so following group_sched_in will fail to schedule
+  group siblings, because of the state check in event_sched_in:
+
+	static int
+	event_sched_in(struct perf_event *event,
+			 struct perf_cpu_context *cpuctx,
+			 struct perf_event_context *ctx)
+	{
+		u64 tstamp = perf_event_time(event);
+
+		if (event->state <= PERF_EVENT_STATE_OFF)
+			return 0;
+
+- ending up with only leader enabled
+- all the other events in group are enabled by perf after the leader,
+  but meanwhile leader can hit sample.. and read group events.. ;)
+
+attached patch fixies this for me and I was wondering we want
+same behaviour for disable path as well (included below not tested)
+
+I also think that we should keep that state check before calling
+pmu->read() in the perf sample read
+
+thanks,
+jirka
+
 
 ---
- Documentation/zh_CN/arm64/memory.txt |   93 ++++++++++++++++++++++++++++++++++
- 1 file changed, 93 insertions(+)
- create mode 100644 Documentation/zh_CN/arm64/memory.txt
-
-diff --git a/Documentation/zh_CN/arm64/memory.txt b/Documentation/zh_CN/arm64/memory.txt
-new file mode 100644
-index 0000000..83b5193
---- /dev/null
-+++ b/Documentation/zh_CN/arm64/memory.txt
-@@ -0,0 +1,93 @@
-+Chinese translated version of Documentation/arm64/memory.txt
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index dabfc5d..119a57e 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1253,6 +1253,16 @@ retry:
+ 	raw_spin_unlock_irq(&ctx->lock);
+ }
+ 
++static void __perf_event_mark_disabled(struct perf_event *event)
++{
++	struct perf_event *sub;
 +
-+If you have any comment or update to the content, please contact the
-+original document maintainer directly.  However, if you have a problem
-+communicating in English you can also ask the Chinese maintainer for
-+help.  Contact the Chinese maintainer if this translation is outdated
-+or if there is a problem with the translation.
++	event->state = PERF_EVENT_STATE_OFF;
 +
-+Maintainer: Catalin Marinas <catalin.marinas@arm.com>
-+Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
-+---------------------------------------------------------------------
-+Documentation/arm64/memory.txt 的中文翻译
++	list_for_each_entry(sub, &event->sibling_list, group_entry)
++		sub->state = PERF_EVENT_STATE_OFF;
++}
 +
-+如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
-+交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
-+译存在问题，请联系中文版维护者。
+ /*
+  * Cross CPU call to disable a performance event
+  */
+@@ -1286,7 +1296,8 @@ int __perf_event_disable(void *info)
+ 			group_sched_out(event, cpuctx, ctx);
+ 		else
+ 			event_sched_out(event, cpuctx, ctx);
+-		event->state = PERF_EVENT_STATE_OFF;
 +
-+英文版维护者： Catalin Marinas <catalin.marinas@arm.com>
-+中文版维护者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
-+中文版翻译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
-+中文版校译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++		__perf_event_mark_disabled(event);
+ 	}
+ 
+ 	raw_spin_unlock(&ctx->lock);
+@@ -1685,8 +1696,8 @@ retry:
+ /*
+  * Put a event into inactive state and update time fields.
+  * Enabling the leader of a group effectively enables all
+- * the group members that aren't explicitly disabled, so we
+- * have to update their ->tstamp_enabled also.
++ * the group members, so we have to update their ->tstamp_enabled
++ * also.
+  * Note: this works for group members as well as group leaders
+  * since the non-leader members' sibling_lists will be empty.
+  */
+@@ -1697,9 +1708,10 @@ static void __perf_event_mark_enabled(struct perf_event *event)
+ 
+ 	event->state = PERF_EVENT_STATE_INACTIVE;
+ 	event->tstamp_enabled = tstamp - event->total_time_enabled;
 +
-+以下为正文
-+---------------------------------------------------------------------
-+		     Linux 在 AArch64 中的内存布局
-+		     ===========================
-+
-+作者: Catalin Marinas <catalin.marinas@arm.com>
-+日期: 2012 年 02 月 20 日
-+
-+本文档描述 AArch64 Linux 内核所使用的虚拟内存布局。此构架可以实现
-+页大小为 4KB 的 4 级转换表和页大小为 64KB 的 3 级转换表。
-+
-+AArch64 Linux 使用页大小为 4KB 的 3 级转换表配置，对于用户和内核
-+都有 39-bit (512GB) 的虚拟地址空间。对于页大小为 64KB的配置，仅
-+使用 2 级转换表，但内存布局相同。
-+
-+用户地址空间的 63:39 位为 0，而内核地址空间的相应位为 1。TTBRx 的
-+选择由虚拟地址的 63 位给出。swapper_pg_dir 仅包含内核（全局）映射，
-+而用户 pgd 仅包含用户（非全局）映射。swapper_pgd_dir 地址被写入
-+TTBR1 中，且从不写入 TTBR0。
-+
-+
-+AArch64 Linux 内存布局：
-+
-+起始地址			结束地址			大小		用途
-+-----------------------------------------------------------------------
-+0000000000000000	0000007fffffffff	 512GB		用户空间
-+
-+ffffff8000000000	ffffffbbfffcffff	~240GB		vmalloc
-+
-+ffffffbbfffd0000	ffffffbcfffdffff	  64KB		[防护页]
-+
-+ffffffbbfffe0000	ffffffbcfffeffff	  64KB		PCI I/O 空间
-+
-+ffffffbbffff0000	ffffffbcffffffff	  64KB		[防护页]
-+
-+ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
-+
-+ffffffbe00000000	ffffffbffbffffff	  ~8GB		[防护页，未来用于 vmmemap]
-+
-+ffffffbffc000000	ffffffbfffffffff	  64MB		模块
-+
-+ffffffc000000000	ffffffffffffffff	 256GB		内存空间
-+
-+
-+4KB 页大小的转换表查找：
-+
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+ |                 |         |         |         |         |
-+ |                 |         |         |         |         v
-+ |                 |         |         |         |   [11:0]  页内偏移
-+ |                 |         |         |         +-> [20:12] L3 索引
-+ |                 |         |         +-----------> [29:21] L2 索引
-+ |                 |         +---------------------> [38:30] L1 索引
-+ |                 +-------------------------------> [47:39] L0 索引 (未使用)
-+ +-------------------------------------------------> [63] TTBR0/1
-+
-+
-+64KB 页大小的转换表查找：
-+
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
-++--------+--------+--------+--------+--------+--------+--------+--------+
-+ |                 |    |               |              |
-+ |                 |    |               |              v
-+ |                 |    |               |            [15:0]  页内偏移
-+ |                 |    |               +----------> [28:16] L3 索引
-+ |                 |    +--------------------------> [41:29] L2 索引 (仅使用 38:29 )
-+ |                 +-------------------------------> [47:42] L1 索引 (未使用)
-+ +-------------------------------------------------> [63] TTBR0/1
--- 
-1.7.9.5
-
+ 	list_for_each_entry(sub, &event->sibling_list, group_entry) {
+-		if (sub->state >= PERF_EVENT_STATE_INACTIVE)
+-			sub->tstamp_enabled = tstamp - sub->total_time_enabled;
++		sub->state = PERF_EVENT_STATE_INACTIVE;
++		sub->tstamp_enabled = tstamp - sub->total_time_enabled;
+ 	}
+ }
+ 
