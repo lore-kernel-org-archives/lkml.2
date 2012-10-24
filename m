@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935150Ab2JXPML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:12:11 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55364
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935005Ab2JXPMJ (ORCPT
+	id S935154Ab2JXPNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:13:21 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58730 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934146Ab2JXPNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:12:09 -0400
-Date: Wed, 24 Oct 2012 11:12:08 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/21] procfs: drop vmtruncate
-Message-ID: <20121024151208.GB24318@infradead.org>
-References: <5082965D.3070307@gmail.com>
+	Wed, 24 Oct 2012 11:13:19 -0400
+Date: Wed, 24 Oct 2012 11:13:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: lockdep says circular locking since "tty: localise the lock"
+In-Reply-To: <20121024142852.GE4368@breakpoint.cc>
+Message-ID: <Pine.LNX.4.44L0.1210241112430.1481-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5082965D.3070307@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 20, 2012 at 02:17:33PM +0200, Marco Stornelli wrote:
-> Removed vmtruncate
-> 
-> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+On Wed, 24 Oct 2012, Sebastian Andrzej Siewior wrote:
 
-As Al pointed out we probably shouldn't even allow truncate on procfs.
-Can look into refusing it instead, please?
+> On Wed, Oct 17, 2012 at 09:20:35PM +0200, Sebastian Andrzej Siewior wrote:
+> > With dummy_hcd and g_nokia (that is CONFIG_USB_GADGET=m,
+> > CONFIG_USB_DUMMY_HCD=m, CONFIG_USB_G_NOKIA=m) I see a lockdep complaing
+> > about a "circular locking dependency" after executing
+> 
+> ping? Or is it an obvious false positive?
+> 
+> Sebastian
+
+Are you pinging yourself?  That's what it looks like...  :-)
+
+Alan Stern
 
