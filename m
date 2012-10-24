@@ -1,148 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934955Ab2JXOXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:23:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30463 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934800Ab2JXOXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:23:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
-   d="scan'208";a="208475710"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: linus.walleij@stericsson.com
-Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC PATCH v2] gpiolib: add gpio get direction callback support
-Date: Wed, 24 Oct 2012 17:25:27 +0300
-Message-Id: <1351088727-15257-1-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S934965Ab2JXO25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:28:57 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43646 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934939Ab2JXO2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:28:55 -0400
+Date: Wed, 24 Oct 2012 16:28:52 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: lockdep says circular locking since "tty: localise the lock"
+Message-ID: <20121024142852.GE4368@breakpoint.cc>
+References: <20121017192035.GA31303@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121017192035.GA31303@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add .get_direction callback to gpio_chip. This allows gpiolib
-to check the current direction of a gpio.
-Used to show the correct gpio direction in sysfs and debug entries.
+On Wed, Oct 17, 2012 at 09:20:35PM +0200, Sebastian Andrzej Siewior wrote:
+> With dummy_hcd and g_nokia (that is CONFIG_USB_GADGET=m,
+> CONFIG_USB_DUMMY_HCD=m, CONFIG_USB_G_NOKIA=m) I see a lockdep complaing
+> about a "circular locking dependency" after executing
 
-If callback is not set then gpiolib will work as previously;
-e.g. guessing everything is input until a direction is set.
+ping? Or is it an obvious false positive?
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/gpio/gpiolib.c     |   38 +++++++++++++++++++++++++++++++++++++-
- include/asm-generic/gpio.h |    5 ++++-
- 2 files changed, 41 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index de0213c..141f793 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -191,6 +191,32 @@ err:
- 	return ret;
- }
- 
-+/* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
-+static int gpio_get_direction(unsigned gpio)
-+{
-+	struct gpio_chip	*chip;
-+	struct gpio_desc	*desc = &gpio_desc[gpio];
-+	int			status = -EINVAL;
-+
-+	chip = gpio_to_chip(gpio);
-+	gpio -= chip->base;
-+
-+	if (!chip->get_direction)
-+		return status;
-+
-+	status = chip->get_direction(chip, gpio);
-+	if (status > 0) {
-+		/* GPIOF_DIR_IN, or other positive */
-+		status = 1;
-+		clear_bit(FLAG_IS_OUT, &desc->flags);
-+	}
-+	if (status == 0) {
-+		/* GPIOF_DIR_OUT */
-+		set_bit(FLAG_IS_OUT, &desc->flags);
-+	}
-+	return status;
-+}
-+
- #ifdef CONFIG_GPIO_SYSFS
- 
- /* lock protects against unexport_gpio() being called while
-@@ -223,6 +249,7 @@ static ssize_t gpio_direction_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	const struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	unsigned		gpio = desc - gpio_desc;
- 	ssize_t			status;
- 
- 	mutex_lock(&sysfs_lock);
-@@ -230,6 +257,7 @@ static ssize_t gpio_direction_show(struct device *dev,
- 	if (!test_bit(FLAG_EXPORT, &desc->flags))
- 		status = -EIO;
- 	else
-+		gpio_get_direction(gpio);
- 		status = sprintf(buf, "%s\n",
- 			test_bit(FLAG_IS_OUT, &desc->flags)
- 				? "out" : "in");
-@@ -1073,6 +1101,7 @@ int gpiochip_add(struct gpio_chip *chip)
- 			 * inputs (often with pullups enabled) so power
- 			 * usage is minimized.  Linux code should set the
- 			 * gpio direction first thing; but until it does,
-+			 * and in case chip->get_direction is not set,
- 			 * we may expose the wrong direction in sysfs.
- 			 */
- 			gpio_desc[id].flags = !chip->direction_input
-@@ -1224,9 +1253,15 @@ int gpio_request(unsigned gpio, const char *label)
- 			desc_set_label(desc, NULL);
- 			module_put(chip->owner);
- 			clear_bit(FLAG_REQUESTED, &desc->flags);
-+			goto done;
- 		}
- 	}
--
-+	if (chip->get_direction) {
-+		/* chip->get_direction may sleep */
-+		spin_unlock_irqrestore(&gpio_lock, flags);
-+		gpio_get_direction(gpio);
-+		spin_lock_irqsave(&gpio_lock, flags);
-+	}
- done:
- 	if (status)
- 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
-@@ -1762,6 +1797,7 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 		if (!test_bit(FLAG_REQUESTED, &gdesc->flags))
- 			continue;
- 
-+		gpio_get_direction(gpio);
- 		is_out = test_bit(FLAG_IS_OUT, &gdesc->flags);
- 		seq_printf(s, " gpio-%-3d (%-20.20s) %s %s",
- 			gpio, gdesc->label,
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 365ea09..d8e8c26 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -56,6 +56,8 @@ struct device_node;
-  *	enabling module power and clock; may sleep
-  * @free: optional hook for chip-specific deactivation, such as
-  *	disabling module power and clock; may sleep
-+ * @get_direction: returns direction for signal "offset", 0=out, 1=in,
-+ *	(same as GPIOF_DIR_XXX), or negative error
-  * @direction_input: configures signal "offset" as input, or returns error
-  * @get: returns value for signal "offset"; for output signals this
-  *	returns either the value actually sensed, or zero
-@@ -98,7 +100,8 @@ struct gpio_chip {
- 						unsigned offset);
- 	void			(*free)(struct gpio_chip *chip,
- 						unsigned offset);
--
-+	int			(*get_direction)(struct gpio_chip *chip,
-+						unsigned offset);
- 	int			(*direction_input)(struct gpio_chip *chip,
- 						unsigned offset);
- 	int			(*get)(struct gpio_chip *chip,
--- 
-1.7.4.1
-
+Sebastian
