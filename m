@@ -1,235 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935165Ab2JXPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:21:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35980 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935005Ab2JXPVN (ORCPT
+	id S965057Ab2JXPVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:21:38 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:59786 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933839Ab2JXPVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:21:13 -0400
-Message-ID: <50880750.4060809@ti.com>
-Date: Wed, 24 Oct 2012 20:50:48 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 24 Oct 2012 11:21:37 -0400
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linaro-dev@lists.linaro.org>, <peterz@infradead.org>,
-        <mingo@redhat.com>, <pjt@google.com>, <linux@arm.linux.org.uk>
-Subject: Re: [RFC 3/6] sched: pack small tasks
-References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org> <1349595838-31274-4-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1349595838-31274-4-git-send-email-vincent.guittot@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2001:470:1f05:1640:8180:e7c3:6ba0:d42]
+In-Reply-To: <5087A999.8090802@canonical.com>
+References: <1349706500.15966.165.camel@mfleming-mobl1.ger.corp.intel.com>
+	<1351059878-28795-1-git-send-email-olof@lixom.net>
+	<5087A999.8090802@canonical.com>
+Date: Wed, 24 Oct 2012 08:21:36 -0700
+Message-ID: <CAOesGMiB3cDMOSz+t4Mhek5+AbyoRtoJHRu+_8TL=Ob+6uPSaA@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: efi: Turn off efi_enabled after setup on mixed fw/kernel
+From: Olof Johansson <olof@lixom.net>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: matt@console-pimps.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        marko.kohtala@gmail.com, Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vincent,
+Hi,
 
-Few comments/questions.
-
-On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
-> During sched_domain creation, we define a pack buddy CPU if available.
+On Wed, Oct 24, 2012 at 1:40 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+> Op 24-10-12 08:24, Olof Johansson schreef:
+>> When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
+>> efi_enabled once setup is done. Beyond setup, it is normally used to
+>> determine if runtime services are available and we will have none.
+>>
+>> This will resolve issues stemming from efivars modprobe panicking on a
+>> 32/64-bit setup, as well as some reboot issues on similar setups.
+>>
+>> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45991
+>>
+>> Reported-by: Marko Kohtala <marko.kohtala@gmail.com>
+>> Reported-by: Maxim Kammerer <mk@dee.su>
+>> Signed-off-by: Olof Johansson <olof@lixom.net>
+>> Cc: stable@kernel.org # 3.4 - 3.6
+>> Cc: Matthew Garrett <mjg@redhat.com>
+>> Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+>> ---
+>>
+>> v2: rebase due to context diffs, and simplified efi_is_native() logic.
+>>
+>>  arch/x86/kernel/setup.c     | 11 +++++++++++
+>>  arch/x86/platform/efi/efi.c | 16 +++++++++-------
+>>  2 files changed, 20 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index 468e98d..ea2c587 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -1048,6 +1048,17 @@ void __init setup_arch(char **cmdline_p)
+>>       arch_init_ideal_nops();
+>>
+>>       register_refined_jiffies(CLOCK_TICK_RATE);
+>> +
+>> +#ifdef CONFIG_EFI
+>> +     /* Once setup is done above, disable efi_enabled on mismatched
+>> +      * firmware/kernel archtectures since there is no support for
+>> +      * runtime services.
+>> +      */
+>> +     if (IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
+>> +             pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
+>> +             efi_enabled = 0;
+>> +     }
+>> +#endif
+>>  }
 >
-> On a system that share the powerline at all level, the buddy is set to -1
+> Won't this give a spurious warning if it's already disabled?
+
+Ah, of course, my bad. v3 forthcoming.
+
+> And it should probably be moved to before the vga con setup, else it seems you
+> might not get a vga console when efifb is not used. Unless that's intentional,
+> but in that case please change the commit message to reflect that. :-)
+
+Hmm. I think the current logic and flow is valid -- it's likely a bad
+idea to enable VGA console if the memory isn't set aside in the memory
+map, since that possibly means that EFI didn't POST graphics for VGA
+text mode in the first place.
+
+> With those issues fixed in next version.
 >
-> On a dual clusters / dual cores system which can powergate each core and
-> cluster independantly, the buddy configuration will be :
->        | CPU0 | CPU1 | CPU2 | CPU3 |
-> -----------------------------------
-> buddy | CPU0 | CPU0 | CPU0 | CPU2 |
-			^
-Is that a typo ? Should it be CPU2 instead of
-CPU0 ?
+> Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-> Small tasks tend to slip out of the periodic load balance.
-> The best place to choose to migrate them is at their wake up.
->
-I have tried this series since I was looking at some of these packing
-bits. On Mobile workloads like OSIdle with Screen ON, MP3, gallary,
-I did see some additional filtering of threads with this series
-but its not making much difference in power. More on this below.
+Please confirm if you agree with my reasoning above, I'll post v3
+right after if so.
 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->   kernel/sched/core.c  |    1 +
->   kernel/sched/fair.c  |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++
->   kernel/sched/sched.h |    1 +
->   3 files changed, 111 insertions(+)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index dab7908..70cadbe 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -6131,6 +6131,7 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
->   	rcu_assign_pointer(rq->sd, sd);
->   	destroy_sched_domains(tmp, cpu);
->
-> +	update_packing_domain(cpu);
->   	update_top_cache_domain(cpu);
->   }
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 4f4a4f6..8c9d3ed 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -157,6 +157,63 @@ void sched_init_granularity(void)
->   	update_sysctl();
->   }
->
-> +
-> +/*
-> + * Save the id of the optimal CPU that should be used to pack small tasks
-> + * The value -1 is used when no buddy has been found
-> + */
-> +DEFINE_PER_CPU(int, sd_pack_buddy);
-> +
-> +/* Look for the best buddy CPU that can be used to pack small tasks
-> + * We make the assumption that it doesn't wort to pack on CPU that share the
-s/wort/worth
-> + * same powerline. We looks for the 1st sched_domain without the
-> + * SD_SHARE_POWERLINE flag. Then We look for the sched_group witht the lowest
-> + * power per core based on the assumption that their power efficiency is
-> + * better */
-Commenting style..
-/*
-  *
-  */
+Thanks,
 
-Can you please expand the why the assumption is right ?
-"it doesn't wort to pack on CPU that share the same powerline"
-
-Think about a scenario where you have quad core, ducal cluster system
-
-	|Cluster1|			|cluster 2|
-| CPU0 | CPU1 | CPU2 | CPU3 |	| CPU0 | CPU1 | CPU2 | CPU3 |
-
-
-Both clusters run from same voltage rail and have same PLL
-clocking them. But the cluster have their own power domain
-and all CPU's can power gate them-self to low power states.
-Clusters also have their own level2 caches.
-
-In this case, you will still save power if you try to pack
-load on one cluster. No ?
-
-> +void update_packing_domain(int cpu)
-> +{
-> +	struct sched_domain *sd;
-> +	int id = -1;
-> +
-> +	sd = highest_flag_domain(cpu, SD_SHARE_POWERLINE);
-> +	if (!sd)
-> +		sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
-> +	else
-> +		sd = sd->parent;
-> +
-> +	while (sd) {
-> +		struct sched_group *sg = sd->groups;
-> +		struct sched_group *pack = sg;
-> +		struct sched_group *tmp = sg->next;
-> +
-> +		/* 1st CPU of the sched domain is a good candidate */
-> +		if (id == -1)
-> +			id = cpumask_first(sched_domain_span(sd));
-> +
-> +		/* loop the sched groups to find the best one */
-> +		while (tmp != sg) {
-> +			if (tmp->sgp->power * sg->group_weight <
-> +					sg->sgp->power * tmp->group_weight)
-> +				pack = tmp;
-> +			tmp = tmp->next;
-> +		}
-> +
-> +		/* we have found a better group */
-> +		if (pack != sg)
-> +			id = cpumask_first(sched_group_cpus(pack));
-> +
-> +		/* Look for another CPU than itself */
-> +		if ((id != cpu)
-> +		 || ((sd->parent) && !(sd->parent->flags && SD_LOAD_BALANCE)))
-Is the condition "!(sd->parent->flags && SD_LOAD_BALANCE)" for
-big.LITTLE kind of system where SD_LOAD_BALANCE may not be used ?
-
-> +			break;
-> +
-> +		sd = sd->parent;
-> +	}
-> +
-> +	pr_info(KERN_INFO "CPU%d packing on CPU%d\n", cpu, id);
-> +	per_cpu(sd_pack_buddy, cpu) = id;
-> +}
-> +
->   #if BITS_PER_LONG == 32
->   # define WMULT_CONST	(~0UL)
->   #else
-> @@ -3073,6 +3130,55 @@ static int select_idle_sibling(struct task_struct *p, int target)
->   	return target;
->   }
->
-> +static inline bool is_buddy_busy(int cpu)
-> +{
-> +	struct rq *rq = cpu_rq(cpu);
-> +
-> +	/*
-> +	 * A busy buddy is a CPU with a high load or a small load with a lot of
-> +	 * running tasks.
-> +	 */
-> +	return ((rq->avg.usage_avg_sum << rq->nr_running) >
-> +			rq->avg.runnable_avg_period);
-I agree busy CPU is the one with high load, but many small threads may
-not make CPU fully busy, right ? Should we just stick to the load
-parameter alone here ?
-
-> +}
-> +
-> +static inline bool is_light_task(struct task_struct *p)
-> +{
-> +	/* A light task runs less than 25% in average */
-> +	return ((p->se.avg.usage_avg_sum << 2) < p->se.avg.runnable_avg_period);
-> +}
-Since the whole packing logic relies on the light threads only, the
-overall effectiveness is not significant. Infact with multiple tries on
-Dual core system, I didn't see any major improvement in power. I think
-we need to be more aggressive here. From the cover letter, I noticed
-that, you were concerned about any performance drop due to packing and
-may be that is the reason you chose the conservative threshold. But the
-fact is, if we want to save meaningful power, there will be slight
-performance drop which is expected.
-
-> +static int check_pack_buddy(int cpu, struct task_struct *p)
-> +{
-> +	int buddy = per_cpu(sd_pack_buddy, cpu);
-> +
-> +	/* No pack buddy for this CPU */
-> +	if (buddy == -1)
-> +		return false;
-> +
-> +	/*
-> +	 * If a task is waiting for running on the CPU which is its own buddy,
-> +	 * let the default behavior to look for a better CPU if available
-> +	 * The threshold has been set to 37.5%
-> +	 */
-> +	if ((buddy == cpu)
-> +	 && ((p->se.avg.usage_avg_sum << 3) < (p->se.avg.runnable_avg_sum * 5)))
-> +		return false;
-I lost you here on better CPU , 37.5 % and last two conditions.
-Isn't the first condition 'buddy==cpu' enough to return since nothing 
-really needs to be done in that case. Can you please expand this a bit?
-
-> +
-> +	/* buddy is not an allowed CPU */
-> +	if (!cpumask_test_cpu(buddy, tsk_cpus_allowed(p)))
-> +		return false;
-> +
-> +	/*
-> +	 * If the task is a small one and the buddy is not overloaded,
-> +	 * we use buddy cpu
-> +	 */
-> +	 if (!is_light_task(p) || is_buddy_busy(buddy))
-> +		return false;
-This is right but both the evaluation needs update to be effective.
-
-Regards
-Santosh
+-Olof
