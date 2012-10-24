@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926Ab2JXAwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:52:19 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:36582 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933407Ab2JXAwR (ORCPT
+	id S933938Ab2JXAxJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:53:09 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:44363 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933407Ab2JXAxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:52:17 -0400
+	Tue, 23 Oct 2012 20:53:08 -0400
+Date: Tue, 23 Oct 2012 19:53:06 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] arm: l2cc: doc: fix device tree example typo
+Message-ID: <20121024005306.GA32126@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-In-Reply-To: <1351030575.2459.21.camel@palomino.walls.org>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-	<1351022246-8201-17-git-send-email-elezegarcia@gmail.com>
-	<1351030575.2459.21.camel@palomino.walls.org>
-Date: Tue, 23 Oct 2012 21:52:16 -0300
-Message-ID: <CALF0-+WUBp4_50STBT2C2X_CRM3bjWw1C49fHu4wynXLZHgvHg@mail.gmail.com>
-Subject: Re: [PATCH 17/23] cx23885: Replace memcpy with struct assignment
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Andy Walls <awalls@md.metrocast.net>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>, stoth@kernellabs.com,
-        Devin Heitmueller <dheitmueller@kernellabs.com>
-Content-Type: text/plain; charset=ISO-8859-1
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 07:53:01 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/23/2012 07:53:01 PM,
+	Serialize complete at 10/23/2012 07:53:01 PM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-23_09:2012-10-23,2012-10-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(CCed Steven Toth and Devin Heitmueller)
+The list of attributes above details the use of the 'filter-ranges'
+property, but the example improperly used 'filter-latency'.  Make these
+consistent by fixing up the example.
 
-On Tue, Oct 23, 2012 at 7:16 PM, Andy Walls <awalls@md.metrocast.net> wrote:
-> On Tue, 2012-10-23 at 16:57 -0300, Ezequiel Garcia wrote:
->> This kind of memcpy() is error-prone. Its replacement with a struct
->> assignment is prefered because it's type-safe and much easier to read.
->>
->> Found by coccinelle. Hand patched and reviewed.
->> Tested by compilation only.
->>
->> A simplified version of the semantic match that finds this problem is as
->> follows: (http://coccinelle.lip6.fr/)
->>
->> // <smpl>
->> @@
->> identifier struct_name;
->> struct struct_name to;
->> struct struct_name from;
->> expression E;
->> @@
->> -memcpy(&(to), &(from), E);
->> +to = from;
->> // </smpl>
->>
->> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
->
-> This patch looks OK to me.  You forgot to CC: Steven Toth and/or Devin
-> Heitmueller (I can't remember who did the VBI work.)
+Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+---
+ Documentation/devicetree/bindings/arm/l2cc.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Done, thank you.
-
-    Ezequiel
+diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+index 7ca5216..7c3ee3a 100644
+--- a/Documentation/devicetree/bindings/arm/l2cc.txt
++++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+@@ -37,7 +37,7 @@ L2: cache-controller {
+         reg = <0xfff12000 0x1000>;
+         arm,data-latency = <1 1 1>;
+         arm,tag-latency = <2 2 2>;
+-        arm,filter-latency = <0x80000000 0x8000000>;
++        arm,filter-ranges = <0x80000000 0x8000000>;
+         cache-unified;
+         cache-level = <2>;
+ 	interrupts = <45>;
+-- 
+1.8.0
