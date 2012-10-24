@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934706Ab2JXLKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:10:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39155 "EHLO arroyo.ext.ti.com"
+	id S934708Ab2JXLNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:13:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11410 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933804Ab2JXLKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:10:49 -0400
-Message-ID: <5087CCA8.9020906@ti.com>
-Date: Wed, 24 Oct 2012 16:40:32 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: <balbi@ti.com>, Constantine Shulyupin <const@MakeLinux.com>
-CC: <gregkh@linuxfoundation.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] usb: remove CONFIG_USB_MUSB_HOST etc
-References: <1349702227-24875-1-git-send-email-const@MakeLinux.com> <50868EED.7050909@ti.com> <20121023123927.GB29281@arwen.pp.htv.fi>
-In-Reply-To: <20121023123927.GB29281@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S932128Ab2JXLNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 07:13:12 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20121024103559.GB10691@gmail.com>
+References: <20121024103559.GB10691@gmail.com> <20121022120558.14413.78980.stgit@warthog.procyon.org.uk>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: dhowells@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/2] x86: Provide a comment in uapi/asm/hw_breakpoint.h
+Date: Wed, 24 Oct 2012 12:12:53 +0100
+Message-ID: <22333.1351077173@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 6:09 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Oct 23, 2012 at 06:04:53PM +0530, Sekhar Nori wrote:
->> On 10/8/2012 6:47 PM, Constantine Shulyupin wrote:
->>> From: Constantine Shulyupin <const@MakeLinux.com>
->>>
->>> Remove USB configuration in arch/arm/mach-davinci/usb.c accordingly 
->>> CONFIG_USB_MUSB_OTG CONFIG_USB_MUSB_PERIPHERAL CONFIG_USB_MUSB_HOST 
->>> and set MUSB_OTG configuration by default
->>> because this configuration options are removed from Kconfig.
->>>
->>> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
->>
->> Queuing this patch for v3.8. Since the config options are removed there
->> is no use having code which refers to them. The patch has been tested on
->> DM644x and DM365 in both host and gadget mode (I will add this
->> information to commit text while committing). Without this patch .mode
->> seems to be defaulting to MUSB_UNDEFINED which I think is definitely wrong.
-> 
-> sorry for the delay, this looks ok:
-> 
-> Acked-by: Felipe Balbi <balbi@ti.com>
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Thanks Felipe, I added your ack.
+> Just wondering, have the tools/perf/ issues been solved in your 
+> tree, are the x86 UAPI disintegration changes pullable?
 
-Constantine,
+Did you have a look at the set of five patches I sent?  I think those should
+fix up perf and building tools with O=, but I'm not sure whether we want the
+last two.  From commits already made, I'm guessing that at least patch #4
+should be made.
 
-Patches touching arch/arm/* should be prefixed with 'ARM:' and those
-touching mach-davinci should be prefixed with 'davinci:'. I added these
-two while committing the patch this time. Please take care next time on.
+Note that the disintegrate-x86 branch does not include any perf fixes.  I can
+regenerate that with some or all of them, once I know what they will be.
 
-Thanks,
-Sekhar
+David
