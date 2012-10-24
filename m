@@ -1,232 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422795Ab2JXV62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:58:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37124 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422772Ab2JXV6S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:58:18 -0400
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org
-Subject: [PATCH 16/16] sched: add sched_dl documentation.
-Date: Wed, 24 Oct 2012 14:53:54 -0700
-Message-Id: <1351115634-8420-17-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	id S1422785Ab2JXV6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:58:25 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35645 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758777Ab2JXV6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:58:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: pdsw-power-team@arm.com, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arvind.chauhan@arm.com, patches@linaro.org
+Subject: Re: [PATCH 1/2] cpufreq: return early from __cpufreq_driver_getavg()
+Date: Thu, 25 Oct 2012 00:02:17 +0200
+Message-ID: <112621141.CGPLIkkgz1@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAKohponGwhC_zmk1Whq56vmZMvjcxXKiSpdvMk4ZU8z0Wa2TBw@mail.gmail.com>
+References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org> <2737823.2JYE7UmLRN@vostro.rjw.lan> <CAKohponGwhC_zmk1Whq56vmZMvjcxXKiSpdvMk4ZU8z0Wa2TBw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+On Saturday 20 of October 2012 10:12:07 Viresh Kumar wrote:
+> On Oct 20, 2012 3:37 AM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> >
+> > On Saturday 20 of October 2012 01:42:05 Viresh Kumar wrote:
+> > > There is no need to do cpufreq_get_cpu() and cpufreq_put_cpu() for
+> drivers that
+> > > don't support getavg() routine.
+> > >
+> > > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >
+> > The patch doesn't seem to follow the changelog or the other way around.
+> 
+> Sorry if my log isn't clear enough.
+> But i could still see it matching the code :)
+> 
+> I have moved the check for drivers capabilities at the top
+> of routine, so that there is no need to call mentioned routines.
 
-Add in Documentation/scheduler/ some hints about the design
-choices, the usage and the future possible developments of the
-sched_dl scheduling class and of the SCHED_DEADLINE policy.
+OK
 
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- Documentation/scheduler/sched-deadline.txt |  164 ++++++++++++++++++++++++++++
- kernel/sched/dl.c                          |    3 +-
- 2 files changed, 166 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/scheduler/sched-deadline.txt
+Applied to linux-pm.git/linux-next as v3.8 material.
 
-diff --git a/Documentation/scheduler/sched-deadline.txt b/Documentation/scheduler/sched-deadline.txt
-new file mode 100644
-index 0000000..d4dcfc7
---- /dev/null
-+++ b/Documentation/scheduler/sched-deadline.txt
-@@ -0,0 +1,164 @@
-+			Deadline Task and Group Scheduling
-+			----------------------------------
-+
-+CONTENTS
-+========
-+
-+0. WARNING
-+1. Overview
-+2. Task scheduling
-+2. The Interface
-+3. Bandwidth management
-+  3.1 System-wide settings
-+  2.2 Task interface
-+  2.4 Default behavior
-+3. Future plans
-+
-+
-+0. WARNING
-+==========
-+
-+ Fiddling with these settings can result in an unpredictable or even unstable
-+ system behavior. As for -rt (group) scheduling, it is assumed that root users
-+ know what they're doing.
-+
-+
-+1. Overview
-+===========
-+
-+ The SCHED_DEADLINE policy contained inside the sched_dl scheduling class is
-+ basically an implementation of the Earliest Deadline First (EDF) scheduling
-+ algorithm, augmented with a mechanism (called Constant Bandwidth Server, CBS)
-+ that makes it possible to isolate the behavior of tasks between each other.
-+
-+
-+2. Task scheduling
-+==================
-+
-+ The typical -deadline task is composed of a computation phase (instance)
-+ which is activated on a periodic or sporadic fashion. The expected (maximum)
-+ duration of such computation is called the task's runtime; the time interval
-+ by which each instance needs to be completed is called the task's relative
-+ deadline. The task's absolute deadline is dynamically calculated as the
-+ time instant a task (or, more properly) activates plus the relative
-+ deadline.
-+
-+ The EDF[1] algorithm selects the task with the smallest absolute deadline as
-+ the one to be executed first, while the CBS[2,3] ensures that each task runs
-+ for at most its runtime every period, avoiding any interference between
-+ different tasks (bandwidth isolation).
-+ Thanks to this feature, also tasks that do not strictly comply with the
-+ computational model described above can effectively use the new policy.
-+ IOW, there are no limitations on what kind of task can exploit this new
-+ scheduling discipline, even if it must be said that it is particularly
-+ suited for periodic or sporadic tasks that need guarantees on their
-+ timing behavior, e.g., multimedia, streaming, control applications, etc.
-+
-+ References:
-+  1 - C. L. Liu and J. W. Layland. Scheduling algorithms for multiprogram-
-+      ming in a hard-real-time environment. Journal of the Association for
-+      Computing Machinery, 20(1), 1973.
-+  2 - L. Abeni , G. Buttazzo. Integrating Multimedia Applications in Hard
-+      Real-Time Systems. Proceedings of the 19th IEEE Real-time Systems
-+      Symposium, 1998. http://retis.sssup.it/~giorgio/paps/1998/rtss98-cbs.pdf
-+  3 - L. Abeni. Server Mechanisms for Multimedia Applications. ReTiS Lab
-+      Technical Report. http://xoomer.virgilio.it/lucabe72/pubs/tr-98-01.ps
-+
-+3. Bandwidth management
-+=======================
-+
-+ In order for the -deadline scheduling to be effective and useful, it is
-+ important to have some method to keep the allocation of the available CPU
-+ bandwidth to the tasks under control.
-+ This is usually called "admission control" and if it is not performed at all,
-+ no guarantee can be given on the actual scheduling of the -deadline tasks.
-+
-+ Since when RT-throttling has been introduced each task group has a bandwidth
-+ associated, calculated as a certain amount of runtime over a period.
-+ Moreover, to make it possible to manipulate such bandwidth, readable/writable
-+ controls have been added to both procfs (for system wide settings) and cgroupfs
-+ (for per-group settings).
-+ Therefore, the same interface is being used for controlling the bandwidth
-+ distrubution to -deadline tasks and task groups, i.e., new controls but with
-+ similar names, equivalent meaning and with the same usage paradigm are added.
-+
-+ However, more discussion is needed in order to figure out how we want to manage
-+ SCHED_DEADLINE bandwidth at the task group level. Therefore, SCHED_DEADLINE
-+ uses (for now) a less sophisticated, but actually very sensible, mechanism to
-+ ensure that a certain utilization cap is not overcome per each root_domain.
-+
-+ Another main difference between deadline bandwidth management and RT-throttling
-+ is that -deadline tasks have bandwidth on their own (while -rt ones don't!),
-+ and thus we don't need an higher level throttling mechanism to enforce the
-+ desired bandwidth.
-+
-+3.1 System wide settings
-+------------------------
-+
-+The system wide settings are configured under the /proc virtual file system:
-+
-+ The per-group controls that are added to the cgroupfs virtual file system are:
-+  * /proc/sys/kernel/sched_dl_runtime_us,
-+  * /proc/sys/kernel/sched_dl_period_us,
-+
-+ They accept (if written) and provides (if read) the new runtime and period,
-+ respectively, for each CPU in each root_domain.
-+
-+ This means that, for a root_domain comprising M CPUs, -deadline tasks
-+ can be created until the sum of their bandwidths stay below:
-+
-+   M * (sched_dl_runtime_us / sched_dl_period_us)
-+
-+ It is also possible to disable this bandwidth management logic, and
-+ be thus free of oversubscribing the system up to any arbitrary level.
-+ This is done by writing -1 in /proc/sys/kernel/sched_dl_runtime_us.
-+
-+
-+2.2 Task interface
-+------------------
-+
-+ Specifying a periodic/sporadic task that executes for a given amount of
-+ runtime at each instance, and that is scheduled according to the urgency of
-+ its own timing constraints needs, in general, a way of declaring:
-+  - a (maximum/typical) instance execution time,
-+  - a minimum interval between consecutive instances,
-+  - a time constraint by which each instance must be completed.
-+
-+ Therefore:
-+  * a new struct sched_param2, containing all the necessary fields is
-+    provided;
-+  * the new scheduling related syscalls that manipulate it, i.e.,
-+    sched_setscheduler2(), sched_setparam2() and sched_getparam2()
-+    are implemented.
-+
-+
-+2.4 Default behavior
-+---------------------
-+
-+The default values for SCHED_DEADLINE bandwidth is to have dl_runtime and
-+dl_period equal to 500000 and 1000000, respectively. This means -deadline
-+tasks can use at most 5%, multiplied by the number of CPUs that compose the
-+root_domain, for each root_domain.
-+
-+When a -deadline task fork a child, its dl_runtime is set to 0, which means
-+someone must call sched_setscheduler2() on it, or it won't even start.
-+
-+
-+3. Future plans
-+===============
-+
-+Still missing:
-+
-+ - refinements to deadline inheritance, especially regarding the possibility
-+   of retaining bandwidth isolation among non-interacting tasks. This is
-+   being studied from both theoretical and practical point of views, and
-+   hopefully we should be able to produce some demonstrative code soon;
-+ - (c)group based bandwidth management, and maybe scheduling;
-+ - access control for non-root users (and related security concerns to
-+   address), which is the best way to allow unprivileged use of the mechanisms
-+   and how to prevent non-root users "cheat" the system?
-+
-+As already discussed, we are planning also to merge this work with the EDF
-+throttling patches [https://lkml.org/lkml/2010/2/23/239] but we still are in
-+the preliminary phases of the merge and we really seek feedback that would help us
-+decide on the direction it should take.
-diff --git a/kernel/sched/dl.c b/kernel/sched/dl.c
-index 1002955..69d9a54 100644
---- a/kernel/sched/dl.c
-+++ b/kernel/sched/dl.c
-@@ -347,7 +347,8 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
-  * disrupting the schedulability of the system. Otherwise, we should
-  * refill the runtime and set the deadline a period in the future,
-  * because keeping the current (absolute) deadline of the task would
-- * result in breaking guarantees promised to other tasks.
-+ * result in breaking guarantees promised to other tasks (refer to
-+ * Documentation/scheduler/sched-deadline.txt for more informations).
-  *
-  * This function returns true if:
-  *
+Thanks,
+Rafael
+
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
