@@ -1,130 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758202Ab2JXKpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:45:22 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:11106 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758111Ab2JXKpT (ORCPT
+	id S934662Ab2JXKpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:45:44 -0400
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39523 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758209Ab2JXKpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:45:19 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="15355111"
-Message-ID: <5087C6BC.7070109@citrix.com>
-Date: Wed, 24 Oct 2012 12:45:16 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 24 Oct 2012 06:45:42 -0400
+Message-ID: <5087C6DA.1070706@st.com>
+Date: Wed, 24 Oct 2012 11:45:46 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk drivers
-References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com> <20121022134708.GA13832@konrad-lan.dumpdata.com> <5086C0C8.5000306@citrix.com> <20121023172008.GB11787@phenom.dumpdata.com> <5086DD57.4000206@citrix.com> <20121023185049.GB20350@phenom.dumpdata.com>
-In-Reply-To: <20121023185049.GB20350@phenom.dumpdata.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Rob Herring <robherring2@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 3.7.0-rc2] dt: match id-table before creating platform
+ device
+References: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com> <5086988F.6090107@gmail.com>
+In-Reply-To: <5086988F.6090107@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/12 20:50, Konrad Rzeszutek Wilk wrote:
-> On Tue, Oct 23, 2012 at 08:09:27PM +0200, Roger Pau Monné wrote:
->> On 23/10/12 19:20, Konrad Rzeszutek Wilk wrote:
->>>>>> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
->>>>>> index c6decb9..2b982b2 100644
->>>>>> --- a/drivers/block/xen-blkback/blkback.c
->>>>>> +++ b/drivers/block/xen-blkback/blkback.c
->>>>>> @@ -78,6 +78,7 @@ struct pending_req {
->>>>>>       unsigned short          operation;
->>>>>>       int                     status;
->>>>>>       struct list_head        free_list;
->>>>>> +     unsigned int            unmap_seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+On 23/10/12 14:15, Rob Herring wrote:
+> Adding lkml. DT patches should go to both lists.
+>
+> On 10/23/2012 05:30 AM, Srinivas KANDAGATLA wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 >>
->> Should I change this to a bool? Since we are only setting it to 0 or 1.
-> 
-> I would just keep it as 'int'. Eventually we can replace this with a
-> bit-map, but that can be done later.
+>> As part of of_platform_populate call, the existing code iterates each
+>> child node and then creates a platform device for each child, however
+>> there is bug in the code which does not check the match table before
+>> creating the platform device. This might result creating two platfrom
+>> devices and also invoking driver probe twice, which is incorrect.
+>>
+>> This patch moves a existing of_match_node check to start of the function
+>> to fix the bug, doing this way will return immediately without creating
+>> any datastructures if the child does not match the supplied match-table.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> ---
+>>  drivers/of/platform.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>> index b80891b..1aaa560 100644
+>> --- a/drivers/of/platform.c
+>> +++ b/drivers/of/platform.c
+>> @@ -367,6 +367,9 @@ static int of_platform_bus_create(struct device_node *bus,
+>>  		return 0;
+>>  	}
+>>  
+>> +	if (!of_match_node(matches, bus))
+>> +		return 0;
+>> +
+> This is not right. This function is recursive and this change would
+> break that. 
+You are correct, this change might break the functionality.
+> Perhaps we could only call of_platform_device_create_pdata
+> if !of_match_node instead, but I'm not completely sure that would be the
+> right thing to do. 
+I did try to do the same thing in the patch.
+May be I should have moved check just before calling
+of_platform_device_create_pdata?
+> There's also some historical things we have to
+> support which is why we have of_platform_populate and of_platform_bus_probe.
+Am just trying to understand the difference between of_platform_populate
+and of_platform_bus_probe.
+Looking at the function documentation, which states
+of_platform_bus_probe will only create children of the root which are
+selected by the @matches argument.
 
-I've already changed it to a bitmap.
+of_platform_populate walks the device tree and creates devices from
+nodes.  It differs in that it follows the modern convention of requiring
+all device nodes to have a 'compatible' property, and it is suitable for
+creating devices which are children of the root node.
 
->>>>> Perhaps there should be a #define for that array..
->>>>
->>>> Do you mean something like:
->>>>
->>>> #define unmap(req, i) req->unmap_seg[i]
->>>
->>> I was thinking that you just check for req->unamp_seg[i] to
->>> have an non-zero value. But since that array is just used as an check
->>> to see whether the functionality is enabled (or not), you might want
->>> to declerare the right values so:
->>> #define UNMAP_SG_ON 1
->>> #define UNMAP_SG_OFF 0
->>>
->>> or so.
->>
->> Agreed, will add the defines.
->>
->>>>>> +             if (persistent_gnts[i]) {
->>>>>> +                     if (!persistent_gnts[i]->handle) {
->>>>>> +                             /*
->>>>>> +                              * If this is a new persistent grant
->>>>>> +                              * save the handler
->>>>>> +                              */
->>>>>> +                             persistent_gnts[i]->handle = map[j].handle;
->>>>>> +                             persistent_gnts[i]->dev_bus_addr =
->>>>>> +                                     map[j++].dev_bus_addr;
->>>>>> +                     }
->>>>>> +                     pending_handle(pending_req, i) =
->>>>>> +                             persistent_gnts[i]->handle;
->>>>>> +                     pending_req->unmap_seg[i] = 0;
->>>>>
->>>>> Could we have a #define for that?
->>>>
->>>> Sure.
->>
->> I've used the previous macro, so it looks like:
->>
->> unmap(req, i) = UNMAP_SG_OFF;
->>
->> I'm not sure if this is what you meant, or if you where interested in
->> defining a set of macros like:
->>
->> #define check_unmap(req, i) req->unmap_seg[i]
->> #define unset_unmap(req, i) req->unmap_seg[i] = UNMAP_SG_OFF
->> #define set_unmap(req, i) req->unmap_seg[i] = UNMAP_SG_ON
->>
->> I would go for the first option (the unmap macro that can be used here
->> and in xen_blkbk_unmap).
-> 
-> I was just thinking something as simple as
-> 
-> 	if (reg->unmap_seg[i] == UNMAP_SG_OFF)
-> 		continue;
-> 
-> And the #defines are just for the hard-coded values of 0 or 1.
-> 
->>
->>>>> HA! By default, eh?
->>>>
->>>> Yes, you caught me, there's a paragraph in the commit message that
->>>> explains that we are using persistent grants in the frontend
->>>> unconditionally, since the protocol is compatible (you can have a
->>>> persistent blkfront and a non-persistent blkback). It simplifies the
->>>> logic in blkfront. Are you OK with it?
->>>
->>> It is OK, but you should be checking whether the backend supports it.
->>> I don't see it checking the info->feature_persistent_grant to print
->>> that.
->>
->> I don't understand why blkfront needs to check if the backend supports
->> persisten grants, blkfront is going to use persistent grants anyway.
-> 
-> What if it does not (say this guest runs on an older xen-blkback?)?
-> Then you would be still printing 'persistent grants' in the blkfront.
+Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
+on a device trees like the below with
+struct of_device_id match_table[] = {
+    { .compatible = "simple-bus", }
+    {}
+};
 
-Ok, I get your point. Now blkfront will only report the use of
-persistent grants if the backend supports it.
+parent@0{
+    compatible    = "xxx,parent1", "simple-bus";
+    ...
+    child@0 {
+        compatible    = "xxx,child0", "simple-bus";
+        ...
+    };
+    child@1 {
+        compatible    = "xxx,child1";
+        ...
+    };
+    child@2 {
+        compatible    = "xxx,child2", "simple-bus";
+        ...
+    };
+};
 
-If there are no further comments I will send v2 after doing some tests,
-thanks for the reviews.
+of_platform_bus_probewould create platform-devices for parent@0,
+child@0and child@2
+where as
+of_platform_populate would create platform-devices for parent@0,
+child@0, child@1 and child@2 nodes.
+
+So the question is
+why do we need to have @matches argument to of_platform_populate in the
+first place, if it creates all the devices by walking the dt nodes?
+
+It is bit confusion, As some platforms use of_platform_populate(NULL,
+of_default_bus_match_table, NULL, NULL) assuming that only matching
+nodes will end up having platform device.
+Also
+some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
+where match table is of_default_bus_match_table.
+
+IMO, we could do two things to avoid this confusion in future.
+
+1. Remove matches from of_platform_populate
+2. add Lookup argument to of_platform_bus_probe
+
+What do you think?
+
+--srini
+
+
+
+
+>
+> Rob
+>
+>>  	auxdata = of_dev_lookup(lookup, bus);
+>>  	if (auxdata) {
+>>  		bus_id = auxdata->name;
+>> @@ -379,7 +382,7 @@ static int of_platform_bus_create(struct device_node *bus,
+>>  	}
+>>  
+>>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
+>> -	if (!dev || !of_match_node(matches, bus))
+>> +	if (!dev)
+>>  		return 0;
+>>  
+>>  	for_each_child_of_node(bus, child) {
+>>
+>
+>
 
