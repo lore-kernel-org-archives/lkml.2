@@ -1,65 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab2JXIVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:21:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22223 "EHLO mga01.intel.com"
+	id S933398Ab2JXIXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:23:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27325 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab2JXIVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:21:38 -0400
-Message-Id: <b94cdc$72fm1r@fmsmga001.fm.intel.com>
+	id S1755607Ab2JXIXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:23:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="237492283"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: drm i915 hangs on heavy io load
-To: Norbert Preining <preining@logic.at>, Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org
-In-Reply-To: <20121024003659.GA30962@gamma.logic.tuwien.ac.at>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at>
-Date: Wed, 24 Oct 2012 09:11:03 +0100
+   d="scan'208";a="231525604"
+Message-ID: <5087A574.3040507@intel.com>
+Date: Wed, 24 Oct 2012 16:23:16 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH V2 1/7] perf, x86: Reduce lbr_sel_map size
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com> <1351058350-9159-2-git-send-email-zheng.z.yan@intel.com> <CABPqkBRMo9o8bujM+aCqh-hWqVz1-Y1G_15Oovv+15SMBbK=aA@mail.gmail.com> <50879D71.3080108@intel.com> <CABPqkBQWvV5w-qyaWmbmqs9+7zaC8kBhmacuAF3FYvw-PCh=9A@mail.gmail.com>
+In-Reply-To: <CABPqkBQWvV5w-qyaWmbmqs9+7zaC8kBhmacuAF3FYvw-PCh=9A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 09:36:59 +0900, Norbert Preining <preining@logic.at> wrote:
-> Hi Dave, hi Chris,
+On 10/24/2012 04:15 PM, Stephane Eranian wrote:
+> On Wed, Oct 24, 2012 at 9:49 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> On 10/24/2012 03:28 PM, Stephane Eranian wrote:
+>>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>>
+>>>> The index of lbr_sel_map is bit value of perf branch_sample_type.
+>>>> By using bit shift as index, we can reduce lbr_sel_map size.
+>>>>
+>>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>>> ---
+>>>>  arch/x86/kernel/cpu/perf_event.h           |  4 +++
+>>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 50 ++++++++++++++----------------
+>>>>  include/uapi/linux/perf_event.h            | 42 +++++++++++++++++--------
+>>>>  3 files changed, 56 insertions(+), 40 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+>>>> index d3b3bb7..ea6749a 100644
+>>>> --- a/arch/x86/kernel/cpu/perf_event.h
+>>>> +++ b/arch/x86/kernel/cpu/perf_event.h
+>>>> @@ -412,6 +412,10 @@ struct x86_pmu {
+>>>>         struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+>>>>  };
+>>>>
+>>>> +enum {
+>>>> +       PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
+>>>> +};
+>>>> +
+>>> What's the point on the extraneous definition?
+>>
+>> because later patches will add map PERF_SAMPLE_BRANCH_CALL_STACK, it will make
+>> "PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE != PERF_SAMPLE_BRANCH_MAX_SHIFT"
+>>
+> And you are not going to do:
 > 
-> thanks for your answers.
+> enum perf_branch_sample_type_shift {
+> ...
+> PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = 10
+> PERF_SAMPLE_BRANCH_MAX_SHIFT
+> };
 > 
-> On Di, 23 Okt 2012, Dave Airlie wrote:
-> > Does booting with i915.i915_enable_rc6=0 help?
+> PERF_SAMPLE_BRANCH_CALL_STACK = 1 << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT
 > 
-> No,booted with that, it happened again on a completely idle
-> system (well, I believe completely idle, I was doing the
-> dishes ;-)
+> Unless you're telling you are not going to add a mapping for
+> PERF_SAMPLE_CALL_STACK to the
+> lbr_sel_map[]?
 > 
-> [12437.995026] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-> [12437.995034] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
-> [12438.000213] [drm:init_ring_common] *ERROR* failed to set render ring head to zero ctl 00000000 head 5ee06f14 tail 00000000 start 00003000
-> [12438.054894] [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 5ee06f14 tail 00000000 start 00003000
-> [12439.583064] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-> [12439.583176] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
-> [12439.583182] [drm:i915_reset] *ERROR* Failed to reset chip.
-> 
-> New output see here:
-> http://www.logic.at/people/preining/i915_error_state.gz
 
-That has a very similar look to it, so reasonable to assume that is the
-same issue.
- 
-> > http://cgit.freedesktop.org/~danvet/drm/commit/?h=ilk-wa-pile&id=0d5fed2de763b49bb1a90140758153481f043757
-> > is the missing ingredient.
-> 
-> I am compiling a kernel with this patch based on current git now.
-> Should I still use the above kernel cmd argument (i915...rc6=0)
-> or try without it?
+I think include/uapi/linux/perf_event.h should only contain definition for user API.
+So I added PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT and PERF_SAMPLE_BRANCH_CALL_STACK to
+arch/x86/kernel/cpu/perf_event.h. Please check patch 1.
 
-Without any rc6 parameter would be best. But if rc6=0 wasn't the
-solution for you, then I may have identified the wrong w/a. Can I ask
-you try the patches in that branch until you find one (or more perhaps)
-that stabilise your system?
--Chris
+Regards
+Yan, Zheng
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
