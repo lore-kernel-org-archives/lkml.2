@@ -1,126 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964793Ab2JXGsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:48:35 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:39923 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933722Ab2JXGsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:48:33 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: hpa@zytor.com
-Subject: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Wed, 24 Oct 2012 08:47:52 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1757912Ab2JXGt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:49:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:13631 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757833Ab2JXGt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:49:56 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
+   d="scan'208";a="6057777"
+Message-ID: <508790DD.8070607@cn.fujitsu.com>
+Date: Wed, 24 Oct 2012 14:55:25 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: akpm@linux-foundation.org
+CC: mm-commits@vger.kernel.org, benh@kernel.crashing.org, cl@linux.com,
+        dave@linux.vnet.ibm.com, isimatu.yasuaki@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, len.brown@intel.com, liuj97@gmail.com,
+        mel@csn.ul.ie, minchan.kim@gmail.com, paulus@samba.org,
+        rientjes@google.com, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: + memory-hotplug-allocate-zones-pcp-before-onlining-pages.patch
+ added to -mm tree
+References: <20121018223135.5D11F1E0043@wpzn4.hot.corp.google.com>
+In-Reply-To: <20121018223135.5D11F1E0043@wpzn4.hot.corp.google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:49:17,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:49:19,
+	Serialize complete at 2012/10/24 14:49:19
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201210240847.52417.linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-line but resume code assumes that KBC was used.
-The laptop will not resume from S3 otherwise but powers off after a while
-and then powers on again stuck with a blank screen.
+Hi, Andrew Morton
 
-Fix it by enabling A20 using KBC. Affected laptop list and DMI data are from
-bug reports at Ubuntu Launchpad.
+At 10/19/2012 06:31 AM, akpm@linux-foundation.org Wrote:
+> The patch titled
+>      Subject: memory-hotplug: allocate zone's pcp before onlining pages
+> has been added to the -mm tree.  Its filename is
+>      memory-hotplug-allocate-zones-pcp-before-onlining-pages.patch
 
-Tested with EX600 and PR200.
+I find a problem introduced by this patch, and the following is the fix:
+Do I need to merge them into a single patch?
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+>From 705b8f7392adba8a36d8e89b5aef77d9a6a9042c Mon Sep 17 00:00:00 2001
+From: Wen Congyang <wency@cn.fujitsu.com>
+Date: Wed, 24 Oct 2012 14:21:15 +0800
+Subject: [PATCH] memory-hotplug: build zonelist if a zone is populated after onlining pages
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+After "memory-hotplug: allocate zone's pcp before onlining pages", we
+build zone list before onlining pages to allocate zone's pcp. But the
+zone doesn't have pages before onlining pages, and the zone is not in
+zonelist, so we still need to build zonelist after onlining pages.
 
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -1349,6 +1349,20 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
- }
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ mm/memory_hotplug.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 3656926..b82bccf 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -529,7 +529,9 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+ 	if (onlined_pages) {
+ 		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+-		if (!need_zonelists_rebuild)
++		if (need_zonelists_rebuild)
++			build_all_zonelists(NULL, NULL);
++		else
+ 			zone_pcp_update(zone);
+ 	}
  
- /*
-+ * Enable A20 line using KBC even if it's already enabled using other method.
-+ * This is needed for some MSI laptops to resume from S3.
-+ */
-+static int __init a20_enable_kbc(const struct dmi_system_id *d)
-+{
-+	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n", d->ident);
-+	outb(0xd1, 0x64);	/* Command write */
-+	outb(0xdf, 0x60);	/* A20 on */
-+	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
-+
-+	return 0;
-+}
-+
-+/*
-  * If your system is blacklisted here, but you find that acpi=force
-  * works for you, please contact linux-acpi@vger.kernel.org
-  */
-@@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
- 		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
- 		     },
- 	 },
-+	/*
-+	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
-+	 * enable A20 line but resume code assumes that KBC was used.
-+	 * The laptop will not resume from S3 otherwise but powers off
-+	 * after a while and then powers on again stuck with a blank screen.
-+	 */
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI EX600 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
-+		     },
-+	 },
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI EX700 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
-+		     },
-+	 },
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI GX700 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
-+		     },
-+	 },
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI VR201 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
-+		     },
-+	 },
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI VR601 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
-+		     },
-+	 },
-+	{
-+	 .callback = a20_enable_kbc,
-+	 .ident = "MSI PR200 Laptop",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
-+		     },
-+	 },
- 	{}
- };
- 
-
-
 -- 
-Ondrej Zary
+1.7.1
+
+
+> 
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+> 
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> 
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+> 
+> ------------------------------------------------------
+> From: Wen Congyang <wency@cn.fujitsu.com>
+> Subject: memory-hotplug: allocate zone's pcp before onlining pages
+> 
+> We use __free_page() to put a page to buddy system when onlining pages. 
+> __free_page() will store NR_FREE_PAGES in zone's pcp.vm_stat_diff, so we
+> should allocate zone's pcp before onlining pages, otherwise we will lose
+> some free pages.
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Jiang Liu <liuj97@gmail.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/memory_hotplug.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff -puN mm/memory_hotplug.c~memory-hotplug-allocate-zones-pcp-before-onlining-pages mm/memory_hotplug.c
+> --- a/mm/memory_hotplug.c~memory-hotplug-allocate-zones-pcp-before-onlining-pages
+> +++ a/mm/memory_hotplug.c
+> @@ -505,12 +505,16 @@ int __ref online_pages(unsigned long pfn
+>  	 * So, zonelist must be updated after online.
+>  	 */
+>  	mutex_lock(&zonelists_mutex);
+> -	if (!populated_zone(zone))
+> +	if (!populated_zone(zone)) {
+>  		need_zonelists_rebuild = 1;
+> +		build_all_zonelists(NULL, zone);
+> +	}
+>  
+>  	ret = walk_system_ram_range(pfn, nr_pages, &onlined_pages,
+>  		online_pages_range);
+>  	if (ret) {
+> +		if (need_zonelists_rebuild)
+> +			zone_pcp_reset(zone);
+>  		mutex_unlock(&zonelists_mutex);
+>  		printk(KERN_DEBUG "online_pages [mem %#010llx-%#010llx] failed\n",
+>  		       (unsigned long long) pfn << PAGE_SHIFT,
+> @@ -525,9 +529,7 @@ int __ref online_pages(unsigned long pfn
+>  	zone->zone_pgdat->node_present_pages += onlined_pages;
+>  	if (onlined_pages) {
+>  		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+> -		if (need_zonelists_rebuild)
+> -			build_all_zonelists(NULL, zone);
+> -		else
+> +		if (!need_zonelists_rebuild)
+>  			zone_pcp_update(zone);
+>  	}
+>  
+> _
+> 
+> Patches currently in -mm which might be from wency@cn.fujitsu.com are
+> 
+> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved.patch
+> cpu_hotplug-unmap-cpu2node-when-the-cpu-is-hotremoved-fix.patch
+> acpi_memhotplugc-fix-memory-leak-when-memory-device-is-unbound-from-the-module-acpi_memhotplug.patch
+> acpi_memhotplugc-free-memory-device-if-acpi_memory_enable_device-failed.patch
+> acpi_memhotplugc-remove-memory-info-from-list-before-freeing-it.patch
+> acpi_memhotplugc-dont-allow-to-eject-the-memory-device-if-it-is-being-used.patch
+> acpi_memhotplugc-bind-the-memory-device-when-the-driver-is-being-loaded.patch
+> acpi_memhotplugc-auto-bind-the-memory-device-which-is-hotplugged-before-the-driver-is-loaded.patch
+> x86-numa-dont-check-if-node-is-numa_no_node.patch
+> memory-hotplug-suppress-device-memoryx-does-not-have-a-release-function-warning.patch
+> memory-hotplug-suppress-device-nodex-does-not-have-a-release-function-warning.patch
+> memory-hotplug-skip-hwpoisoned-page-when-offlining-pages.patch
+> memory-hotplug-update-mce_bad_pages-when-removing-the-memory.patch
+> memory-hotplug-update-mce_bad_pages-when-removing-the-memory-fix.patch
+> memory-hotplug-auto-offline-page_cgroup-when-onlining-memory-block-failed.patch
+> memory-hotplug-fix-nr_free_pages-mismatch.patch
+> memory-hotplug-allocate-zones-pcp-before-onlining-pages.patch
+> 
+> 
+
