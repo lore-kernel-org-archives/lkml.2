@@ -1,120 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab2JXGGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:06:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53310 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab2JXGGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:06:22 -0400
-Date: Tue, 23 Oct 2012 23:04:29 -0700
-From: tip-bot for Luigi Semenzato <semenzato@chromium.org>
-Message-ID: <tip-9fdbf671ba7e8adb2cbb93d716232ebcab55f6bd@git.kernel.org>
-Cc: acme@redhat.com, eranian@google.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, wilsons@start.ca, semenzato@chromium.org,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
-        robert.richter@amd.com, fweisbec@gmail.com, olofj@chromium.org,
-        akpm@linux-foundation.org, dsahern@gmail.com, ak@linux.intel.com,
-        oleg@redhat.com, tglx@linutronix.de, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        segoon@openwall.com, lucas.demarchi@profusion.mobi, namhyung@gmail.com,
-        ebiederm@xmission.com, tj@kernel.org, sonnyrao@chromium.org,
-        paul.gortmaker@windriver.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, eranian@google.com, acme@redhat.com,
-        a.p.zijlstra@chello.nl, semenzato@chromium.org, wilsons@start.ca,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org,
-        fweisbec@gmail.com, robert.richter@amd.com, akpm@linux-foundation.org,
-        olofj@chromium.org, ak@linux.intel.com, dsahern@gmail.com,
-        tglx@linutronix.de, oleg@redhat.com, rjw@sisk.pl, hpa@zytor.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, segoon@openwall.com,
-        namhyung@gmail.com, lucas.demarchi@profusion.mobi,
-        ebiederm@xmission.com, tj@kernel.org, sonnyrao@chromium.org,
-        mingo@elte.hu, paul.gortmaker@windriver.com
-In-Reply-To: <1345585940-6497-1-git-send-email-semenzato@chromium.org>
-References: <1345585940-6497-1-git-send-email-semenzato@chromium.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  do not flush maps on COMM for perf report
-Git-Commit-ID: 9fdbf671ba7e8adb2cbb93d716232ebcab55f6bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 23 Oct 2012 23:04:38 -0700 (PDT)
+	id S1757818Ab2JXGHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:07:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53191 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757500Ab2JXGHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:07:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
+   d="scan'208";a="6057053"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] Use kacpi_hotplug_wq to handle container hotplug event.
+Date: Wed, 24 Oct 2012 14:05:49 +0800
+Message-Id: <1351058750-4275-2-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:06:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:06:31,
+	Serialize complete at 2012/10/24 14:06:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9fdbf671ba7e8adb2cbb93d716232ebcab55f6bd
-Gitweb:     http://git.kernel.org/tip/9fdbf671ba7e8adb2cbb93d716232ebcab55f6bd
-Author:     Luigi Semenzato <semenzato@chromium.org>
-AuthorDate: Tue, 21 Aug 2012 14:52:20 -0700
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 22 Oct 2012 13:55:53 -0200
+As the comments in __acpi_os_execute() said:
 
-perf tools: do not flush maps on COMM for perf report
+	We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
+	because the hotplug code may call driver .remove() functions,
+	which invoke flush_scheduled_work/acpi_os_wait_events_complete
+	to flush these workqueues.
 
-This fixes a long-standing bug caused by the lack of separate COMM and EXEC
-record types, which makes "perf report" lose track of symbols when a process
-renames itself.
+we should keep the hotplug code in kacpi_hotplug_wq.
 
-With this fix (suggested by Stephane Eranian), a COMM (rename) no longer
-flushes the maps, which is the correct behavior.  An EXEC also no longer
-flushes the maps, but this doesn't matter because as new mappings are created
-(for the executable and the libraries) the old mappings are automatically
-removed.  This is not by accident: the functionality is necessary because DLLs
-can be explicitly loaded at any time with dlopen(), possibly on top of existing
-text, so "perf report" handles correctly the clobbering of new mappings on top
-of old ones.
+But we have the following call series in kernel now:
+	acpi_ev_queue_notify_request()
+	|--> acpi_os_execute()
+	     |--> __acpi_os_execute(type, function, context, 0)
 
-An alternative patch (which I proposed earlier) would be to introduce a
-separate PERF_RECORD_EXEC type, but it is a much larger change (about 300
-lines) and is not necessary.
+The last parameter 0 makes the container_notify_cb() executed in
+kacpi_notify_wq or kacpid_wq. So, we need to put the real hotplug code
+into kacpi_hotplug_wq.
 
-Signed-off-by: Luigi Semenzato <semenzato@chromium.org>
-Tested-by: Stephane Eranian <eranian@google.com>
-Acked-by: Stephane Eranian <eranian@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Olof Johansson <olofj@chromium.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Sonny Rao <sonnyrao@chromium.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Stephen Wilson <wilsons@start.ca>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Link: http://lkml.kernel.org/r/1345585940-6497-1-git-send-email-semenzato@chromium.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- tools/perf/util/thread.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/acpi/container.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index fb4b7ea..8b3e593 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -39,7 +39,6 @@ int thread__set_comm(struct thread *self, const char *comm)
- 	err = self->comm == NULL ? -ENOMEM : 0;
- 	if (!err) {
- 		self->comm_set = true;
--		map_groups__flush(&self->mg);
- 	}
- 	return err;
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 69e2d6b..d300e03 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -35,6 +35,7 @@
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ #include <acpi/container.h>
++#include <acpi/acpiosxf.h>
+ 
+ #define PREFIX "ACPI: "
+ 
+@@ -165,14 +166,21 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
+ 	return result;
  }
+ 
+-static void container_notify_cb(acpi_handle handle, u32 type, void *context)
++static void __container_notify_cb(struct work_struct *work)
+ {
+ 	struct acpi_device *device = NULL;
+ 	int result;
+ 	int present;
+ 	acpi_status status;
++	struct acpi_hp_work *hp_work;
++	acpi_handle handle;
++	u32 type;
+ 	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+ 
++	hp_work = container_of(work, struct acpi_hp_work, work);
++	handle = hp_work->handle;
++	type = hp_work->type;
++
+ 	switch (type) {
+ 	case ACPI_NOTIFY_BUS_CHECK:
+ 		/* Fall through */
+@@ -224,6 +232,13 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 	return;
+ }
+ 
++static void container_notify_cb(acpi_handle handle, u32 type,
++				void *context)
++{
++	alloc_acpi_hp_work(handle, type, context,
++			   __container_notify_cb);
++}
++
+ static acpi_status
+ container_walk_namespace_cb(acpi_handle handle,
+ 			    u32 lvl, void *context, void **rv)
+-- 
+1.7.1
+
