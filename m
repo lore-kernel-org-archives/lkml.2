@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965133Ab2JXHkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:40:17 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57002 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965068Ab2JXHkP (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 24 Oct 2012 03:40:15 -0400
-Message-Id: <5087B77A02000078000A3D00@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 24 Oct 2012 08:40:10 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <roger.pau@citrix.com>, "Konrad Rzeszutek Wilk" <konrad@kernel.org>
-Cc: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk
- drivers
-References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com>
- <20121022134708.GA13832@konrad-lan.dumpdata.com>
- <5086C0C8.5000306@citrix.com> <20121023172008.GB11787@phenom.dumpdata.com>
- <5086DD57.4000206@citrix.com> <20121023185049.GB20350@phenom.dumpdata.com>
-In-Reply-To: <20121023185049.GB20350@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S934439Ab2JXHl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:41:27 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35655 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934401Ab2JXHlY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 03:41:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <021101cdb128$1f56c1c0$5e044540$%kim@samsung.com>
+References: <002801cdac0a$11e4f340$35aed9c0$%han@samsung.com>
+	<CACRpkdYx1HLF2==6DsPp+qC6Xyb7Ag8qa1K7g2Ht-Y2T-UjzMA@mail.gmail.com>
+	<00a201cdaff0$d90a11a0$8b1e34e0$%han@samsung.com>
+	<CACRpkdZCH_bxviyz5Qqx0ttFFGW-CkJT6vCT3-JcOgQ5quK0kg@mail.gmail.com>
+	<021101cdb128$1f56c1c0$5e044540$%kim@samsung.com>
+Date: Wed, 24 Oct 2012 09:41:23 +0200
+Message-ID: <CACRpkdYKXZwFLhnw0AAcjELqUnRG+xzahtwgvQvAUQEFevPWXw@mail.gmail.com>
+Subject: Re: [PATCH V3] gpio: samsung: use pr_* instead of printk
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Grant Likely <grant.likely@secretlab.ca>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ryan Mallon <rmallon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 23.10.12 at 20:50, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
-> On Tue, Oct 23, 2012 at 08:09:27PM +0200, Roger Pau Monné wrote:
->> On 23/10/12 19:20, Konrad Rzeszutek Wilk wrote:
->> >>>> diff --git a/drivers/block/xen-blkback/blkback.c 
-> b/drivers/block/xen-blkback/blkback.c
->> >>>> index c6decb9..2b982b2 100644
->> >>>> --- a/drivers/block/xen-blkback/blkback.c
->> >>>> +++ b/drivers/block/xen-blkback/blkback.c
->> >>>> @@ -78,6 +78,7 @@ struct pending_req {
->> >>>>       unsigned short          operation;
->> >>>>       int                     status;
->> >>>>       struct list_head        free_list;
->> >>>> +     unsigned int            unmap_seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
->> 
->> Should I change this to a bool? Since we are only setting it to 0 or 1.
-> 
-> I would just keep it as 'int'. Eventually we can replace this with a
-> bit-map, but that can be done later.
+On Tue, Oct 23, 2012 at 4:10 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> Linus Walleij wrote:
+>>
+>> On Mon, Oct 22, 2012 at 3:02 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+>> > On Friday, October 19, 2012 7:09 PM Linus Walleij wrote
+>> >>
+>> >> On Wed, Oct 17, 2012 at 3:52 AM, Jingoo Han <jg1.han@samsung.com>
+> wrote:
+>> >>
+>> >> > This patch uses pr_* instead of printk. Also, gpio_dbg
+>> >> > is replaced with pr_debug.
+>> >> >
+>> >> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>> >> > Reviewed-by: Linus Walleij <linus.walleij@linaro.org> <- NAK
+>> >>
+>> >> Please consult Documentation/SubmittingPatches as to the conditions
+>> that
+>> >> apply when you add Reviewed-by tags.
+>> >
+>> > Um, you already gave the Reviewed-by to the same patch, a month ago.
+>> > Anyway, I will remove Reviewed-by and send v4 patch, soon.
+>>
+>> My bad. I confused this mail thread for something else, sorry
+>> for this. :-(
+>>
+>> Please keep the Reviewed-tag if you want to!
+>>
+> Linus, if you don't have any objection, let me take this into Samsung tree.
 
-I think this should be a bitmap from the beginning - why would
-you want to waste 44 bytes per request for something that fits
-in a single unsigned long (and the picture would get worse with
-the number-of-segments extension)?
+Of course you should take it, sorry for the mess.
+Acked-by/Reviewed-by: <linus.walleij@linaro.org>
 
-Also - am I taking this work being done here as a silent agreement
-to not invest into blkif2 to streamline the various extensions
-floating around?
-
-Jan
+Yours,
+Linus Walleij
