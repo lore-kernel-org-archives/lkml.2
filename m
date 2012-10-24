@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab2JXH3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:29:09 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39988 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934412Ab2JXH3H (ORCPT
+	id S934446Ab2JXHdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:33:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54114 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934396Ab2JXHdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 03:29:07 -0400
-Date: Wed, 24 Oct 2012 09:29:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Yan@gmail.com, Zheng <zheng.z.yan@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [bug] perf_event_intel_uncore.c build warnings on allnoconfig
-Message-ID: <20121024072901.GA25890@gmail.com>
+	Wed, 24 Oct 2012 03:33:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351050074-22480-1-git-send-email-weiyang@linux.vnet.ibm.com>
+References: <1351050074-22480-1-git-send-email-weiyang@linux.vnet.ibm.com>
+Date: Wed, 24 Oct 2012 09:33:19 +0200
+Message-ID: <CAFLxGvwZdsQn=cT1Y5oz8mdByym=7_BqNfL=bU9pWys2GvDnqA@mail.gmail.com>
+Subject: Re: [PATCH] Replace the type check code with typecheck() in kfifo_in
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Wei Yang <weiyang@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, jkosina@suse.cz, stefani@seibold.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 24, 2012 at 5:41 AM, Wei Yang <weiyang@linux.vnet.ibm.com> wrote:
+> Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
+> Reviewed-by: Andrew Morton <akpm@linux-foundation.org>
+> Reviewed-by: richard -rw- weinberger <richard.weinberger@gmail.com>
 
-FYI, on a 'make allnoconfig' x86_64 kernel I get a stream of 
-warnings:
+I did *not* review this patch, nor did Andrew.
 
- arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function ‘snbep_uncore_pci_disable_box’:
- arch/x86/kernel/cpu/perf_event_intel_uncore.c:124:9: warning: ‘config’ is used uninitialized in this function [-Wuninitialized]
- arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function ‘snbep_uncore_pci_enable_box’:
- arch/x86/kernel/cpu/perf_event_intel_uncore.c:135:9: warning: ‘config’ is used uninitialized in this function [-Wuninitialized]
- arch/x86/kernel/cpu/perf_event_intel_uncore.c: In function ‘snbep_uncore_pci_read_counter’:
- arch/x86/kernel/cpu/perf_event_intel_uncore.c:164:2: warning: ‘count’ is used uninitialized in this function [-Wuninitialized]
-
-Please fix this - if pci_read_config_dword() returns an error it 
-should be handled - that will fix these warnings as well.
-
+-- 
 Thanks,
-
-	Ingo
+//richard
