@@ -1,132 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935454Ab2JXSKc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:10:32 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39325 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935343Ab2JXSKa (ORCPT
+	id S1161082Ab2JXSNa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:13:30 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:58842 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161061Ab2JXSN2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:10:30 -0400
+	Wed, 24 Oct 2012 14:13:28 -0400
+Date: Wed, 24 Oct 2012 11:13:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Scott Liu <scott.liu@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jesse <jesse@emc.com.tw>, Vincent Wang <vincent.wang@emc.com.tw>,
+        Paul <paul.liang@emc.com.tw>
+Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
+Message-ID: <20121024181323.GA18122@core.coreip.homeip.net>
+References: <1351042903-27538-1-git-send-email-scott.liu@emc.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <1350656442-1523-9-git-send-email-glommer@parallels.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
-	<1350656442-1523-9-git-send-email-glommer@parallels.com>
-Date: Thu, 25 Oct 2012 03:10:29 +0900
-Message-ID: <CAAmzW4N40MedsCfcj+eiM-i6cU65n3z7uy08YFyknXbBKj7Z-g@mail.gmail.com>
-Subject: Re: [PATCH v5 08/18] memcg: infrastructure to match an allocation to
- the right cache
-From: JoonSoo Kim <js1304@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351042903-27538-1-git-send-email-scott.liu@emc.com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/19 Glauber Costa <glommer@parallels.com>:
-> @@ -2930,9 +2937,188 @@ int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s)
->
->  void memcg_release_cache(struct kmem_cache *s)
->  {
-> +       struct kmem_cache *root;
-> +       int id = memcg_css_id(s->memcg_params->memcg);
-> +
-> +       if (s->memcg_params->is_root_cache)
-> +               goto out;
-> +
-> +       root = s->memcg_params->root_cache;
-> +       root->memcg_params->memcg_caches[id] = NULL;
-> +       mem_cgroup_put(s->memcg_params->memcg);
-> +out:
->         kfree(s->memcg_params);
->  }
+Hi Scott,
 
-memcg_css_id should be called after checking "s->memcg_params->is_root_cache".
-Because when is_root_cache == true, memcg_params has no memcg object.
+On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
+> This patch is for Elan eKTF Touchscreen product, I2C adpater module.
+> 
+> Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
+> ---
+> 
+> Hi,
+>         v2 revision I have fixed some bug as your advise.
+>         1. To target the mainline
+>         2. No Android dependency
+>         3. reuse those duplication code from Henrik's patchset.
+>                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
 
+Just a quick run through the code, so:
 
-> +/*
-> + * This lock protects updaters, not readers. We want readers to be as fast as
-> + * they can, and they will either see NULL or a valid cache value. Our model
-> + * allow them to see NULL, in which case the root memcg will be selected.
-> + *
-> + * We need this lock because multiple allocations to the same cache from a non
-> + * GFP_WAIT area will span more than one worker. Only one of them can create
-> + * the cache.
-> + */
-> +static DEFINE_MUTEX(memcg_cache_mutex);
-> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-> +                                                 struct kmem_cache *cachep)
-> +{
-> +       struct kmem_cache *new_cachep;
-> +       int idx;
-> +
-> +       BUG_ON(!memcg_can_account_kmem(memcg));
-> +
-> +       idx = memcg_css_id(memcg);
-> +
-> +       mutex_lock(&memcg_cache_mutex);
-> +       new_cachep = cachep->memcg_params->memcg_caches[idx];
-> +       if (new_cachep)
-> +               goto out;
-> +
-> +       new_cachep = kmem_cache_dup(memcg, cachep);
-> +
-> +       if (new_cachep == NULL) {
-> +               new_cachep = cachep;
-> +               goto out;
-> +       }
-> +
-> +       mem_cgroup_get(memcg);
-> +       cachep->memcg_params->memcg_caches[idx] = new_cachep;
-> +       wmb(); /* the readers won't lock, make sure everybody sees it */
-
-Is there any rmb() pair?
-As far as I know, without rmb(), wmb() doesn't guarantee anything.
-
-> +       new_cachep->memcg_params->memcg = memcg;
-> +       new_cachep->memcg_params->root_cache = cachep;
-
-It may be better these assignment before the statement
-"cachep->memcg_params->memcg_caches[idx] = new_cachep".
-Otherwise, it may produce race situation.
-
-And assigning value to memcg_params->memcg and root_cache is redundant,
-because it is already done in memcg_register_cache().
-
-> +/*
-> + * Return the kmem_cache we're supposed to use for a slab allocation.
-> + * We try to use the current memcg's version of the cache.
-> + *
-> + * If the cache does not exist yet, if we are the first user of it,
-> + * we either create it immediately, if possible, or create it asynchronously
-> + * in a workqueue.
-> + * In the latter case, we will let the current allocation go through with
-> + * the original cache.
-> + *
-> + * Can't be called in interrupt context or from kernel threads.
-> + * This function needs to be called with rcu_read_lock() held.
-> + */
-> +struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
-> +                                         gfp_t gfp)
-> +{
-> +       struct mem_cgroup *memcg;
-> +       int idx;
-> +
-> +       if (cachep->memcg_params && cachep->memcg_params->memcg)
-> +               return cachep;
-
-In __memcg_kmem_get_cache, cachep may be always root cache.
-So checking "cachep->memcg_params->memcg" is somewhat strange.
-Is it right?
-
+- please remove polling support, it is not useful in production;
+- why do you need a separate probe work instead of doing what you
+  need in elants_probe()
+- it is not a good idea to register input device first and then
+  allocating memory for MT handling.
+- I do not understand why kfifo is needed
+- please remove the rest of the custom threads
+- you do not need to call input_mt_destroy_slots() explicitly
+- use request_firmware() instead of special character device to upload
+  firmware.
+- please use standard kernel-doc markup.
+- consider what attributes are there only for debugging and move them to
+  debugfs.
+- I find the use of enums in this driver quite unconventional, just
+  standard #defines would probably be more straightforward.
 
 Thanks.
+
+-- 
+Dmitry
