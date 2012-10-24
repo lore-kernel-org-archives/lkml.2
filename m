@@ -1,80 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab2JXQAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:00:40 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33126 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757859Ab2JXQAj convert rfc822-to-8bit (ORCPT
+	id S1757859Ab2JXQDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:03:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41214 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab2JXQDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:00:39 -0400
-Message-ID: <1351094432.23327.42.camel@hornet>
-Subject: Re: [RFC] Energy/power monitoring within the kernel
-From: Pawel Moll <pawel.moll@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Date: Wed, 24 Oct 2012 17:00:32 +0100
-In-Reply-To: <1351014187.8467.24.camel@gandalf.local.home>
-References: <1351013449.9070.5.camel@hornet>
-	 <1351014187.8467.24.camel@gandalf.local.home>
-X-Mailer: Evolution 3.6.0-0ubuntu3
-Mime-Version: 1.0
-X-OriginalArrivalTime: 24 Oct 2012 16:00:32.0822 (UTC) FILETIME=[B281FD60:01CDB200]
-X-MC-Unique: 112102417003600801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Oct 2012 12:03:10 -0400
+Date: Thu, 25 Oct 2012 00:02:53 +0800
+From: Tekkaman Ninja <tekkamanninja@gmail.com>
+To: Harry Wei <harryxiyou@gmail.com>
+Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel@vger.linux-kernel.cn, Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH]Documentation:Chinese translation of
+ Documentation/arm64/memory.txt
+Message-ID: <20121024160253.GB6567@Super-MAGI>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 18:43 +0100, Steven Rostedt wrote:
-> > <...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
-> > 
-> > One issue with this is that some external knowledge is required to
-> > relate a number to a processor core. Or maybe it's not an issue at all
-> > because it should be left for the user(space)?
-> 
-> If the external knowledge can be characterized in a userspace tool with
-> the given data here, I see no issues with this.
+This is a Chinese translated version of
+Documentation/arm64/memory.txt
 
-Ok, fine.
+Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
 
-> > 	TP_fast_assign(
-> > 		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
-> 
-> Copying the entire cpumask seems like overkill. Especially when you have
-> 4096 CPU machines.
+---
+ Documentation/zh_CN/arm64/memory.txt |   93 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
+ create mode 100644 Documentation/zh_CN/arm64/memory.txt
 
-Uh, right. I didn't consider such use case...
-
-> Perhaps making a field that can be a subset of cpus may be better. That
-> way we don't waste the ring buffer with lots of zeros. I'm guessing that
-> it will only be a group of cpus, and not a scattered list? Of course,
-> I've seen boxes where the cpu numbers went from core to core. That is,
-> cpu 0 was on core 1, cpu 1 was on core 2, and then it would repeat. 
-> cpu 8 was on core 1, cpu 9 was on core 2, etc.
-> 
-> But still, this could be compressed somehow.
-
-Sure thing. Or I could simply use cpumask_scnprintf() on the assign
-stage and keep an already-formatted string. Or, as the cpumask per
-sensor would be de-facto constant, I could assume keep only a pointer to
-it. Will keep it in mind if this event was supposed to happen.
-
-Thanks!
-
-Paweł
-
-
+diff --git a/Documentation/zh_CN/arm64/memory.txt b/Documentation/zh_CN/arm64/memory.txt
+new file mode 100644
+index 0000000..83b5193
+--- /dev/null
++++ b/Documentation/zh_CN/arm64/memory.txt
+@@ -0,0 +1,93 @@
++Chinese translated version of Documentation/arm64/memory.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Maintainer: Catalin Marinas <catalin.marinas@arm.com>
++Chinese maintainer: Fu Wei <tekkamanninja@gmail.com>
++---------------------------------------------------------------------
++Documentation/arm64/memory.txt 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++
++英文版维护者： Catalin Marinas <catalin.marinas@arm.com>
++中文版维护者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++中文版翻译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++中文版校译者： 傅炜  Fu Wei <tekkamanninja@gmail.com>
++
++以下为正文
++---------------------------------------------------------------------
++		     Linux 在 AArch64 中的内存布局
++		     ===========================
++
++作者: Catalin Marinas <catalin.marinas@arm.com>
++日期: 2012 年 02 月 20 日
++
++本文档描述 AArch64 Linux 内核所使用的虚拟内存布局。此构架可以实现
++页大小为 4KB 的 4 级转换表和页大小为 64KB 的 3 级转换表。
++
++AArch64 Linux 使用页大小为 4KB 的 3 级转换表配置，对于用户和内核
++都有 39-bit (512GB) 的虚拟地址空间。对于页大小为 64KB的配置，仅
++使用 2 级转换表，但内存布局相同。
++
++用户地址空间的 63:39 位为 0，而内核地址空间的相应位为 1。TTBRx 的
++选择由虚拟地址的 63 位给出。swapper_pg_dir 仅包含内核（全局）映射，
++而用户 pgd 仅包含用户（非全局）映射。swapper_pgd_dir 地址被写入
++TTBR1 中，且从不写入 TTBR0。
++
++
++AArch64 Linux 内存布局：
++
++起始地址			结束地址			大小		用途
++-----------------------------------------------------------------------
++0000000000000000	0000007fffffffff	 512GB		用户空间
++
++ffffff8000000000	ffffffbbfffcffff	~240GB		vmalloc
++
++ffffffbbfffd0000	ffffffbcfffdffff	  64KB		[防护页]
++
++ffffffbbfffe0000	ffffffbcfffeffff	  64KB		PCI I/O 空间
++
++ffffffbbffff0000	ffffffbcffffffff	  64KB		[防护页]
++
++ffffffbc00000000	ffffffbdffffffff	   8GB		vmemmap
++
++ffffffbe00000000	ffffffbffbffffff	  ~8GB		[防护页，未来用于 vmmemap]
++
++ffffffbffc000000	ffffffbfffffffff	  64MB		模块
++
++ffffffc000000000	ffffffffffffffff	 256GB		内存空间
++
++
++4KB 页大小的转换表查找：
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |         |         |         |         |
++ |                 |         |         |         |         v
++ |                 |         |         |         |   [11:0]  页内偏移
++ |                 |         |         |         +-> [20:12] L3 索引
++ |                 |         |         +-----------> [29:21] L2 索引
++ |                 |         +---------------------> [38:30] L1 索引
++ |                 +-------------------------------> [47:39] L0 索引 (未使用)
++ +-------------------------------------------------> [63] TTBR0/1
++
++
++64KB 页大小的转换表查找：
++
+++--------+--------+--------+--------+--------+--------+--------+--------+
++|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
+++--------+--------+--------+--------+--------+--------+--------+--------+
++ |                 |    |               |              |
++ |                 |    |               |              v
++ |                 |    |               |            [15:0]  页内偏移
++ |                 |    |               +----------> [28:16] L3 索引
++ |                 |    +--------------------------> [41:29] L2 索引 (仅使用 38:29 )
++ |                 +-------------------------------> [47:42] L1 索引 (未使用)
++ +-------------------------------------------------> [63] TTBR0/1
+-- 
+1.7.9.5
 
