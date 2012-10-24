@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934555Ab2JXJeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:34:04 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41190 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2JXJeB (ORCPT
+	id S934563Ab2JXJen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:34:43 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25160 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2JXJem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:34:01 -0400
+	Wed, 24 Oct 2012 05:34:42 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
+   d="scan'208";a="15352515"
+Message-ID: <1351071279.2237.126.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH V5] PVH patches for v3.8.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Oct 2012 10:34:39 +0100
+In-Reply-To: <5087B13402000078000A3CBB@nat28.tlf.novell.com>
+References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
+	 <5087B13402000078000A3CBB@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-In-Reply-To: <1350306806-5688-2-git-send-email-lee.jones@linaro.org>
-References: <1350306806-5688-1-git-send-email-lee.jones@linaro.org>
-	<1350306806-5688-2-git-send-email-lee.jones@linaro.org>
-Date: Wed, 24 Oct 2012 11:34:00 +0200
-Message-ID: <CAPDyKFqrS0QT+UO0L3B29UcnjX0bSv3XvWTmC6E_ubgr8NTDiQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ASoC: ux500_msp_i2s: Fix devm_* and return code merge error
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
-        arnd@arndb.de, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+On Wed, 2012-10-24 at 08:13 +0100, Jan Beulich wrote:
 
-I assume this shall go into 3.7, right?
+> >  include/xen/interface/memory.h       |   29 ++++++-
+> >  include/xen/interface/physdev.h      |   10 ++
+> 
+> ... any changes to the hypervisor interface (didn't look in detail
+> what is being changed in these two headers) should first be in
+> at least -unstable before being consumed in any official release
+> imo.
 
-Kind regards
-Ulf Hansson
+I'd also like to see at least the interface definitions in the h/v tree
+if not the implementation right away.
 
-On 15 October 2012 15:13, Lee Jones <lee.jones@linaro.org> wrote:
-> Some ux500_msp_i2s patches clashed with:
->
-> b18e93a493626c1446f9788ebd5844d008bbf71c
-> ASoC: ux500_msp_i2s: better use devm functions and fix error return code
->
-> ... leaving the driver uncompilable. This patch fixes the
-> issues encountered.
->
-> Cc: alsa-devel@alsa-project.org
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  sound/soc/ux500/ux500_msp_i2s.c |    8 +++-----
->  1 file changed, 3 insertions(+), 5 deletions(-)
->
-> diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
-> index b7c996e..a26c6bf 100644
-> --- a/sound/soc/ux500/ux500_msp_i2s.c
-> +++ b/sound/soc/ux500/ux500_msp_i2s.c
-> @@ -18,6 +18,7 @@
->  #include <linux/pinctrl/consumer.h>
->  #include <linux/delay.h>
->  #include <linux/slab.h>
-> +#include <linux/io.h>
->  #include <linux/of.h>
->
->  #include <mach/hardware.h>
-> @@ -697,14 +698,11 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
->                         platform_data = devm_kzalloc(&pdev->dev,
->                                 sizeof(struct msp_i2s_platform_data), GFP_KERNEL);
->                         if (!platform_data)
-> -                               ret = -ENOMEM;
-> +                               return -ENOMEM;
->                 }
->         } else
->                 if (!platform_data)
-> -                       ret = -EINVAL;
-> -
-> -       if (ret)
-> -               goto err_res;
-> +                       return -EINVAL;
->
->         dev_dbg(&pdev->dev, "%s: Enter (name: %s, id: %d).\n", __func__,
->                 pdev->name, platform_data->id);
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The flip side is that we have agreed that the interfaces are not
+considered set in stone / stable until we've had a chance to review the
+implementation, so perhaps it is better not to commit them to
+xen-unstable.hg right away.
+
+I don't know what the right answer is. Perhaps we should at a minimum
+reserve the subop numbers even if we don't yet define what they mean in
+the Xen tree.
+
+Ian.
+
