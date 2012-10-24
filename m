@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422750Ab2JXV6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:58:01 -0400
+	id S1422769Ab2JXV6N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:58:13 -0400
 Received: from mail-da0-f46.google.com ([209.85.210.46]:36192 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422721Ab2JXV54 (ORCPT
+	with ESMTP id S1422721Ab2JXV6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:57:56 -0400
+	Wed, 24 Oct 2012 17:58:06 -0400
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org
-Subject: [PATCH 14/16] sched: make dl_bw a sub-quota of rt_bw
-Date: Wed, 24 Oct 2012 14:53:52 -0700
-Message-Id: <1351115634-8420-15-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 15/16] sched: speed up -dl pushes with a push-heap.
+Date: Wed, 24 Oct 2012 14:53:53 -0700
+Message-Id: <1351115634-8420-16-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
 References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
@@ -29,546 +29,472 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change real-time bandwidth management as to make dl_bw a sub-quota
-of rt_bw. This patch leaves rt_bw at its default value and sets
-dl_bw at 40% of rt_bw. It also remove sched_dl_period_us control
-knob using sched_rt_period_us as common period for both rt_bw and
-dl_bw.
+Data from tests confirmed that the original active load balancing
+logic didn't scale neither in the number of CPU nor in the number of
+tasks (as sched_rt does).
 
-Checks are made when the user tries to change dl_bw sub-quota as to
-not fall below what currently used. Since dl_bw now depends upon
-rt_bw, similar checks are performed when the users modifies rt_bw
-and dl_bw is changed accordingly. Setting rt_bw sysctl variable to
--1 (actually disabling rt throttling) disables dl_bw checks as well.
+Here we provide a global data structure to keep track of deadlines
+of the running tasks in the system. The structure is composed by
+a bitmask showing the free CPUs and a max-heap, needed when the system
+is heavily loaded.
+
+The implementation and concurrent access scheme are kept simple by
+design. However, our measurements show that we can compete with sched_rt
+on large multi-CPUs machines [1].
+
+Only the push path is addressed, the extension to use this structure
+also for pull decisions is straightforward. However, we are currently
+evaluating different (in order to decrease/avoid contention) data
+structures to solve possibly both problems. We are also going to re-run
+tests considering recent changes inside cpupri [2].
+
+[1] http://retis.sssup.it/~jlelli/papers/Ospert11Lelli.pdf
+[2] http://www.spinics.net/lists/linux-rt-users/msg06778.html
 
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- include/linux/sched.h |    1 -
- kernel/sched/core.c   |  282 +++++++++++++++++++++++--------------------------
- kernel/sched/dl.c     |    3 +-
- kernel/sched/sched.h  |   22 ++--
- kernel/sysctl.c       |    7 --
- 5 files changed, 143 insertions(+), 172 deletions(-)
+ kernel/sched/Makefile |    2 +-
+ kernel/sched/core.c   |    3 +
+ kernel/sched/cpudl.c  |  208 +++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/cpudl.h  |   33 ++++++++
+ kernel/sched/dl.c     |   51 +++---------
+ kernel/sched/sched.h  |    2 +
+ 6 files changed, 259 insertions(+), 40 deletions(-)
+ create mode 100644 kernel/sched/cpudl.c
+ create mode 100644 kernel/sched/cpudl.h
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 4ad8dc1..3bce12f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2156,7 +2156,6 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 622046c..1c788ab 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -12,7 +12,7 @@ CFLAGS_core.o := $(PROFILING) -fno-omit-frame-pointer
+ endif
  
--extern unsigned int sysctl_sched_dl_period;
- extern int sysctl_sched_dl_runtime;
- 
- int sched_dl_handler(struct ctl_table *table, int write,
+ obj-y += core.o clock.o cputime.o idle_task.o fair.o rt.o dl.o stop_task.o
+-obj-$(CONFIG_SMP) += cpupri.o
++obj-$(CONFIG_SMP) += cpupri.o cpudl.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b926969..3003a4e 100644
+index 3003a4e..499c23d 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -288,13 +288,12 @@ __read_mostly int scheduler_running;
- int sysctl_sched_rt_runtime = 950000;
+@@ -5738,6 +5738,7 @@ static void free_rootdomain(struct rcu_head *rcu)
+ 	struct root_domain *rd = container_of(rcu, struct root_domain, rcu);
  
- /*
-- * Maximum bandwidth available for all -deadline tasks and groups
-- * (if group scheduling is configured) on each CPU.
-+ * Sub-quota or rt bandwidth available for all -deadline tasks
-+ * on each CPU.
-  *
-- * default: 5%
-+ * default: 40%
-  */
--unsigned int sysctl_sched_dl_period = 1000000;
--int sysctl_sched_dl_runtime = 50000;
-+int sysctl_sched_dl_runtime = 400000;
+ 	cpupri_cleanup(&rd->cpupri);
++	cpudl_cleanup(&rd->cpudl);
+ 	free_cpumask_var(rd->dlo_mask);
+ 	free_cpumask_var(rd->rto_mask);
+ 	free_cpumask_var(rd->online);
+@@ -5796,6 +5797,8 @@ static int init_rootdomain(struct root_domain *rd)
+ 		goto free_dlo_mask;
  
+ 	init_dl_bw(&rd->dl_bw);
++	if (cpudl_init(&rd->cpudl) != 0)
++		goto free_dlo_mask;
  
- 
-@@ -7204,7 +7203,7 @@ void __init sched_init(void)
- 	init_rt_bandwidth(&def_rt_bandwidth,
- 			global_rt_period(), global_rt_runtime());
- 	init_dl_bandwidth(&def_dl_bandwidth,
--			global_dl_period(), global_dl_runtime());
-+			global_rt_period(), global_dl_runtime());
- 
- #ifdef CONFIG_RT_GROUP_SCHED
- 	init_rt_bandwidth(&root_task_group.rt_bandwidth,
-@@ -7598,6 +7597,93 @@ void sched_move_task(struct task_struct *tsk)
- }
- #endif /* CONFIG_CGROUP_SCHED */
- 
-+static u64 actual_dl_runtime(void)
+ 	if (cpupri_init(&rd->cpupri) != 0)
+ 		goto free_rto_mask;
+diff --git a/kernel/sched/cpudl.c b/kernel/sched/cpudl.c
+new file mode 100644
+index 0000000..ac4f746
+--- /dev/null
++++ b/kernel/sched/cpudl.c
+@@ -0,0 +1,208 @@
++/*
++ *  kernel/sched/cpudl.c
++ *
++ *  Global CPU deadline management
++ *
++ *  Author: Juri Lelli <j.lelli@sssup.it>
++ *
++ *  This program is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License
++ *  as published by the Free Software Foundation; version 2
++ *  of the License.
++ */
++
++#include <linux/gfp.h>
++#include <linux/kernel.h>
++#include "cpudl.h"
++
++static inline int parent(int i)
 +{
-+	u64 dl_runtime = global_dl_runtime();
-+	u64 rt_runtime = global_rt_runtime();
-+	u64 period = global_rt_period();
-+
-+	/*
-+	 * We want to calculate the sub-quota of rt_bw actually available
-+	 * for -dl tasks. It is a percentage of percentage. By default 95%
-+	 * of system bandwidth is allocate to -rt tasks; among this, a 40%
-+	 * quota is reserved for -dl tasks. To have the actual quota a simple
-+	 * multiplication is needed: .95 * .40 = .38 (38% of system bandwidth
-+	 * for deadline tasks).
-+	 * What follows is basically the same, but using unsigned integers.
-+	 *
-+	 *                   dl_runtime   rt_runtime
-+	 * actual_runtime =  ---------- * ---------- * period
-+	 *                     period       period
-+	 */
-+	if (dl_runtime == RUNTIME_INF)
-+		return RUNTIME_INF;
-+
-+	return div64_u64 (dl_runtime * rt_runtime, period);
++	return (i - 1) >> 1;
 +}
 +
-+static int check_dl_bw(void)
++static inline int left_child(int i)
 +{
-+	int i;
-+	u64 period = global_rt_period();
-+	u64 dl_actual_runtime = actual_dl_runtime();
-+	u64 new_bw = to_ratio(period, dl_actual_runtime);
++	return (i << 1) + 1;
++}
 +
-+	/*
-+	 * Here we want to check the bandwidth not being set to some
-+	 * value smaller than the currently allocated bandwidth in
-+	 * any of the root_domains.
-+	 *
-+	 * FIXME: Cycling on all the CPUs is overdoing, but simpler than
-+	 * cycling on root_domains... Discussion on different/better
-+	 * solutions is welcome!
-+	 */
-+	for_each_possible_cpu(i) {
-+#ifdef CONFIG_SMP
-+		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
-+#else
-+		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
-+#endif
-+		raw_spin_lock(&dl_b->lock);
-+		if (new_bw < dl_b->total_bw) {
-+			raw_spin_unlock(&dl_b->lock);
-+			return -EBUSY;
++static inline int right_child(int i)
++{
++	return (i << 1) + 2;
++}
++
++static inline int dl_time_before(u64 a, u64 b)
++{
++	return (s64)(a - b) < 0;
++}
++
++void cpudl_exchange(struct cpudl *cp, int a, int b)
++{
++	int cpu_a = cp->elements[a].cpu, cpu_b = cp->elements[b].cpu;
++
++	swap(cp->elements[a], cp->elements[b]);
++	swap(cp->cpu_to_idx[cpu_a], cp->cpu_to_idx[cpu_b]);
++}
++
++void cpudl_heapify(struct cpudl *cp, int idx)
++{
++	int l, r, largest;
++
++	/* adapted from lib/prio_heap.c */
++	while(1) {
++		l = left_child(idx);
++		r = right_child(idx);
++		largest = idx;
++
++		if ((l < cp->size) && dl_time_before(cp->elements[idx].dl,
++							cp->elements[l].dl))
++			largest = l;
++		if ((r < cp->size) && dl_time_before(cp->elements[largest].dl,
++							cp->elements[r].dl))
++			largest = r;
++		if (largest == idx)
++			break;
++
++		/* Push idx down the heap one level and bump one up */
++		cpudl_exchange(cp, largest, idx);
++		idx = largest;
++	}
++}
++
++void cpudl_change_key(struct cpudl *cp, int idx, u64 new_dl)
++{
++	WARN_ON(idx > num_present_cpus() && idx != -1);
++
++	if (dl_time_before(new_dl, cp->elements[idx].dl)) {
++		cp->elements[idx].dl = new_dl;
++		cpudl_heapify(cp, idx);
++	} else {
++		cp->elements[idx].dl = new_dl;
++		while (idx > 0 && dl_time_before(cp->elements[parent(idx)].dl,
++					cp->elements[idx].dl)) {
++			cpudl_exchange(cp, idx, parent(idx));
++			idx = parent(idx);
 +		}
-+		raw_spin_unlock(&dl_b->lock);
 +	}
-+
-+	return 0;
 +}
 +
-+static void update_dl_bw(void)
++static inline int cpudl_maximum(struct cpudl *cp)
 +{
-+	u64 new_bw;
++	return cp->elements[0].cpu;
++}
++
++/*
++ * cpudl_find - find the best (later-dl) CPU in the system
++ * @cp: the cpudl max-heap context
++ * @p: the task
++ * @later_mask: a mask to fill in with the selected CPUs (or NULL)
++ *
++ * Returns: int - best CPU (heap maximum if suitable)
++ */
++int cpudl_find(struct cpudl *cp, struct task_struct *p,
++	       struct cpumask *later_mask)
++{
++	int best_cpu = -1;
++	const struct sched_dl_entity *dl_se = &p->dl;
++
++	if (later_mask && cpumask_and(later_mask, cp->free_cpus,
++			&p->cpus_allowed) && cpumask_and(later_mask,
++			later_mask, cpu_active_mask)) {
++		best_cpu = cpumask_any(later_mask);
++		goto out;
++	} else if (cpumask_test_cpu(cpudl_maximum(cp), &p->cpus_allowed) &&
++			dl_time_before(dl_se->deadline, cp->elements[0].dl)) {
++		best_cpu = cpudl_maximum(cp);
++		if (later_mask)
++			cpumask_set_cpu(best_cpu, later_mask);
++	}
++
++out:
++	WARN_ON(best_cpu > num_present_cpus() && best_cpu != -1);
++
++	return best_cpu;
++}
++
++/*
++ * cpudl_set - update the cpudl max-heap
++ * @cp: the cpudl max-heap context
++ * @cpu: the target cpu
++ * @dl: the new earliest deadline for this cpu
++ *
++ * Notes: assumes cpu_rq(cpu)->lock is locked
++ *
++ * Returns: (void)
++ */
++void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid)
++{
++	int old_idx, new_cpu;
++	unsigned long flags;
++
++	WARN_ON(cpu > num_present_cpus());
++
++	raw_spin_lock_irqsave(&cp->lock, flags);
++	old_idx = cp->cpu_to_idx[cpu];
++	if (!is_valid) {
++		/* remove item */
++		new_cpu = cp->elements[cp->size - 1].cpu;
++		cp->elements[old_idx].dl = cp->elements[cp->size - 1].dl;
++		cp->elements[old_idx].cpu = new_cpu;
++		cp->size--;
++		cp->cpu_to_idx[new_cpu] = old_idx;
++		cp->cpu_to_idx[cpu] = IDX_INVALID;
++		while (old_idx > 0 && dl_time_before(
++				cp->elements[parent(old_idx)].dl,
++				cp->elements[old_idx].dl)) {
++			cpudl_exchange(cp, old_idx, parent(old_idx));
++			old_idx = parent(old_idx);
++		}
++		cpumask_set_cpu(cpu, cp->free_cpus);
++                cpudl_heapify(cp, old_idx);
++
++		goto out;
++	}
++
++	if (old_idx == IDX_INVALID) {
++		cp->size++;
++		cp->elements[cp->size - 1].dl = 0;
++		cp->elements[cp->size - 1].cpu = cpu;
++		cp->cpu_to_idx[cpu] = cp->size - 1;
++		cpudl_change_key(cp, cp->size - 1, dl);
++		cpumask_clear_cpu(cpu, cp->free_cpus);
++	} else {
++		cpudl_change_key(cp, old_idx, dl);
++	}
++
++out:
++	raw_spin_unlock_irqrestore(&cp->lock, flags);
++}
++
++/*
++ * cpudl_init - initialize the cpudl structure
++ * @cp: the cpudl max-heap context
++ */
++int cpudl_init(struct cpudl *cp)
++{
 +	int i;
 +
-+	def_dl_bandwidth.dl_runtime = global_dl_runtime();
-+	if (global_dl_runtime() == RUNTIME_INF ||
-+	    global_rt_runtime() == RUNTIME_INF)
-+		new_bw = -1;
-+	else {
-+		new_bw = to_ratio(global_rt_period(),
-+				  actual_dl_runtime());
-+	}
-+	/*
-+	 * FIXME: As above...
-+	 */
-+	for_each_possible_cpu(i) {
-+#ifdef CONFIG_SMP
-+		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
-+#else
-+		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
-+#endif
++	memset(cp, 0, sizeof(*cp));
++	raw_spin_lock_init(&cp->lock);
++	cp->size = 0;
++	for (i = 0; i < NR_CPUS; i++)
++		cp->cpu_to_idx[i] = IDX_INVALID;
++	if (!alloc_cpumask_var(&cp->free_cpus, GFP_KERNEL))
++		return -ENOMEM;
++	cpumask_setall(cp->free_cpus);
 +
-+		raw_spin_lock(&dl_b->lock);
-+		dl_b->bw = new_bw;
-+		raw_spin_unlock(&dl_b->lock);
-+	}
++	return 0;
 +}
 +
- #ifdef CONFIG_RT_GROUP_SCHED
- /*
-  * Ensure that the real time constraints are schedulable.
-@@ -7771,48 +7857,10 @@ long sched_group_rt_period(struct task_group *tg)
- 	do_div(rt_period_us, NSEC_PER_USEC);
- 	return rt_period_us;
- }
--#endif /* CONFIG_RT_GROUP_SCHED */
- 
--/*
-- * Coupling of -rt and -deadline bandwidth.
-- *
-- * Here we check if the new -rt bandwidth value is consistent
-- * with the system settings for the bandwidth available
-- * to -deadline tasks.
-- *
-- * IOW, we want to enforce that
-- *
-- *   rt_bandwidth + dl_bandwidth <= 100%
-- *
-- * is always true.
-- */
--static bool __sched_rt_dl_global_constraints(u64 rt_bw)
--{
--	unsigned long flags;
--	u64 dl_bw;
--	bool ret;
--
--	raw_spin_lock_irqsave(&def_dl_bandwidth.dl_runtime_lock, flags);
--	if (global_rt_runtime() == RUNTIME_INF ||
--	    global_dl_runtime() == RUNTIME_INF) {
--		ret = true;
--		goto unlock;
--	}
--
--	dl_bw = to_ratio(def_dl_bandwidth.dl_period,
--			 def_dl_bandwidth.dl_runtime);
--
--	ret = rt_bw + dl_bw <= to_ratio(RUNTIME_INF, RUNTIME_INF);
--unlock:
--	raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock, flags);
--
--	return ret;
--}
--
--#ifdef CONFIG_RT_GROUP_SCHED
- static int sched_rt_global_constraints(void)
- {
--	u64 runtime, period, bw;
-+	u64 runtime, period;
- 	int ret = 0;
- 
- 	if (sysctl_sched_rt_period <= 0)
-@@ -7827,9 +7875,13 @@ static int sched_rt_global_constraints(void)
- 	if (runtime > period && runtime != RUNTIME_INF)
- 		return -EINVAL;
- 
--	bw = to_ratio(period, runtime);
--	if (!__sched_rt_dl_global_constraints(bw))
--		return -EINVAL;
++/*
++ * cpudl_cleanup - clean up the cpudl structure
++ * @cp: the cpudl max-heap context
++ */
++void cpudl_cleanup(struct cpudl *cp)
++{
 +	/*
-+	 * Check if changing rt_bw could have negative effects
-+	 * on dl_bw
++	 * nothing to do for the moment
 +	 */
-+	ret = check_dl_bw();
-+	if (ret)
-+		return ret;
- 
- 	mutex_lock(&rt_constraints_mutex);
- 	read_lock(&tasklist_lock);
-@@ -7853,18 +7905,27 @@ int sched_rt_can_attach(struct task_group *tg, struct task_struct *tsk)
- static int sched_rt_global_constraints(void)
- {
- 	unsigned long flags;
--	int i, ret = 0;
--	u64 bw;
-+	int i, ret;
- 
- 	if (sysctl_sched_rt_period <= 0)
- 		return -EINVAL;
- 
-+	/*
-+	 * There's always some RT tasks in the root group
-+	 * -- migration, kstopmachine etc..
-+	 */
-+	if (sysctl_sched_rt_runtime == 0)
-+		return -EBUSY;
++}
+diff --git a/kernel/sched/cpudl.h b/kernel/sched/cpudl.h
+new file mode 100644
+index 0000000..a202789
+--- /dev/null
++++ b/kernel/sched/cpudl.h
+@@ -0,0 +1,33 @@
++#ifndef _LINUX_CPUDL_H
++#define _LINUX_CPUDL_H
 +
-+	/*
-+	 * Check if changing rt_bw could have negative effects
-+	 * on dl_bw
-+	 */
-+	ret = check_dl_bw();
-+	if (ret)
-+		return ret;
++#include <linux/sched.h>
 +
- 	raw_spin_lock_irqsave(&def_rt_bandwidth.rt_runtime_lock, flags);
--	bw = to_ratio(global_rt_period(), global_rt_runtime());
--	if (!__sched_rt_dl_global_constraints(bw)) {
--		ret = -EINVAL;
--		goto unlock;
--	}
- 
- 	for_each_possible_cpu(i) {
- 		struct rt_rq *rt_rq = &cpu_rq(i)->rt;
-@@ -7873,48 +7934,12 @@ static int sched_rt_global_constraints(void)
- 		rt_rq->rt_runtime = global_rt_runtime();
- 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
- 	}
--unlock:
- 	raw_spin_unlock_irqrestore(&def_rt_bandwidth.rt_runtime_lock, flags);
- 
--	return ret;
-+	return 0;
- }
- #endif /* CONFIG_RT_GROUP_SCHED */
- 
--/*
-- * Coupling of -dl and -rt bandwidth.
-- *
-- * Here we check, while setting the system wide bandwidth available
-- * for -dl tasks and groups, if the new values are consistent with
-- * the system settings for the bandwidth available to -rt entities.
-- *
-- * IOW, we want to enforce that
-- *
-- *   rt_bandwidth + dl_bandwidth <= 100%
-- *
-- * is always true.
-- */
--static bool __sched_dl_rt_global_constraints(u64 dl_bw)
--{
--	u64 rt_bw;
--	bool ret;
--
--	raw_spin_lock(&def_rt_bandwidth.rt_runtime_lock);
--	if (global_dl_runtime() == RUNTIME_INF ||
--	    global_rt_runtime() == RUNTIME_INF) {
--		ret = true;
--		goto unlock;
--	}
--
--	rt_bw = to_ratio(ktime_to_ns(def_rt_bandwidth.rt_period),
--			 def_rt_bandwidth.rt_runtime);
--
--	ret = rt_bw + dl_bw <= to_ratio(RUNTIME_INF, RUNTIME_INF);
--unlock:
--	raw_spin_unlock(&def_rt_bandwidth.rt_runtime_lock);
--
--	return ret;
--}
--
- static bool __sched_dl_global_constraints(u64 runtime, u64 period)
- {
- 	if (!period || (runtime != RUNTIME_INF && runtime > period))
-@@ -7925,40 +7950,17 @@ static bool __sched_dl_global_constraints(u64 runtime, u64 period)
- 
- static int sched_dl_global_constraints(void)
- {
--	u64 runtime = global_dl_runtime();
--	u64 period = global_dl_period();
--	u64 new_bw = to_ratio(period, runtime);
--	int ret, i;
-+	u64 period = global_rt_period();
-+	u64 dl_actual_runtime = actual_dl_runtime();
-+	int ret;
- 
--	ret = __sched_dl_global_constraints(runtime, period);
-+	ret = __sched_dl_global_constraints(dl_actual_runtime, period);
- 	if (ret)
- 		return ret;
- 
--	if (!__sched_dl_rt_global_constraints(new_bw))
--		return -EINVAL;
--
--	/*
--	 * Here we want to check the bandwidth not being set to some
--	 * value smaller than the currently allocated bandwidth in
--	 * any of the root_domains.
--	 *
--	 * FIXME: Cycling on all the CPUs is overdoing, but simpler than
--	 * cycling on root_domains... Discussion on different/better
--	 * solutions is welcome!
--	 */
--	for_each_possible_cpu(i) {
--#ifdef CONFIG_SMP
--		struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
--#else
--		struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
--#endif
--		raw_spin_lock(&dl_b->lock);
--		if (new_bw < dl_b->total_bw) {
--			raw_spin_unlock(&dl_b->lock);
--			return -EBUSY;
--		}
--		raw_spin_unlock(&dl_b->lock);
--	}
-+	ret = check_dl_bw();
-+	if (ret)
-+		return ret;
- 
- 	return 0;
- }
-@@ -7970,6 +7972,7 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 	int ret;
- 	int old_period, old_runtime;
- 	static DEFINE_MUTEX(mutex);
-+	unsigned long flags;
- 
- 	mutex_lock(&mutex);
- 	old_period = sysctl_sched_rt_period;
-@@ -7978,6 +7981,8 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 	ret = proc_dointvec(table, write, buffer, lenp, ppos);
- 
- 	if (!ret && write) {
-+		raw_spin_lock_irqsave(&def_dl_bandwidth.dl_runtime_lock,
-+				      flags);
- 		ret = sched_rt_global_constraints();
- 		if (ret) {
- 			sysctl_sched_rt_period = old_period;
-@@ -7986,7 +7991,11 @@ int sched_rt_handler(struct ctl_table *table, int write,
- 			def_rt_bandwidth.rt_runtime = global_rt_runtime();
- 			def_rt_bandwidth.rt_period =
- 				ns_to_ktime(global_rt_period());
++#define IDX_INVALID     -1
 +
-+			update_dl_bw();
- 		}
-+		raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock,
-+					   flags);
- 	}
- 	mutex_unlock(&mutex);
- 
-@@ -7998,12 +8007,11 @@ int sched_dl_handler(struct ctl_table *table, int write,
- 		loff_t *ppos)
- {
- 	int ret;
--	int old_period, old_runtime;
-+	int old_runtime;
- 	static DEFINE_MUTEX(mutex);
- 	unsigned long flags;
- 
- 	mutex_lock(&mutex);
--	old_period = sysctl_sched_dl_period;
- 	old_runtime = sysctl_sched_dl_runtime;
- 
- 	ret = proc_dointvec(table, write, buffer, lenp, ppos);
-@@ -8014,33 +8022,9 @@ int sched_dl_handler(struct ctl_table *table, int write,
- 
- 		ret = sched_dl_global_constraints();
- 		if (ret) {
--			sysctl_sched_dl_period = old_period;
- 			sysctl_sched_dl_runtime = old_runtime;
- 		} else {
--			u64 new_bw;
--			int i;
--
--			def_dl_bandwidth.dl_period = global_dl_period();
--			def_dl_bandwidth.dl_runtime = global_dl_runtime();
--			if (global_dl_runtime() == RUNTIME_INF)
--				new_bw = -1;
--			else
--				new_bw = to_ratio(global_dl_period(),
--						  global_dl_runtime());
--			/*
--			 * FIXME: As above...
--			 */
--			for_each_possible_cpu(i) {
--#ifdef CONFIG_SMP
--				struct dl_bw *dl_b = &cpu_rq(i)->rd->dl_bw;
--#else
--				struct dl_bw *dl_b = &cpu_rq(i)->dl.dl_bw;
--#endif
--
--				raw_spin_lock(&dl_b->lock);
--				dl_b->bw = new_bw;
--				raw_spin_unlock(&dl_b->lock);
--			}
-+			update_dl_bw();
- 		}
- 
- 		raw_spin_unlock_irqrestore(&def_dl_bandwidth.dl_runtime_lock,
++struct array_item {
++	u64 dl;
++	int cpu;
++};
++
++struct cpudl {
++	raw_spinlock_t lock;
++	int size;
++	int cpu_to_idx[NR_CPUS];
++	struct array_item elements[NR_CPUS];
++	cpumask_var_t free_cpus;
++};
++
++
++#ifdef CONFIG_SMP
++int cpudl_find(struct cpudl *cp, struct task_struct *p,
++	       struct cpumask *later_mask);
++void cpudl_set(struct cpudl *cp, int cpu, u64 dl, int is_valid);
++int cpudl_init(struct cpudl *cp);
++void cpudl_cleanup(struct cpudl *cp);
++#else
++#define cpudl_set(cp, cpu, dl) do { } while (0)
++#define cpudl_init() do { } while (0)
++#endif /* CONFIG_SMP */
++
++#endif /* _LINUX_CPUDL_H */
 diff --git a/kernel/sched/dl.c b/kernel/sched/dl.c
-index b345853..4176b8c 100644
+index 4176b8c..1002955 100644
 --- a/kernel/sched/dl.c
 +++ b/kernel/sched/dl.c
-@@ -52,7 +52,6 @@ static inline int is_leftmost(struct task_struct *p, struct dl_rq *dl_rq)
- void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 period, u64 runtime)
- {
- 	raw_spin_lock_init(&dl_b->dl_runtime_lock);
--	dl_b->dl_period = period;
- 	dl_b->dl_runtime = runtime;
+@@ -650,6 +650,7 @@ static void inc_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
+ 		 */
+ 		dl_rq->earliest_dl.next = dl_rq->earliest_dl.curr;
+ 		dl_rq->earliest_dl.curr = deadline;
++		cpudl_set(&rq->rd->cpudl, rq->cpu, deadline, 1);
+ 	} else if (dl_rq->earliest_dl.next == 0 ||
+ 		   dl_time_before(deadline, dl_rq->earliest_dl.next)) {
+ 		/*
+@@ -673,6 +674,7 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
+ 	if (!dl_rq->dl_nr_running) {
+ 		dl_rq->earliest_dl.curr = 0;
+ 		dl_rq->earliest_dl.next = 0;
++		cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
+ 	} else {
+ 		struct rb_node *leftmost = dl_rq->rb_leftmost;
+ 		struct sched_dl_entity *entry;
+@@ -680,6 +682,7 @@ static void dec_dl_deadline(struct dl_rq *dl_rq, u64 deadline)
+ 		entry = rb_entry(leftmost, struct sched_dl_entity, rb_node);
+ 		dl_rq->earliest_dl.curr = entry->deadline;
+ 		dl_rq->earliest_dl.next = next_deadline(rq);
++		cpudl_set(&rq->rd->cpudl, rq->cpu, entry->deadline, 1);
+ 	}
  }
  
-@@ -65,7 +64,7 @@ void init_dl_bw(struct dl_bw *dl_b)
- 	if (global_dl_runtime() == RUNTIME_INF)
- 		dl_b->bw = -1;
- 	else
--		dl_b->bw = to_ratio(global_dl_period(), global_dl_runtime());
-+		dl_b->bw = to_ratio(global_rt_period(), global_dl_runtime());
- 	raw_spin_unlock(&def_dl_bandwidth.dl_runtime_lock);
- 	dl_b->total_bw = 0;
- }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 85fe8a0..1e0d5b1 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -97,20 +97,20 @@ struct rt_bandwidth {
- 	struct hrtimer		rt_period_timer;
- };
- /*
-- * To keep the bandwidth of -deadline tasks and groups under control
-- * we need some place where:
-- *  - store the maximum -deadline bandwidth of the system (the group);
-+ * To keep the bandwidth of -deadline tasks under control we need some
-+ * place where:
-+ *  - store the maximum -deadline bandwidth of the system;
-  *  - cache the fraction of that bandwidth that is currently allocated.
-  *
-  * This is all done in the data structure below. It is similar to the
-  * one used for RT-throttling (rt_bandwidth), with the main difference
-  * that, since here we are only interested in admission control, we
-- * do not decrease any runtime while the group "executes", neither we
-+ * do not decrease any runtime while the task "executes", neither we
-  * need a timer to replenish it.
-  *
-  * With respect to SMP, the bandwidth is given on a per-CPU basis,
-  * meaning that:
-- *  - dl_bw (< 100%) is the bandwidth of the system (group) on each CPU;
-+ *  - dl_bw (< 100%) is the bandwidth of the system on each CPU;
-  *  - dl_total_bw array contains, in the i-eth element, the currently
-  *    allocated bandwidth on the i-eth CPU.
-  * Moreover, groups consume bandwidth on each CPU, while tasks only
-@@ -123,7 +123,6 @@ struct rt_bandwidth {
- struct dl_bandwidth {
- 	raw_spinlock_t dl_runtime_lock;
- 	u64 dl_runtime;
--	u64 dl_period;
- };
+@@ -861,9 +864,6 @@ static void yield_task_dl(struct rq *rq)
+ #ifdef CONFIG_SMP
  
- static inline int dl_bandwidth_enabled(void)
-@@ -133,10 +132,12 @@ static inline int dl_bandwidth_enabled(void)
+ static int find_later_rq(struct task_struct *task);
+-static int latest_cpu_find(struct cpumask *span,
+-			   struct task_struct *task,
+-			   struct cpumask *later_mask);
  
- struct dl_bw {
- 	raw_spinlock_t lock;
--	u64 bw, total_bw;
-+	/* default value */
-+	u64 bw;
-+	/* allocated */
-+	u64 total_bw;
- };
+ static int
+ select_task_rq_dl(struct task_struct *p, int sd_flag, int flags)
+@@ -913,7 +913,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+ 	 * let's hope p can move out.
+ 	 */
+ 	if (rq->curr->nr_cpus_allowed == 1 ||
+-	    latest_cpu_find(rq->rd->span, rq->curr, NULL) == -1)
++	    cpudl_find(&rq->rd->cpudl, rq->curr, NULL) == -1)
+ 		return;
  
--static inline u64 global_dl_period(void);
- static inline u64 global_dl_runtime(void);
+ 	/*
+@@ -921,7 +921,7 @@ static void check_preempt_equal_dl(struct rq *rq, struct task_struct *p)
+ 	 * see if it is pushed or pulled somewhere else.
+ 	 */
+ 	if (p->nr_cpus_allowed != 1 &&
+-	    latest_cpu_find(rq->rd->span, p, NULL) != -1)
++	    cpudl_find(&rq->rd->cpudl, p, NULL) != -1)
+ 		return;
  
- extern struct mutex sched_domains_mutex;
-@@ -781,11 +782,6 @@ static inline u64 global_rt_runtime(void)
- 	return (u64)sysctl_sched_rt_runtime * NSEC_PER_USEC;
+ 	resched_task(rq->curr);
+@@ -1114,39 +1114,6 @@ next_node:
+ 	return NULL;
  }
  
--static inline u64 global_dl_period(void)
+-static int latest_cpu_find(struct cpumask *span,
+-			   struct task_struct *task,
+-			   struct cpumask *later_mask)
 -{
--	return (u64)sysctl_sched_dl_period * NSEC_PER_USEC;
+-	const struct sched_dl_entity *dl_se = &task->dl;
+-	int cpu, found = -1, best = 0;
+-	u64 max_dl = 0;
+-
+-	for_each_cpu(cpu, span) {
+-		struct rq *rq = cpu_rq(cpu);
+-		struct dl_rq *dl_rq = &rq->dl;
+-
+-		if (cpumask_test_cpu(cpu, &task->cpus_allowed) &&
+-		    (!dl_rq->dl_nr_running || dl_time_before(dl_se->deadline,
+-		     dl_rq->earliest_dl.curr))) {
+-			if (later_mask)
+-				cpumask_set_cpu(cpu, later_mask);
+-			if (!best && !dl_rq->dl_nr_running) {
+-				best = 1;
+-				found = cpu;
+-			} else if (!best &&
+-				   dl_time_before(max_dl,
+-						  dl_rq->earliest_dl.curr)) {
+-				max_dl = dl_rq->earliest_dl.curr;
+-				found = cpu;
+-			}
+-		} else if (later_mask)
+-			cpumask_clear_cpu(cpu, later_mask);
+-	}
+-
+-	return found;
 -}
 -
- static inline u64 global_dl_runtime(void)
+ static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask_dl);
+ 
+ static int find_later_rq(struct task_struct *task)
+@@ -1163,7 +1130,8 @@ static int find_later_rq(struct task_struct *task)
+ 	if (task->nr_cpus_allowed == 1)
+ 		return -1;
+ 
+-	best_cpu = latest_cpu_find(task_rq(task)->rd->span, task, later_mask);
++	best_cpu = cpudl_find(&task_rq(task)->rd->cpudl,
++			task, later_mask);
+ 	if (best_cpu == -1)
+ 		return -1;
+ 
+@@ -1529,6 +1497,9 @@ static void rq_online_dl(struct rq *rq)
  {
- 	if (sysctl_sched_dl_runtime < 0)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 9731aab..2938473 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -363,13 +363,6 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= sched_rt_handler,
- 	},
- 	{
--		.procname	= "sched_dl_period_us",
--		.data		= &sysctl_sched_dl_period,
--		.maxlen		= sizeof(unsigned int),
--		.mode		= 0644,
--		.proc_handler	= sched_dl_handler,
--	},
--	{
- 		.procname	= "sched_dl_runtime_us",
- 		.data		= &sysctl_sched_dl_runtime,
- 		.maxlen		= sizeof(int),
+ 	if (rq->dl.overloaded)
+ 		dl_set_overload(rq);
++
++	if (rq->dl.dl_nr_running > 0)
++		cpudl_set(&rq->rd->cpudl, rq->cpu, rq->dl.earliest_dl.curr, 1);
+ }
+ 
+ /* Assumes rq->lock is held */
+@@ -1536,6 +1507,8 @@ static void rq_offline_dl(struct rq *rq)
+ {
+ 	if (rq->dl.overloaded)
+ 		dl_clear_overload(rq);
++
++	cpudl_set(&rq->rd->cpudl, rq->cpu, 0, 0);
+ }
+ 
+ void init_sched_dl_class(void)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 1e0d5b1..3450dee 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -5,6 +5,7 @@
+ #include <linux/stop_machine.h>
+ 
+ #include "cpupri.h"
++#include "cpudl.h"
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -445,6 +446,7 @@ struct root_domain {
+ 	cpumask_var_t dlo_mask;
+ 	atomic_t dlo_count;
+ 	struct dl_bw dl_bw;
++	struct cpudl cpudl;
+ 
+ 	/*
+ 	 * The "RT overload" flag: it gets set if a CPU has more than
 -- 
 1.7.9.5
 
