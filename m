@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab2JXXj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:39:28 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:58603 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758853Ab2JXXj1 (ORCPT
+	id S1758897Ab2JXXm7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:42:59 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:60977 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757645Ab2JXXm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:39:27 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-iio@vger.kernel.org, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
-        lars@metafoo.de, Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH] iio: isl29018: Support suspend and resume.
-Date: Wed, 24 Oct 2012 16:39:15 -0700
-Message-Id: <1351121955-25788-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 24 Oct 2012 19:42:57 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
+References: <20121023013343.GB6370@fieldses.org>
+	<87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
+Emacs: it's not slow --- it's stately.
+Date: Thu, 25 Oct 2012 00:42:44 +0100
+In-Reply-To: <87y5iv78op.fsf_-_@spindle.srvr.nix> (nix@esperi.org.uk's message
+	of "Thu, 25 Oct 2012 00:27:02 +0100")
+Message-ID: <87txtj77yj.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver leaves the device in power-down state anyway,
-so there is nothing to do on suspend.
-On resume, we just have to make sure the range and ADC
-values are updated in the device since it may have been
-powered down in suspend.
+On 25 Oct 2012, nix@esperi.org.uk said:
+> Even though my own system relies on the possibility of rebooting during
+> umount to reboot reliably, I'd be inclined to say 'not a bug, don't do
+> that then' -- except that this renders it unreliable to use umount -l to
+> unmount all the filesystems you can, skipping those that are not
+> reachable due to having unresponsive servers in the way.
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- drivers/staging/iio/light/isl29018.c |   45 ++++++++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
+It's worse than that. If you're using filesystem namespaces, how can
+*any* shell script loop, or anything in userspace, reliably unmount all
+filesystems before reboot? It seems to me this is impossible. There is
+no process that necessarily has access to all namespaces, and when you
+bring PID namespaces into the picture there is no process that can even
+kill all userspace processes in order to zap their filesystems.
 
-diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-index 6ee5567..3b03f6f 100644
---- a/drivers/staging/iio/light/isl29018.c
-+++ b/drivers/staging/iio/light/isl29018.c
-@@ -67,6 +67,7 @@ struct isl29018_chip {
- 	unsigned int		range;
- 	unsigned int		adc_bit;
- 	int			prox_scheme;
-+	bool			suspended;
- };
- 
- static int isl29018_set_range(struct isl29018_chip *chip, unsigned long range,
-@@ -368,6 +369,10 @@ static int isl29018_read_raw(struct iio_dev *indio_dev,
- 	struct isl29018_chip *chip = iio_priv(indio_dev);
- 
- 	mutex_lock(&chip->lock);
-+	if (chip->suspended) {
-+		mutex_unlock(&chip->lock);
-+		return -EBUSY;
-+	}
- 	switch (mask) {
- 	case IIO_CHAN_INFO_RAW:
- 	case IIO_CHAN_INFO_PROCESSED:
-@@ -561,6 +566,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
- 	chip->lux_scale = 1;
- 	chip->range = 1000;
- 	chip->adc_bit = 16;
-+	chip->suspended = false;
- 
- 	chip->regmap = devm_regmap_init_i2c(client, &isl29018_regmap_config);
- 	if (IS_ERR(chip->regmap)) {
-@@ -603,6 +609,44 @@ static int __devexit isl29018_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int isl29018_suspend(struct device *dev)
-+{
-+	struct isl29018_chip *chip = iio_priv(dev_get_drvdata(dev));
-+
-+	mutex_lock(&chip->lock);
-+
-+	/* Since this driver uses only polling commands, we are by default in
-+	 * auto shutdown (ie, power-down) mode.
-+	 * So we do not have much to do here.
-+	 */
-+	chip->suspended = true;
-+
-+	mutex_unlock(&chip->lock);
-+	return 0;
-+}
-+
-+static int isl29018_resume(struct device *dev)
-+{
-+	struct isl29018_chip *chip = iio_priv(dev_get_drvdata(dev));
-+	int err;
-+
-+	mutex_lock(&chip->lock);
-+
-+	err = isl29018_chip_init(chip);
-+	if (!err)
-+		chip->suspended = false;
-+
-+	mutex_unlock(&chip->lock);
-+	return err;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(isl29018_pm_ops, isl29018_suspend, isl29018_resume);
-+#define ISL29018_PM_OPS (&isl29018_pm_ops)
-+#else
-+#define ISL29018_PM_OPS NULL
-+#endif
-+
- static const struct i2c_device_id isl29018_id[] = {
- 	{"isl29018", 0},
- 	{}
-@@ -620,6 +664,7 @@ static struct i2c_driver isl29018_driver = {
- 	.class	= I2C_CLASS_HWMON,
- 	.driver	 = {
- 			.name = "isl29018",
-+			.pm = ISL29018_PM_OPS,
- 			.owner = THIS_MODULE,
- 			.of_match_table = isl29018_of_match,
- 		    },
+I suspect we need a new blocking 'umountall' syscall and a command that
+calls it, which umounts everything it can in every filesystem namespace
+it can, skipping those that are (unreachable?) network mounts, and
+returns only when everything is done. (Possibly it should first kill
+every process it sees in every PID namespace other than that of the
+caller, too.)
+
+Then shutdown scripts can just call this, and get the right behaviour
+immediately.
+
 -- 
-1.7.7.3
-
+NULL && (void)
