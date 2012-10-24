@@ -1,94 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161113Ab2JXS65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:58:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32938 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934943Ab2JXS6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:58:55 -0400
-Date: Wed, 24 Oct 2012 21:53:04 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH] Revert "serial: omap: fix software flow control"
-Message-ID: <20121024185304.GA772@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350396562-32579-1-git-send-email-balbi@ti.com>
- <20121016151357.GN15569@atomide.com>
- <20121024100254.GG5665@arwen.pp.htv.fi>
- <20121024185742.GA26995@kroah.com>
+	id S1161116Ab2JXTBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:01:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60476 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934308Ab2JXTBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:01:46 -0400
+Date: Wed, 24 Oct 2012 12:01:28 -0700
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
+Message-ID: <tip-6ede1fd3cb404c0016de6ac529df46d561bd558b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, stable@vger.kernel.org, jacob.shin@amd.com,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
+        stable@vger.kernel.org, hpa@linux.intel.com
+In-Reply-To: <CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com>
+References: <CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mm:
+  Trim memory in memblock to be page aligned
+Git-Commit-ID: 6ede1fd3cb404c0016de6ac529df46d561bd558b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121024185742.GA26995@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 12:01:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  6ede1fd3cb404c0016de6ac529df46d561bd558b
+Gitweb:     http://git.kernel.org/tip/6ede1fd3cb404c0016de6ac529df46d561bd558b
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Mon, 22 Oct 2012 16:35:18 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 24 Oct 2012 11:52:21 -0700
 
-On Wed, Oct 24, 2012 at 11:57:42AM -0700, Greg KH wrote:
-> On Wed, Oct 24, 2012 at 01:02:55PM +0300, Felipe Balbi wrote:
-> > Hi Greg,
-> >=20
-> > On Tue, Oct 16, 2012 at 08:13:59AM -0700, Tony Lindgren wrote:
-> > > * Felipe Balbi <balbi@ti.com> [121016 07:16]:
-> > > > This reverts commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6
-> > > > (serial: omap: fix software flow control).
-> > > >=20
-> > > > As Russell has pointed out, that commit isn't fixing
-> > > > Software Flow Control at all, and it actually makes
-> > > > it even more broken.
-> > > >=20
-> > > > It was agreed to revert this commit and use Russell's
-> > > > latest UART patches instead.
-> > > >=20
-> > > > Cc: Russell King <linux@arm.linux.org.uk>
-> > > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > >=20
-> > > This seems like the best way to go for the -rc series:
-> > >=20
-> > > Acked-by: Tony Lindgren <tony@atomide.com>
-> >=20
-> > Any chance you can pick this one up for v3.7-rc3 ?
->=20
-> Now queued up, sorry for the delay.
+x86, mm: Trim memory in memblock to be page aligned
 
-no problems, thanks a lot.
+We will not map partial pages, so need to make sure memblock
+allocation will not allocate those bytes out.
 
---=20
-balbi
+Also we will use for_each_mem_pfn_range() to loop to map memory
+range to keep them consistent.
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com
+Acked-by: Jacob Shin <jacob.shin@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/e820.c   |    3 +++
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |   24 ++++++++++++++++++++++++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiDkPAAoJEIaOsuA1yqREfdkP/jqySj8uLO7QnA46FmvInRuU
-DvdL6zyaB+ej5CSCVHNPg+MQmn3/0Rtr4rlYdjKM+YfKyFLpJmBHn2EbrEJQIaH1
-jmn0FyYtZs3U+k0daokMNHgfSZoeVrR3rZ/yhYmUeghflU4cPGLztIC+B2L7NJa7
-cX904iOk/8glHLYpYGY0Uvy8MNHc1cHATEXAmliECwcZq3GD6I/1ML/No/RfhP4B
-WWtU2UNT81k1ZWF/XMys0BaJ4S0PAnNQG0fn3OFWo0KHOyQ/S47JVoP9FznWw0jf
-s2Yq+GrynuHA+awMi8/pU8Op0WJzAnJ00135mlFsNxBqby58mNbYrR2Ulhtmo4N2
-2GLXnCLe3hn95kJUEEy7lsaDCHZw8nrNi5CHqUrDOd4+ayMgmOLTEagx62ns6MH8
-BbkI419kNjTfFAq061MgVlWdbC1MMuOfWTvn//Gp2hZX42bqQzfNxTZUqw0Sc9Zf
-MnPU8zOAnU9vLVdt2uJOi2TMVSVCxhUSZWEfOefRHRVJW/hID7Yw045dR4vVr/bf
-fVANl7YWUSioVTi6M8kJpt8YKLwniWzOagisZutoLeemSK44jmaDqnR8vz4+48Ni
-b+96oZG2KAdCVLXClgIoN6MME1vEtwIKKM8wFJLDfG91IohUpGpqwh/2ZUuiiRVZ
-S59PoZvdcZE66pVPxjYg
-=L6+l
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index ed858e9..df06ade 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1077,6 +1077,9 @@ void __init memblock_x86_fill(void)
+ 		memblock_add(ei->addr, ei->size);
+ 	}
+ 
++	/* throw away partial pages */
++	memblock_trim_memory(PAGE_SIZE);
++
+ 	memblock_dump_all();
+ }
+ 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 569d67d..d452ee1 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -57,6 +57,7 @@ int memblock_add(phys_addr_t base, phys_addr_t size);
+ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
++void memblock_trim_memory(phys_addr_t align);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 931eef1..6259055 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -930,6 +930,30 @@ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t si
+ 	return memblock_overlaps_region(&memblock.reserved, base, size) >= 0;
+ }
+ 
++void __init_memblock memblock_trim_memory(phys_addr_t align)
++{
++	int i;
++	phys_addr_t start, end, orig_start, orig_end;
++	struct memblock_type *mem = &memblock.memory;
++
++	for (i = 0; i < mem->cnt; i++) {
++		orig_start = mem->regions[i].base;
++		orig_end = mem->regions[i].base + mem->regions[i].size;
++		start = round_up(orig_start, align);
++		end = round_down(orig_end, align);
++
++		if (start == orig_start && end == orig_end)
++			continue;
++
++		if (start < end) {
++			mem->regions[i].base = start;
++			mem->regions[i].size = end - start;
++		} else {
++			memblock_remove_region(mem, i);
++			i--;
++		}
++	}
++}
+ 
+ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ {
