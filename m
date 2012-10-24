@@ -1,142 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934457Ab2JXHoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:44:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:32988 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S934420Ab2JXHoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 03:44:11 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
-   d="scan'208";a="6058669"
-Message-ID: <50879BFC.1070202@cn.fujitsu.com>
-Date: Wed, 24 Oct 2012 15:42:52 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S934442Ab2JXHo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:44:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54780 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934420Ab2JXHo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 03:44:27 -0400
+Message-ID: <50879C4E.6020003@ti.com>
+Date: Wed, 24 Oct 2012 09:44:14 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com, mihailm@parallels.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Use kacpi_hotplug_wq to handle container hotplug
- event.
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com> <1351058750-4275-2-git-send-email-tangchen@cn.fujitsu.com> <508790AC.5080001@jp.fujitsu.com>
-In-Reply-To: <508790AC.5080001@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 15:43:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 15:43:35,
-	Serialize complete at 2012/10/24 15:43:35
+To: Sebastien Guiriec <s-guiriec@ti.com>
+CC: Jon Hunter <jon-hunter@ti.com>, Tony Lindgren <tony@atomide.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/4] ARM: dts: omap5: Update GPIO with address space
+ and interrupts
+References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com> <1350981432-6750-2-git-send-email-s-guiriec@ti.com> <5086AE8E.60106@ti.com> <5086B316.6000001@ti.com> <5086BECA.9070502@ti.com> <5086C0C3.1060305@ti.com> <5086C29C.5000209@ti.com>
+In-Reply-To: <5086C29C.5000209@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ishimatsu-san:
+On 10/23/2012 06:15 PM, Sebastien Guiriec wrote:
+> Hi Benoit and John,
+> 
+> On 10/23/2012 06:07 PM, Benoit Cousson wrote:
+>> On 10/23/2012 05:59 PM, Jon Hunter wrote:
+>>>
+>>> On 10/23/2012 10:09 AM, Benoit Cousson wrote:
+>>>> On 10/23/2012 04:49 PM, Jon Hunter wrote:
+>>>>> Hi Seb,
+>>>>>
+>>>>> On 10/23/2012 03:37 AM, Sebastien Guiriec wrote:
+>>>>>> Add base address and interrupt line inside Device Tree data for
+>>>>>> OMAP5
+>>>>>>
+>>>>>> Signed-off-by: Sebastien Guiriec <s-guiriec@ti.com>
+>>>>>> ---
+>>>>>>   arch/arm/boot/dts/omap5.dtsi |   16 ++++++++++++++++
+>>>>>>   1 file changed, 16 insertions(+)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/omap5.dtsi
+>>>>>> b/arch/arm/boot/dts/omap5.dtsi
+>>>>>> index 42c78be..9e39f9f 100644
+>>>>>> --- a/arch/arm/boot/dts/omap5.dtsi
+>>>>>> +++ b/arch/arm/boot/dts/omap5.dtsi
+>>>>>> @@ -104,6 +104,8 @@
+>>>>>>
+>>>>>>           gpio1: gpio@4ae10000 {
+>>>>>>               compatible = "ti,omap4-gpio";
+>>>>>> +            reg = <0x4ae10000 0x200>;
+>>>>>> +            interrupts = <0 29 0x4>;
+>>>>>>               ti,hwmods = "gpio1";
+>>>>>>               gpio-controller;
+>>>>>>               #gpio-cells = <2>;
+>>>>>
+>>>>> I am wondering if we should add the "interrupt-parent" property to add
+>>>>> nodes in the device-tree source. I know that today the
+>>>>> interrupt-parent
+>>>>> is being defined globally, but when device-tree maps an interrupt
+>>>>> for a
+>>>>> device it searches for the interrupt-parent starting the current
+>>>>> device
+>>>>> node.
+>>>>>
+>>>>> So in other words, for gpio1 it will search the gpio1 binding for
+>>>>> "interrupt-parent" and if not found move up a level and search
+>>>>> again. It
+>>>>> will keep doing this until it finds the "interrupt-parent".
+>>>>>
+>>>>> Therefore, I believe it will improve search time and hence, boot
+>>>>> time if
+>>>>> we have interrupt-parent defined in each node.
+>>>>
+>>>> Mmm, I'm not that sure. it will increase the size of the blob, so
+>>>> increase the time to load it and then to parse it. Where in the current
+>>>> case, it is just going up to the parent node using the already
+>>>> un-flatten tree in memory and thus that should not take that much time.
+>>>
+>>> Yes it will definitely increase the size, so that could slow things
+>>> down.
+>>>
+>>>> That being said, it might be interesting to benchmark that to see what
+>>>> is the real impact.
+>>>
+>>> Right, I wonder what the key functions are we need to benchmark to get
+>>> an overall feel for what is best? Right now I am seeing some people add
+>>> the interrupt-parent for device nodes and others not. Ideally we should
+>>> be consistent, but at the same time it is probably something that we can
+>>> easily sort out later. So not a big deal either way.
+>>
+>> For consistency, I'd rather not add it at all for the moment.
+>> Later, when we will only support DT boot, people will start complaining
+>> about the boot time increase and then we will start optimizing a little
+>> bit :-)
+> 
+> I just do it like that to be consistent with what is inside OMAP4 dtsi
+> for those IPs (GPIO/UART/MMC/I2C). Now after checking Peter already add
+> the interrupt-parent for all audio IPs (OMAP3/4/5). But here we need
+> also interrupts name. So here we should try to be consistent.
+> 
+> So I can send back the series for OMAP5 and update the OMAP4 with
+>   interrupts-parent = <&gic>
 
-By the way, if you want to reproduce this problem, just
-modify my patch1 to call __container_notify_cb() directly
-in container_notify_cb(). And apply my patch2.
-
-Then, you add a container, and remove it.
-The deadlock will be triggered.
-
-And this patch is based on Lu Yinghai's tree:
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-pci-split-pci-root-hp-2
+No, you should not, as explained previously. You'd better remove the one
+already in audio IPs for consistency.
 
 
-On 10/24/2012 02:54 PM, Yasuaki Ishimatsu wrote:
-> Hi Tang,
-> 
-> 2012/10/24 15:05, Tang Chen wrote:
->> As the comments in __acpi_os_execute() said:
->>
->> 	We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
->> 	because the hotplug code may call driver .remove() functions,
->> 	which invoke flush_scheduled_work/acpi_os_wait_events_complete
->> 	to flush these workqueues.
->>
->> we should keep the hotplug code in kacpi_hotplug_wq.
->>
->> But we have the following call series in kernel now:
->> 	acpi_ev_queue_notify_request()
->> 	|-->  acpi_os_execute()
->> 	     |-->  __acpi_os_execute(type, function, context, 0)
->>
->> The last parameter 0 makes the container_notify_cb() executed in
->> kacpi_notify_wq or kacpid_wq. So, we need to put the real hotplug code
->> into kacpi_hotplug_wq.
-> 
-> I cannot understand the purpose of the patch.
-> Is the patch a bug fix patch? If yes, what problem happens?
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> ---
->>    drivers/acpi/container.c |   17 ++++++++++++++++-
->>    1 files changed, 16 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
->> index 69e2d6b..d300e03 100644
->> --- a/drivers/acpi/container.c
->> +++ b/drivers/acpi/container.c
->> @@ -35,6 +35,7 @@
->>    #include<acpi/acpi_bus.h>
->>    #include<acpi/acpi_drivers.h>
->>    #include<acpi/container.h>
->> +#include<acpi/acpiosxf.h>
->>
->>    #define PREFIX "ACPI: "
->>
->> @@ -165,14 +166,21 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
->>    	return result;
->>    }
->>
->> -static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->> +static void __container_notify_cb(struct work_struct *work)
->>    {
->>    	struct acpi_device *device = NULL;
->>    	int result;
->>    	int present;
->>    	acpi_status status;
->> +	struct acpi_hp_work *hp_work;
->> +	acpi_handle handle;
->> +	u32 type;
->>    	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->>
->> +	hp_work = container_of(work, struct acpi_hp_work, work);
->> +	handle = hp_work->handle;
->> +	type = hp_work->type;
->> +
->>    	switch (type) {
->>    	case ACPI_NOTIFY_BUS_CHECK:
->>    		/* Fall through */
->> @@ -224,6 +232,13 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->>    	return;
->>    }
->>
->> +static void container_notify_cb(acpi_handle handle, u32 type,
->> +				void *context)
->> +{
->> +	alloc_acpi_hp_work(handle, type, context,
->> +			   __container_notify_cb);
->> +}
->> +
->>    static acpi_status
->>    container_walk_namespace_cb(acpi_handle handle,
->>    			    u32 lvl, void *context, void **rv)
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Regards,
+Benoit
 
