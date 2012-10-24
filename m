@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964860Ab2JXAlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:41:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55045 "EHLO mx2.suse.de"
+	id S964967Ab2JXAlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:41:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55060 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933591Ab2JXAla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:41:30 -0400
+	id S933591Ab2JXAlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 20:41:35 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: Pawel Moll <pawel.moll@arm.com>
 Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
@@ -19,8 +19,8 @@ Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         lm-sensors@lm-sensors.org, linaro-dev@lists.linaro.org
 Subject: Re: [RFC] Energy/power monitoring within the kernel
-Date: Wed, 24 Oct 2012 02:40:49 +0200
-Message-ID: <4317776.evLpJapyim@hammer82.arch.suse.de>
+Date: Wed, 24 Oct 2012 02:41:09 +0200
+Message-ID: <2863728.eWy5qxh2lp@hammer82.arch.suse.de>
 User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
 In-Reply-To: <1351013449.9070.5.camel@hornet>
 References: <1351013449.9070.5.camel@hornet>
