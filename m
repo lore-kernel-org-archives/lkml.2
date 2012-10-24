@@ -1,222 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992619Ab2JYTGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:06:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10819 "EHLO mx1.redhat.com"
+	id S2992634Ab2JYTJF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:09:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59497 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992568Ab2JYTGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:06:51 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: [PATCH] MAINTAINERS: update email and git tree
-Date: Thu, 25 Oct 2012 17:06:38 -0200
-Message-Id: <1351191998-13860-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S935206Ab2JYTJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:09:00 -0400
+Date: Wed, 24 Oct 2012 22:17:17 +0200
+From: Jan Kara <jack@suse.cz>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121024201717.GA5572@quack.suse.cz>
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <20121023221913.GC28626@thunk.org>
+ <50873CE5.8090303@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50873CE5.8090303@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While mchehab@infradead.org is valid, I prefer to use just one email
-for all patches upstream, instead of receiving some things on one
-emails, and others on some other place.
+On Tue 23-10-12 19:57:09, Eric Sandeen wrote:
+> On 10/23/12 5:19 PM, Theodore Ts'o wrote:
+> > On Tue, Oct 23, 2012 at 09:57:08PM +0100, Nix wrote:
+> >>
+> >> It is now quite clear that this is a bug introduced by one or more of
+> >> the post-3.6.1 ext4 patches (which have all been backported at least to
+> >> 3.5, so the problem is probably there too).
+> >>
+> >> [   60.290844] EXT4-fs error (device dm-3): ext4_mb_generate_buddy:741: group 202, 1583 clusters in bitmap, 1675 in gd
+> >> [   60.291426] JBD2: Spotted dirty metadata buffer (dev = dm-3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
+> >>
+> > 
+> > I think I've found the problem.  I believe the commit at fault is commit
+> > 14b4ed22a6 (upstream commit eeecef0af5e):
+> > 
+> >     jbd2: don't write superblock when if its empty
+> > 
+> > which first appeared in v3.6.2.
+> > 
+> > The reason why the problem happens rarely is that the effect of the
+> > buggy commit is that if the journal's starting block is zero, we fail
+> > to truncate the journal when we unmount the file system.  This can
+> > happen if we mount and then unmount the file system fairly quickly,
+> > before the log has a chance to wrap.After the first time this has
+> > happened, it's not a disaster, since when we replay the journal, we'll
+> > just replay some extra transactions.  But if this happens twice, the
+> > oldest valid transaction will still not have gotten updated, but some
+> > of the newer transactions from the last mount session will have gotten
+> > written by the very latest transacitons, and when we then try to do
+> > the extra transaction replays, the metadata blocks can end up getting
+> > very scrambled indeed.
+> 
+> I'm stumped by this; maybe Ted can see if I'm missing something.
+> 
+> (and Nix, is there anything special about your fs?  Any nondefault
+> mkfs or mount options, external journal, inordinately large fs, or
+> anything like that?)
+> 
+> The suspect commit added this in jbd2_mark_journal_empty():
+> 
+>         /* Is it already empty? */
+>         if (sb->s_start == 0) {
+>                 read_unlock(&journal->j_state_lock);
+>                 return;
+>         }
+> 
+> thereby short circuiting the function.
+> 
+> But Ted's suggestion that mounting the fs, doing a little work, and
+> unmounting before we wrap would lead to this doesn't make sense to
+> me.  When I do a little work, s_start is at 1, not 0.  We start
+> the journal at s_first:
+> 
+> load_superblock()
+> 	journal->j_first = be32_to_cpu(sb->s_first);
+> 
+> And when we wrap the journal, we wrap back to j_first:
+> 
+> jbd2_journal_next_log_block():
+>         if (journal->j_head == journal->j_last)
+>                 journal->j_head = journal->j_first;
+> 
+> and j_first comes from s_first, which is set at journal creation
+> time to be "1" for an internal journal.
+> 
+> So s_start == 0 sure looks special to me; so far I can only see that
+> we get there if we've been through jbd2_mark_journal_empty() already,
+> though I'm eyeballing jbd2_journal_get_log_tail() as well.
+> 
+> Ted's proposed patch seems harmless but so far I don't understand
+> what problem it fixes, and I cannot recreate getting to
+> jbd2_mark_journal_empty() with a dirty log and s_start == 0.
+  Agreed. I rather thing we might miss journal->j_flags |= JBD2_FLUSHED
+when shortcircuiting jbd2_mark_journal_empty(). But I still don't exactly
+see how that would cause the corruption...
 
-While here, also update the main linux-media development tree,
-as the one at kernel.org is used mainly for patch merging and it
-is generally delayed.
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- MAINTAINERS | 44 ++++++++++++++++++++++----------------------
- 1 file changed, 22 insertions(+), 22 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e73060f..2bf8543 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1724,10 +1724,10 @@ F:	Documentation/filesystems/btrfs.txt
- F:	fs/btrfs/
- 
- BTTV VIDEO4LINUX DRIVER
--M:	Mauro Carvalho Chehab <mchehab@infradead.org>
-+M:	Mauro Carvalho Chehab <mchehab@redhat.com>
- L:	linux-media@vger.kernel.org
- W:	http://linuxtv.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	Documentation/video4linux/bttv/
- F:	drivers/media/pci/bt8xx/bttv*
-@@ -1757,7 +1757,7 @@ F:	fs/cachefiles/
- CAFE CMOS INTEGRATED CAMERA CONTROLLER DRIVER
- M:	Jonathan Corbet <corbet@lwn.net>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	Documentation/video4linux/cafe_ccic
- F:	drivers/media/platform/marvell-ccic/
-@@ -2144,7 +2144,7 @@ CX18 VIDEO4LINUX DRIVER
- M:	Andy Walls <awalls@md.metrocast.net>
- L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://linuxtv.org
- W:	http://www.ivtvdriver.org/index.php/Cx18
- S:	Maintained
-@@ -3318,56 +3318,56 @@ F:	drivers/net/ethernet/aeroflex/
- GSPCA FINEPIX SUBDRIVER
- M:	Frank Zago <frank@zago.net>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/finepix.c
- 
- GSPCA GL860 SUBDRIVER
- M:	Olivier Lorin <o.lorin@laposte.net>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/gl860/
- 
- GSPCA M5602 SUBDRIVER
- M:	Erik Andren <erik.andren@gmail.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/m5602/
- 
- GSPCA PAC207 SONIXB SUBDRIVER
- M:	Hans de Goede <hdegoede@redhat.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/pac207.c
- 
- GSPCA SN9C20X SUBDRIVER
- M:	Brian Johnson <brijohn@gmail.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/sn9c20x.c
- 
- GSPCA T613 SUBDRIVER
- M:	Leandro Costantino <lcostantino@gmail.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/t613.c
- 
- GSPCA USB WEBCAM DRIVER
- M:	Hans de Goede <hdegoede@redhat.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/gspca/
- 
- STK1160 USB VIDEO CAPTURE DRIVER
- M:	Ezequiel Garcia <elezegarcia@gmail.com>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/usb/stk1160/
- 
-@@ -4095,7 +4095,7 @@ IVTV VIDEO4LINUX DRIVER
- M:	Andy Walls <awalls@md.metrocast.net>
- L:	ivtv-devel@ivtvdriver.org (moderated for non-subscribers)
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://www.ivtvdriver.org
- S:	Maintained
- F:	Documentation/video4linux/*.ivtv
-@@ -4728,12 +4728,12 @@ F:	Documentation/hwmon/max6650
- F:	drivers/hwmon/max6650.c
- 
- MEDIA INPUT INFRASTRUCTURE (V4L/DVB)
--M:	Mauro Carvalho Chehab <mchehab@infradead.org>
-+M:	Mauro Carvalho Chehab <mchehab@redhat.com>
- P:	LinuxTV.org Project
- L:	linux-media@vger.kernel.org
- W:	http://linuxtv.org
- Q:	http://patchwork.kernel.org/project/linux-media/list/
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	Documentation/dvb/
- F:	Documentation/video4linux/
-@@ -5270,7 +5270,7 @@ F:	drivers/char/pcmcia/cm4040_cs.*
- OMNIVISION OV7670 SENSOR DRIVER
- M:	Jonathan Corbet <corbet@lwn.net>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	drivers/media/i2c/ov7670.c
- 
-@@ -5813,7 +5813,7 @@ M:	Mike Isely <isely@pobox.com>
- L:	pvrusb2@isely.net	(subscribers-only)
- L:	linux-media@vger.kernel.org
- W:	http://www.isely.net/pvrusb2/
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	Documentation/video4linux/README.pvrusb2
- F:	drivers/media/usb/pvrusb2/
-@@ -6203,7 +6203,7 @@ F:	drivers/mmc/host/s3cmci.*
- SAA7146 VIDEO4LINUX-2 DRIVER
- M:	Michael Hunold <michael@mihu.de>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://www.mihu.de/linux/saa7146
- S:	Maintained
- F:	drivers/media/common/saa7146/
-@@ -6655,7 +6655,7 @@ F:	arch/ia64/sn/
- SOC-CAMERA V4L2 SUBSYSTEM
- M:	Guennadi Liakhovetski <g.liakhovetski@gmx.de>
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- S:	Maintained
- F:	include/media/soc*
- F:	drivers/media/i2c/soc_camera/
-@@ -7690,7 +7690,7 @@ USB SN9C1xx DRIVER
- M:	Luca Risolia <luca.risolia@studio.unibo.it>
- L:	linux-usb@vger.kernel.org
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://www.linux-projects.org
- S:	Maintained
- F:	Documentation/video4linux/sn9c102.txt
-@@ -7726,7 +7726,7 @@ USB VIDEO CLASS
- M:	Laurent Pinchart <laurent.pinchart@ideasonboard.com>
- L:	linux-uvc-devel@lists.sourceforge.net (subscribers-only)
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://www.ideasonboard.org/uvc/
- S:	Maintained
- F:	drivers/media/usb/uvc/
-@@ -7754,7 +7754,7 @@ USB ZR364XX DRIVER
- M:	Antoine Jacquet <royale@zerezo.com>
- L:	linux-usb@vger.kernel.org
- L:	linux-media@vger.kernel.org
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media.git
-+T:	git git://linuxtv.org/media_tree.git
- W:	http://royale.zerezo.com/zr364xx/
- S:	Maintained
- F:	Documentation/video4linux/zr364xx.txt
+								Honza
 -- 
-1.7.11.7
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
