@@ -1,107 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935464Ab2JXSPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:15:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28434 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935380Ab2JXSPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
-   d="scan'208";a="231764227"
-Subject: [stable 2.6.32..2.6.34] x86, ioapic: initialize nr_ioapic_registers
- early in mp_register_ioapic()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com
-Date: Wed, 24 Oct 2012 11:17:24 -0700
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S935468Ab2JXSRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:17:08 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:45720 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab2JXSRG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:17:06 -0400
+Date: Wed, 24 Oct 2012 13:16:56 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>
+Subject: Re: [PATCH v3 3/5] zynq: remove use of CLKDEV_LOOKUP
+Message-ID: <20121024181656.GS20593@beefymiracle.amer.corp.natinst.com>
+References: <20121024003218.GA31625@beefymiracle.amer.corp.natinst.com>
+ <20121024003442.GD31625@beefymiracle.amer.corp.natinst.com>
+ <20121024133231.GA28661@elliptictech.com>
+MIME-Version: 1.0
+In-Reply-To: <20121024133231.GA28661@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 01:16:52 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 01:16:52 PM,
+	Serialize complete at 10/24/2012 01:16:52 PM
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MWF3YmTHhoLNIVQC"
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-24_05:2012-10-24,2012-10-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lin Bao reported that one of the HP platforms failed to boot
-2.6.32 kernel, when the BIOS enabled interrupt-remapping and
-x2apic before handing over the control to the Linux kernel.
 
-During boot, Linux kernel masks all the interrupt sources
-(8259, IO-APIC RTE's), setup the interrupt-remapping hardware
-with the OS controlled table and unmasks the 8259 interrupts
-but not the IO-APIC RTE's (as the newly setup interrupt-remapping
-table and the IO-APIC RTE's are not yet programmed by the kernel).
+--MWF3YmTHhoLNIVQC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Shortly after this, IO-APIC RTE's and the interrupt-remapping table
-entries are programmed based on the ACPI tables etc. So the
-expectation is that any interrupt during this window will be dropped
-and not see the intermediate configuration.
+On Wed, Oct 24, 2012 at 09:32:32AM -0400, Nick Bowler wrote:
+> On 2012-10-23 19:34 -0500, Josh Cartwright wrote:
+> > The Zynq support in mainline does not (yet) make use of any of the
+> > generic clk or clk lookup functionality.  Remove what is upstream for
+> > now, until the out-of-tree implementation is in suitable form for
+> > merging.
+> >=20
+> > An important side effect of this patch is that it allows the building of
+> > a Zynq kernel without running into unresolved symbol problems:
+> >=20
+> >    drivers/built-in.o: In function `amba_get_enable_pclk':
+> >    clkdev.c:(.text+0x444): undefined reference to `clk_enable'
+>=20
+> For the record, I think this was introduced by commit 56a34b03ff427
+> ("ARM: versatile: Make plat-versatile clock optional") which forgot to
+> select PLAT_VERSATILE_CLOCK on Zynq.  This is not all that surprising,
+> because the fact that Zynq "uses" PLAT_VERSATILE is secretly hidden in
+> the Makefile.
 
-In the reported problematic case, BIOS has configured the IO-APIC
-in virtual wire-B mode. Between the window of the kernel setting up
-new interrupt-remapping table  and the IO-APIC RTE's are properly
-configured, an interrupt gets routed by the IO-APIC RTE (setup
-by the virtual wire-B configuration) and sees the empty
-interrupt-remapping table entry, resulting in vt-d fault causing
-the platform to generate NMI. And the OS panics on this unexpected NMI.
+Yes, indeed.  I did try to fix my problems by having ARCH_ZYNQ select
+PLAT_VERSATILE_CLOCK, but I recall running into additional build
+problems...
 
-This problem doesn't happen with more recent kernels and closer
-look at the 2.6.32 kernel shows that the code which masks
-the IO-APIC RTE's is not working as expected as the nr_ioapic_registers
-for each IO-APIC is not yet initialized at this point. In the later
-kernels we initialize nr_ioapic_registers much before and
-everything works as expected.
+But now that I just tried it again, it all seems to work, barring
+Kconfig complaining I've selected PLAT_VERSATILE_CLOCK, but not
+PLAT_VERSATILE.  (Having ARCH_ZYNQ select PLAT_VERSATILE, however, leads
+to additional build problems).
 
-For 2.6.[32..34] kernels, fix this issue by initializing
-nr_ioapic_registers early in mp_register_ioapic()
+> Nevertheless, the only feature from versatile that Zynq needed was the
+> clock support, so this patch should *also* delete the secret use of
+> plat-versatile by removing this line from arch/arm/Makefile:
+>=20
+>   plat-$(CONFIG_ARCH_ZYNQ)	+=3D versatile
 
-Relevant upstream commit info:
+Yes, indeed it should.
 
-commit 7716a5c4ff5f1f3dc5e9edcab125cbf7fceef0af
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Tue Mar 30 01:07:12 2010 -0700
+Thanks,
 
-    x86, ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
+  Josh
 
-Reported-and-tested-by: Zhang, Lin-Bao <linbao.zhang@hp.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: stable@vger.kernel.org [v2.6.32..v2.6.34]
----
- arch/x86/kernel/apic/io_apic.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+--MWF3YmTHhoLNIVQC
+Content-Type: application/pgp-signature
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 8928d97..d256bc3 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -4262,6 +4262,7 @@ static int bad_ioapic(unsigned long address)
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- {
- 	int idx = 0;
-+	int entries;
- 
- 	if (bad_ioapic(address))
- 		return;
-@@ -4280,10 +4281,14 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
- 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
- 	 */
-+	entries = io_apic_get_redir_entries(idx);
- 	mp_gsi_routing[idx].gsi_base = gsi_base;
--	mp_gsi_routing[idx].gsi_end = gsi_base +
--	    io_apic_get_redir_entries(idx);
-+	mp_gsi_routing[idx].gsi_end = gsi_base + entries;
- 
-+	/*
-+	 * The number of IO-APIC IRQ registers (== #pins):
-+	 */
-+	nr_ioapic_registers[idx] = entries + 1;
- 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
- 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
- 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQiDCYAAoJEEef0niEbw+lUn0P/3nQG85jLu2uV1eCps/1skh8
+rAAfEeS9j9QyUVAcg03WC0mW4k5rDj1LKusYw+S9AYKD8RTz7ZLNG4rEVnXZ04l8
+TRIFBr7MLNLhm2xDC8oXxJ62Hj22t5ffQGwHzkAA2Ue0GD6PMW1mXO6lQRIPnl8g
+cW/qpPBZ4utmwTF9JnhoVqQByP6Q0hK1fsN4rVNpXNwy44vRcbE8UpwywlmG24/K
+KC7pDsLnXrHpTybM7tYaGAU6uGdOunawbHLBOsRk0OXHdfAK2w/AERgmE25xymkq
+ub592VfsfPfM3vDKJ883R4w0+IcEA/OFoiOvmHbVwJNgmxs/Tz/DA9nkdb9lTHg9
+0ittT4rjNMk0W6d0ARRrG2+6LGLMNn/8X5saxl6z6oW06lsIFyqKNaprh3BsMhGU
+iesltyMThgu7RjWlJfyzh2jAbbfp8V4ygJXXgbT801NIAc779iGMEszR9sNEYYIm
+s0FYU9J6HVJrpu5mV995M3NGPlocuI3153e3t7YHWvI0uDp4HEimLuxkh+wMV3Tr
++xAMnwlzNRFulhchYsgYHWcJEABj8l9ZI05Au2SOCAJAMSjvePXPAsnxq/r+7p44
+TzxvxiEag6S6jUnYZhUdgod0N84w+a+dryG9nKHbekh9hrHIiIrpLQLCeCloMpTz
+jfmylHQhqYTyf7hNXZ7H
+=WLR+
+-----END PGP SIGNATURE-----
 
+--MWF3YmTHhoLNIVQC--
