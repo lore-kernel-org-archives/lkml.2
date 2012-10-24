@@ -1,90 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935298Ab2JXTZt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:25:49 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45041 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab2JXTZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:25:47 -0400
-Date: Wed, 24 Oct 2012 12:25:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
-Message-ID: <20121024192535.GG12182@atj.dyndns.org>
-References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
- <1350480648-10905-5-git-send-email-mhocko@suse.cz>
- <20121018224148.GR13370@google.com>
- <20121019133244.GE799@dhcp22.suse.cz>
- <20121019202405.GR13370@google.com>
- <20121022103021.GA6367@dhcp22.suse.cz>
+	id S934697Ab2JXTav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:30:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:51489 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757623Ab2JXTat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:30:49 -0400
+Date: Wed, 24 Oct 2012 21:30:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: Build install-man target when installing
+Message-ID: <20121024193046.GB17945@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Namhyung Kim <namhyung@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120925174658.GD9320@aftab.osrc.amd.com>
+ <1348854427-12746-1-git-send-email-bp@amd64.org>
+ <20121020111625.GB17563@liondog.tnic>
+ <87mwzfj7dn.fsf@sejong.aot.lge.com>
+ <20121022100719.GA8352@liondog.tnic>
+ <20121022140339.GA8775@ghostprotocols.net>
+ <20121022231301.GA13994@liondog.tnic>
+ <20121023133951.GA11351@ghostprotocols.net>
+ <20121024170316.GA13993@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121022103021.GA6367@dhcp22.suse.cz>
+In-Reply-To: <20121024170316.GA13993@ghostprotocols.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+On Wed, Oct 24, 2012 at 10:03:16AM -0700, Arnaldo Carvalho de Melo wrote:
+> The 'install-man' target will use your check-executable-or-error-out
+> stuff, but the main 'install' target will call just 'try-install-man',
+> that will not stop the build if there are missing tools to generate
+> the man pages.
+>
+> Installing just xmlto makes it ask just for asciidoc, install both and
+> it generates the man pages, please try to check if it works for you so
+> that I can have your Tested-by.
 
-On Mon, Oct 22, 2012 at 12:30:21PM +0200, Michal Hocko wrote:
-> > > We can still fail inn #3 without this patch becasuse there are is no
-> > > guarantee that a new task is attached to the group. And I wanted to keep
-> > > memcg and generic cgroup parts separated.
-> > 
-> > Yes, but all other controllers are broken that way too
-> 
-> It's just hugetlb and memcg that have pre_destroy.
-> 
-> > and the worst thing which will hapen is triggering WARN_ON_ONCE().
-> 
-> The patch does BUG_ON(ss->pre_destroy(cgrp)). I am not sure WARN_ON_ONCE is
-> appropriate here because we would like to have it at least per
-> controller warning. I do not see any reason why to make this more
-> complicated but I am open to suggestions.
+Ok, then this can be done even simpler, I went and simplified your
+version and we don't need that check-executable-or-error-out helper
+anymore, I'm including it below.
 
-Once it's dropped from memcg, the next patch can update cgroup core
-accordingly and the bug will exist for a single commit and the failure
-mode would be triggering of WARN_ON_ONCE().  Seems pretty simple to
-me.
+For it you can have my
 
-> > Let's note the failure in the commit and remove
-> > DEPREDATED_clear_css_refs in the previous patch.  Then, I can pull
-> > from you, clean up pre_destroy mess and then you can pull back for
-> > further cleanups.
-> 
-> Well this will get complicated as there are dependencies between memcg
-> parts (based on Andrew's tree) and your tree. My tree is not pullable as
-> all the patches go via Andrew. I am not sure how to get out of this.
-> There is only one cgroup patch so what about pushing all of this via
-> Andrew and do the follow up cleanups once they get merged? We are not in
-> hurry, are we?
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
 
-Let's create a cgroup branch and build things there.  I don't think
-cgroup changes are gonna be a single patch and expect to see at least
-some bug fixes afterwards and don't wanna keep them floating separate
-from other cgroup changes.  mm being based on top of -next, that
-should work, right?
+Btw, I keep seeing those errors when building on your perf/core branch:
 
-> Anyway does it really make sense to drop DEPREDATED_clear_css_refs
-> already in the previous patch when it is _not_ guaranteed that
-> pre_destroy succeeds?
+...
+    FLEX util/pmu-flex.c
+    FLEX util/parse-events-flex.c
+    CC util/pmu-flex.o
+    CC util/pmu.o
+    CC util/parse-events.o
+gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
+error: command 'gcc' failed with exit status 1
+cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
+make: *** [python/perf.so] Error 1
+make: *** Waiting for unfinished jobs....
+Makefile:513: No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99
+Makefile:568: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
+Makefile:579: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
+    SUBDIR ../lib/traceevent/
 
-It makes things simpler here by decoupling memcg change with core
-cgroup changes and the introduced bug isn't too easy to trigger and
-even when triggered the failure mode isn't critical.  It's not gonna
-break normal common operations or bisection.  As long as the issue is
-clearly documented, I think it should be fine.  Just note that this
-opens up a race window from deficient cgroup API and the following
-commits will address it.
+...
 
 Thanks.
 
---
-tejun
+---
+diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
+index 9f2e44f2b17a..ef6d22e879eb 100644
+--- a/tools/perf/Documentation/Makefile
++++ b/tools/perf/Documentation/Makefile
+@@ -1,3 +1,5 @@
++include ../config/utilities.mak
++
+ OUTPUT := ./
+ ifeq ("$(origin O)", "command line")
+   ifneq ($(O),)
+@@ -64,6 +66,7 @@ MAKEINFO=makeinfo
+ INSTALL_INFO=install-info
+ DOCBOOK2X_TEXI=docbook2x-texi
+ DBLATEX=dblatex
++XMLTO=xmlto
+ ifndef PERL_PATH
+ 	PERL_PATH = /usr/bin/perl
+ endif
+@@ -71,6 +74,16 @@ endif
+ -include ../config.mak.autogen
+ -include ../config.mak
+ 
++_tmp_tool_path := $(call get-executable,$(ASCIIDOC))
++ifeq ($(_tmp_tool_path),)
++	missing_tools = $(ASCIIDOC)
++endif
++
++_tmp_tool_path := $(call get-executable,$(XMLTO))
++ifeq ($(_tmp_tool_path),)
++	missing_tools += $(XMLTO)
++endif
++
+ #
+ # For asciidoc ...
+ #	-7.1.2,	no extra settings are needed.
+@@ -170,7 +183,12 @@ pdf: $(OUTPUT)user-manual.pdf
+ 
+ install: install-man
+ 
+-install-man: man
++check-man-tools:
++ifdef missing_tools
++	$(error "You need to install $(missing_tools) for man pages")
++endif
++
++do-install-man: man
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(man1dir)
+ #	$(INSTALL) -d -m 755 $(DESTDIR)$(man5dir)
+ #	$(INSTALL) -d -m 755 $(DESTDIR)$(man7dir)
+@@ -178,6 +196,15 @@ install-man: man
+ #	$(INSTALL) -m 644 $(DOC_MAN5) $(DESTDIR)$(man5dir)
+ #	$(INSTALL) -m 644 $(DOC_MAN7) $(DESTDIR)$(man7dir)
+ 
++install-man: check-man-tools man
++
++try-install-man:
++ifdef missing_tools
++	$(warning Please install $(missing_tools) to have the man pages installed)
++else
++	$(MAKE) do-install-man
++endif
++
+ install-info: info
+ 	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
+ 	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
+@@ -246,7 +273,7 @@ $(MAN_HTML): $(OUTPUT)%.html : %.txt
+ 
+ $(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
+ 	$(QUIET_XMLTO)$(RM) $@ && \
+-	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
++	$(XMLTO) -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
+ 
+ $(OUTPUT)%.xml : %.txt
+ 	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 76190a7e2934..3252563bfca7 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1038,7 +1038,7 @@ perfexec_instdir = $(prefix)/$(perfexecdir)
+ endif
+ perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
+ 
+-install: all install-man
++install: all try-install-man
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
+ 	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
+@@ -1064,6 +1064,9 @@ install-doc:
+ install-man:
+ 	$(MAKE) -C Documentation install-man
+ 
++try-install-man:
++	$(MAKE) -C Documentation try-install-man
++
+ install-html:
+ 	$(MAKE) -C Documentation install-html
+ 
+
+-- 
+Regards/Gruss,
+    Boris.
