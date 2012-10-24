@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935275Ab2JXRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:18:56 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34625 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934943Ab2JXRSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:18:54 -0400
+	id S935281Ab2JXRTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:19:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756966Ab2JXRTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 13:19:42 -0400
+Date: Wed, 24 Oct 2012 13:19:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Khalid Aziz <khalid@gonehiking.org>,
+        kexec@lists.infradead.org, horms@verge.net.au,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Subject: Re: [RFC] Kdump with signed images
+Message-ID: <20121024171926.GD1821@redhat.com>
+References: <20121018193831.GD18147@redhat.com>
+ <874nlrv2ni.fsf@xmission.com>
+ <20121019020630.GA27052@redhat.com>
+ <877gqnnnf0.fsf@xmission.com>
+ <20121019143112.GB27052@redhat.com>
+ <871ugqb4gj.fsf@xmission.com>
+ <20121023131854.GA16496@redhat.com>
+ <20121023145920.GD16496@redhat.com>
+ <20121023154123.GA30730@srcf.ucam.org>
+ <87d309xhmc.fsf_-_@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <20121024165749.GB32220@arwen.pp.htv.fi>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-	<20121022155028.GA13791@core.coreip.homeip.net>
-	<508660D4.9030507@ti.com>
-	<20121023200249.GA2712@core.coreip.homeip.net>
-	<CACRpkdYwA7O8AqB8YFCK-c3e6-7FcbhMOiPEUq-cKJni_PO-Ow@mail.gmail.com>
-	<20121024161801.GB16350@core.coreip.homeip.net>
-	<20121024165749.GB32220@arwen.pp.htv.fi>
-Date: Wed, 24 Oct 2012 19:18:53 +0200
-Message-ID: <CACRpkdb3ixJWDhJVOX4ZM-xqk37v5k8zhhFGBH-uxgFHHeVEfA@mail.gmail.com>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: balbi@ti.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d309xhmc.fsf_-_@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 6:57 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Oct 24, 2012 at 09:18:01AM -0700, Dmitry Torokhov wrote:
->> OK, so with drivers/base/, have you considered doing default pinctrl
->> selection in bus's probe() methods? Yo would select the default
->> configuration before starting probing the device and maybe select idle
->> when probe fails or device is unbound? That would still keep the link
->> between device object and pinctrl and there less busses than device
->> drivers out there.
->
-> it starts to become confusing after a while. I mean, there's a reason
-> why all drivers explictly call pm_runtim_enable(), right ?
->
-> From a first thought, one could think of just yanking that into bus'
-> probe() as you may suggest, but sometimes the device is already enabled,
-> so we need extra tricks:
->
-> pm_runtime_set_active();
-> pm_runtime_enable();
-> pm_runtime_get();
->
-> the same could happen with pinctrl eventually. What if a device needs to
-> do something else (an errata fix as an example) before requesting
-> pinctrl's default state ?
+On Tue, Oct 23, 2012 at 09:44:59AM -0700, Eric W. Biederman wrote:
+> Matthew Garrett <mjg@redhat.com> writes:
+> 
+> > On Tue, Oct 23, 2012 at 10:59:20AM -0400, Vivek Goyal wrote:
+> >
+> >> But what about creation of a new program which can call kexec_load()
+> >> and execute an unsigned kernel. Doesn't look like that will be
+> >> prevented using IMA.
+> >
+> > Right. Trusting userspace would require a new system call that passes in 
+> > a signature of the userspace binary, and the kernel would then have to 
+> > verify the ELF object in memory in order to ensure that it 
+> > matches the signature. Verifying that the copy on the filesystem is 
+> > unmodified isn't adequate - an attacker could simply have paused the 
+> > process and injected code. 
+> 
+> Verifying the copy on the filesystem at exec time is perfectly adequate
+> for gating extra permissions.  Certainly that is the model everywhere
+> else in the signed key chain.
+> 
+> Where IMA falls short is there is no offline signing capability in IMA
+> itself.  I think EVM may fix that.
 
-I can confirm this. Just the ordering between enabling/disabling
-resources like clock/pins/powerdomain screw things up for us
-and even if we can surely centralize parts of this code as such
-into the drivers/base or pm_* namespace we would still need
-explicit calls from the driver.
+[ CCing lkml. I think it is a good idea to open discussion to wider
+audience. Also CCing IMA/EVM folks ]
 
-I'm thinking that maybe the best helpers are actually static
-inline functions in the <linux/pinctrl/consumer.h> header
-rather than moving anything into drivers/base/* if the
-code duplication is the real problem.
+Based on reading following wiki page, looks like EVM also does not allow
+offline signing capability. And EVM is protecting IMA data to protect
+against offline attack. If we can assume that unisgned kernels can't be
+booted on the platform, then EVM might not be a strict requirement in
+this case.
 
-Yours,
-Linus Walleij
+So as you said, one of the main problem with IMA use to verify /sbin/kexec
+is that IMA does not provide offline signing capability.
+
+> 
+> > Realistically, the only solution here is for 
+> > the kernel to verify that the kernel it's about to boot is signed and 
+> > for it not to take any untrusted executable code from userspace.
+> 
+> Hogwash.  The kernel verifing a signature of /sbin/kexec at exec time is
+> perfectly reasonable, and realistic.  In fact finding a way to trust
+> small bits of userspace even if root is compromised seems a far superior
+> model to simply solving the signing problem for /sbin/kexec.
+> 
+> Although I do admit some part of the kexec process will need to verify
+> keys on the images we decide to boot.
+
+It should be an option, isn't it? Either /sbin/kexec can try to verify the
+integrity of kernel or we extend try to extend kexec() system call to also
+pass the signature of kernel and let kernel verify it (as you mentioned
+previously).
+
+Thanks
+Vivek
