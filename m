@@ -1,111 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab2JXFo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 01:44:26 -0400
-Received: from www84.your-server.de ([213.133.104.84]:48014 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab2JXFoY (ORCPT
+	id S1757568Ab2JXFrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 01:47:08 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44428 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab2JXFrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 01:44:24 -0400
-Message-ID: <1351057417.8916.1.camel@wall-e>
-Subject: Re: [PATCH] Replace the type check code with typecheck() in kfifo_in
-From: Stefani Seibold <stefani@seibold.net>
-To: Wei Yang <weiyang@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, richard.weinberger@gmail.com, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-Date: Wed, 24 Oct 2012 07:43:37 +0200
-In-Reply-To: <1351050074-22480-1-git-send-email-weiyang@linux.vnet.ibm.com>
-References: <1351050074-22480-1-git-send-email-weiyang@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 24 Oct 2012 01:47:06 -0400
+Date: Wed, 24 Oct 2012 07:47:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>, peterz@infradead.org,
+        mingo@redhat.com, devel@openvz.org, linux-kernel@vger.kernel.org,
+        xemul@parallels.com
+Subject: Re: [PATCH v5] posix timers: allocate timer id per process
+Message-ID: <20121024054700.GA18601@gmail.com>
+References: <20121023073913.23514.87934.stgit@localhost.localdomain>
+ <1350978723.8609.1555.camel@edumazet-glaptop>
+ <alpine.LFD.2.02.1210232345200.2756@ionos>
+ <1351029216.6537.3.camel@edumazet-glaptop>
+ <alpine.LFD.2.02.1210240004410.2756@ionos>
+ <1351047760.6537.6.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351047760.6537.6.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 24.10.2012, 11:41 +0800 schrieb Wei Yang:
-> In kfifo_in marco, one piece of code which is arounded by if(0) will check the
-> type of __tmp->ptr_const and __buf. If they are different type, there will
-> output a warning during compiling. This piece of code is not self explaining
-> and a little bit hard to understand.
-> 
-> Based on Andrew Morton's suggestion, this patch replace this with typecheck()
-> which will be easy to understand.
-> 
-> In the same file, there are several places with the same code style. This
-> patch change them too.
-> 
-> Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
-> Reviewed-by: Andrew Morton <akpm@linux-foundation.org>
-> Reviewed-by: richard -rw- weinberger <richard.weinberger@gmail.com>
-> ---
->  include/linux/kfifo.h |   22 +++++-----------------
->  1 files changed, 5 insertions(+), 17 deletions(-)
-> 
-> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-> index 10308c6..680c293 100644
-> --- a/include/linux/kfifo.h
-> +++ b/include/linux/kfifo.h
-> @@ -390,10 +390,7 @@ __kfifo_int_must_check_helper( \
->  	unsigned int __ret; \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> -		__dummy = (typeof(__val))NULL; \
-> -	} \
-> +	typecheck(typeof(__tmp->ptr_const), __val); \
->  	if (__recsize) \
->  		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
->  			__recsize); \
-> @@ -433,7 +430,7 @@ __kfifo_uint_must_check_helper( \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
->  	if (0) \
-> -		__val = (typeof(__tmp->ptr))0; \
-> +		__val = (typeof(__tmp->ptr))NULL; \
->  	if (__recsize) \
->  		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
->  			__recsize); \
-> @@ -512,10 +509,7 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> -		__dummy = (typeof(__buf))NULL; \
-> -	} \
-> +	typecheck(typeof(__tmp->ptr_const), __buf);\
->  	(__recsize) ?\
->  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_in(__kfifo, __buf, __n); \
-> @@ -565,10 +559,7 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr) __dummy = NULL; \
-> -		__buf = __dummy; \
-> -	} \
-> +	typecheck(typeof(__tmp->ptr), __buf); \
->  	(__recsize) ?\
->  	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_out(__kfifo, __buf, __n); \
-> @@ -777,10 +768,7 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
-> -		__buf = __dummy; \
-> -	} \
-> +	typecheck(typeof(__tmp->ptr), __buf); \
->  	(__recsize) ? \
->  	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_out_peek(__kfifo, __buf, __n); \
 
-Acked-by: Stefani Seibold <stefani@seibold.net>
+* Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
+> On Wed, 2012-10-24 at 00:33 +0200, Thomas Gleixner wrote:
+> > On Tue, 23 Oct 2012, Eric Dumazet wrote:
+> > 
+> > > On Tue, 2012-10-23 at 23:47 +0200, Thomas Gleixner wrote:
+> > > 
+> > > > Not so good to me.
+> > > >  
+> > > > > Signed-off-by: Eric Dumazet <edumazet@google.com>
+> > > > 
+> > > > And that should be either an Acked-by or a Reviewed-by. You can't sign
+> > > > off on patches which have not been submitted or transported by you.
+> > > 
+> > > I actually gave some input, provided a hash function, and so on.
+> > > 
+> > > So this SOB was valid. I do that all the time.
+> > 
+> > Not really. I recommend you to read the relevant file in Documentation
+> > which covers what can have your SOB. 
+> 
+> OK I did that again, and found this :
+> 
+> The Signed-off-by: tag indicates that the signer was involved in the
+> development of the patch, or that he/she was in the patch's delivery
+> path.
+> 
+> 
+> And I was involved in the development of the patch.
+> 
+> I understand you dont like it at all, so I'll remember not trying to
+> help anymore in this area.
 
+No, you are simply wrong and Linus would (rightfully) complain 
+to *Thomas* if he added a SOB like that and pushed such a faulty 
+commit to him. Linus has complained about such SOBs before and 
+Thomas would be wrong to put them into commits.
+
+SOBs get added if you are the developer of the patch or if you 
+are actually one of the 'hops' in the route of the patch that 
+gets it to Thomas. SOBs don't get added over email like you did 
+and what Thomas pointed out was simply a maintainer's job to 
+point out.
+
+Adding credits for helping development get added via different 
+tags, not via SOBs.
+
+Thanks,
+
+	Ingo
