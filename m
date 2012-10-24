@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933875Ab2JXALs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:11:48 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:61587 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933463Ab2JXALq (ORCPT
+	id S933890Ab2JXAPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:15:52 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:59648 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933463Ab2JXAPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:11:46 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Allie Xiong <axiong@synaptics.com>, Vivian Ly <vly@synaptics.com>,
-        Daniel Rosenberg <daniel.rosenberg@synaptics.com>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Subject: Re: [RFC PATCH 02/06] input/rmi4: Core files
-Date: Tue, 23 Oct 2012 17:11:41 -0700
-Message-ID: <5515083.K7EXLgnYa6@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50872C54.4090505@synaptics.com>
-References: <1349496603-20775-1-git-send-email-cheiny@synaptics.com> <20121011081351.GA32175@core.coreip.homeip.net> <50872C54.4090505@synaptics.com>
+	Tue, 23 Oct 2012 20:15:51 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	<1350925299.8609.978.camel@edumazet-glaptop>
+	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+Date: Tue, 23 Oct 2012 17:15:49 -0700
+X-Google-Sender-Auth: nj4ZV9LPmvH9U5veKKXb39haJTo
+Message-ID: <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 23, 2012 04:46:28 PM Christopher Heiny wrote:
-> On 10/11/2012 01:13 AM, Dmitry Torokhov wrote:
-> > On Thu, Oct 11, 2012 at 04:15:56AM +0000, Christopher Heiny wrote:
-> >> On Thursday, October 11, 2012 02:21:53 AM you wrote:
-> >>> On Sat, Oct 6, 2012 at 6:09 AM, Christopher Heiny <cheiny@synaptics.com> 
-wrote:
-> >>>> +
-> >>>> +/** This is here because all those casts made for some ugly code.
-> >>>> + */
-> >>>> +static void u8_and(u8 *dest, u8 *target1, u8 *target2, int nbits)
-> >>>> +{
-> >>>> +       bitmap_and((long unsigned int *) dest,
-> >>>> +                  (long unsigned int *) target1,
-> >>>> +                  (long unsigned int *) target2,
-> >>>> +                  nbits);
-> >>>> +}
-> >>> 
-> >>> Hm, getting rid of unreadable casts is a valid case.
-> >>> 
-> >>> I'll be OK with this but maybe the real solution is to introduce such
-> >>> helpers into <linux/bitmap.h>?
-> >> 
-> >> Hmmm.  We'll give that some thought.  Thought I'd like to get the RMI4
-> >> driver nailed down, just to keep the area of change small.  Once we've
-> >> got all the kinks worked out here, we'll look at bitmap.h helpers.
-> > 
-> > The question is why you are using u8 for bitmaps instead of doing
-> > DECALRE_BITMAP() and using it instead? Then you would not need silly
-> > wrappers around existing APIs.
-> 
-> OK, we'll look into that.  My big concern is whether the bit-order in
-> bitmask.h will be the same as the bit order in the RMI4 sensor
-> registers.  If that works out OK, we'll switch.
+(Sorry for the subject change, but I wanted to try and pull in those
+who work on RT issues, and the subject didn't make that obvious.
+Please search for the same subject without the RT Linux trailing
+text.)
 
-I think if you properly convert data to/from cpu-endianness it will clear 
-matters a lot.
+Well, more information.  Even with SMP enabled (and presumably the
+migrate_enable having calls to preempt_disable), we still got the
+lockup in iptables-restore.  I did more digging, and it looks like the
+complete stack trace includes a call from iptables-restore (through
+setsockopt with IPT_SO_SET_ADD_COUNTERS).  This seems to be a
+potential multiple writer case where the counters are updated through
+the syscall and the kernel is updating the counters as it filters
+packets.
 
+I think there might be a race on the update to xt_recseq.sequence,
+since the RT patches remove the spinlock in seqlock_t.  Thus multiple
+writers can corrupt the sequence count.  And I thought the SMP
+configuration would disable preemption when local_bh_disable() is
+called.  And indeed, looking at the disassembly, I see
+preempt_disable() (though optimized, goes to add_preempt_count() ) is
+being called.
 
-> 
-> >>> (...)
-> >>> 
-> >>>> +static int process_interrupt_requests(struct rmi_device *rmi_dev)
-> >>>> +{
-> >>>> +       struct rmi_driver_data *data = dev_get_drvdata(&rmi_dev->dev);
-> >>>> +       struct device *dev = &rmi_dev->dev;
-> >>>> +       struct rmi_function_container *entry;
-> >>>> +       u8 irq_status[data->num_of_irq_regs];
-> >>> 
-> >>> Looking at this...
-> >>> 
-> >>> What does the data->num_of_irq_regs actually contain?
-> >>> 
-> >>> I just fear that it is something constant like always 2 or always 4,
-> >>> so there is actually, in reality, a 16 or 32 bit register hiding in
-> >>> there.
-> >>> 
-> >>> In that case what you should do is to represent it as a u16 or u32 here,
-> >>> just or the bits into a status word, and then walk over that status
-> >>> word with something like ffs(bitword); ...
-> >> 
-> >> Nope, it's not constant.  In theory, and RMI4 based sensor can have up
-> >> to 128 functions (in practice, it's far fewer), and each function can
-> >> have as many as 7 interrupts.  So the number of IRQ registers can vary
-> >> from RMI4 sensor to RMI4 sensor, and needs to be computed during the
-> >> scan of the product descriptor table.
-> > 
-> > Is it a good idea to have it on stack then? Should it be part of
-> > rmi_device instead?
-> 
-> It's not coming off the stack.  We're allocating it via devm_kzalloc()
-> in rmi_driver_probe().
+Yet we still see the lockup in the get_counters() in iptables.  Which,
+it seems, is because of some sort of problem with the sequence.  It
+doesn't appear to be related to the preemption, and perhaps there is
+some other corruption of the sequence counter happening.  But the only
+places I see it modified is in xt_write_recseq_begin and
+xt_write_recseq_end, which is only in the netfilter code
+(ip6_tables.c, ip_tables.c, and arp_tables.c).  And every single call
+is preceeded by a call to local_bh_disable().
 
-No, look at the part of the code that was quoted. "u8 irq_status[data-
->num_of_irq_regs];" is on stack.
+This problem is a huge one for us.  And so far I'm unable to track
+down how this is occurring.
 
-Thanks.
+Any other tips?  I presume this is the proper place for RT issues.
 
--- 
-Dmitry
+Thanks,
+Pete
