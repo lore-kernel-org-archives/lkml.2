@@ -1,55 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139Ab2JXLqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:46:48 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:58534 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436Ab2JXLqq (ORCPT
+	id S1758243Ab2JXLrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:47:42 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:43006 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757491Ab2JXLrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:46:46 -0400
-From: Nix <nix@esperi.org.uk>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Eric Sandeen <sandeen@redhat.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org>
-	<alpine.LNX.2.00.1210232359180.29283@eggly.anvils>
-Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
-Date: Wed, 24 Oct 2012 12:46:33 +0100
-In-Reply-To: <alpine.LNX.2.00.1210232359180.29283@eggly.anvils> (Hugh
-	Dickins's message of "Wed, 24 Oct 2012 00:00:46 -0700 (PDT)")
-Message-ID: <87hapkks86.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Wed, 24 Oct 2012 07:47:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-INFN-TO-Metrics: spindle 1233; Body=11 Fuz1=11 Fuz2=11
+In-Reply-To: <5087CF96.7010406@intel.com>
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
+	<1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+	<5087CF96.7010406@intel.com>
+Date: Wed, 24 Oct 2012 13:47:38 +0200
+Message-ID: <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 Oct 2012, Hugh Dickins verbalised:
-
-> On Wed, 24 Oct 2012, Theodore Ts'o wrote:
->> Journal flushes outside of an unmount does
->> happen as part of online resizing, the FIBMAP ioctl, or when the file
->> system is frozen.  But it didn't sound like Toralf or Nix was using
->> any of those features.  (Toralf, Nix, please correct me if my
->> assumptions here is wrong).
+On Wed, Oct 24, 2012 at 1:23 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> On 10/24/2012 04:57 PM, Stephane Eranian wrote:
+>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>
+>>> Try enabling the LBR call stack feature if event request recording
+>>> callchain. Try utilizing the LBR call stack to get user callchain
+>>> in case of there is no frame pointer.
+>>>
+>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>> ---
+>>>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
+>>>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>>>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>>>  include/linux/perf_event.h                 |   6 ++
+>>>  kernel/events/core.c                       |  11 ++-
+>>>  6 files changed, 124 insertions(+), 49 deletions(-)
+>>>
+>>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>>> index 8ae8044..3bf2100 100644
+>>> --- a/arch/x86/kernel/cpu/perf_event.c
+>>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>>> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
+>>>
+>>>                 if (event->attr.precise_ip > precise)
+>>>                         return -EOPNOTSUPP;
+>>> -               /*
+>>> -                * check that PEBS LBR correction does not conflict with
+>>> -                * whatever the user is asking with attr->branch_sample_type
+>>> -                */
+>>> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>> -                       u64 *br_type = &event->attr.branch_sample_type;
+>>> -
+>>> -                       if (has_branch_stack(event)) {
+>>> -                               if (!precise_br_compat(event))
+>>> -                                       return -EOPNOTSUPP;
+>>> -
+>>> -                               /* branch_sample_type is compatible */
+>>> -
+>>> -                       } else {
+>>> -                               /*
+>>> -                                * user did not specify  branch_sample_type
+>>> -                                *
+>>> -                                * For PEBS fixups, we capture all
+>>> -                                * the branches at the priv level of the
+>>> -                                * event.
+>>> -                                */
+>>> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>> -
+>>> -                               if (!event->attr.exclude_user)
+>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>> -
+>>> -                               if (!event->attr.exclude_kernel)
+>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>> -                       }
+>>> +       }
+>>> +       /*
+>>> +        * check that PEBS LBR correction does not conflict with
+>>> +        * whatever the user is asking with attr->branch_sample_type
+>>> +        */
+>>> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>> +               u64 *br_type = &event->attr.branch_sample_type;
+>>> +
+>>> +               if (has_branch_stack(event)) {
+>>> +                       if (!precise_br_compat(event))
+>>> +                               return -EOPNOTSUPP;
+>>> +
+>>> +                       /* branch_sample_type is compatible */
+>>> +
+>>> +               } else {
+>>> +                       /*
+>>> +                        * user did not specify  branch_sample_type
+>>> +                        *
+>>> +                        * For PEBS fixups, we capture all
+>>> +                        * the branches at the priv level of the
+>>> +                        * event.
+>>> +                        */
+>>> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>> +
+>>> +                       if (!event->attr.exclude_user)
+>>> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>> +
+>>> +                       if (!event->attr.exclude_kernel)
+>>> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>> +               }
+>>> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>>> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
+>>> +                       /*
+>>> +                        * user did not specify branch_sample_type,
+>>> +                        * try using the LBR call stack facility to
+>>> +                        * record call chains in the user space.
+>>> +                        */
+>>> +                       event->attr.branch_sample_type =
+>>> +                               PERF_SAMPLE_BRANCH_USER |
+>>> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
+>>
+>> You are forcing user level here, but how do you know the user wanted
+>> ONLY user level
+>> callchains?
+>>
+>>
 >
-> I believe it also happens at swapon of a swapfile on the filesystem.
+> The LBR call stack is used only when the frame pointer approach doesn't work.
 
-I'm not using swapfiles, only swap partitions (on separate LVM LVs).
-So that's not it either.
+And where is that determination made?
 
--- 
-NULL && (void)
+> I think the kernel has frame pointer for the most cases. The second reason is
+> that the LBR call stack only has 16 entries. I think it's too small to record
+> both kernel and user call chains.
+>
+It's even too small for many object oriented user programs as well.
+
+> Regards
+> Yan, Zheng
+>
