@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934517Ab2JXKZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:25:42 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:35243 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932622Ab2JXKZk (ORCPT
+	id S934628Ab2JXK0c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:26:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48470 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932622Ab2JXK0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:25:40 -0400
-Date: Wed, 24 Oct 2012 12:25:33 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Alexander Duyck <alexander.h.duyck@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] x86: Improve 64 bit __phys_addr call performance
-Message-ID: <20121024102533.GA10447@gmail.com>
-References: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Oct 2012 06:26:31 -0400
+Date: Wed, 24 Oct 2012 21:26:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: akpm@linux-foundation.org, a.p.zijlstra@chello.nl, xemul@parallels.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + procfs-add-vmflags-field-in-smaps-output-v3-fix-2.patch added
+ to -mm tree
+Message-Id: <20121024212620.da7147354d523151c97de962@canb.auug.org.au>
+In-Reply-To: <20121024095959.GA30240@moon>
+References: <20121023220300.1185C200057@hpza10.eem.corp.google.com>
+	<20121024084515.GB30983@moon>
+	<20121024204746.8a8c0fa14b6495b5d5013db4@canb.auug.org.au>
+	<20121024095959.GA30240@moon>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__24_Oct_2012_21_26_20_+1100_kLh9o+cWp_BP.4FQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__24_Oct_2012_21_26_20_+1100_kLh9o+cWp_BP.4FQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Alexander Duyck <alexander.h.duyck@intel.com> wrote:
+Hi Cyrill,
 
-> This patch is meant to improve overall system performance when 
-> making use of the __phys_addr call on 64 bit x86 systems.  To 
-> do this I have implemented several changes.
-> 
-> First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is 
-> made an inline, similar to how this is currently handled in 32 
-> bit.  However in order to do this it is required to export 
-> phys_base so that it is available if __phys_addr is used in 
-> kernel modules.
-> 
-> The second change was to streamline the code by making use of 
-> the carry flag on an add operation instead of performing a 
-> compare on a 64 bit value.  The advantage to this is that it 
-> allows us to reduce the overall size of the call. On my Xeon 
-> E5 system the entire __phys_addr inline call consumes 30 bytes 
-> and 5 instructions.  I also applied similar logic to the debug 
-> version of the function.  My testing shows that the debug 
-> version of the function with this patch applied is slightly 
-> faster than the non-debug version without the patch.
-> 
-> Finally, when building the kernel with the first two changes 
-> applied I saw build warnings about __START_KERNEL_map and 
-> PAGE_OFFSET constants not fitting in their type.  In order to 
-> resolve the build warning I changed their type from UL to ULL.
-> 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> ---
-> 
->  arch/x86/include/asm/page_64_types.h |   16 ++++++++++++++--
->  arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
->  arch/x86/mm/physaddr.c               |   20 ++++++++++++++------
->  3 files changed, 31 insertions(+), 8 deletions(-)
+On Wed, 24 Oct 2012 13:59:59 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wr=
+ote:
+>
+> On Wed, Oct 24, 2012 at 08:47:46PM +1100, Stephen Rothwell wrote:
+> >=20
+> > On Wed, 24 Oct 2012 12:45:15 +0400 Cyrill Gorcunov <gorcunov@openvz.org=
+> wrote:
+> > >
+> > >  static void show_smap_vma_flags(struct seq_file *m, struct vm_area_s=
+truct *vma)
+> > >  {
+> > > +#define __VM_FLAG(_f, _s)	[ilog2(_f)] =3D {(const char [2]){_s}}
+> >=20
+> > I really don't think you need the cast (and it may hide bad usages) or
+> > the second set of braces.  Thus:
+>=20
+> Hi Stephen, could you please elaborate, which bad usage hiding could be t=
+here?
 
-> +#ifdef CONFIG_DEBUG_VIRTUAL
->  extern unsigned long __phys_addr(unsigned long);
-> +#else
-> +static inline unsigned long __phys_addr(unsigned long x)
-> +{
-> +	unsigned long y = x - __START_KERNEL_map;
-> +
-> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
-> +	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
-> +
-> +	return x;
-> +}
+I though it might suppress a warning if someone added an entry with a >2
+character string, but testing shows that it does not, so that is OK.
+There is still no need for the cast, though, or the second set of
+braces.  The C standard allows fixed length char arrays to be initialised
+by string constants and discards the trailing NUL if necessary.
 
-This is a rather frequently used primitive. By how much does 
-this patch increase a 'make defconfig' kernel's vmlinux, as 
-measured via 'size vmlinux'?
+> > Further is there any reason for the struct?
+> >=20
+> > #define __VM_FLAG(_f, _s)	[ilog2(_f)] =3D _s
+> >=20
+> > static const char mnemonics[BITS_PER_LONG][2] =3D {
+> > ...
+> > };
+>=20
+> Well, good point, though the benefit of using stucture here
+> could be easier way for extension if needed. The compiled result
+> is the same as for plain array or structure, so I would rather
+> stick with struct here, until contrary proved (I mean it's not
+> a problem to update the patch and use array here but I still
+> think struct it better in long term). If you guys think that I
+> should move it to array -- no problem, i may update ;)
 
-Thanks,
+One thing we learn about early (especially working at IBM) is to resist
+the temptation to over engineer :-)
 
-	Ingo
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__24_Oct_2012_21_26_20_+1100_kLh9o+cWp_BP.4FQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQh8JMAAoJEECxmPOUX5FEGtgQAKmw18dVL1JC0+rWLtcyUyFo
+/nBbXZ14T7rgCwIA8WtGfURp1hYH4+8bzuJoOKqIB3x+Xw9L2kSKuwnaJerfHC7V
+pt0UjUKtE7s6ShUv9lhA6zIhSm4+i96n/8KBf/1rfF+rFnhbMQjDUjfkHHwwBpNt
+uHKd8eP644cojBE2f50Ew4x+juAuQ6EM1+SiBGMS7dmBwOYnWVbDa9BM1xoFEVJD
+SuETvc7UxyjQI1IpOzFpPuffQQ8ElC1dRBFtXy8Vr+mc9HaBYExTnIpi40HDUDBB
+7QSO02BssWzqMWfSJGICmTORi+6TY1x3rxHXziEOFC0TsNCelRGjiZKBBtqypuos
+68RBTwlHKIj0AUXr8Cf7f7dRmKAVMdce0ybzAPDsfzqGJ2WS7clmXF2TSOfkxFSs
+wBCTeqKhRlhVffpaCj8fblD3L2Z6Mrj4dLFKI24Y1Gh31UHlKk4EdgG9eONbDmEg
+6RkzhH8BPDRZZlaqI6yaTS3x6z1A+HVssgCl/MArWgaXNk70OHBvI9jjTjiZNfVA
+oLdGg1ATHUyxtRDvj/rrCtlrgMxGGiO449QQJGapABLoxrThAlIgHfISCPN97URn
+0qFleUGXEe71b/eB0y9HNFLJUhNtTnkD2xDG3uJ+WvGZYugT1xu+/AtSuTKWfFgq
+rJP3g1T7LDsxUT2R6ben
+=8dLL
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__24_Oct_2012_21_26_20_+1100_kLh9o+cWp_BP.4FQ--
