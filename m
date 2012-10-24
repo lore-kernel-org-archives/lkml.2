@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935170Ab2JXRRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:17:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53577 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab2JXRRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:17:31 -0400
-Date: Wed, 24 Oct 2012 12:17:23 -0500
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 155/193] init: remove CONFIG_EXPERIMENTAL
-Message-ID: <20121024171723.GA7698@sergelap>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
- <1351022666-6960-156-git-send-email-keescook@chromium.org>
- <20121024134831.GB7217@sergelap>
- <CAGXu5jJZxY4k2Xpg=nuUn6p6V8NqYBPmvAt4Y35eogZfYWSM+g@mail.gmail.com>
+	id S935234Ab2JXRSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:18:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758654Ab2JXRSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 13:18:16 -0400
+Date: Wed, 24 Oct 2012 19:18:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
+Message-ID: <20121024171855.GA22371@redhat.com>
+References: <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com> <20121024161638.GA2465@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5jJZxY4k2Xpg=nuUn6p6V8NqYBPmvAt4Y35eogZfYWSM+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121024161638.GA2465@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (keescook@chromium.org):
-> On Wed, Oct 24, 2012 at 6:48 AM, Serge Hallyn
-> <serge.hallyn@canonical.com> wrote:
-> > Quoting Kees Cook (keescook@chromium.org):
-> >> This config item has not carried much meaning for a while now and is
-> >> almost always enabled by default. As agreed during the Linux kernel
-> >> summit, remove it.
-> >>
-> >> CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> >> CC: Serge Hallyn <serge.hallyn@canonical.com>
-> >> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> >> CC: Andrew Morton <akpm@linux-foundation.org>
-> >> CC: Frederic Weisbecker <fweisbec@gmail.com>
-> >> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >> ---
-> >>  init/Kconfig |   23 ++++++++++-------------
-> >>  1 file changed, 10 insertions(+), 13 deletions(-)
-> >>
-> >> diff --git a/init/Kconfig b/init/Kconfig
-> >> index 2bf7b83..4b65c1c 100644
-> >> --- a/init/Kconfig
-> >> +++ b/init/Kconfig
-> >> @@ -220,7 +220,7 @@ config SYSVIPC_SYSCTL
-> >>
-> >>  config POSIX_MQUEUE
-> >>       bool "POSIX Message Queues"
-> >> -     depends on NET && EXPERIMENTAL
-> >> +     depends on NET
-> >>       ---help---
-> >>         POSIX variant of message queues is a part of IPC. In POSIX message
-> >>         queues every message has a priority which decides about succession
-> >> @@ -366,7 +366,7 @@ config BSD_PROCESS_ACCT_V3
-> >>         at <http://www.gnu.org/software/acct/>.
-> >>
-> >>  config TASKSTATS
-> >> -     bool "Export task/process statistics through netlink (EXPERIMENTAL)"
-> >> +     bool "Export task/process statistics through netlink"
-> >
-> > In these cases, should we keep the '(EXPERIMENTAL)' text since it is just
-> > a hint to anyone running make menuconfig?  I think removing the 'depends on
-> > EXPERIMENTAL's is fine, but cases we should leave it (or replace it) as
-> > a textual hint, except in cases where we're sure that is no longer the case.
-> 
-> I covered this in the 000 intro email (https://lkml.org/lkml/2012/10/23/580):
+On 10/24, Paul E. McKenney wrote:
+>
+> static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> {
+> 	/*
+> 	 * Decrement our count, but protected by RCU-sched so that
+> 	 * the writer can force proper serialization.
+> 	 */
+> 	rcu_read_lock_sched();
+> 	this_cpu_dec(*p->counters);
+> 	rcu_read_unlock_sched();
+> }
 
-intro email is an appreciated courtesy, but should not take the place of
-info in the individual patch changelogs, especially as the intro emails
-won't go into git history.
+Yes, the explicit lock/unlock makes the new assumptions about
+synchronize_sched && barriers unnecessary. And iiuc this could
+even written as
 
-> Some patches remove "(EXPERIMENTAL)" from Kconfig titles when there was
-> no "depends on EXPERIMENTAL". I've removed the cases of these where I
+	rcu_read_lock_sched();
+	rcu_read_unlock_sched();
 
-Hm, I was under the impression that taskstats are not quite trusted yet,
-but I could be way out of date with that.
+	this_cpu_dec(*p->counters);
 
-> know the maintainer intended it that way. I've left the others in case a
-> "depends on EXPERIMENTAL" had been removed in the past and it had been
-> accidentally forgotten in the title. If the title is correct as-is,
-> just let me know, and I'll drop the patch from my series.
-> 
-> 
-> So, if some of these need to be adjusted, I'm fine with that. I opted
-> for aggressive removal in this first series.
-> 
-> -Kees
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+
+> Of course, it would be nice to get rid of the extra synchronize_sched().
+> One way to do this is to use SRCU, which allows blocking operations in
+> its read-side critical sections (though also increasing read-side overhead
+> a bit, and also untested):
+>
+> ------------------------------------------------------------------------
+>
+> struct percpu_rw_semaphore {
+> 	bool locked;
+> 	struct mutex mtx; /* Could also be rw_semaphore. */
+> 	struct srcu_struct s;
+> 	wait_queue_head_t wq;
+> };
+
+but in this case I don't understand
+
+> static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+> {
+> 	/* Allow others to proceed, but not yet locklessly. */
+> 	mutex_unlock(&p->mtx);
+>
+> 	/*
+> 	 * Ensure that all calls to percpu_down_read() that did not
+> 	 * start unambiguously after the above mutex_unlock() still
+> 	 * acquire the lock, forcing their critical sections to be
+> 	 * serialized with the one terminated by this call to
+> 	 * percpu_up_write().
+> 	 */
+> 	synchronize_sched();
+
+how this synchronize_sched() can help...
+
+Oleg.
+
