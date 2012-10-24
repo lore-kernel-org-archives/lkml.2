@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422659Ab2JXVme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:42:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42248 "EHLO
+	id S1161296Ab2JXVoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:44:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161224Ab2JXVmc (ORCPT
+	with ESMTP id S1161217Ab2JXVon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:42:32 -0400
-Date: Wed, 24 Oct 2012 14:42:30 -0700
+	Wed, 24 Oct 2012 17:44:43 -0400
+Date: Wed, 24 Oct 2012 14:44:42 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org, xemul@parallels.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, jmorris@namei.org,
-        cmetcalf@tilera.com, joe.korty@ccur.com, dhowells@redhat.com,
-        dledford@redhat.com, viro@zeniv.linux.org.uk,
-        kosaki.motohiro@jp.fujitsu.com, linux-api@vger.kernel.org,
-        serue@us.ibm.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        devel@openvz.org, mtk.manpages@gmail.com
-Subject: Re: [RFC PATCH v8 0/5] IPC: checkpoint/restore in userspace
- enhancements
-Message-Id: <20121024144230.a932f2e9.akpm@linux-foundation.org>
-In-Reply-To: <20121024151555.5642.79086.stgit@localhost.localdomain>
-References: <20121024151555.5642.79086.stgit@localhost.localdomain>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>
+Subject: Re: [RESEND][PATCH] gen_init_cpio: avoid stack overflow when
+ expanding
+Message-Id: <20121024144442.6253965d.akpm@linux-foundation.org>
+In-Reply-To: <CAGXu5jK2kNgccbbuadjUFn+bbj9_02HbQfjUDeL4sNz1GWtHEQ@mail.gmail.com>
+References: <20121024205756.GA12419@www.outflux.net>
+	<20121024140227.299041a9.akpm@linux-foundation.org>
+	<CAGXu5jK2kNgccbbuadjUFn+bbj9_02HbQfjUDeL4sNz1GWtHEQ@mail.gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,28 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 19:34:51 +0400
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
+On Wed, 24 Oct 2012 14:33:02 -0700
+Kees Cook <keescook@chromium.org> wrote:
 
-> This respin of the patch set was significantly reworked. Most part of new API
-> was replaced by sysctls (by one per messages, semaphores and shared memory),
-> allowing to preset desired id for next new IPC object.
+> On Wed, Oct 24, 2012 at 2:02 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Wed, 24 Oct 2012 13:57:56 -0700
+> > Kees Cook <keescook@chromium.org> wrote:
+> >
+> >> Fix possible overflow of the buffer used for expanding environment
+> >> variables when building file list.
+> >>
+> >> $ cat usr/crash.list
+> >> file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
+> >> $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
+> >> *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+> >>
+> >> This also replaces the space-indenting with tabs.
+> >>
+> >> Patch based on existing fix extracted from grsecurity.
+> >>
+> >> ...
+> >>
+> >> Cc: stable@vger.kernel.org
+> >
+> > Why did you feel we need to backport this to -stable?
 > 
-> This patch set is aimed to provide additional functionality for all IPC
-> objects, which is required for migration of these objects by user-space
-> checkpoint/restore utils (CRIU).
-> 
-> The main problem here was impossibility to set up object id. This patch set
-> solves the problem by adding new sysctls for preset of desired id for new IPC
-> object.
-> 
-> Another problem was to peek messages from queues without deleting them.
-> This was achived by introducing of new MSG_COPY flag for sys_msgrcv(). If
-> MSG_COPY flag is set, then msgtyp is interpreted as message number.
+> It's an extremely hard to hit security issue, but it's a security fix
+> regardless. I won't cry if it doesn't go to stable, but it seems a
+> trivial fix, so I included it for stable.
 
-OK, thanks, I grabbed these.  They're not the worst c/r patches I've
-ever seen ;)
+Well, I do think that a description of the user impact of the bug
+should be included in the changelog so that poor old Greg can work out
+why we sent it at him.
 
-I'm not seeing any evidence that anyone else has reviewed or tested
-these?
-
+If you can suggest some suitable text I can copy-n-slurp that into the
+changelog.
