@@ -1,136 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935116Ab2JXOqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:46:47 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:49947 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935070Ab2JXOpx (ORCPT
+	id S964920Ab2JXOrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:47:14 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:43689 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935125Ab2JXOrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:45:53 -0400
-Message-ID: <5087FF0C.7050303@free-electrons.com>
-Date: Wed, 24 Oct 2012 16:45:32 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	Wed, 24 Oct 2012 10:47:10 -0400
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Lior Amsalem <alior@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and config
- update
-References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com> <20121024140801.GB11837@lunn.ch>
-In-Reply-To: <20121024140801.GB11837@lunn.ch>
-X-Enigmail-Version: 1.4.4
+In-Reply-To: <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
+Date: Wed, 24 Oct 2012 20:17:10 +0530
+Message-ID: <CAKohpom0EOAuahLQoNr1ODbTT-Trv3eE0-oBEmbbdbiKBJPCng@mail.gmail.com>
+Subject: Re: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal properties
+ and platform data.
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 04:08 PM, Andrew Lunn wrote:
-> On Wed, Oct 24, 2012 at 03:49:21PM +0200, Gregory CLEMENT wrote:
->> From: Lior Amsalem <alior@marvell.com>
->>
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->> Signed-off-by: Lior Amsalem <alior@marvell.com>
->> ---
->>  arch/arm/boot/dts/armada-370-db.dts  |    3 +++
->>  arch/arm/boot/dts/armada-370-xp.dtsi |   10 ++++++++++
->>  arch/arm/boot/dts/armada-xp-db.dts   |    3 +++
->>  arch/arm/configs/mvebu_defconfig     |    7 +++++++
->>  4 files changed, 23 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/armada-370-db.dts b/arch/arm/boot/dts/armada-370-db.dts
->> index 4a31b03..2a2aa75 100644
->> --- a/arch/arm/boot/dts/armada-370-db.dts
->> +++ b/arch/arm/boot/dts/armada-370-db.dts
->> @@ -34,5 +34,8 @@
->>  			clock-frequency = <200000000>;
->>  			status = "okay";
->>  		};
->> +		sata@d00a0000 {
->> +			status = "okay";
->> +		};
->>  	};
->>  };
->> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
->> index 94b4b9e..3f08233 100644
->> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
->> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
->> @@ -69,6 +69,16 @@
->>  			compatible = "marvell,armada-addr-decoding-controller";
->>  			reg = <0xd0020000 0x258>;
->>  		};
->> +
->> +		sata@d00a0000 {
->> +                        compatible = "marvell,orion-sata";
->> +                        reg = <0xd00a0000 0x2400>;
->> +                        interrupts = <55>;
->> +                        nr-ports = <2>;
->> +			clocks = <&coreclk 0>;//,  <&coreclk 0>;
->> +                        status = "disabled";
->> +		};
->> +
->>  	};
->>  };
->>  
->> diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
->> index b1fc728..b0db9a3 100644
->> --- a/arch/arm/boot/dts/armada-xp-db.dts
->> +++ b/arch/arm/boot/dts/armada-xp-db.dts
->> @@ -46,5 +46,8 @@
->>  			clock-frequency = <250000000>;
->>  			status = "okay";
->>  		};
->> +		sata@d00a0000 {
->> +			status = "okay";
->> +		};
->>  	};
->>  };
-> 
-> Hi Gregory
-> 
-> Should there be some pinctrl setup somewhere, to ensure the pins used
-> for SATA are really setup up for SATA?
+On 24 October 2012 17:28, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
+> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
+>
+> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+> also adds the platform data to support the old fashion.
+>
+> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+> ---
+>  .../devicetree/bindings/thermal/db8500-thermal.txt | 40 ++++++++++++++
 
-Yes you're right we should not depend of the bootloader configuration.
+It must be included in patch 5/6
 
-> 
-> Also, for kirkwood, the number of SATA ports varies. So we don't
-> define it in the base kirkwood.dtsi and leave each board to set it.
-> Do we want to be consistent between kirkwood and 370/xp?
+>  arch/arm/boot/dts/dbx5x0.dtsi                      | 14 +++++
+>  arch/arm/boot/dts/snowball.dts                     | 31 +++++++++++
+>  arch/arm/mach-ux500/board-mop500.c                 | 64 ++++++++++++++++++++++
+>  4 files changed, 149 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+>
+> diff --git a/Documentation/devicetree/bindings/thermal/db8500-thermal.txt b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+> new file mode 100644
+> index 0000000..80d53e6
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
+> @@ -0,0 +1,40 @@
+> +* ST-Ericsson DB8500 Thermal
+> +
+> +** Thermal node properties:
+> +
+> +- compatible : "stericsson,db8500-thermal";
+> +- reg : address range of the thermal sensor registers;
+> +- interrupts : interrupts generated form PRCMU;
+> +- interrupt-names : "IRQ_HOTMON_LOW" and "IRQ_HOTMON_HIGH";
+> +- num-trips : number of total trip points;
+> +- tripN-temp : temperature of trip point N;
+> +- tripN-type : type of trip point N, should be one of "active" "passive" "hot" "critical";
+> +- tripN-cdev-num : number of the cooling devices which can be bound to trip point N;
+> +- tripN-cdev-nameM : name of the No. M cooling device of trip point N;
+> +
+> +Usually the num-trips and tripN-*** are seperated in board related dts files.
 
-Yes sure. I will move it from dtsi to dts.
+s/seperated/separated
 
-> 
-> Thanks
->     Andrew
-> 
+> +
+> +Example:
+> +thermal@801573c0 {
+> +       compatible = "stericsson,db8500-thermal";
+> +       reg = <0x801573c0 0x40>;
+> +       interrupts = <21 0x4>, <22 0x4>;
+> +       interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
+> +
+> +       num-trips = <3>;
+> +
+> +       trip0-temp = <70000>;
+> +       trip0-type = "active";
+> +       trip0-cdev-num = <1>;
+> +       trip0-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +       trip1-temp = <75000>;
+> +       trip1-type = "active";
+> +       trip1-cdev-num = <2>;
+> +       trip1-cdev-name0 = "thermal-cpufreq-0";
+> +       trip1-cdev-name1 = "thermal-fan";
+> +
+> +       trip2-temp = <85000>;
+> +       trip2-type = "critical";
+> +       trip2-cdev-num = <0>;
+> +}
+> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+> index 748ba7a..949edc2 100644
+> --- a/arch/arm/boot/dts/dbx5x0.dtsi
+> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
+> @@ -203,6 +203,14 @@
+>                                 reg = <0x80157450 0xC>;
+>                         };
+>
+> +                       thermal@801573c0 {
+> +                               compatible = "stericsson,db8500-thermal";
+> +                               reg = <0x801573c0 0x40>;
+> +                               interrupts = <21 0x4>, <22 0x4>;
+> +                               interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
+> +                               status = "disabled";
+> +                        };
+> +
+>                         db8500-prcmu-regulators {
+>                                 compatible = "stericsson,db8500-prcmu-regulator";
+>
+> @@ -645,5 +653,11 @@
+>                         ranges = <0 0x50000000 0x4000000>;
+>                         status = "disabled";
+>                 };
+> +
+> +               cpufreq-cooling {
+> +                       compatible = "stericsson,db8500-cpufreq-cooling";
+> +                       status = "disabled";
+> +                };
+> +
+>         };
+>  };
+> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+> index 702c0ba..c6f85f0 100644
+> --- a/arch/arm/boot/dts/snowball.dts
+> +++ b/arch/arm/boot/dts/snowball.dts
+> @@ -99,6 +99,33 @@
+>                         status = "okay";
+>                 };
+>
+> +               prcmu@80157000 {
+> +                       thermal@801573c0 {
+> +                               num-trips = <4>;
+> +
+> +                               trip0-temp = <70000>;
+> +                               trip0-type = "active";
+> +                               trip0-cdev-num = <1>;
+> +                               trip0-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +                               trip1-temp = <75000>;
+> +                               trip1-type = "active";
+> +                               trip1-cdev-num = <1>;
+> +                               trip1-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +                               trip2-temp = <80000>;
+> +                               trip2-type = "active";
+> +                               trip2-cdev-num = <1>;
+> +                               trip2-cdev-name0 = "thermal-cpufreq-0";
+> +
+> +                               trip3-temp = <85000>;
+> +                               trip3-type = "critical";
+> +                               trip3-cdev-num = <0>;
+> +
+> +                               status = "okay";
+> +                        };
+> +               };
+> +
+>                 external-bus@50000000 {
+>                         status = "okay";
+>
+> @@ -183,5 +210,9 @@
+>                                 reg = <0x33>;
+>                         };
+>                 };
+> +
+> +               cpufreq-cooling {
+> +                       status = "okay";
+> +               };
+>         };
+>  };
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+> index 416d436..b03216b 100644
+> --- a/arch/arm/mach-ux500/board-mop500.c
+> +++ b/arch/arm/mach-ux500/board-mop500.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/io.h>
+>  #include <linux/i2c.h>
+>  #include <linux/platform_data/i2c-nomadik.h>
+> +#include <linux/platform_data/db8500_thermal.h>
+>  #include <linux/gpio.h>
+>  #include <linux/amba/bus.h>
+>  #include <linux/amba/pl022.h>
+> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
+>  };
+>
+>  /*
+> + * Thermal Sensor
+> + */
+> +
+> +static struct resource db8500_thsens_resources[] = {
+> +       {
+> +               .name = "IRQ_HOTMON_LOW",
+> +               .start  = IRQ_PRCMU_HOTMON_LOW,
+> +               .end    = IRQ_PRCMU_HOTMON_LOW,
+> +               .flags  = IORESOURCE_IRQ,
+> +       },
+> +       {
+
+I prefer }, {
+
+> +               .name = "IRQ_HOTMON_HIGH",
+> +               .start  = IRQ_PRCMU_HOTMON_HIGH,
+> +               .end    = IRQ_PRCMU_HOTMON_HIGH,
+> +               .flags  = IORESOURCE_IRQ,
+> +       },
+> +};
+> +
+> +static struct db8500_thsens_platform_data db8500_thsens_data = {
+> +       .trip_points[0] = {
+> +               .temp = 70000,
+> +               .type = THERMAL_TRIP_ACTIVE,
+> +               .cdev_name = {
+> +                       [0] = "thermal-cpufreq-0",
+> +               },
+> +       },
+> +       .trip_points[1] = {
+> +               .temp = 75000,
+> +               .type = THERMAL_TRIP_ACTIVE,
+> +               .cdev_name = {
+> +                       [0] = "thermal-cpufreq-0",
+> +               },
+> +       },
+> +       .trip_points[2] = {
+> +               .temp = 80000,
+> +               .type = THERMAL_TRIP_ACTIVE,
+> +               .cdev_name = {
+> +                       [0] = "thermal-cpufreq-0",
+> +               },
+> +       },
+> +       .trip_points[3] = {
+> +               .temp = 85000,
+> +               .type = THERMAL_TRIP_CRITICAL,
+> +       },
+> +       .num_trips = 4,
+> +};
+> +
+> +static struct platform_device u8500_thsens_device = {
+> +       .name           = "db8500-thermal",
+> +       .resource       = db8500_thsens_resources,
+> +       .num_resources  = ARRAY_SIZE(db8500_thsens_resources),
+> +       .dev    = {
+> +               .platform_data  = &db8500_thsens_data,
+> +       },
+> +};
+> +
+> +static struct platform_device u8500_cpufreq_cooling_device = {
+> +       .name           = "db8500-cpufreq-cooling",
+> +};
+> +
+> +/*
+>   * TPS61052
+>   */
+>
+> @@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
+>         &snowball_key_dev,
+>         &snowball_sbnet_dev,
+>         &snowball_gpio_en_3v3_regulator_dev,
+> +       &u8500_thsens_device,
+> +       &u8500_cpufreq_cooling_device,
+>  };
+>
+>  static void __init mop500_init_machine(void)
+> --
+> 1.7.11.3
+>
+>
 > _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
