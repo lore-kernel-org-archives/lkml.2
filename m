@@ -1,256 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965001Ab2JXBCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:02:07 -0400
-Received: from exprod6og112.obsmtp.com ([64.18.1.29]:55418 "EHLO
-	exprod6og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933666Ab2JXBCD (ORCPT
+	id S965061Ab2JXBCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:02:33 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:59925 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933666Ab2JXBCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:02:03 -0400
-Message-ID: <50873DFA.5010205@adobe.com>
-Date: Tue, 23 Oct 2012 18:01:46 -0700
-From: "Paton J. Lewis" <palewis@adobe.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:15.0) Gecko/20120824 Thunderbird/15.0
+	Tue, 23 Oct 2012 21:02:30 -0400
+Message-ID: <50873E1F.2050009@gmail.com>
+Date: Wed, 24 Oct 2012 09:02:23 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "Paton J. Lewis" <palewis@adobe.com>
-CC: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Holland <pholland@adobe.com>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
- app.
-References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <5086D27F.1000007@adobe.com>
-In-Reply-To: <5086D27F.1000007@adobe.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: YingHang Zhu <casualfisher@gmail.com>
+CC: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com> <508699D3.9040509@gmail.com> <CAA9v8mGMa3SDD1OLTG_wdhCGx7K-0kvSV1+MRi9uCGTz6zZaLg@mail.gmail.com> <CAA9v8mGGE2sPW1hv-zSaFEq4PD2DZES=zYTJ=aeY1CVe8sXwyw@mail.gmail.com>
+In-Reply-To: <CAA9v8mGGE2sPW1hv-zSaFEq4PD2DZES=zYTJ=aeY1CVe8sXwyw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/12 6:26 AM, Michael Kerrisk (man-pages) wrote:
-> On 10/23/12 10:23 AM, Paton J. Lewis wrote:
->> [Re-sending without HTML formatting; all vger.kernel.org destination
->> addresses bounced my original response.]
+On 10/23/2012 09:41 PM, YingHang Zhu wrote:
+> Sorry for the annoying, I forgot ccs in the previous mail.
+> Thanks,
+>           Ying Zhu
+> Hi Chen,
+>
+> On Tue, Oct 23, 2012 at 9:21 PM, Ni zhan Chen <nizhan.chen@gmail.com> wrote:
+>> On 10/23/2012 08:46 PM, Ying Zhu wrote:
+>>> Hi,
+>>>     Recently we ran into the bug that an opened file's ra_pages does not
+>>> synchronize with it's backing device's when the latter is changed
+>>> with blockdev --setra, the application needs to reopen the file
+>>> to know the change, which is inappropriate under our circumstances.
 >>
->> On 10/16/12 8:12 AM, Michael Kerrisk (man-pages) wrote:
->>> [CC += linux-api@]
+>> Could you tell me in which function do this synchronize stuff?
+> With this patch we use bdi.ra_pages directly, so change bdi.ra_pages also
+> change an opened file's ra_pages.
 >>
->> Thank you; is this sufficient to coordinate the required changes to the
->> glibc version of epoll.h?
->
-> I'm not sure. With a bit of luck, someone at glibc might monitor that list.
->
->>> Hello Paton,
->>>
->>> On Thu, Aug 23, 2012 at 11:15 PM, Paton J. Lewis <palewis@adobe.com>
->>> wrote:
->>>> From: "Paton J. Lewis" <palewis@adobe.com>
->>>>
->>>> Enhanced epoll_ctl to support EPOLL_CTL_DISABLE, which disables an
->>>> epoll item.
->>>> If epoll_ctl doesn't return -EBUSY in this case, it is then safe to
->>>> delete the
->>>> epoll item in a multi-threaded environment. Also added a new
->>>> test_epoll self-
->>>> test app to both demonstrate the need for this feature and test it.
->>>
->>> (There's a lot of background missing from this version of the patch
->>> that was included in the previous version
->>> [http://thread.gmane.org/gmane.linux.kernel/1311457]. It helps to
->>> include the full rationale with a revised patch--best not to assume
->>> that someone has the context of past mails when reading a revised
->>> patch.)
+>>> This bug is also mentioned in scst (generic SCSI target subsystem for
+>>> Linux)'s
+>>> README file.
+>>>     This patch tries to unify the ra_pages in struct file_ra_state
+>>> and struct backing_dev_info. Basically current readahead algorithm
+>>> will ramp file_ra_state.ra_pages up to bdi.ra_pages once it detects the
 >>
->> I was trying to present the same information in a more concise manner. I
->> was hoping that the test application would provide a clearer description
->> of the problem and the solution. However, I can include some of my
->> original prose from the v1 email in the next revision's email if you
->> think that would be helpful.
->
-> Yes, it would be a good idea.
->
->>> I've taken a look at this patch as it currently stands in 3.7-rc1, and
->>> done a bit of testing. (By the way, the test program
->>> tools/testing/selftests/epoll/test_epoll.c does not compile...)
+>> You mean ondemand readahead algorithm will do this? I don't think so.
+>> file_ra_state_init only called in btrfs path, correct?
+> No, it's also called in do_dentry_open.
 >>
->> Sorry, the test program compiled against commit
->> ecca5c3acc0d0933d89abc44e60afb0cc8170e35 from
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git, which
->> I believe was the current head commit when I emailed the v2 patch in
->> August. I thought that git's format-patch command would include the
->> necessary information so people could see which commit the diff was
->> created from. Should I be pulling from a different repository or working
->> on a different branch? Since this is my first patch submission and I
->> have essentially zero experience with git, I would appreciate any
->> guidance you could provide here.
->
-> I'm not expert enough to provide guidance, unfortunately. I'd just
-> make sure that the program gets updated with any future patch
-> revision.
->
-> I should have added that the changes to fix the program were fairly
-> trivial (but they involved a misnamed variable--it looks like you did
-> a scan renaming a variable but didn't catch all instances, so I'm not
-> sure how the test program could have ever compiled in the form that
-> was committed), and I did get it going.
+>>> read mode is sequential. Then all files sharing the same backing device
+>>> have the same max value bdi.ra_pages set in file_ra_state.
+>>
+>> why remove file_ra_state? If one file is read sequential and another file is
+>> read ramdom, how can use the global bdi.ra_pages to indicate the max
+>> readahead window of each file?
+> This patch does not remove file_ra_state, an file's readahead window
+> is determined
+> by it's backing device.
 
-Sorry, that error arose from my lack of experience with git and its 
-format-patch command. I created the patch without first committing the 
-final fix to my branch.
+As Dave said, backing device readahead window doesn't tend to change 
+dynamically, but file readahead window does, it will change when 
+sequential read, random read, thrash, interleaved read and so on occur.
 
->>> There are one or two places where the behavior seems a little strange,
->>> so I have a question or two at the end of this mail. But other than
->>> that, I want to check my understanding so that the interface can be
->>> correctly documented.
->>>
->>> Just to go though my understanding, the problem is the following
->>> scenario in a multithreaded application:
->>>
->>> 1. Multiple threads are performing epoll_wait() operations,
->>>     and maintaining a user-space cache that contains information
->>>     corresponding to each file descriptor being monitored by
->>>     epoll_wait().
->>>
->>> 2. At some point, a thread wants to delete (EPOLL_CTL_DEL)
->>>     a file descriptor from the epoll interest list, and
->>>     delete the corresponding record from the user-space cache.
->>>
->>> 3. The problem with (2) is that some other thread may have
->>>     previously done an epoll_wait() that retrieved information
->>>     about the fd in question, and may be in the middle of using
->>>     information in the cache that relates to that fd. Thus,
->>>     there is a potential race.
->>>
->>> 4. The race can't solved purely in user space, because doing
->>>     so would require applying a mutex across the epoll_wait()
->>>     call, which would of course blow thread concurrency.
->>>
->>> Right?
 >>
->> Yes, that is an accurate description of the problem.
->
-> Okay.
->
->>> Your solution is the EPOLL_CTL_DISABLE operation. I want to
->>> confirm my understanding about how to use this flag, since
->>> the description that has accompanied the patches so far
->>> has been a bit sparse
->>>
->>> 0. In the scenario you're concerned about, deleting a file
->>>     descriptor means (safely) doing the following:
->>>     (a) Deleting the file descriptor from the epoll interest list
->>>         using EPOLL_CTL_DEL
->>>     (b) Deleting the corresponding record in the user-space cache
->>>
->>> 1. It's only meaningful to use this EPOLL_CTL_DISABLE in
->>>     conjunction with EPOLLONESHOT.
->>>
->>> 2. Using EPOLL_CTL_DISABLE without using EPOLLONESHOT in
->>>     conjunction is a logical error.
->>>
->>> 3. The correct way to code multithreaded applications using
->>>     EPOLL_CTL_DISABLE and EPOLLONESHOT is as follows:
->>>
->>>     a. All EPOLL_CTL_ADD and EPOLL_CTL_MOD operations should
->>>        should EPOLLONESHOT.
->>>
->>>     b. When a thread wants to delete a file descriptor, it
->>>        should do the following:
->>>
->>>        [1] Call epoll_ctl(EPOLL_CTL_DISABLE)
->>>        [2] If the return status from epoll_ctl(EPOLL_CTL_DISABLE)
->>>            was zero, then the file descriptor can be safely
->>>            deleted by the thread that made this call.
->>>        [3] If the epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY,
->>>            then the descriptor is in use. In this case, the calling
->>>            thread should set a flag in the user-space cache to
->>>            indicate that the thread that is using the descriptor
->>>            should perform the deletion operation.
->>>
->>> Is all of the above correct?
+>>>     Applying this means the flags POSIX_FADV_NORMAL and
+>>> POSIX_FADV_SEQUENTIAL
+>>> in fadivse will only set file reading mode without signifying the
+>>> max readahead size of the file. The current apporach adds no additional
+>>> overhead in read IO path, IMHO is the simplest solution.
+>>> Any comments are welcome, thanks in advance.
 >>
->> Yes, that is correct.
->
-> Okay
->
+>> Could you show me how you test this patch?
+> This patch brings no perfmance gain, just fixs some functional bugs.
+> By reading a 500MB file, the default max readahead size of the
+> backing device was 128KB, after applying this patch, the read file's
+> max ra_pages
+> changed when I tuned the device's read ahead size with blockdev.
 >>
->>> The implementation depends on checking on whether
->>> (events & ~EP_PRIVATE_BITS) == 0
->>> This replies on the fact that EPOLL_CTL_AD and EPOLL_CTL_MOD always
->>> set EPOLLHUP and EPOLLERR in the 'events' mask, and EPOLLONESHOT
->>> causes those flags (as well as all others in ~EP_PRIVATE_BITS) to be
->>> cleared.
+>>> Thanks,
+>>>          Ying Zhu
 >>>
->>> A corollary to the previous paragraph is that using EPOLL_CTL_DISABLE
->>> is only useful in conjunction with EPOLLONESHOT. However, as things
->>> stand, one can use EPOLL_CTL_DISABLE on a file descriptor that does
->>> not have EPOLLONESHOT set in 'events' This results in the following
->>> (slightly surprising) behavior:
+>>> Signed-off-by: Ying Zhu <casualfisher@gmail.com>
+>>> ---
+>>>    include/linux/fs.h |    1 -
+>>>    mm/fadvise.c       |    2 --
+>>>    mm/filemap.c       |   17 +++++++++++------
+>>>    mm/readahead.c     |    8 ++++----
+>>>    4 files changed, 15 insertions(+), 13 deletions(-)
 >>>
->>> (a) The first call to epoll_ctl(EPOLL_CTL_DISABLE) returns 0
->>>      (the indicator that the file descriptor can be safely deleted).
->>> (b) The next call to epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY.
->>>
->>> This doesn't seem particularly useful, and in fact is probably an
->>> indication that the user made a logic error: they should only be using
->>> epoll_ctl(EPOLL_CTL_DISABLE) on a file descriptor for which
->>> EPOLLONESHOT was set in 'events'. If that is correct, then would it
->>> not make sense to return an error to user space for this case?
+>>> diff --git a/include/linux/fs.h b/include/linux/fs.h
+>>> index 17fd887..36303a5 100644
+>>> --- a/include/linux/fs.h
+>>> +++ b/include/linux/fs.h
+>>> @@ -991,7 +991,6 @@ struct file_ra_state {
+>>>          unsigned int async_size;        /* do asynchronous readahead when
+>>>                                             there are only # of pages ahead
+>>> */
+>>>    -     unsigned int ra_pages;          /* Maximum readahead window */
+>>>          unsigned int mmap_miss;         /* Cache miss stat for mmap
+>>> accesses */
+>>>          loff_t prev_pos;                /* Cache last read() position */
+>>>    };
+>>> diff --git a/mm/fadvise.c b/mm/fadvise.c
+>>> index 469491e..75e2378 100644
+>>> --- a/mm/fadvise.c
+>>> +++ b/mm/fadvise.c
+>>> @@ -76,7 +76,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
+>>> loff_t len, int advice)
+>>>          switch (advice) {
+>>>          case POSIX_FADV_NORMAL:
+>>> -               file->f_ra.ra_pages = bdi->ra_pages;
+>>>                  spin_lock(&file->f_lock);
+>>>                  file->f_mode &= ~FMODE_RANDOM;
+>>>                  spin_unlock(&file->f_lock);
+>>> @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset,
+>>> loff_t len, int advice)
+>>>                  spin_unlock(&file->f_lock);
+>>>                  break;
+>>>          case POSIX_FADV_SEQUENTIAL:
+>>> -               file->f_ra.ra_pages = bdi->ra_pages * 2;
+>>>                  spin_lock(&file->f_lock);
+>>>                  file->f_mode &= ~FMODE_RANDOM;
+>>>                  spin_unlock(&file->f_lock);
+>>> diff --git a/mm/filemap.c b/mm/filemap.c
+>>> index a4a5260..e7e4409 100644
+>>> --- a/mm/filemap.c
+>>> +++ b/mm/filemap.c
+>>> @@ -1058,11 +1058,15 @@ EXPORT_SYMBOL(grab_cache_page_nowait);
+>>>     * readahead(R+4...B+3) => bang => read(R+4) => read(R+5) => ......
+>>>     *
+>>>     * It is going insane. Fix it by quickly scaling down the readahead
+>>> size.
+>>> + * It's hard to estimate how the bad sectors lay out, so to be
+>>> conservative,
+>>> + * set the read mode in random.
+>>>     */
+>>>    static void shrink_readahead_size_eio(struct file *filp,
+>>>                                          struct file_ra_state *ra)
+>>>    {
+>>> -       ra->ra_pages /= 4;
+>>> +       spin_lock(&filp->f_lock);
+>>> +       filp->f_mode |= FMODE_RANDOM;
+>>> +       spin_unlock(&filp->f_lock);
+>>>    }
+>>>      /**
+>>> @@ -1527,12 +1531,12 @@ static void do_sync_mmap_readahead(struct
+>>> vm_area_struct *vma,
+>>>          /* If we don't want any read-ahead, don't bother */
+>>>          if (VM_RandomReadHint(vma))
+>>>                  return;
+>>> -       if (!ra->ra_pages)
+>>> +       if (!mapping->backing_dev_info->ra_pages)
+>>>                  return;
+>>>          if (VM_SequentialReadHint(vma)) {
+>>> -               page_cache_sync_readahead(mapping, ra, file, offset,
+>>> -                                         ra->ra_pages);
+>>> +               page_cache_sync_readahead(mapping, ra, file, offset,
+>>> +
+>>> mapping->backing_dev_info->ra_pages);
+>>>                  return;
+>>>          }
+>>>    @@ -1550,7 +1554,7 @@ static void do_sync_mmap_readahead(struct
+>>> vm_area_struct *vma,
+>>>          /*
+>>>           * mmap read-around
+>>>           */
+>>> -       ra_pages = max_sane_readahead(ra->ra_pages);
+>>> +       ra_pages =
+>>> max_sane_readahead(mapping->backing_dev_info->ra_pages);
+>>>          ra->start = max_t(long, 0, offset - ra_pages / 2);
+>>>          ra->size = ra_pages;
+>>>          ra->async_size = ra_pages / 4;
+>>> @@ -1576,7 +1580,8 @@ static void do_async_mmap_readahead(struct
+>>> vm_area_struct *vma,
+>>>                  ra->mmap_miss--;
+>>>          if (PageReadahead(page))
+>>>                  page_cache_async_readahead(mapping, ra, file,
+>>> -                                          page, offset, ra->ra_pages);
+>>> +                                          page, offset,
+>>> +
+>>> mapping->backing_dev_info->ra_pages);
+>>>    }
+>>>      /**
+>>> diff --git a/mm/readahead.c b/mm/readahead.c
+>>> index ea8f8fa..6ea5999 100644
+>>> --- a/mm/readahead.c
+>>> +++ b/mm/readahead.c
+>>> @@ -27,7 +27,6 @@
+>>>    void
+>>>    file_ra_state_init(struct file_ra_state *ra, struct address_space
+>>> *mapping)
+>>>    {
+>>> -       ra->ra_pages = mapping->backing_dev_info->ra_pages;
+>>>          ra->prev_pos = -1;
+>>>    }
+>>>    EXPORT_SYMBOL_GPL(file_ra_state_init);
+>>> @@ -400,7 +399,8 @@ ondemand_readahead(struct address_space *mapping,
+>>>                     bool hit_readahead_marker, pgoff_t offset,
+>>>                     unsigned long req_size)
+>>>    {
+>>> -       unsigned long max = max_sane_readahead(ra->ra_pages);
+>>> +       struct backing_dev_info *bdi = mapping->backing_dev_info;
+>>> +       unsigned long max = max_sane_readahead(bdi->ra_pages);
+>>>          /*
+>>>           * start of file
+>>> @@ -507,7 +507,7 @@ void page_cache_sync_readahead(struct address_space
+>>> *mapping,
+>>>                                 pgoff_t offset, unsigned long req_size)
+>>>    {
+>>>          /* no read-ahead */
+>>> -       if (!ra->ra_pages)
+>>> +       if (!mapping->backing_dev_info->ra_pages)
+>>>                  return;
+>>>          /* be dumb */
+>>> @@ -543,7 +543,7 @@ page_cache_async_readahead(struct address_space
+>>> *mapping,
+>>>                             unsigned long req_size)
+>>>    {
+>>>          /* no read-ahead */
+>>> -       if (!ra->ra_pages)
+>>> +       if (!mapping->backing_dev_info->ra_pages)
+>>>                  return;
+>>>          /*
 >>
->> Good point. I've implemented and tested your suggested change, and I've
->> updated the test application to cover that case. I will soon submit a
->> revised patch.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 >
-> I suppose that I have a concern that goes in the other direction. Is
-> there not some other solution possible that doesn't require the use of
-> EPOLLONESHOT? It seems overly restrictive to require that the caller
-> must employ this flag, and imposes the burden that the caller must
-> re-enable monitoring after each event.
->
-> Does a solution like the following (with no requirement for EPOLLONESHOT) work?
->
-> 0. Implement an epoll_ctl() operation EPOLL_CTL_XXX
->    where the name XXX might be chosen based on the decision
->    in 4(a).
-> 1. EPOLL_CTL_XXX employs a private flag, EPOLLUSED, in the
->    per-fd events mask in the ready list. By default,
->    that flag is off.
-> 2. epoll_wait() always clears the EPOLLUSED flag if a
->    file descriptor is found to be ready.
-> 3. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
->    flag is NOT set, then
->         a) it sets the EPOLLUSED flag
->         b) It disables I/O events (as per EPOLL_CTL_DISABLE)
->            (I'm not 100% sure if this is necesary).
->         c) it returns EBUSY to the caller
-> 4. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
->    flag IS set, then it
->         a) either deletes the fd or disables events for the fd
->            (the choice here is a matter of design taste, I think;
->            deletion has the virtue of simplicity; disabling provides
->            the option to re-enable the fd later, if desired)
->         b) returns 0 to the caller.
->
-> All of the above with suitable locking around the user-space cache.
->
-> Cheers,
->
-> Michael
-
-I don't believe that proposal will solve the problem. Consider the case 
-where a worker thread has just executed epoll_wait and is about to 
-execute the next line of code (which will access the data associated 
-with the fd receiving the event). If the deletion thread manages to call 
-epoll_ctl(EPOLL_CTL_XXX) for that fd twice in a row before the worker 
-thread is able to execute the next statement, then the deletion thread 
-will mistakenly conclude that it is safe to destroy the data that the 
-worker thread is about to access.
-
-Pat
 
