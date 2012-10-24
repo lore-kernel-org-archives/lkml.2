@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab2JXKIt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:08:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33189 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754218Ab2JXKIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:08:47 -0400
-Date: Wed, 24 Oct 2012 13:02:55 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH] Revert "serial: omap: fix software flow control"
-Message-ID: <20121024100254.GG5665@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350396562-32579-1-git-send-email-balbi@ti.com>
- <20121016151357.GN15569@atomide.com>
+	id S964797Ab2JXKI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:08:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55250 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758162Ab2JXKIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 06:08:52 -0400
+Date: Wed, 24 Oct 2012 03:07:34 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-3fded963cdae12ff891a55efc866437506c3f912@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, jolsa@redhat.com, fweisbec@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com, jolsa@redhat.com
+In-Reply-To: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
+References: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Fix PMU object alias initialization
+Git-Commit-ID: 3fded963cdae12ff891a55efc866437506c3f912
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lHGcFxmlz1yfXmOs"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20121016151357.GN15569@atomide.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 03:07:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---lHGcFxmlz1yfXmOs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  3fded963cdae12ff891a55efc866437506c3f912
+Gitweb:     http://git.kernel.org/tip/3fded963cdae12ff891a55efc866437506c3f912
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 10 Oct 2012 14:53:16 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Oct 2012 10:41:26 +0200
 
-Hi Greg,
+perf tools: Fix PMU object alias initialization
 
-On Tue, Oct 16, 2012 at 08:13:59AM -0700, Tony Lindgren wrote:
-> * Felipe Balbi <balbi@ti.com> [121016 07:16]:
-> > This reverts commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6
-> > (serial: omap: fix software flow control).
-> >=20
-> > As Russell has pointed out, that commit isn't fixing
-> > Software Flow Control at all, and it actually makes
-> > it even more broken.
-> >=20
-> > It was agreed to revert this commit and use Russell's
-> > latest UART patches instead.
-> >=20
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
->=20
-> This seems like the best way to go for the -rc series:
->=20
-> Acked-by: Tony Lindgren <tony@atomide.com>
+The pmu_lookup should return pmus that do not expose the 'events'
+group attribute in sysfs. Also it should fail when any other error
+during 'events' lookup is hit (pmu_aliases fails).
 
-Any chance you can pick this one up for v3.7-rc3 ?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349873598-12583-7-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/util/pmu.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-cheers
-
---=20
-balbi
-
---lHGcFxmlz1yfXmOs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQh7zOAAoJEIaOsuA1yqREI4IQAKVXiIKQc489tzBZannUfi/w
-yfwWLwedUJZKof0kzdM/dKxqZL+qCilL2u0piuKLnuRzH4GQcVPbuXP+AGx9/766
-V+Ljkltz+09hhRTMZWtxvgWYGYHyZNnveVAYh0bp1u+05XRPsiJLuoXnEfZNkWkU
-2bYSMtTo0qcNaTZkkC3+0ea7mJHysLBXqbnbwcLhdhPGndk1uhinKcQfWuGXZSAe
-/p6emuM0OMpPoqpKy/cnQrgccTYP4nMCMI/NW8LiAuswffMu3ohS8GM4ZBsZp6NK
-+4zetajE70xugcIeOvL30VdIIcVdEjMg+tvXOh8hpYSof3FiUPLXIeKUZuEiDyTy
-HdRHV87OQnS5Zk4TqqJNBSuilpzMKxRSRNYDTXlA3BF12BNTvOj+OkrH/2yAQp68
-lT5Er+tsPdvgb328DLFehs92YKmZafdAKZivSjpxn+mqMbVkvQjd46k+OKcztWKS
-/IuQ/JMO9HxSpWEYOftktO851UOVJnWQ5qUeSlRHYVHc8EMwpA/J61eZWfDV8oEA
-2KQhNlQwTxiAWI4Do0MXOkhdBV049pCL4Wk2WOYMpvFRD/dANqTy/vWRkZhYzjNY
-pSQpiOVEatwU8cojWujJWJJVmjC8UdRnA0dveftU3zFLhUHHruomflWoAZzdIekC
-2OPjOtDE1EQKJj0EvkEE
-=4Hvm
------END PGP SIGNATURE-----
-
---lHGcFxmlz1yfXmOs--
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 8a2229d..18e8480 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -164,7 +164,7 @@ static int pmu_aliases(char *name, struct list_head *head)
+ 		 "%s/bus/event_source/devices/%s/events", sysfs, name);
+ 
+ 	if (stat(path, &st) < 0)
+-		return -1;
++		return 0;	 /* no error if 'events' does not exist */
+ 
+ 	if (pmu_aliases_parse(path, head))
+ 		return -1;
+@@ -296,6 +296,9 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 	if (pmu_format(name, &format))
+ 		return NULL;
+ 
++	if (pmu_aliases(name, &aliases))
++		return NULL;
++
+ 	if (pmu_type(name, &type))
+ 		return NULL;
+ 
+@@ -305,8 +308,6 @@ static struct perf_pmu *pmu_lookup(char *name)
+ 
+ 	pmu->cpus = pmu_cpumask(name);
+ 
+-	pmu_aliases(name, &aliases);
+-
+ 	INIT_LIST_HEAD(&pmu->format);
+ 	INIT_LIST_HEAD(&pmu->aliases);
+ 	list_splice(&format, &pmu->format);
