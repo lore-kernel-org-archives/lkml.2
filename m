@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161130Ab2JXUE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:04:57 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:38509 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161051Ab2JXUEy (ORCPT
+	id S935528Ab2JXUGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:06:42 -0400
+Received: from woodbine.london.02.net ([87.194.255.145]:40860 "EHLO
+	woodbine.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935427Ab2JXUGk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:04:54 -0400
-Date: Wed, 24 Oct 2012 15:04:51 -0500
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: [PATCH v4 5/5] zynq: move static peripheral mappings
-Message-ID: <20121024200451.GF6713@beefymiracle.amer.corp.natinst.com>
+	Wed, 24 Oct 2012 16:06:40 -0400
+From: Matthew Leach <matthew@mattleach.net>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org,
+        Martin =?utf-8?Q?P=C3=A4rtel?= <martin.partel@gmail.com>
+Subject: Re: [REGRESSION] uml: signal.c build errors
+References: <87pq48lqut.fsf@mattleach.net>
+	<20121024213919.5543e90b@spider.haslach.nod.at>
+	<87objr3b2z.fsf@mattleach.net>
+	<20121024215445.04d53d0d@spider.haslach.nod.at>
+Date: Wed, 24 Oct 2012 21:06:25 +0100
+In-Reply-To: <20121024215445.04d53d0d@spider.haslach.nod.at> (Richard
+	Weinberger's message of "Wed, 24 Oct 2012 21:54:45 +0200")
+Message-ID: <87hapj3a9q.fsf@mattleach.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121024200222.GA6713@beefymiracle.amer.corp.natinst.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/24/2012 03:04:46 PM,
-	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/24/2012 03:04:46 PM,
-	Serialize complete at 10/24/2012 03:04:46 PM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-24_05:2012-10-24,2012-10-24,1970-01-01 signatures=0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shifting them up into the vmalloc region prevents the following warning,
-when booting a zynq qemu target with more than 512mb of RAM:
+Richard Weinberger <richard@nod.at> writes:
+> Am Wed, 24 Oct 2012 20:48:52 +0100
+> schrieb Matthew Leach <matthew@mattleach.net>:
+>
+>> 
+>> Richard Weinberger <richard@nod.at> writes:
+>> > Am Wed, 24 Oct 2012 00:18:34 +0100
+>> >> I have tracked this down to [1] where, indeed, the type of
+>> >> sig_info is different; the second parameter in signal.c is
+>> >> 'siginfo_t' where as in as-layout.h the second parameter's type is
+>> >> declared as 'struct siginfo'.
+>> >> 
+>> >> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
+>> >
+>> > Looks like we have to revert that commit.
+>> > Moving everything to siginfo_t requires a non-trivial header cleanup
+>> > and may introduce new regressions.
+>> >
+>> > Matthew, does the attached revert patch help?
+>> 
+>> The revert did remove the errors for the compilation of signal.c, so
+>> that seems fine. I still get the following errors, however:
+>> 
+>>   CC      arch/um/os-Linux/sigio.o
+>>   CC      arch/um/os-Linux/signal.o
+>>   CC      arch/um/os-Linux/start_up.o
+>> arch/um/os-Linux/start_up.c: In function ‘check_coredump_limit’:
+>> arch/um/os-Linux/start_up.c:338:16: error: storage size of ‘lim’
+>> isn’t known arch/um/os-Linux/start_up.c:339:2: error: implicit
+>> declaration of function
+>> ‘getrlimit’ [-Werror=implicit-function-declaration]
+>> arch/um/os-Linux/start_up.c:339:22: error: ‘RLIMIT_CORE’ undeclared
+>> (first use in this function) arch/um/os-Linux/start_up.c:339:22:
+>> note: each undeclared identifier is reported only once for each
+>> function it appears in arch/um/os-Linux/start_up.c:347:22: error:
+>> ‘RLIM_INFINITY’ undeclared (first use in this function)
+>> arch/um/os-Linux/start_up.c:338:16: warning: unused variable
+>> ‘lim’ [-Wunused-variable] cc1: some warnings being treated as errors
+>> make[1]: *** [arch/um/os-Linux/start_up.o] Error 1 make: ***
+>> [arch/um/os-Linux] Error 2
+>
+> Does adding
+> #include <sys/time.h>
+> #include <sys/resource.h>
+>
+> to arch/um/os-Linux/start_up.c help?
 
-  BUG: mapping for 0xe0000000 at 0xe0000000 out of vmalloc space
+Adding the above includes and the revert commit did the trick!
 
-In addition, it allows for reuse of these mappings when the proper
-drivers issue requests via ioremap().
-
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-Cc: John Linn <john.linn@xilinx.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/arm/mach-zynq/common.c                |  6 +++---
- arch/arm/mach-zynq/include/mach/zynq_soc.h | 23 +++++++++++++----------
- 2 files changed, 16 insertions(+), 13 deletions(-)
-
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index ba48f06..ba8d14f 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -73,12 +73,12 @@ static struct map_desc io_desc[] __initdata = {
- 	{
- 		.virtual	= TTC0_VIRT,
- 		.pfn		= __phys_to_pfn(TTC0_PHYS),
--		.length		= SZ_4K,
-+		.length		= TTC0_SIZE,
- 		.type		= MT_DEVICE,
- 	}, {
- 		.virtual	= SCU_PERIPH_VIRT,
- 		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
--		.length		= SZ_8K,
-+		.length		= SCU_PERIPH_SIZE,
- 		.type		= MT_DEVICE,
- 	},
- 
-@@ -86,7 +86,7 @@ static struct map_desc io_desc[] __initdata = {
- 	{
- 		.virtual	= UART0_VIRT,
- 		.pfn		= __phys_to_pfn(UART0_PHYS),
--		.length		= SZ_4K,
-+		.length		= UART0_SIZE,
- 		.type		= MT_DEVICE,
- 	},
- #endif
-diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-index 218283a..c6b9b67 100644
---- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
-+++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-@@ -15,27 +15,30 @@
- #ifndef __MACH_XILINX_SOC_H__
- #define __MACH_XILINX_SOC_H__
- 
-+#include <asm/pgtable.h>
-+
- #define PERIPHERAL_CLOCK_RATE		2500000
- 
--/* For now, all mappings are flat (physical = virtual)
-+/* Static peripheral mappings are mapped at the top of the
-+ * vmalloc region
-  */
--#define UART0_PHYS			0xE0000000
--#define UART0_VIRT			UART0_PHYS
-+#define UART0_PHYS		0xE0000000
-+#define UART0_SIZE		SZ_4K
-+#define UART0_VIRT		(VMALLOC_END - UART0_SIZE)
- 
--#define TTC0_PHYS			0xF8001000
--#define TTC0_VIRT			TTC0_PHYS
-+#define TTC0_PHYS		0xF8001000
-+#define TTC0_SIZE		SZ_4K
-+#define TTC0_VIRT		(UART0_VIRT - TTC0_SIZE)
- 
--#define SCU_PERIPH_PHYS			0xF8F00000
--#define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
-+#define SCU_PERIPH_PHYS		0xF8F00000
-+#define SCU_PERIPH_SIZE		SZ_8K
-+#define SCU_PERIPH_VIRT		(TTC0_VIRT - SCU_PERIPH_SIZE)
- 
- /* The following are intended for the devices that are mapped early */
- 
- #define TTC0_BASE			IOMEM(TTC0_VIRT)
- #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
- 
--/*
-- * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
-- */
- #define LL_UART_PADDR	UART0_PHYS
- #define LL_UART_VADDR	UART0_VIRT
- 
--- 
-1.8.0
+Thanks,
+matt
