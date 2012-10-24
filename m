@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934613Ab2JXJoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:44:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54830 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934576Ab2JXJoC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:44:02 -0400
-Date: Wed, 24 Oct 2012 02:42:46 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-p9w5w57ylinrj9zakvhc5zay@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fabio.estevam@freescale.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fabio.estevam@freescale.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sysctl/sched: Fix 'defined but not used' warning
-Git-Commit-ID: f7d07c71748f040a1dc85943245931925b80892f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S934625Ab2JXJoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:44:39 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:55417 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934576Ab2JXJoi convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 24 Oct 2012 05:44:38 -0400
+Message-Id: <5087D4A102000078000A3E23@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 24 Oct 2012 10:44:33 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ian Campbell" <Ian.Campbell@citrix.com>
+Cc: "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH V5] PVH patches for v3.8.
+References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
+ <5087B13402000078000A3CBB@nat28.tlf.novell.com>
+ <1351071279.2237.126.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1351071279.2237.126.camel@zakaz.uk.xensource.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:42:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f7d07c71748f040a1dc85943245931925b80892f
-Gitweb:     http://git.kernel.org/tip/f7d07c71748f040a1dc85943245931925b80892f
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 23 Oct 2012 17:47:12 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:19:07 +0200
+>>> On 24.10.12 at 11:34, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> On Wed, 2012-10-24 at 08:13 +0100, Jan Beulich wrote:
+> 
+>> >  include/xen/interface/memory.h       |   29 ++++++-
+>> >  include/xen/interface/physdev.h      |   10 ++
+>> 
+>> ... any changes to the hypervisor interface (didn't look in detail
+>> what is being changed in these two headers) should first be in
+>> at least -unstable before being consumed in any official release
+>> imo.
+> 
+> I'd also like to see at least the interface definitions in the h/v tree
+> if not the implementation right away.
+> 
+> The flip side is that we have agreed that the interfaces are not
+> considered set in stone / stable until we've had a chance to review the
+> implementation, so perhaps it is better not to commit them to
+> xen-unstable.hg right away.
+> 
+> I don't know what the right answer is. Perhaps we should at a minimum
+> reserve the subop numbers even if we don't yet define what they mean in
+> the Xen tree.
 
-sysctl/sched: Fix 'defined but not used' warning
+But even then - what use is it to have 3.8 possibly only work on
+some intermediate (perhaps even just privately built) hypervisors?
 
-Since commit ("sched/numa: Implement NUMA home-node selection code")
-building a kernel with CONFIG_SMP disabled causes the following
-warning:
+Jan
 
-  kernel/sysctl.c:259:12: warning: 'min_sched_tunable_scaling' defined but not used [-Wunused-variable]
-  kernel/sysctl.c:260:12: warning: 'max_sched_tunable_scaling' defined but not used [-Wunused-variable]
-
-Reported-by: Fabio Estevam <fabio.estevam@freescale.com>
-[ Ingo preferred extra #ifdef variant over the __maybe_unused ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-p9w5w57ylinrj9zakvhc5zay@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sysctl.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 2f7e671..b769d25 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -256,9 +256,11 @@ static int min_sched_granularity_ns = 100000;		/* 100 usecs */
- static int max_sched_granularity_ns = NSEC_PER_SEC;	/* 1 second */
- static int min_wakeup_granularity_ns;			/* 0 usecs */
- static int max_wakeup_granularity_ns = NSEC_PER_SEC;	/* 1 second */
-+#ifdef CONFIG_SMP
- static int min_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;
- static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END-1;
--#endif
-+#endif /* CONFIG_SMP */
-+#endif /* CONFIG_SCHED_DEBUG */
- 
- #ifdef CONFIG_COMPACTION
- static int min_extfrag_threshold;
