@@ -1,101 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933664Ab2JXG3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:29:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34458 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933488Ab2JXG3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:29:48 -0400
-Date: Wed, 24 Oct 2012 08:29:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1757888Ab2JXGah (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:30:37 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39311 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757847Ab2JXGag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:30:36 -0400
+Date: Wed, 24 Oct 2012 10:30:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-ID: <20121024062938.GA6119@dhcp22.suse.cz>
-References: <20121012125708.GJ10110@dhcp22.suse.cz>
- <20121023164546.747e90f6.akpm@linux-foundation.org>
+Subject: Re: [rfc 0/2] Introducing VmFlags field into smaps output
+Message-ID: <20121024063032.GA30983@moon>
+References: <20121022213449.GH31440@moon>
+ <20121022145158.53bddfc1.akpm@linux-foundation.org>
+ <20121023061341.GA7020@moon>
+ <20121022233025.09ec2d92.akpm@linux-foundation.org>
+ <20121023063430.GB7020@moon>
+ <20121023071549.GC7020@moon>
+ <20121023143045.183657c4.akpm@linux-foundation.org>
+ <20121023214639.GM7020@moon>
+ <20121023215907.GB24069@moon>
+ <1351031574.13456.47.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121023164546.747e90f6.akpm@linux-foundation.org>
+In-Reply-To: <1351031574.13456.47.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-10-12 16:45:46, Andrew Morton wrote:
-> On Fri, 12 Oct 2012 14:57:08 +0200
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Wed, Oct 24, 2012 at 12:32:54AM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-10-24 at 01:59 +0400, Cyrill Gorcunov wrote:
+> >                 [ilog2(VM_WRITE)]       = { {'w', 'r'} },
 > 
-> > Hi,
-> > I would like to resurrect the following Dave's patch. The last time it
-> > has been posted was here https://lkml.org/lkml/2010/9/16/250 and there
-> > didn't seem to be any strong opposition. 
-> > Kosaki was worried about possible excessive logging when somebody drops
-> > caches too often (but then he claimed he didn't have a strong opinion
-> > on that) but I would say opposite. If somebody does that then I would
-> > really like to know that from the log when supporting a system because
-> > it almost for sure means that there is something fishy going on. It is
-> > also worth mentioning that only root can write drop caches so this is
-> > not an flooding attack vector.
-> > I am bringing that up again because this can be really helpful when
-> > chasing strange performance issues which (surprise surprise) turn out to
-> > be related to artificially dropped caches done because the admin thinks
-> > this would help...
-> > 
-> > I have just refreshed the original patch on top of the current mm tree
-> > but I could live with KERN_INFO as well if people think that KERN_NOTICE
-> > is too hysterical.
-> > ---
-> > >From 1f4058be9b089bc9d43d71bc63989335d7637d8d Mon Sep 17 00:00:00 2001
-> > From: Dave Hansen <dave@linux.vnet.ibm.com>
-> > Date: Fri, 12 Oct 2012 14:30:54 +0200
-> > Subject: [PATCH] add some drop_caches documentation and info messsge
-> > 
-> > There is plenty of anecdotal evidence and a load of blog posts
-> > suggesting that using "drop_caches" periodically keeps your system
-> > running in "tip top shape".  Perhaps adding some kernel
-> > documentation will increase the amount of accurate data on its use.
-> > 
-> > If we are not shrinking caches effectively, then we have real bugs.
-> > Using drop_caches will simply mask the bugs and make them harder
-> > to find, but certainly does not fix them, nor is it an appropriate
-> > "workaround" to limit the size of the caches.
-> > 
-> > It's a great debugging tool, and is really handy for doing things
-> > like repeatable benchmark runs.  So, add a bit more documentation
-> > about it, and add a little KERN_NOTICE.  It should help developers
-> > who are chasing down reclaim-related bugs.
-> > 
-> > ...
-> >
-> > +		printk(KERN_NOTICE "%s (%d): dropped kernel caches: %d\n",
-> > +			current->comm, task_pid_nr(current), sysctl_drop_caches);
+> since we're being awfully positive about crazy late night ideas, how
+> about something like:
 > 
-> urgh.  Are we really sure we want to do this?  The system operators who
-> are actually using this thing will hate us :(
+> #define MNEM(_VM, _mn) [ilog2(_VM)] = {(const char [2]){_mn}}
+> 
+> 	MNEM(VM_WRITE, "wr"),
 
-I have no problems with lowering the priority (how do you see
-KERN_INFO?) but shouldn't this message kick them that they are doing
-something wrong? Or if somebody uses that for "benchmarking" to have a
-clean table before start is this really that invasive?
-
-> More friendly alternatives might be:
-> 
-> - Taint the kernel.  But that will only become apparent with an oops
->   trace or similar.
-> 
-> - Add a drop_caches counter and make that available in /proc/vmstat,
->   show_mem() output and perhaps other places.
-
-We would loose timing and originating process name in both cases which
-can be really helpful while debugging. It is fair to say that we could
-deduce the timing if we are collecting /proc/meminfo or /proc/vmstat
-already and we do collect them often but this is not the case all of the
-time and sometimes it is important to know _who_ is doing all this.
--- 
-Michal Hocko
-SUSE Labs
+I see no reason why should not we :) I'll update.
