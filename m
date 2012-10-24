@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161195Ab2JXVHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:07:14 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33264 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751447Ab2JXVHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:07:12 -0400
-X-Sasl-enc: L/lD88TlfpewRUnnwxdqcP30TNKHQfI3YrL8S3A/Wo6Y 1351112830
-Date: Wed, 24 Oct 2012 14:07:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Chris Zankel <chris@zankel.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH stable] xtensa: add missing system calls to the syscall
- table
-Message-ID: <20121024210709.GA12308@kroah.com>
-References: <5088517B.1010102@zankel.net>
+	id S1758826Ab2JXVIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:08:21 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35430 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751447Ab2JXVIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:08:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com
+Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
+Date: Wed, 24 Oct 2012 23:12:13 +0200
+Message-ID: <3245066.cWfgP9Ikey@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1597360.JT7plJlUsZ@vostro.rjw.lan>
+References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org> <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com> <1597360.JT7plJlUsZ@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5088517B.1010102@zankel.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 01:37:15PM -0700, Chris Zankel wrote:
-> Hi Greg,
+On Wednesday 24 of October 2012 21:43:46 Rafael J. Wysocki wrote:
+> On Wednesday 24 of October 2012 11:37:13 Viresh Kumar wrote:
+> > On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > > On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > >> Initially ondemand governor was written and then using its code conservative
+> > >> governor is written. It used a lot of code from ondemand governor, but copy of
+> > >> code was created instead of using the same routines from both governors. Which
+> > >> increased code redundancy, which is difficult to manage.
+> > >>
+> > >> This patch is an attempt to move common part of both the governors to
+> > >> cpufreq_governor.c file to come over above mentioned issues.
+> > >>
+> > >> This shouldn't change anything from functionality point of view.
+> > >>
+> > >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> > 
+> > For everybody else, this patch is already pushed by Rafael in his linux-next
+> > branch.
 > 
-> Could you please include this patch in the next stable tree? It adds
-> system calls required for libc builds, so would be great to have it
-> there.
+> Well, not yet, although I'm going to do that.
 
-What stable releases do you want it in?
+Or I would if it still applied.  Unfortunately, though, it doesn't apply any
+more to my linux-next branch due to some previous changes in it.
 
-Also, please look at Documentation/stable_kernel_rules.txt for how to do
-this properly (hint, emailing me isn't the best way...)
+Care to rebase?
 
-thanks,
+Rafael
 
-greg k-h
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
