@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934784Ab2JXNeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:34:46 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53649 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab2JXNep (ORCPT
+	id S934789Ab2JXNgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:36:39 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:1874 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752402Ab2JXNgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:34:45 -0400
+	Wed, 24 Oct 2012 09:36:38 -0400
+Date: Wed, 24 Oct 2012 13:36:37 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Pekka Enberg <penberg@kernel.org>
+cc: Joonsoo Kim <js1304@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH for-v3.7 1/2] slub: optimize poorly inlined kmalloc*
+ functions
+In-Reply-To: <CAOJsxLFay=KhhsuTho3focQ5V90k4sBCNNpyP1v29STsmDG=7Q@mail.gmail.com>
+Message-ID: <0000013a92fd2f35-3d28d0e4-3419-4b78-ab29-f529b60a1c65-000000@email.amazonses.com>
+References: <1350748093-7868-1-git-send-email-js1304@gmail.com> <CAOJsxLFay=KhhsuTho3focQ5V90k4sBCNNpyP1v29STsmDG=7Q@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1351079900-32236-4-git-send-email-hongbo.zhang@linaro.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-4-git-send-email-hongbo.zhang@linaro.com>
-Date: Wed, 24 Oct 2012 19:04:44 +0530
-Message-ID: <CAKohpomygrbhNMJ5+P6DnppBTOSXB8GFeQsbjkUZ61Ou6bzaPQ@mail.gmail.com>
-Subject: Re: [PATCH V2 3/6] Thermal: fix bug of counting cpu frequencies.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 17:28, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
->
-> In the while loop for counting cpu frequencies, if table[i].frequency equals
-> CPUFREQ_ENTRY_INVALID, index i won't be increased, so this leads to an endless
-> loop, what's more the index i cannot be referred as cpu frequencies number if
-> there is CPUFREQ_ENTRY_INVALID case.
->
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+On Wed, 24 Oct 2012, Pekka Enberg wrote:
 
-Good one.
+> Looks reasonable to me. Christoph, any objections?
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+I am fine with it. Its going to be short lived because my latest patchset
+will do the same. Can we merge this for 3.7?
