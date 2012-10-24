@@ -1,409 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161340Ab2JXVur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:50:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40929 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161298Ab2JXVun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:50:43 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/12] perf trace: Support interrupted syscalls
-Date: Wed, 24 Oct 2012 19:50:18 -0200
-Message-Id: <1351115423-9025-8-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1351115423-9025-1-git-send-email-acme@infradead.org>
-References: <1351115423-9025-1-git-send-email-acme@infradead.org>
+	id S1161373Ab2JXVxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:53:19 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35574 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161289Ab2JXVxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:53:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH] cpufreq, powernow-k8: Remove usage of smp_processor_id() in preemptible code
+Date: Wed, 24 Oct 2012 23:57:11 +0200
+Message-ID: <4061311.WJSyxPuklg@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121012151841.GA4571@alberich>
+References: <20121009193844.GC7724@alberich> <20121010124839.GA22448@alberich> <20121012151841.GA4571@alberich>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Friday 12 of October 2012 17:18:41 Andreas Herrmann wrote:
+> 
+> Commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9
+> (cpufreq/powernow-k8: workqueue user shouldn't migrate the kworker to another CPU)
+> causes powernow-k8 to trigger a preempt warning, e.g.:
+> 
+>   BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq/3776
+>   caller is powernowk8_target+0x20/0x49
+>   Pid: 3776, comm: cpufreq Not tainted 3.6.0 #9
+>   Call Trace:
+>    [<ffffffff8125b447>] debug_smp_processor_id+0xc7/0xe0
+>    [<ffffffff814877e7>] powernowk8_target+0x20/0x49
+>    [<ffffffff81482b02>] __cpufreq_driver_target+0x82/0x8a
+>    [<ffffffff81484fc6>] cpufreq_governor_performance+0x4e/0x54
+>    [<ffffffff81482c50>] __cpufreq_governor+0x8c/0xc9
+>    [<ffffffff81482e6f>] __cpufreq_set_policy+0x1a9/0x21e
+>    [<ffffffff814839af>] store_scaling_governor+0x16f/0x19b
+>    [<ffffffff81484f16>] ? cpufreq_update_policy+0x124/0x124
+>    [<ffffffff8162b4a5>] ? _raw_spin_unlock_irqrestore+0x2c/0x49
+>    [<ffffffff81483640>] store+0x60/0x88
+>    [<ffffffff811708c0>] sysfs_write_file+0xf4/0x130
+>    [<ffffffff8111243b>] vfs_write+0xb5/0x151
+>    [<ffffffff811126e0>] sys_write+0x4a/0x71
+>    [<ffffffff816319a9>] system_call_fastpath+0x16/0x1b
+> 
+> Fix this by by always using work_on_cpu().
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Using the same strategies as in the tmp.perf/trace2, i.e. the 'trace'
-tool implemented by tglx, just updated to the current codebase.
+Applied to linux-pm.git/linux-next as v3.7 material, will be included in the
+next linux-pm push.
 
-Example:
+Thanks,
+Rafael
 
-[root@sandy linux]# perf trace usleep 1  | tail
-     2.003: mmap(addr: 0, len: 4096, prot: 3, flags: 34, fd: 4294967295, off: 0   ) = -2128396288
-     2.017: mmap(addr: 0, len: 4096, prot: 3, flags: 34, fd: 4294967295, off: 0   ) = -2128400384
-     2.029: arch_prctl(option: 4098, arg2: 140146949441280, arg3: 140146949435392, arg4: 34, arg5: 4294967295) = 0
-     2.084: mprotect(start: 208741634048, len: 16384, prot: 1                     ) = 0
-     2.098: mprotect(start: 208735956992, len: 4096, prot: 1                      ) = 0
-     2.122: munmap(addr: 140146949447680, len: 91882                              ) = 0
-     2.359: brk(brk: 0                                                            ) = 28987392
-     2.371: brk(brk: 29122560                                                     ) = 29122560
-     2.490: nanosleep(rqtp: 140735694241504, rmtp: 0                              ) = 0
-     2.507: exit_group(error_code: 0
-[root@sandy linux]#
 
-For now the timestamp and duration are always on, will be selectable.
 
-Also if multiple threads are being monitored, its tid will appear.
-
-The ret output continues to be interpreted a la strace.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ly9ulroru4my5isn0xe9gr0m@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c |  199 +++++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/util.h     |    4 +
- 2 files changed, 181 insertions(+), 22 deletions(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 14b3229..873f50b 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1,5 +1,8 @@
- #include "builtin.h"
-+#include "util/color.h"
- #include "util/evlist.h"
-+#include "util/machine.h"
-+#include "util/thread.h"
- #include "util/parse-options.h"
- #include "util/thread_map.h"
- #include "event-parse.h"
-@@ -43,6 +46,36 @@ struct syscall {
- 	struct syscall_fmt  *fmt;
- };
- 
-+struct thread_trace {
-+	u64		  entry_time;
-+	u64		  exit_time;
-+	bool		  entry_pending;
-+	char		  *entry_str;
-+};
-+
-+static struct thread_trace *thread_trace__new(void)
-+{
-+	return zalloc(sizeof(struct thread_trace));
-+}
-+
-+static struct thread_trace *thread__trace(struct thread *thread)
-+{
-+	if (thread == NULL)
-+		goto fail;
-+
-+	if (thread->priv == NULL)
-+		thread->priv = thread_trace__new();
-+
-+	if (thread->priv == NULL)
-+		goto fail;
-+
-+	return thread->priv;
-+fail:
-+	color_fprintf(stdout, PERF_COLOR_RED,
-+		      "WARNING: not enough memory, dropping samples!\n");
-+	return NULL;
-+}
-+
- struct trace {
- 	int			audit_machine;
- 	struct {
-@@ -50,8 +83,18 @@ struct trace {
- 		struct syscall  *table;
- 	} syscalls;
- 	struct perf_record_opts opts;
-+	struct machine		host;
-+	u64			base_time;
-+	bool			multiple_threads;
- };
- 
-+static size_t trace__fprintf_tstamp(struct trace *trace, u64 tstamp, FILE *fp)
-+{
-+	double ts = (double)(tstamp - trace->base_time) / NSEC_PER_MSEC;
-+
-+	return fprintf(fp, "%10.3f: ", ts);
-+}
-+
- static bool done = false;
- 
- static void sig_handler(int sig __maybe_unused)
-@@ -59,6 +102,67 @@ static void sig_handler(int sig __maybe_unused)
- 	done = true;
- }
- 
-+static size_t trace__fprintf_entry_head(struct trace *trace, struct thread *thread,
-+					u64 tstamp, FILE *fp)
-+{
-+	size_t printed = trace__fprintf_tstamp(trace, tstamp, fp);
-+
-+	if (trace->multiple_threads)
-+		printed += fprintf(fp, "%d ", thread->pid);
-+
-+	return printed;
-+}
-+
-+static int trace__process_event(struct machine *machine, union perf_event *event)
-+{
-+	int ret = 0;
-+
-+	switch (event->header.type) {
-+	case PERF_RECORD_LOST:
-+		color_fprintf(stdout, PERF_COLOR_RED,
-+			      "LOST %" PRIu64 " events!\n", event->lost.lost);
-+		ret = machine__process_lost_event(machine, event);
-+	default:
-+		ret = machine__process_event(machine, event);
-+		break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int trace__tool_process(struct perf_tool *tool __maybe_unused,
-+			       union perf_event *event,
-+			       struct perf_sample *sample __maybe_unused,
-+			       struct machine *machine)
-+{
-+	return trace__process_event(machine, event);
-+}
-+
-+static int trace__symbols_init(struct trace *trace, struct perf_evlist *evlist)
-+{
-+	int err = symbol__init();
-+
-+	if (err)
-+		return err;
-+
-+	machine__init(&trace->host, "", HOST_KERNEL_ID);
-+	machine__create_kernel_maps(&trace->host);
-+
-+	if (perf_target__has_task(&trace->opts.target)) {
-+		err = perf_event__synthesize_thread_map(NULL, evlist->threads,
-+							trace__tool_process,
-+							&trace->host);
-+	} else {
-+		err = perf_event__synthesize_threads(NULL, trace__tool_process,
-+						     &trace->host);
-+	}
-+
-+	if (err)
-+		symbol__exit();
-+
-+	return err;
-+}
-+
- static int trace__read_syscall_info(struct trace *trace, int id)
- {
- 	char tp_name[128];
-@@ -100,7 +204,8 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- 	return sc->tp_format != NULL ? 0 : -1;
- }
- 
--static size_t syscall__fprintf_args(struct syscall *sc, unsigned long *args, FILE *fp)
-+static size_t syscall__scnprintf_args(struct syscall *sc, char *bf, size_t size,
-+				      unsigned long *args)
- {
- 	int i = 0;
- 	size_t printed = 0;
-@@ -109,12 +214,15 @@ static size_t syscall__fprintf_args(struct syscall *sc, unsigned long *args, FIL
- 		struct format_field *field;
- 
- 		for (field = sc->tp_format->format.fields->next; field; field = field->next) {
--			printed += fprintf(fp, "%s%s: %ld", printed ? ", " : "",
--					   field->name, args[i++]);
-+			printed += scnprintf(bf + printed, size - printed,
-+					     "%s%s: %ld", printed ? ", " : "",
-+					     field->name, args[i++]);
- 		}
- 	} else {
- 		while (i < 6) {
--			printed += fprintf(fp, "%sarg%d: %ld", printed ? ", " : "", i, args[i]);
-+			printed += scnprintf(bf + printed, size - printed,
-+					     "%sarg%d: %ld",
-+					     printed ? ", " : "", i, args[i]);
- 			++i;
- 		}
- 	}
-@@ -153,10 +261,14 @@ out_cant_read:
- static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 			    struct perf_sample *sample)
- {
-+	char *msg;
- 	void *args;
-+	size_t printed = 0;
-+	struct thread *thread = machine__findnew_thread(&trace->host, sample->tid);
- 	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
-+	struct thread_trace *ttrace = thread__trace(thread);
- 
--	if (sc == NULL)
-+	if (ttrace == NULL || sc == NULL)
- 		return -1;
- 
- 	args = perf_evsel__rawptr(evsel, sample, "args");
-@@ -165,8 +277,25 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 		return -1;
- 	}
- 
--	printf("%s(", sc->name);
--	syscall__fprintf_args(sc, args, stdout);
-+	ttrace = thread->priv;
-+
-+	if (ttrace->entry_str == NULL) {
-+		ttrace->entry_str = malloc(1024);
-+		if (!ttrace->entry_str)
-+			return -1;
-+	}
-+
-+	ttrace->entry_time = sample->time;
-+	msg = ttrace->entry_str;
-+	printed += scnprintf(msg + printed, 1024 - printed, "%s(", sc->name);
-+
-+	printed += syscall__scnprintf_args(sc, msg + printed, 1024 - printed,  args);
-+
-+	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
-+		trace__fprintf_entry_head(trace, thread, sample->time, stdout);
-+		printf("%-70s\n", ttrace->entry_str);
-+	} else
-+		ttrace->entry_pending = true;
- 
- 	return 0;
- }
-@@ -175,13 +304,29 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 			   struct perf_sample *sample)
- {
- 	int ret;
-+	struct thread *thread = machine__findnew_thread(&trace->host, sample->tid);
-+	struct thread_trace *ttrace = thread__trace(thread);
- 	struct syscall *sc = trace__syscall_info(trace, evsel, sample);
- 
--	if (sc == NULL)
-+	if (ttrace == NULL || sc == NULL)
- 		return -1;
- 
- 	ret = perf_evsel__intval(evsel, sample, "ret");
- 
-+	ttrace = thread->priv;
-+
-+	ttrace->exit_time = sample->time;
-+
-+	trace__fprintf_entry_head(trace, thread, sample->time, stdout);
-+
-+	if (ttrace->entry_pending) {
-+		printf("%-70s", ttrace->entry_str);
-+	} else {
-+		printf(" ... [");
-+		color_fprintf(stdout, PERF_COLOR_YELLOW, "continued");
-+		printf("]: %s()", sc->name);
-+	}
-+
- 	if (ret < 0 && sc->fmt && sc->fmt->errmsg) {
- 		char bf[256];
- 		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
-@@ -194,6 +339,9 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 		printf(") = %d", ret);
- 
- 	putchar('\n');
-+
-+	ttrace->entry_pending = false;
-+
- 	return 0;
- }
- 
-@@ -221,6 +369,12 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 		goto out_delete_evlist;
- 	}
- 
-+	err = trace__symbols_init(trace, evlist);
-+	if (err < 0) {
-+		printf("Problems initializing symbol libraries!\n");
-+		goto out_delete_evlist;
-+	}
-+
- 	perf_evlist__config_attrs(evlist, &trace->opts);
- 
- 	signal(SIGCHLD, sig_handler);
-@@ -251,6 +405,7 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	if (forks)
- 		perf_evlist__start_workload(evlist);
- 
-+	trace->multiple_threads = evlist->threads->map[0] == -1 || evlist->threads->nr > 1;
- again:
- 	before = nr_events;
- 
-@@ -264,32 +419,32 @@ again:
- 
- 			++nr_events;
- 
--			switch (type) {
--			case PERF_RECORD_SAMPLE:
--				break;
--			case PERF_RECORD_LOST:
--				printf("LOST %" PRIu64 " events!\n", event->lost.lost);
--				continue;
--			default:
--				printf("Unexpected %s event, skipping...\n",
--					perf_event__name(type));
--				continue;
--			}
--
- 			err = perf_evlist__parse_sample(evlist, event, &sample);
- 			if (err) {
- 				printf("Can't parse sample, err = %d, skipping...\n", err);
- 				continue;
- 			}
- 
-+			if (trace->base_time == 0)
-+				trace->base_time = sample.time;
-+
-+			if (type != PERF_RECORD_SAMPLE) {
-+				trace__process_event(&trace->host, event);
-+				continue;
-+			}
-+
- 			evsel = perf_evlist__id2evsel(evlist, sample.id);
- 			if (evsel == NULL) {
- 				printf("Unknown tp ID %" PRIu64 ", skipping...\n", sample.id);
- 				continue;
- 			}
- 
--			if (evlist->threads->map[0] == -1 || evlist->threads->nr > 1)
--				printf("%d ", sample.tid);
-+			if (sample.raw_data == NULL) {
-+				printf("%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
-+				       perf_evsel__name(evsel), sample.tid,
-+				       sample.cpu, sample.raw_size);
-+				continue;
-+			}
- 
- 			if (sample.raw_data == NULL) {
- 				printf("%s sample with no payload for tid: %d, cpu %d, raw_size=%d, skipping...\n",
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index a6b83f8..0d85209 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -198,6 +198,10 @@ static inline int has_extension(const char *filename, const char *ext)
- #undef tolower
- #undef toupper
- 
-+#ifndef NSEC_PER_MSEC
-+#define NSEC_PER_MSEC	1000000L
-+#endif
-+
- extern unsigned char sane_ctype[256];
- #define GIT_SPACE		0x01
- #define GIT_DIGIT		0x02
+> ---
+>  drivers/cpufreq/powernow-k8.c | 9 +--------
+>  1 file changed, 1 insertion(+), 8 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index 129e80b..c16a3a5 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1052,14 +1052,7 @@ static int powernowk8_target(struct cpufreq_policy *pol,
+>  	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
+>  					     .relation = relation };
+>  
+> -	/*
+> -	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
+> -	 * that we're bound to the current CPU and pol->cpu stays online.
+> -	 */
+> -	if (smp_processor_id() == pol->cpu)
+> -		return powernowk8_target_fn(&pta);
+> -	else
+> -		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+> +	return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+>  }
+>  
+>  /* Driver entry point to verify the policy and range of frequencies */
+> 
 -- 
-1.7.9.2.358.g22243
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
