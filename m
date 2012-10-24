@@ -1,189 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957Ab2JXTle (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:41:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39128 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933046Ab2JXTlb (ORCPT
+	id S934174Ab2JXTmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:42:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40376 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933818Ab2JXTmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:41:31 -0400
-Date: Wed, 24 Oct 2012 12:41:17 -0700
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Build install-man target when installing
-Message-ID: <20121024194117.GE13993@ghostprotocols.net>
-References: <20120925174658.GD9320@aftab.osrc.amd.com>
- <1348854427-12746-1-git-send-email-bp@amd64.org>
- <20121020111625.GB17563@liondog.tnic>
- <87mwzfj7dn.fsf@sejong.aot.lge.com>
- <20121022100719.GA8352@liondog.tnic>
- <20121022140339.GA8775@ghostprotocols.net>
- <20121022231301.GA13994@liondog.tnic>
- <20121023133951.GA11351@ghostprotocols.net>
- <20121024170316.GA13993@ghostprotocols.net>
- <20121024193046.GB17945@liondog.tnic>
+	Wed, 24 Oct 2012 15:42:12 -0400
+Date: Wed, 24 Oct 2012 12:42:07 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 1/3] x86, ioapic: Teach mp_register_ioapic to compute a
+ global gsi_end
+Message-ID: <20121024194207.GD3120@elie.Belkin>
+References: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
+ <20121024182546.GB3338@elie.Belkin>
+ <1351103872.6017.80.camel@sbsiddha-desk.sc.intel.com>
+ <20121024194114.GC3120@elie.Belkin>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024193046.GB17945@liondog.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20121024194114.GC3120@elie.Belkin>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 24, 2012 at 09:30:46PM +0200, Borislav Petkov escreveu:
-> On Wed, Oct 24, 2012 at 10:03:16AM -0700, Arnaldo Carvalho de Melo wrote:
-> > The 'install-man' target will use your check-executable-or-error-out
-> > stuff, but the main 'install' target will call just 'try-install-man',
-> > that will not stop the build if there are missing tools to generate
-> > the man pages.
-> >
-> > Installing just xmlto makes it ask just for asciidoc, install both and
-> > it generates the man pages, please try to check if it works for you so
-> > that I can have your Tested-by.
-> 
-> Ok, then this can be done even simpler, I went and simplified your
-> version and we don't need that check-executable-or-error-out helper
-> anymore, I'm including it below.
-> 
-> For it you can have my
-> 
-> Signed-off-by: Borislav Petkov <bp@alien8.de>
-> Tested-by: Borislav Petkov <bp@alien8.de>
-> 
-> Btw, I keep seeing those errors when building on your perf/core branch:
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Tue, 30 Mar 2010 01:07:10 -0700
 
-That is fixed in the perf/urgent one, I'm reworking my perf/core branch
-on top of Ingo's tip/perf/core, that already merged tip/perf/urgent so
-has that fix.
+commit 5777372af5c929b8f3c706ed7b295b7279537c88 upstream.
 
-Testing your new version now, thanks!
+Add the global variable gsi_end and teach mp_register_ioapic
+to keep it uptodate as we add more ioapics into the system.
 
-- Arnaldo
+ioapics can only be added early in boot so the code that
+runs later can treat gsi_end as a constant.
+
+Remove the have hacks in sfi.c to second guess mp_register_ioapic
+by keeping t's own running total of how many gsi's have been seen,
+and instead use the gsi_end.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+LKML-Reference: <1269936436-7039-9-git-send-email-ebiederm@xmission.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+ arch/x86/include/asm/io_apic.h | 1 +
+ arch/x86/kernel/apic/io_apic.c | 6 ++++++
+ arch/x86/kernel/sfi.c          | 4 +---
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 5f61f6e0ffdd..c145253f34fa 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -186,6 +186,7 @@ struct mp_ioapic_gsi{
+ 	int gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
++extern u32 gsi_end;
+ int mp_find_ioapic(int gsi);
+ int mp_find_ioapic_pin(int ioapic, int gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 8928d9785eb4..7a5087640599 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -90,6 +90,9 @@ int nr_ioapics;
+ /* IO APIC gsi routing info */
+ struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
  
-> ...
->     FLEX util/pmu-flex.c
->     FLEX util/parse-events-flex.c
->     CC util/pmu-flex.o
->     CC util/pmu.o
->     CC util/parse-events.o
-> gcc: error: python_ext_build/tmp//../../libtraceevent.a: No such file or directory
-> error: command 'gcc' failed with exit status 1
-> cp: cannot stat `python_ext_build/lib/perf.so': No such file or directory
-> make: *** [python/perf.so] Error 1
-> make: *** Waiting for unfinished jobs....
-> Makefile:513: No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99
-> Makefile:568: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
-> Makefile:579: newt not found, disables TUI support. Please install newt-devel or libnewt-dev
->     SUBDIR ../lib/traceevent/
-> 
-> ...
-> 
-> Thanks.
-> 
-> ---
-> diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-> index 9f2e44f2b17a..ef6d22e879eb 100644
-> --- a/tools/perf/Documentation/Makefile
-> +++ b/tools/perf/Documentation/Makefile
-> @@ -1,3 +1,5 @@
-> +include ../config/utilities.mak
-> +
->  OUTPUT := ./
->  ifeq ("$(origin O)", "command line")
->    ifneq ($(O),)
-> @@ -64,6 +66,7 @@ MAKEINFO=makeinfo
->  INSTALL_INFO=install-info
->  DOCBOOK2X_TEXI=docbook2x-texi
->  DBLATEX=dblatex
-> +XMLTO=xmlto
->  ifndef PERL_PATH
->  	PERL_PATH = /usr/bin/perl
->  endif
-> @@ -71,6 +74,16 @@ endif
->  -include ../config.mak.autogen
->  -include ../config.mak
->  
-> +_tmp_tool_path := $(call get-executable,$(ASCIIDOC))
-> +ifeq ($(_tmp_tool_path),)
-> +	missing_tools = $(ASCIIDOC)
-> +endif
-> +
-> +_tmp_tool_path := $(call get-executable,$(XMLTO))
-> +ifeq ($(_tmp_tool_path),)
-> +	missing_tools += $(XMLTO)
-> +endif
-> +
->  #
->  # For asciidoc ...
->  #	-7.1.2,	no extra settings are needed.
-> @@ -170,7 +183,12 @@ pdf: $(OUTPUT)user-manual.pdf
->  
->  install: install-man
->  
-> -install-man: man
-> +check-man-tools:
-> +ifdef missing_tools
-> +	$(error "You need to install $(missing_tools) for man pages")
-> +endif
-> +
-> +do-install-man: man
->  	$(INSTALL) -d -m 755 $(DESTDIR)$(man1dir)
->  #	$(INSTALL) -d -m 755 $(DESTDIR)$(man5dir)
->  #	$(INSTALL) -d -m 755 $(DESTDIR)$(man7dir)
-> @@ -178,6 +196,15 @@ install-man: man
->  #	$(INSTALL) -m 644 $(DOC_MAN5) $(DESTDIR)$(man5dir)
->  #	$(INSTALL) -m 644 $(DOC_MAN7) $(DESTDIR)$(man7dir)
->  
-> +install-man: check-man-tools man
-> +
-> +try-install-man:
-> +ifdef missing_tools
-> +	$(warning Please install $(missing_tools) to have the man pages installed)
-> +else
-> +	$(MAKE) do-install-man
-> +endif
-> +
->  install-info: info
->  	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
->  	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
-> @@ -246,7 +273,7 @@ $(MAN_HTML): $(OUTPUT)%.html : %.txt
->  
->  $(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
->  	$(QUIET_XMLTO)$(RM) $@ && \
-> -	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-> +	$(XMLTO) -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
->  
->  $(OUTPUT)%.xml : %.txt
->  	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 76190a7e2934..3252563bfca7 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -1038,7 +1038,7 @@ perfexec_instdir = $(prefix)/$(perfexecdir)
->  endif
->  perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
->  
-> -install: all install-man
-> +install: all try-install-man
->  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
->  	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
->  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-> @@ -1064,6 +1064,9 @@ install-doc:
->  install-man:
->  	$(MAKE) -C Documentation install-man
->  
-> +try-install-man:
-> +	$(MAKE) -C Documentation try-install-man
-> +
->  install-html:
->  	$(MAKE) -C Documentation install-html
->  
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
++/* The last gsi number used */
++u32 gsi_end;
++
+ /* MP IRQ source entries */
+ struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
+ 
+@@ -4284,6 +4287,9 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	mp_gsi_routing[idx].gsi_end = gsi_base +
+ 	    io_apic_get_redir_entries(idx);
+ 
++	if (mp_gsi_routing[idx].gsi_end > gsi_end)
++		gsi_end = mp_gsi_routing[idx].gsi_end;
++
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+ 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+ 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
+diff --git a/arch/x86/kernel/sfi.c b/arch/x86/kernel/sfi.c
+index 34e099382651..7ded57896c0a 100644
+--- a/arch/x86/kernel/sfi.c
++++ b/arch/x86/kernel/sfi.c
+@@ -81,7 +81,6 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
+ #endif /* CONFIG_X86_LOCAL_APIC */
+ 
+ #ifdef CONFIG_X86_IO_APIC
+-static u32 gsi_base;
+ 
+ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
+ {
+@@ -94,8 +93,7 @@ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
+ 	pentry = (struct sfi_apic_table_entry *)sb->pentry;
+ 
+ 	for (i = 0; i < num; i++) {
+-		mp_register_ioapic(i, pentry->phys_addr, gsi_base);
+-		gsi_base += io_apic_get_redir_entries(i);
++		mp_register_ioapic(i, pentry->phys_addr, gsi_end + 1);
+ 		pentry++;
+ 	}
+ 
+-- 
+1.8.0
+
