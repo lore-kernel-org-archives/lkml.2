@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161184Ab2JXVGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:06:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39089 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2JXVGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:06:04 -0400
-Date: Wed, 24 Oct 2012 23:06:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-ID: <20121024210600.GA17037@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Dave Hansen <dave@linux.vnet.ibm.com>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20121012125708.GJ10110@dhcp22.suse.cz>
- <20121023164546.747e90f6.akpm@linux-foundation.org>
- <20121024062938.GA6119@dhcp22.suse.cz>
- <20121024125439.c17a510e.akpm@linux-foundation.org>
- <50884F63.8030606@linux.vnet.ibm.com>
- <20121024134836.a28d223a.akpm@linux-foundation.org>
+	id S1161195Ab2JXVHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:07:14 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33264 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751447Ab2JXVHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:07:12 -0400
+X-Sasl-enc: L/lD88TlfpewRUnnwxdqcP30TNKHQfI3YrL8S3A/Wo6Y 1351112830
+Date: Wed, 24 Oct 2012 14:07:09 -0700
+From: Greg KH <greg@kroah.com>
+To: Chris Zankel <chris@zankel.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH stable] xtensa: add missing system calls to the syscall
+ table
+Message-ID: <20121024210709.GA12308@kroah.com>
+References: <5088517B.1010102@zankel.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024134836.a28d223a.akpm@linux-foundation.org>
+In-Reply-To: <5088517B.1010102@zankel.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 01:48:36PM -0700, Andrew Morton wrote:
-> Well who knows. Could be that people's vm *does* suck. Or they have
-> some particularly peculiar worklosd or requirement[*]. Or their VM
-> *used* to suck, and the drop_caches is not really needed any more but
-> it's there in vendor-provided code and they can't practically prevent
-> it.
+On Wed, Oct 24, 2012 at 01:37:15PM -0700, Chris Zankel wrote:
+> Hi Greg,
+> 
+> Could you please include this patch in the next stable tree? It adds
+> system calls required for libc builds, so would be great to have it
+> there.
 
-I have drop_caches in my suspend-to-disk script so that the hibernation
-image is kept at minimum and suspend times are as small as possible.
+What stable releases do you want it in?
 
-Would that be a valid use-case?
+Also, please look at Documentation/stable_kernel_rules.txt for how to do
+this properly (hint, emailing me isn't the best way...)
 
--- 
-Regards/Gruss,
-    Boris.
+thanks,
+
+greg k-h
