@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965293Ab2JXDFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 23:05:41 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59237 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577Ab2JXDFj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 23:05:39 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 1/3] staging/sbe-2t3e3: Use netdev_ printks in main.c
-Date: Wed, 24 Oct 2012 12:05:28 +0900
-Message-Id: <1351047928-7234-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121019191038.GA18369@kroah.com>
-References: <20121019191038.GA18369@kroah.com>
+	id S965318Ab2JXDIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:08:17 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57151 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934056Ab2JXDIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 23:08:16 -0400
+Date: Tue, 23 Oct 2012 23:08:12 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: OOPS after deleting file on ext4 filesystem
+Message-ID: <20121024030812.GA21714@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Nick Bowler <nbowler@elliptictech.com>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <20121024005022.GA25399@elliptictech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024005022.GA25399@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+On Tue, Oct 23, 2012 at 08:50:22PM -0400, Nick Bowler wrote:
+> Hi folks,
+> 
+> I just saw an ext4 oops on one of my machines after a couple months of
+> uptime, on Linux 3.5.2.  I doubt I will be able to reproduce the problem
+> easily so I'm just posting this in case anyone can tell what's going on.
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/sbe-2t3e3/main.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Fixed in v3.5.3 or later kernels.  (Commit 2cd45bebc56a)
 
-diff --git a/drivers/staging/sbe-2t3e3/main.c b/drivers/staging/sbe-2t3e3/main.c
-index f3dbef6..c8e0398 100644
---- a/drivers/staging/sbe-2t3e3/main.c
-+++ b/drivers/staging/sbe-2t3e3/main.c
-@@ -135,9 +135,10 @@ void t3e3_read_card_serial_number(struct channel *sc)
- 	for (i = 0; i < 3; i++)
- 		sc->ether.card_serial_number[i] = t3e3_eeprom_read_word(sc, 10 + i);
- 
--	printk(KERN_INFO "SBE wanPMC-2T3E3 serial number: %04X%04X%04X\n",
--	       sc->ether.card_serial_number[0], sc->ether.card_serial_number[1],
--	       sc->ether.card_serial_number[2]);
-+	netdev_info(sc->dev, "SBE wanPMC-2T3E3 serial number: %04X%04X%04X\n",
-+		    sc->ether.card_serial_number[0],
-+		    sc->ether.card_serial_number[1],
-+		    sc->ether.card_serial_number[2]);
- }
- 
- /*
--- 
-1.7.9.5
-
+      	 	   	 	   - Ted
