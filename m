@@ -1,53 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935133Ab2JXP2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:28:42 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:27568
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934874Ab2JXP2l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:28:41 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z551biz98dI1454Izz1202h1d1ah1d2ahzz15d4Iz2dh668h839h944hd25he5bhf0ah107ah11b5h121eh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14afh1504h1537h153bh1155h)
-X-WSS-ID: 0MCELNO-01-383-02
-X-M-MSG: 
-Date: Wed, 24 Oct 2012 17:28:34 +0200
-From: Joerg Roedel <Joerg.Roedel@amd.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: <florian@dazinger.net>, <iommu@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/5] amd_iommu: Refactor IOMMU group and support
- virtual aliases
-Message-ID: <20121024152834.GD2764@amd.com>
-References: <20121009044057.16302.44577.stgit@bling.home>
- <1350595750.2112.438.camel@bling.home>
+	id S932475Ab2JXPdy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:33:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:22762 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab2JXPdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 11:33:51 -0400
+Subject: [PATCH v8 3/5] ipc: message queue receive cleanup
+To: akpm@linux-foundation.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: serge.hallyn@canonical.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, xemul@parallels.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, jmorris@namei.org,
+        cmetcalf@tilera.com, joe.korty@ccur.com, dhowells@redhat.com,
+        dledford@redhat.com, viro@zeniv.linux.org.uk,
+        kosaki.motohiro@jp.fujitsu.com, linux-api@vger.kernel.org,
+        serue@us.ibm.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        devel@openvz.org, mtk.manpages@gmail.com
+Date: Wed, 24 Oct 2012 19:35:15 +0400
+Message-ID: <20121024153515.5642.78383.stgit@localhost.localdomain>
+In-Reply-To: <20121024151555.5642.79086.stgit@localhost.localdomain>
+References: <20121024151555.5642.79086.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1350595750.2112.438.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 03:29:10PM -0600, Alex Williamson wrote:
-> I think this series is good-to-go, modulo any testing you may be able to
-> do on it.  I'm going to be offline for a couple weeks so feel free to
-> incorporate this RFC directly or I can re-spin something when I'm back.
+This patch moves all message related manipulation into one function msg_fill().
+Actually, two functions because of the compat one.
 
-Okay, I applied the patches and will do some testing before pushing them
-out. I will fix all objections by follow-on patches.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ include/linux/msg.h |    5 +++--
+ ipc/compat.c        |   45 +++++++++++++++++++--------------------------
+ ipc/msg.c           |   44 +++++++++++++++++++++++---------------------
+ 3 files changed, 45 insertions(+), 49 deletions(-)
 
-
-	Joerg
-
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+diff --git a/include/linux/msg.h b/include/linux/msg.h
+index 7a4b9e9..f38edba 100644
+--- a/include/linux/msg.h
++++ b/include/linux/msg.h
+@@ -34,7 +34,8 @@ struct msg_queue {
+ /* Helper routines for sys_msgsnd and sys_msgrcv */
+ extern long do_msgsnd(int msqid, long mtype, void __user *mtext,
+ 			size_t msgsz, int msgflg);
+-extern long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+-			size_t msgsz, long msgtyp, int msgflg);
++extern long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
++		      int msgflg,
++		      long (*msg_fill)(void __user *, struct msg_msg *, size_t ));
+ 
+ #endif /* _LINUX_MSG_H */
+diff --git a/ipc/compat.c b/ipc/compat.c
+index ad9518e..eb3ea16 100644
+--- a/ipc/compat.c
++++ b/ipc/compat.c
+@@ -306,6 +306,20 @@ static long do_compat_semctl(int first, int second, int third, u32 pad)
+ 	return err;
+ }
+ 
++long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
++{
++	struct compat_msgbuf __user *msgp = dest;
++	size_t msgsz;
++
++	if (put_user(msg->m_type, &msgp->mtype))
++		return -EFAULT;
++
++	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
++	if (store_msg(msgp->mtext, msg, msgsz))
++		return -EFAULT;
++	return msgsz;
++}
++
+ #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
+ long compat_sys_semctl(int first, int second, int third, void __user *uptr)
+ {
+@@ -337,10 +351,6 @@ long compat_sys_msgsnd(int first, int second, int third, void __user *uptr)
+ long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
+ 			   int version, void __user *uptr)
+ {
+-	struct compat_msgbuf __user *up;
+-	long type;
+-	int err;
+-
+ 	if (first < 0)
+ 		return -EINVAL;
+ 	if (second < 0)
+@@ -348,23 +358,14 @@ long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
+ 
+ 	if (!version) {
+ 		struct compat_ipc_kludge ipck;
+-		err = -EINVAL;
+ 		if (!uptr)
+-			goto out;
+-		err = -EFAULT;
++			return -EINVAL;
+ 		if (copy_from_user (&ipck, uptr, sizeof(ipck)))
+-			goto out;
++			return -EFAULT;
+ 		uptr = compat_ptr(ipck.msgp);
+ 		msgtyp = ipck.msgtyp;
+ 	}
+-	up = uptr;
+-	err = do_msgrcv(first, &type, up->mtext, second, msgtyp, third);
+-	if (err < 0)
+-		goto out;
+-	if (put_user(type, &up->mtype))
+-		err = -EFAULT;
+-out:
+-	return err;
++	return do_msgrcv(first, uptr, second, msgtyp, third, compat_do_msg_fill);
+ }
+ #else
+ long compat_sys_semctl(int semid, int semnum, int cmd, int arg)
+@@ -385,16 +386,8 @@ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
+ long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
+ 		       compat_ssize_t msgsz, long msgtyp, int msgflg)
+ {
+-	long err, mtype;
+-
+-	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp, msgflg);
+-	if (err < 0)
+-		goto out;
+-
+-	if (put_user(mtype, &msgp->mtype))
+-		err = -EFAULT;
+- out:
+-	return err;
++	return do_msgrcv(msqid, msgp, (ssize_t)msgsz, msgtyp, msgflg,
++			 compat_do_msg_fill);
+ }
+ #endif
+ 
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 2f272fa..532ebc3 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -755,15 +755,30 @@ static inline int convert_mode(long *msgtyp, int msgflg)
+ 	return SEARCH_EQUAL;
+ }
+ 
+-long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+-		size_t msgsz, long msgtyp, int msgflg)
++static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
++{
++	struct msgbuf __user *msgp = dest;
++	size_t msgsz;
++
++	if (put_user(msg->m_type, &msgp->mtype))
++		return -EFAULT;
++
++	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
++	if (store_msg(msgp->mtext, msg, msgsz))
++		return -EFAULT;
++	return msgsz;
++}
++
++long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
++	       int msgflg,
++	       long (*msg_handler)(void __user *, struct msg_msg *, size_t ))
+ {
+ 	struct msg_queue *msq;
+ 	struct msg_msg *msg;
+ 	int mode;
+ 	struct ipc_namespace *ns;
+ 
+-	if (msqid < 0 || (long) msgsz < 0)
++	if (msqid < 0 || (long) bufsz < 0)
+ 		return -EINVAL;
+ 	mode = convert_mode(&msgtyp, msgflg);
+ 	ns = current->nsproxy->ipc_ns;
+@@ -804,7 +819,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+ 			 * Found a suitable message.
+ 			 * Unlink it from the queue.
+ 			 */
+-			if ((msgsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
++			if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
+ 				msg = ERR_PTR(-E2BIG);
+ 				goto out_unlock;
+ 			}
+@@ -831,7 +846,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
+ 		if (msgflg & MSG_NOERROR)
+ 			msr_d.r_maxsize = INT_MAX;
+ 		else
+-			msr_d.r_maxsize = msgsz;
++			msr_d.r_maxsize = bufsz;
+ 		msr_d.r_msg = ERR_PTR(-EAGAIN);
+ 		current->state = TASK_INTERRUPTIBLE;
+ 		msg_unlock(msq);
+@@ -894,29 +909,16 @@ out_unlock:
+ 	if (IS_ERR(msg))
+ 		return PTR_ERR(msg);
+ 
+-	msgsz = (msgsz > msg->m_ts) ? msg->m_ts : msgsz;
+-	*pmtype = msg->m_type;
+-	if (store_msg(mtext, msg, msgsz))
+-		msgsz = -EFAULT;
+-
++	bufsz = msg_handler(buf, msg, bufsz);
+ 	free_msg(msg);
+ 
+-	return msgsz;
++	return bufsz;
+ }
+ 
+ SYSCALL_DEFINE5(msgrcv, int, msqid, struct msgbuf __user *, msgp, size_t, msgsz,
+ 		long, msgtyp, int, msgflg)
+ {
+-	long err, mtype;
+-
+-	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
+-	if (err < 0)
+-		goto out;
+-
+-	if (put_user(mtype, &msgp->mtype))
+-		err = -EFAULT;
+-out:
+-	return err;
++	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg, do_msg_fill);
+ }
+ 
+ #ifdef CONFIG_PROC_FS
 
