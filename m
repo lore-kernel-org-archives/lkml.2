@@ -1,134 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935250Ab2JXQhc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:37:32 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46966 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935193Ab2JXQha convert rfc822-to-8bit (ORCPT
+	id S935225Ab2JXQjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:39:48 -0400
+Received: from nm11.access.bullet.mail.sp2.yahoo.com ([98.139.44.138]:48579
+	"EHLO nm11.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934468Ab2JXQjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:37:30 -0400
-Message-ID: <1351096647.23327.64.camel@hornet>
-Subject: Re: [RFC] Energy/power monitoring within the kernel
-From: Pawel Moll <pawel.moll@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Date: Wed, 24 Oct 2012 17:37:27 +0100
-In-Reply-To: <20121023220240.GA25895@roeck-us.net>
-References: <1351013449.9070.5.camel@hornet>
-	 <20121023220240.GA25895@roeck-us.net>
-X-Mailer: Evolution 3.6.0-0ubuntu3
-Mime-Version: 1.0
-X-OriginalArrivalTime: 24 Oct 2012 16:37:28.0261 (UTC) FILETIME=[DB032750:01CDB205]
-X-MC-Unique: 112102417372802201
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Oct 2012 12:39:45 -0400
+X-Yahoo-Newman-Id: 524141.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: I4hNqs0VM1mgcwo1.yH8Z0TZr1J3u.kHdLqn_IS0YwiY4RF
+ bEkDf4gwU3gN7PrnuVBO0cFst28.cerqyPF8lndDqAGq67biqq3hh8rx57o5
+ bc5rpjX86EgMOG2FhM7lmX17.s9Kxo2cK6onrdZHiVhAuRBkBKtCtP93ZI1B
+ 6P2TWFfUKYAA4ugPGP7W._Ag_KlKqmV9ubJprpdE_sq.b75kmAaj9ywDQ4rw
+ OkCQm0m.NM2IYVGwjRUzJrXJHP6rxq2Jk3OP9GyW0AxZt3gzWZ4sUVFZICM8
+ shT5FbkRRjWwXl.LZf_UDC6d16S2O.5mFYb_e86aGgtomkEfoTJZdoskgifG
+ iqjl_64O71xFjnvWOYIKsRgwt6XcWbjbqc8_rlJDmlbwV.Q.fbeYUBE9V5tV
+ 4DoH2NhuuMnEiZKqn3o0xM9Cp.nNISB0FsI5QsO1bDcaHy4rmhUeDFQ--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+From: danielfsantos@att.net
+To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>,
+        Daniel Santos <daniel.santos@pobox.com>,
+        David Daney <david.daney@cavium.com>,
+        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v3 05/10] compiler{,-gcc4}.h, bug.h: Remove duplicate macros
+Date: Wed, 24 Oct 2012 11:33:56 -0500
+Message-Id: <1351096441-12388-5-git-send-email-daniel.santos@pobox.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
+References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 23:02 +0100, Guenter Roeck wrote:
-> > Traditionally such data should be exposed to the user via hwmon sysfs
-> > interface, and that's exactly what I did for "my" platform - I have
-> > a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
-> > enough to draw pretty graphs in userspace. Everyone was happy...
-> > 
-> Only driver supporting "energy" output so far is ibmaem, and the reported energy
-> is supposed to be cumulative, as in energy = power * time. Do you mean power,
-> possibly ?
+__linktime_error() does the same thing as __compiletime_error() and is
+only used in bug.h.  Since the macro defines a function attribute that
+will cause a failure at compile-time (not link-time), it makes more
+sense to keep __compiletime_error(), which is also neatly mated with
+__compiletime_warning().
 
-So the vexpress would be the second one, than :-) as the energy
-"monitor" actually on the latest tiles reports 64-bit value of
-microJoules consumed (or produced) since the power-up.
+Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/bug.h           |    2 +-
+ include/linux/compiler-gcc4.h |    2 --
+ include/linux/compiler.h      |    3 ---
+ 3 files changed, 1 insertions(+), 6 deletions(-)
 
-Some of the older boards were able to report instant power, but this
-metrics is less useful in our case.
-
-> > Now I am getting new requests to do more with this data. In particular
-> > I'm asked how to add such information to ftrace/perf output. The second
-> > most frequent request is about providing it to a "energy aware"
-> > cpufreq governor.
-> 
-> Anything energy related would have to be along the line of "do something after a
-> certain amount of work has been performed", which at least at the surface does
-> not make much sense to me, unless you mean something along the line of a
-> process scheduler which schedules a process not based on time slices but based
-> on energy consumed, ie if you want to define a time slice not in milli-seconds
-> but in Joule.
-
-Actually there is some research being done in this direction, but it's
-way too early to draw any conclusions...
-
-> If so, I would argue that a similar behavior could be achieved by varying the
-> duration of time slices with the current CPU speed, or simply by using cycle
-> count instead of time as time slice parameter. Not that I am sure if such an
-> approach would really be of interest for anyone. 
-> 
-> Or do you really mean power, not energy, such as in "reduce CPU speed if its
-> power consumption is above X Watt" ?
-
-Uh. To be completely honest I must answer: I'm not sure how the "energy
-aware" cpufreq governor is supposed to work. I have been simply asked to
-provide the data in some standard way, if possible.
-
-> I am not sure how this would be expected to work. hwmon is, by its very nature,
-> a passive subsystem: It doesn't do anything unless data is explicitly requested
-> from it. It does not update an attribute unless that attribute is read.
-> That does not seem to fit well with the idea of tracing - which assumes
-> that some activity is happening, ultimately, all by itself, presumably
-> periodically. The idea to have a user space application read hwmon data only
-> for it to trigger trace events does not seem to be very compelling to me.
-
-What I had in mind was similar to what adt7470 driver does. The driver
-would automatically access the device every now and then to update it's
-internal state and generate the trace event on the way. This
-auto-refresh "feature" is particularly appealing for me, as on some of
-"my" platforms can take up to 500 microseconds to actually get the data.
-So doing this in background (and providing users with the last known
-value in the meantime) seems attractive.
-
-> An exception is if a monitoring device suppports interrupts, and if its driver
-> actually implements those interrupts. This is, however, not the case for most of
-> the current drivers (if any), mostly because interrupt support for hardware
-> monitoring devices is very platform dependent and thus difficult to implement.
-
-Interestingly enough the newest version of our platform control micro
-(doing the energy monitoring as well) can generate and interrupt when a
-transaction is finished, so I was planning to periodically update the
-all sort of values. And again, generating a trace event on this
-opportunity would be trivial.
-
-> > Of course a particular driver could register its own perf PMU on its
-> > own. It's certainly an option, just very suboptimal in my opinion.
-> > Or maybe not? Maybe the task is so specialized that it makes sense?
-> > 
-> We had a couple of attempts to provide an in-kernel API. Unfortunately,
-> the result was, at least so far, more complexity on the driver side.
-> So the difficulty is really to define an API which is really simple, and does
-> not just complicate driver development for a (presumably) rare use case.
-
-Yes, I appreciate this. That's why this option is actually my least
-favourite. Anyway, what I was thinking about was just a thin shin that
-*can* be used by a driver to register some particular value with the
-core (so it can be enumerated and accessed by in-kernel clients) and the
-core could (or not) create a sysfs attribute for this value on behalf of
-the driver. Seems lightweight enough, unless previous experience
-suggests otherwise?
-
-Cheers!
-
-Paweł
-
+diff --git a/include/linux/bug.h b/include/linux/bug.h
+index 4bd74d8..a03c3ef 100644
+--- a/include/linux/bug.h
++++ b/include/linux/bug.h
+@@ -74,7 +74,7 @@ extern int __build_bug_on_failed;
+ #define BUILD_BUG()						\
+ 	do {							\
+ 		extern void __build_bug_failed(void)		\
+-			__linktime_error("BUILD_BUG failed");	\
++			__compiletime_error("BUILD_BUG failed");\
+ 		__build_bug_failed();				\
+ 	} while (0)
+ 
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 9755029..7f143ac 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -33,8 +33,6 @@
+    the kernel context */
+ #define __cold			__attribute__((__cold__))
+ 
+-#define __linktime_error(message) __attribute__((__error__(message)))
+-
+ #ifndef __CHECKER__
+ # define __compiletime_warning(message) __attribute__((warning(message)))
+ # define __compiletime_error(message) __attribute__((error(message)))
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index b121554..cbf6d9d 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -299,9 +299,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #ifndef __compiletime_error
+ # define __compiletime_error(message)
+ #endif
+-#ifndef __linktime_error
+-# define __linktime_error(message)
+-#endif
+ /*
+  * Prevent the compiler from merging or refetching accesses.  The compiler
+  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+-- 
+1.7.3.4
 
