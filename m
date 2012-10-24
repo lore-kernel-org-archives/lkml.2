@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934973Ab2JXO3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:29:50 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46278 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934873Ab2JXO3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:29:47 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] tty: Fix typo in tty drivers
-Date: Wed, 24 Oct 2012 23:29:41 +0900
-Message-Id: <1351088981-24976-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+	id S934971Ab2JXOcI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:32:08 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41951 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934917Ab2JXOcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:32:05 -0400
+Message-ID: <1351089124.18179.12.camel@joe-AO722>
+Subject: Re: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal
+ properties and platform data.
+From: Joe Perches <joe@perches.com>
+To: "hongbo.zhang" <hongbo.zhang@linaro.org>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, "hongbo.zhang" <hongbo.zhang@linaro.com>
+Date: Wed, 24 Oct 2012 07:32:04 -0700
+In-Reply-To: <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	 <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
+	 <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in debug messages within tty drivers.
+On Wed, 2012-10-24 at 19:58 +0800, hongbo.zhang wrote:
+> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+> also adds the platform data to support the old fashion.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/tty/hvc/hvc_opal.c      | 2 +-
- drivers/tty/hvc/hvc_vio.c       | 2 +-
- drivers/tty/serial/8250/Kconfig | 2 +-
- drivers/tty/serial/bfin_uart.c  | 2 +-
- drivers/tty/serial/icom.c       | 2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+Just a trivial note:
 
-diff --git a/drivers/tty/hvc/hvc_opal.c b/drivers/tty/hvc/hvc_opal.c
-index 0d2ea0c..a4f488f 100644
---- a/drivers/tty/hvc/hvc_opal.c
-+++ b/drivers/tty/hvc/hvc_opal.c
-@@ -178,7 +178,7 @@ static int __devinit hvc_opal_probe(struct platform_device *dev)
- 		proto = HV_PROTOCOL_HVSI;
- 		ops = &hvc_opal_hvsi_ops;
- 	} else {
--		pr_err("hvc_opal: Unkown protocol for %s\n",
-+		pr_err("hvc_opal: Unknown protocol for %s\n",
- 		       dev->dev.of_node->full_name);
- 		return -ENXIO;
- 	}
-diff --git a/drivers/tty/hvc/hvc_vio.c b/drivers/tty/hvc/hvc_vio.c
-index ee30779..56e9725 100644
---- a/drivers/tty/hvc/hvc_vio.c
-+++ b/drivers/tty/hvc/hvc_vio.c
-@@ -250,7 +250,7 @@ static int __devinit hvc_vio_probe(struct vio_dev *vdev,
- 		proto = HV_PROTOCOL_HVSI;
- 		ops = &hvterm_hvsi_ops;
- 	} else {
--		pr_err("hvc_vio: Unkown protocol for %s\n", vdev->dev.of_node->full_name);
-+		pr_err("hvc_vio: Unknown protocol for %s\n", vdev->dev.of_node->full_name);
- 		return -ENXIO;
- 	}
- 
-diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-index a27dd05..9395800 100644
---- a/drivers/tty/serial/8250/Kconfig
-+++ b/drivers/tty/serial/8250/Kconfig
-@@ -271,7 +271,7 @@ config SERIAL_8250_DW
- 	  present in the Synopsys DesignWare APB UART.
- 
- config SERIAL_8250_EM
--	tristate "Support for Emma Mobile intergrated serial port"
-+	tristate "Support for Emma Mobile integrated serial port"
- 	depends on SERIAL_8250 && ARM && HAVE_CLK
- 	help
- 	  Selecting this option will add support for the integrated serial
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index 9242d56..9b11c3f 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -815,7 +815,7 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
- 		lcr = WLS(5);
- 		break;
- 	default:
--		printk(KERN_ERR "%s: word lengh not supported\n",
-+		printk(KERN_ERR "%s: word length not supported\n",
- 			__func__);
- 	}
- 
-diff --git a/drivers/tty/serial/icom.c b/drivers/tty/serial/icom.c
-index defc4e3..6131516 100644
---- a/drivers/tty/serial/icom.c
-+++ b/drivers/tty/serial/icom.c
-@@ -505,7 +505,7 @@ static void load_code(struct icom_port *icom_port)
- 		/* Stop processor */
- 		stop_processor(icom_port);
- 
--		dev_err(&icom_port->adapter->pci_dev->dev,"Port not opertional\n");
-+		dev_err(&icom_port->adapter->pci_dev->dev,"Port not operational\n");
- 	}
- 
- 	if (new_page != NULL)
--- 
-1.8.0.rc3.16.g8ead1bf
+> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+
+> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
+>  };
+>  
+>  /*
+> + * Thermal Sensor
+> + */
+> +
+> +static struct resource db8500_thsens_resources[] = {
+
+should there be a const in any of these?
+
+> +static struct db8500_thsens_platform_data db8500_thsens_data = {
+[]
+> +static struct platform_device u8500_thsens_device = {
+[]
+> +static struct platform_device u8500_cpufreq_cooling_device = {
+
 
