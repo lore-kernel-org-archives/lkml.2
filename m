@@ -1,53 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab2JXL35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:29:57 -0400
-Received: from ozlabs.org ([203.10.76.45]:48089 "EHLO ozlabs.org"
+	id S1758463Ab2JXLdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:33:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36317 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758242Ab2JXL3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:29:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Kees Cook <keescook@chromium.org>
-Cc: mtk.manpages@gmail.com, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, jonathon@jonmasters.org,
-        "Mimi Zohar" <zohar@linux.vnet.ibm.com>,
-        "Kasatkin\, Dmitry" <dmitry.kasatkin@intel.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-In-Reply-To: <CAMOw1v4KOcH+OckoFzWEr68aUweKD-6gH83BHmBm-1c7PqhCpQ@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org> <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com> <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com> <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au> <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com> <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com> <87sj97hs5e.fsf@rustcorp.com.au> <CAMOw1v7ySGT2g5s8djEbCGnqTNjqHky_LvaZsGEN6CSLNPMUgw@mail.gmail.com> <CAGXu5jK5wCnG0Ks+8YPgubX9dOir786hY4N+S3yTirK2-hBLqQ@mail.gmail.com> <CAMOw1v6bL2U2d6fKzqmGxk5GrjUzA7whcaCsp9e3EOOe+c=N_A@mail.gmail.com> <CAGXu5j+2vpA3J4sCUCaNkzCfO0yON2cVwSqFOiXku5u8GMwmmA@mail.gmail.com> <CAMOw1v4KOcH+OckoFzWEr68aUweKD-6gH83BHmBm-1c7PqhCpQ@mail.gmail.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 24 Oct 2012 13:36:59 +1030
-Message-ID: <87d308o9f0.fsf@rustcorp.com.au>
+	id S1758266Ab2JXLdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 07:33:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
+   d="scan'208";a="239459086"
+Message-ID: <5087CF96.7010406@intel.com>
+Date: Wed, 24 Oct 2012 19:23:02 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com> <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com> <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+In-Reply-To: <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lucas De Marchi <lucas.demarchi@profusion.mobi> writes:
-> On Tue, Oct 23, 2012 at 1:42 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, Oct 22, 2012 at 9:08 PM, Lucas De Marchi
->> <lucas.demarchi@profusion.mobi> wrote:
->>> sure... but do you realize this will fail in case kernel is checking
->>> module signature and we passed --force to modprobe (therefore mangled
->>> the decompressed memory area)?
+On 10/24/2012 04:57 PM, Stephane Eranian wrote:
+> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 >>
->> Hm, yeah, userspace mangling of a module plus signing would fail.
->> Seems like mangling and signing aren't compatible. Doing it in
->> kernel-space (as now written for finit_module) solves that, but it
->> means that now compression isn't possible if you need both signing and
->> mangling.
+>> Try enabling the LBR call stack feature if event request recording
+>> callchain. Try utilizing the LBR call stack to get user callchain
+>> in case of there is no frame pointer.
+>>
+>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
+>>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>>  include/linux/perf_event.h                 |   6 ++
+>>  kernel/events/core.c                       |  11 ++-
+>>  6 files changed, 124 insertions(+), 49 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>> index 8ae8044..3bf2100 100644
+>> --- a/arch/x86/kernel/cpu/perf_event.c
+>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
+>>
+>>                 if (event->attr.precise_ip > precise)
+>>                         return -EOPNOTSUPP;
+>> -               /*
+>> -                * check that PEBS LBR correction does not conflict with
+>> -                * whatever the user is asking with attr->branch_sample_type
+>> -                */
+>> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>> -                       u64 *br_type = &event->attr.branch_sample_type;
+>> -
+>> -                       if (has_branch_stack(event)) {
+>> -                               if (!precise_br_compat(event))
+>> -                                       return -EOPNOTSUPP;
+>> -
+>> -                               /* branch_sample_type is compatible */
+>> -
+>> -                       } else {
+>> -                               /*
+>> -                                * user did not specify  branch_sample_type
+>> -                                *
+>> -                                * For PEBS fixups, we capture all
+>> -                                * the branches at the priv level of the
+>> -                                * event.
+>> -                                */
+>> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+>> -
+>> -                               if (!event->attr.exclude_user)
+>> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+>> -
+>> -                               if (!event->attr.exclude_kernel)
+>> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>> -                       }
+>> +       }
+>> +       /*
+>> +        * check that PEBS LBR correction does not conflict with
+>> +        * whatever the user is asking with attr->branch_sample_type
+>> +        */
+>> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>> +               u64 *br_type = &event->attr.branch_sample_type;
+>> +
+>> +               if (has_branch_stack(event)) {
+>> +                       if (!precise_br_compat(event))
+>> +                               return -EOPNOTSUPP;
+>> +
+>> +                       /* branch_sample_type is compatible */
+>> +
+>> +               } else {
+>> +                       /*
+>> +                        * user did not specify  branch_sample_type
+>> +                        *
+>> +                        * For PEBS fixups, we capture all
+>> +                        * the branches at the priv level of the
+>> +                        * event.
+>> +                        */
+>> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+>> +
+>> +                       if (!event->attr.exclude_user)
+>> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+>> +
+>> +                       if (!event->attr.exclude_kernel)
+>> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>> +               }
+>> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
+>> +                       /*
+>> +                        * user did not specify branch_sample_type,
+>> +                        * try using the LBR call stack facility to
+>> +                        * record call chains in the user space.
+>> +                        */
+>> +                       event->attr.branch_sample_type =
+>> +                               PERF_SAMPLE_BRANCH_USER |
+>> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
+> 
+> You are forcing user level here, but how do you know the user wanted
+> ONLY user level
+> callchains?
+> 
+> 
 
-Signing and mangling are always incompatible, of course.
+The LBR call stack is used only when the frame pointer approach doesn't work.
+I think the kernel has frame pointer for the most cases. The second reason is
+that the LBR call stack only has 16 entries. I think it's too small to record
+both kernel and user call chains.
 
-Compressed modules breaks Kees' (and IMA's) requirement to have an fd
-attached, unless the kernel does the decompression.  We have that code
-already, in fact.
+Regards
+Yan, Zheng
 
-It would be easy to add a config option the recognize the compression
-magic and uncompress in-kernel.  That would happen after the signature
-check, of course, and Just Work.
-
-Cheers,
-Rusty.
