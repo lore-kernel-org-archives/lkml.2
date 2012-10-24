@@ -1,140 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933645Ab2JXASp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:18:45 -0400
-Received: from rs130.luxsci.com ([72.32.115.17]:52778 "EHLO rs130.luxsci.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918Ab2JXASn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:18:43 -0400
-Message-ID: <508733D5.3060207@firmworks.com>
-Date: Tue, 23 Oct 2012 14:18:29 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S933685Ab2JXA3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:29:00 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:59656 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933445Ab2JXA26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 20:28:58 -0400
 MIME-Version: 1.0
-To: Jon Hunter <jon-hunter@ti.com>
-CC: Sebastien Guiriec <s-guiriec@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/4] ARM: dts: omap5: Update GPIO with address space
- and interrupts
-References: <1350981432-6750-1-git-send-email-s-guiriec@ti.com> <1350981432-6750-2-git-send-email-s-guiriec@ti.com> <5086AE8E.60106@ti.com> <5086CC02.6070801@firmworks.com> <5087252A.50203@ti.com>
-In-Reply-To: <5087252A.50203@ti.com>
+In-Reply-To: <1351030129.2459.17.camel@palomino.walls.org>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	<1351022246-8201-15-git-send-email-elezegarcia@gmail.com>
+	<1351030129.2459.17.camel@palomino.walls.org>
+Date: Tue, 23 Oct 2012 21:28:57 -0300
+Message-ID: <CALF0-+UOJDFXB+U=owDzvs+RsrXR2501O=McH4FnrzYGfNi6QQ@mail.gmail.com>
+Subject: Re: [PATCH 15/23] ivtv: Replace memcpy with struct assignment
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Lux-Comment: Message q9O0IUQj024354 sent by user #11875
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2012 1:15 PM, Jon Hunter wrote:
-> Hi Mitch,
-> 
-> On 10/23/2012 11:55 AM, Mitch Bradley wrote:
->> On 10/23/2012 4:49 AM, Jon Hunter wrote:
+Hey Andy,
+
+On Tue, Oct 23, 2012 at 7:08 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+> On Tue, 2012-10-23 at 16:57 -0300, Ezequiel Garcia wrote:
+>> This kind of memcpy() is error-prone. Its replacement with a struct
+>> assignment is prefered because it's type-safe and much easier to read.
+>
+> This one is a code maintenance win. :)
+>
+> See my comments at the end for the difference in assembled code on an
+> AMD x86_64 CPU using
+> $ gcc --version
+> gcc (GCC) 4.6.3 20120306 (Red Hat 4.6.3-2)
+>
+>
+>> Found by coccinelle. Hand patched and reviewed.
+>> Tested by compilation only.
 >>
->>> Therefore, I believe it will improve search time and hence, boot time if
->>> we have interrupt-parent defined in each node.
+>> A simplified version of the semantic match that finds this problem is as
+>> follows: (http://coccinelle.lip6.fr/)
 >>
->> I strongly suspect (based on many years of performance tuning, with
->> special focus on boot time) that the time difference will be completely
->> insignificant.  The total extra time for walking up the interrupt tree
->> for every interrupt in a large system is comparable to the time it takes
->> to send a few characters out a UART.  So you can get more improvement
->> from eliminating a single printk() than from globally adding per-node
->> interrupt-parent.
+>> // <smpl>
+>> @@
+>> identifier struct_name;
+>> struct struct_name to;
+>> struct struct_name from;
+>> expression E;
+>> @@
+>> -memcpy(&(to), &(from), E);
+>> +to = from;
+>> // </smpl>
 >>
->> Furthermore, the cost of processing all of the interrupt-parent
->> properties is probably similar to the cost of the avoided tree walks.
+>> Cc: Andy Walls <awalls@md.metrocast.net>
+>
+> Signed-off-by: Andy Walls <awalls@md.metrocast.net>
+>
+>
+>> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+>> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+>> ---
+>>  drivers/media/pci/ivtv/ivtv-i2c.c |   12 ++++--------
+>>  1 files changed, 4 insertions(+), 8 deletions(-)
 >>
->> CPU cycles are very fast compared to I/O register accesses, say a factor
->> of 100.  Now consider that many modern devices contain embedded
->> microcontrollers (SD cards, network interface modules, USB hubs and
->> devices, ...), and those devices usually require various delays measured
->> in milliseconds, to ensure that the microcontroller is ready for the
->> next initialization step.  Those delays are extremely long compared to
->> CPU cycles.  Obviously, some of that can be overlapped by careful
->> multithreading, but that isn't free either.
+>> diff --git a/drivers/media/pci/ivtv/ivtv-i2c.c b/drivers/media/pci/ivtv/ivtv-i2c.c
+>> index d47f41a..27a8466 100644
+>> --- a/drivers/media/pci/ivtv/ivtv-i2c.c
+>> +++ b/drivers/media/pci/ivtv/ivtv-i2c.c
+>> @@ -719,13 +719,10 @@ int init_ivtv_i2c(struct ivtv *itv)
+>>               return -ENODEV;
+>>       }
+>>       if (itv->options.newi2c > 0) {
+>> -             memcpy(&itv->i2c_adap, &ivtv_i2c_adap_hw_template,
+>> -                    sizeof(struct i2c_adapter));
+>> +             itv->i2c_adap = ivtv_i2c_adap_hw_template;
+>>       } else {
+>> -             memcpy(&itv->i2c_adap, &ivtv_i2c_adap_template,
+>> -                    sizeof(struct i2c_adapter));
+>> -             memcpy(&itv->i2c_algo, &ivtv_i2c_algo_template,
+>> -                    sizeof(struct i2c_algo_bit_data));
+>> +             itv->i2c_adap = ivtv_i2c_adap_template;
+>> +             itv->i2c_algo = ivtv_i2c_algo_template;
+>>       }
+>>       itv->i2c_algo.udelay = itv->options.i2c_clock_period / 2;
+>>       itv->i2c_algo.data = itv;
+>> @@ -735,8 +732,7 @@ int init_ivtv_i2c(struct ivtv *itv)
+>>               itv->instance);
+>>       i2c_set_adapdata(&itv->i2c_adap, &itv->v4l2_dev);
 >>
->> The bottom line is that I'm pretty sure that adding per-node
->> interrupt-parent would not be worthwhile from the standpoint of speeding
->> up boot time.
-> 
-> Absolutely, I don't expect this to miraculously improve the boot time or
-> suggest that this is a major contributor to boot time, but what is the
-> best approach in general in terms of efficiency (memory and time). In
-> other words, is there a best practice? And from your feedback, I
-> understand that adding a global interrupt-parent is a good practice.
+>> -     memcpy(&itv->i2c_client, &ivtv_i2c_client_template,
+>> -            sizeof(struct i2c_client));
+>> +     itv->i2c_client = ivtv_i2c_client_template;
+>>       itv->i2c_client.adapter = &itv->i2c_adap;
+>>       itv->i2c_adap.dev.parent = &itv->pdev->dev;
+>>
+>
+> I looked at the generated assembly with only this last change
+> implemented:
+>
+> $ objdump -h -r -d -l -s orig-ivtv-i2c.o.sav | less
+> [...]
+>  07e0 00000000 69767476 20696e74 65726e61  ....ivtv interna
+>  07f0 6c000000 00000000 00000000 00000000  l...............
+>  0800 00000000 00000000 00000000 00000000  ................
+>  0810 00000000 00000000 00000000 00000000  ................
+>  0820 00000000 00000000 00000000 00000000  ................
+>  0830 00000000 00000000 00000000 00000000  ................
+> [...]
+> init_ivtv_i2c():
+> /home/andy/cx18dev/git/media_tree/drivers/media/video/ivtv/ivtv-i2c.c:738
+>     13bb:       48 c7 c6 00 00 00 00    mov    $0x0,%rsi
+>                         13be: R_X86_64_32S      .rodata+0x7e0
+>     13c2:       48 8d bb 30 04 01 00    lea    0x10430(%rbx),%rdi
+>     13c9:       b9 5a 00 00 00          mov    $0x5a,%ecx
+>     13ce:       f3 48 a5                rep movsq %ds:(%rsi),%es:(%rdi)
+>
+>
+> $ objdump -h -r -d -l -s orig-ivtv-i2c.o.sav | less
+> [...]
+>  07e0 00000000 69767476 20696e74 65726e61  ....ivtv interna
+>  07f0 6c000000 00000000 00000000 00000000  l...............
+>  0800 00000000 00000000 00000000 00000000  ................
+>  0810 00000000 00000000 00000000 00000000  ................
+>  0820 00000000 00000000 00000000 00000000  ................
+>  0830 00000000 00000000 00000000 00000000  ................
+> [...]
+> init_ivtv_i2c():
+> /home/andy/cx18dev/git/media_tree/drivers/media/video/ivtv/ivtv-i2c.c:738
+>     13bb:       48 8d bb 30 04 01 00    lea    0x10430(%rbx),%rdi
+>     13c2:       48 c7 c6 00 00 00 00    mov    $0x0,%rsi
+>                         13c5: R_X86_64_32S      .rodata+0x7e0
+>     13c9:       b9 5a 00 00 00          mov    $0x5a,%ecx
+>     13ce:       f3 48 a5                rep movsq %ds:(%rsi),%es:(%rdi)
+>
+>
+> The generated code is reordered, but essentially identical.  So I guess
+> in this instance, the preprocessor defines resolved such that an x86-64
+> optimized memcpy() function was not used from the linux kernel source.
+>
+> Since all of these memcpy()'s are only called once for each board at
+> board initialization, performance here really doesn't matter here
+> anyway.  (Unless one is insanely trying to shave microseconds off boot
+> time :P )
+>
+> With other memcpy()/assignement_operator replacement patches, you may
+> wish to keep performance in mind, if you are patching a frequently
+> called function.
+>
 
->From a maintenance standpoint, "saying it once" is best practice.  Time
-that you don't spend doing unnecessary maintenance can be spent looking
-for other, higher value, improvements.  And when you do need to optimize
-something, it's much easier if the function is centralized.
+Thanks for your thorough review on generated assembly.
+It's certainly very helpful.
 
-Pushing the interrupt parent up the tree to the appropriate point can
-make the next platform easier, opening the possibility of changing just
-one thing instead of several dozen.
+However, IMHO, this kind of memcpy/assignment can't generate
+any performance difference, and we shouldn't worry about this
+unless it's a very-very-very hot path.
 
-There have been several cases when I have violated good factoring in
-order to save a little time, only to have to undo it later when the next
-system was enough different that the de-factored version didn't work.
+On the other side, am I being too naive? I'd like to hear others opinion.
 
-So, while there are certainly cases where you are forced to do
-otherwise, I generally like the "don't repeat yourself" mantra.
+Again: thanks!
 
-> 
-> For a bit of fun, I took an omap4430 board and benchmarked the time
-> taken by the of_irq_find_parent() when interrupt-parent was defined for
-> each node using interrupts and without.
-> 
-> There were a total of 47 device nodes using interrupts. Adding the
-> interrupt-parent to all 47 nodes increased the dtb from 13211 bytes to
-> 13963 bytes.
-> 
-> On boot-up I saw 117 calls to of_irq_find_parent() for this platform
-> (there appears to be multiple calls for a given device). Without
-> interrupt-parent defined for each node total time spent in
-> of_irq_find_parent() was 1.028 ms where as with interrupt-parent defined
-> for each node the total time was 0.4032 ms. This was done using a
-> 38.4MHz timer and the overhead of reading the timer 117 times was about
-> 36 us.
-
-That sounds about right.  The savings of 600 us is 6 characters at
-115200 baud.
-
-> 
-> I understand that this does not provide the full picture, but I wanted
-> to get a better handle on the times here. So yes the overall overhead
-> here is not significant for us to worry about.
-
-Big ticket items for boot time improvement are time spent waiting for
-peripheral devices to become ready and time spent spewing diagnostic
-messages.  But in the final analysis, you just have to measure what is
-happening and see what you can do to improve it.  In my experience, CPU
-cycles are rarely problematic, unless they are artificially slowed down
-due to caches being off or due to direct execution from slow memory like
-ROMs.
-
-I once shaved an hour off the startup time for a PowerPC system by
-moving some critical code into cache.  This was on a prototype "chip"
-that was being emulated by arrays of FPGAs.
-
-On the first generation OLPC XO-1 machine we were really interested in
-super-fast wakeup from suspend.  I tuned that firmware code path to the
-nth degree, finally getting stuck at 2 ms because you had to wait that
-long before accessing the PCI bus interface, otherwise the SD controller
-chip would lock up.  Then I transferred control to the kernel, which had
-to wait something like 40 ms (two display frame times) to re-sync the
-video subsystem, then it had to re-enable the USB subsystem, which ended
-up taking a good fraction of a second.
-
-Things haven't gotten much better (in fact they are probably worse),
-because, even the the CPUs have gotten faster, there are more
-peripherals with hard-to-avoid delays.  So, in the end, a few
-sub-millisecond delays just don't matter.
-
-> 
-> Cheers
-> Jon
-> 
-> 
+    Ezequiel
