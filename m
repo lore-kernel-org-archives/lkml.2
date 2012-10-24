@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab2JXDZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 23:25:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54332 "EHLO
+	id S934344Ab2JXD1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:27:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54355 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934238Ab2JXDZo (ORCPT
+	with ESMTP id S934331Ab2JXD1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 23:25:44 -0400
-Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
+	Tue, 23 Oct 2012 23:27:48 -0400
+Subject: Re: [PATCH 041/193] drivers/dma: remove CONFIG_EXPERIMENTAL
 From: Vinod Koul <vkoul@infradead.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: vinod.koul@intel.com, Matt Porter <mporter@ti.com>,
-        Dan Williams <djbw@fb.com>, Chris Ball <cjb@laptop.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-In-Reply-To: <CACxGe6sUrXPc2wtLfOy8_LvRMM+e=9=sSDNLkeszfe=JX_ipbw@mail.gmail.com>
-References: <1350615088-14562-1-git-send-email-mporter@ti.com>
-	 <1350615088-14562-2-git-send-email-mporter@ti.com>
-	 <CACxGe6sUrXPc2wtLfOy8_LvRMM+e=9=sSDNLkeszfe=JX_ipbw@mail.gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        Dan Williams <djbw@fb.com>
+In-Reply-To: <1351022666-6960-42-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	 <1351022666-6960-42-git-send-email-keescook@chromium.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Oct 2012 08:43:27 +0530
-Message-ID: <1351048407.5263.10.camel@vkoul-udesk3>
+Date: Wed, 24 Oct 2012 08:45:37 +0530
+Message-ID: <1351048537.5263.11.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,28 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 23:49 +0100, Grant Likely wrote:
-> > +enum dmaengine_apis {
-> > +       DMAENGINE_MEMCPY        = 0x0001,
-> > +       DMAENGINE_XOR           = 0x0002,
-> > +       DMAENGINE_XOR_VAL       = 0x0004,
-> > +       DMAENGINE_PQ            = 0x0008,
-> > +       DMAENGINE_PQ_VAL        = 0x0010,
-> > +       DMAENGINE_MEMSET        = 0x0020,
-> > +       DMAENGINE_SLAVE         = 0x0040,
-> > +       DMAENGINE_CYCLIC        = 0x0080,
-> > +       DMAENGINE_INTERLEAVED   = 0x0100,
-> > +       DMAENGINE_SG            = 0x0200,
-> > +};
+On Tue, 2012-10-23 at 13:01 -0700, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
 > 
-> Actually, one more comment. Why the new enum? Why can't the
-> dma_transaction_type enum be used directly along with dma_cap_mask_t? 
-Some of the capabilities above are not there in dma_caps_t like DMA_SG.
-Also DMA_INTERRUPT and DMA_PRIVATE would not make much sense here.
+> CC: Vinod Koul <vinod.koul@intel.com>
+> CC: Dan Williams <djbw@fb.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  drivers/dma/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 677cd6e..dc8f4d1 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -51,7 +51,7 @@ config ASYNC_TX_ENABLE_CHANNEL_SWITCH
+>  
+>  config AMBA_PL08X
+>  	bool "ARM PrimeCell PL080 or PL081 support"
+> -	depends on ARM_AMBA && EXPERIMENTAL
+> +	depends on ARM_AMBA
+>  	select DMA_ENGINE
+>  	select DMA_VIRTUAL_CHANNELS
+>  	help
 
-BUT would help to keep things simpler if have one definition which
-includes all.
- 
+Applied thanks
+
 -- 
 Vinod Koul
 Intel Corp.
