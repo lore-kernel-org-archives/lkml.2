@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab2JXXKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:10:53 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:59427 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750710Ab2JXXKv (ORCPT
+	id S1755703Ab2JXXSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:18:36 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:38203 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab2JXXSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:10:51 -0400
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com> <2776796.95QghSKdPW@avalon>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <2776796.95QghSKdPW@avalon>
+	Wed, 24 Oct 2012 19:18:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-From: Andy Walls <awalls@md.metrocast.net>
-Date: Wed, 24 Oct 2012 19:10:45 -0400
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ezequiel Garcia <elezegarcia@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Message-ID: <e8dd9233-589d-4e57-8a58-593789c8eae1@email.android.com>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-24_07:2012-10-24,2012-10-24,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=11
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=6.0.2-1203120001 definitions=main-1210240291
+In-Reply-To: <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com> <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 24 Oct 2012 16:18:13 -0700
+X-Google-Sender-Auth: JbwEx8Np5_yQPeCOBEDQj5S-S-M
+Message-ID: <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+On Wed, Oct 24, 2012 at 2:53 PM, Juri Lelli <juri.lelli@gmail.com> wrote:
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>
+> Grow rudimentary u128 support without relying on gcc/libgcc.
 
->Hi Ezequiel,
->
->Thanks for the patch.
->
->On Tuesday 23 October 2012 16:57:04 Ezequiel Garcia wrote:
->> This kind of memcpy() is error-prone. Its replacement with a struct
->> assignment is prefered because it's type-safe and much easier to
->read.
->> 
->> Found by coccinelle. Hand patched and reviewed.
->> Tested by compilation only.
->
->This looks good, but there's one more memcpy that can be replaced by a
->direct 
->structure assignment in uvc_ctrl_add_info() 
->(drivers/media/usb/uvc/uvc_ctrl.c). You might want to check why it
->hasn't been 
->caught by the semantic patch.
->
->> A simplified version of the semantic match that finds this problem is
->as
->> follows: (http://coccinelle.lip6.fr/)
->> 
->> // <smpl>
->> @@
->> identifier struct_name;
->> struct struct_name to;
->> struct struct_name from;
->> expression E;
->> @@
->> -memcpy(&(to), &(from), E);
->> +to = from;
->> // </smpl>
->> 
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
->> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
->> ---
->>  drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
->>  1 files changed, 3 insertions(+), 3 deletions(-)
->> 
->> diff --git a/drivers/media/usb/uvc/uvc_v4l2.c
->> b/drivers/media/usb/uvc/uvc_v4l2.c index f00db30..4fc8737 100644
->> --- a/drivers/media/usb/uvc/uvc_v4l2.c
->> +++ b/drivers/media/usb/uvc/uvc_v4l2.c
->> @@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct
->uvc_streaming
->> *stream, goto done;
->>  	}
->> 
->> -	memcpy(&stream->ctrl, &probe, sizeof probe);
->> +	stream->ctrl = probe;
->>  	stream->cur_format = format;
->>  	stream->cur_frame = frame;
->> 
->> @@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct
->uvc_streaming
->> *stream, return -EBUSY;
->>  	}
->> 
->> -	memcpy(&probe, &stream->ctrl, sizeof probe);
->> +	probe = stream->ctrl;
->>  	probe.dwFrameInterval =
->>  		uvc_try_frame_interval(stream->cur_frame, interval);
->> 
->> @@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct
->uvc_streaming
->> *stream, return ret;
->>  	}
->> 
->> -	memcpy(&stream->ctrl, &probe, sizeof probe);
->> +	stream->ctrl = probe;
->>  	mutex_unlock(&stream->mutex);
->> 
->>  	/* Return the actual frame period. */
->
->-- 
->Regards,
->
->Laurent Pinchart
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-media"
->in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I missed the part where somebody explains why and what needs this?
+It's going to be very expensive indeed on some platforms, so the fact
+that it is *sometimes* cheap doesn't necessarily imply it should ever
+be used.
 
-Maybe because there is no '&' operator on the second argument. 
+So please, explain what the pressing need is that is so worthwhile
+that this is worth it. Maybe it was in a 00/16 cover letter, but not
+only was that not sent out to the people who got 01, you'd still want
+it in the commit message.
 
-Regards,
-Andy
+> +typedef union {
+> +       struct {
+> +#if __BYTE_ORDER__  == __ORDER_LITTLE_ENDIAN__
+> +               u64 lo, hi;
+> +#else
+> +               u64 hi, lo;
+> +#endif
+> +       };
+> +#ifdef __SIZEOF_INT128__ /* gcc-4.6+ */
+> +       unsigned __int128 val;
+> +#endif
+> +} u128;
+
+This also looks totally wrong.
+
+If gcc has native support for __int128, then the union is pointless.
+Don't do it. Just do
+
+  #ifdef __SIZEOF_INT128__
+    typedef unsigned __int128 u128;
+  #else
+    typedef struct { ... u64 hi/lo in the right order } u128;
+  #endif
+
+because it's possible that using the native bare type will make gcc
+able to do better for various things.
+
+Sure, it's possible that you want to use a union in low-level
+architecture code that implements the actual math, BUT EVEN THEN the
+above union is pure and utter garbage. On 32-bit machines, you'd want
+to make it a union of 4 32-bit entities etc. So putting it like this
+in a generic file looks wrong. In fact, your very own generic
+mul_u64_u64() would seem to want to use the "4 32-bit words" kind of
+model.
+
+Also, the union isn't used for generic code anyway, since the generic
+code has that same __SIZEOF_INT128__ test for which generic version it
+should include (and I wonder if it should just be
+
+  #ifdef __SIZEOF_INT128__
+    #include <linux/native-128bit.h>
+  #elif CONFIG_64BIT
+    #include <linux/generic64bit-128bit.h>
+  #else
+    #include <linux/generic64bit-128bit.h>
+  #endif
+
+and then have separate files entirely for the "gcc handles the common
+operations" vs "64-bit architecture needs two words for most things"
+vs "32-bit architectures need 4 words for most things".
+
+I dunno. But I think this is wrong.
+
+             Linus
