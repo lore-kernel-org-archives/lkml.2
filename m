@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab2JXDAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 23:00:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36245 "EHLO
+	id S934309Ab2JXDCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:02:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60880 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933993Ab2JXDAd (ORCPT
+	with ESMTP id S933993Ab2JXDCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 23:00:33 -0400
-Date: Tue, 23 Oct 2012 20:01:05 -0700
+	Tue, 23 Oct 2012 23:02:09 -0400
+Date: Tue, 23 Oct 2012 20:02:41 -0700
 From: "'Greg KH'" <gregkh@linuxfoundation.org>
 To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,39 +15,56 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         chur.lee@samsung.com, cm224.lee@samsung.com,
         jooyoung.hwang@samsung.com
 Subject: Re: [PATCH 00/16 v2] f2fs: introduce flash-friendly file system
-Message-ID: <20121024030105.GC7982@kroah.com>
+Message-ID: <20121024030241.GD7982@kroah.com>
 References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
  <20121023182659.GA6587@kroah.com>
- <012e01cdb174$3068f540$913adfc0$%kim@samsung.com>
+ <20121023185753.GA2466@kroah.com>
+ <013801cdb174$ba5ca990$2f15fcb0$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <012e01cdb174$3068f540$913adfc0$%kim@samsung.com>
+In-Reply-To: <013801cdb174$ba5ca990$2f15fcb0$%kim@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 08:14:44AM +0900, Jaegeuk Kim wrote:
-> > On Tue, Oct 23, 2012 at 11:21:53AM +0900, Jaegeuk Kim wrote:
-> > > mkfs.f2fs
-> > > =========
+On Wed, Oct 24, 2012 at 08:18:36AM +0900, Jaegeuk Kim wrote:
+> > On Tue, Oct 23, 2012 at 11:26:59AM -0700, Greg KH wrote:
+> > > On Tue, Oct 23, 2012 at 11:21:53AM +0900, Jaegeuk Kim wrote:
+> > > > mkfs.f2fs
+> > > > =========
+> > > >
+> > > > The file system formatting tool, "mkfs.f2fs", is available from the following
+> > > > download page:		http://sourceforge.net/projects/f2fs-tools/
 > > >
-> > > The file system formatting tool, "mkfs.f2fs", is available from the following
-> > > download page:		http://sourceforge.net/projects/f2fs-tools/
+> > > Is there a git tree of this tool somewhere, so I don't have to
+> > > constantly suffer the sf.net download interface every time I want to get
+> > > the latest version?
 > > 
-> > Is there a git tree of this tool somewhere, so I don't have to
-> > constantly suffer the sf.net download interface every time I want to get
-> > the latest version?
+> > Oh, and where do we report bugs for this tool?  I just formatted a usb
+> > stick with the mkfs.f2fs program, and it did not fully erase the old
+> > filesystem that was on there (iso9660), so when I mounted it, it did so
+> > in iso9660 mode, not f2fs mode.
+> > 
 > 
-> I'd love to do like that.
-> I've managed a git tree for tools in house only, due to the company secret.
-> Would you suggest something for this?
-> I can do managing the tree outside though.
+> Any suggestion for reporting bugs?
+> Maybe via a mailing list?
 
-git.kernel.org can work, so can github, and also, you have a sf.net
-project, why not use the git tree it provides you?  Right now it is
-empty.
+Mailing list is fine.
+
+> What version did you use? (1.1.0 is correct.)
+
+I used 1.1.0
+
+> The reason we found was due to the 0'th block, so we fixed that in v1.1.0.
+
+Hm, that's what I used.  I zeroed out the whole usb disk and tried again
+and it worked then, I was trying to debug the kernel changes, not the
+userspace tool, so I didn't spend much time on it :)
+
+But, if you do get a public git tree up, I will at the very least,
+provide a patch to handle '-h' properly for mkfs, that should work...
 
 thanks,
 
