@@ -1,195 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab2JXJxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:53:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54974 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754546Ab2JXJxL (ORCPT
+	id S1757095Ab2JXJxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:53:39 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38225 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab2JXJxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:53:11 -0400
-Date: Wed, 24 Oct 2012 02:51:43 -0700
-From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-bb17f65571e97a7ec0297571fb1154fbd107ad00@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de
-In-Reply-To: <20120823141506.930124292@google.com>
-References: <20120823141506.930124292@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Normalize tg load contributions against runnable time
-Git-Commit-ID: bb17f65571e97a7ec0297571fb1154fbd107ad00
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Oct 2012 05:53:38 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
+   d="scan'208";a="15353140"
+Message-ID: <1351072415.2237.137.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH V5] PVH patches for v3.8.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jan Beulich <JBeulich@suse.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Oct 2012 10:53:35 +0100
+In-Reply-To: <5087D4A102000078000A3E23@nat28.tlf.novell.com>
+References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
+	 <5087B13402000078000A3CBB@nat28.tlf.novell.com>
+	 <1351071279.2237.126.camel@zakaz.uk.xensource.com>
+	 <5087D4A102000078000A3E23@nat28.tlf.novell.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:51:48 -0700 (PDT)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb17f65571e97a7ec0297571fb1154fbd107ad00
-Gitweb:     http://git.kernel.org/tip/bb17f65571e97a7ec0297571fb1154fbd107ad00
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 4 Oct 2012 13:18:31 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:26 +0200
+On Wed, 2012-10-24 at 10:44 +0100, Jan Beulich wrote:
+> >>> On 24.10.12 at 11:34, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > On Wed, 2012-10-24 at 08:13 +0100, Jan Beulich wrote:
+> > 
+> >> >  include/xen/interface/memory.h       |   29 ++++++-
+> >> >  include/xen/interface/physdev.h      |   10 ++
+> >> 
+> >> ... any changes to the hypervisor interface (didn't look in detail
+> >> what is being changed in these two headers) should first be in
+> >> at least -unstable before being consumed in any official release
+> >> imo.
+> > 
+> > I'd also like to see at least the interface definitions in the h/v tree
+> > if not the implementation right away.
+> > 
+> > The flip side is that we have agreed that the interfaces are not
+> > considered set in stone / stable until we've had a chance to review the
+> > implementation, so perhaps it is better not to commit them to
+> > xen-unstable.hg right away.
+> > 
+> > I don't know what the right answer is. Perhaps we should at a minimum
+> > reserve the subop numbers even if we don't yet define what they mean in
+> > the Xen tree.
+> 
+> But even then - what use is it to have 3.8 possibly only work on
+> some intermediate (perhaps even just privately built) hypervisors?
 
-sched: Normalize tg load contributions against runnable time
+Mukesh was having trouble keeping up with rebasing both the Linux and
+Xen sides simultaneously to keep up with development, so he decided to
+concentrate on getting the Linux side in first.
 
-Entities of equal weight should receive equitable distribution of cpu time.
-This is challenging in the case of a task_group's shares as execution may be
-occurring on multiple cpus simultaneously.
+Ian.
 
-To handle this we divide up the shares into weights proportionate with the load
-on each cfs_rq.  This does not however, account for the fact that the sum of
-the parts may be less than one cpu and so we need to normalize:
-  load(tg) = min(runnable_avg(tg), 1) * tg->shares
-Where runnable_avg is the aggregate time in which the task_group had runnable
-children.
-
-Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Ben Segall <bsegall@google.com>.
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120823141506.930124292@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/debug.c |    4 +++
- kernel/sched/fair.c  |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/sched.h |    2 +
- 3 files changed, 62 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 2908923..71b0ea3 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -234,6 +234,10 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			atomic64_read(&cfs_rq->tg->load_avg));
- 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
- 			cfs_rq->tg_load_contrib);
-+	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
-+			cfs_rq->tg_runnable_contrib);
-+	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
-+			atomic_read(&cfs_rq->tg->runnable_avg));
- #endif
- 
- 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e20cb26..9e49722 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1118,19 +1118,73 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 	}
- }
- 
-+/*
-+ * Aggregate cfs_rq runnable averages into an equivalent task_group
-+ * representation for computing load contributions.
-+ */
-+static inline void __update_tg_runnable_avg(struct sched_avg *sa,
-+						  struct cfs_rq *cfs_rq)
-+{
-+	struct task_group *tg = cfs_rq->tg;
-+	long contrib;
-+
-+	/* The fraction of a cpu used by this cfs_rq */
-+	contrib = div_u64(sa->runnable_avg_sum << NICE_0_SHIFT,
-+			  sa->runnable_avg_period + 1);
-+	contrib -= cfs_rq->tg_runnable_contrib;
-+
-+	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-+		atomic_add(contrib, &tg->runnable_avg);
-+		cfs_rq->tg_runnable_contrib += contrib;
-+	}
-+}
-+
- static inline void __update_group_entity_contrib(struct sched_entity *se)
- {
- 	struct cfs_rq *cfs_rq = group_cfs_rq(se);
- 	struct task_group *tg = cfs_rq->tg;
-+	int runnable_avg;
-+
- 	u64 contrib;
- 
- 	contrib = cfs_rq->tg_load_contrib * tg->shares;
- 	se->avg.load_avg_contrib = div64_u64(contrib,
- 					     atomic64_read(&tg->load_avg) + 1);
-+
-+	/*
-+	 * For group entities we need to compute a correction term in the case
-+	 * that they are consuming <1 cpu so that we would contribute the same
-+	 * load as a task of equal weight.
-+	 *
-+	 * Explicitly co-ordinating this measurement would be expensive, but
-+	 * fortunately the sum of each cpus contribution forms a usable
-+	 * lower-bound on the true value.
-+	 *
-+	 * Consider the aggregate of 2 contributions.  Either they are disjoint
-+	 * (and the sum represents true value) or they are disjoint and we are
-+	 * understating by the aggregate of their overlap.
-+	 *
-+	 * Extending this to N cpus, for a given overlap, the maximum amount we
-+	 * understand is then n_i(n_i+1)/2 * w_i where n_i is the number of
-+	 * cpus that overlap for this interval and w_i is the interval width.
-+	 *
-+	 * On a small machine; the first term is well-bounded which bounds the
-+	 * total error since w_i is a subset of the period.  Whereas on a
-+	 * larger machine, while this first term can be larger, if w_i is the
-+	 * of consequential size guaranteed to see n_i*w_i quickly converge to
-+	 * our upper bound of 1-cpu.
-+	 */
-+	runnable_avg = atomic_read(&tg->runnable_avg);
-+	if (runnable_avg < NICE_0_LOAD) {
-+		se->avg.load_avg_contrib *= runnable_avg;
-+		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
-+	}
- }
- #else
- static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 						 int force_update) {}
-+static inline void __update_tg_runnable_avg(struct sched_avg *sa,
-+						  struct cfs_rq *cfs_rq) {}
- static inline void __update_group_entity_contrib(struct sched_entity *se) {}
- #endif
- 
-@@ -1152,6 +1206,7 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
- 	if (entity_is_task(se)) {
- 		__update_task_entity_contrib(se);
- 	} else {
-+		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
- 		__update_group_entity_contrib(se);
- 	}
- 
-@@ -1220,6 +1275,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
- 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
-+	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
- }
- 
- /* Add the load generated by se into cfs_rq's child load-average */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 924a990..134928d 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -113,6 +113,7 @@ struct task_group {
- 
- 	atomic_t load_weight;
- 	atomic64_t load_avg;
-+	atomic_t runnable_avg;
- #endif
- 
- #ifdef CONFIG_RT_GROUP_SCHED
-@@ -234,6 +235,7 @@ struct cfs_rq {
- 	atomic64_t decay_counter, removed_load;
- 	u64 last_decay;
- #ifdef CONFIG_FAIR_GROUP_SCHED
-+	u32 tg_runnable_contrib;
- 	u64 tg_load_contrib;
- #endif
- #endif
