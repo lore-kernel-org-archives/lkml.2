@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161044Ab2JXS1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:27:07 -0400
-Received: from dupo.coraid.com ([208.71.232.133]:52307 "EHLO coraid.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935245Ab2JXS1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:27:05 -0400
-From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH] aoe: avoid using skb member after dev_queue_xmit
-To: akpm@linux-foundation.org
-Cc: ecashin@coraid.com, dan.carpenter@oracle.com,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Ed Cashin <ecashin@coraid.com>
-X-Mailer: nedmail
-Date: Wed, 24 Oct 2012 14:26:13 -0400
-Message-ID: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
+	id S1161078Ab2JXS1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:27:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38951 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935245Ab2JXS1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:27:51 -0400
+Date: Wed, 24 Oct 2012 11:27:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, hpa@zytor.com,
+        xemul@parallels.com, jslaby@suse.cz
+Subject: Re: [patch 1/3] tty: pty - Move TIOCPKT handling into pty.c
+Message-ID: <20121024182747.GA2614@kroah.com>
+References: <20120927211032.576475929@openvz.org>
+ <20120927211121.651422569@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120927211121.651422569@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After calling dev_queue_xmit it is no longer safe to access the
-members of the skb.
+On Fri, Sep 28, 2012 at 01:10:33AM +0400, Cyrill Gorcunov wrote:
+> Since this ioctl is for pty devices only move it to pty.c.
+> 
+> v2:
+>  - drop PTY_TYPE_MASTER test since it's master peer
+>    ioctl anyway (by jslaby@)
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Ed Cashin <ecashin@coraid.com>
----
- drivers/block/aoe/aoenet.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+This patch adds the compiler warning:
+drivers/tty/tty_ioctl.c: In function ‘n_tty_ioctl_helper’:
+drivers/tty/tty_ioctl.c:1121:16: warning: unused variable ‘flags’ [-Wunused-variable]
 
-diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
-index ae56828..2e47404 100644
---- a/drivers/block/aoe/aoenet.c
-+++ b/drivers/block/aoe/aoenet.c
-@@ -55,12 +55,14 @@ static int
- tx(void) __must_hold(&txlock)
- {
- 	struct sk_buff *skb;
-+	struct net_device *ifp;
- 
- 	while ((skb = skb_dequeue(&skbtxq))) {
- 		spin_unlock_irq(&txlock);
-+		ifp = skb->dev;
- 		if (dev_queue_xmit(skb) == NET_XMIT_DROP && net_ratelimit())
- 			pr_warn("aoe: packet could not be sent on %s.  %s\n",
--				skb->dev ? skb->dev->name : "netif",
-+				ifp ? ifp->name : "netif",
- 				"consider increasing tx_queue_len");
- 		spin_lock_irq(&txlock);
- 	}
--- 
-1.7.1
+Care to fix it up and resend?
 
+thanks,
+
+greg k-h
