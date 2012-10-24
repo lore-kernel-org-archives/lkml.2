@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab2JXKI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:08:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55250 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758162Ab2JXKIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:08:52 -0400
-Date: Wed, 24 Oct 2012 03:07:34 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-3fded963cdae12ff891a55efc866437506c3f912@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, jolsa@redhat.com, fweisbec@gmail.com,
-        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, jolsa@redhat.com
-In-Reply-To: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
-References: <1349873598-12583-7-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix PMU object alias initialization
-Git-Commit-ID: 3fded963cdae12ff891a55efc866437506c3f912
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S964991Ab2JXKJv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:09:51 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49852 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932684Ab2JXKJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 06:09:49 -0400
+Message-ID: <5087BE61.6060704@ti.com>
+Date: Wed, 24 Oct 2012 12:09:37 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 03:07:39 -0700 (PDT)
+To: Sebastien Guiriec <s-guiriec@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and
+ interrupts
+References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com> <5087B196.7090804@ti.com> <5087B47B.8080009@ti.com>
+In-Reply-To: <5087B47B.8080009@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3fded963cdae12ff891a55efc866437506c3f912
-Gitweb:     http://git.kernel.org/tip/3fded963cdae12ff891a55efc866437506c3f912
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 10 Oct 2012 14:53:16 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:41:26 +0200
+On 10/24/2012 11:27 AM, Sebastien Guiriec wrote:
+> Hi Benoit,
+> 
+> On 10/24/2012 11:15 AM, Benoit Cousson wrote:
+>> Hi Seb,
+>>
+>> Sorry, I missed your previous email, your v2 was the right one.
+>> We do have a single INTC in every OMAP, there is no point to repeat the
+>> same data hundred times.
+>> The DTS are already big enough.
+> 
+> So in such case we should send a series for audio IP interrupt-parent
+> removal for OMAP3/4/5 dtsi file in order to be coherent.
 
-perf tools: Fix PMU object alias initialization
+Yes. AM33xx was as well using that in some other IPs.
 
-The pmu_lookup should return pmus that do not expose the 'events'
-group attribute in sysfs. Also it should fail when any other error
-during 'events' lookup is hit (pmu_aliases fails).
+> Do you want me to do it?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1349873598-12583-7-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- tools/perf/util/pmu.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Thanks, but I've just done the patch, I'll sent it in a couple of minutes.
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 8a2229d..18e8480 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -164,7 +164,7 @@ static int pmu_aliases(char *name, struct list_head *head)
- 		 "%s/bus/event_source/devices/%s/events", sysfs, name);
- 
- 	if (stat(path, &st) < 0)
--		return -1;
-+		return 0;	 /* no error if 'events' does not exist */
- 
- 	if (pmu_aliases_parse(path, head))
- 		return -1;
-@@ -296,6 +296,9 @@ static struct perf_pmu *pmu_lookup(char *name)
- 	if (pmu_format(name, &format))
- 		return NULL;
- 
-+	if (pmu_aliases(name, &aliases))
-+		return NULL;
-+
- 	if (pmu_type(name, &type))
- 		return NULL;
- 
-@@ -305,8 +308,6 @@ static struct perf_pmu *pmu_lookup(char *name)
- 
- 	pmu->cpus = pmu_cpumask(name);
- 
--	pmu_aliases(name, &aliases);
--
- 	INIT_LIST_HEAD(&pmu->format);
- 	INIT_LIST_HEAD(&pmu->aliases);
- 	list_splice(&format, &pmu->format);
+Benoit
+
+> 
+>>
+>> On 10/24/2012 09:07 AM, Sebastien Guiriec wrote:
+>>> Since kernel 3.7 the DTS data are not overwriten by hwmod data we can
+>>> add the address space
+>>> and interrupt line description inside dtsi file for OMAP5. This serie
+>>> is updating the
+>>> current OMAP5 IP with missing entry.
+>>>
+>>> It has been tested on OMAP5 with 3.7-audio-display feature tree.
+>>> - MMC is probing and functional
+>>> - TWL6041 probing (GPIO/I2C)
+>>> - booting (UART)
+>>>
+>>> Update since v1:
+>>> - Add Ack and review
+>>> - Fix up commit messages.
+>>>
+>>> Update since v2:
+>>> - Add interrupt-parent.
+>>
+>> I will take the previous one to avoid the duplication of attributes.
+>>
+>> On top of that I will remove the ones introduce in audio IPs for
+>> consistency on OMAP3/4/5 platforms.
+>>
+>> Regards,
+>> Benoit
+>>
+> 
+
