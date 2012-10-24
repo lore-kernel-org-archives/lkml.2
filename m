@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935301Ab2JXQkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:40:25 -0400
-Received: from nm25-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.184]:36767
+	id S1754131Ab2JXQku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:40:50 -0400
+Received: from nm25-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.184]:36933
 	"EHLO nm25-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935288Ab2JXQkU (ORCPT
+	by vger.kernel.org with ESMTP id S1752875Ab2JXQks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:40:20 -0400
-X-Yahoo-Newman-Id: 844284.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+	Wed, 24 Oct 2012 12:40:48 -0400
+X-Yahoo-Newman-Id: 997213.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: HoKQw_0VM1kxOeOrWggTlGV5lYZti3V6lK1mDuqpLXmg36i
- 1nwNX7kjocGgmF6tLOeMKB6oBX0TNstX9wqZv24ethRQxMh16v8lbuXZcS10
- _eIeTuyi3SW6ANxxapBUuOtMhQT2pKUOdEpszAVqiFXU2aLA56evKPHEXYeZ
- jbRlfqXUnzict_Mc3QGNULkw_qbzWK_CoA5grbGpuXqiDSMLwypm5yTB02mC
- .D7ILe3h4v1WDBBGhxw.ghHETpZYEVGlDEFkIgMd6lraNyYff8yFR4UYt1aN
- GTyPTtYJmJlgLNjsQgdvZsvarN0B5zkeKfF8JaERJpzrnlE8DGRdth82ZgKj
- wssQM9QuRMuttRZOwG8s_awx70AOmM2IBdc8kuY_djJMlHdCp.Rd2cVF17B8
- 02G.qDEuOyi4ofb1JdSrKtpAbFyEW84eX8f71O346eiH5uU6CzUtX
+X-YMail-OSG: HHAwkiQVM1kyoW_fwfFbeCXieIsPTHRwR0KN8xRTeWngQ6W
+ Kzzo5bVfMrN5BwGV86gc6aamPmalZfkAF.UL7mW.zPOMGVg8WOJmNrWiqKAs
+ U4Yw3YmcrxwthdP_B85wrIM7KsbTjQRhGNFX9rrV.roCuaUcey9v5OehLXbi
+ pMzrK89QYgFuYJgYdnFUdMLp_BFKE6mQsh0nh5FrI8Nu994GfEm3JKZ5yUsg
+ Uxhv_3IP_5hou42jBJCwJyHfzUN1Eaqoi05GHlwvNZRK5b1Ed62yKhuhw.__
+ hDOlu2n4mJVSjAhrrPy087M2F1ilYmSlCW5xiNkPjfgcTXTfYtXwLXXHzico
+ LQAttXBjl.pg7H.SAEbtrwvXxhgFleiYFGMfRd7pavGE3sJgEhggE6CjgJrT
+ rLk5QAvShoEpMR_YqmQh.vPaEM1IumIeiLnjq71ulT0hsWvMaEg84iuITlTk
+ ZZc.6S6047mxjHG14twrZYg7kmR3Q
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -34,9 +35,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v3 07/10] compiler.h, bug.h: Prevent double error messages with BUILD_BUG{,_ON}
-Date: Wed, 24 Oct 2012 11:33:58 -0500
-Message-Id: <1351096441-12388-7-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v3 04/10] bug.h: directly include linux/compiler.h
+Date: Wed, 24 Oct 2012 11:33:55 -0500
+Message-Id: <1351096441-12388-4-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
@@ -44,64 +45,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
-creating compile-time errors required a little trickery.
-BUILD_BUG{,_ON} uses this attribute when available to generate
-compile-time errors, but also uses the negative-sized array trick for
-older compilers, resulting in two error messages in some cases.  The
-reason it's "some" cases is that as of gcc 4.4, the negative-sized array
-will not create an error in some situations, like inline functions.
-
-This patch replaces the negative-sized array code with the new
-__compiletime_error_fallback() macro which expands to the same thing
-unless the the error attribute is available, in which case it expands to
-do{}while(0), resulting in exactly one compile-time error on all
-versions of gcc.
+Currently, we are only including asm/bug.h and then expecting that
+linux/compiler.h will eventually be included to define __linktime_error
+(used in BUILD_BUG_ON). This patch includes it directly for clarity and
+to avoid the possibility of changes in <arch>/*/include/asm/bug.h being
+changed or not including linux/compiler.h for some reason. (Later
+patches will in this set use more macros defined in compiler*.h.)
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 ---
- include/linux/bug.h      |    4 ++--
- include/linux/compiler.h |    7 +++++++
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ include/linux/bug.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index 3d4b564..f8eae31 100644
+index aaac4bb..4bd74d8 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -56,13 +56,13 @@ struct pt_regs;
-  * link-time error, which is harder to track down.
-  */
- #ifndef __OPTIMIZE__
--#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-+#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
- #else
- #define BUILD_BUG_ON(condition)						\
- 	do {								\
- 		extern void __build_bug_on_failed(void)			\
- 			__compiletime_error("BUILD_BUG_ON failed");	\
--		((void)sizeof(char[1 - 2*!!(condition)]));		\
-+		__compiletime_error_fallback(condition);		\
- 		if (condition)						\
- 			__build_bug_on_failed();			\
- 	} while(0)
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index cbf6d9d..84926f2 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -298,6 +298,13 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #endif
- #ifndef __compiletime_error
- # define __compiletime_error(message)
-+# define __compiletime_error_fallback(condition)		\
-+	do {							\
-+		((void)sizeof(char[1 - 2*!!(condition)]));	\
-+	} while (0)
-+#endif
-+#ifndef __compiletime_error_fallback
-+# define __compiletime_error_fallback(condition) do { } while (0)
- #endif
- /*
-  * Prevent the compiler from merging or refetching accesses.  The compiler
+@@ -2,6 +2,7 @@
+ #define _LINUX_BUG_H
+ 
+ #include <asm/bug.h>
++#include <linux/compiler.h>
+ 
+ enum bug_trap_type {
+ 	BUG_TRAP_TYPE_NONE = 0,
 -- 
 1.7.3.4
 
