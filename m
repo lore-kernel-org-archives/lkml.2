@@ -1,122 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab2JXJ0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:26:13 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:39573 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2JXJ0K (ORCPT
+	id S1756188Ab2JXJ1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:27:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47854 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab2JXJ1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:26:10 -0400
-From: Huacai Chen <chenhc@lemote.com>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, Huacai Chen <chenhc@lemote.com>
-Subject: [RFC][PATCH] sched: Fix a deadlock of cpu-hotplug
-Date: Wed, 24 Oct 2012 17:25:14 +0800
-Message-Id: <1351070714-17676-1-git-send-email-chenhc@lemote.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 24 Oct 2012 05:27:34 -0400
+Message-ID: <5087B47B.8080009@ti.com>
+Date: Wed, 24 Oct 2012 11:27:23 +0200
+From: Sebastien Guiriec <s-guiriec@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Benoit Cousson <b-cousson@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and
+ interrupts
+References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com> <5087B196.7090804@ti.com>
+In-Reply-To: <5087B196.7090804@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We found poweroff sometimes fails on our computers, so we have the
-lock debug options configured. Then, when we do poweroff or take a
-cpu down via cpu-hotplug, kernel complain as below. To resove this,
-we modify sched_ttwu_pending(), disable the local irq when acquire
-rq->lock.
+Hi Benoit,
 
-[   83.066406] =================================
-[   83.066406] [ INFO: inconsistent lock state ]
-[   83.066406] 3.5.0-3.lemote #428 Not tainted
-[   83.066406] ---------------------------------
-[   83.066406] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
-[   83.066406] migration/1/7 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[   83.066406]  (&rq->lock){?.-.-.}, at: [<ffffffff802585ac>] sched_ttwu_pending+0x64/0x98
-[   83.066406] {IN-HARDIRQ-W} state was registered at:
-[   83.066406]   [<ffffffff8027c9ac>] __lock_acquire+0x80c/0x1cc0
-[   83.066406]   [<ffffffff8027e3d0>] lock_acquire+0x60/0x9c
-[   83.066406]   [<ffffffff8074ba04>] _raw_spin_lock+0x3c/0x50
-[   83.066406]   [<ffffffff8025a2fc>] scheduler_tick+0x48/0x178
-[   83.066406]   [<ffffffff8023b334>] update_process_times+0x54/0x70
-[   83.066406]   [<ffffffff80277568>] tick_handle_periodic+0x2c/0x9c
-[   83.066406]   [<ffffffff8020a818>] c0_compare_interrupt+0x8c/0x94
-[   83.066406]   [<ffffffff8029ec8c>] handle_irq_event_percpu+0x7c/0x248
-[   83.066406]   [<ffffffff802a2774>] handle_percpu_irq+0x8c/0xc0
-[   83.066406]   [<ffffffff8029e2c8>] generic_handle_irq+0x48/0x58
-[   83.066406]   [<ffffffff80205c04>] do_IRQ+0x18/0x24
-[   83.066406]   [<ffffffff802016e4>] mach_irq_dispatch+0xe4/0x124
-[   83.066406]   [<ffffffff80203ca0>] ret_from_irq+0x0/0x4
-[   83.066406]   [<ffffffff8022d114>] console_unlock+0x3e8/0x4c0
-[   83.066406]   [<ffffffff811ff0d0>] con_init+0x370/0x398
-[   83.066406]   [<ffffffff811fe3e0>] console_init+0x34/0x50
-[   83.066406]   [<ffffffff811e4844>] start_kernel+0x2f8/0x4e0
-[   83.066406] irq event stamp: 971
-[   83.066406] hardirqs last  enabled at (971): [<ffffffff8021c384>] local_flush_tlb_all+0x134/0x17c
-[   83.066406] hardirqs last disabled at (970): [<ffffffff8021c298>] local_flush_tlb_all+0x48/0x17c
-[   83.066406] softirqs last  enabled at (0): [<ffffffff802298a4>] copy_process+0x510/0x117c
-[   83.066406] softirqs last disabled at (0): [<          (null)>] (null)
-[   83.066406]
-[   83.066406] other info that might help us debug this:
-[   83.066406]  Possible unsafe locking scenario:
-[   83.066406]
-[   83.066406]        CPU0
-[   83.066406]        ----
-[   83.066406]   lock(&rq->lock);
-[   83.066406]   <Interrupt>
-[   83.066406]     lock(&rq->lock);
-[   83.066406]
-[   83.066406]  *** DEADLOCK ***
-[   83.066406]
-[   83.066406] no locks held by migration/1/7.
-[   83.066406]
-[   83.066406] stack backtrace:
-[   83.066406] Call Trace:
-[   83.066406] [<ffffffff80747544>] dump_stack+0x8/0x34
-[   83.066406] [<ffffffff8027ba04>] print_usage_bug+0x2ec/0x314
-[   83.066406] [<ffffffff8027be28>] mark_lock+0x3fc/0x774
-[   83.066406] [<ffffffff8027ca48>] __lock_acquire+0x8a8/0x1cc0
-[   83.066406] [<ffffffff8027e3d0>] lock_acquire+0x60/0x9c
-[   83.066406] [<ffffffff8074ba04>] _raw_spin_lock+0x3c/0x50
-[   83.066406] [<ffffffff802585ac>] sched_ttwu_pending+0x64/0x98
-[   83.066406] [<ffffffff80745ff4>] migration_call+0x10c/0x2e0
-[   83.066406] [<ffffffff80253110>] notifier_call_chain+0x44/0x94
-[   83.066406] [<ffffffff8022eae0>] __cpu_notify+0x30/0x5c
-[   83.066406] [<ffffffff8072b598>] take_cpu_down+0x5c/0x70
-[   83.066406] [<ffffffff80299ba4>] stop_machine_cpu_stop+0x104/0x1e8
-[   83.066406] [<ffffffff802997cc>] cpu_stopper_thread+0x110/0x1ac
-[   83.066406] [<ffffffff8024c940>] kthread+0x88/0x90
-[   83.066406] [<ffffffff80205ee4>] kernel_thread_helper+0x10/0x18
+On 10/24/2012 11:15 AM, Benoit Cousson wrote:
+> Hi Seb,
+>
+> Sorry, I missed your previous email, your v2 was the right one.
+> We do have a single INTC in every OMAP, there is no point to repeat the
+> same data hundred times.
+> The DTS are already big enough.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
----
- kernel/sched/core.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+So in such case we should send a series for audio IP interrupt-parent 
+removal for OMAP3/4/5 dtsi file in order to be coherent.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 36e2666..703754a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1468,9 +1468,10 @@ static void sched_ttwu_pending(void)
- {
- 	struct rq *rq = this_rq();
- 	struct llist_node *llist = llist_del_all(&rq->wake_list);
-+	unsigned long flags;
- 	struct task_struct *p;
- 
--	raw_spin_lock(&rq->lock);
-+	raw_spin_lock_irqsave(&rq->lock, flags);
- 
- 	while (llist) {
- 		p = llist_entry(llist, struct task_struct, wake_entry);
-@@ -1478,7 +1479,7 @@ static void sched_ttwu_pending(void)
- 		ttwu_do_activate(rq, p, 0);
- 	}
- 
--	raw_spin_unlock(&rq->lock);
-+	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- 
- void scheduler_ipi(void)
--- 
-1.7.7.3
+Do you want me to do it?
+
+>
+> On 10/24/2012 09:07 AM, Sebastien Guiriec wrote:
+>> Since kernel 3.7 the DTS data are not overwriten by hwmod data we can add the address space
+>> and interrupt line description inside dtsi file for OMAP5. This serie is updating the
+>> current OMAP5 IP with missing entry.
+>>
+>> It has been tested on OMAP5 with 3.7-audio-display feature tree.
+>> - MMC is probing and functional
+>> - TWL6041 probing (GPIO/I2C)
+>> - booting (UART)
+>>
+>> Update since v1:
+>> - Add Ack and review
+>> - Fix up commit messages.
+>>
+>> Update since v2:
+>> - Add interrupt-parent.
+>
+> I will take the previous one to avoid the duplication of attributes.
+>
+> On top of that I will remove the ones introduce in audio IPs for
+> consistency on OMAP3/4/5 platforms.
+>
+> Regards,
+> Benoit
+>
 
