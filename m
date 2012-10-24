@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab2JXIKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:10:50 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757352Ab2JXIKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:10:46 -0400
-Message-ID: <5087A285.4030305@nod.at>
-Date: Wed, 24 Oct 2012 10:10:45 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	id S1758059Ab2JXIPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:15:31 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55440 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755607Ab2JXIPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:15:24 -0400
+Date: Wed, 24 Oct 2012 10:15:19 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] perf: SNB exclusive PMU access for
+ INST_RETIRED:PREC_DIST
+Message-ID: <20121024081519.GA29182@gmail.com>
+References: <1350658326-14715-1-git-send-email-eranian@google.com>
+ <1350658326-14715-3-git-send-email-eranian@google.com>
+ <1350664077.2768.32.camel@twins>
+ <CABPqkBQ5kCyGByFS-D62RYg2VUf_W-rJKDH=AzyrcaBPVY-eFQ@mail.gmail.com>
+ <1350665152.2768.41.camel@twins>
+ <20121019172018.GA2095@tassilo.jf.intel.com>
+ <20121021165523.GA29247@gmail.com>
+ <CABPqkBR_BSf6Akzxn+2gOrksUMXmAgPi3xY0KJUbhT0Eddo3Kw@mail.gmail.com>
+ <20121021180341.GA4128@gmail.com>
+ <CABPqkBRhyHNiHvPLCQB3zOkH5oY9+Cn-mmMUp0rveBe+mg-z_Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthew Leach <matthew@mattleach.net>
-CC: linux-kernel@vger.kernel.org,
-        =?UTF-8?B?TWFydGluIFDDpHJ0ZWw=?= <martin.partel@gmail.com>
-Subject: Re: [REGRESSION] uml: signal.c build errors
-References: <87pq48lqut.fsf@mattleach.net> <5087A203.4060505@nod.at>
-In-Reply-To: <5087A203.4060505@nod.at>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBRhyHNiHvPLCQB3zOkH5oY9+Cn-mmMUp0rveBe+mg-z_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.10.2012 10:08, Richard Weinberger wrote:
-> On 24.10.2012 01:18, Matthew Leach wrote:
->> Hi,
->>
->> When building UML against 3.7-rc2 I encounter the following build error:
->>
->> # make ARCH=uml
->> scripts/kconfig/conf --silentoldconfig arch/x86/um/Kconfig
->>    CHK     include/generated/uapi/linux/version.h
->>    UPD     include/generated/uapi/linux/version.h
->>    WRAP    arch/um/include/generated/asm/clkdev.h
->>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_32.h
->>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_64.h
->>    SYSHDR  arch/x86/syscalls/../include/generated/uapi/asm/unistd_x32.h
->>
->> ...
->>
->>    CC      arch/um/os-Linux/signal.o
->> arch/um/os-Linux/signal.c:18:8: error: conflicting types for ‘sig_info’
->> In file included from arch/um/os-Linux/signal.c:12:0:
->> /home/matthew/Development/linux/arch/um/include/shared/as-layout.h:64:15: note: previous declaration of ‘sig_info’ was
->> here
->> arch/um/os-Linux/signal.c:19:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:19:2: warning: (near initialization for ‘sig_info[5]’) [enabled by default]
->> arch/um/os-Linux/signal.c:20:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:20:2: warning: (near initialization for ‘sig_info[8]’) [enabled by default]
->> arch/um/os-Linux/signal.c:21:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:21:2: warning: (near initialization for ‘sig_info[4]’) [enabled by default]
->> arch/um/os-Linux/signal.c:22:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:22:2: warning: (near initialization for ‘sig_info[28]’) [enabled by default]
->> arch/um/os-Linux/signal.c:23:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:23:2: warning: (near initialization for ‘sig_info[7]’) [enabled by default]
->> arch/um/os-Linux/signal.c:24:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:24:2: warning: (near initialization for ‘sig_info[11]’) [enabled by default]
->> arch/um/os-Linux/signal.c:25:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:25:2: warning: (near initialization for ‘sig_info[29]’) [enabled by default]
->> arch/um/os-Linux/signal.c:26:2: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:26:2: warning: (near initialization for ‘sig_info[26]’) [enabled by default]
->> arch/um/os-Linux/signal.c:133:1: warning: initialization from incompatible pointer type [enabled by default]
->> arch/um/os-Linux/signal.c:133:1: warning: (near initialization for ‘handlers[26]’) [enabled by default]
->> make[1]: *** [arch/um/os-Linux/signal.o] Error 1
->> make: *** [arch/um/os-Linux] Error 2
->>
->> I have tracked this down to [1] where, indeed, the type of sig_info is
->> different; the second parameter in signal.c is 'siginfo_t' where as in
->> as-layout.h the second parameter's type is declared as 'struct siginfo'.
->>
->> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
->
-> Does this patch fix the issue?
-> Are you using glibc 2.17?
 
-If not, Martin, can you please convert your code to siginfo_t?
-It looks like struct sig_info and siginfo_t are no longer compatible.
+* Stephane Eranian <eranian@google.com> wrote:
+
+> On Sun, Oct 21, 2012 at 8:03 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Stephane Eranian <eranian@google.com> wrote:
+> >
+> >> On Sun, Oct 21, 2012 at 6:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> >
+> >> > * Andi Kleen <ak@linux.intel.com> wrote:
+> >> >
+> >> >> > > > This isn't limited to admin, right? So the above turns into a DoS on the
+> >> >> > > > console.
+> >> >> > > >
+> >> >> > > Ok, so how about a WARN_ON_ONCE() instead?
+> >> >> >
+> >> >> > That should be fine I guess ;-)
+> >> >>
+> >> >> imho there is need for a generic mechanism to return an error
+> >> >> string to the user program without such hacks.
+> >> >
+> >> > Agreed - we could return an 'extended errno' long error return
+> >> > value, which in reality is a pointer to an error string (in
+> >> > perf_attr::error_str), and copy that string to user-space at
+> >> > perf syscall return time.
+> >> >
+> >> I assume by perf_attr:error_str, you actually mean:
+> >>
+> >> struct perf_event_attr {
+> >>    char error_str[PERF_ERR_LEN];
+> >> };
+> >>
+> >> Right?
+> >
+> > I don't think we should allocate space in the attr, instead we
+> > should use something like:
+> >
+> >         u8 __user       *err_str;
+> >         u32              err_str_len;
+> >
+> > which would be filled in by tooling with a string and a max_len
+> > value, and strncpy_to_user() could do the rest on the kernel
+> > side. [ A minor complication is that we don't have a
+> > strncpy_to_user() method at the moment. ]
+> >
+> > Static strings could be handled this way.
+> >
+> > [ Dynamic strings could be supported too with a few tricks,
+> >   although I doubt it matters in practice. ]
+> >
+>
+> Ok, but this still limits returning error string to the 
+> perf_event_open() syscall, not read(), ioctl() and such.
+
+Yes - but this should be enough to handle most of the cases in 
+practice - because the richness of the various perf components 
+is mostly exposed via the perf syscall. By the time we get to 
+read() and ioctl() we are in a pretty well defined domain.
+
+Also, I don't think people want the (small but nonzero) overhead 
+of extended error reporting for read or ioctl.
+
+> I am fine with this change. However, I think it should be 
+> added separately from my inst_retired:prec_dist patch. It has 
+> a broader impact.
+
+Most definitely.
 
 Thanks,
-//richard
+
+	Ingo
