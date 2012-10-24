@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934243Ab2JXCfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 22:35:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58056 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933564Ab2JXCfe convert rfc822-to-8bit (ORCPT
+	id S934253Ab2JXChH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 22:37:07 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:48003 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab2JXChC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 22:35:34 -0400
-X-IronPort-AV: E=Sophos;i="4.80,638,1344182400"; 
-   d="scan'208";a="6055189"
-Subject: Re: [RFC PATCH 04/10] sched: Introduce priority-based task
- migration filter
-From: li guang <lig.fnst@cn.fujitsu.com>
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "suresh.b.siddha@intel.com" <suresh.b.siddha@intel.com>,
-        "linaro-sched-sig@lists.linaro.org" 
-	<linaro-sched-sig@lists.linaro.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Robin Randhawa <Robin.Randhawa@arm.com>
-In-Reply-To: <20121009164045.GB3729@e103034-lin>
-References: <1348252345-5642-1-git-send-email-morten.rasmussen@arm.com>
-	 <1348252345-5642-5-git-send-email-morten.rasmussen@arm.com>
-	 <CAKohpo=gvA4o=d3rw18O8sMOfXCh1M=39OcdOre4c4Azs42REg@mail.gmail.com>
-	 <20121009164045.GB3729@e103034-lin>
-Date: Wed, 24 Oct 2012 10:32:43 +0800
-Message-ID: <1351045963.22024.12.camel@liguang.fnst.cn.fujitsu.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 10:34:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 10:34:51,
-	Serialize complete at 2012/10/24 10:34:51
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 23 Oct 2012 22:37:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <50871695.2040904@gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1350387889-15324-2-git-send-email-hongbo.zhang@linaro.com>
+	<5083C8E4.7090007@gmail.com>
+	<CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
+	<50871695.2040904@gmail.com>
+Date: Wed, 24 Oct 2012 10:37:01 +0800
+Message-ID: <CAJLyvQwKxVA7xz_KQsDAznJXr+OnFSHFyxGGL6DQucobA+JO4w@mail.gmail.com>
+Subject: Re: [PATCH 1/5] Thermal: do bind operation after thermal zone or
+ cooling device register returns.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Francesco Lavra <francescolavra.fl@gmail.com>
+Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
+        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org,
+        amit.kachhap@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2012-10-09二的 17:40 +0100，Morten Rasmussen写道：
-> On Thu, Oct 04, 2012 at 07:27:00AM +0100, Viresh Kumar wrote:
-> > On 22 September 2012 00:02,  <morten.rasmussen@arm.com> wrote:
-> > 
-> > > +config SCHED_HMP_PRIO_FILTER
-> > > +       bool "(EXPERIMENTAL) Filter HMP migrations by task priority"
-> > > +       depends on SCHED_HMP
-> > 
-> > Should it depend on EXPERIMENTAL?
-> > 
-> > > +       help
-> > > +         Enables task priority based HMP migration filter. Any task with
-> > > +         a NICE value above the threshold will always be on low-power cpus
-> > > +         with less compute capacity.
-> > > +
-> > > +config SCHED_HMP_PRIO_FILTER_VAL
-> > > +       int "NICE priority threshold"
-> > > +       default 5
-> > > +       depends on SCHED_HMP_PRIO_FILTER
-> > > +
-> > >  config HAVE_ARM_SCU
-> > >         bool
-> > >         help
-> > > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > > index 490f1f0..8f0f3b9 100644
-> > > --- a/kernel/sched/fair.c
-> > > +++ b/kernel/sched/fair.c
-> > > @@ -3129,9 +3129,12 @@ static int __init hmp_cpu_mask_setup(void)
-> > >   * hmp_down_threshold: max. load allowed for tasks migrating to a slower cpu
-> > >   * The default values (512, 256) offer good responsiveness, but may need
-> > >   * tweaking suit particular needs.
-> > > + *
-> > > + * hmp_up_prio: Only up migrate task with high priority (<hmp_up_prio)
-> > >   */
-> > >  unsigned int hmp_up_threshold = 512;
-> > >  unsigned int hmp_down_threshold = 256;
+On 24 October 2012 06:13, Francesco Lavra <francescolavra.fl@gmail.com> wrote:
+> Hi,
+> On 10/23/2012 10:23 AM, Hongbo Zhang wrote:
+>> Hi Francesco,
+>> I found out more points about this issue.
+>>
+>> [1]
+>> cdev should be ready when get_max_state callback be called, otherwise
+>> parameter cdev is useless, imagine there may be cases that
+>> get_max_state call back is shared by more than one cooling devices of
+>> same kind, like this:
+>> common_get_max_state(*cdev, *state)
+>> {
+>>     if (cdev == cdev1)  *state = 3;
+>>     else if (cdev == cdev)  *state = 5;
+>>     else
+>> }
+>>
+>> [2]
+>> In my cpufreq cooling case(in fact cdev is not used to calculate
+>> max_state), the cooling_cpufreq_list should be ready when
+>> get_max_state call back is called. In this patch I defer the binding
+>> when registration finished, but this is not perfect now, see this
+>> routine in cpufreq_cooling_register:
+>>
+>> thermal_cooling_device_register;
+>> at this time: thermal_bind_work -> get_max_state -> get NULL
+>> cooling_cpufreq_list
+>> and then: list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list)
+>> This is due to we cannot know exactly when the bind work is executed.
+>> (and this can be fixed by moving mutex_lock(&cooling_cpufreq_lock)
+>> aheadof thermal_cooling_device_register and other corresponding
+>> modifications, but I found another way as below)
+>>
+>> [3]
+>> Root cause of this problem is calling get_max_state in register -> bind routine.
+>> Better solution is to add another parameter in cooling device register
+>> function, also add a max_state member in struct cdev, like:
+>> thermal_cooling_device_register(char *type, void *devdata, const
+>> struct thermal_cooling_device_ops *ops, unsigned long max_state)
+>> and then in the bind function:
+>> if(cdev->max_state)
+>>     max_state = cdev->max_state;
+>> else
+>>     cdev->get_max_state(cdev, &max_state)
+>>
+>> It is common sense that the cooling driver should know its cooling
+>> max_state(ability) before registration, and it can be offered when
+>> register.
+>> I think this way doesn't change both thermal and cooling layer much,
+>> it is more clear.
+>> I will update this patch soon.
+>
+> I still believe the thermal layer doesn't need any change to work around
+> this problem, and I still believe that when a cooling device is being
+> registered, all of its ops should be fully functional.
+> The problem with the cpufreq cooling device driver is that its callbacks
+> use the internal list of devices to retrieve the struct
+> cpufreq_cooling_device instance corresponding to a given struct
+> thermal_cooling_device. This is not necessary, because the struct
+> thermal_cooling_device has a private data pointer (devdata) which in
+> this case is exactly a reference to the struct cpufreq_cooling_device
+> instance the callbacks are looking for. In fact, I think the
+> cooling_cpufreq_list is not necessary at all, and should be removed from
+> the cpufreq cooling driver.
+> So the 3 callbacks, instead of iterating through the device list, should
+> have something like:
+> struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+> That would do the trick.
 
-hmp_*_threshold maybe sysctl_hmp_*_threshold,
-and appear at /proc/sys/kernel,
-so, can be adjusted to be rational.
-
-> > > +unsigned int hmp_up_prio = NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
-> > >
-> > >  static unsigned int hmp_up_migration(int cpu, struct sched_entity *se);
-> > >  static unsigned int hmp_down_migration(int cpu, struct sched_entity *se);
-> > > @@ -5491,6 +5494,12 @@ static unsigned int hmp_up_migration(int cpu, struct sched_entity *se)
-> > >         if (hmp_cpu_is_fastest(cpu))
-> > >                 return 0;
-> > >
-> > > +#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-> > > +       /* Filter by task priority */
-> > > +       if (p->prio >= hmp_up_prio)
-> > > +               return 0;
-> > > +#endif
-> > > +
-> > >         if (cpumask_intersects(&hmp_faster_domain(cpu)->cpus,
-> > >                                         tsk_cpus_allowed(p))
-> > >                 && se->avg.load_avg_ratio > hmp_up_threshold) {
-> > > @@ -5507,6 +5516,12 @@ static unsigned int hmp_down_migration(int cpu, struct sched_entity *se)
-> > >         if (hmp_cpu_is_slowest(cpu))
-> > >                 return 0;
-> > >
-> > > +#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
-> > > +       /* Filter by task priority */
-> > > +       if (p->prio >= hmp_up_prio)
-> > > +               return 1;
-> > > +#endif
-> > 
-> > Even if below cpumask_intersects() fails?
-> > 
-> 
-> No. Good catch :)
-> 
-> > >         if (cpumask_intersects(&hmp_slower_domain(cpu)->cpus,
-> > >                                         tsk_cpus_allowed(p))
-> > >                 && se->avg.load_avg_ratio < hmp_down_threshold) {
-> > 
-> > --
-> > viresh
-> > 
-> 
-> Thanks,
-> Morten
-> 
+Hi Francesco,
+When I found out this issue, I was hesitating to select the best
+solution among several ideas.
+It is clear now after talk with you, I will send patch for cpufreq
+cooling layer.
+Thank you.
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-liguang    lig.fnst@cn.fujitsu.com
-FNST linux kernel team
-
+> Francesco
