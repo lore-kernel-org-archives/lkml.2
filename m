@@ -1,157 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934662Ab2JXKpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:45:44 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39523 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758209Ab2JXKpm (ORCPT
+	id S1758222Ab2JXKqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:46:16 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:44190 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758162Ab2JXKqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:45:42 -0400
-Message-ID: <5087C6DA.1070706@st.com>
-Date: Wed, 24 Oct 2012 11:45:46 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 24 Oct 2012 06:46:15 -0400
+Date: Wed, 24 Oct 2012 12:46:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andre Przywara <andre.przywara@amd.com>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, andreas.herrmann3@amd.com
+Subject: Re: [PATCH] x86/amd: disable way access filter on affected CPUs
+Message-ID: <20121024104609.GA13010@gmail.com>
+References: <1351065377-1989-1-git-send-email-andre.przywara@amd.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 3.7.0-rc2] dt: match id-table before creating platform
- device
-References: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com> <5086988F.6090107@gmail.com>
-In-Reply-To: <5086988F.6090107@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351065377-1989-1-git-send-email-andre.przywara@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/12 14:15, Rob Herring wrote:
-> Adding lkml. DT patches should go to both lists.
->
-> On 10/23/2012 05:30 AM, Srinivas KANDAGATLA wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> As part of of_platform_populate call, the existing code iterates each
->> child node and then creates a platform device for each child, however
->> there is bug in the code which does not check the match table before
->> creating the platform device. This might result creating two platfrom
->> devices and also invoking driver probe twice, which is incorrect.
->>
->> This patch moves a existing of_match_node check to start of the function
->> to fix the bug, doing this way will return immediately without creating
->> any datastructures if the child does not match the supplied match-table.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->> ---
->>  drivers/of/platform.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->> index b80891b..1aaa560 100644
->> --- a/drivers/of/platform.c
->> +++ b/drivers/of/platform.c
->> @@ -367,6 +367,9 @@ static int of_platform_bus_create(struct device_node *bus,
->>  		return 0;
->>  	}
->>  
->> +	if (!of_match_node(matches, bus))
->> +		return 0;
->> +
-> This is not right. This function is recursive and this change would
-> break that. 
-You are correct, this change might break the functionality.
-> Perhaps we could only call of_platform_device_create_pdata
-> if !of_match_node instead, but I'm not completely sure that would be the
-> right thing to do. 
-I did try to do the same thing in the patch.
-May be I should have moved check just before calling
-of_platform_device_create_pdata?
-> There's also some historical things we have to
-> support which is why we have of_platform_populate and of_platform_bus_probe.
-Am just trying to understand the difference between of_platform_populate
-and of_platform_bus_probe.
-Looking at the function documentation, which states
-of_platform_bus_probe will only create children of the root which are
-selected by the @matches argument.
 
-of_platform_populate walks the device tree and creates devices from
-nodes.  It differs in that it follows the modern convention of requiring
-all device nodes to have a 'compatible' property, and it is suitable for
-creating devices which are children of the root node.
+* Andre Przywara <andre.przywara@amd.com> wrote:
 
-Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
-on a device trees like the below with
-struct of_device_id match_table[] = {
-    { .compatible = "simple-bus", }
-    {}
-};
+> The WAF may hurt the performance of some workloads, caused by
+> aliasing issues in the L1 cache.
+> Disable it on the affected CPUs.
+> 
+> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+> ---
+>  arch/x86/kernel/cpu/amd.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index f7e98a2..1b7d165 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+>  		}
+>  	}
+>  
+> +	/*
+> +	 * The way access filter has a performance penalty on some workloads.
+> +	 * Disable it on the affected CPUs.
+> +	 */
+> +	if ((c->x86 == 0x15) &&
+> +	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
+> +		u64 val;
+> +
+> +		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
+> +			val |= 0x1E;
+> +			wrmsrl_safe(0xc0011021, val);
+> +		}
+> +	}
 
-parent@0{
-    compatible    = "xxx,parent1", "simple-bus";
-    ...
-    child@0 {
-        compatible    = "xxx,child0", "simple-bus";
-        ...
-    };
-    child@1 {
-        compatible    = "xxx,child1";
-        ...
-    };
-    child@2 {
-        compatible    = "xxx,child2", "simple-bus";
-        ...
-    };
-};
+Would be nice to hear more about the background of this change, 
+about the amount of 'penalty' and the nature of the workloads. 
+Also, it would be useful to know how the [0x02..0x1f] model 
+range was chosen.
 
-of_platform_bus_probewould create platform-devices for parent@0,
-child@0and child@2
-where as
-of_platform_populate would create platform-devices for parent@0,
-child@0, child@1 and child@2 nodes.
+Thanks,
 
-So the question is
-why do we need to have @matches argument to of_platform_populate in the
-first place, if it creates all the devices by walking the dt nodes?
-
-It is bit confusion, As some platforms use of_platform_populate(NULL,
-of_default_bus_match_table, NULL, NULL) assuming that only matching
-nodes will end up having platform device.
-Also
-some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
-where match table is of_default_bus_match_table.
-
-IMO, we could do two things to avoid this confusion in future.
-
-1. Remove matches from of_platform_populate
-2. add Lookup argument to of_platform_bus_probe
-
-What do you think?
-
---srini
-
-
-
-
->
-> Rob
->
->>  	auxdata = of_dev_lookup(lookup, bus);
->>  	if (auxdata) {
->>  		bus_id = auxdata->name;
->> @@ -379,7 +382,7 @@ static int of_platform_bus_create(struct device_node *bus,
->>  	}
->>  
->>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
->> -	if (!dev || !of_match_node(matches, bus))
->> +	if (!dev)
->>  		return 0;
->>  
->>  	for_each_child_of_node(bus, child) {
->>
->
->
-
+	Ingo
