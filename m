@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab2JXVEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:04:15 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56755 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751447Ab2JXVEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:04:13 -0400
+	id S1758814Ab2JXVEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:04:55 -0400
+Received: from mout.web.de ([212.227.17.11]:63549 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab2JXVEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:04:54 -0400
+Message-ID: <508857F2.9000206@web.de>
+Date: Wed, 24 Oct 2012 23:04:50 +0200
+From: Jannis Achstetter <jannis_achstetter@web.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351059113-4660-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1351059113-4660-1-git-send-email-tangchen@cn.fujitsu.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 24 Oct 2012 15:03:52 -0600
-Message-ID: <CAErSpo6649U3FU_LL8CSgpdoP0aTQK49AEHEcC4JuHGZaqXP0w@mail.gmail.com>
-Subject: Re: [PATCH v3] Fix a hard coding style when determining if a device
- is a container.
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: yinghai@kernel.org, lenb@kernel.org, jiang.liu@huawei.com,
-        izumi.taku@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <20121023221913.GC28626@thunk.org>
+In-Reply-To: <20121023221913.GC28626@thunk.org>
+X-Enigmail-Version: 1.5a1pre
+OpenPGP: url=subkeys.pgp.net
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:UKV2dWqV0IBUS/LqGxJfuG2Cx0ARpqjE9WWd0QkhDSu
+ sGhCeGe0DOD6o9sAzIenoaLXTtTkvGxk8EnW7sfnaJA5DTjh7q
+ ReqiJZZ62/c8xmINfib0txSJUK0s9NGWcLjdz14Py7UAoMQquo
+ 78McgCNiAKmgM/1NLRuxB8MFOoP/Z9Pi7WA94krnVZTtokkz4F
+ cnDrODTMgvohUw6JbcOVFT1gL/rffizV7demqDzUhk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 12:11 AM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> "ACPI0004","PNP0A05" and "PNP0A06" are all defined in array
-> container_device_ids[], so use it, but not the hard coding style.
->
-> Also, introduce a new api is_container_device() to determine if a
-> device is a container device.
->
-> change log v2 -> v3:
->
-> 1. change the is_container_device()'s return value type from int to bool.
+Am 24.10.2012 00:19, schrieb Theodore Ts'o:
+> The reason why the problem happens rarely is that the effect of the
+> buggy commit is that if the journal's starting block is zero, we fail
+> to truncate the journal when we unmount the file system.  This can
+> happen if we mount and then unmount the file system fairly quickly,
+> before the log has a chance to wrap.  After the first time this has
+> happened, it's not a disaster, since when we replay the journal, we'll
+> just replay some extra transactions.  But if this happens twice, the
+> oldest valid transaction will still not have gotten updated, but some
+> of the newer transactions from the last mount session will have gotten
+> written by the very latest transacitons, and when we then try to do
+> the extra transaction replays, the metadata blocks can end up getting
+> very scrambled indeed.
 
-No need to keep this level of detail in the permanent git changelogs.
+Repost. Sorry, I don't mean to spam, I just don't see my first mail
+(sent via gmane.org) anywhere, so ...
 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+As a "normal linux user" I'm interested in the practical things to do
+now to avoid data loss. I'm running several systems with 3.6.2 and ext4.
+Fearing loss of data:
+- Is there a way to see whether the journal of a specific partition has
+been wrapped (since mounting) so that umounting and mounting (or doing a
+reboot to downgrade the kernel) is safe?
+- Is there a way to "force" a journal-wrap? Run any
+filesystem-benchmark? Which one with what parameters? Or is it unwise
+since I might even further corrupt data if I hit the case already?
+- Is it wise to umount now and run e2fsck or might I corrupt my files
+just by umounting now if the journal hasn't wrapped yet?
+- How do you define "fairly quickly"? Of course servers run 24/7 but I
+might be using my PC 2-5 hrs a day... Is that a "reboot to soon after
+booting"?
+- Any more advice you can give to the ordinary user to avoid
+fs-corruption? Don't shut down machines for some days? Better down- or
+upgrade the kernel?
 
-Reviewed-by: Bjorn Helgaas <bhelgaas@google.com>
+Best regards,
+	Jannis Achstetter
 
-> ---
->  drivers/acpi/container.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-> index 1f9f7d7..69e2d6b 100644
-> --- a/drivers/acpi/container.c
-> +++ b/drivers/acpi/container.c
-> @@ -92,6 +92,19 @@ static int is_device_present(acpi_handle handle)
->         return ((sta & ACPI_STA_DEVICE_PRESENT) == ACPI_STA_DEVICE_PRESENT);
->  }
->
-> +static bool is_container_device(const char *hid)
-> +{
-> +       const struct acpi_device_id *container_id;
-> +
-> +       for (container_id = container_device_ids;
-> +            container_id->id[0]; container_id++) {
-> +               if (!strcmp((char *)container_id->id, hid))
-> +                       return true;
-> +       }
-> +
-> +       return false;
-> +}
-> +
->  /*******************************************************************/
->  static int acpi_container_add(struct acpi_device *device)
->  {
-> @@ -232,10 +245,8 @@ container_walk_namespace_cb(acpi_handle handle,
->                 goto end;
->         }
->
-> -       if (strcmp(hid, "ACPI0004") && strcmp(hid, "PNP0A05") &&
-> -           strcmp(hid, "PNP0A06")) {
-> +       if (!is_container_device(hid))
->                 goto end;
-> -       }
->
->         switch (*action) {
->         case INSTALL_NOTIFY_HANDLER:
-> --
-> 1.7.1
->
