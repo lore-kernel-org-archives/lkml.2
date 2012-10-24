@@ -1,35 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab2JXEPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 00:15:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57196 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726Ab2JXEPL (ORCPT
+	id S1752316Ab2JXEPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 00:15:43 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:60292 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284Ab2JXEPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 00:15:11 -0400
-Date: Tue, 23 Oct 2012 21:15:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: YAMANE Toshiaki <yamanetoshi@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] staging/sbe-2t3e3: Use netdev_ printks in main.c
-Message-ID: <20121024041543.GA29712@kroah.com>
-References: <20121019191038.GA18369@kroah.com>
- <1351047928-7234-1-git-send-email-yamanetoshi@gmail.com>
+	Wed, 24 Oct 2012 00:15:42 -0400
+From: Nix <nix@esperi.org.uk>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+Emacs: the Swiss Army of Editors.
+Date: Wed, 24 Oct 2012 05:15:10 +0100
+In-Reply-To: <508740B2.2030401@redhat.com> (Eric Sandeen's message of "Tue, 23
+	Oct 2012 20:13:22 -0500")
+Message-ID: <87txtkld4h.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351047928-7234-1-git-send-email-yamanetoshi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 12:05:28PM +0900, YAMANE Toshiaki wrote:
-> fixed below checkpatch warning.
-> - WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-> 
-> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+On 24 Oct 2012, Eric Sandeen uttered the following:
 
-I never got the 3/3 patch in this series :(
+> On 10/23/12 3:57 PM, Nix wrote:
+>> The only unusual thing about the filesystems on this machine are that
+>> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
+>> 'nobarrier': 
+>
+> I should have read more.  :(  More questions follow:
+>
+> * Does the Areca have a battery backed write cache?
 
-greg k-h
+Yes (though I'm not powering off, just rebooting). Battery at 100% and
+happy, though the lack of power-off means it's not actually getting
+used, since the cache is obviously mains-backed as well.
+
+> * Are you crashing or rebooting cleanly?
+
+Rebooting cleanly, everything umounted happily including /home and /var.
+
+> * Do you see log recovery messages in the logs for this filesystem?
+
+My memory says yes, but nothing seems to be logged when this happens
+(though with my logs on the first filesystem damaged by this, this is
+rather hard to tell, they're all quite full of NULs by now).
+
+I'll double-reboot tomorrow via the faulty kernel and check, unless I
+get asked not to in the interim. (And then double-reboot again to fsck
+everything...)
+
+>> the full set of options for all my ext4 filesystems are:
+>> 
+>> rw,nosuid,nodev,relatime,journal_checksum,journal_async_commit,nobarrier,quota,
+>> usrquota,grpquota,commit=30,stripe=16,data=ordered,usrquota,grpquota
+>
+> ok journal_async_commit is off the reservation a bit; that's really not
+> tested, and Jan had serious reservations about its safety.
+
+OK, well, I've been 'testing' it for years :) No problems until now. (If
+anything, I was more concerned about journal_checksum. I thought that
+had actually been implicated in corruption before now...)
+
+> * Can you reproduce this w/o journal_async_commit?
+
+I can try!
+
+-- 
+NULL && (void)
