@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161491Ab2JXWjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 18:39:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49055 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161330Ab2JXWjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 18:39:07 -0400
-Date: Thu, 25 Oct 2012 00:39:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Paul Thompson <set.mailinglist@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BUG: using smp_processor_id() in preemptible
-Message-ID: <20121024223904.GA9129@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Paul Thompson <set.mailinglist@gmail.com>,
-	linux-kernel@vger.kernel.org
-References: <20121024082423.GB2604@squish.home.loc>
+	id S1161472Ab2JXWpd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 18:45:33 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54624 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161237Ab2JXWpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 18:45:32 -0400
+Date: Wed, 24 Oct 2012 15:45:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH 3/3] Drivers: hv: Get rid of hv_ringbuffer_cleanup()
+Message-ID: <20121024224528.GA30009@kroah.com>
+References: <1350073335-10575-1-git-send-email-kys@microsoft.com>
+ <1350073363-10614-1-git-send-email-kys@microsoft.com>
+ <1350073363-10614-3-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024082423.GB2604@squish.home.loc>
+In-Reply-To: <1350073363-10614-3-git-send-email-kys@microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 04:24:23AM -0400, Paul Thompson wrote:
-> 	Hi;
+On Fri, Oct 12, 2012 at 01:22:43PM -0700, K. Y. Srinivasan wrote:
+> hv_ringbuffer_cleanup() is an empty function; get rid of it.
 > 
-> 	Just saw this after invoking cpufreq-set -g performance in
-> an attempt to enhance a stuttering mpeg transcode for ps3mediaserver.
-> 	This repeats in the logs about 10 times. If anyone cares, I
-> will be responsive.
-> 
-> Paul
-> 
-> 2012 Oct 24 01:39:14: BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq-set/22941
-> 2012 Oct 24 01:39:14: caller is powernowk8_target+0x19/0x50
-...
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reported-by: Jason Wang <jasowang@redhat.com>
+> Acked-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/hv/channel.c      |    4 ----
+>  drivers/hv/hyperv_vmbus.h |    1 -
+>  drivers/hv/ring_buffer.c  |   11 -----------
+>  3 files changed, 0 insertions(+), 16 deletions(-)
 
-http://marc.info/?l=linux-kernel&m=135111561229153
+That's nice, but this patch causes build failures, so I can't accept it.
 
-HTH.
+Please test your patches better (hint, a simple 'git grep' would have
+worked here...)
 
--- 
-Regards/Gruss,
-    Boris.
+greg k-h
