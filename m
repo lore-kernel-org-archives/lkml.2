@@ -1,171 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964883Ab2JXA5f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:57:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21160 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933774Ab2JXA5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:57:34 -0400
-Message-ID: <50873CE5.8090303@redhat.com>
-Date: Tue, 23 Oct 2012 19:57:09 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S965001Ab2JXBCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:02:07 -0400
+Received: from exprod6og112.obsmtp.com ([64.18.1.29]:55418 "EHLO
+	exprod6og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933666Ab2JXBCD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 21:02:03 -0400
+Message-ID: <50873DFA.5010205@adobe.com>
+Date: Tue, 23 Oct 2012 18:01:46 -0700
+From: "Paton J. Lewis" <palewis@adobe.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <20121023221913.GC28626@thunk.org>
-In-Reply-To: <20121023221913.GC28626@thunk.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Paton J. Lewis" <palewis@adobe.com>
+CC: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
+ app.
+References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <5086D27F.1000007@adobe.com>
+In-Reply-To: <5086D27F.1000007@adobe.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/12 5:19 PM, Theodore Ts'o wrote:
-> On Tue, Oct 23, 2012 at 09:57:08PM +0100, Nix wrote:
+On 10/23/12 6:26 AM, Michael Kerrisk (man-pages) wrote:
+> On 10/23/12 10:23 AM, Paton J. Lewis wrote:
+>> [Re-sending without HTML formatting; all vger.kernel.org destination
+>> addresses bounced my original response.]
 >>
->> It is now quite clear that this is a bug introduced by one or more of
->> the post-3.6.1 ext4 patches (which have all been backported at least to
->> 3.5, so the problem is probably there too).
+>> On 10/16/12 8:12 AM, Michael Kerrisk (man-pages) wrote:
+>>> [CC += linux-api@]
 >>
->> [   60.290844] EXT4-fs error (device dm-3): ext4_mb_generate_buddy:741: group 202, 1583 clusters in bitmap, 1675 in gd
->> [   60.291426] JBD2: Spotted dirty metadata buffer (dev = dm-3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
+>> Thank you; is this sufficient to coordinate the required changes to the
+>> glibc version of epoll.h?
+>
+> I'm not sure. With a bit of luck, someone at glibc might monitor that list.
+>
+>>> Hello Paton,
+>>>
+>>> On Thu, Aug 23, 2012 at 11:15 PM, Paton J. Lewis <palewis@adobe.com>
+>>> wrote:
+>>>> From: "Paton J. Lewis" <palewis@adobe.com>
+>>>>
+>>>> Enhanced epoll_ctl to support EPOLL_CTL_DISABLE, which disables an
+>>>> epoll item.
+>>>> If epoll_ctl doesn't return -EBUSY in this case, it is then safe to
+>>>> delete the
+>>>> epoll item in a multi-threaded environment. Also added a new
+>>>> test_epoll self-
+>>>> test app to both demonstrate the need for this feature and test it.
+>>>
+>>> (There's a lot of background missing from this version of the patch
+>>> that was included in the previous version
+>>> [http://thread.gmane.org/gmane.linux.kernel/1311457]. It helps to
+>>> include the full rationale with a revised patch--best not to assume
+>>> that someone has the context of past mails when reading a revised
+>>> patch.)
 >>
-> 
-> I think I've found the problem.  I believe the commit at fault is commit
-> 14b4ed22a6 (upstream commit eeecef0af5e):
-> 
->     jbd2: don't write superblock when if its empty
-> 
-> which first appeared in v3.6.2.
-> 
-> The reason why the problem happens rarely is that the effect of the
-> buggy commit is that if the journal's starting block is zero, we fail
-> to truncate the journal when we unmount the file system.  This can
-> happen if we mount and then unmount the file system fairly quickly,
-> before the log has a chance to wrap.After the first time this has
-> happened, it's not a disaster, since when we replay the journal, we'll
-> just replay some extra transactions.  But if this happens twice, the
-> oldest valid transaction will still not have gotten updated, but some
-> of the newer transactions from the last mount session will have gotten
-> written by the very latest transacitons, and when we then try to do
-> the extra transaction replays, the metadata blocks can end up getting
-> very scrambled indeed.
+>> I was trying to present the same information in a more concise manner. I
+>> was hoping that the test application would provide a clearer description
+>> of the problem and the solution. However, I can include some of my
+>> original prose from the v1 email in the next revision's email if you
+>> think that would be helpful.
+>
+> Yes, it would be a good idea.
+>
+>>> I've taken a look at this patch as it currently stands in 3.7-rc1, and
+>>> done a bit of testing. (By the way, the test program
+>>> tools/testing/selftests/epoll/test_epoll.c does not compile...)
+>>
+>> Sorry, the test program compiled against commit
+>> ecca5c3acc0d0933d89abc44e60afb0cc8170e35 from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git, which
+>> I believe was the current head commit when I emailed the v2 patch in
+>> August. I thought that git's format-patch command would include the
+>> necessary information so people could see which commit the diff was
+>> created from. Should I be pulling from a different repository or working
+>> on a different branch? Since this is my first patch submission and I
+>> have essentially zero experience with git, I would appreciate any
+>> guidance you could provide here.
+>
+> I'm not expert enough to provide guidance, unfortunately. I'd just
+> make sure that the program gets updated with any future patch
+> revision.
+>
+> I should have added that the changes to fix the program were fairly
+> trivial (but they involved a misnamed variable--it looks like you did
+> a scan renaming a variable but didn't catch all instances, so I'm not
+> sure how the test program could have ever compiled in the form that
+> was committed), and I did get it going.
 
-I'm stumped by this; maybe Ted can see if I'm missing something.
+Sorry, that error arose from my lack of experience with git and its 
+format-patch command. I created the patch without first committing the 
+final fix to my branch.
 
-(and Nix, is there anything special about your fs?  Any nondefault
-mkfs or mount options, external journal, inordinately large fs, or
-anything like that?)
+>>> There are one or two places where the behavior seems a little strange,
+>>> so I have a question or two at the end of this mail. But other than
+>>> that, I want to check my understanding so that the interface can be
+>>> correctly documented.
+>>>
+>>> Just to go though my understanding, the problem is the following
+>>> scenario in a multithreaded application:
+>>>
+>>> 1. Multiple threads are performing epoll_wait() operations,
+>>>     and maintaining a user-space cache that contains information
+>>>     corresponding to each file descriptor being monitored by
+>>>     epoll_wait().
+>>>
+>>> 2. At some point, a thread wants to delete (EPOLL_CTL_DEL)
+>>>     a file descriptor from the epoll interest list, and
+>>>     delete the corresponding record from the user-space cache.
+>>>
+>>> 3. The problem with (2) is that some other thread may have
+>>>     previously done an epoll_wait() that retrieved information
+>>>     about the fd in question, and may be in the middle of using
+>>>     information in the cache that relates to that fd. Thus,
+>>>     there is a potential race.
+>>>
+>>> 4. The race can't solved purely in user space, because doing
+>>>     so would require applying a mutex across the epoll_wait()
+>>>     call, which would of course blow thread concurrency.
+>>>
+>>> Right?
+>>
+>> Yes, that is an accurate description of the problem.
+>
+> Okay.
+>
+>>> Your solution is the EPOLL_CTL_DISABLE operation. I want to
+>>> confirm my understanding about how to use this flag, since
+>>> the description that has accompanied the patches so far
+>>> has been a bit sparse
+>>>
+>>> 0. In the scenario you're concerned about, deleting a file
+>>>     descriptor means (safely) doing the following:
+>>>     (a) Deleting the file descriptor from the epoll interest list
+>>>         using EPOLL_CTL_DEL
+>>>     (b) Deleting the corresponding record in the user-space cache
+>>>
+>>> 1. It's only meaningful to use this EPOLL_CTL_DISABLE in
+>>>     conjunction with EPOLLONESHOT.
+>>>
+>>> 2. Using EPOLL_CTL_DISABLE without using EPOLLONESHOT in
+>>>     conjunction is a logical error.
+>>>
+>>> 3. The correct way to code multithreaded applications using
+>>>     EPOLL_CTL_DISABLE and EPOLLONESHOT is as follows:
+>>>
+>>>     a. All EPOLL_CTL_ADD and EPOLL_CTL_MOD operations should
+>>>        should EPOLLONESHOT.
+>>>
+>>>     b. When a thread wants to delete a file descriptor, it
+>>>        should do the following:
+>>>
+>>>        [1] Call epoll_ctl(EPOLL_CTL_DISABLE)
+>>>        [2] If the return status from epoll_ctl(EPOLL_CTL_DISABLE)
+>>>            was zero, then the file descriptor can be safely
+>>>            deleted by the thread that made this call.
+>>>        [3] If the epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY,
+>>>            then the descriptor is in use. In this case, the calling
+>>>            thread should set a flag in the user-space cache to
+>>>            indicate that the thread that is using the descriptor
+>>>            should perform the deletion operation.
+>>>
+>>> Is all of the above correct?
+>>
+>> Yes, that is correct.
+>
+> Okay
+>
+>>
+>>> The implementation depends on checking on whether
+>>> (events & ~EP_PRIVATE_BITS) == 0
+>>> This replies on the fact that EPOLL_CTL_AD and EPOLL_CTL_MOD always
+>>> set EPOLLHUP and EPOLLERR in the 'events' mask, and EPOLLONESHOT
+>>> causes those flags (as well as all others in ~EP_PRIVATE_BITS) to be
+>>> cleared.
+>>>
+>>> A corollary to the previous paragraph is that using EPOLL_CTL_DISABLE
+>>> is only useful in conjunction with EPOLLONESHOT. However, as things
+>>> stand, one can use EPOLL_CTL_DISABLE on a file descriptor that does
+>>> not have EPOLLONESHOT set in 'events' This results in the following
+>>> (slightly surprising) behavior:
+>>>
+>>> (a) The first call to epoll_ctl(EPOLL_CTL_DISABLE) returns 0
+>>>      (the indicator that the file descriptor can be safely deleted).
+>>> (b) The next call to epoll_ctl(EPOLL_CTL_DISABLE) fails with EBUSY.
+>>>
+>>> This doesn't seem particularly useful, and in fact is probably an
+>>> indication that the user made a logic error: they should only be using
+>>> epoll_ctl(EPOLL_CTL_DISABLE) on a file descriptor for which
+>>> EPOLLONESHOT was set in 'events'. If that is correct, then would it
+>>> not make sense to return an error to user space for this case?
+>>
+>> Good point. I've implemented and tested your suggested change, and I've
+>> updated the test application to cover that case. I will soon submit a
+>> revised patch.
+>
+> I suppose that I have a concern that goes in the other direction. Is
+> there not some other solution possible that doesn't require the use of
+> EPOLLONESHOT? It seems overly restrictive to require that the caller
+> must employ this flag, and imposes the burden that the caller must
+> re-enable monitoring after each event.
+>
+> Does a solution like the following (with no requirement for EPOLLONESHOT) work?
+>
+> 0. Implement an epoll_ctl() operation EPOLL_CTL_XXX
+>    where the name XXX might be chosen based on the decision
+>    in 4(a).
+> 1. EPOLL_CTL_XXX employs a private flag, EPOLLUSED, in the
+>    per-fd events mask in the ready list. By default,
+>    that flag is off.
+> 2. epoll_wait() always clears the EPOLLUSED flag if a
+>    file descriptor is found to be ready.
+> 3. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
+>    flag is NOT set, then
+>         a) it sets the EPOLLUSED flag
+>         b) It disables I/O events (as per EPOLL_CTL_DISABLE)
+>            (I'm not 100% sure if this is necesary).
+>         c) it returns EBUSY to the caller
+> 4. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
+>    flag IS set, then it
+>         a) either deletes the fd or disables events for the fd
+>            (the choice here is a matter of design taste, I think;
+>            deletion has the virtue of simplicity; disabling provides
+>            the option to re-enable the fd later, if desired)
+>         b) returns 0 to the caller.
+>
+> All of the above with suitable locking around the user-space cache.
+>
+> Cheers,
+>
+> Michael
 
-The suspect commit added this in jbd2_mark_journal_empty():
+I don't believe that proposal will solve the problem. Consider the case 
+where a worker thread has just executed epoll_wait and is about to 
+execute the next line of code (which will access the data associated 
+with the fd receiving the event). If the deletion thread manages to call 
+epoll_ctl(EPOLL_CTL_XXX) for that fd twice in a row before the worker 
+thread is able to execute the next statement, then the deletion thread 
+will mistakenly conclude that it is safe to destroy the data that the 
+worker thread is about to access.
 
-        /* Is it already empty? */
-        if (sb->s_start == 0) {
-                read_unlock(&journal->j_state_lock);
-                return;
-        }
-
-thereby short circuiting the function.
-
-But Ted's suggestion that mounting the fs, doing a little work, and
-unmounting before we wrap would lead to this doesn't make sense to
-me.  When I do a little work, s_start is at 1, not 0.  We start
-the journal at s_first:
-
-load_superblock()
-	journal->j_first = be32_to_cpu(sb->s_first);
-
-And when we wrap the journal, we wrap back to j_first:
-
-jbd2_journal_next_log_block():
-        if (journal->j_head == journal->j_last)
-                journal->j_head = journal->j_first;
-
-and j_first comes from s_first, which is set at journal creation
-time to be "1" for an internal journal.
-
-So s_start == 0 sure looks special to me; so far I can only see that
-we get there if we've been through jbd2_mark_journal_empty() already,
-though I'm eyeballing jbd2_journal_get_log_tail() as well.
-
-Ted's proposed patch seems harmless but so far I don't understand
-what problem it fixes, and I cannot recreate getting to
-jbd2_mark_journal_empty() with a dirty log and s_start == 0.
-
--Eric
-
-> *Sigh*.  My apologies for not catching this when I reviewed this
-> patch.  I believe the following patch should fix the bug; once it's
-> reviewed by other ext4 developers, I'll push this to Linus ASAP.
-> 
-> 						- Ted
-> 
-> commit 26de1ba5acc39f0ab57ce1ed523cb128e4ad73a4
-> Author: Theodore Ts'o <tytso@mit.edu>
-> Date:   Tue Oct 23 18:15:22 2012 -0400
-> 
->     jbd2: fix a potential fs corrupting bug in jbd2_mark_journal_empty
->     
->     Fix a potential file system corrupting bug which was introduced by
->     commit eeecef0af5ea4efd763c9554cf2bd80fc4a0efd3: jbd2: don't write
->     superblock when if its empty.
->     
->     We should only skip writing the journal superblock if there is nothing
->     to do --- not just when s_start is zero.
->     
->     This has caused users to report file system corruptions in ext4 that
->     look like this:
->     
->     EXT4-fs error (device sdb3): ext4_mb_generate_buddy:741: group 436, 22902 clusters in bitmap, 22901 in gd
->     JBD2: Spotted dirty metadata buffer (dev = sdb3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
->     
->     after the file system has been corrupted.
->     
->     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
->     Cc: stable@vger.kernel.org
-> 
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index 0f16edd..0064181 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -1351,18 +1351,20 @@ void jbd2_journal_update_sb_log_tail(journal_t *journal, tid_t tail_tid,
->  static void jbd2_mark_journal_empty(journal_t *journal)
->  {
->  	journal_superblock_t *sb = journal->j_superblock;
-> +	__be32		new_tail_sequence;
->  
->  	BUG_ON(!mutex_is_locked(&journal->j_checkpoint_mutex));
->  	read_lock(&journal->j_state_lock);
-> -	/* Is it already empty? */
-> -	if (sb->s_start == 0) {
-> +	new_tail_sequence = cpu_to_be32(journal->j_tail_sequence);
-> +	/* Nothing to do? */
-> +	if (sb->s_start == 0 && sb->s_sequence == new_tail_sequence) {
->  		read_unlock(&journal->j_state_lock);
->  		return;
->  	}
->  	jbd_debug(1, "JBD2: Marking journal as empty (seq %d)\n",
->  		  journal->j_tail_sequence);
->  
-> -	sb->s_sequence = cpu_to_be32(journal->j_tail_sequence);
-> +	sb->s_sequence = new_tail_sequence;
->  	sb->s_start    = cpu_to_be32(0);
->  	read_unlock(&journal->j_state_lock);
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Pat
 
