@@ -1,136 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934443Ab2JXIw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:52:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64966 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933591Ab2JXIwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:52:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="237501505"
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@kernel.org
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH] perf/x86/uncore: Handle pci_read_config_dword() error.
-Date: Wed, 24 Oct 2012 16:42:20 +0800
-Message-Id: <1351068140-13456-1-git-send-email-zheng.z.yan@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S934461Ab2JXIxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:53:16 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60854 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932832Ab2JXIxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:53:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <5087A8C8.2030200@intel.com>
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
+	<1351058350-9159-2-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBRMo9o8bujM+aCqh-hWqVz1-Y1G_15Oovv+15SMBbK=aA@mail.gmail.com>
+	<50879D71.3080108@intel.com>
+	<CABPqkBQWvV5w-qyaWmbmqs9+7zaC8kBhmacuAF3FYvw-PCh=9A@mail.gmail.com>
+	<5087A574.3040507@intel.com>
+	<5087A8C8.2030200@intel.com>
+Date: Wed, 24 Oct 2012 10:53:11 +0200
+Message-ID: <CABPqkBS29OnR9N5bfRXTKOPvXx5A1rAx2rZdMk-2nHQHc=hBQg@mail.gmail.com>
+Subject: Re: [PATCH V2 1/7] perf, x86: Reduce lbr_sel_map size
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Wed, Oct 24, 2012 at 10:37 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> On 10/24/2012 04:23 PM, Yan, Zheng wrote:
+>> On 10/24/2012 04:15 PM, Stephane Eranian wrote:
+>>> On Wed, Oct 24, 2012 at 9:49 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>> On 10/24/2012 03:28 PM, Stephane Eranian wrote:
+>>>>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>>>>
+>>>>>> The index of lbr_sel_map is bit value of perf branch_sample_type.
+>>>>>> By using bit shift as index, we can reduce lbr_sel_map size.
+>>>>>>
+>>>>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>>>>> ---
+>>>>>>  arch/x86/kernel/cpu/perf_event.h           |  4 +++
+>>>>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c | 50 ++++++++++++++----------------
+>>>>>>  include/uapi/linux/perf_event.h            | 42 +++++++++++++++++--------
+>>>>>>  3 files changed, 56 insertions(+), 40 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+>>>>>> index d3b3bb7..ea6749a 100644
+>>>>>> --- a/arch/x86/kernel/cpu/perf_event.h
+>>>>>> +++ b/arch/x86/kernel/cpu/perf_event.h
+>>>>>> @@ -412,6 +412,10 @@ struct x86_pmu {
+>>>>>>         struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+>>>>>>  };
+>>>>>>
+>>>>>> +enum {
+>>>>>> +       PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
+>>>>>> +};
+>>>>>> +
+>>>>> What's the point on the extraneous definition?
+>>>>
+>>>> because later patches will add map PERF_SAMPLE_BRANCH_CALL_STACK, it will make
+>>>> "PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE != PERF_SAMPLE_BRANCH_MAX_SHIFT"
+>>>>
+>>> And you are not going to do:
+>>>
+>>> enum perf_branch_sample_type_shift {
+>>> ...
+>>> PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT = 10
+>>> PERF_SAMPLE_BRANCH_MAX_SHIFT
+>>> };
+>>>
+>>> PERF_SAMPLE_BRANCH_CALL_STACK = 1 << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT
+>>>
+>>> Unless you're telling you are not going to add a mapping for
+>>> PERF_SAMPLE_CALL_STACK to the
+>>> lbr_sel_map[]?
+>>>
+>>
+>> I think include/uapi/linux/perf_event.h should only contain definition for user API.
+>> So I added PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT and PERF_SAMPLE_BRANCH_CALL_STACK to
+>> arch/x86/kernel/cpu/perf_event.h. Please check patch 1.
+>>
+>
+> Sorry, I mean patch 2.
+>
+Yeah, I figured that one. The part I was missing was that you're
+trying to fit this
+under PERF_SAMPLE_CALLCHAIN.
 
-Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 43 +++++++++++++++++----------
- 1 file changed, 28 insertions(+), 15 deletions(-)
+So now, looks like we have 3 different ways of getting user call stacks:
+   - PERF_SAMPLE_CALLCHAIN via frame pointer
+   - PERF_SAMPLE_CALLCHAIN via LBR cstack on HSW
+   - PERF_SAMPLE_USER_CSTACK via stack copying + dwarf
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 99d96a4..344e0e9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -118,22 +118,24 @@ static void snbep_uncore_pci_disable_box(struct intel_uncore_box *box)
- {
- 	struct pci_dev *pdev = box->pci_dev;
- 	int box_ctl = uncore_pci_box_ctl(box);
--	u32 config;
-+	u32 config = 0;
- 
--	pci_read_config_dword(pdev, box_ctl, &config);
--	config |= SNBEP_PMON_BOX_CTL_FRZ;
--	pci_write_config_dword(pdev, box_ctl, config);
-+	if (!pci_read_config_dword(pdev, box_ctl, &config)) {
-+		config |= SNBEP_PMON_BOX_CTL_FRZ;
-+		pci_write_config_dword(pdev, box_ctl, config);
-+	}
- }
- 
- static void snbep_uncore_pci_enable_box(struct intel_uncore_box *box)
- {
- 	struct pci_dev *pdev = box->pci_dev;
- 	int box_ctl = uncore_pci_box_ctl(box);
--	u32 config;
-+	u32 config = 0;
- 
--	pci_read_config_dword(pdev, box_ctl, &config);
--	config &= ~SNBEP_PMON_BOX_CTL_FRZ;
--	pci_write_config_dword(pdev, box_ctl, config);
-+	if (!pci_read_config_dword(pdev, box_ctl, &config)) {
-+		config &= ~SNBEP_PMON_BOX_CTL_FRZ;
-+		pci_write_config_dword(pdev, box_ctl, config);
-+	}
- }
- 
- static void snbep_uncore_pci_enable_event(struct intel_uncore_box *box, struct perf_event *event)
-@@ -156,7 +158,7 @@ static u64 snbep_uncore_pci_read_counter(struct intel_uncore_box *box, struct pe
- {
- 	struct pci_dev *pdev = box->pci_dev;
- 	struct hw_perf_event *hwc = &event->hw;
--	u64 count;
-+	u64 count = 0;
- 
- 	pci_read_config_dword(pdev, hwc->event_base, (u32 *)&count);
- 	pci_read_config_dword(pdev, hwc->event_base + 4, (u32 *)&count + 1);
-@@ -603,11 +605,12 @@ static struct pci_driver snbep_uncore_pci_driver = {
- /*
-  * build pci bus to socket mapping
-  */
--static void snbep_pci2phy_map_init(void)
-+static int snbep_pci2phy_map_init(void)
- {
- 	struct pci_dev *ubox_dev = NULL;
- 	int i, bus, nodeid;
--	u32 config;
-+	int err = 0;
-+	u32 config = 0;
- 
- 	while (1) {
- 		/* find the UBOX device */
-@@ -618,10 +621,14 @@ static void snbep_pci2phy_map_init(void)
- 			break;
- 		bus = ubox_dev->bus->number;
- 		/* get the Node ID of the local register */
--		pci_read_config_dword(ubox_dev, 0x40, &config);
-+		err = pci_read_config_dword(ubox_dev, 0x40, &config);
-+		if (err)
-+			break;
- 		nodeid = config;
- 		/* get the Node ID mapping */
--		pci_read_config_dword(ubox_dev, 0x54, &config);
-+		err = pci_read_config_dword(ubox_dev, 0x54, &config);
-+		if (err)
-+			break;
- 		/*
- 		 * every three bits in the Node ID mapping register maps
- 		 * to a particular node.
-@@ -633,7 +640,11 @@ static void snbep_pci2phy_map_init(void)
- 			}
- 		}
- 	};
--	return;
-+
-+	if (ubox_dev)
-+		pci_dev_put(ubox_dev);
-+
-+	return err ? pcibios_err_to_errno(err) : 0;
- }
- /* end of Sandy Bridge-EP uncore support */
- 
-@@ -2578,9 +2589,11 @@ static int __init uncore_pci_init(void)
- 
- 	switch (boot_cpu_data.x86_model) {
- 	case 45: /* Sandy Bridge-EP */
-+		ret = snbep_pci2phy_map_init();
-+		if (ret)
-+			return ret;
- 		pci_uncores = snbep_pci_uncores;
- 		uncore_pci_driver = &snbep_uncore_pci_driver;
--		snbep_pci2phy_map_init();
- 		break;
- 	default:
- 		return 0;
--- 
-1.7.11.7
+And presumably all are available under perf record -g.
 
+The difference I see with LBR cstack is that the callstack is much
+smaller, max 16 deep
+and it has the limitations you mentioned in the cover message.
