@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934803Ab2JXNgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:36:47 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54058 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab2JXNgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:36:43 -0400
-Date: Wed, 24 Oct 2012 15:36:40 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Ming Lei <tom.leiming@gmail.com>
-cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        linux-sh@vger.kernel.org
-Subject: Re: [Q] "console=" command line ignored?
-In-Reply-To: <CACVXFVOv-zMj_cEyRuehhWMjCF1nvd-tkW7c8o5raHZoMbCZiQ@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1210241535560.2683@axis700.grange>
-References: <Pine.LNX.4.64.1210241226060.31768@axis700.grange>
- <CACVXFVOv-zMj_cEyRuehhWMjCF1nvd-tkW7c8o5raHZoMbCZiQ@mail.gmail.com>
+	id S934797Ab2JXNhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:37:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753307Ab2JXNhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:37:47 -0400
+Date: Wed, 24 Oct 2012 15:37:30 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: a.p.zijlstra@chello.nl, x86@kernel.org, linux-kernel@vger.kernel.org,
+        acme@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>,
+        avi@redhat.com
+Subject: Re: [06/34] perf, kvm: Support the intx/intx_cp modifiers in KVM
+ arch perfmon emulation v2
+Message-ID: <20121024133730.GB29310@redhat.com>
+References: <1350602382-12771-7-git-send-email-andi@firstfloor.org>
+ <20121023130509.GB3654@redhat.com>
+ <20121023132039.GV16230@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:jK8Xx6OuiTAGAWxxzSqkM66MiEWoJ5NBXyB+0v0Vh8D
- gwPjvCbXkVJu1gWgF7MGNIp0wQNdleSrPkIBuCrn+HN1/SmPnz
- Iczwux64AE/FKmHul55mjR2OE968wYebnH+4KwVCHBkEa5PvSi
- QzHtwsNBpf4vA5lsFCUFL9YbYUdLiGnevgGtEHGIwFMP9KkGJx
- KaJa/NRVh6zj3bxCUXJZ0j1qXmb7oGMMk3+Ti6tv92icXEhqzB
- s70qUqRkf1+t5sOa6KU60vCRnokX3eZG0fjfMVdmWvuYjcwcEI
- 1iyX9Kq/myVxY74/3SB/S8wqPGgd+pbbFAJ12BYxHOOY3DE/kG
- YcbwsbD/3Sq6xzmbt2hyYXQtmHrpPj/b6Dz1VT1CqL1MU1ptFf
- FL1fGbg9Xyffw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023132039.GV16230@one.firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012, Ming Lei wrote:
-
-> On Wed, Oct 24, 2012 at 6:49 PM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> > Hi
-> >
-> > I cannot seem to force selection of a serial console by specifying
-> > "console=ttySC0..." on the command line with modern (yesterday's "next")
-> > kernels. The kernel insists on
-> >
-> > console [tty0] enabled
+On Tue, Oct 23, 2012 at 03:20:39PM +0200, Andi Kleen wrote:
+> On Tue, Oct 23, 2012 at 03:05:09PM +0200, Gleb Natapov wrote:
+> > On Thu, Oct 18, 2012 at 11:19:14PM -0000, Andi Kleen wrote:
+> > >  static inline u8 fixed_en_pmi(u64 ctrl, int idx)
+> > > @@ -400,7 +407,7 @@ int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
+> > >  		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
+> > >  			if (data == pmc->eventsel)
+> > >  				return 0;
+> > > -			if (!(data & 0xffffffff00200000ull)) {
+> > > +			if (!(data & 0xfffffffc00200000ull)) {
+> > >  				reprogram_gp_counter(pmc, data);
+> > >  				return 0;
+> > >  			}
+> > 
+> > Mask should depend on cpuid bits provided to a guest. SDM says TSX is
+> > available if CPUID.(EAX=7, ECX=0):RTM[bit 11]=1, or  if
+> > CPUID.07H.EBX.HLE [bit 4] = 1, so we need to check for this in
+> > kvm_pmu_cpuid_update() and initialize mask accordingly.
 > 
-> Please see https://lkml.org/lkml/2012/10/23/307
+> I think it will still error out or do nothing.
+It will drop TSX related bits without any way for guest to know and count
+something else as a result.  It is true that well behaved guest will check
+cpuid bits by itself before setting them, but we are trying to emulate
+HW as close as possible for the sake of not so well behaved. Some crazy
+guest may try to check if those bits are supported by trying to set them
+and checking for the #GP for instance. (And I noticed that performance
+monitoring application writers tend to not check cpuid even for those
+things that can be checked and go by CPU model alone.)
 
-Perfect, thanks! Fixes my problem too.
+> So I have doubts the explicit check is worth it.
+> That should be near enough the hardware.
+> 
+> BTW does the PMU feature still work? I couldn't get it to work at all
+> with the latest kernel, just when I originally wrote it.
+> 
+Works for me here with 3.6.0. Have you ran qemu with "-cpu host"?
 
-Regards
-Guennadi
-
-> > The reason might also well be, that the respective "sh-sci" driver is
-> > only registered later. I'll try to look at this in more detail - since
-> > when this is broken and how the registration order looked before. This is
-> > just a first heads-up in case someone has a solution immediately at hand.
-> 
-> 
-> 
-> Thanks,
-> -- 
-> Ming Lei
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+--
+			Gleb.
