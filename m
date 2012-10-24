@@ -1,84 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935393Ab2JXT47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:56:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50054 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933614Ab2JXT44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:56:56 -0400
-Date: Wed, 24 Oct 2012 22:51:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121024195104.GA1175@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <64355430.MNHe7H1cg3@dtor-d630.eng.vmware.com>
- <20121024191042.GC772@arwen.pp.htv.fi>
- <4612865.mWDXHX689T@dtor-d630.eng.vmware.com>
+	id S1757970Ab2JXT5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:57:22 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:51144 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756140Ab2JXT5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:57:18 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
+Date: Wed, 24 Oct 2012 21:56:42 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <201210240847.52417.linux@rainbow-software.org> <450396555.xT2D53NWjT@vostro.rjw.lan> <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com>
+In-Reply-To: <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4612865.mWDXHX689T@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201210242156.43233.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 24 October 2012 21:36:04 H. Peter Anvin wrote:
+> Minor concern: it should do the wait for ready before sending each command.
 
-Hi,
+It was a hack and then I forgot to add the waits... Should I redo the patch? 
+I'll not be able to test it as I have to return the machine.
 
-On Wed, Oct 24, 2012 at 12:38:44PM -0700, Dmitry Torokhov wrote:
-> On Wednesday, October 24, 2012 10:10:42 PM Felipe Balbi wrote:
-> > >=20
-> > >
-> > > That is a valid concern and we'll need to find a compromise here. As I
-> > > said,
-> > WHAT ?? Silicon erratas are not a valid concern ? Power waste isn't a
-> > valid concern ? Tell that to the millions of devices shipped with Linux
-> > everyday. Power usage if it's the top concern in any product, is right
-> > there as the top five. Likewise for silicon erratas.
->=20
-> I think we should come back to this discussion when you get more coffee
-> and start parsing other party e-mails properly.
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> >On Wednesday 24 of October 2012 08:47:52 Ondrej Zary wrote:
+> >> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
+> >
+> >enable A20
+> >
+> >> line but resume code assumes that KBC was used.
+> >> The laptop will not resume from S3 otherwise but powers off after a
+> >
+> >while
+> >
+> >> and then powers on again stuck with a blank screen.
+> >>
+> >> Fix it by enabling A20 using KBC. Affected laptop list and DMI data
+> >
+> >are from
+> >
+> >> bug reports at Ubuntu Launchpad.
+> >>
+> >> Tested with EX600 and PR200.
+> >>
+> >> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+> >>
+> >> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> >
+> >Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> >> --- a/arch/x86/kernel/acpi/boot.c
+> >> +++ b/arch/x86/kernel/acpi/boot.c
+> >> @@ -1349,6 +1349,20 @@ static int __init
+> >
+> >dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+> >
+> >>  }
+> >>
+> >>  /*
+> >> + * Enable A20 line using KBC even if it's already enabled using
+> >
+> >other method.
+> >
+> >> + * This is needed for some MSI laptops to resume from S3.
+> >> + */
+> >> +static int __init a20_enable_kbc(const struct dmi_system_id *d)
+> >> +{
+> >> +	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n",
+> >
+> >d->ident);
+> >
+> >> +	outb(0xd1, 0x64);	/* Command write */
+> >> +	outb(0xdf, 0x60);	/* A20 on */
+> >> +	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +/*
+> >>   * If your system is blacklisted here, but you find that acpi=force
+> >>   * works for you, please contact linux-acpi@vger.kernel.org
+> >>   */
+> >> @@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata
+> >
+> >acpi_dmi_table[] = {
+> >
+> >>  		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
+> >>  		     },
+> >>  	 },
+> >> +	/*
+> >> +	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h
+> >
+> >to
+> >
+> >> +	 * enable A20 line but resume code assumes that KBC was used.
+> >> +	 * The laptop will not resume from S3 otherwise but powers off
+> >> +	 * after a while and then powers on again stuck with a blank
+> >
+> >screen.
+> >
+> >> +	 */
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI EX600 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
+> >> +		     },
+> >> +	 },
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI EX700 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
+> >> +		     },
+> >> +	 },
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI GX700 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
+> >> +		     },
+> >> +	 },
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI VR201 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
+> >> +		     },
+> >> +	 },
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI VR601 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
+> >> +		     },
+> >> +	 },
+> >> +	{
+> >> +	 .callback = a20_enable_kbc,
+> >> +	 .ident = "MSI PR200 Laptop",
+> >> +	 .matches = {
+> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
+> >> +		     },
+> >> +	 },
+> >>  	{}
+> >>  };
 
-indeed. I really misparsed it. My bad. comments withdrawn.
 
---=20
-balbi
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiEaoAAoJEIaOsuA1yqRE2kAQAIqVwPdCxEwcs4dAfXY8i1k0
-tTWRZWWRyGq9ZX+usVg24Xnz186bo2FpiCaMNXuhrVFLK7Z5L4mt80BcJSLj+htt
-21j+YJV+y4QHaN29gjJxTjO947VWc1SLjl4ztrlsPdiefFj0KC0NRLTtulAqe40t
-rxfZW5v4dkU/VY11UNkG6ACh+/2DMeefiot7O+hSevh8LPvoPzMoluC73HynVwEp
-tmCC3L1Neg4sfcegHMqNHkzto8NysOVSNrHFS2A68//KalmKp74jWlzw8Edo4iBh
-4HYOdyObMCcVbOWnaZkpPiZtS57JCCfX8VPgEv10Nx5Kh+MxGl+wBCwsDwDS+8sh
-7TWc/nUGTIfaaF8OAjqrFbOhr4+BcIE7/FkngRoMmcHJzRFKELRIAibA+2Vi8YP3
-hVMd4itvmwIvfR4IuEbIrqkGs3D/qD4GxREaiwhJg0d+aQ7v8iUdfgnhRM6YTcjf
-uNVBq/7EodILtfw4v1CJgi1ILrWpCRTAtEUUB4A1HTAfdmF+e2kviUTdnjMxzVqr
-58N66fyO9syUzc7UWXaXbzuzDcUkbPAWLXXiHtbCSbYAGSlZ7VOMDe3nLpbV9C5T
-XicyR2ursdlMJouvUDiFlaoPix+QNLuWRfo+SBb7gmwgcyElRtlJFTy9TJS+EW9r
-p25y75h/VpCAhEm2ZIP0
-=UWgz
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
+-- 
+Ondrej Zary
