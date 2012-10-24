@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935545Ab2JXUTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:19:34 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:29190 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935521Ab2JXUTa (ORCPT
+	id S1161145Ab2JXUUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:20:44 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:45955 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933652Ab2JXUUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:19:30 -0400
-Date: Wed, 24 Oct 2012 16:19:28 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Josh Cartwright <josh.cartwright@ni.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        John Linn <john.linn@xilinx.com>
-Subject: Re: [PATCH v2 2/4] zynq: move static peripheral mappings
-Message-ID: <20121024201928.GA31069@elliptictech.com>
-References: <20121022211219.GC31538@beefymiracle.amer.corp.natinst.com>
- <201210231450.11540.arnd@arndb.de>
- <20121023162641.GG20593@beefymiracle.amer.corp.natinst.com>
- <20121023202703.GA16912@elliptictech.com>
- <20121023234219.GM20593@beefymiracle.amer.corp.natinst.com>
+	Wed, 24 Oct 2012 16:20:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023234219.GM20593@beefymiracle.amer.corp.natinst.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121024175225.GA27553@kroah.com>
+References: <1343340000-7587-1-git-send-email-mjg@redhat.com>
+	<CAA7rmPGL827cgT6hM8h_xhokEbTbTnrptoRekVByM7AcMdRUdw@mail.gmail.com>
+	<20121018182831.GA30905@srcf.ucam.org>
+	<CAA7rmPHSX+nOfQc-rs729g7ibkH5VwvsGkiOLLxX794CAgmYSw@mail.gmail.com>
+	<20121024175225.GA27553@kroah.com>
+Date: Wed, 24 Oct 2012 22:20:41 +0200
+Message-ID: <CAA7rmPGG8X9hJjwHKoCTWwmPf+HgcOKMr0hg+Aw3PJuwK8q9Ww@mail.gmail.com>
+Subject: Re: [PATCH] efi: Build EFI stub with EFI-appropriate options
+From: Daniel Vacek <neelx.g@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-23 18:42 -0500, Josh Cartwright wrote:
-> On Tue, Oct 23, 2012 at 04:27:03PM -0400, Nick Bowler wrote:
-> > Just FYI, I sent a patch to fix the same bug a while back
-> >
-> >   https://patchwork.kernel.org/patch/1156361/
-> >
-> > together with other patches to fix early printk on the ZC702 serial
-> > console.  Admittedly, I dropped the ball on these as other issues
-> > came up so I was away from the Zynq for a while.
-> >
-> > However, I'm now getting back on the Zynq and have a bunch of patches to
-> > make it all work on the ZC702 board.  I've respun the ZC702 early boot
-> > fixes against newer git but they're obviously going to conflict with
-> > this series.  Should I resend them anyway?
-> 
-> If you have other fixes for the zc702, that'd be great.  Most of my
-> testing has been in a qemu model; I haven't had a chance to try getting
-> the zc702 booting yet.
-> 
-> The first stumbling block is that it looks like the secondary uart is
-> the primary uart on the zc702.
+On Wed, Oct 24, 2012 at 7:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Oct 18, 2012 at 10:32:50PM +0200, Daniel Vacek wrote:
+>> On Thu, Oct 18, 2012 at 8:28 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>> > On Thu, Oct 18, 2012 at 08:18:51PM +0200, Daniel Vacek wrote:
+>> >
+>> >> s/CLFAGS/CFLAGS/
+>> >>
+>> >> should go to stable too?
+>> >
+>> > Crap. Yes. Feel free to send that.
+>
+> Applied, thanks.
 
-Yes, that is indeed the case, and was what I tried to address with my
-earlier patches.
+Something went wrong. I responded to the other two emails.
 
-> > I also have a DT binding for the TTC driver, I can send that.
-> 
-> That'd be great!
-
-OK, I will respin and test this stuff on top of your v4 series and send
-them out.
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+--nX
