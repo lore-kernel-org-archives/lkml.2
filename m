@@ -1,62 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab2JXXZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:25:44 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:33304 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab2JXXZn (ORCPT
+	id S1755907Ab2JXX1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:27:18 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:35583 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab2JXX1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:25:43 -0400
+	Wed, 24 Oct 2012 19:27:16 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
+References: <20121023013343.GB6370@fieldses.org>
+	<87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org>
+Emacs: it's like swatting a fly with a supernova.
+Date: Thu, 25 Oct 2012 00:27:02 +0100
+In-Reply-To: <20121024210819.GA5484@thunk.org> (Theodore Ts'o's message of
+	"Wed, 24 Oct 2012 17:08:19 -0400")
+Message-ID: <87y5iv78op.fsf_-_@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121024222854.GA1891@kroah.com>
-References: <1351116560-6918-1-git-send-email-omar.ramirez@copitl.com>
-	<20121024222854.GA1891@kroah.com>
-Date: Wed, 24 Oct 2012 18:25:42 -0500
-Message-ID: <CAJ6Av5O0Ri-ZzNj-MnFH53qSdc9r_BNCVs=ktRY5+qUqEzGaGA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] staging: tidspbridge fixes for 3.7
-From: Omar Ramirez Luna <omar.ramirez@copitl.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Victor Manuel Jaquez Leal <vjaquez@igalia.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 24 Oct 2012, Theodore Ts'o verbalised:
 
-On Wed, Oct 24, 2012 at 5:28 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Oct 24, 2012 at 05:09:14PM -0500, Omar Ramirez Luna wrote:
->> With 3.7-rc1 changes:
->>
->> - New irq numbering in OMAP3 broke the driver request for a mmu irq,
->>   until this is migrated to the common iommu framework we can only
->>   hardcode the new number.
->> - _raw_* accessors changed a type of one of their parameters with patch
->>   "195bbca ARM: 7500/1: io: avoid writeback addressing modes for
->>   __raw_ accessors", so the build system was filled with warnings from
->>   the old parameter usage.
->>
->> Omar Ramirez Luna (6):
->>   staging: tidspbridge: request the right irq for mmu
->>   staging: tidspbridge: drop const from custom mmu implementation
->>   staging: tidspbridge: change type to __iomem for per and core
->>     addresses
->>   staging: tidspbridge: ioremap dsp sync addr
->>   staging: tidspbridge: ioremap physical address of the stack segment
->>     in shm
->>   staging: tidspbridge: delete unused mmu functions
+> On Wed, Oct 24, 2012 at 09:45:47PM +0100, Nix wrote:
+>> 
+>> It occurs to me that it is possible that this bug hits only those
+>> filesystems for which a umount has started but been unable to complete.
+>> If so, this is a relatively rare and unimportant bug which probably hits
+>> only me and users of slow removable filesystems in the whole world...
 >
-> Are the "fix up the compiler warning" patches really needed for 3.7?
-> Are they new in 3.7-rc1?  Or were they there before in 3.6?
+> Can you verify this?  Does the bug show up if you just hit the power
+> switch while the system is booted?
 
-All are new in 3.7-rc1.
+Verified! You do indeed need to do passing strange things to trigger
+this bug -- not surprising, really, or everyone and his dog would have
+reported it by now. As it is, I'm sorry this hit slashdot, because it
+reflects unnecessarily badly on a filesystem that is experiencing
+problems only when people do rather insane things to it.
 
-The "warning fixes" would be good to have and thought they could make
-it given that the change was introduced during 3.7 rc cycle. So, the
-warnings are not that critical.
+> How about changing the "sleep 2" to "sleep 0.5"?
 
-Cheers,
+I tried the following:
 
-Omar
+ - /sbin/reboot -f of running system
+   -> Journal replay, no problems other than the expected free block
+      count problems. This is not such a severe problem after all!
+
+ - Normal shutdown, but a 60 second pause after lazy umount, more than
+   long enough for all umounts to proceed to termination
+   -> no corruption, but curiously /home experienced a journal replay
+      before being fscked, even though a cat of /proc/mounts after
+      umounting revealed that the only mounted filesystem was /,
+      read-only, so /home should have been clean
+
+ - Normal shutdown, a 60 second pause after lazy umount of everything
+   other than /var, and then a umount of /var the instant before
+   reboot, no sleep at all
+   -> massive corruption just as seen before.
+
+Unfortunately, the massive corruption in the last testcase was seen in
+3.6.1 as well as 3.6.3: it appears that the only effect that superblock
+change had in 3.6.3 was to make this problem easier to hit, and that the
+bug itself was introduced probably somewhere between 3.5 and 3.6 (though
+I only rebooted 3.5.x twice, and it's rare enough before 3.6.[23], at
+~1/20 boots, that it may have been present for longer and I never
+noticed).
+
+So the problem is caused by rebooting or powering off or disconnecting
+the device *while* umounting a filesystem with a dirty journal, and
+might have been introduced by I/O scheduler changes or who knows what
+other changes, not just ext4 changes, since the order of block writes by
+umount is clearly at issue.
+
+Even though my own system relies on the possibility of rebooting during
+umount to reboot reliably, I'd be inclined to say 'not a bug, don't do
+that then' -- except that this renders it unreliable to use umount -l to
+unmount all the filesystems you can, skipping those that are not
+reachable due to having unresponsive servers in the way. As far as I can
+tell, there is *no* way to tell when a lazy umount has completed, except
+perhaps for polling /proc/mounts: and there is no way at all to tell
+when a lazy umount switches from 'waiting for the last process to stop
+using me, you can reboot without incident' to 'doing umount, rebooting
+is disastrous'. And unfortunately I want to reboot if we're in the
+former state, but not in the latter.
+
+(It also makes it unreliable to use ext4 on devices like USB sticks that
+might suddenly get disconnected during a umount.)
+
+
+Further, it seems to me that this makes it dangerous to ever use umount
+-l at all, even during normal system operation, since the real umount
+might only start when all processes are killed at system shutdown, and
+the reboot could well kick in before the umount has finished.
+
+It also appears impossible for me to reliably shut my system down,
+though a 60s timeout after lazy umount and before reboot is likely to
+work in all but the most pathological of cases (where a downed NFS
+server comes up at just the wrong instant): it is clear that the
+previous 5s timeout eventually became insufficient simply because of the
+amount of time it can take to do a umount on today's larger filesystems.
+
+Truly, my joy is unbounded :(
+
+> 0) Make sure the reliable repro does _not_ work with 3.6.1 booted
+
+Oh dear. Sorry :(((
+
+I can try to bisect this and track down which kernel release it appeared
+in -- if it isn't expected behaviour, of course, which is perfectly
+possible: rebooting during a umount is at best questionable. But I can't
+do anything that lengthy before the weekend, I'm afraid.
+
+-- 
+NULL && (void)
