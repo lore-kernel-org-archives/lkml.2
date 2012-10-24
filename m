@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161203Ab2JXVIh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:08:37 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57316 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161051Ab2JXVIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:08:34 -0400
-Date: Wed, 24 Oct 2012 17:08:19 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Nix <nix@esperi.org.uk>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121024210819.GA5484@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Bryan Schumaker <bjschuma@netapp.com>,
-	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
-	gregkh@linuxfoundation.org,
-	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-References: <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <508740B2.2030401@redhat.com>
- <87txtkld4h.fsf@spindle.srvr.nix>
- <50876E1D.3040501@redhat.com>
- <20121024052351.GB21714@thunk.org>
- <878vavveee.fsf@spindle.srvr.nix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <878vavveee.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1161214Ab2JXVLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:11:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5829 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161186Ab2JXVLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:11:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,642,1344236400"; 
+   d="scan'208";a="231932310"
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        David Howells <dhowells@redhat.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [PATCH] Makefile: Documentation for external tool should be correct
+Date: Wed, 24 Oct 2012 14:11:48 -0700
+Message-Id: <1351113108-23277-1-git-send-email-hpa@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 09:45:47PM +0100, Nix wrote:
-> 
-> It occurs to me that it is possible that this bug hits only those
-> filesystems for which a umount has started but been unable to complete.
-> If so, this is a relatively rare and unimportant bug which probably hits
-> only me and users of slow removable filesystems in the whole world...
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-Can you verify this?  Does the bug show up if you just hit the power
-switch while the system is booted?
+If one includes documentation for an external tool, it should be
+correct.  This is not:
 
-How about changing the "sleep 2" to "sleep 0.5"?  (Feel free to
-unmount your other partitions, and just leave a test file system
-mounted to minimize the chances that you lose partitions that require
-hours and hours to restore...)
+1. Overriding the input to rngd should typically be neither
+   necessary nor desired.  This is especially so since newer
+   versions of rngd support a number of different *types* of sources.
+2. The default kernel-exported device is called /dev/hwrng not
+   /dev/hwrandom nor /dev/hw_random (both of which were used in the
+   past; however, kernel and udev seem to have converged on
+   /dev/hwrng.)
 
-If you can get a very reliable repro, we might have to ask you to try
-the following experiments:
+Overall it is better if the documentation for rngd is kept with rngd
+rather than in a kernel Makefile.
 
-0) Make sure the reliable repro does _not_ work with 3.6.1 booted
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
+---
+ kernel/Makefile |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-1) Try a 3.6.2 kernel
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0dfeca4..86e3285 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -174,10 +174,8 @@ signing_key.priv signing_key.x509: x509.genkey
+ 	@echo "###"
+ 	@echo "### If this takes a long time, you might wish to run rngd in the"
+ 	@echo "### background to keep the supply of entropy topped up.  It"
+-	@echo "### needs to be run as root, and should use a hardware random"
+-	@echo "### number generator if one is available, eg:"
+-	@echo "###"
+-	@echo "###     rngd -r /dev/hwrandom"
++	@echo "### needs to be run as root, and uses a hardware random"
++	@echo "### number generator if one is available."
+ 	@echo "###"
+ 	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
+ 		-x509 -config x509.genkey \
+-- 
+1.7.6.5
 
-2) (If the problem shows up above) try a 3.6.2 kernel with 14b4ed2 reverted
-
-3) (If the problem shows up above) try a 3.6.2 kernel with all of ext4
-   related patches reverted:
-92b7722 ext4: fix mtime update in nodelalloc mode
-34414b2 ext4: fix fdatasync() for files with only i_size changes
-12ebdf0 ext4: always set i_op in ext4_mknod()
-22a5672 ext4: online defrag is not supported for journaled files
-ba57d9e ext4: move_extent code cleanup
-2fdb112 ext4: fix crash when accessing /proc/mounts concurrently
-1638f1f ext4: fix potential deadlock in ext4_nonda_switch()
-5018ddd ext4: avoid duplicate writes of the backup bg descriptor blocks
-256ae46 ext4: don't copy non-existent gdt blocks when resizing
-416a688 ext4: ignore last group w/o enough space when resizing instead of BUG'ing
-14b4ed2 jbd2: don't write superblock when if its empty
-
-4) (If the problem still shows up) then we may need to do a full
-   bisect to figure out what is going on....
-
-   	     	     	    	     	- Ted
