@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab2JXXm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:42:59 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:60977 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757645Ab2JXXm5 (ORCPT
+	id S1758906Ab2JXXoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:44:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47800 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2JXXoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:42:57 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
-References: <20121023013343.GB6370@fieldses.org>
-	<87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
-Emacs: it's not slow --- it's stately.
-Date: Thu, 25 Oct 2012 00:42:44 +0100
-In-Reply-To: <87y5iv78op.fsf_-_@spindle.srvr.nix> (nix@esperi.org.uk's message
-	of "Thu, 25 Oct 2012 00:27:02 +0100")
-Message-ID: <87txtj77yj.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
+	Wed, 24 Oct 2012 19:44:21 -0400
+Date: Wed, 24 Oct 2012 16:44:11 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
+ needed for privcmd mappings.
+Message-ID: <20121024164411.5b000087@mantra.us.oracle.com>
+In-Reply-To: <1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
+References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
+	<1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 Oct 2012, nix@esperi.org.uk said:
-> Even though my own system relies on the possibility of rebooting during
-> umount to reboot reliably, I'd be inclined to say 'not a bug, don't do
-> that then' -- except that this renders it unreliable to use umount -l to
-> unmount all the filesystems you can, skipping those that are not
-> reachable due to having unresponsive servers in the way.
+>  
+>  #ifndef HYPERVISOR_VIRT_START
+> diff --git a/include/xen/interface/memory.h
+> b/include/xen/interface/memory.h index ad0dff5..5de2b36 100644
+> --- a/include/xen/interface/memory.h
+> +++ b/include/xen/interface/memory.h
+> @@ -188,6 +188,24 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
+>  /*** REMOVED ***/
+>  /*#define XENMEM_translate_gpfn_list  8*/
+>  
+> +#define XENMEM_add_to_physmap_range 23
+> +struct xen_add_to_physmap_range {
+> +    /* Which domain to change the mapping for. */
+> +    domid_t domid;
+> +    uint16_t space; /* => enum phys_map_space */
+> +
+> +    /* Number of pages to go through */
+> +    uint16_t size;
+> +    domid_t foreign_domid; /* IFF gmfn_foreign */
+> +
+> +    /* Indexes into space being mapped. */
+> +    GUEST_HANDLE(xen_ulong_t) idxs;
+> +
+> +    /* GPFN in domid where the source mapping page should appear. */
+> +    GUEST_HANDLE(xen_pfn_t) gpfns;
 
-It's worse than that. If you're using filesystem namespaces, how can
-*any* shell script loop, or anything in userspace, reliably unmount all
-filesystems before reboot? It seems to me this is impossible. There is
-no process that necessarily has access to all namespaces, and when you
-bring PID namespaces into the picture there is no process that can even
-kill all userspace processes in order to zap their filesystems.
 
-I suspect we need a new blocking 'umountall' syscall and a command that
-calls it, which umounts everything it can in every filesystem namespace
-it can, skipping those that are (unreachable?) network mounts, and
-returns only when everything is done. (Possibly it should first kill
-every process it sees in every PID namespace other than that of the
-caller, too.)
+Looking at your arm implementation in xen, doesn't look like you are
+expecting idxs and gpfns to be contigous. In that case, shouldn't idxs
+and gpfns be pointers, ie, they are sent down as arrays? Or does
+GUEST_HANDLE do that, I can't seem to find where it's defined quickly.
 
-Then shutdown scripts can just call this, and get the right behaviour
-immediately.
+thanks
+Mukesh
 
--- 
-NULL && (void)
