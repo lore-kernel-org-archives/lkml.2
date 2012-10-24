@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012Ab2JXHEV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:04:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:15175 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933727Ab2JXHET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 03:04:19 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
-   d="scan'208";a="6058072"
-Message-ID: <50879380.2080703@cn.fujitsu.com>
-Date: Wed, 24 Oct 2012 15:06:40 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S934388Ab2JXHH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:07:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41396 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933821Ab2JXHH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 03:07:27 -0400
+From: Sebastien Guiriec <s-guiriec@ti.com>
+To: Sebastien Guiriec <s-guiriec@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and interrupts
+Date: Wed, 24 Oct 2012 09:07:10 +0200
+Message-ID: <1351062434-22514-1-git-send-email-s-guiriec@ti.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Christoph <cl@linux.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/3] slub, hotplug: ignore unrelated node's hot-adding
- and hot-removing
-References: <1348728470-5580-1-git-send-email-laijs@cn.fujitsu.com> <1348728470-5580-3-git-send-email-laijs@cn.fujitsu.com> <5064CD7F.1040507@gmail.com> <0000013a09dec004-497e7afa-8c0f-46ff-bf8e-056f7df1ed0b-000000@email.amazonses.com> <50654F6E.7090000@cn.fujitsu.com> <CAHGf_=pUMDm2M2wGvnsqrDgnhj0oHUO4JVuG=u3Qcn3TLvGRgg@mail.gmail.com>
-In-Reply-To: <CAHGf_=pUMDm2M2wGvnsqrDgnhj0oHUO4JVuG=u3Qcn3TLvGRgg@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 15:03:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 15:03:46,
-	Serialize complete at 2012/10/24 15:03:46
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2012 06:26 AM, KOSAKI Motohiro wrote:
-> On Fri, Sep 28, 2012 at 3:19 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
->> HI, Christoph, KOSAKI
->>
->> SLAB always allocates kmem_list3 for all nodes(N_HIGH_MEMORY), also node bug/bad things happens.
->> SLUB always requires kmem_cache_node on the correct node, so these fix is needed.
->>
->> SLAB uses for_each_online_node() to travel nodes and do maintain,
->> and it tolerates kmem_list3 on alien nodes.
->> SLUB uses for_each_node_state(node, N_NORMAL_MEMORY) to travel nodes and do maintain,
->> and it does not tolerate kmem_cache_node on alien nodes.
->>
->> Maybe we need to change SLAB future and let it use
->> for_each_node_state(node, N_NORMAL_MEMORY), But I don't want to change SLAB
->> until I find something bad in SLAB.
-> 
-> SLAB can't use highmem. then traverse zones which don't have normal
-> memory is silly IMHO.
+Since kernel 3.7 the DTS data are not overwriten by hwmod data we can add the address space
+and interrupt line description inside dtsi file for OMAP5. This serie is updating the
+current OMAP5 IP with missing entry.
 
-SLAB tolerates dummy kmem_list3 on alien nodes.
+It has been tested on OMAP5 with 3.7-audio-display feature tree.
+- MMC is probing and functional
+- TWL6041 probing (GPIO/I2C)
+- booting (UART)
 
-> If this is not bug, current slub behavior is also not bug. Is there
-> any difference?
+Update since v1:
+- Add Ack and review
+- Fix up commit messages.
 
-SLUB can't tolerates dummy kmem_cache_node on alien nodes, otherwise
-n->nr_slabs will be corrupted when we online a node which don't have normal memory,
-and trigger a WARN_ON(). And it will trigger BUG_ON() when we remove the node.
+Update since v2:
+- Add interrupt-parent.
 
-Since SLUB always use for_each_node_state(node, N_NORMAL_MEMORY), we should make
-all the other code in slub.c be compatible with it. otherwise we will break the
-design of SLUB.
+Sebastien Guiriec (4):
+  ARM: dts: omap5: Update GPIO with address space and interrupts
+  ARM: dts: omap5: Update I2C with address space and interrupts
+  ARM: dts: omap5: Update UART with address space and interrupts
+  ARM: dts: omap5: Update MMC with address space and interrupts
 
-Since SLAB always use for_each_online_node(), it means it accept some silly behavior
-in the design, we don't need to change it before we decide to remove the whole
-silly things at together. there is not waring and buggy in SLAB in this view.
+ arch/arm/boot/dts/omap5.dtsi |   80 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 76 insertions(+), 4 deletions(-)
 
-> 
-> If I understand correctly, current code may waste some additional
-> memory on corner case. but it doesn't make memory leak both when slab
-> and slub.
-> 
+-- 
+1.7.10.4
 
