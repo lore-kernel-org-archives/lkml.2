@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813Ab2JXGvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:51:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:50395 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282Ab2JXGvS (ORCPT
+	id S1757930Ab2JXGxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:53:22 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:64199 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757833Ab2JXGxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:51:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121024054236.GA14826@kroah.com>
-References: <1351046993-2220-1-git-send-email-ming.lei@canonical.com>
-	<20121024031845.GA11255@kroah.com>
-	<CACVXFVNAWcNgf94mY24c7r2jwtciekz=N-Yw_PyY9-4sT+BL_Q@mail.gmail.com>
-	<20121024054236.GA14826@kroah.com>
-Date: Wed, 24 Oct 2012 14:51:16 +0800
-Message-ID: <CACVXFVPB6Vn5rh51DLBS_DpYXD4x7rkxPrk1_uLtRBGndBcdXA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] firmware loader: introduce kernel parameter to
- customize fw search path
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Oct 2012 02:53:19 -0400
+From: ycnian@gmail.com
+To: bfields@fieldses.org
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Yanchuan Nian <ycnian@gmail.com>
+Subject: [PATCH] nfs: fix wrong object type in lockowner_slab
+Date: Wed, 24 Oct 2012 14:44:19 +0800
+Message-Id: <1351061059-29318-1-git-send-email-ycnian@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 1:42 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
+From: Yanchuan Nian <ycnian@gmail.com>
 
-> Yes, but why?  Let's not overdesign this, get the basics working and
-> then, if someone really needs it, we can add it.
+The object type in the cache of lockowner_slab is wrong, and it is better to fix it.
 
-OK, I will remove the kernel parameter and related documentation,
-and just keep it as module parameter, sorry about that.
+Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+---
+ fs/nfsd/nfs4state.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index cc894ed..1609eb2 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2325,7 +2325,7 @@ nfsd4_init_slabs(void)
+ 	if (openowner_slab == NULL)
+ 		goto out_nomem;
+ 	lockowner_slab = kmem_cache_create("nfsd4_lockowners",
+-			sizeof(struct nfs4_openowner), 0, 0, NULL);
++			sizeof(struct nfs4_lockowner), 0, 0, NULL);
+ 	if (lockowner_slab == NULL)
+ 		goto out_nomem;
+ 	file_slab = kmem_cache_create("nfsd4_files",
+-- 
+1.7.4.4
 
-Thanks,
---
-Ming Lei
