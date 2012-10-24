@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422725Ab2JXVvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:51:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40980 "EHLO
+	id S1422761Ab2JXVvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:51:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40973 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422692Ab2JXVvJ (ORCPT
+	with ESMTP id S1422709Ab2JXVvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:51:09 -0400
+	Wed, 24 Oct 2012 17:51:06 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 09/12] perf trace: Add duration filter
-Date: Wed, 24 Oct 2012 19:50:20 -0200
-Message-Id: <1351115423-9025-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/12] perf tools: Diplays more output on features check for make V=1
+Date: Wed, 24 Oct 2012 19:50:12 -0200
+Message-Id: <1351115423-9025-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1351115423-9025-1-git-send-email-acme@infradead.org>
 References: <1351115423-9025-1-git-send-email-acme@infradead.org>
@@ -30,133 +28,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Example:
+Adding more verbose output for compile time features checking, to ease
+up debuging of feature detection failures.
 
-[acme@sandy linux]$ perf trace --duration 0.025 usleep 1
-     2.221 ( 0.958 ms): 6724 execve(arg0: 140733557168278, arg1: 140733557178768, arg2: 16134304, arg3: 140733557167840, arg4: 7955998171588342573, arg5: 6723) = -2
-     3.690 ( 1.443 ms): 6724 execve(arg0: 140733557168295, arg1: 140733557178768, arg2: 16134304, arg3: 140733557167840, arg4: 7955998171588342573, arg5: 6723) = 0
-     3.979 ( 0.048 ms): 6724 open(filename: 208733843841, flags: 0, mode: 1                        ) = 3
-     4.071 ( 0.075 ms): 6724 open(filename: 139744419925673, flags: 0, mode: 0                     ) = 3
-     4.318 ( 0.056 ms): 6724 nanosleep(rqtp: 140734030404608, rmtp: 0                              ) = 0
-[acme@sandy linux]$ perf trace --duration 0.100 usleep 1
-     1.143 ( 1.021 ms): 6726 execve(arg0: 140736323962279, arg1: 140736323972752, arg2: 34926752, arg3: 140736323961824, arg4: 7955998171588342573, arg5: 6725) = 0
-[acme@sandy linux]$
-
-Cherry picked from tmp.perf/trace2 branch.
-
-Cc: David Ahern <dsahern@gmail.com>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-oslw2j2958we9qf0ctra4whd@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-fbjha6xs5soyaiek8j4142xg@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-trace.txt |    3 +++
- tools/perf/builtin-trace.c              |   32 +++++++++++++++++++++++++++----
- 2 files changed, 31 insertions(+), 4 deletions(-)
+ tools/perf/Makefile             |   46 +++++++++++++++++++--------------------
+ tools/perf/config/utilities.mak |   11 ++++++++--
+ 2 files changed, 32 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
-index 3a2ae37..38d4b68 100644
---- a/tools/perf/Documentation/perf-trace.txt
-+++ b/tools/perf/Documentation/perf-trace.txt
-@@ -48,6 +48,9 @@ comma-separated list with no space: 0,1. Ranges of CPUs are specified with -: 0-
- In per-thread mode with inheritance mode on (default), Events are captured only when
- the thread executes on the designated CPUs. Default is to monitor all CPUs.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index f530502..6790cb4 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -155,15 +155,15 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
  
-+--duration:
-+	Show only events that had a duration greater than N.M ms.
+ -include config/feature-tests.mak
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
+ 	CFLAGS := $(CFLAGS) -fstack-protector-all
+ endif
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
+        CFLAGS := $(CFLAGS) -Wstack-protector
+ endif
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var),y)
++ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
+        CFLAGS := $(CFLAGS) -Wvolatile-register-var
+ endif
+ 
+@@ -172,7 +172,7 @@ endif
+ BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ BASIC_LDFLAGS =
+ 
+-ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS)),y)
++ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	BIONIC := 1
+ 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+@@ -477,9 +477,9 @@ ifdef NO_LIBELF
+ 	NO_LIBUNWIND := 1
+ else
+ FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
++ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+ 	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
+-	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
++	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+ 		LIBC_SUPPORT := 1
+ 	endif
+ 	ifeq ($(BIONIC),1)
+@@ -494,7 +494,7 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
+ 	endif
+ else
+ 	FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+-	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
++	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+ 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+ 		NO_DWARF := 1
+ 	endif # Dwarf support
+@@ -510,7 +510,7 @@ ifdef LIBUNWIND_DIR
+ endif
+ 
+ FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
++ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
+ 	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
+ 	NO_LIBUNWIND := 1
+ endif # Libunwind support
+@@ -539,7 +539,7 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
+ else # NO_LIBELF
+ BASIC_CFLAGS += -DLIBELF_SUPPORT
+ 
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON),-DLIBELF_MMAP),y)
+ 	BASIC_CFLAGS += -DLIBELF_MMAP
+ endif
+ 
+@@ -565,7 +565,7 @@ endif
+ 
+ ifndef NO_LIBAUDIT
+ 	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
+-	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT)),y)
++	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+ 		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+ 	else
+ 		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
+@@ -576,7 +576,7 @@ endif
+ 
+ ifndef NO_NEWT
+ 	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
+-	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
++	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT),libnewt),y)
+ 		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
+ 	else
+ 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+@@ -605,10 +605,10 @@ endif
+ 
+ ifndef NO_GTK2
+ 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
+-	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
++	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
+ 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+ 	else
+-		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2)),y)
++		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
+ 			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
+ 		endif
+ 		BASIC_CFLAGS += -DGTK2_SUPPORT
+@@ -635,7 +635,7 @@ else
+ 	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+ 	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
+ 
+-	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
++	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
+ 		BASIC_CFLAGS += -DNO_LIBPERL
+ 	else
+                ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
+@@ -689,11 +689,11 @@ else
+       PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+       FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+ 
+-      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
++      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
+         $(call disable-python,Python.h (for Python 2.x))
+       else
+ 
+-        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED)),y)
++        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
+           $(warning Python 3 is not yet supported; please set)
+           $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
+           $(warning If you also have Python 2 installed, then)
+@@ -727,22 +727,22 @@ else
+ 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+         else
+ 		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
++		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+ 		ifeq ($(has_bfd),y)
+ 			EXTLIBS += -lbfd
+ 		else
+ 			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
++			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+ 			ifeq ($(has_bfd_iberty),y)
+ 				EXTLIBS += -lbfd -liberty
+ 			else
+ 				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
++				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
+ 				ifeq ($(has_bfd_iberty_z),y)
+ 					EXTLIBS += -lbfd -liberty -lz
+ 				else
+ 					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
+-					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
++					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+ 					ifeq ($(has_cplus_demangle),y)
+ 						EXTLIBS += -liberty
+ 						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+@@ -764,19 +764,19 @@ ifeq ($(NO_PERF_REGS),0)
+ endif
+ 
+ ifndef NO_STRLCPY
+-	ifeq ($(call try-cc,$(SOURCE_STRLCPY),),y)
++	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+ 		BASIC_CFLAGS += -DHAVE_STRLCPY
+ 	endif
+ endif
+ 
+ ifndef NO_ON_EXIT
+-	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),),y)
++	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
+ 		BASIC_CFLAGS += -DHAVE_ON_EXIT
+ 	endif
+ endif
+ 
+ ifndef NO_BACKTRACE
+-       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
++       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
+                BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+        endif
+ endif
+diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+index 8046182..ea853c2 100644
+--- a/tools/perf/config/utilities.mak
++++ b/tools/perf/config/utilities.mak
+@@ -180,9 +180,16 @@ _gea_warn = $(warning The path '$(1)' is not executable.)
+ _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+ 
+ # try-cc
+-# Usage: option = $(call try-cc, source-to-build, cc-options)
++# Usage: option = $(call try-cc, source-to-build, cc-options, msg)
++ifndef V
++TRY_CC_OUTPUT= > /dev/null 2>&1
++else
++TRY_CC_MSG=echo "CHK $(3)" 1>&2;
++endif
 +
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script[1]
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index ddb6e37..82ffa6c 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -100,8 +100,14 @@ struct trace {
- 	struct machine		host;
- 	u64			base_time;
- 	bool			multiple_threads;
-+	double			duration_filter;
- };
- 
-+static bool trace__filter_duration(struct trace *trace, double t)
-+{
-+	return t < (trace->duration_filter * NSEC_PER_MSEC);
-+}
-+
- static size_t trace__fprintf_tstamp(struct trace *trace, u64 tstamp, FILE *fp)
- {
- 	double ts = (double)(tstamp - trace->base_time) / NSEC_PER_MSEC;
-@@ -307,8 +313,10 @@ static int trace__sys_enter(struct trace *trace, struct perf_evsel *evsel,
- 	printed += syscall__scnprintf_args(sc, msg + printed, 1024 - printed,  args);
- 
- 	if (!strcmp(sc->name, "exit_group") || !strcmp(sc->name, "exit")) {
--		trace__fprintf_entry_head(trace, thread, 1, sample->time, stdout);
--		printf("%-70s\n", ttrace->entry_str);
-+		if (!trace->duration_filter) {
-+			trace__fprintf_entry_head(trace, thread, 1, sample->time, stdout);
-+			printf("%-70s\n", ttrace->entry_str);
-+		}
- 	} else
- 		ttrace->entry_pending = true;
- 
-@@ -333,8 +341,12 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 
- 	ttrace->exit_time = sample->time;
- 
--	if (ttrace->entry_time)
-+	if (ttrace->entry_time) {
- 		duration = sample->time - ttrace->entry_time;
-+		if (trace__filter_duration(trace, duration))
-+			goto out;
-+	} else if (trace->duration_filter)
-+		goto out;
- 
- 	trace__fprintf_entry_head(trace, thread, duration, sample->time, stdout);
- 
-@@ -358,7 +370,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
- 		printf(") = %d", ret);
- 
- 	putchar('\n');
--
-+out:
- 	ttrace->entry_pending = false;
- 
- 	return 0;
-@@ -495,6 +507,15 @@ out:
- 	return err;
- }
- 
-+static int trace__set_duration(const struct option *opt, const char *str,
-+			       int unset __maybe_unused)
-+{
-+	struct trace *trace = opt->value;
-+
-+	trace->duration_filter = atof(str);
-+	return 0;
-+}
-+
- int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	const char * const trace_usage[] = {
-@@ -533,6 +554,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "number of mmap data pages"),
- 	OPT_STRING(0, "uid", &trace.opts.target.uid_str, "user",
- 		   "user to profile"),
-+	OPT_CALLBACK(0, "duration", &trace, "float",
-+		     "show only events with duration > N.M ms",
-+		     trace__set_duration),
- 	OPT_END()
- 	};
- 	int err;
+ try-cc = $(shell sh -c						  \
+ 	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
++	 $(TRY_CC_MSG)						  \
+ 	 echo "$(1)" |						  \
+-	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
++	 $(CC) -x c - $(2) -o "$$TMP" $(TRY_CC_OUTPUT) && echo y; \
+ 	 rm -f "$$TMP"')
 -- 
 1.7.9.2.358.g22243
 
