@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934450Ab2JXJBg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:01:36 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46111 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933529Ab2JXJBe (ORCPT
+	id S934485Ab2JXJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:03:16 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:48698 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933757Ab2JXJDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:01:34 -0400
-Date: Wed, 24 Oct 2012 11:01:25 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 026/193] arch/s390/kvm: remove CONFIG_EXPERIMENTAL
-Message-ID: <20121024110125.6c8a3589@BR9GNB5Z>
-In-Reply-To: <1351022666-6960-27-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-27-git-send-email-keescook@chromium.org>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12102409-6892-0000-0000-000003548E56
+	Wed, 24 Oct 2012 05:03:13 -0400
+Date: Wed, 24 Oct 2012 12:03:10 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC 1/2] vmevent: Implement pressure attribute
+In-Reply-To: <20121022112149.GA29325@lizard>
+Message-ID: <alpine.LFD.2.02.1210241159590.13035@tux.localdomain>
+References: <20121022111928.GA12396@lizard> <20121022112149.GA29325@lizard>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Oct 2012 13:01:39 -0700
-Kees Cook <keescook@chromium.org> wrote:
-
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
+On Mon, 22 Oct 2012, Anton Vorontsov wrote:
+> This patch introduces VMEVENT_ATTR_PRESSURE, the attribute reports Linux
+> virtual memory management pressure. There are three discrete levels:
 > 
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Marcelo Tosatti <mtosatti@redhat.com>
-> CC: Christian Borntraeger <borntraeger@de.ibm.com>
-> CC: Cornelia Huck <cornelia.huck@de.ibm.com>
-> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-
-Acked-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-
-> ---
->  arch/s390/kvm/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> VMEVENT_PRESSURE_LOW: Notifies that the system is reclaiming memory for
+> new allocations. Monitoring reclaiming activity might be useful for
+> maintaining overall system's cache level.
 > 
-> diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
-> index b58dd86..60f9f8a 100644
-> --- a/arch/s390/kvm/Kconfig
-> +++ b/arch/s390/kvm/Kconfig
-> @@ -18,7 +18,7 @@ if VIRTUALIZATION
->  config KVM
->  	def_tristate y
->  	prompt "Kernel-based Virtual Machine (KVM) support"
-> -	depends on HAVE_KVM && EXPERIMENTAL
-> +	depends on HAVE_KVM
->  	select PREEMPT_NOTIFIERS
->  	select ANON_INODES
->  	select HAVE_KVM_CPU_RELAX_INTERCEPT
+> VMEVENT_PRESSURE_MED: The system is experiencing medium memory pressure,
+> there is some mild swapping activity. Upon this event applications may
+> decide to free any resources that can be easily reconstructed or re-read
+> from a disk.
 
+Nit:
+
+s/VMEVENT_PRESSURE_MED/VMEVENT_PRESSUDE_MEDIUM/
+
+Other than that, I'm OK with this. Mel and others, what are your thoughts 
+on this?
+
+Anton, have you tested this with real world scenarios? How does it stack 
+up against Android's low memory killer, for example?
+
+			Pekka
