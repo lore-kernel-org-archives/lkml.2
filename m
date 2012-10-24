@@ -1,90 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935534Ab2JXToW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:44:22 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:49668 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934318Ab2JXToS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:44:18 -0400
-Date: Wed, 24 Oct 2012 12:43:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
-Message-ID: <20121024194311.GH2465@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com>
- <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com>
- <20121024161638.GA2465@linux.vnet.ibm.com>
- <20121024171855.GA22371@redhat.com>
- <20121024182005.GF2465@linux.vnet.ibm.com>
- <20121024184311.GA5025@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024184311.GA5025@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102419-6078-0000-0000-000011134F78
+	id S935404Ab2JXTnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:43:37 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55795 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934491Ab2JXTnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:43:33 -0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, hpa@zytor.com,
+        xemul@parallels.com, jslaby@suse.cz,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH 3/3] tty: Add get- ioctls to fetch tty status v3
+Date: Wed, 24 Oct 2012 23:43:22 +0400
+Message-Id: <1351107802-14795-4-git-send-email-gorcunov@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1351107802-14795-1-git-send-email-gorcunov@gmail.com>
+References: <1351107802-14795-1-git-send-email-gorcunov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 08:43:11PM +0200, Oleg Nesterov wrote:
-> On 10/24, Paul E. McKenney wrote:
-> >
-> > On Wed, Oct 24, 2012 at 07:18:55PM +0200, Oleg Nesterov wrote:
-> > > On 10/24, Paul E. McKenney wrote:
-> > > >
-> > > > static inline void percpu_up_read(struct percpu_rw_semaphore *p)
-> > > > {
-> > > > 	/*
-> > > > 	 * Decrement our count, but protected by RCU-sched so that
-> > > > 	 * the writer can force proper serialization.
-> > > > 	 */
-> > > > 	rcu_read_lock_sched();
-> > > > 	this_cpu_dec(*p->counters);
-> > > > 	rcu_read_unlock_sched();
-> > > > }
-> > >
-> > > Yes, the explicit lock/unlock makes the new assumptions about
-> > > synchronize_sched && barriers unnecessary. And iiuc this could
-> > > even written as
-> > >
-> > > 	rcu_read_lock_sched();
-> > > 	rcu_read_unlock_sched();
-> > >
-> > > 	this_cpu_dec(*p->counters);
-> >
-> > But this would lose the memory barrier that is inserted by
-> > synchronize_sched() after the CPU's last RCU-sched read-side critical
-> > section.
-> 
-> How? Afaics there is no need to synchronize with this_cpu_dec(), its
-> result was already seen before the 2nd synchronize_sched() was called
-> in percpu_down_write().
-> 
-> IOW, this memory barrier is only needed to synchronize with memory
-> changes inside down_read/up_read.
-> 
-> To clarify, of course I do not suggest to write is this way. I am just
-> trying to check my understanding.
+From: Cyrill Gorcunov <gorcunov@openvz.org>
 
-You are quite correct -- once the writer has seen the change in the
-counter, it knows that the reader's empty RCU-sched read must have
-at least started, and thus can rely on the following memory barrier
-to guarantee that it sees the reader's critical section.
+For checkpoint/restore we need to know if tty has
+exclusive or packet mode set, as well as if pty
+is currently locked. Just to be able to restore
+this characteristics.
 
-But that code really does look strange, I will grant you that!  ;-)
+For this sake the following ioctl codes are introduced
 
-							Thanx, Paul
+ - TIOCGPKT to get packet mode state
+ - TIOCGPTLCK to get Pty locked state
+ - TIOCGEXCL to get Exclusive mode state
+
+Note this ioctls are a bit unsafe in terms of data
+obtained consistency. The tty characteristics might
+be changed right after ioctl complete. Keep it in
+mind and use this ioctl carefully.
+
+v2:
+ - Use TIOC prefix for ioctl codes (by jslaby@)
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/pty.c    |   21 +++++++++++++++++++++
+ drivers/tty/tty_io.c |    5 +++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index df3c642..0ce0b3e 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -171,6 +171,12 @@ static int pty_set_lock(struct tty_struct *tty, int __user *arg)
+ 	return 0;
+ }
+ 
++static int pty_get_lock(struct tty_struct *tty, int __user *arg)
++{
++	int locked = test_bit(TTY_PTY_LOCK, &tty->flags);
++	return put_user(locked, arg);
++}
++
+ /* Set the packet mode on a pty */
+ static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
+ {
+@@ -193,6 +199,13 @@ static int pty_set_pktmode(struct tty_struct *tty, int __user *arg)
+ 	return 0;
+ }
+ 
++/* Get the packet mode of a pty */
++static int pty_get_pktmode(struct tty_struct *tty, int __user *arg)
++{
++	int pktmode = tty->packet;
++	return put_user(pktmode, arg);
++}
++
+ /* Send a signal to the slave */
+ static int pty_signal(struct tty_struct *tty, int sig)
+ {
+@@ -420,8 +433,12 @@ static int pty_bsd_ioctl(struct tty_struct *tty,
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *) arg);
++	case TIOCGPTLCK: /* Get PT Lock status */
++		return pty_get_lock(tty, (int __user *)arg);
+ 	case TIOCPKT: /* Set PT packet mode */
+ 		return pty_set_pktmode(tty, (int __user *)arg);
++	case TIOCGPKT: /* Get PT packet mode */
++		return pty_get_pktmode(tty, (int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+ 		return pty_signal(tty, (int) arg);
+ 	}
+@@ -536,8 +553,12 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
+ 	switch (cmd) {
+ 	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+ 		return pty_set_lock(tty, (int __user *)arg);
++	case TIOCGPTLCK: /* Get PT Lock status */
++		return pty_get_lock(tty, (int __user *)arg);
+ 	case TIOCPKT: /* Set PT packet mode */
+ 		return pty_set_pktmode(tty, (int __user *)arg);
++	case TIOCGPKT: /* Get PT packet mode */
++		return pty_get_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+ 	case TIOCSIG:    /* Send signal to other side of pty */
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index a3eba7f..739ea86 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -2687,6 +2687,11 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	case TIOCNXCL:
+ 		clear_bit(TTY_EXCLUSIVE, &tty->flags);
+ 		return 0;
++	case TIOCGEXCL:
++	{
++		int excl = test_bit(TTY_EXCLUSIVE, &tty->flags);
++		return put_user(excl, (int __user *)p);
++	}
+ 	case TIOCNOTTY:
+ 		if (current->signal->tty != tty)
+ 			return -ENOTTY;
+-- 
+1.7.7.6
 
