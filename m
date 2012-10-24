@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab2JXL64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:58:56 -0400
+	id S1758301Ab2JXL7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:59:05 -0400
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:36016 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758111Ab2JXL6z (ORCPT
+	with ESMTP id S1757459Ab2JXL7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:58:55 -0400
+	Wed, 24 Oct 2012 07:59:01 -0400
 From: "hongbo.zhang" <hongbo.zhang@linaro.org>
 To: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
 Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
         STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
         "hongbo.zhang" <hongbo.zhang@linaro.com>
-Subject: [PATCH V2 0/6] Fix thermal bugs and Upstream ST-Ericsson thermal driver
-Date: Wed, 24 Oct 2012 19:58:14 +0800
-Message-Id: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
+Subject: [PATCH V2 1/6] Thermal: add indent for code alignment.
+Date: Wed, 24 Oct 2012 19:58:15 +0800
+Message-Id: <1351079900-32236-2-git-send-email-hongbo.zhang@linaro.com>
 X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+In-Reply-To: <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
 References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+ <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-V1->V2 Changes:
+The curly bracket should be aligned with corresponding if else statements.
 
-DB8500 thermal dirver: Accept comments from Francesco Lavra and Viresh Kumar,
-and split platform and driver parts into separate patches.
+Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/thermal/cpu_cooling.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thermal layer: Cancel the patch for deferring bind due to new patch for generic
-cpu cooling layer to fix this issue.
-
-CPU cooling layer: New patch "Remove the cooling_cpufreq_list" added, thus old
-patch to fix empty list checking is also removed.
-
-hongbo.zhang (6):
-  Thermal: add indent for code alignment.
-  Thermal: make sure cpufreq cooling register after cpufreq driver
-  Thermal: fix bug of counting cpu frequencies.
-  Thermal: Remove the cooling_cpufreq_list.
-  Thermal: Add ST-Ericsson DB8500 thermal dirver.
-  Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
-
- .../devicetree/bindings/thermal/db8500-thermal.txt |  40 ++
- arch/arm/boot/dts/dbx5x0.dtsi                      |  14 +
- arch/arm/boot/dts/snowball.dts                     |  31 ++
- arch/arm/configs/u8500_defconfig                   |   4 +
- arch/arm/mach-ux500/board-mop500.c                 |  64 +++
- drivers/thermal/Kconfig                            |  20 +
- drivers/thermal/Makefile                           |   2 +
- drivers/thermal/cpu_cooling.c                      |  95 +---
- drivers/thermal/db8500_cpufreq_cooling.c           | 123 +++++
- drivers/thermal/db8500_thermal.c                   | 557 +++++++++++++++++++++
- include/linux/platform_data/db8500_thermal.h       |  39 ++
- 11 files changed, 920 insertions(+), 69 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
- create mode 100644 drivers/thermal/db8500_cpufreq_cooling.c
- create mode 100644 drivers/thermal/db8500_thermal.c
- create mode 100644 include/linux/platform_data/db8500_thermal.h
-
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index cc1c930..b6b4c2a 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -369,7 +369,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+ 			if (min != policy.cpuinfo.min_freq ||
+ 				max != policy.cpuinfo.max_freq)
+ 				return ERR_PTR(-EINVAL);
+-}
++		}
+ 	}
+ 	cpufreq_dev = kzalloc(sizeof(struct cpufreq_cooling_device),
+ 			GFP_KERNEL);
 -- 
 1.7.11.3
 
