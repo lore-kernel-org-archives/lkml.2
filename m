@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935366Ab2JXTyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:54:52 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab2JXTyt convert rfc822-to-8bit (ORCPT
+	id S965035Ab2JXTyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:54:54 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:57723 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934201Ab2JXTyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Oct 2012 15:54:49 -0400
-Date: Wed, 24 Oct 2012 21:54:45 +0200
-From: Richard Weinberger <richard@nod.at>
-To: Matthew Leach <matthew@mattleach.net>
-Cc: linux-kernel@vger.kernel.org,
-        Martin =?UTF-8?B?UMOkcnRlbA==?= <martin.partel@gmail.com>
-Subject: Re: [REGRESSION] uml: signal.c build errors
-Message-ID: <20121024215445.04d53d0d@spider.haslach.nod.at>
-In-Reply-To: <87objr3b2z.fsf@mattleach.net>
-References: <87pq48lqut.fsf@mattleach.net>
-	<20121024213919.5543e90b@spider.haslach.nod.at>
-	<87objr3b2z.fsf@mattleach.net>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Oct 2012 12:54:41 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup fixes for v3.7-rc2
+Message-ID: <20121024195441.GI12182@atj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Wed, 24 Oct 2012 20:48:52 +0100
-schrieb Matthew Leach <matthew@mattleach.net>:
+Hello, Linus.
 
-> 
-> Richard Weinberger <richard@nod.at> writes:
-> > Am Wed, 24 Oct 2012 00:18:34 +0100
-> >> I have tracked this down to [1] where, indeed, the type of
-> >> sig_info is different; the second parameter in signal.c is
-> >> 'siginfo_t' where as in as-layout.h the second parameter's type is
-> >> declared as 'struct siginfo'.
-> >> 
-> >> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
-> >
-> > Looks like we have to revert that commit.
-> > Moving everything to siginfo_t requires a non-trivial header cleanup
-> > and may introduce new regressions.
-> >
-> > Matthew, does the attached revert patch help?
-> 
-> The revert did remove the errors for the compilation of signal.c, so
-> that seems fine. I still get the following errors, however:
-> 
->   CC      arch/um/os-Linux/sigio.o
->   CC      arch/um/os-Linux/signal.o
->   CC      arch/um/os-Linux/start_up.o
-> arch/um/os-Linux/start_up.c: In function ‘check_coredump_limit’:
-> arch/um/os-Linux/start_up.c:338:16: error: storage size of ‘lim’
-> isn’t known arch/um/os-Linux/start_up.c:339:2: error: implicit
-> declaration of function
-> ‘getrlimit’ [-Werror=implicit-function-declaration]
-> arch/um/os-Linux/start_up.c:339:22: error: ‘RLIMIT_CORE’ undeclared
-> (first use in this function) arch/um/os-Linux/start_up.c:339:22:
-> note: each undeclared identifier is reported only once for each
-> function it appears in arch/um/os-Linux/start_up.c:347:22: error:
-> ‘RLIM_INFINITY’ undeclared (first use in this function)
-> arch/um/os-Linux/start_up.c:338:16: warning: unused variable
-> ‘lim’ [-Wunused-variable] cc1: some warnings being treated as errors
-> make[1]: *** [arch/um/os-Linux/start_up.o] Error 1 make: ***
-> [arch/um/os-Linux] Error 2
+This pull request contains three fixes.  Two are reverts of
+task_lock() removal in cgroup fork path.  The optimizations
+incorrectly assumed that threadgroup_lock can protect process forks
+(as opposed to thread creations) too.  Further cleanup of cgroup fork
+path is scheduled.  The third fixes cgroup emptiness notification
+loss.
 
-Does adding
-#include <sys/time.h>
-#include <sys/resource.h>
+Please pull from the following git branch to receive the above
+changes.
 
-to arch/um/os-Linux/start_up.c help?
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.7-fixes
 
-Thanks,
-//richard
+for you to fetch changes up to d87838321124061f6c935069d97f37010fa417e6:
+
+  Revert "cgroup: Remove task_lock() from cgroup_post_fork()" (2012-10-19 14:09:35 -0700)
+
+----------------------------------------------------------------
+Daisuke Nishimura (1):
+      cgroup: notify_on_release may not be triggered in some cases
+
+Tejun Heo (2):
+      Revert "cgroup: Drop task_lock(parent) on cgroup_fork()"
+      Revert "cgroup: Remove task_lock() from cgroup_post_fork()"
+
+ kernel/cgroup.c | 41 ++++++++++-------------------------------
+ 1 file changed, 10 insertions(+), 31 deletions(-)
+
+Thanks.
+
+--
+tejun
