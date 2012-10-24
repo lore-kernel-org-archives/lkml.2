@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422696Ab2JXVzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:55:32 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53815 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161208Ab2JXVz1 (ORCPT
+	id S1161290Ab2JXVzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:55:46 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61837 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422670Ab2JXVzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:55:27 -0400
+	Wed, 24 Oct 2012 17:55:41 -0400
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -18,13 +18,10 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
         raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 02/16] math128, x86_64: Implement {mul,add}_u128 in 64bit asm
-Date: Wed, 24 Oct 2012 14:53:40 -0700
-Message-Id: <1351115634-8420-3-git-send-email-juri.lelli@gmail.com>
+        vincent.guittot@linaro.org
+Subject: [PATCH 03/16] sched: add sched_class->task_dead.
+Date: Wed, 24 Oct 2012 14:53:41 -0700
+Message-Id: <1351115634-8420-4-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
 References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
@@ -32,68 +29,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Dario Faggioli <raistlin@linux.it>
 
-Enable __int128 usage when available, if not, provide asm versions of
-mul_u64_u64 and add_u128.
+Add a new function to the scheduling class interface. It is called
+at the end of a context switch, if the prev task is in TASK_DEAD state.
 
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-67zk6v8agsi8m7k1bdcd0srw@git.kernel.org
+It might be useful for the scheduling classes that want to be notified
+when one of their task dies, e.g. to perform some cleanup actions.
+
+Signed-off-by: Dario Faggioli <raistlin@linux.it>
+Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- arch/x86/include/asm/math128.h |   39 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 39 insertions(+)
- create mode 100644 arch/x86/include/asm/math128.h
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    3 +++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/arch/x86/include/asm/math128.h b/arch/x86/include/asm/math128.h
-new file mode 100644
-index 0000000..c0e2a6c
---- /dev/null
-+++ b/arch/x86/include/asm/math128.h
-@@ -0,0 +1,39 @@
-+#ifndef _ASM_MATH128_H
-+#define _ASM_MATH128_H
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0dd42a0..c8955a2 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1077,6 +1077,7 @@ struct sched_class {
+ 	void (*set_curr_task) (struct rq *rq);
+ 	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+ 	void (*task_fork) (struct task_struct *p);
++	void (*task_dead) (struct task_struct *p);
+ 
+ 	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+ 	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..fc0f7d8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1774,6 +1774,9 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	if (mm)
+ 		mmdrop(mm);
+ 	if (unlikely(prev_state == TASK_DEAD)) {
++		if (prev->sched_class->task_dead)
++			prev->sched_class->task_dead(prev);
 +
-+#ifdef CONFIG_X86_64
-+
-+#ifdef __SIZEOF_INT128__
-+#define ARCH_HAS_INT128
-+#endif
-+
-+#ifndef ARCH_HAS_INT128
-+
-+static inline u128 mul_u64_u64(u64 a, u64 b)
-+{
-+       u128 res;
-+
-+       asm("mulq %2"
-+               : "=a" (res.lo), "=d" (res.hi)
-+               :  "rm" (b), "0" (a));
-+
-+       return res;
-+}
-+#define mul_u64_u64 mul_u64_u64
-+
-+static inline u128 add_u128(u128 a, u128 b)
-+{
-+       u128 res;
-+
-+       asm("addq %2,%0;\n"
-+           "adcq %3,%1;\n"
-+               : "=rm" (res.lo), "=rm" (res.hi)
-+               : "r" (b.lo), "r" (b.hi), "0" (a.lo), "1" (a.hi));
-+
-+       return res;
-+}
-+#define add_u128 add_u128
-+
-+#endif /* ARCH_HAS_INT128 */
-+#endif /* CONFIG_X86_64 */
-+#endif /* _ASM_MATH128_H */
+ 		/*
+ 		 * Remove function-return probe instances associated with this
+ 		 * task and put them back on the free list.
 -- 
 1.7.9.5
 
