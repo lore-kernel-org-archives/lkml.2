@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935538Ab2JXUW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:22:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11337 "EHLO mx1.redhat.com"
+	id S1161120Ab2JXUYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:24:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34122 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933660Ab2JXUW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:22:56 -0400
-Date: Wed, 24 Oct 2012 16:22:17 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
-In-Reply-To: <20121024162304.GB2465@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.64.1210241616540.11796@file.rdu.redhat.com>
-References: <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com>
- <20121023180558.GF2585@linux.vnet.ibm.com> <20121023184123.GB24055@redhat.com>
- <20121023202902.GJ2585@linux.vnet.ibm.com> <20121023203254.GA3410@linux.vnet.ibm.com>
- <Pine.LNX.4.64.1210231730270.2689@file.rdu.redhat.com>
- <20121024162304.GB2465@linux.vnet.ibm.com>
+	id S933652Ab2JXUYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 16:24:18 -0400
+Date: Wed, 24 Oct 2012 16:24:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Subject: pi futex oops in __lock_acquire
+Message-ID: <20121024202411.GA20597@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Darren Hart <dvhart@linux.intel.com>
+References: <20121018015312.GA29865@redhat.com>
+ <507F9944.50505@kernel.dk>
+ <20121019052136.GA30852@redhat.com>
+ <1350650972.30157.34.camel@twins>
+ <20121023195026.GA2872@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023195026.GA2872@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've been able to trigger this for the last week or so.
+Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
+pi-futex code hasn't changed since the last time it found something..
 
+ > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ > IP: [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ > PGD 8e72c067 PUD 34f07067 PMD 0 
+ > Oops: 0000 [#1] PREEMPT SMP 
+ > CPU 7 
+ > Pid: 27513, comm: trinity-child0 Not tainted 3.7.0-rc2+ #43
+ > RIP: 0010:[<ffffffff810e185e>]  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ > RSP: 0018:ffff8800803f7b28  EFLAGS: 00010046
+ > RAX: 0000000000000086 RBX: 0000000000000000 RCX: 0000000000000000
+ > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+ > RBP: ffff8800803f7c18 R08: 0000000000000002 R09: 0000000000000000
+ > R10: 0000000000000000 R11: 2222222222222222 R12: 0000000000000002
+ > R13: ffff880051dd8000 R14: 0000000000000002 R15: 0000000000000018
+ > FS:  00007f9fc6ccb740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
+ > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ > CR2: 0000000000000018 CR3: 000000008e6fb000 CR4: 00000000001407e0
+ > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ > Process trinity-child0 (pid: 27513, threadinfo ffff8800803f6000, task ffff880051dd8000)
+ > Stack:
+ >  ffff8800803f7b48 ffffffff816c5c59 ffff8800803f7b48 ffff88014840ebc0
+ >  ffff8800803f7b68 ffffffff816c18e3 ffff8800803f7d10 0000000000000001
+ >  ffff8800803f7ba8 ffffffff810a1e62 ffff8800803f7d10 0000000000000282
+ > Call Trace:
+ >  [<ffffffff816c5c59>] ? sub_preempt_count+0x79/0xd0
+ >  [<ffffffff816c18e3>] ? _raw_spin_unlock_irqrestore+0x73/0xa0
+ >  [<ffffffff810a1e62>] ? hrtimer_try_to_cancel+0x52/0x210
+ >  [<ffffffff810eb9e5>] ? debug_rt_mutex_free_waiter+0x15/0x180
+ >  [<ffffffff816c0107>] ? rt_mutex_slowlock+0x127/0x1b0
+ >  [<ffffffff810b7039>] ? local_clock+0x89/0xa0
+ >  [<ffffffff810e3ac2>] lock_acquire+0xa2/0x220
+ >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+ >  [<ffffffff816c09e0>] _raw_spin_lock+0x40/0x80
+ >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+ >  [<ffffffff810e812c>] futex_lock_pi.isra.18+0x1cc/0x390
+ >  [<ffffffff810a1980>] ? update_rmtp+0x70/0x70
+ >  [<ffffffff810e99e4>] do_futex+0x394/0xa50
+ >  [<ffffffff8119ec43>] ? might_fault+0x53/0xb0
+ >  [<ffffffff810ea12d>] sys_futex+0x8d/0x190
+ >  [<ffffffff816ca288>] tracesys+0xe1/0xe6
+ > Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 22 fe f3 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d c0 81 06 82 44 0f 44 e2 83 fb 01 
+ > RIP  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+ >  RSP <ffff8800803f7b28>
+ > CR2: 0000000000000018
 
-On Wed, 24 Oct 2012, Paul E. McKenney wrote:
+It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
 
-> On Tue, Oct 23, 2012 at 05:39:43PM -0400, Mikulas Patocka wrote:
-> > 
-> > 
-> > On Tue, 23 Oct 2012, Paul E. McKenney wrote:
-> > 
-> > > On Tue, Oct 23, 2012 at 01:29:02PM -0700, Paul E. McKenney wrote:
-> > > > On Tue, Oct 23, 2012 at 08:41:23PM +0200, Oleg Nesterov wrote:
-> > > > > On 10/23, Paul E. McKenney wrote:
-> > > > > >
-> > > > > >  * Note that this guarantee implies a further memory-ordering guarantee.
-> > > > > >  * On systems with more than one CPU, when synchronize_sched() returns,
-> > > > > >  * each CPU is guaranteed to have executed a full memory barrier since
-> > > > > >  * the end of its last RCU read-side critical section
-> > > > >          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > > > > 
-> > > > > Ah wait... I misread this comment.
-> > > > 
-> > > > And I miswrote it.  It should say "since the end of its last RCU-sched
-> > > > read-side critical section."  So, for example, RCU-sched need not force
-> > > > a CPU that is idle, offline, or (eventually) executing in user mode to
-> > > > execute a memory barrier.  Fixed this.
-> > 
-> > Or you can write "each CPU that is executing a kernel code is guaranteed 
-> > to have executed a full memory barrier".
-> 
-> Perhaps I could, but it isn't needed, nor is it particularly helpful.
-> Please see suggestions in preceding email.
+Darren, any idea how this could happen ?
 
-It is helpful, because if you add this requirement (that already holds for 
-the current implementation), you can drop rcu_read_lock_sched() and 
-rcu_read_unlock_sched() from the following code that you submitted.
+	Dave
 
-static inline void percpu_up_read(struct percpu_rw_semaphore *p)
-{
-        /*
-         * Decrement our count, but protected by RCU-sched so that
-         * the writer can force proper serialization.
-         */
-        rcu_read_lock_sched();
-        this_cpu_dec(*p->counters);
-        rcu_read_unlock_sched();
-}
-
-> > The current implementation fulfills this requirement, you can just add it 
-> > to the specification so that whoever changes the implementation keeps it.
-> 
-> I will consider doing that if and when someone shows me a situation where
-> adding that requirement makes things simpler and/or faster.  From what I
-> can see, your example does not do so.
-> 
-> 							Thanx, Paul
-
-If you do, the above code can be simplified to:
-{
-	barrier();
-	this_cpu_dec(*p->counters);
-}
-
-Mikulas
