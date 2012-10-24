@@ -1,55 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161099Ab2JXS5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:57:20 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:57357 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934943Ab2JXS5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:57:17 -0400
-Date: Wed, 24 Oct 2012 14:57:10 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 2/7] freezer: add missing mb's to freezer_count() and
- freezer_should_skip()
-Message-ID: <20121024185710.GA12182@atj.dyndns.org>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org>
- <1350426526-14254-3-git-send-email-tj@kernel.org>
- <20121022174404.GA21553@redhat.com>
- <20121022211317.GD5951@atj.dyndns.org>
- <20121023153919.GA16201@redhat.com>
+	id S965317Ab2JXS53 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:57:29 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35116 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965177Ab2JXS50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:57:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ondrej Zary <linux@rainbow-software.org>, hpa@zytor.com
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
+Date: Wed, 24 Oct 2012 21:01:16 +0200
+Message-ID: <450396555.xT2D53NWjT@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <201210240847.52417.linux@rainbow-software.org>
+References: <201210240847.52417.linux@rainbow-software.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121023153919.GA16201@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
-
-On Tue, Oct 23, 2012 at 05:39:19PM +0200, Oleg Nesterov wrote:
-> > Hmm....  Guess we should drop __ from set_current_state.
+On Wednesday 24 of October 2012 08:47:52 Ondrej Zary wrote:
+> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+> line but resume code assumes that KBC was used.
+> The laptop will not resume from S3 otherwise but powers off after a while
+> and then powers on again stuck with a blank screen.
 > 
-> Yes.
+> Fix it by enabling A20 using KBC. Affected laptop list and DMI data are from
+> bug reports at Ubuntu Launchpad.
 > 
-> Or we can change ptrace_stop() and do_signal_stop() to use freezer_do_not_count/
-> freezer_count and remove task_is_stopped_or_traced() from update_if_frozen()
-> and try_to_freeze_tasks(). But this means that do_signal_stop() will call
-> try_to_freeze() twice, unless we add __freezer_count() which only clears
-> PF_FREEZER_SKIP.
+> Tested with EX600 and PR200.
+> 
+> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Ooh, I like this idea.  If we have a mechanism to mark a task "frozen
-enough", it makes sense to use it universally.  As long as
-try_to_freeze() invocation stays outside fast path, I don't think
-invoking it twice really matters.  Can you please cook up a patch for
-it?
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Thanks.
 
---
-tejun
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -1349,6 +1349,20 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+>  }
+>  
+>  /*
+> + * Enable A20 line using KBC even if it's already enabled using other method.
+> + * This is needed for some MSI laptops to resume from S3.
+> + */
+> +static int __init a20_enable_kbc(const struct dmi_system_id *d)
+> +{
+> +	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n", d->ident);
+> +	outb(0xd1, 0x64);	/* Command write */
+> +	outb(0xdf, 0x60);	/* A20 on */
+> +	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+>   * If your system is blacklisted here, but you find that acpi=force
+>   * works for you, please contact linux-acpi@vger.kernel.org
+>   */
+> @@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
+>  		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
+>  		     },
+>  	 },
+> +	/*
+> +	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
+> +	 * enable A20 line but resume code assumes that KBC was used.
+> +	 * The laptop will not resume from S3 otherwise but powers off
+> +	 * after a while and then powers on again stuck with a blank screen.
+> +	 */
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI EX600 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
+> +		     },
+> +	 },
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI EX700 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
+> +		     },
+> +	 },
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI GX700 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
+> +		     },
+> +	 },
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI VR201 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
+> +		     },
+> +	 },
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI VR601 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
+> +		     },
+> +	 },
+> +	{
+> +	 .callback = a20_enable_kbc,
+> +	 .ident = "MSI PR200 Laptop",
+> +	 .matches = {
+> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
+> +		     },
+> +	 },
+>  	{}
+>  };
+>  
+> 
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
