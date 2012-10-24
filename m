@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab2JXPxx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:53:53 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:59211 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab2JXPxw (ORCPT
+	id S1758164Ab2JXPy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:54:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52242 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab2JXPyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:53:52 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <tytso@mit.edu>, "'Steven J. Magnani'" <steve@digidescorp.com>
-Cc: <linux-kernel@vger.kernel.org>
-References: <1351085817.2362.2.camel@iscandar> <002101cdb1e1$47972c60$d6c58520$@lucidpixels.com> <20121024144025.GA30955@thunk.org>
-In-Reply-To: <20121024144025.GA30955@thunk.org>
-Subject: RE: 3.6.0 kernel - ext4 corruption, or?
-Date: Wed, 24 Oct 2012 11:53:47 -0400
-Message-ID: <009201cdb1ff$c33d8c60$49b8a520$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Wed, 24 Oct 2012 11:54:25 -0400
+Date: Wed, 24 Oct 2012 16:59:21 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH] [trivial] tty: Fix typo in tty drivers
+Message-ID: <20121024165921.3dc0f9ee@pyramind.ukuu.org.uk>
+In-Reply-To: <1351088981-24976-1-git-send-email-standby24x7@gmail.com>
+References: <1351088981-24976-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQElwWCuRA+s4lQJJiW862BUB3QrZ5kYe7MA
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> +++ b/drivers/tty/serial/bfin_uart.c
+> @@ -815,7 +815,7 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
+>  		lcr = WLS(5);
+>  		break;
+>  	default:
+> -		printk(KERN_ERR "%s: word lengh not supported\n",
+> +		printk(KERN_ERR "%s: word length not supported\n",
+>  			__func__);
 
+Looks fine me although the bfin_uart one should just be picking a
+suitable bit length and reporting back the one it uses not printing
+errors 8)
 
------Original Message-----
-From: tytso@mit.edu [mailto:tytso@mit.edu] 
-Sent: Wednesday, October 24, 2012 10:40 AM
-To: Justin Piszcz; Steven J. Magnani
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.6.0 kernel - ext4 corruption, or?
-
-On Wed, Oct 24, 2012 at 08:15:37AM -0400, Justin Piszcz wrote:
-> 
-> I read there was a bug in 3.6.2, is there also one in 3.6.0, or can
-someone
-> help explain this?
-
-The problem which we are currently trying to investigate was
-reportedly introduced in v3.6.1.  So far that's about how we know; we
-have two users who have reported it, but I and other ext4 developers
-haven't been able to reproduce it yet.
-
-Got it.
-
-> # grep 10.0.0.11 -r /etc
-> /etc/posfix.old/master.cf:10.0.0.11:smtp         inet  n       -       -
-> -        1    postscreen
-> 
-> # ls -l /etc/posfix.old/master.cf
-> -rw-r--r-- 1 root root 13236 Oct 28  2011 /etc/posfix.old/master.cf
-> 
-> # ls -ld /etc/postfix.old
-> ls: cannot access /etc/postfix.old: No such file or directory
-> 
-
-Looks like you or some script renamed /etc/postfix to /etc/posfix.old
-as part some upgrade?
-
-Whoops-- sorry about that, typo, so for now (concerning the other bug) it's
-best to stay with 3.6.0 until the bug is found, thank you.
-
-Justin.
-
+Acked-by: Alan Cox <alan@linux.intel.com>
