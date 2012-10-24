@@ -1,41 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161247Ab2JXVl0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:41:26 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:53356 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161210Ab2JXVlY (ORCPT
+	id S1161261Ab2JXVl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:41:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42211 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161190Ab2JXVlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Oct 2012 17:41:24 -0400
-Date: Wed, 24 Oct 2012 23:20:03 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jean@google.com
-Subject: Re: [PATCH v3 net-next] r8169: enable ALDPS for power saving
-Message-ID: <20121024212003.GA11152@electric-eye.fr.zoreil.com>
-References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com> <1351059843-1464-1-git-send-email-hayeswang@realtek.com>
+Date: Wed, 24 Oct 2012 14:41:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: serge.hallyn@canonical.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, xemul@parallels.com,
+        catalin.marinas@arm.com, will.deacon@arm.com, jmorris@namei.org,
+        cmetcalf@tilera.com, joe.korty@ccur.com, dhowells@redhat.com,
+        dledford@redhat.com, viro@zeniv.linux.org.uk,
+        kosaki.motohiro@jp.fujitsu.com, linux-api@vger.kernel.org,
+        serue@us.ibm.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        devel@openvz.org, mtk.manpages@gmail.com
+Subject: Re: [PATCH v8 2/5] ipc: add sysctl to specify desired next object
+ id
+Message-Id: <20121024144123.0a77584b.akpm@linux-foundation.org>
+In-Reply-To: <20121024153509.5642.76385.stgit@localhost.localdomain>
+References: <20121024151555.5642.79086.stgit@localhost.localdomain>
+	<20121024153509.5642.76385.stgit@localhost.localdomain>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351059843-1464-1-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> Enable ALDPS function to save power when link down. Note that the
-> feature should be set after the other PHY settings. And the firmware
-> is necessary. Don't enable it without loading the firmware.
-> 
-> None of the firmware-free chipsets support ALDPS. Neither do the
-> RTL8168d/8111d.
-> 
-> For 8136 series, make sure the ALDPS is disabled before loading the
-> firmware. For 8168 series, the ALDPS would be disabled automatically
-> when loading firmware. You must not disable it directly.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+On Wed, 24 Oct 2012 19:35:09 +0400
+Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
 
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+> This patch adds 3 new variables and sysctls to tune them (by one "next_id"
+> variable for messages, semaphores and shared memory respectively).
+> This variable can be used to set desired id for next allocated IPC object.
+> By default it's equal to -1 and old behaviour is preserved.
+> If this variable is non-negative, then desired idr will be extracted from it
+> and used as a start value to search for free IDR slot.
+> 
+> Notes:
+> 1) this patch doesn't garantee, that new object will have desired id. So it's
+> up to user space how to handle new object with wrong id.
+> 2) After sucessfull id allocation attempt, "next_id" will be set back to -1
+> (if it was non-negative).
+> 
+> --- a/ipc/ipc_sysctl.c
+> +++ b/ipc/ipc_sysctl.c
+> @@ -158,6 +158,7 @@ static int proc_ipcauto_dointvec_minmax(ctl_table *table, int write,
+>  
+>  static int zero;
+>  static int one = 1;
+> +static int int_max = INT_MAX;
+>  
+>  static struct ctl_table ipc_kern_table[] = {
+>  	{
+> @@ -227,6 +228,33 @@ static struct ctl_table ipc_kern_table[] = {
+>  		.extra1		= &zero,
+>  		.extra2		= &one,
+>  	},
+> +	{
+> +		.procname	= "sem_next_id",
+> +		.data		= &init_ipc_ns.ids[IPC_SEM_IDS].next_id,
+> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_SEM_IDS].next_id),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_ipc_dointvec_minmax,
+> +		.extra1		= &zero,
+> +		.extra2		= &int_max,
+> +	},
+> +	{
+> +		.procname	= "msg_next_id",
+> +		.data		= &init_ipc_ns.ids[IPC_MSG_IDS].next_id,
+> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_MSG_IDS].next_id),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_ipc_dointvec_minmax,
+> +		.extra1		= &zero,
+> +		.extra2		= &int_max,
+> +	},
+> +	{
+> +		.procname	= "shm_next_id",
+> +		.data		= &init_ipc_ns.ids[IPC_SHM_IDS].next_id,
+> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_SHM_IDS].next_id),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_ipc_dointvec_minmax,
+> +		.extra1		= &zero,
+> +		.extra2		= &int_max,
+> +	},
+>  	{}
+>  };
+
+ipc_kern_table[] is (badly) documented in
+Documentation/sysctl/kernel.txt.  Can we at least mention these
+controls in there?  Better, create a new way of properly documenting
+each control and document these three in that manner?  Better still,
+document all the other ones as well ;)
+
+The patch adds these controls to CONFIG_CHECKPOINT_RESTORE=n kernels. 
+Why is this?
+
