@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934759Ab2JXNU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:20:29 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:57900 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934696Ab2JXNTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:19:40 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="42269818"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@citrix.com>,
-        xen-devel <xen-devel@lists.xen.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 3/5] xen: correctly use xen_pfn_t in remap_domain_mfn_range.
-Date: Wed, 24 Oct 2012 14:19:35 +0100
-Message-ID: <1351084777-28898-3-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
-References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
+	id S934743Ab2JXNVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:21:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62699 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab2JXNVh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:21:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/1] mmc: Standardise capability type
+Date: Wed, 24 Oct 2012 13:21:26 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+References: <1351084664-30526-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1351084664-30526-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210241321.26878.arnd@arndb.de>
+X-Provags-ID: V02:K0:kUpr1iUAvAgPVhzjz8xPjm1OVdo5PIrA7rJ4m5hKdkY
+ 5Sco2lMy2gFQYLbuxTuaO+dCkTnbaGriyabAwFsVQlPw19kMAZ
+ NyZva6DKxzE0HA27Ds5CQX5iMWqr/9Y5h0oa4wY1bZ1MK5psmM
+ Rjk4UNu/xovo6SagosVzS3V1G8NINkxvyOfwgTgMN+vR/v2LL6
+ QNAz0bFGt7zeGeZO+7RyUW/m0U2uC4vemgqTYNK1j/54xiC5De
+ AS8vRD739DGudEBsHsWvbSxCaHkOXzX9PH3meZGBMF0ZSfSu2L
+ 4kXS2Di464cmSD7WptP6uQjXb8VWqxT5gBDuCSTE2vRckVng0/
+ wzR8xCGZrU3Io/MPFke0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Xen on ARM a PFN is 64 bits so we need to use the appropriate
-type here.
+On Wednesday 24 October 2012, Lee Jones wrote:
+> 
+> There are discrepancies with regards to how MMC capabilities
+> are carried throughout the subsystem. Let's standardise them
+> to elevate any confusion.
+> 
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: linux-mmc@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/xen/mmu.c    |    2 +-
- include/xen/xen-ops.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Why make it "unsigned long" then? I think that adds to the
+confusion because it's sometimes 32 bits and sometimes 64 bits,
+depending on the CPU. Since it's a bitmask, I would suggest
+using u32 to make the size explicit.
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 5747a41..58f2084 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2599,7 +2599,7 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
- 
- int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 			       unsigned long addr,
--			       unsigned long mfn, int nr,
-+			       xen_pfn_t mfn, int nr,
- 			       pgprot_t prot, unsigned domid,
- 			       struct page **pages)
- 
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 990b43e..ee188eb 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -26,7 +26,7 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
- struct vm_area_struct;
- int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 			       unsigned long addr,
--			       unsigned long mfn, int nr,
-+			       xen_pfn_t mfn, int nr,
- 			       pgprot_t prot, unsigned domid,
- 			       struct page **pages);
- int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
--- 
-1.7.2.5
-
+	Arnd
