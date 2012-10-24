@@ -1,94 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757716Ab2JXGDJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:03:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53244 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab2JXGDG (ORCPT
+	id S1757726Ab2JXGDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:03:43 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45229 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab2JXGDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:03:06 -0400
-Date: Tue, 23 Oct 2012 23:01:30 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-0lsokw3xor7c4ijo45u6bauh@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf trace:
-  Validate syscall id before growing syscall table
-Git-Commit-ID: 3a531260a14631ae8d231279b8738884bf808e7b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Oct 2012 02:03:41 -0400
+Date: Wed, 24 Oct 2012 08:03:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 031/193] arch/x86: remove CONFIG_EXPERIMENTAL
+Message-ID: <20121024060336.GB20007@gmail.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+ <1351022666-6960-32-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 23 Oct 2012 23:01:37 -0700 (PDT)
+In-Reply-To: <1351022666-6960-32-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3a531260a14631ae8d231279b8738884bf808e7b
-Gitweb:     http://git.kernel.org/tip/3a531260a14631ae8d231279b8738884bf808e7b
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 20 Oct 2012 12:39:03 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sun, 21 Oct 2012 23:07:36 -0200
 
-perf trace: Validate syscall id before growing syscall table
+* Kees Cook <keescook@chromium.org> wrote:
 
-In some cases the ID for a syscall read thru the raw_syscalls tracepoint
-is bogus, still needs to be investigated why, but to make the tool more
-robust first try to resolve the ID to a name via libaudit and if it
-fails, don't grow the table.
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+> 
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-0lsokw3xor7c4ijo45u6bauh@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index dec8ced..83c6515 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -56,6 +56,10 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- {
- 	char tp_name[128];
- 	struct syscall *sc;
-+	const char *name = audit_syscall_to_name(id, trace->audit_machine);
-+
-+	if (name == NULL)
-+		return -1;
- 
- 	if (id > trace->syscalls.max) {
- 		struct syscall *nsyscalls = realloc(trace->syscalls.table, (id + 1) * sizeof(*sc));
-@@ -75,11 +79,8 @@ static int trace__read_syscall_info(struct trace *trace, int id)
- 	}
- 
- 	sc = trace->syscalls.table + id;
--	sc->name = audit_syscall_to_name(id, trace->audit_machine);
--	if (sc->name == NULL)
--		return -1;
--
--	sc->fmt = syscall_fmt__find(sc->name);
-+	sc->name = name;
-+	sc->fmt  = syscall_fmt__find(sc->name);
- 
- 	snprintf(tp_name, sizeof(tp_name), "sys_enter_%s", sc->name);
- 	sc->tp_format = event_format__new("syscalls", tp_name);
+Thanks,
+
+	Ingo
