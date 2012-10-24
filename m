@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934481Ab2JXIxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:53:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10001 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934041Ab2JXIxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:53:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="159736407"
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-To: rob@landley.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Subject: [PATCH] Documentation: fixed Documentation/security/00-INDEX
-Date: Wed, 24 Oct 2012 11:53:31 +0300
-Message-Id: <1351068811-8200-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S934505Ab2JXI43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:56:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39309 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934183Ab2JXI41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:56:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1350914737-4097-3-git-send-email-glommer@parallels.com>
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com>
+	<1350914737-4097-3-git-send-email-glommer@parallels.com>
+Date: Wed, 24 Oct 2012 11:56:25 +0300
+X-Google-Sender-Auth: x7xuTmEedpALhYZr9QTXDwwi9MA
+Message-ID: <CAOJsxLHuQxZ8Hh_bhidaZRMqKssRc=h3RRPPPYD=unoJU-G4AA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-keys-ecryptfs.txt was missing from 00-INDEX.
+On Mon, Oct 22, 2012 at 5:05 PM, Glauber Costa <glommer@parallels.com> wrote:
+> +/**
+> + * kmem_cache_free - Deallocate an object
+> + * @cachep: The cache the allocation was from.
+> + * @objp: The previously allocated object.
+> + *
+> + * Free an object which was previously allocated from this
+> + * cache.
+> + */
+> +void kmem_cache_free(struct kmem_cache *s, void *x)
+> +{
+> +       __kmem_cache_free(s, x);
+> +       trace_kmem_cache_free(_RET_IP_, x);
+> +}
+> +EXPORT_SYMBOL(kmem_cache_free);
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
----
- Documentation/security/00-INDEX |    2 ++
- 1 file changed, 2 insertions(+)
+As Christoph mentioned, this is going to hurt performance. The proper
+way to do this is to implement the *hook* in mm/slab_common.c and call
+that from all the allocator specific kmem_cache_free() functions.
 
-diff --git a/Documentation/security/00-INDEX b/Documentation/security/00-INDEX
-index eeed1de..414235c 100644
---- a/Documentation/security/00-INDEX
-+++ b/Documentation/security/00-INDEX
-@@ -12,6 +12,8 @@ apparmor.txt
- 	- documentation on the AppArmor security extension.
- credentials.txt
- 	- documentation about credentials in Linux.
-+keys-ecryptfs.txt
-+	- description of the encryption keys for the ecryptfs filesystem.
- keys-request-key.txt
- 	- description of the kernel key request service.
- keys-trusted-encrypted.txt
--- 
-1.7.10.4
-
+                        Pekka
