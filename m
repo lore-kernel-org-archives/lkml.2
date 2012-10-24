@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934485Ab2JXJDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:03:16 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48698 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757Ab2JXJDN (ORCPT
+	id S934502Ab2JXJFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:05:19 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:36794 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933757Ab2JXJFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:03:13 -0400
-Date: Wed, 24 Oct 2012 12:03:10 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 1/2] vmevent: Implement pressure attribute
-In-Reply-To: <20121022112149.GA29325@lizard>
-Message-ID: <alpine.LFD.2.02.1210241159590.13035@tux.localdomain>
-References: <20121022111928.GA12396@lizard> <20121022112149.GA29325@lizard>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 24 Oct 2012 05:05:17 -0400
+Message-ID: <5087AF40.7090105@gaisler.com>
+Date: Wed, 24 Oct 2012 11:05:04 +0200
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Peter Korsgaard <jacmet@sunsite.dk>
+CC: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
+Subject: Re: [PATCH 1/2] i2c: i2c-ocores: Add irq support for sparc
+References: <1351004637-11049-1-git-send-email-andreas@gaisler.com> <1351004637-11049-2-git-send-email-andreas@gaisler.com> <87wqyhlzfv.fsf@macbook.be.48ers.dk>
+In-Reply-To: <87wqyhlzfv.fsf@macbook.be.48ers.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Oct 2012, Anton Vorontsov wrote:
-> This patch introduces VMEVENT_ATTR_PRESSURE, the attribute reports Linux
-> virtual memory management pressure. There are three discrete levels:
-> 
-> VMEVENT_PRESSURE_LOW: Notifies that the system is reclaiming memory for
-> new allocations. Monitoring reclaiming activity might be useful for
-> maintaining overall system's cache level.
-> 
-> VMEVENT_PRESSURE_MED: The system is experiencing medium memory pressure,
-> there is some mild swapping activity. Upon this event applications may
-> decide to free any resources that can be easily reconstructed or re-read
-> from a disk.
+On 10/23/2012 10:13 PM, Peter Korsgaard wrote:
+>>>>>> "Andreas" == Andreas Larsson <andreas@gaisler.com> writes:
+>
+>   Andreas> There are no platform resources of type IORESOURCE_IRQ on
+>   Andreas> sparc, so the irq number is acquired in a different manner for
+>   Andreas> sparc. The general case uses platform_get_irq, that internally
+>   Andreas> still uses platform_get_resource.
+>
+> I have no idea why sparc is being odd in this regard, but assuming this
+> is how it's done, I'm fine with this change.
+>
+> A quick grep doesn't find any other drivers doing this though:
+>
+> git grep -l archdata.irqs drivers | xargs grep platform_get_irq
+>
+> Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
 
-Nit:
+Other drivers that work both on sparc and on other platforms usually use 
+irq_of_parse_and_map on a corresponding device_node. For non-sparc 
+architectures irq_of_parse_and_map sets up mappings that needs to be 
+teared down on module exit. Sparc however has its own version of 
+irq_of_parse_and_map that just returns the irq number using archdata.irq[].
 
-s/VMEVENT_PRESSURE_MED/VMEVENT_PRESSUDE_MEDIUM/
+I am trying to get through a patch platform_get_irq to work for sparc as 
+well. If that eventually goes through, the CONFIG_SPARC stuff can then 
+be removed cleanly from this driver withouth having to mess with 
+irq_of_parse_and_map and tearing mappings down.
 
-Other than that, I'm OK with this. Mel and others, what are your thoughts 
-on this?
+Another solution is to use irq_of_parse_and_map for the of-case if no 
+irq was found using platform_get_irq. But that would make for more 
+rearrangements and add the need for irq_dispose_mapping to be added on 
+module exit as well (even though the disposing would do nothing for sparc).
 
-Anton, have you tested this with real world scenarios? How does it stack 
-up against Android's low memory killer, for example?
+Cheers,
+Andreas Larsson
 
-			Pekka
