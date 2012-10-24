@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932859Ab2JXQll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:41:41 -0400
-Received: from nm12-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.126]:44033
-	"EHLO nm12-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935256Ab2JXQkH (ORCPT
+	id S1756863Ab2JXQlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:41:39 -0400
+Received: from nm9.access.bullet.mail.sp2.yahoo.com ([98.139.44.136]:30450
+	"EHLO nm9.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935221Ab2JXQkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:40:07 -0400
-X-Yahoo-Newman-Id: 308485.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+	Wed, 24 Oct 2012 12:40:08 -0400
+X-Yahoo-Newman-Id: 845324.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Oq9_brwVM1lD3O40xOQolVzI9gImCtw1fjOYV5Mmy5wdko0
- HygpJ59c.T..RNEF1AO32TAa.VQitfdLTsZshPRoJQPmB4bErIOmi9fUmu_Z
- WP982X1BLptVaBIgZ8JZH8qYwr_AnfisC1TMqiGUpQMX0EtI6pjSWNsXfSKe
- oU0b8uUPcQ.M3CGWZ6czcLO.dB3Pbtt4E1QbFusdEaNOMwQF2e.tc6T06_9O
- RoZTRMhDclfQjz0FMDiCOS14kSO8I6JYAUND9nWL_pIaPcN3LVlpGROVvxKX
- cMFO5o2k70E0yC6L4lTRG2fuOkTl6vll2MM3UIRuBmIz2hrLeVvbQQCc0qr7
- lpY2PuMIEXbJgd22Bs74VS_C1okycUA3dcVYlDgyAhzJtDDOdQc.obo.HkT3
- x_7jh4vBib.Boab7MPMWiq05.rnpAyxSilkc8PdvpNQC1ij37eaUgsvNpJbJ
- kboQpN6ESGHyw2u_jKworBUYHwO7N5Q--
+X-YMail-OSG: b55g8SQVM1nSdYyiVv_jNIKF7019afaQKHUIYsA2_6jpIuo
+ vor1pKFHmRbrwbGi6jbZEYI3CTN3RoWWAiOi0ZEvNInAlE.4_1C9ww8vFG6a
+ M7itMhBhmT_AMj1nksBMr6xXCMCqhNHQD5.xZ3bWirSXB2cKunkNWGpAxjDk
+ dXK8mwSugYQlExyXcQiDj6bMpgNPlyLhPurunxKHte5NYSWpqQUzXGrKxq6T
+ 44IjhSJ1GKmPHwyC14Ss7.IV8QUz6v.zOB4LLCdjWDu9vlWsESo7x5sHH.b7
+ .s4fR_qGKgFRsjxxeq3D2D9v.5.IwKUfwJRPYiIYoE73dzQ7S17XFl45F5pV
+ Ad.6KlGn5TFevGCOg_R.1E2SUJ1_3_p2WlVN3oqEIco.MdKBKGmYM.km2VIn
+ _OgHa_Ahj7HAI_QwU_yz6WsZJkBFK96qQNTBu9D7_5plUsXlsR8lNqOBD6f4
+ Y2aUbfVSskWrNiuYWwZBnec.ERuZQJrtWMejW8gtQALXcw0X1Getl5P6990V
+ tYfId8GrVKmn_kOxC1uls15KGOZn4Fintv510bLKNQQKRn9iIBz1lxzedSSw
+ cRD0hZsswE3yq9NEgOTg-
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -35,9 +37,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v3 01/10] compiler-gcc4.h: Reorder macros based upon gcc ver
-Date: Wed, 24 Oct 2012 11:33:52 -0500
-Message-Id: <1351096441-12388-1-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v3 02/10] compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
+Date: Wed, 24 Oct 2012 11:33:53 -0500
+Message-Id: <1351096441-12388-2-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
@@ -45,65 +47,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This helps to keep the file from getting confusing, removes one
-duplicate version check and should encourage future editors to put new
-macros where they belong.
+Throughout compiler*.h, many version checks are made.  These can be
+simplified by using the macro that gcc's documentation recommends.
+However, my primary reason for adding this is that I need bug-check
+macros that are enabled at certain gcc versions and it's cleaner to use
+this macro than the tradition method:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+
+If you add patch level, it gets this ugly:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
+   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
+
+As opposed to:
+
+if GCC_VERSION >= 40201
+
+While having separate headers for gcc 3 & 4 eliminates some of this
+verbosity, they can still be cleaned up by this.
+
+See also:
+http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: Borislav Petkov <bp@alien8.de>
 Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/compiler-gcc4.h |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ include/linux/compiler-gcc.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 412bc6c..8914293 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -13,6 +13,10 @@
- #define __must_check 		__attribute__((warn_unused_result))
- #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
- 
-+#if __GNUC_MINOR__ > 0
-+# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
-+#endif
-+
- #if __GNUC_MINOR__ >= 3
- /* Mark functions as cold. gcc will assume any path leading to a call
-    to them will be unlikely.  This means a lot of manual unlikely()s
-@@ -31,6 +35,12 @@
- 
- #define __linktime_error(message) __attribute__((__error__(message)))
- 
-+#ifndef __CHECKER__
-+# define __compiletime_warning(message) __attribute__((warning(message)))
-+# define __compiletime_error(message) __attribute__((error(message)))
-+#endif /* __CHECKER__ */
-+#endif /* __GNUC_MINOR__ >= 3 */
-+
- #if __GNUC_MINOR__ >= 5
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 6a6d7ae..24545cd 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -5,6 +5,9 @@
  /*
-  * Mark a position in code as unreachable.  This can be used to
-@@ -46,8 +56,7 @@
- /* Mark a function definition as prohibited from being cloned. */
- #define __noclone	__attribute__((__noclone__))
+  * Common definitions for all gcc versions go here.
+  */
++#define GCC_VERSION (__GNUC__ * 10000 \
++		   + __GNUC_MINOR__ * 100 \
++		   + __GNUC_PATCHLEVEL__)
  
--#endif
--#endif
-+#endif /* __GNUC_MINOR__ >= 5 */
  
- #if __GNUC_MINOR__ >= 6
- /*
-@@ -56,10 +65,3 @@
- #define __visible __attribute__((externally_visible))
- #endif
- 
--#if __GNUC_MINOR__ > 0
--#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
--#endif
--#if __GNUC_MINOR__ >= 3 && !defined(__CHECKER__)
--#define __compiletime_warning(message) __attribute__((warning(message)))
--#define __compiletime_error(message) __attribute__((error(message)))
--#endif
+ /* Optimization barrier */
 -- 
 1.7.3.4
 
