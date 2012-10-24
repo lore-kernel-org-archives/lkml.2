@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab2JXXez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:34:55 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:56973 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2JXXex (ORCPT
+	id S1757867Ab2JXXgA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:36:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51906 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755685Ab2JXXf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:34:53 -0400
-Date: Wed, 24 Oct 2012 16:34:50 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasha Levin <levinsasha928@gmail.com>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
- numa_maps
-In-Reply-To: <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
-References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
- <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
- <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 24 Oct 2012 19:35:59 -0400
+Date: Wed, 24 Oct 2012 16:35:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>
+Cc: Victor Manuel Jaquez Leal <vjaquez@igalia.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] staging: tidspbridge fixes for 3.7
+Message-ID: <20121024233555.GA13874@kroah.com>
+References: <1351116560-6918-1-git-send-email-omar.ramirez@copitl.com>
+ <20121024222854.GA1891@kroah.com>
+ <CAJ6Av5O0Ri-ZzNj-MnFH53qSdc9r_BNCVs=ktRY5+qUqEzGaGA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJ6Av5O0Ri-ZzNj-MnFH53qSdc9r_BNCVs=ktRY5+qUqEzGaGA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012, Sasha Levin wrote:
-
-> I'm not sure about the status of the patch, but it doesn't apply on
-> top of -next, and I still
-> see the warnings when fuzzing on -next.
+On Wed, Oct 24, 2012 at 06:25:42PM -0500, Omar Ramirez Luna wrote:
+> Hi,
 > 
+> On Wed, Oct 24, 2012 at 5:28 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Oct 24, 2012 at 05:09:14PM -0500, Omar Ramirez Luna wrote:
+> >> With 3.7-rc1 changes:
+> >>
+> >> - New irq numbering in OMAP3 broke the driver request for a mmu irq,
+> >>   until this is migrated to the common iommu framework we can only
+> >>   hardcode the new number.
+> >> - _raw_* accessors changed a type of one of their parameters with patch
+> >>   "195bbca ARM: 7500/1: io: avoid writeback addressing modes for
+> >>   __raw_ accessors", so the build system was filled with warnings from
+> >>   the old parameter usage.
+> >>
+> >> Omar Ramirez Luna (6):
+> >>   staging: tidspbridge: request the right irq for mmu
+> >>   staging: tidspbridge: drop const from custom mmu implementation
+> >>   staging: tidspbridge: change type to __iomem for per and core
+> >>     addresses
+> >>   staging: tidspbridge: ioremap dsp sync addr
+> >>   staging: tidspbridge: ioremap physical address of the stack segment
+> >>     in shm
+> >>   staging: tidspbridge: delete unused mmu functions
+> >
+> > Are the "fix up the compiler warning" patches really needed for 3.7?
+> > Are they new in 3.7-rc1?  Or were they there before in 3.6?
+> 
+> All are new in 3.7-rc1.
+> 
+> The "warning fixes" would be good to have and thought they could make
+> it given that the change was introduced during 3.7 rc cycle. So, the
+> warnings are not that critical.
 
-This should be fixed by 9e7814404b77 ("hold task->mempolicy while 
-numa_maps scans.") in 3.7-rc2, can you reproduce any issues reading 
-/proc/pid/numa_maps on that kernel?
+Ok, good enough, I'll queue this up for 3.7.
+
+greg k-h
