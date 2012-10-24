@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935053Ab2JXOkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:40:45 -0400
-Received: from server505h.appriver.com ([98.129.35.13]:4097 "EHLO
-	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934903Ab2JXOkl convert rfc822-to-8bit (ORCPT
+	id S935043Ab2JXOmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:42:53 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63337 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934820Ab2JXOmw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:40:41 -0400
-X-Note-AR-ScanTimeLocal: 10/24/2012 9:40:39 AM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: Too many policies to list
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-ALLOW: @coraid.com ALLOWED
-X-Virus-Scan: V-
-X-Note: Spam Tests Failed: 
-X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
-X-Note-Sending-IP: 98.129.35.1
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: ALLOWEDSENDER
-X-Note: Headers Injected
-From: Ed Cashin <ecashin@coraid.com>
-To: Jonathan Corbet <corbet@lwn.net>
-CC: "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 24 Oct 2012 09:40:36 -0500
-Subject: Re: [PATCH] Documentation/SubmittingPatches: implicit permission
- for public reports
-Thread-Topic: [PATCH] Documentation/SubmittingPatches: implicit permission
- for public reports
-Thread-Index: Ac2x9YglBQBKGwKXTCK0/DvxAy9LMQ==
-Message-ID: <D525A332-64AB-43E9-9EBA-976E7B744627@coraid.com>
-References: <623a994357ba3348d5a4a0a2003b4dc0@coraid.com>
- <20121024083648.5976519f@lwn.net>
-In-Reply-To: <20121024083648.5976519f@lwn.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 24 Oct 2012 10:42:52 -0400
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: airlied@linux.ie
+Cc: airlied@redhat.com, alexander.deucher@amd.com, maraeo@gmail.com,
+        jglisse@redhat.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+Subject: [PATCH] drivers/gpu/drm/radeon/evergreen_cs.c: Remove unnecessary semicolon
+Date: Wed, 24 Oct 2012 16:42:26 +0200
+Message-Id: <1351089746-5552-1-git-send-email-peter.senna@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 24, 2012, at 10:36 AM, Jonathan Corbet wrote:
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-> On Wed, 24 Oct 2012 10:22:02 -0400
-> Ed Cashin <ecashin@coraid.com> wrote:
-> 
->> +contribution.  Please note that this tag should not be added without
->> +the reporter's permission unless the problem was reported in a public
->> +forum.  That said, if we diligently credit our bug reporters, they
-> 
-> I know what you're getting at, but this reads as if one should add the tag
-> even if it's contrary to the reporter's wishes.  How about something like:
-> 
-> 	If the bug report was via a private channel, please obtain the
-> 	reporter's permission before adding this tag - or, even better,
-> 	ask that the report be posted publicly.
-> 
-> ?
+// <smpl>
+@r1@
+statement S;
+position p,p1;
+@@
+S@p1;@p
 
-Yes, that's a great improvement, thanks!
+@script:python r2@
+p << r1.p;
+p1 << r1.p1;
+@@
+if p[0].line != p1[0].line_end:
+        cocci.include_match(False)
+@@
+position r1.p;
+@@
+-;@p
+// </smpl>
 
+Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+
+---
+
+The full version of the semantic patch can be found at:
+http://www.mail-archive.com/cocci@systeme.lip6.fr/msg00014.html
+
+ drivers/gpu/drm/radeon/evergreen_cs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
+index 573ed1b..5daf0c5 100644
+--- a/drivers/gpu/drm/radeon/evergreen_cs.c
++++ b/drivers/gpu/drm/radeon/evergreen_cs.c
+@@ -264,7 +264,7 @@ static int evergreen_surface_check_2d(struct radeon_cs_parser *p,
+ 	/* macro tile width & height */
+ 	palign = (8 * surf->bankw * track->npipes) * surf->mtilea;
+ 	halign = (8 * surf->bankh * surf->nbanks) / surf->mtilea;
+-	mtileb = (palign / 8) * (halign / 8) * tileb;;
++	mtileb = (palign / 8) * (halign / 8) * tileb;
+ 	mtile_pr = surf->nbx / palign;
+ 	mtile_ps = (mtile_pr * surf->nby) / halign;
+ 	surf->layer_size = mtile_ps * mtileb * slice_pt;
 -- 
-  Ed Cashin
-  ecashin@coraid.com
-
+1.7.11.7
 
