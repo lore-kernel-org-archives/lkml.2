@@ -1,126 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab2JXPr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:47:57 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:12442 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2JXPry (ORCPT
+	id S1757668Ab2JXPsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:48:10 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45704 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751161Ab2JXPsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:47:54 -0400
-Message-ID: <1351093667.1205.11.camel@MikesLinux.fc.hp.com>
-Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
-From: Mike Yoknis <mike.yoknis@hp.com>
-Reply-To: mike.yoknis@hp.com
-To: Mel Gorman <mgorman@suse.de>
-Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
-        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Wed, 24 Oct 2012 09:47:47 -0600
-In-Reply-To: <20121020082858.GA2698@suse.de>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-	 <20121008151656.GM29125@suse.de>
-	 <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-	 <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
-	 <20121020082858.GA2698@suse.de>
-Organization: Hewlett-Packard
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 11:48:06 -0400
+X-Sasl-enc: ogiptH5VsrMmocdnrPb2c7aOwN/XaDSfa99pReFlZiy/ 1351093685
+Date: Wed, 24 Oct 2012 08:48:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] use clamp_t in UNAME26 fix
+Message-ID: <20121024154804.GB30669@kroah.com>
+References: <20121020014553.GA6785@www.outflux.net>
+ <20121019202204.76666c39.akpm@linux-foundation.org>
+ <CAGXu5j+80oat9gkq6-9vtMUo33BC8D=A1rPQF5yE89M-Kq=G7g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+80oat9gkq6-9vtMUo33BC8D=A1rPQF5yE89M-Kq=G7g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-20 at 09:29 +0100, Mel Gorman wrote:
-> On Fri, Oct 19, 2012 at 01:53:18PM -0600, Mike Yoknis wrote:
-> > On Tue, 2012-10-09 at 08:56 -0600, Mike Yoknis wrote:
-> > > On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
-> > > > On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
-> > > > > memmap_init_zone() loops through every Page Frame Number (pfn),
-> > > > > including pfn values that are within the gaps between existing
-> > > > > memory sections.  The unneeded looping will become a boot
-> > > > > performance issue when machines configure larger memory ranges
-> > > > > that will contain larger and more numerous gaps.
-> > > > > 
-> > > > > The code will skip across invalid sections to reduce the
-> > > > > number of loops executed.
-> > > > > 
-> > > > > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
-> > > > 
-> > > > I do not see the need for
-> > > > the additional complexity unless you can show it makes a big difference
-> > > > to boot times.
-> > > > 
-> > > 
-> > > Mel,
-> > > 
-> > > Let me pass along the numbers I have.  We have what we call an
-> > > "architectural simulator".  It is a computer program that pretends that
-> > > it is a computer system.  We use it to test the firmware before real
-> > > hardware is available.  We have booted Linux on our simulator.  As you
-> > > would expect it takes longer to boot on the simulator than it does on
-> > > real hardware.
-> > > 
-> > > With my patch - boot time 41 minutes
-> > > Without patch - boot time 94 minutes
-> > > 
-> > > These numbers do not scale linearly to real hardware.  But indicate to
-> > > me a place where Linux can be improved.
-> > > 
-> > > Mike Yoknis
-> > > 
-> > Mel,
-> > I finally got access to prototype hardware.  
-> > It is a relatively small machine with only 64GB of RAM.
-> >  
-> > I put in a time measurement by reading the TSC register.
-> > I booted both with and without my patch -
-> >  
-> > Without patch -
-> > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
-> > [    0.000000] memmap_init_zone() enter 1404184834218
-> > [    0.000000] memmap_init_zone() exit  1411174884438  diff = 6990050220
-> >  
-> > With patch -
-> > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
-> > [    0.000000] memmap_init_zone() enter 1555530050778
-> > [    0.000000] memmap_init_zone() exit  1559379204643  diff = 3849153865
-> >  
-> > This shows that without the patch the routine spends 45% 
-> > of its time spinning unnecessarily.
-> >  
-> 
-> I'm travelling at the moment so apologies that I have not followed up on
-> this. My problem is still the same with the patch - it changes more
-> headers than is necessary and it is sparsemem specific. At minimum, try
-> the suggestion of 
-> 
-> if (!early_pfn_valid(pfn)) {
->       pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
->       continue;
-> }
-> 
-> and see how much it gains you as it should work on all memory models. If
-> it turns out that you really need to skip whole sections then the strice
-> could MAX_ORDER_NR_PAGES on all memory models except sparsemem where the
-> stride would be PAGES_PER_SECTION
-> 
-Mel,
-I tried your suggestion.  I re-ran all 3 methods on our latest firmware.
+On Fri, Oct 19, 2012 at 09:30:24PM -0700, Kees Cook wrote:
+> Argh, whoops. Greg, can you please include
+> 31fd84b95eb211d5db460a1dda85e004800a7b52 in stable?
 
-The following are TSC difference numbers (*10^6) to execute
-memmap_init_zone() -
+Now applied, thanks.
 
-No patch   - 7010
-Mel's patch- 3918
-My patch   - 3847
-
-The incremental improvement of my method is not significant vs. yours.
-
-If you believe your suggested change is worthwhile I will create a v2
-patch.
-Mike Y
-
-
+greg k-h
