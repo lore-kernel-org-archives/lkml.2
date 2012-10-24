@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041Ab2JXJNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:13:48 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:34235 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753236Ab2JXJNq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:13:46 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1756146Ab2JXJPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:15:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34890 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754321Ab2JXJPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 05:15:13 -0400
+Message-ID: <5087B196.7090804@ti.com>
+Date: Wed, 24 Oct 2012 11:15:02 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-Date: Wed, 24 Oct 2012 10:06:36 +0100
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B7060@saturn3.aculab.com>
-In-Reply-To: <CACVXFVN+=XH_f5BmRkXeagTNowz0o0-Pd7GcxCneO0FSq8xqEw@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [RFC PATCH v2 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-thread-index: Ac2xMehlIZK+/a3NSEiPhIv77D7QvwAk8FDQ
-References: <CACVXFVMmszZWHaeNS6LSG4nHR4wWBLwM_BvynRwUW8X=nO+JWA@mail.gmail.com><Pine.LNX.4.44L0.1210231022230.1635-100000@iolanthe.rowland.org> <CACVXFVN+=XH_f5BmRkXeagTNowz0o0-Pd7GcxCneO0FSq8xqEw@mail.gmail.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Ming Lei" <ming.lei@canonical.com>,
-        "Alan Stern" <stern@rowland.harvard.edu>
-Cc: <linux-kernel@vger.kernel.org>, "Oliver Neukum" <oneukum@suse.de>,
-        "Minchan Kim" <minchan@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, "Jens Axboe" <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
+To: Sebastien Guiriec <s-guiriec@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and
+ interrupts
+References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com>
+In-Reply-To: <1351062434-22514-1-git-send-email-s-guiriec@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Looks the problem is worse than above, not only bitfields are affected, the
-> adjacent fields might be involved too, see:
+Hi Seb,
+
+Sorry, I missed your previous email, your v2 was the right one.
+We do have a single INTC in every OMAP, there is no point to repeat the
+same data hundred times.
+The DTS are already big enough.
+
+On 10/24/2012 09:07 AM, Sebastien Guiriec wrote:
+> Since kernel 3.7 the DTS data are not overwriten by hwmod data we can add the address space
+> and interrupt line description inside dtsi file for OMAP5. This serie is updating the
+> current OMAP5 IP with missing entry.
 > 
->            http://lwn.net/Articles/478657/
+> It has been tested on OMAP5 with 3.7-audio-display feature tree.
+> - MMC is probing and functional
+> - TWL6041 probing (GPIO/I2C)
+> - booting (UART)
+> 
+> Update since v1:
+> - Add Ack and review
+> - Fix up commit messages.
+> 
+> Update since v2:
+> - Add interrupt-parent.
 
-Not mentioned in there is that even with x86/amd64 given
-a struct with the following adjacent fields:
-	char a;
-	char b;
-	char c;
-then foo->b |= 0x80; might do a 32bit RMW cycle.
-This will (well might - but probably does) happen
-if compiled to a 'BTS' instruction.
-The x86 instruction set docs are actually unclear
-as to whether the 32bit cycle might even be misaligned!
-amd64 might do a 64bit cycle (not checked the docs).
+I will take the previous one to avoid the duplication of attributes.
 
-	David
+On top of that I will remove the ones introduce in audio IPs for
+consistency on OMAP3/4/5 platforms.
 
-
+Regards,
+Benoit
 
