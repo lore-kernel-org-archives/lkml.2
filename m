@@ -1,66 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161082Ab2JXSNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:13:30 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:58842 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161061Ab2JXSN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:13:28 -0400
-Date: Wed, 24 Oct 2012 11:13:23 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Scott Liu <scott.liu@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jesse <jesse@emc.com.tw>, Vincent Wang <vincent.wang@emc.com.tw>,
-        Paul <paul.liang@emc.com.tw>
-Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
-Message-ID: <20121024181323.GA18122@core.coreip.homeip.net>
-References: <1351042903-27538-1-git-send-email-scott.liu@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351042903-27538-1-git-send-email-scott.liu@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935464Ab2JXSPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:15:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28434 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935380Ab2JXSPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:15:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
+   d="scan'208";a="231764227"
+Subject: [stable 2.6.32..2.6.34] x86, ioapic: initialize nr_ioapic_registers
+ early in mp_register_ioapic()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com
+Date: Wed, 24 Oct 2012 11:17:24 -0700
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
+Lin Bao reported that one of the HP platforms failed to boot
+2.6.32 kernel, when the BIOS enabled interrupt-remapping and
+x2apic before handing over the control to the Linux kernel.
 
-On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
-> This patch is for Elan eKTF Touchscreen product, I2C adpater module.
-> 
-> Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
-> ---
-> 
-> Hi,
->         v2 revision I have fixed some bug as your advise.
->         1. To target the mainline
->         2. No Android dependency
->         3. reuse those duplication code from Henrik's patchset.
->                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
+During boot, Linux kernel masks all the interrupt sources
+(8259, IO-APIC RTE's), setup the interrupt-remapping hardware
+with the OS controlled table and unmasks the 8259 interrupts
+but not the IO-APIC RTE's (as the newly setup interrupt-remapping
+table and the IO-APIC RTE's are not yet programmed by the kernel).
 
-Just a quick run through the code, so:
+Shortly after this, IO-APIC RTE's and the interrupt-remapping table
+entries are programmed based on the ACPI tables etc. So the
+expectation is that any interrupt during this window will be dropped
+and not see the intermediate configuration.
 
-- please remove polling support, it is not useful in production;
-- why do you need a separate probe work instead of doing what you
-  need in elants_probe()
-- it is not a good idea to register input device first and then
-  allocating memory for MT handling.
-- I do not understand why kfifo is needed
-- please remove the rest of the custom threads
-- you do not need to call input_mt_destroy_slots() explicitly
-- use request_firmware() instead of special character device to upload
-  firmware.
-- please use standard kernel-doc markup.
-- consider what attributes are there only for debugging and move them to
-  debugfs.
-- I find the use of enums in this driver quite unconventional, just
-  standard #defines would probably be more straightforward.
+In the reported problematic case, BIOS has configured the IO-APIC
+in virtual wire-B mode. Between the window of the kernel setting up
+new interrupt-remapping table  and the IO-APIC RTE's are properly
+configured, an interrupt gets routed by the IO-APIC RTE (setup
+by the virtual wire-B configuration) and sees the empty
+interrupt-remapping table entry, resulting in vt-d fault causing
+the platform to generate NMI. And the OS panics on this unexpected NMI.
 
-Thanks.
+This problem doesn't happen with more recent kernels and closer
+look at the 2.6.32 kernel shows that the code which masks
+the IO-APIC RTE's is not working as expected as the nr_ioapic_registers
+for each IO-APIC is not yet initialized at this point. In the later
+kernels we initialize nr_ioapic_registers much before and
+everything works as expected.
 
--- 
-Dmitry
+For 2.6.[32..34] kernels, fix this issue by initializing
+nr_ioapic_registers early in mp_register_ioapic()
+
+Relevant upstream commit info:
+
+commit 7716a5c4ff5f1f3dc5e9edcab125cbf7fceef0af
+Author: Eric W. Biederman <ebiederm@xmission.com>
+Date:   Tue Mar 30 01:07:12 2010 -0700
+
+    x86, ioapic: Move nr_ioapic_registers calculation to mp_register_ioapic.
+
+Reported-and-tested-by: Zhang, Lin-Bao <linbao.zhang@hp.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: stable@vger.kernel.org [v2.6.32..v2.6.34]
+---
+ arch/x86/kernel/apic/io_apic.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 8928d97..d256bc3 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -4262,6 +4262,7 @@ static int bad_ioapic(unsigned long address)
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ {
+ 	int idx = 0;
++	int entries;
+ 
+ 	if (bad_ioapic(address))
+ 		return;
+@@ -4280,10 +4281,14 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	 * Build basic GSI lookup table to facilitate gsi->io_apic lookups
+ 	 * and to prevent reprogramming of IOAPIC pins (PCI GSIs).
+ 	 */
++	entries = io_apic_get_redir_entries(idx);
+ 	mp_gsi_routing[idx].gsi_base = gsi_base;
+-	mp_gsi_routing[idx].gsi_end = gsi_base +
+-	    io_apic_get_redir_entries(idx);
++	mp_gsi_routing[idx].gsi_end = gsi_base + entries;
+ 
++	/*
++	 * The number of IO-APIC IRQ registers (== #pins):
++	 */
++	nr_ioapic_registers[idx] = entries + 1;
+ 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+ 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
+ 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
+
+
