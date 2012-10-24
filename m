@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934044Ab2JXNEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:04:40 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:13132 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab2JXNEj (ORCPT
+	id S933628Ab2JXNHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:07:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:33456 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756144Ab2JXNHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:04:39 -0400
-Date: Wed, 24 Oct 2012 09:04:36 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: OOPS after deleting file on ext4 filesystem
-Message-ID: <20121024130436.GA28400@elliptictech.com>
-References: <20121024005022.GA25399@elliptictech.com>
- <20121024030812.GA21714@thunk.org>
+	Wed, 24 Oct 2012 09:07:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024030812.GA21714@thunk.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.64.1210241226060.31768@axis700.grange>
+References: <Pine.LNX.4.64.1210241226060.31768@axis700.grange>
+Date: Wed, 24 Oct 2012 21:07:05 +0800
+Message-ID: <CACVXFVOv-zMj_cEyRuehhWMjCF1nvd-tkW7c8o5raHZoMbCZiQ@mail.gmail.com>
+Subject: Re: [Q] "console=" command line ignored?
+From: Ming Lei <tom.leiming@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-23 23:08 -0400, Theodore Ts'o wrote:
-> On Tue, Oct 23, 2012 at 08:50:22PM -0400, Nick Bowler wrote:
-> > I just saw an ext4 oops on one of my machines after a couple months of
-> > uptime, on Linux 3.5.2.  I doubt I will be able to reproduce the problem
-> > easily so I'm just posting this in case anyone can tell what's going on.
-> 
-> Fixed in v3.5.3 or later kernels.  (Commit 2cd45bebc56a)
+On Wed, Oct 24, 2012 at 6:49 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> Hi
+>
+> I cannot seem to force selection of a serial console by specifying
+> "console=ttySC0..." on the command line with modern (yesterday's "next")
+> kernels. The kernel insists on
+>
+> console [tty0] enabled
 
-Good to know.
+Please see https://lkml.org/lkml/2012/10/23/307
+
+>
+> The reason might also well be, that the respective "sh-sci" driver is
+> only registered later. I'll try to look at this in more detail - since
+> when this is broken and how the registration order looked before. This is
+> just a first heads-up in case someone has a solution immediately at hand.
+
+
 
 Thanks,
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Ming Lei
