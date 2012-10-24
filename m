@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934971Ab2JXOcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:32:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41951 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934917Ab2JXOcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:32:05 -0400
-Message-ID: <1351089124.18179.12.camel@joe-AO722>
-Subject: Re: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal
- properties and platform data.
-From: Joe Perches <joe@perches.com>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, "hongbo.zhang" <hongbo.zhang@linaro.com>
-Date: Wed, 24 Oct 2012 07:32:04 -0700
-In-Reply-To: <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	 <1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	 <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
+	id S934986Ab2JXOd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:33:27 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60950 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934903Ab2JXOdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:33:25 -0400
+Message-ID: <5087FC33.10906@gmail.com>
+Date: Wed, 24 Oct 2012 10:33:23 -0400
+From: Vlad Yasevich <vyasevich@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 181/193] net/sctp: remove CONFIG_EXPERIMENTAL
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org> <1351022666-6960-182-git-send-email-keescook@chromium.org>
+In-Reply-To: <1351022666-6960-182-git-send-email-keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-24 at 19:58 +0800, hongbo.zhang wrote:
-> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
-> also adds the platform data to support the old fashion.
+On 10/23/2012 04:04 PM, Kees Cook wrote:
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+>
+> CC: Vlad Yasevich <vyasevich@gmail.com>
+> CC: Sridhar Samudrala <sri@us.ibm.com>
+> CC: "David S. Miller" <davem@davemloft.net>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Just a trivial note:
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-
-> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
->  };
->  
->  /*
-> + * Thermal Sensor
-> + */
-> +
-> +static struct resource db8500_thsens_resources[] = {
-
-should there be a const in any of these?
-
-> +static struct db8500_thsens_platform_data db8500_thsens_data = {
-[]
-> +static struct platform_device u8500_thsens_device = {
-[]
-> +static struct platform_device u8500_cpufreq_cooling_device = {
-
+> ---
+>   net/sctp/Kconfig |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/net/sctp/Kconfig b/net/sctp/Kconfig
+> index 126b014..0e13f54 100644
+> --- a/net/sctp/Kconfig
+> +++ b/net/sctp/Kconfig
+> @@ -3,8 +3,8 @@
+>   #
+>
+>   menuconfig IP_SCTP
+> -	tristate "The SCTP Protocol (EXPERIMENTAL)"
+> -	depends on INET && EXPERIMENTAL
+> +	tristate "The SCTP Protocol"
+> +	depends on INET
+>   	depends on IPV6 || IPV6=n
+>   	select CRYPTO
+>   	select CRYPTO_HMAC
+>
 
