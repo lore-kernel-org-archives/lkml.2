@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934783Ab2JXNUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:20:30 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:49022 "EHLO SMTP.CITRIX.COM"
+	id S934759Ab2JXNU3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:20:29 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:57900 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934681Ab2JXNTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:19:39 -0400
+	id S934696Ab2JXNTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:19:40 -0400
 X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="42269817"
+   d="scan'208";a="42269818"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: Stefano Stabellini <stefano.stabellini@citrix.com>,
         xen-devel <xen-devel@lists.xen.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 1/5] xen: balloon: allow PVMMU interfaces to be compiled out
-Date: Wed, 24 Oct 2012 14:19:33 +0100
-Message-ID: <1351084777-28898-1-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 3/5] xen: correctly use xen_pfn_t in remap_domain_mfn_range.
+Date: Wed, 24 Oct 2012 14:19:35 +0100
+Message-ID: <1351084777-28898-3-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
 References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
@@ -26,81 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ARM platform has no concept of PVMMU and therefor no
-HYPERVISOR_update_va_mapping et al. Allow this code to be compiled out
-when not required.
-
-In some similar situations (e.g. P2M) we have defined dummy functions
-to avoid this, however I think we can/should draw the line at dummying
-out actual hypercalls.
+For Xen on ARM a PFN is 64 bits so we need to use the appropriate
+type here.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/xen/Kconfig  |    1 +
- drivers/xen/Kconfig   |    3 +++
- drivers/xen/balloon.c |    4 ++++
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ arch/x86/xen/mmu.c    |    2 +-
+ include/xen/xen-ops.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index c9660bf..7e938ba 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -6,6 +6,7 @@ config XEN
- 	bool "Xen guest support"
- 	select PARAVIRT
- 	select PARAVIRT_CLOCK
-+	select XEN_HAVE_PVMMU
- 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
- 	depends on X86_CMPXCHG && X86_TSC
- 	help
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index d4dffcd..9c00652 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -204,4 +204,7 @@ config XEN_MCE_LOG
- 	  Allow kernel fetching MCE error from Xen platform and
- 	  converting it into Linux mcelog format for mcelog tools
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 5747a41..58f2084 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2599,7 +2599,7 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
  
-+config XEN_HAVE_PVMMU
-+       bool
-+
- endmenu
-diff --git a/drivers/xen/balloon.c b/drivers/xen/balloon.c
-index 66fad33..d42da3b 100644
---- a/drivers/xen/balloon.c
-+++ b/drivers/xen/balloon.c
-@@ -359,6 +359,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
+ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 			       unsigned long addr,
+-			       unsigned long mfn, int nr,
++			       xen_pfn_t mfn, int nr,
+ 			       pgprot_t prot, unsigned domid,
+ 			       struct page **pages)
  
- 		set_phys_to_machine(pfn, frame_list[i]);
- 
-+#ifdef CONFIG_XEN_HAVE_PVMMU
- 		/* Link back into the page tables if not highmem. */
- 		if (xen_pv_domain() && !PageHighMem(page) &&
- 		    !xen_feature(XENFEAT_auto_translated_physmap)) {
-@@ -370,6 +371,7 @@ static enum bp_state increase_reservation(unsigned long nr_pages)
- 				0);
- 			BUG_ON(ret);
- 		}
-+#endif
- 
- 		/* Relinquish the page back to the allocator. */
- 		ClearPageReserved(page);
-@@ -418,6 +420,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
- 
- 		scrub_page(page);
- 
-+#ifdef CONFIG_XEN_HAVE_PVMMU
- 		if (xen_pv_domain() && !PageHighMem(page)) {
- 			if (!xen_feature(XENFEAT_auto_translated_physmap)) {
- 				ret = HYPERVISOR_update_va_mapping(
-@@ -426,6 +429,7 @@ static enum bp_state decrease_reservation(unsigned long nr_pages, gfp_t gfp)
- 				BUG_ON(ret);
- 			}
- 		}
-+#endif
- 	}
- 
- 	/* Ensure that ballooned highmem pages don't have kmaps. */
+diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+index 990b43e..ee188eb 100644
+--- a/include/xen/xen-ops.h
++++ b/include/xen/xen-ops.h
+@@ -26,7 +26,7 @@ void xen_destroy_contiguous_region(unsigned long vstart, unsigned int order);
+ struct vm_area_struct;
+ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 			       unsigned long addr,
+-			       unsigned long mfn, int nr,
++			       xen_pfn_t mfn, int nr,
+ 			       pgprot_t prot, unsigned domid,
+ 			       struct page **pages);
+ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
 -- 
 1.7.2.5
 
