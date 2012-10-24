@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934312Ab2JXC7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 22:59:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56693 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934284Ab2JXC73 (ORCPT
+	id S934323Ab2JXDAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:00:34 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36245 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab2JXDAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 22:59:29 -0400
-Date: Tue, 23 Oct 2012 20:00:02 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anil Nair <anilcoll90@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: Re: usbview 2.0 release
-Message-ID: <20121024030002.GB7982@kroah.com>
-References: <20121022162140.GA10021@kroah.com>
- <CAHkwNT=dvfzwHhK3wag41da3H8oahh27yAAy3-TVmGAArQ=L_A@mail.gmail.com>
- <1350927423.4238.5.camel@iscandar.digidescorp.com>
- <20121022175907.GA19113@kroah.com>
- <CAHkwNTnH-qx5rUZhVwB9cW-4wVOa-TEuO3=A158XZ7T+Y7LOPw@mail.gmail.com>
- <CAHkwNTniuL-G11c25FV5k5F_yyhOR-++OBhOahBugjeFqWzFng@mail.gmail.com>
- <20121022185004.GA19645@kroah.com>
- <CAHkwNTmqVkjnZBi01RkY3McSOHYFOvb4m82Lfrc_dVSxSoBWDg@mail.gmail.com>
+	Tue, 23 Oct 2012 23:00:33 -0400
+Date: Tue, 23 Oct 2012 20:01:05 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Subject: Re: [PATCH 00/16 v2] f2fs: introduce flash-friendly file system
+Message-ID: <20121024030105.GC7982@kroah.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+ <20121023182659.GA6587@kroah.com>
+ <012e01cdb174$3068f540$913adfc0$%kim@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHkwNTmqVkjnZBi01RkY3McSOHYFOvb4m82Lfrc_dVSxSoBWDg@mail.gmail.com>
+In-Reply-To: <012e01cdb174$3068f540$913adfc0$%kim@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 10:17:22AM +0530, Anil Nair wrote:
-> Hello Greg,
+On Wed, Oct 24, 2012 at 08:14:44AM +0900, Jaegeuk Kim wrote:
+> > On Tue, Oct 23, 2012 at 11:21:53AM +0900, Jaegeuk Kim wrote:
+> > > mkfs.f2fs
+> > > =========
+> > >
+> > > The file system formatting tool, "mkfs.f2fs", is available from the following
+> > > download page:		http://sourceforge.net/projects/f2fs-tools/
+> > 
+> > Is there a git tree of this tool somewhere, so I don't have to
+> > constantly suffer the sf.net download interface every time I want to get
+> > the latest version?
 > 
-> > No, debugfs needs to be mounted at /sys/kernel/debug/  Is it not mounted
-> > that way for you?  Perhaps it is mounted with root-only access (default
-> > for 3.7-rc1 and newer kernels)?
-> 
-> Yes you are right i verified "/sys/kernel/debug" has root-only access.
-> The kernel version i am using is 3.0.0-26-generic(Default kernel
-> provided by ubuntu 11.10 amd64).
-> 
-> > I should just port the thing to use libusb instead of debugfs, but
-> > that's a larger job for such a low-priority tool.
-> 
-> If you don't mind i would like to give it a try, though most of the
-> terminologies i don't know but i would like to give it a try, just
-> guide me on way of doing it thats all.
+> I'd love to do like that.
+> I've managed a git tree for tools in house only, due to the company secret.
+> Would you suggest something for this?
+> I can do managing the tree outside though.
 
-Look at how the lsusb tool walks the list of all USB devices in the
-system, using libusb, and port that code over to usbview, replacing the
-big "walk and parse the devices file" functionality.
-
-It shouldn't be that hard, if you run into any problems, please let me
-know.
+git.kernel.org can work, so can github, and also, you have a sf.net
+project, why not use the git tree it provides you?  Right now it is
+empty.
 
 thanks,
 
