@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab2JXIY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:24:28 -0400
-Received: from smtp.wow.synacor.com ([64.8.70.55]:43358 "EHLO
-	smtp.mail.wowway.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607Ab2JXIYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:24:25 -0400
-X-Spam-Rating: None
-X_CMAE_Category: 0,0 Undefined,Undefined
-X-CNFS-Analysis: v=1.1 cv=xHXv0g0Kn/mySl3Zfr0D25xRGcuzAlFTymZE9p2Zkbk= c=1 sm=0 a=Vm6sNz4auHEA:10 a=nDghuxUhq_wA:10 a=kj9zAlcOel0A:10 a=txbFqWyMoYUhCs4Bd_4A:9 a=CjuIK1q_8ugA:10 a=zsaeSSr3pazHFAQJU9uUyg==:117
-X-CM-Score: 0
-Authentication-Results: smtp02.wow.synacor.com smtp.mail=set@squish.homelinux.org; spf=neutral
-Date: Wed, 24 Oct 2012 04:24:23 -0400
-From: Paul Thompson <set.mailinglist@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: BUG: using smp_processor_id() in preemptible
-Message-ID: <20121024082423.GB2604@squish.home.loc>
+	id S933671Ab2JXIbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:31:36 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:38159 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933274Ab2JXIbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:31:34 -0400
+Message-ID: <5087A75F.1050401@parallels.com>
+Date: Wed, 24 Oct 2012 12:31:27 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: JoonSoo Kim <js1304@gmail.com>
+CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        "David Rientjes" <rientjes@google.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <0000013a88eff593-50da3bb8-3294-41db-9c32-4e890ef6940a-000000@email.amazonses.com> <508561E0.5000406@parallels.com> <CAAmzW4PJkDbLJBKZ1zPNDw+dHPcgzX_25tMw3rWoX0ybpXACSQ@mail.gmail.com> <50865024.60309@parallels.com> <508676FA.4000107@parallels.com> <CAAmzW4M9Casm+b4TOe7MOuZMYf7PKmzOHs1wZOXvybhRxCqZRA@mail.gmail.com>
+In-Reply-To: <CAAmzW4M9Casm+b4TOe7MOuZMYf7PKmzOHs1wZOXvybhRxCqZRA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi;
+On 10/23/2012 07:43 PM, JoonSoo Kim wrote:
+> 2012/10/23 Glauber Costa <glommer@parallels.com>:
+>> On 10/23/2012 12:07 PM, Glauber Costa wrote:
+>>> On 10/23/2012 04:48 AM, JoonSoo Kim wrote:
+>>>> Hello, Glauber.
+>>>>
+>>>> 2012/10/23 Glauber Costa <glommer@parallels.com>:
+>>>>> On 10/22/2012 06:45 PM, Christoph Lameter wrote:
+>>>>>> On Mon, 22 Oct 2012, Glauber Costa wrote:
+>>>>>>
+>>>>>>> + * kmem_cache_free - Deallocate an object
+>>>>>>> + * @cachep: The cache the allocation was from.
+>>>>>>> + * @objp: The previously allocated object.
+>>>>>>> + *
+>>>>>>> + * Free an object which was previously allocated from this
+>>>>>>> + * cache.
+>>>>>>> + */
+>>>>>>> +void kmem_cache_free(struct kmem_cache *s, void *x)
+>>>>>>> +{
+>>>>>>> +    __kmem_cache_free(s, x);
+>>>>>>> +    trace_kmem_cache_free(_RET_IP_, x);
+>>>>>>> +}
+>>>>>>> +EXPORT_SYMBOL(kmem_cache_free);
+>>>>>>> +
+>>>>>>
+>>>>>> This results in an additional indirection if tracing is off. Wonder if
+>>>>>> there is a performance impact?
+>>>>>>
+>>>>> if tracing is on, you mean?
+>>>>>
+>>>>> Tracing already incurs overhead, not sure how much a function call would
+>>>>> add to the tracing overhead.
+>>>>>
+>>>>> I would not be concerned with this, but I can measure, if you have any
+>>>>> specific workload in mind.
+>>>>
+>>>> With this patch, kmem_cache_free() invokes __kmem_cache_free(),
+>>>> that is, it add one more "call instruction" than before.
+>>>>
+>>>> I think that Christoph's comment means above fact.
+>>>
+>>> Ah, this. Ok, I got fooled by his mention to tracing.
+>>>
+>>> I do agree, but since freeing is ultimately dependent on the allocator
+>>> layout, I don't see a clean way of doing this without dropping tears of
+>>> sorrow around. The calls in slub/slab/slob would have to be somehow
+>>> inlined. Hum... maybe it is possible to do it from
+>>> include/linux/sl*b_def.h...
+>>>
+>>> Let me give it a try and see what I can come up with.
+>>>
+>>
+>> Ok.
+>>
+>> I am attaching a PoC for this for your appreciation. This gets quite
+>> ugly, but it's the way I found without including sl{a,u,o}b.c directly -
+>> which would be even worse.
+> 
+> Hmm...
+> This is important issue for sl[aou]b common allocators.
+> Because there are similar functions like as kmem_cache_alloc, ksize, kfree, ...
+> So it is good time to resolve this issue.
+> 
+> As far as I know, now, we have 3 solutions.
+> 
+> 1. include/linux/slab.h
+> __always_inline kmem_cache_free()
+> {
+> __kmem_cache_free();
+> blablabla...
+> }
+> 
+> 2. define macro like as Glauber's solution
+> 3. include sl[aou]b.c directly.
+> 
+> Is there other good solution?
+> Among them, I prefer "solution 3", because future developing cost may
+> be minimum among them.
+> 
+> "Solution 2" may be error-prone for future developing.
+> "Solution 1" may make compile-time longer and larger code.
+> 
+> Is my understanding right?
+> Is "Solution 3" really ugly?
+> 
 
-	Just saw this after invoking cpufreq-set -g performance in
-an attempt to enhance a stuttering mpeg transcode for ps3mediaserver.
-	This repeats in the logs about 10 times. If anyone cares, I
-will be responsive.
+As much as I agree my proposed solution is ugly (I wouldn't necessarily
+call it error-prone, it's just that that doesn't belong in there, and it
+is hard for people to figure out what is going on at first look), I
+don't like "Solution 3" either.
 
-Paul
+The main reason is that over time, .c files tend to grow with more code.
+You are not necessarily seeing what are in the other files, and the
+opportunities for name clashes become abundant. Among others...
 
-2012 Oct 24 01:39:14: BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq-set/22941
-2012 Oct 24 01:39:14: caller is powernowk8_target+0x19/0x50
-2012 Oct 24 01:39:14: Pid: 22941, comm: cpufreq-set Not tainted 3.6.2-low-lat #13
-2012 Oct 24 01:39:14: Call Trace:
-2012 Oct 24 01:39:14: [<ffffffff811b0476>] ? debug_smp_processor_id+0xd6/0xf0
-2012 Oct 24 01:39:14: [<ffffffff812eb6e9>] ? powernowk8_target+0x19/0x50
-2012 Oct 24 01:39:14: [<ffffffff812e9a95>] ? cpufreq_governor_performance+0x25/0x30
-2012 Oct 24 01:39:14: [<ffffffff812e7f87>] ? __cpufreq_governor+0x47/0xc0
-2012 Oct 24 01:39:14: [<ffffffff812e8164>] ? __cpufreq_set_policy+0x164/0x1a0
-2012 Oct 24 01:39:14: [<ffffffff812e8849>] ? store_scaling_governor+0xc9/0x1b0
-2012 Oct 24 01:39:15: [<ffffffff812e8c40>] ? cpufreq_update_policy+0xf0/0xf0
-2012 Oct 24 01:39:15: [<ffffffff812e9005>] ? store+0x65/0xb0
-2012 Oct 24 01:39:15: [<ffffffff8112574d>] ? sysfs_write_file+0xcd/0x150
-2012 Oct 24 01:39:15: [<ffffffff810ca9a7>] ? vfs_write+0xa7/0x180
-2012 Oct 24 01:39:15: [<ffffffff810cacd7>] ? sys_write+0x47/0x90
-2012 Oct 24 01:39:15: [<ffffffff813d8526>] ? system_call_fastpath+0x1a/0x1f
+So what I coded, at least has the advantage of restricting this to only
+a selected subset of user-visible functions.
 
 
