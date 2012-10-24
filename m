@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab2JXM2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:28:16 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60109 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933342Ab2JXM2O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:28:14 -0400
-Message-ID: <1351081662.22332.13.camel@twins>
-Subject: Re: [RFC][PATCH] perf: Add a few generic stalled-cycles events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Robert Richter <robert.richter@amd.com>, acme@redhat.com, mingo@kernel.org,
-        eranian@google.com, asharma@fb.com,
-        Anton Blanchard <anton@au1.ibm.com>, paulus@samba.org,
-        mpjohn@us.ibm.com, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 24 Oct 2012 14:27:42 +0200
-In-Reply-To: <20121016183148.GA25482@us.ibm.com>
-References: <20121012012839.GA15348@us.ibm.com>
-	 <20121015155534.GR8285@erda.amd.com> <20121016100809.GS8285@erda.amd.com>
-	 <20121016183148.GA25482@us.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758614Ab2JXMb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:31:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:13788 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758385Ab2JXMbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 08:31:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
+   d="scan'208";a="159797026"
+Date: Wed, 24 Oct 2012 05:31:24 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user
+ callchain
+Message-ID: <20121024123124.GU2095@tassilo.jf.intel.com>
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
+ <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
+ <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+ <5087CF96.7010406@intel.com>
+ <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+ <5087D678.1080905@intel.com>
+ <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
+ <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-16 at 11:31 -0700, Sukadev Bhattiprolu wrote:
-> On a side note, how does the kernel on x86 use the 'config' information in 
-> say /sys/bus/event_source/devices/cpu/format/cccr ? On Power7, the raw
-> code encodes the information such as the PMC to use for the event. Is that
-> how the 'config' info in Intel is used ?
+On Wed, Oct 24, 2012 at 02:21:43PM +0200, Stephane Eranian wrote:
+> But still, if I do:
+> $  perf record -g -e cpu/cycles/k ........
 > 
-> Does the 'config' info change from system to system or is it static for
-> a given event on a given CPU ? 
+> Looks like your code will activate LBR cstack for user stack even
+> though I don't use it.
+> I know it won't generate any user samples (theoretically) but you are
+> still commandeering
+> the LBR resource which other events may want to use.
 
-Have a look at commits (tip/master):
+You can disable it in sysfs. LBR is a power user feature and they will
+know how to do this.
 
-  641cc938815dfd09f8fa1ec72deb814f0938ac33
-  a47473939db20e3961b200eb00acf5fcf084d755
-  43c032febde48aabcf6d59f47cdcb7b5debbdc63
+See it as a "prefer the needs of the 95+% over the needs of the few" default
 
-
-So basically
-
- /sys/bus/event_source/devices/cpu/format/event
-
-contains something like:
-
-  config:0-7
-
-Which says that for the 'cpu' PMU, field 'event' fills
-perf_event_attr::config bits 0 through 7 (for type=PERF_TYPE_RAW).
-
-The perf tool syntax for this is:
-
-  perf stat -e 'cpu/event=0x3c/'
-
-This basically allows you to expose bitfields in the 'raw' event format
-for ease of writing raw events. I do not know if the Power PMU has such
-or not.
-
-Using this,
-
-  /sys/bus/event_source/devices/cpu/events/cpu-cycles
-
-would contain something like:
-
-  event=0x3c
-
-which one can use as:
-
-  perf stat -e 'cpu/event=cpu-cycles/'
-  perf stat -e 'cpu/cpu-cycles/'
-
-The tool will then read the sysfs file, substitute the content to
-obtain:
-
-  perf stat -e 'cpu/event=0x3c/'
-
-and run with that.
-
-Within all this, the perf_event_attr::config* field names are hard-coded
-special, so 'cpu/config=0xffff/' will always work, even without sysfs
-format/ specification and is equivalent to the raw event stuff we had
-before.
-
-
-If the Power PMU lacks any structure to the raw config, you could simply
-provide sysfs event/ files with:
-
-  config=0xdeadbeef
-
-like content.
+-Andi
