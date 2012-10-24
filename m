@@ -1,191 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab2JXTxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:53:24 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:40419 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932117Ab2JXTxW (ORCPT
+	id S933956Ab2JXTym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:54:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41356 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab2JXTyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:53:22 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-X-WSS-ID: 0MCEXWN-02-67D-02
-X-M-MSG: 
-Date: Wed, 24 Oct 2012 14:53:11 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Tom Rini <trini@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: 1bbbbe7 (x86: Exclude E820_RESERVED regions...) PANIC on
- boot
-Message-ID: <20121024195311.GB11779@jshin-Toonie>
-References: <20121022144020.GA14425@jshin-Toonie>
- <CAE9FiQWvVNCK8Ka6rq+RMf3u4JFn8D18rGMy4Hpz7Rhnrn6VTA@mail.gmail.com>
- <20121022183858.GA31185@jshin-Toonie>
- <CAE9FiQWZmwa6EwsfZzz_e3A-tz2LUS2+i+zh4zpXpR_Jj_FQ1w@mail.gmail.com>
- <5085ABEF.3060502@linux.intelZNw@mail.gmail.com>
- <20121024164808.GA11779@jshin-Toonie>
- <5088391C.6080603@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5088391C.6080603@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Wed, 24 Oct 2012 15:54:40 -0400
+Date: Wed, 24 Oct 2012 12:54:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-Id: <20121024125439.c17a510e.akpm@linux-foundation.org>
+In-Reply-To: <20121024062938.GA6119@dhcp22.suse.cz>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+	<20121023164546.747e90f6.akpm@linux-foundation.org>
+	<20121024062938.GA6119@dhcp22.suse.cz>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 11:53:16AM -0700, H. Peter Anvin wrote:
-> On 10/24/2012 09:48 AM, Jacob Shin wrote:
+On Wed, 24 Oct 2012 08:29:45 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> > >
+> > > +		printk(KERN_NOTICE "%s (%d): dropped kernel caches: %d\n",
+> > > +			current->comm, task_pid_nr(current), sysctl_drop_caches);
 > > 
-> > hpa, we need this patch: https://lkml.org/lkml/2012/8/24/469 and the above
-> > 2 from Yinghai to handle corner case E820 layouts.
-> > 
+> > urgh.  Are we really sure we want to do this?  The system operators who
+> > are actually using this thing will hate us :(
 > 
-> I can apply Yinghai's patches, but the above patch no longer applies.
-> Could you refresh it on top of tip:x86/u, please?
+> I have no problems with lowering the priority (how do you see
+> KERN_INFO?) but shouldn't this message kick them that they are doing
+> something wrong? Or if somebody uses that for "benchmarking" to have a
+> clean table before start is this really that invasive?
 
-Sorry about that, it applied to Linus's 3.7-rc2 so I just assumed .. :-(
+hmpf.  This patch worries me.  If there are people out there who are
+regularly using drop_caches because the VM sucks, it seems pretty
+obnoxious of us to go dumping stuff into their syslog.  What are they
+supposed to do?  Stop using drop_caches?  But that would unfix the
+problem which they fixed with drop_caches in the first case.
 
->From 7d2a67f6b435ede202bdf5d1982f9b5af90cce34 Mon Sep 17 00:00:00 2001
-From: Jacob Shin <jacob.shin@amd.com>
-Date: Wed, 24 Oct 2012 14:24:44 -0500
-Subject: [PATCH] x86/mm: find_early_table_space based on ranges that are
- actually being mapped
+And they might not even have control over the code - they need to go
+back to their supplier and say "please send me a new version", along
+with all the additional costs and risks involed in an update.
 
-Current logic finds enough space for direct mapping page tables from 0
-to end. Instead, we only need to find enough space to cover mr[0].start
-to mr[nr_range].end -- the range that is actually being mapped by
-init_memory_mapping()
+> > More friendly alternatives might be:
+> > 
+> > - Taint the kernel.  But that will only become apparent with an oops
+> >   trace or similar.
+> > 
+> > - Add a drop_caches counter and make that available in /proc/vmstat,
+> >   show_mem() output and perhaps other places.
+> 
+> We would loose timing and originating process name in both cases which
+> can be really helpful while debugging. It is fair to say that we could
+> deduce the timing if we are collecting /proc/meminfo or /proc/vmstat
+> already and we do collect them often but this is not the case all of the
+> time and sometimes it is important to know _who_ is doing all this.
 
-This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
-the panic reported here:
-
-  https://lkml.org/lkml/2012/10/20/160
-  https://lkml.org/lkml/2012/10/21/157
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Tested-by: Tom Rini <trini@ti.com>
-
----
- arch/x86/mm/init.c |   70 ++++++++++++++++++++++++++++++----------------------
- 1 file changed, 41 insertions(+), 29 deletions(-)
-
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 8653b3a..bc287d6 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -29,36 +29,54 @@ int direct_gbpages
- #endif
- ;
- 
--static void __init find_early_table_space(unsigned long end, int use_pse,
--					  int use_gbpages)
-+struct map_range {
-+	unsigned long start;
-+	unsigned long end;
-+	unsigned page_size_mask;
-+};
-+
-+/*
-+ * First calculate space needed for kernel direct mapping page tables to cover
-+ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-+ * pages. Then find enough contiguous space for those page tables.
-+ */
-+static void __init find_early_table_space(struct map_range *mr, int nr_range)
- {
--	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
-+	int i;
-+	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
-+	unsigned long start = 0, good_end;
- 	phys_addr_t base;
- 
--	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
--	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	for (i = 0; i < nr_range; i++) {
-+		unsigned long range, extra;
- 
--	if (use_gbpages) {
--		unsigned long extra;
-+		range = mr[i].end - mr[i].start;
-+		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
--		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
--		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
--	} else
--		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
--
--	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
-+			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
-+			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
-+		} else {
-+			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
-+		}
- 
--	if (use_pse) {
--		unsigned long extra;
--
--		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
-+			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
--		extra += PMD_SIZE;
-+			extra += PMD_SIZE;
- #endif
--		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
--	} else
--		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+			/* The first 2/4M doesn't use large pages. */
-+			if (mr[i].start < PMD_SIZE)
-+				extra += range;
-+
-+			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		} else {
-+			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		}
-+	}
- 
-+	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
-@@ -76,7 +94,7 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
- 
- 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
--		end - 1, pgt_buf_start << PAGE_SHIFT,
-+		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
- 		(pgt_buf_top << PAGE_SHIFT) - 1);
- }
- 
-@@ -85,12 +103,6 @@ void __init native_pagetable_reserve(u64 start, u64 end)
- 	memblock_reserve(start, end - start);
- }
- 
--struct map_range {
--	unsigned long start;
--	unsigned long end;
--	unsigned page_size_mask;
--};
--
- #ifdef CONFIG_X86_32
- #define NR_RANGE_MR 3
- #else /* CONFIG_X86_64 */
-@@ -263,7 +275,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(end, use_pse, use_gbpages);
-+		find_early_table_space(mr, nr_range);
- 
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
--- 
-1.7.9.5
-
-
+But how important is all that?  The main piece of information the
+kernel developer wants is "this guy is using drop_caches a lot".  All
+the other info is peripheral and can be gathered by other means if so
+desired.
