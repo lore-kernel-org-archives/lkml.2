@@ -1,275 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964920Ab2JXOrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:47:14 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43689 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935125Ab2JXOrK (ORCPT
+	id S935139Ab2JXOrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:47:12 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43786 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935060Ab2JXOpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:47:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
-Date: Wed, 24 Oct 2012 20:17:10 +0530
-Message-ID: <CAKohpom0EOAuahLQoNr1ODbTT-Trv3eE0-oBEmbbdbiKBJPCng@mail.gmail.com>
-Subject: Re: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal properties
- and platform data.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "hongbo.zhang" <hongbo.zhang@linaro.org>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Oct 2012 10:45:51 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 2/6] pinctrl: Update clock handling for the pinctrl-nomadik GPIO driver
+Date: Wed, 24 Oct 2012 15:45:22 +0100
+Message-Id: <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 17:28, hongbo.zhang <hongbo.zhang@linaro.org> wrote:
-> From: "hongbo.zhang" <hongbo.zhang@linaro.com>
->
-> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
-> also adds the platform data to support the old fashion.
->
-> Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
-> ---
->  .../devicetree/bindings/thermal/db8500-thermal.txt | 40 ++++++++++++++
+The clock framework has changed somewhat and it's now better to
+invoke clock_prepare_enable() and clk_disable_unprepare() rather
+than the legacy clk_enable() and clk_disable() calls. This patch
+converts the Nomadik Pin Control driver to the new framework.
 
-It must be included in patch 5/6
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/pinctrl/pinctrl-nomadik.c |   96 ++++++++++++++++++-------------------
+ 1 file changed, 48 insertions(+), 48 deletions(-)
 
->  arch/arm/boot/dts/dbx5x0.dtsi                      | 14 +++++
->  arch/arm/boot/dts/snowball.dts                     | 31 +++++++++++
->  arch/arm/mach-ux500/board-mop500.c                 | 64 ++++++++++++++++++++++
->  4 files changed, 149 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/thermal/db8500-thermal.txt
->
-> diff --git a/Documentation/devicetree/bindings/thermal/db8500-thermal.txt b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
-> new file mode 100644
-> index 0000000..80d53e6
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/thermal/db8500-thermal.txt
-> @@ -0,0 +1,40 @@
-> +* ST-Ericsson DB8500 Thermal
-> +
-> +** Thermal node properties:
-> +
-> +- compatible : "stericsson,db8500-thermal";
-> +- reg : address range of the thermal sensor registers;
-> +- interrupts : interrupts generated form PRCMU;
-> +- interrupt-names : "IRQ_HOTMON_LOW" and "IRQ_HOTMON_HIGH";
-> +- num-trips : number of total trip points;
-> +- tripN-temp : temperature of trip point N;
-> +- tripN-type : type of trip point N, should be one of "active" "passive" "hot" "critical";
-> +- tripN-cdev-num : number of the cooling devices which can be bound to trip point N;
-> +- tripN-cdev-nameM : name of the No. M cooling device of trip point N;
-> +
-> +Usually the num-trips and tripN-*** are seperated in board related dts files.
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 01aea1c..570c753 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -448,7 +448,7 @@ static void nmk_gpio_glitch_slpm_init(unsigned int *slpm)
+ 		if (!chip)
+ 			break;
+ 
+-		clk_enable(chip->clk);
++		clk_prepare_enable(chip->clk);
+ 
+ 		slpm[i] = readl(chip->addr + NMK_GPIO_SLPC);
+ 		writel(temp, chip->addr + NMK_GPIO_SLPC);
+@@ -467,7 +467,7 @@ static void nmk_gpio_glitch_slpm_restore(unsigned int *slpm)
+ 
+ 		writel(slpm[i], chip->addr + NMK_GPIO_SLPC);
+ 
+-		clk_disable(chip->clk);
++		clk_disable_unprepare(chip->clk);
+ 	}
+ }
+ 
+@@ -512,12 +512,12 @@ static int __nmk_config_pins(pin_cfg_t *cfgs, int num, bool sleep)
+ 			break;
+ 		}
+ 
+-		clk_enable(nmk_chip->clk);
++		clk_prepare_enable(nmk_chip->clk);
+ 		spin_lock(&nmk_chip->lock);
+ 		__nmk_config_pin(nmk_chip, pin % NMK_GPIO_PER_CHIP,
+ 				 cfgs[i], sleep, glitch ? slpm : NULL);
+ 		spin_unlock(&nmk_chip->lock);
+-		clk_disable(nmk_chip->clk);
++		clk_disable_unprepare(nmk_chip->clk);
+ 	}
+ 
+ 	if (glitch)
+@@ -602,7 +602,7 @@ int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -610,7 +610,7 @@ int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -637,11 +637,11 @@ int nmk_gpio_set_pull(int gpio, enum nmk_gpio_pull pull)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 	__nmk_gpio_set_pull(nmk_chip, gpio % NMK_GPIO_PER_CHIP, pull);
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -665,11 +665,11 @@ int nmk_gpio_set_mode(int gpio, int gpio_mode)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 	__nmk_gpio_set_mode(nmk_chip, gpio % NMK_GPIO_PER_CHIP, gpio_mode);
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -686,12 +686,12 @@ int nmk_gpio_get_mode(int gpio)
+ 
+ 	bit = 1 << (gpio % NMK_GPIO_PER_CHIP);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 
+ 	afunc = readl(nmk_chip->addr + NMK_GPIO_AFSLA) & bit;
+ 	bfunc = readl(nmk_chip->addr + NMK_GPIO_AFSLB) & bit;
+ 
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return (afunc ? NMK_GPIO_ALT_A : 0) | (bfunc ? NMK_GPIO_ALT_B : 0);
+ }
+@@ -712,9 +712,9 @@ static void nmk_gpio_irq_ack(struct irq_data *d)
+ 	if (!nmk_chip)
+ 		return;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	writel(nmk_gpio_get_bitmask(d->hwirq), nmk_chip->addr + NMK_GPIO_IC);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ }
+ 
+ enum nmk_gpio_irq_type {
+@@ -788,7 +788,7 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -799,7 +799,7 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -825,7 +825,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ 		return -EINVAL;
+ 	bitmask = nmk_gpio_get_bitmask(d->hwirq);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -839,7 +839,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -861,7 +861,7 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 	if (type & IRQ_TYPE_LEVEL_LOW)
+ 		return -EINVAL;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 
+ 	if (enabled)
+@@ -885,7 +885,7 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 		__nmk_gpio_irq_modify(nmk_chip, d->hwirq, WAKE, true);
+ 
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -894,7 +894,7 @@ static unsigned int nmk_gpio_irq_startup(struct irq_data *d)
+ {
+ 	struct nmk_gpio_chip *nmk_chip = irq_data_get_irq_chip_data(d);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	nmk_gpio_irq_unmask(d);
+ 	return 0;
+ }
+@@ -904,7 +904,7 @@ static void nmk_gpio_irq_shutdown(struct irq_data *d)
+ 	struct nmk_gpio_chip *nmk_chip = irq_data_get_irq_chip_data(d);
+ 
+ 	nmk_gpio_irq_mask(d);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ }
+ 
+ static struct irq_chip nmk_gpio_irq_chip = {
+@@ -943,9 +943,9 @@ static void nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+ 	struct nmk_gpio_chip *nmk_chip = irq_get_handler_data(irq);
+ 	u32 status;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	status = readl(nmk_chip->addr + NMK_GPIO_IS);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	__nmk_gpio_irq_handler(irq, desc, status);
+ }
+@@ -998,11 +998,11 @@ static int nmk_gpio_make_input(struct gpio_chip *chip, unsigned offset)
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 
+ 	writel(1 << offset, nmk_chip->addr + NMK_GPIO_DIRC);
+ 
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -1014,11 +1014,11 @@ static int nmk_gpio_get_input(struct gpio_chip *chip, unsigned offset)
+ 	u32 bit = 1 << offset;
+ 	int value;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 
+ 	value = (readl(nmk_chip->addr + NMK_GPIO_DAT) & bit) != 0;
+ 
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return value;
+ }
+@@ -1029,11 +1029,11 @@ static void nmk_gpio_set_output(struct gpio_chip *chip, unsigned offset,
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 
+ 	__nmk_gpio_set_output(nmk_chip, offset, val);
+ 
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ }
+ 
+ static int nmk_gpio_make_output(struct gpio_chip *chip, unsigned offset,
+@@ -1042,11 +1042,11 @@ static int nmk_gpio_make_output(struct gpio_chip *chip, unsigned offset,
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 
+ 	__nmk_gpio_make_output(nmk_chip, offset, val);
+ 
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -1080,7 +1080,7 @@ static void nmk_gpio_dbg_show_one(struct seq_file *s, struct gpio_chip *chip,
+ 		[NMK_GPIO_ALT_C]	= "altC",
+ 	};
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	is_out = !!(readl(nmk_chip->addr + NMK_GPIO_DIR) & bit);
+ 	pull = !(readl(nmk_chip->addr + NMK_GPIO_PDIS) & bit);
+ 	mode = nmk_gpio_get_mode(gpio);
+@@ -1118,7 +1118,7 @@ static void nmk_gpio_dbg_show_one(struct seq_file *s, struct gpio_chip *chip,
+ 				   ? " wakeup" : "");
+ 		}
+ 	}
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ }
+ 
+ static void nmk_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+@@ -1164,7 +1164,7 @@ void nmk_gpio_clocks_enable(void)
+ 		if (!chip)
+ 			continue;
+ 
+-		clk_enable(chip->clk);
++		clk_prepare_enable(chip->clk);
+ 	}
+ }
+ 
+@@ -1178,7 +1178,7 @@ void nmk_gpio_clocks_disable(void)
+ 		if (!chip)
+ 			continue;
+ 
+-		clk_disable(chip->clk);
++		clk_disable_unprepare(chip->clk);
+ 	}
+ }
+ 
+@@ -1201,14 +1201,14 @@ void nmk_gpio_wakeups_suspend(void)
+ 		if (!chip)
+ 			break;
+ 
+-		clk_enable(chip->clk);
++		clk_prepare_enable(chip->clk);
+ 
+ 		writel(chip->rwimsc & chip->real_wake,
+ 		       chip->addr + NMK_GPIO_RWIMSC);
+ 		writel(chip->fwimsc & chip->real_wake,
+ 		       chip->addr + NMK_GPIO_FWIMSC);
+ 
+-		clk_disable(chip->clk);
++		clk_disable_unprepare(chip->clk);
+ 	}
+ }
+ 
+@@ -1222,12 +1222,12 @@ void nmk_gpio_wakeups_resume(void)
+ 		if (!chip)
+ 			break;
+ 
+-		clk_enable(chip->clk);
++		clk_prepare_enable(chip->clk);
+ 
+ 		writel(chip->rwimsc, chip->addr + NMK_GPIO_RWIMSC);
+ 		writel(chip->fwimsc, chip->addr + NMK_GPIO_FWIMSC);
+ 
+-		clk_disable(chip->clk);
++		clk_disable_unprepare(chip->clk);
+ 	}
+ }
+ 
+@@ -1367,9 +1367,9 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 	chip->dev = &dev->dev;
+ 	chip->owner = THIS_MODULE;
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	nmk_chip->lowemi = readl_relaxed(nmk_chip->addr + NMK_GPIO_LOWEMI);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ #ifdef CONFIG_OF_GPIO
+ 	chip->of_node = np;
+@@ -1580,7 +1580,7 @@ static int nmk_pmx_enable(struct pinctrl_dev *pctldev, unsigned function,
+ 		nmk_chip = container_of(chip, struct nmk_gpio_chip, chip);
+ 		dev_dbg(npct->dev, "setting pin %d to altsetting %d\n", g->pins[i], g->altsetting);
+ 
+-		clk_enable(nmk_chip->clk);
++		clk_prepare_enable(nmk_chip->clk);
+ 		bit = g->pins[i] % NMK_GPIO_PER_CHIP;
+ 		/*
+ 		 * If the pin is switching to altfunc, and there was an
+@@ -1593,7 +1593,7 @@ static int nmk_pmx_enable(struct pinctrl_dev *pctldev, unsigned function,
+ 
+ 		__nmk_gpio_set_mode_safe(nmk_chip, bit,
+ 			(g->altsetting & NMK_GPIO_ALT_C), glitch);
+-		clk_disable(nmk_chip->clk);
++		clk_disable_unprepare(nmk_chip->clk);
+ 
+ 		/*
+ 		 * Call PRCM GPIOCR config function in case ALTC
+@@ -1657,11 +1657,11 @@ int nmk_gpio_request_enable(struct pinctrl_dev *pctldev,
+ 
+ 	dev_dbg(npct->dev, "enable pin %u as GPIO\n", offset);
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	bit = offset % NMK_GPIO_PER_CHIP;
+ 	/* There is no glitch when converting any pin to GPIO */
+ 	__nmk_gpio_set_mode(nmk_chip, bit, NMK_GPIO_ALT_GPIO);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -1773,7 +1773,7 @@ int nmk_pin_config_set(struct pinctrl_dev *pctldev,
+ 		output ? (val ? "high" : "low") : "",
+ 		lowemi ? "on" : "off" );
+ 
+-	clk_enable(nmk_chip->clk);
++	clk_prepare_enable(nmk_chip->clk);
+ 	bit = pin % NMK_GPIO_PER_CHIP;
+ 	if (gpiomode)
+ 		/* No glitch when going to GPIO mode */
+@@ -1788,7 +1788,7 @@ int nmk_pin_config_set(struct pinctrl_dev *pctldev,
+ 	__nmk_gpio_set_lowemi(nmk_chip, bit, lowemi);
+ 
+ 	__nmk_gpio_set_slpm(nmk_chip, bit, slpm);
+-	clk_disable(nmk_chip->clk);
++	clk_disable_unprepare(nmk_chip->clk);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-s/seperated/separated
-
-> +
-> +Example:
-> +thermal@801573c0 {
-> +       compatible = "stericsson,db8500-thermal";
-> +       reg = <0x801573c0 0x40>;
-> +       interrupts = <21 0x4>, <22 0x4>;
-> +       interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
-> +
-> +       num-trips = <3>;
-> +
-> +       trip0-temp = <70000>;
-> +       trip0-type = "active";
-> +       trip0-cdev-num = <1>;
-> +       trip0-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +       trip1-temp = <75000>;
-> +       trip1-type = "active";
-> +       trip1-cdev-num = <2>;
-> +       trip1-cdev-name0 = "thermal-cpufreq-0";
-> +       trip1-cdev-name1 = "thermal-fan";
-> +
-> +       trip2-temp = <85000>;
-> +       trip2-type = "critical";
-> +       trip2-cdev-num = <0>;
-> +}
-> diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
-> index 748ba7a..949edc2 100644
-> --- a/arch/arm/boot/dts/dbx5x0.dtsi
-> +++ b/arch/arm/boot/dts/dbx5x0.dtsi
-> @@ -203,6 +203,14 @@
->                                 reg = <0x80157450 0xC>;
->                         };
->
-> +                       thermal@801573c0 {
-> +                               compatible = "stericsson,db8500-thermal";
-> +                               reg = <0x801573c0 0x40>;
-> +                               interrupts = <21 0x4>, <22 0x4>;
-> +                               interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
-> +                               status = "disabled";
-> +                        };
-> +
->                         db8500-prcmu-regulators {
->                                 compatible = "stericsson,db8500-prcmu-regulator";
->
-> @@ -645,5 +653,11 @@
->                         ranges = <0 0x50000000 0x4000000>;
->                         status = "disabled";
->                 };
-> +
-> +               cpufreq-cooling {
-> +                       compatible = "stericsson,db8500-cpufreq-cooling";
-> +                       status = "disabled";
-> +                };
-> +
->         };
->  };
-> diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-> index 702c0ba..c6f85f0 100644
-> --- a/arch/arm/boot/dts/snowball.dts
-> +++ b/arch/arm/boot/dts/snowball.dts
-> @@ -99,6 +99,33 @@
->                         status = "okay";
->                 };
->
-> +               prcmu@80157000 {
-> +                       thermal@801573c0 {
-> +                               num-trips = <4>;
-> +
-> +                               trip0-temp = <70000>;
-> +                               trip0-type = "active";
-> +                               trip0-cdev-num = <1>;
-> +                               trip0-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +                               trip1-temp = <75000>;
-> +                               trip1-type = "active";
-> +                               trip1-cdev-num = <1>;
-> +                               trip1-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +                               trip2-temp = <80000>;
-> +                               trip2-type = "active";
-> +                               trip2-cdev-num = <1>;
-> +                               trip2-cdev-name0 = "thermal-cpufreq-0";
-> +
-> +                               trip3-temp = <85000>;
-> +                               trip3-type = "critical";
-> +                               trip3-cdev-num = <0>;
-> +
-> +                               status = "okay";
-> +                        };
-> +               };
-> +
->                 external-bus@50000000 {
->                         status = "okay";
->
-> @@ -183,5 +210,9 @@
->                                 reg = <0x33>;
->                         };
->                 };
-> +
-> +               cpufreq-cooling {
-> +                       status = "okay";
-> +               };
->         };
->  };
-> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
-> index 416d436..b03216b 100644
-> --- a/arch/arm/mach-ux500/board-mop500.c
-> +++ b/arch/arm/mach-ux500/board-mop500.c
-> @@ -16,6 +16,7 @@
->  #include <linux/io.h>
->  #include <linux/i2c.h>
->  #include <linux/platform_data/i2c-nomadik.h>
-> +#include <linux/platform_data/db8500_thermal.h>
->  #include <linux/gpio.h>
->  #include <linux/amba/bus.h>
->  #include <linux/amba/pl022.h>
-> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
->  };
->
->  /*
-> + * Thermal Sensor
-> + */
-> +
-> +static struct resource db8500_thsens_resources[] = {
-> +       {
-> +               .name = "IRQ_HOTMON_LOW",
-> +               .start  = IRQ_PRCMU_HOTMON_LOW,
-> +               .end    = IRQ_PRCMU_HOTMON_LOW,
-> +               .flags  = IORESOURCE_IRQ,
-> +       },
-> +       {
-
-I prefer }, {
-
-> +               .name = "IRQ_HOTMON_HIGH",
-> +               .start  = IRQ_PRCMU_HOTMON_HIGH,
-> +               .end    = IRQ_PRCMU_HOTMON_HIGH,
-> +               .flags  = IORESOURCE_IRQ,
-> +       },
-> +};
-> +
-> +static struct db8500_thsens_platform_data db8500_thsens_data = {
-> +       .trip_points[0] = {
-> +               .temp = 70000,
-> +               .type = THERMAL_TRIP_ACTIVE,
-> +               .cdev_name = {
-> +                       [0] = "thermal-cpufreq-0",
-> +               },
-> +       },
-> +       .trip_points[1] = {
-> +               .temp = 75000,
-> +               .type = THERMAL_TRIP_ACTIVE,
-> +               .cdev_name = {
-> +                       [0] = "thermal-cpufreq-0",
-> +               },
-> +       },
-> +       .trip_points[2] = {
-> +               .temp = 80000,
-> +               .type = THERMAL_TRIP_ACTIVE,
-> +               .cdev_name = {
-> +                       [0] = "thermal-cpufreq-0",
-> +               },
-> +       },
-> +       .trip_points[3] = {
-> +               .temp = 85000,
-> +               .type = THERMAL_TRIP_CRITICAL,
-> +       },
-> +       .num_trips = 4,
-> +};
-> +
-> +static struct platform_device u8500_thsens_device = {
-> +       .name           = "db8500-thermal",
-> +       .resource       = db8500_thsens_resources,
-> +       .num_resources  = ARRAY_SIZE(db8500_thsens_resources),
-> +       .dev    = {
-> +               .platform_data  = &db8500_thsens_data,
-> +       },
-> +};
-> +
-> +static struct platform_device u8500_cpufreq_cooling_device = {
-> +       .name           = "db8500-cpufreq-cooling",
-> +};
-> +
-> +/*
->   * TPS61052
->   */
->
-> @@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
->         &snowball_key_dev,
->         &snowball_sbnet_dev,
->         &snowball_gpio_en_3v3_regulator_dev,
-> +       &u8500_thsens_device,
-> +       &u8500_cpufreq_cooling_device,
->  };
->
->  static void __init mop500_init_machine(void)
-> --
-> 1.7.11.3
->
->
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
