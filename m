@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935036Ab2JXOki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:40:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57222 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934903Ab2JXOkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:40:37 -0400
-Date: Wed, 24 Oct 2012 14:40:25 +0000
-From: tytso@mit.edu
-To: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 3.6.0 kernel - ext4 corruption, or?
-Message-ID: <20121024144025.GA30955@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Justin Piszcz <jpiszcz@lucidpixels.com>,
-	"Steven J. Magnani" <steve@digidescorp.com>,
-	linux-kernel@vger.kernel.org
+	id S935053Ab2JXOkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:40:45 -0400
+Received: from server505h.appriver.com ([98.129.35.13]:4097 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934903Ab2JXOkl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:40:41 -0400
+X-Note-AR-ScanTimeLocal: 10/24/2012 9:40:39 AM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: Too many policies to list
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Jonathan Corbet <corbet@lwn.net>
+CC: "rob@landley.net" <rob@landley.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "dan.carpenter@oracle.com" <dan.carpenter@oracle.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Oct 2012 09:40:36 -0500
+Subject: Re: [PATCH] Documentation/SubmittingPatches: implicit permission
+ for public reports
+Thread-Topic: [PATCH] Documentation/SubmittingPatches: implicit permission
+ for public reports
+Thread-Index: Ac2x9YglBQBKGwKXTCK0/DvxAy9LMQ==
+Message-ID: <D525A332-64AB-43E9-9EBA-976E7B744627@coraid.com>
+References: <623a994357ba3348d5a4a0a2003b4dc0@coraid.com>
+ <20121024083648.5976519f@lwn.net>
+In-Reply-To: <20121024083648.5976519f@lwn.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351085817.2362.2.camel@iscandar>
- <002101cdb1e1$47972c60$d6c58520$@lucidpixels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 08:15:37AM -0400, Justin Piszcz wrote:
-> 
-> I read there was a bug in 3.6.2, is there also one in 3.6.0, or can someone
-> help explain this?
+On Oct 24, 2012, at 10:36 AM, Jonathan Corbet wrote:
 
-The problem which we are currently trying to investigate was
-reportedly introduced in v3.6.1.  So far that's about how we know; we
-have two users who have reported it, but I and other ext4 developers
-haven't been able to reproduce it yet.
-
-> # grep 10.0.0.11 -r /etc
-> /etc/posfix.old/master.cf:10.0.0.11:smtp         inet  n       -       -
-> -        1    postscreen
+> On Wed, 24 Oct 2012 10:22:02 -0400
+> Ed Cashin <ecashin@coraid.com> wrote:
 > 
-> # ls -l /etc/posfix.old/master.cf
-> -rw-r--r-- 1 root root 13236 Oct 28  2011 /etc/posfix.old/master.cf
+>> +contribution.  Please note that this tag should not be added without
+>> +the reporter's permission unless the problem was reported in a public
+>> +forum.  That said, if we diligently credit our bug reporters, they
 > 
-> # ls -ld /etc/postfix.old
-> ls: cannot access /etc/postfix.old: No such file or directory
+> I know what you're getting at, but this reads as if one should add the tag
+> even if it's contrary to the reporter's wishes.  How about something like:
 > 
+> 	If the bug report was via a private channel, please obtain the
+> 	reporter's permission before adding this tag - or, even better,
+> 	ask that the report be posted publicly.
+> 
+> ?
 
-Looks like you or some script renamed /etc/postfix to /etc/posfix.old
-as part some upgrade?
+Yes, that's a great improvement, thanks!
 
-      	       	       	      	      		   - Ted
+-- 
+  Ed Cashin
+  ecashin@coraid.com
+
 
