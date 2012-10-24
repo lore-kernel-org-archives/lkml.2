@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab2JXKIG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:08:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55235 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab2JXKID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:08:03 -0400
-Date: Wed, 24 Oct 2012 03:06:34 -0700
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-20550a434583c78f8ff9a2819639e2bacbe58574@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        acme@ghostprotocols.net, jolsa@redhat.com, fweisbec@gmail.com,
-        vincent.weaver@maine.edu, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, jolsa@redhat.com,
-        fweisbec@gmail.com, vincent.weaver@maine.edu, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com
-In-Reply-To: <1349873598-12583-6-git-send-email-jolsa@redhat.com>
-References: <1349873598-12583-6-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86:
-  Add hardware events translations for Intel P6 cpus
-Git-Commit-ID: 20550a434583c78f8ff9a2819639e2bacbe58574
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1758160Ab2JXKIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:08:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33189 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab2JXKIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 06:08:47 -0400
+Date: Wed, 24 Oct 2012 13:02:55 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] Revert "serial: omap: fix software flow control"
+Message-ID: <20121024100254.GG5665@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350396562-32579-1-git-send-email-balbi@ti.com>
+ <20121016151357.GN15569@atomide.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lHGcFxmlz1yfXmOs"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 03:06:40 -0700 (PDT)
+In-Reply-To: <20121016151357.GN15569@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  20550a434583c78f8ff9a2819639e2bacbe58574
-Gitweb:     http://git.kernel.org/tip/20550a434583c78f8ff9a2819639e2bacbe58574
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Wed, 10 Oct 2012 14:53:15 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:41:25 +0200
+--lHGcFxmlz1yfXmOs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-perf/x86: Add hardware events translations for Intel P6 cpus
+Hi Greg,
 
-Add support for Intel P6 processors to display 'events' sysfs
-directory (/sys/devices/cpu/events/) with hw event translations:
+On Tue, Oct 16, 2012 at 08:13:59AM -0700, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [121016 07:16]:
+> > This reverts commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6
+> > (serial: omap: fix software flow control).
+> >=20
+> > As Russell has pointed out, that commit isn't fixing
+> > Software Flow Control at all, and it actually makes
+> > it even more broken.
+> >=20
+> > It was agreed to revert this commit and use Russell's
+> > latest UART patches instead.
+> >=20
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+>=20
+> This seems like the best way to go for the -rc series:
+>=20
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
-  # ls /sys/devices/cpu/events/
-  branch-instructions
-  branch-misses
-  bus-cycles
-  cache-misses
-  cache-references
-  cpu-cycles
-  instructions
-  ref-cycles
-  stalled-cycles-backend
-  stalled-cycles-frontend
+Any chance you can pick this one up for v3.7-rc3 ?
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1349873598-12583-6-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event.h    |    1 +
- arch/x86/kernel/cpu/perf_event_p6.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+cheers
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 21419b9..115c1ea 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -539,6 +539,7 @@ static inline void set_linear_ip(struct pt_regs *regs, unsigned long ip)
- }
- 
- ssize_t x86_event_sysfs_show(char *page, u64 config, u64 event);
-+ssize_t intel_event_sysfs_show(char *page, u64 config);
- 
- #ifdef CONFIG_CPU_SUP_AMD
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index e4dd0f7..900b76b 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -134,6 +134,8 @@ static __initconst const struct x86_pmu p6_pmu = {
- 	.event_constraints	= p6_event_constraints,
- 
- 	.format_attrs		= intel_p6_formats_attr,
-+	.events_sysfs_show	= intel_event_sysfs_show,
-+
- };
- 
- __init int p6_pmu_init(void)
+--=20
+balbi
+
+--lHGcFxmlz1yfXmOs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQh7zOAAoJEIaOsuA1yqREI4IQAKVXiIKQc489tzBZannUfi/w
+yfwWLwedUJZKof0kzdM/dKxqZL+qCilL2u0piuKLnuRzH4GQcVPbuXP+AGx9/766
+V+Ljkltz+09hhRTMZWtxvgWYGYHyZNnveVAYh0bp1u+05XRPsiJLuoXnEfZNkWkU
+2bYSMtTo0qcNaTZkkC3+0ea7mJHysLBXqbnbwcLhdhPGndk1uhinKcQfWuGXZSAe
+/p6emuM0OMpPoqpKy/cnQrgccTYP4nMCMI/NW8LiAuswffMu3ohS8GM4ZBsZp6NK
++4zetajE70xugcIeOvL30VdIIcVdEjMg+tvXOh8hpYSof3FiUPLXIeKUZuEiDyTy
+HdRHV87OQnS5Zk4TqqJNBSuilpzMKxRSRNYDTXlA3BF12BNTvOj+OkrH/2yAQp68
+lT5Er+tsPdvgb328DLFehs92YKmZafdAKZivSjpxn+mqMbVkvQjd46k+OKcztWKS
+/IuQ/JMO9HxSpWEYOftktO851UOVJnWQ5qUeSlRHYVHc8EMwpA/J61eZWfDV8oEA
+2KQhNlQwTxiAWI4Do0MXOkhdBV049pCL4Wk2WOYMpvFRD/dANqTy/vWRkZhYzjNY
+pSQpiOVEatwU8cojWujJWJJVmjC8UdRnA0dveftU3zFLhUHHruomflWoAZzdIekC
+2OPjOtDE1EQKJj0EvkEE
+=4Hvm
+-----END PGP SIGNATURE-----
+
+--lHGcFxmlz1yfXmOs--
