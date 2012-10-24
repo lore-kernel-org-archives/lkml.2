@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758538Ab2JXNuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:50:18 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:49008 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756362Ab2JXNuQ (ORCPT
+	id S934855Ab2JXNxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:53:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60637 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934739Ab2JXNxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:50:16 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] Adding SATA support for Armada 370/XP
-Date: Wed, 24 Oct 2012 15:49:19 +0200
-Message-Id: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 24 Oct 2012 09:53:07 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Shawn Guo <shawn.guo@linaro.org>, kernel@pengutronix.de
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org
+Subject: [PATCH] RFC: leds-pwm: don't disable pwm when setting brightness to 0
+Date: Wed, 24 Oct 2012 15:52:46 +0200
+Message-Id: <1351086766-5837-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20121024095603.GH639@pengutronix.de>
+References: <20121024095603.GH639@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fixes disabling the LED on i.MX28. The PWM hardware delays using
+the newly set pwm-config until the beginning of a new period.  It's very
+likely that pwm_disable is called before the current period ends. In
+case the LED was on brightness=max before the LED stays on because in
+the disabled PWM block the period never ends.
+
+It's unclear if the mxs-pwm driver doesn't implement the API as expected
+(i.e. it should block until the newly set config is effective) or if the
+leds-pwm driver makes wrong assumptions. This patch assumes the latter.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
 Hello,
 
-this small patch set adds the SATA support for Armada 370 and Armada XP.
+I'm not sure this is correct, but this is the workaround I'm using until
+I get some feed back.
 
-The evaluation boards for Armada 370 and Armada XP come with 2 SATA
-ports, and when both are enable the coherent pool for DMA mapping was
-too short. It was exactly the same issue that was fixed for Kirkwood
-two months ago. So I used the same fix in the first patch. Later when
-Kirkwood will be part of mach-mvebu, then this fix will be shared
-between the 2 SoCs families.
+Best regards
+Uwe
 
-This patch set is based on 3.7-rc2 and depends one the framework clock
-support (the last version was posted last week:
-http://thread.gmane.org/gmane.linux.kernel/1375701). The git branch
-called mvebu-SATA-for-3.8 is also available at
-https://github.com/MISL-EBU-System-SW/mainline-public.git.
+ drivers/leds/leds-pwm.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-Regards,
-
-Gregory
-
-Gregory CLEMENT (1):
-  arm: mvebu: increase atomic coherent pool size for armada 370/XP
-
-Lior Amsalem (1):
-  arm: mvebu: adding SATA support: dt binding and config update
-
- arch/arm/boot/dts/armada-370-db.dts  |    3 +++
- arch/arm/boot/dts/armada-370-xp.dtsi |   10 ++++++++++
- arch/arm/boot/dts/armada-xp-db.dts   |    3 +++
- arch/arm/configs/mvebu_defconfig     |    7 +++++++
- arch/arm/mach-mvebu/armada-370-xp.c  |   12 ++++++++++++
- 5 files changed, 35 insertions(+)
-
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index f2e44c7..a909f4f 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -38,13 +38,8 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	unsigned int max = led_dat->cdev.max_brightness;
+ 	unsigned int period =  led_dat->period;
+ 
+-	if (brightness == 0) {
+-		pwm_config(led_dat->pwm, 0, period);
+-		pwm_disable(led_dat->pwm);
+-	} else {
+-		pwm_config(led_dat->pwm, brightness * period / max, period);
+-		pwm_enable(led_dat->pwm);
+-	}
++	pwm_config(led_dat->pwm, brightness * period / max, period);
++	pwm_enable(led_dat->pwm);
+ }
+ 
+ static int led_pwm_probe(struct platform_device *pdev)
 -- 
-1.7.9.5
+1.7.10.4
 
