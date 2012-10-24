@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935425Ab2JXSAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:00:50 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41282 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935262Ab2JXSAt (ORCPT
+	id S1161037Ab2JXSCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:02:30 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52461 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935412Ab2JXSC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:00:49 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6875"; a="1516503"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: arm@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] MAINTAINERS: Add arm-soc tree entry
-Date: Wed, 24 Oct 2012 11:00:29 -0700
-Message-Id: <1351101629-11826-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.0
+	Wed, 24 Oct 2012 14:02:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351098875.19172.21.camel@misato.fc.hp.com>
+References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 24 Oct 2012 12:02:04 -0600
+Message-ID: <CAErSpo7KRTY+M1gSO7s_PGRPkXABK6x9CQsaMXbZ__C11mmTWQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container hot-remove.
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, yinghai@kernel.org, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the arm-soc tree in the maintainers file so that
-developers know how arm SoC development is structured.
+On Wed, Oct 24, 2012 at 11:14 AM, Toshi Kani <toshi.kani@hp.com> wrote:
+> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- MAINTAINERS | 7 +++++++
- 1 file changed, 7 insertions(+)
+>> +             result = container_device_remove(device);
+>> +             if (result) {
+>> +                     printk(KERN_WARNING "Failed to remove container\n");
+>
+> Please use pr_warn().
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 014272b..f70afea 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -637,6 +637,13 @@ W:	http://www.arm.linux.org.uk/
- S:	Maintained
- F:	arch/arm/
- 
-+ARM SUB-ARCHITECTURES
-+L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-+S:	MAINTAINED
-+F:	arch/arm/mach-*/
-+F:	arch/arm/plat-*/
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-+
- ARM PRIMECELL AACI PL041 DRIVER
- M:	Russell King <linux@arm.linux.org.uk>
- S:	Maintained
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+I think you should use dev_warn() and similar when possible.  In a
+year or two, the text "Failed to remove container" all by itself in a
+dmesg log is not going to mean anything to anybody except you, and it
+doesn't give any clue where to start looking for issues.
 
+I also have a larger question.  I'm not sure if
+drivers/acpi/container.c does anything important in the first place.
+The code in it looks an awful lot like the code in
+drivers/acpi/processor_driver.c, drivers/acpi/acpi_memhotplug.c, and
+drivers/pci/hotplug/acpiphp_glue.c.
+
+To me, it looks like container.c (as well as the other places I
+mentioned) is an attempt to compensate for the lack of hotplug support
+in the ACPI core.  If the ACPI core had generic hotplug support, e.g.,
+if it handled BUS_CHECK, DEVICE_CHECK, and EJECT_REQUEST notifications
+and turned those into the appropriate calls to driver .add()/.start()
+and .remove() methods, would we need container.c at all?
+
+Bjorn
