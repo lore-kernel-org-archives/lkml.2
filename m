@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934563Ab2JXJen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:34:43 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:25160 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab2JXJem (ORCPT
+	id S934570Ab2JXJfc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:35:32 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45907 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932132Ab2JXJf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:34:42 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="15352515"
-Message-ID: <1351071279.2237.126.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH V5] PVH patches for v3.8.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jan Beulich <JBeulich@suse.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 24 Oct 2012 10:34:39 +0100
-In-Reply-To: <5087B13402000078000A3CBB@nat28.tlf.novell.com>
-References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
-	 <5087B13402000078000A3CBB@nat28.tlf.novell.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
+	Wed, 24 Oct 2012 05:35:29 -0400
+Date: Wed, 24 Oct 2012 10:35:10 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "mhocko@suse.cz" <mhocko@suse.cz>,
+        "kirill@shutemov.name" <kirill@shutemov.name>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Steve Capper <Steve.Capper@arm.com>
+Subject: Re: [PATCH v2] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121024093510.GB23775@mudshark.cambridge.arm.com>
+References: <20121017130125.GH5973@mudshark.cambridge.arm.com>
+ <20121017.112620.1865348978594874782.davem@davemloft.net>
+ <20121017155401.GJ5973@mudshark.cambridge.arm.com>
+ <20121018150502.3dee7899.akpm@linux-foundation.org>
+ <20121019091016.GA4582@mudshark.cambridge.arm.com>
+ <20121019114955.3a0c2b66.akpm@linux-foundation.org>
+ <20121022103503.GA26619@mudshark.cambridge.arm.com>
+ <20121022111843.4406850d.akpm@linux-foundation.org>
+ <20121023101125.GA20210@mudshark.cambridge.arm.com>
+ <20121023145027.40710e7a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023145027.40710e7a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-24 at 08:13 +0100, Jan Beulich wrote:
-
-> >  include/xen/interface/memory.h       |   29 ++++++-
-> >  include/xen/interface/physdev.h      |   10 ++
+On Tue, Oct 23, 2012 at 10:50:27PM +0100, Andrew Morton wrote:
+> On Tue, 23 Oct 2012 11:11:25 +0100
+> Will Deacon <will.deacon@arm.com> wrote:
+> > This patch ("mm: thp: Set the accessed flag for old pages on access fault")
+> > doesn't depend on "ARM: mm: Transparent huge page support for LPAE systems"
+> > because currently transparent huge pages cannot be enabled for ARM in
+> > mainline (or linux-next). update_mmu_cache_pmd is only called from
+> > mm/huge_memory.c, which depends on CONFIG_TRANSPARENT_HUGEPAGE=y.
+> > 
+> > As for the new huge_pmd_set_accessed function... there's a similar situation
+> > for the do_huge_pmd_wp_page function: it's called from mm/memory.c but is
+> > only defined in mm/huge_memory.c. Looks like the compiler optimises those
+> > calls away because pmd_trans_huge and friends constant-fold to 0.
 > 
-> ... any changes to the hypervisor interface (didn't look in detail
-> what is being changed in these two headers) should first be in
-> at least -unstable before being consumed in any official release
-> imo.
+> Ah, OK.
+> 
+> "mm: thp: Set the accessed flag for old pages on access fault" clashes
+> in a non-trivial way with linux-next changes, due to the sched-numa
+> changes (sigh).  This is a problem for me, because I either need to
+> significantly alter your patch (so it isn't applicable to mainline) or
+> I need to stage your patch ahead of linux-next, then fix up linux-next
+> every day after I've pulled and re-merged it.
+> 
+> I'm unsure what your timing is.  Can you carry "mm: thp: Set the
+> accessed flag for old pages on access fault" until either the whole
+> patchset is ready to merge or until the sched-numa situation has been
+> cleared up?
 
-I'd also like to see at least the interface definitions in the h/v tree
-if not the implementation right away.
+I think DaveM may want this patch for sparc, so I'll keep it separate from
+the ARM patches and have a go at reworking it when the sched-numa stuff has
+settled down. Is that all in linux-next btw? If so, I can use that as a
+starting point to dealing with the mess.
 
-The flip side is that we have agreed that the interfaces are not
-considered set in stone / stable until we've had a chance to review the
-implementation, so perhaps it is better not to commit them to
-xen-unstable.hg right away.
+Cheers,
 
-I don't know what the right answer is. Perhaps we should at a minimum
-reserve the subop numbers even if we don't yet define what they mean in
-the Xen tree.
-
-Ian.
-
+Will
