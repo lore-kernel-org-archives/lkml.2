@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161037Ab2JXSCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:02:30 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:52461 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935412Ab2JXSC0 (ORCPT
+	id S965209Ab2JXSCj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:02:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61200 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161038Ab2JXSCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:02:26 -0400
+	Wed, 24 Oct 2012 14:02:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351098875.19172.21.camel@misato.fc.hp.com>
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
- <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 24 Oct 2012 12:02:04 -0600
-Message-ID: <CAErSpo7KRTY+M1gSO7s_PGRPkXABK6x9CQsaMXbZ__C11mmTWQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container hot-remove.
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, yinghai@kernel.org, lenb@kernel.org,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1351087158-8524-2-git-send-email-glommer@parallels.com>
+References: <1351087158-8524-1-git-send-email-glommer@parallels.com>
+	<1351087158-8524-2-git-send-email-glommer@parallels.com>
+Date: Wed, 24 Oct 2012 21:02:32 +0300
+X-Google-Sender-Auth: 66rjzjENWtNjNbKzbuggKDuBDWQ
+Message-ID: <CAOJsxLHxo7zJk=aWrjmuaYsEkaChTCgXowtHxtuiabaOP3W3-Q@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] kmem_cache: include allocators code directly into slab_common
+From: Pekka Enberg <penberg@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        Christoph Lameter <cl@linux.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 11:14 AM, Toshi Kani <toshi.kani@hp.com> wrote:
-> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
-
->> +             result = container_device_remove(device);
->> +             if (result) {
->> +                     printk(KERN_WARNING "Failed to remove container\n");
+On Wed, Oct 24, 2012 at 4:59 PM, Glauber Costa <glommer@parallels.com> wrote:
+> While the goal of slab_common.c is to have a common place for all
+> allocators, we face two different goals that are in opposition to each
+> other:
 >
-> Please use pr_warn().
+> 1) Have the different layouts be the business of each allocator, in
+> their .c
+> 2) inline as much as we can for fast paths
+>
+> Because of that, we either have to move all the entry points to the
+> mm/slab.h and rely heavily on the pre-processor, or include all .c files
+> in here.
+>
+> The pre-processor solution has the disadvantage that some quite
+> non-trivial code gets even more non-trivial, and we end up leaving for
+> readers a non-pleasant indirection.
+>
+> To keep this sane, we'll include the allocators .c files in here.  Which
+> means we will be able to inline any code they produced, but never the
+> other way around!
+>
+> Doing this produced a name clash. This was resolved in this patch
+> itself.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Joonsoo Kim <js1304@gmail.com>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Pekka Enberg <penberg@kernel.org>
+> CC: Christoph Lameter <cl@linux.com>
 
-I think you should use dev_warn() and similar when possible.  In a
-year or two, the text "Failed to remove container" all by itself in a
-dmesg log is not going to mean anything to anybody except you, and it
-doesn't give any clue where to start looking for issues.
+So I hate this patch with a passion. We don't have any fastpaths in
+mm/slab_common.c nor should we. Those should be allocator specific.
 
-I also have a larger question.  I'm not sure if
-drivers/acpi/container.c does anything important in the first place.
-The code in it looks an awful lot like the code in
-drivers/acpi/processor_driver.c, drivers/acpi/acpi_memhotplug.c, and
-drivers/pci/hotplug/acpiphp_glue.c.
-
-To me, it looks like container.c (as well as the other places I
-mentioned) is an attempt to compensate for the lack of hotplug support
-in the ACPI core.  If the ACPI core had generic hotplug support, e.g.,
-if it handled BUS_CHECK, DEVICE_CHECK, and EJECT_REQUEST notifications
-and turned those into the appropriate calls to driver .add()/.start()
-and .remove() methods, would we need container.c at all?
-
-Bjorn
+                         Pekka
