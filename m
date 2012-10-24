@@ -1,115 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232Ab2JXGzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:55:20 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35522 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933450Ab2JXGzQ (ORCPT
+	id S933845Ab2JXHAM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:00:12 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49101 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933282Ab2JXHAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:55:16 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <508790AC.5080001@jp.fujitsu.com>
-Date: Wed, 24 Oct 2012 15:54:36 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 24 Oct 2012 03:00:10 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-e7-508791f8908b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andrew Jones <drjones@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] perf header: Fix numa topology printing
+References: <20121023072702.GB2772@turtle.usersys.redhat.com>
+	<1350999890-6920-1-git-send-email-namhyung@kernel.org>
+	<20121023141218.GD2772@turtle.usersys.redhat.com>
+Date: Wed, 24 Oct 2012 16:00:08 +0900
+In-Reply-To: <20121023141218.GD2772@turtle.usersys.redhat.com> (Andrew Jones's
+	message of "Tue, 23 Oct 2012 16:12:19 +0200")
+Message-ID: <874nlk9wxz.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: <yinghai@kernel.org>, <bhelgaas@google.com>, <lenb@kernel.org>,
-        <jiang.liu@huawei.com>, <izumi.taku@jp.fujitsu.com>,
-        <mihailm@parallels.com>, <linux-acpi@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/2] Use kacpi_hotplug_wq to handle container hotplug
- event.
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com> <1351058750-4275-2-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1351058750-4275-2-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
+Hi Andrew,
 
-2012/10/24 15:05, Tang Chen wrote:
-> As the comments in __acpi_os_execute() said:
-> 
-> 	We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
-> 	because the hotplug code may call driver .remove() functions,
-> 	which invoke flush_scheduled_work/acpi_os_wait_events_complete
-> 	to flush these workqueues.
-> 
-> we should keep the hotplug code in kacpi_hotplug_wq.
-> 
-> But we have the following call series in kernel now:
-> 	acpi_ev_queue_notify_request()
-> 	|--> acpi_os_execute()
-> 	     |--> __acpi_os_execute(type, function, context, 0)
-> 
-> The last parameter 0 makes the container_notify_cb() executed in
-> kacpi_notify_wq or kacpid_wq. So, we need to put the real hotplug code
-> into kacpi_hotplug_wq.
+On Tue, 23 Oct 2012 16:12:19 +0200, Andrew Jones wrote:
+> On Tue, Oct 23, 2012 at 10:44:49PM +0900, Namhyung Kim wrote:
+>> Andrew reported that the commit 7e94cfcc9d20 ("perf header: Use pre-
+>> processed session env when printing") regresses the header output.
+>> It was because of a missed string pointer calculation in the loop.
+>
+> works for me
+>
+> Tested-by: Andrew Jones <drjones@redhat.com> 
 
-I cannot understand the purpose of the patch.
-Is the patch a bug fix patch? If yes, what problem happens?
+Did you test both of the patches?
 
 Thanks,
-Yasuaki Ishimatsu
-
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->   drivers/acpi/container.c |   17 ++++++++++++++++-
->   1 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-> index 69e2d6b..d300e03 100644
-> --- a/drivers/acpi/container.c
-> +++ b/drivers/acpi/container.c
-> @@ -35,6 +35,7 @@
->   #include <acpi/acpi_bus.h>
->   #include <acpi/acpi_drivers.h>
->   #include <acpi/container.h>
-> +#include <acpi/acpiosxf.h>
->   
->   #define PREFIX "ACPI: "
->   
-> @@ -165,14 +166,21 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
->   	return result;
->   }
->   
-> -static void container_notify_cb(acpi_handle handle, u32 type, void *context)
-> +static void __container_notify_cb(struct work_struct *work)
->   {
->   	struct acpi_device *device = NULL;
->   	int result;
->   	int present;
->   	acpi_status status;
-> +	struct acpi_hp_work *hp_work;
-> +	acpi_handle handle;
-> +	u32 type;
->   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
->   
-> +	hp_work = container_of(work, struct acpi_hp_work, work);
-> +	handle = hp_work->handle;
-> +	type = hp_work->type;
-> +
->   	switch (type) {
->   	case ACPI_NOTIFY_BUS_CHECK:
->   		/* Fall through */
-> @@ -224,6 +232,13 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
->   	return;
->   }
->   
-> +static void container_notify_cb(acpi_handle handle, u32 type,
-> +				void *context)
-> +{
-> +	alloc_acpi_hp_work(handle, type, context,
-> +			   __container_notify_cb);
-> +}
-> +
->   static acpi_status
->   container_walk_namespace_cb(acpi_handle handle,
->   			    u32 lvl, void *context, void **rv)
-> 
-
-
+Namhyung
