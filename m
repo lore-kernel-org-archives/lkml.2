@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935102Ab2JXO5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:57:14 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55921 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934915Ab2JXO5M (ORCPT
+	id S935111Ab2JXO7m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:59:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57066 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934994Ab2JXO7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:57:12 -0400
-Date: Wed, 24 Oct 2012 16:56:44 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
-        linux@sierrawireless.com, linux-usb@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: Fix memory leak in sierra_release() (this time with
- signed-off-by)
-Message-ID: <20121024145644.GB3131@localhost>
-References: <20121024142309.GQ18610@csclub.uwaterloo.ca>
+	Wed, 24 Oct 2012 10:59:40 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Ian Kent <raven@themaw.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, autofs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sukadev@linux.vnet.ibm.com, serge.hallyn@canonical.com
+Subject: Re: [PATCH 0/2] struct pid-ify autofs4
+References: <1348068576-21363-1-git-send-email-miklos@szeredi.hu>
+	<87haqrwfbj.fsf@tucsk.pomaz.szeredi.hu>
+	<1348447130.2318.1.camel@perseus.themaw.net>
+	<87d31bczo7.fsf@tucsk.pomaz.szeredi.hu>
+	<1348537604.2307.8.camel@perseus.themaw.net>
+	<87mx0estch.fsf@xmission.com>
+	<1349926483.2371.35.camel@perseus.themaw.net>
+Date: Wed, 24 Oct 2012 16:59:36 +0200
+In-Reply-To: <1349926483.2371.35.camel@perseus.themaw.net> (Ian Kent's message
+	of "Thu, 11 Oct 2012 11:34:43 +0800")
+Message-ID: <87625z531j.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024142309.GQ18610@csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:23:09AM -0400, Lennart Sorensen wrote:
-> I found a memory leak in sierra_release() (well sierra_probe() I guess)
-> that looses 8 bytes each time the driver releases a device.
+> Ian Kent <raven@themaw.net> writes:
+> 
+> > Yeah, the problem with that is that "autofs doesn't work if containers
+> > are used" is ill defined since there are use cases where it does, I
+> > believe. At the very least, ill defined in my view of things.
 
-Good catch! I missed this one when I fixed a bunch of other memory
-leaks in the sierra with recent kernels:
+Customer says:
 
-	http://marc.info/?l=linux-usb&m=135100550421848&w=2
+ "There is no interaction between host and the conatainer.  The host use
+  only his own automount and each containers used automount in their
+  container."
 
-I'll rebase my patch on top of this one as your patch should be
-backported to all stable kernels, whereas mine is only required for
-v3.6 and later.
+I think it's a pretty clearly defined use case.  And one which automount
+could easily support since the only requirement is that all namespaces
+are treated equally.
 
-> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+But I agree that adding safeguards against cases which don't have such
+easily defined semantics (such as triggers from several different
+namespaces).
 
-Cc: <stable@vger.kernel.org>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+I'll post updated patches.
 
 Thanks,
-Johan
+Miklos
 
-
-> diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-> index 01d882c..76ef95b 100644
-> --- a/drivers/usb/serial/sierra.c
-> +++ b/drivers/usb/serial/sierra.c
-> @@ -959,6 +959,7 @@ static void sierra_release(struct usb_serial *serial)
->  			continue;
->  		kfree(portdata);
->  	}
-> +	kfree(serial->private);
->  }
->  
->  #ifdef CONFIG_PM
