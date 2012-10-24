@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422681Ab2JXVxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:53:51 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35582 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161325Ab2JXVxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:53:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: dave@gnu.org
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] PM/Hibernate: use rb_entry
-Date: Wed, 24 Oct 2012 23:57:46 +0200
-Message-ID: <6750099.YBevmVYGux@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1349086372.2721.1.camel@offbook>
-References: <1349086372.2721.1.camel@offbook>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1422714Ab2JXVyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:54:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40940 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161328Ab2JXVuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:50:46 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 11/12] perf trace: Print the name of a syscall when failing to read its info
+Date: Wed, 24 Oct 2012 19:50:22 -0200
+Message-Id: <1351115423-9025-12-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1351115423-9025-1-git-send-email-acme@infradead.org>
+References: <1351115423-9025-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="utf-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 01 of October 2012 12:12:52 Davidlohr Bueso wrote:
-> Since the software suspend extents are organized in an rbtree, use rb_entry
-> instead of container_of, as it is semantically more appropriate in order to
-> get a node as it is iterated.
-> 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Applied to linux-pm.git/linux-next as v3.8 material.
+When failing to read the tracepoint event format, like currently with
+sys_execve, that is not defined via SYSCALL_DEFINE macros and thus
+doesn't have an entry in:
 
-Thanks,
-Rafael
+  $ ls -d /sys/kernel/debug/tracing/events/syscalls/sys_enter_*exec*
+  /sys/kernel/debug/tracing/events/syscalls/sys_enter_kexec_load
+  $
 
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+echo Link: http://lkml.kernel.org/n/tip-`ranpwd -l 24`@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-q3ak0j8b81yxylykq5wp2uwi@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-> ---
->  kernel/power/swap.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-> index 3c9d764..7c33ed2 100644
-> --- a/kernel/power/swap.c
-> +++ b/kernel/power/swap.c
-> @@ -126,7 +126,7 @@ static int swsusp_extents_insert(unsigned long swap_offset)
->  
->  	/* Figure out where to put the new node */
->  	while (*new) {
-> -		ext = container_of(*new, struct swsusp_extent, node);
-> +		ext = rb_entry(*new, struct swsusp_extent, node);
->  		parent = *new;
->  		if (swap_offset < ext->start) {
->  			/* Try to merge */
-> 
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index fb83cfe..ba05510 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -278,7 +278,10 @@ static struct syscall *trace__syscall_info(struct trace *trace,
+ 	return &trace->syscalls.table[id];
+ 
+ out_cant_read:
+-	printf("Problems reading syscall %d information\n", id);
++	printf("Problems reading syscall %d", id);
++	if (id <= trace->syscalls.max && trace->syscalls.table[id].name != NULL)
++		printf("(%s)", trace->syscalls.table[id].name);
++	puts(" information");
+ 	return NULL;
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.2.358.g22243
+
