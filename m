@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934174Ab2JXTmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:42:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40376 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933818Ab2JXTmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:42:12 -0400
-Date: Wed, 24 Oct 2012 12:42:07 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com,
-        "Eric W. Biederman" <ebiederm@xmission.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 1/3] x86, ioapic: Teach mp_register_ioapic to compute a
- global gsi_end
-Message-ID: <20121024194207.GD3120@elie.Belkin>
-References: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
- <20121024182546.GB3338@elie.Belkin>
- <1351103872.6017.80.camel@sbsiddha-desk.sc.intel.com>
- <20121024194114.GC3120@elie.Belkin>
+	id S934449Ab2JXTm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:42:26 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35205 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933818Ab2JXTmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:42:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: zhanglong <longzhax@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        yanmin_zhang@linux.intel.com, Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH v2] drivers-core: move the calling to device_pm_remove behind the calling to bus_remove_device
+Date: Wed, 24 Oct 2012 21:46:19 +0200
+Message-ID: <1871387.QctMb7gSFB@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <507D7D08.7010903@intel.com>
+References: <507D7D08.7010903@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024194114.GC3120@elie.Belkin>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Tue, 30 Mar 2010 01:07:10 -0700
+On Tuesday 16 of October 2012 23:28:08 zhanglong wrote:
+> We hit an hang issue when removing a mmc device on Medfield Android phone by sysfs interface.
+> 
+> device_pm_remove will call pm_runtime_remove which would disable
+> runtime PM of the device. After that pm_runtime_get* or
+> pm_runtime_put* will be ignored. So if we disable the runtime PM
+> before device really be removed, drivers' _remove callback may
+> access HW even pm_runtime_get* fails. That is bad.
+> 
+> Consider below call sequence when removing a device:
+> device_del => device_pm_remove
+>              => class_intf->remove_dev(dev, class_intf)  => pm_runtime_get_sync/put_sync
+>              => bus_remove_device => device_release_driver => pm_runtime_get_sync/put_sync
+> 
+> remove_dev might call pm_runtime_get_sync/put_sync.
+> Then, generic device_release_driver also calls pm_runtime_get_sync/put_sync.
+> Since device_del => device_pm_remove firstly, later _get_sync wouldn't really wake up the device. 
+> 
+> I git log -p to find the patch which moves the calling to device_pm_remove ahead.
+> It's below patch:
+> 
+> commit  775b64d2b6ca37697de925f70799c710aab5849a
+> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> Date:   Sat Jan 12 20:40:46 2008 +0100
+> 
+>      PM: Acquire device locks on suspend
+> 
+>      This patch reorganizes the way suspend and resume notifications are
+>      sent to drivers.  The major changes are that now the PM core acquires
+>      every device semaphore before calling the methods, and calls to
+>      device_add() during suspends will fail, while calls to device_del()
+>      during suspends will block.
+> 
+>      It also provides a way to safely remove a suspended device with the
+>      help of the PM core, by using the device_pm_schedule_removal() callback
+>      introduced specifically for this purpose, and updates two drivers (msr
+>      and cpuid) that need to use it. 
+> 
+> 
+> As device_pm_schedule_removal is deleted by another patch, we need also revert other parts of the patch,
+> i.e. move the calling of device_pm_remove after the calling to bus_remove_device.
+> 
+> Signed-off-by: LongX Zhang <longx.zhang@intel.com>
 
-commit 5777372af5c929b8f3c706ed7b295b7279537c88 upstream.
+Greg, do you see any potential problems with this patch?
 
-Add the global variable gsi_end and teach mp_register_ioapic
-to keep it uptodate as we add more ioapics into the system.
+Rafael
 
-ioapics can only be added early in boot so the code that
-runs later can treat gsi_end as a constant.
 
-Remove the have hacks in sfi.c to second guess mp_register_ioapic
-by keeping t's own running total of how many gsi's have been seen,
-and instead use the gsi_end.
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-LKML-Reference: <1269936436-7039-9-git-send-email-ebiederm@xmission.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
----
- arch/x86/include/asm/io_apic.h | 1 +
- arch/x86/kernel/apic/io_apic.c | 6 ++++++
- arch/x86/kernel/sfi.c          | 4 +---
- 3 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 5f61f6e0ffdd..c145253f34fa 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -186,6 +186,7 @@ struct mp_ioapic_gsi{
- 	int gsi_end;
- };
- extern struct mp_ioapic_gsi  mp_gsi_routing[];
-+extern u32 gsi_end;
- int mp_find_ioapic(int gsi);
- int mp_find_ioapic_pin(int ioapic, int gsi);
- void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 8928d9785eb4..7a5087640599 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -90,6 +90,9 @@ int nr_ioapics;
- /* IO APIC gsi routing info */
- struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
- 
-+/* The last gsi number used */
-+u32 gsi_end;
-+
- /* MP IRQ source entries */
- struct mpc_intsrc mp_irqs[MAX_IRQ_SOURCES];
- 
-@@ -4284,6 +4287,9 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
- 	mp_gsi_routing[idx].gsi_end = gsi_base +
- 	    io_apic_get_redir_entries(idx);
- 
-+	if (mp_gsi_routing[idx].gsi_end > gsi_end)
-+		gsi_end = mp_gsi_routing[idx].gsi_end;
-+
- 	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
- 	       "GSI %d-%d\n", idx, mp_ioapics[idx].apicid,
- 	       mp_ioapics[idx].apicver, mp_ioapics[idx].apicaddr,
-diff --git a/arch/x86/kernel/sfi.c b/arch/x86/kernel/sfi.c
-index 34e099382651..7ded57896c0a 100644
---- a/arch/x86/kernel/sfi.c
-+++ b/arch/x86/kernel/sfi.c
-@@ -81,7 +81,6 @@ static int __init sfi_parse_cpus(struct sfi_table_header *table)
- #endif /* CONFIG_X86_LOCAL_APIC */
- 
- #ifdef CONFIG_X86_IO_APIC
--static u32 gsi_base;
- 
- static int __init sfi_parse_ioapic(struct sfi_table_header *table)
- {
-@@ -94,8 +93,7 @@ static int __init sfi_parse_ioapic(struct sfi_table_header *table)
- 	pentry = (struct sfi_apic_table_entry *)sb->pentry;
- 
- 	for (i = 0; i < num; i++) {
--		mp_register_ioapic(i, pentry->phys_addr, gsi_base);
--		gsi_base += io_apic_get_redir_entries(i);
-+		mp_register_ioapic(i, pentry->phys_addr, gsi_end + 1);
- 		pentry++;
- 	}
- 
+> ---
+>  drivers/base/core.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index abea76c..150a415 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1180,7 +1180,6 @@ void device_del(struct device *dev)
+>         if (dev->bus)
+>                 blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
+>                                              BUS_NOTIFY_DEL_DEVICE, dev);
+> -       device_pm_remove(dev);
+>         dpm_sysfs_remove(dev);
+>         if (parent)
+>                 klist_del(&dev->p->knode_parent);
+> @@ -1205,6 +1204,7 @@ void device_del(struct device *dev)
+>         device_remove_file(dev, &uevent_attr);
+>         device_remove_attrs(dev);
+>         bus_remove_device(dev);
+> +       device_pm_remove(dev);
+>         driver_deferred_probe_del(dev);
+> 
+>         /* Notify the platform of the removal, in case they
+> 
 -- 
-1.8.0
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
