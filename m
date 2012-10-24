@@ -1,52 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab2JXGT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:19:59 -0400
-Received: from so.liwest.at ([212.33.55.24]:8459 "EHLO so.liwest.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757507Ab2JXGT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:19:58 -0400
-X-Greylist: delayed 997 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Oct 2012 02:19:58 EDT
-Message-ID: <5087848D.7060400@viscovery.net>
-Date: Wed, 24 Oct 2012 08:02:53 +0200
-From: Johannes Sixt <j.sixt@viscovery.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S933441Ab2JXGVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:21:00 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36993 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab2JXGU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:20:58 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9O6KnER005277, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jean@google.com>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v3 net-next] r8169: enable ALDPS for power saving
+Date: Wed, 24 Oct 2012 14:24:03 +0800
+Message-ID: <1351059843-1464-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.11.4
+In-Reply-To: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
+References: <1350893153-18320-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-To: Jeff King <peff@peff.net>
-CC: Marc Gauthier <marc@tensilica.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Chris Metcalf <cmetcalf@tilera.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "git@vger.kernel.org" <git@vger.kernel.org>,
-        Junio C Hamano <gitster@pobox.com>
-Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and GENERIC_KERNEL_EXECVE
-References: <5082A1F1.3080303@tilera.com> <20121020153401.GT2616@ZenIV.linux.org.uk> <20121020171643.GU2616@ZenIV.linux.org.uk> <5086D432.4070008@tilera.com> <20121023184122.GZ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210232232070.2756@ionos> <20121023205119.GA27729@sigill.intra.peff.net> <alpine.LFD.2.02.1210232307480.2756@ionos> <20121023214717.GA29306@sigill.intra.peff.net> <522C1DF17AF50042AD8AE87F7887BD3D0B60880C30@exch.hq.tensilica.com> <20121023222318.GA3055@sigill.intra.peff.net>
-In-Reply-To: <20121023222318.GA3055@sigill.intra.peff.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Spam-Score: -1.0 (-)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10/24/2012 0:23, schrieb Jeff King:
-> For the fold-on-rebase idea, I'd think you would want something similar,
-> like setting rebase.foldNotes to "foo" to say "refs/notes/foo contains
-> pseudo-headers that should be folded in like a signed-off-by".
+Enable ALDPS function to save power when link down. Note that the
+feature should be set after the other PHY settings. And the firmware
+is necessary. Don't enable it without loading the firmware.
 
-If you are rebasing anyway, you can already use interactive rebase's
---autosquash option:
+None of the firmware-free chipsets support ALDPS. Neither do the
+RTL8168d/8111d.
 
-# a late ACK came in:
-git commit --allow-empty -m'squash! tile: support GENERIC_
+For 8136 series, make sure the ALDPS is disabled before loading the
+firmware. For 8168 series, the ALDPS would be disabled automatically
+when loading firmware. You must not disable it directly.
 
-Acked-by: A U Thor <author@example.com>'
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 56 +++++++++++++++++++++++++++++-------
+ 1 file changed, 46 insertions(+), 10 deletions(-)
 
-git rebase -i --keep-empty --autosquash $forkpoint
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e7ff886..2317b8c 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -687,6 +687,7 @@ enum features {
+ 	RTL_FEATURE_WOL		= (1 << 0),
+ 	RTL_FEATURE_MSI		= (1 << 1),
+ 	RTL_FEATURE_GMII	= (1 << 2),
++	RTL_FEATURE_FW_LOADED	= (1 << 3),
+ };
+ 
+ struct rtl8169_counters {
+@@ -2394,8 +2395,10 @@ static void rtl_apply_firmware(struct rtl8169_private *tp)
+ 	struct rtl_fw *rtl_fw = tp->rtl_fw;
+ 
+ 	/* TODO: release firmware once rtl_phy_write_fw signals failures. */
+-	if (!IS_ERR_OR_NULL(rtl_fw))
++	if (!IS_ERR_OR_NULL(rtl_fw)) {
+ 		rtl_phy_write_fw(tp, rtl_fw);
++		tp->features |= RTL_FEATURE_FW_LOADED;
++	}
+ }
+ 
+ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
+@@ -2406,6 +2409,31 @@ static void rtl_apply_firmware_cond(struct rtl8169_private *tp, u8 reg, u16 val)
+ 		rtl_apply_firmware(tp);
+ }
+ 
++static void r810x_aldps_disable(struct rtl8169_private *tp)
++{
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x0310);
++	msleep(100);
++}
++
++static void r810x_aldps_enable(struct rtl8169_private *tp)
++{
++	if (!(tp->features & RTL_FEATURE_FW_LOADED))
++		return;
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_writephy(tp, 0x18, 0x8310);
++}
++
++static void r8168_aldps_enable_1(struct rtl8169_private *tp)
++{
++	if (!(tp->features & RTL_FEATURE_FW_LOADED))
++		return;
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl_w1w0_phy(tp, 0x15, 0x1000, 0x0000);
++}
++
+ static void rtl8169s_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3178,6 +3206,8 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
+@@ -3250,6 +3280,8 @@ static void rtl8168f_1_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x05, 0x8b85);
+ 	rtl_w1w0_phy(tp, 0x06, 0x4000, 0x0000);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+@@ -3257,6 +3289,8 @@ static void rtl8168f_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl8168f_hw_phy_config(tp);
++
++	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+@@ -3354,6 +3388,8 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	r8168_aldps_enable_1(tp);
+ }
+ 
+ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+@@ -3439,21 +3475,19 @@ static void rtl8105e_hw_phy_config(struct rtl8169_private *tp)
+ 	};
+ 
+ 	/* Disable ALDPS before ram code */
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, 0x18, 0x0310);
+-	msleep(100);
++	r810x_aldps_disable(tp);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
++
++	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	/* Disable ALDPS before setting firmware */
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, 0x18, 0x0310);
+-	msleep(20);
++	r810x_aldps_disable(tp);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+@@ -3463,6 +3497,8 @@ static void rtl8402_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x10, 0x401f);
+ 	rtl_writephy(tp, 0x19, 0x7030);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++
++	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+@@ -3475,9 +3511,7 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+ 	};
+ 
+ 	/* Disable ALDPS before ram code */
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, 0x18, 0x0310);
+-	msleep(100);
++	r810x_aldps_disable(tp);
+ 
+ 	rtl_apply_firmware(tp);
+ 
+@@ -3485,6 +3519,8 @@ static void rtl8106e_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy_batch(tp, phy_reg_init, ARRAY_SIZE(phy_reg_init));
+ 
+ 	rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++
++	r810x_aldps_enable(tp);
+ }
+ 
+ static void rtl_hw_phy_config(struct net_device *dev)
+-- 
+1.7.11.4
 
-Requires git 1.7.11 for --keep-empty and requires to edit out the
-'squash!...' headers when the editor appears during the rebase.
-
--- Hannes
