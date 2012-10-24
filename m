@@ -1,118 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab2JXLud (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:50:33 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:47936 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab2JXLub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:50:31 -0400
-Message-ID: <5087D5F4.9060104@free-electrons.com>
-Date: Wed, 24 Oct 2012 13:50:12 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1754816Ab2JXLw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:52:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42471 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752631Ab2JXLw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 07:52:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
+   d="scan'208";a="209938410"
+Message-ID: <5087D678.1080905@intel.com>
+Date: Wed, 24 Oct 2012 19:52:24 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Lior Amsalem <alior@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, Rob Herring <rob.herring@calxeda.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] arm: mvebu: Add hardware I/O Coherency support
-References: <1351065841-18654-1-git-send-email-gregory.clement@free-electrons.com> <1351065841-18654-3-git-send-email-gregory.clement@free-electrons.com> <20121024082529.GZ11837@lunn.ch>
-In-Reply-To: <20121024082529.GZ11837@lunn.ch>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com> <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com> <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com> <5087CF96.7010406@intel.com> <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+In-Reply-To: <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 10:25 AM, Andrew Lunn wrote:
-> On Wed, Oct 24, 2012 at 10:04:01AM +0200, Gregory CLEMENT wrote:
->> Armada 370 and XP come with an unit called coherency fabric. This unit
->> allows to use the Armada XP as a nearly coherent architecture. The
->> coherency mechanism uses snoop filters to ensure the coherency between
->> caches, DRAM and devices. This mechanism needs a synchronization
->> barrier which guarantees that all memory write initiated by the
->> devices has reached their target and do not reside in intermediate
->> write buffers. That's why the architecture is not totally coherent and
->> we need to provide our own functions for some DMA operations.
+On 10/24/2012 07:47 PM, Stephane Eranian wrote:
+> On Wed, Oct 24, 2012 at 1:23 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> On 10/24/2012 04:57 PM, Stephane Eranian wrote:
+>>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>>
+>>>> Try enabling the LBR call stack feature if event request recording
+>>>> callchain. Try utilizing the LBR call stack to get user callchain
+>>>> in case of there is no frame pointer.
+>>>>
+>>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>>> ---
+>>>>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
+>>>>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>>>>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>>>>  include/linux/perf_event.h                 |   6 ++
+>>>>  kernel/events/core.c                       |  11 ++-
+>>>>  6 files changed, 124 insertions(+), 49 deletions(-)
+>>>>
+>>>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>>>> index 8ae8044..3bf2100 100644
+>>>> --- a/arch/x86/kernel/cpu/perf_event.c
+>>>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>>>> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
+>>>>
+>>>>                 if (event->attr.precise_ip > precise)
+>>>>                         return -EOPNOTSUPP;
+>>>> -               /*
+>>>> -                * check that PEBS LBR correction does not conflict with
+>>>> -                * whatever the user is asking with attr->branch_sample_type
+>>>> -                */
+>>>> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>> -                       u64 *br_type = &event->attr.branch_sample_type;
+>>>> -
+>>>> -                       if (has_branch_stack(event)) {
+>>>> -                               if (!precise_br_compat(event))
+>>>> -                                       return -EOPNOTSUPP;
+>>>> -
+>>>> -                               /* branch_sample_type is compatible */
+>>>> -
+>>>> -                       } else {
+>>>> -                               /*
+>>>> -                                * user did not specify  branch_sample_type
+>>>> -                                *
+>>>> -                                * For PEBS fixups, we capture all
+>>>> -                                * the branches at the priv level of the
+>>>> -                                * event.
+>>>> -                                */
+>>>> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>> -
+>>>> -                               if (!event->attr.exclude_user)
+>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>> -
+>>>> -                               if (!event->attr.exclude_kernel)
+>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>> -                       }
+>>>> +       }
+>>>> +       /*
+>>>> +        * check that PEBS LBR correction does not conflict with
+>>>> +        * whatever the user is asking with attr->branch_sample_type
+>>>> +        */
+>>>> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>> +               u64 *br_type = &event->attr.branch_sample_type;
+>>>> +
+>>>> +               if (has_branch_stack(event)) {
+>>>> +                       if (!precise_br_compat(event))
+>>>> +                               return -EOPNOTSUPP;
+>>>> +
+>>>> +                       /* branch_sample_type is compatible */
+>>>> +
+>>>> +               } else {
+>>>> +                       /*
+>>>> +                        * user did not specify  branch_sample_type
+>>>> +                        *
+>>>> +                        * For PEBS fixups, we capture all
+>>>> +                        * the branches at the priv level of the
+>>>> +                        * event.
+>>>> +                        */
+>>>> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>> +
+>>>> +                       if (!event->attr.exclude_user)
+>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>> +
+>>>> +                       if (!event->attr.exclude_kernel)
+>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>> +               }
+>>>> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>>>> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
+>>>> +                       /*
+>>>> +                        * user did not specify branch_sample_type,
+>>>> +                        * try using the LBR call stack facility to
+>>>> +                        * record call chains in the user space.
+>>>> +                        */
+>>>> +                       event->attr.branch_sample_type =
+>>>> +                               PERF_SAMPLE_BRANCH_USER |
+>>>> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
+>>>
+>>> You are forcing user level here, but how do you know the user wanted
+>>> ONLY user level
+>>> callchains?
+>>>
+>>>
 >>
->> Beside the use of the coherency fabric, the device units will have to
->> set the attribute flag to select the accurate coherency process for
->> the memory transaction. This is done each device driver programs the
->> DRAM address windows. The value of the attribute set by the driver is
->> retrieved through the orion_addr_map_cfg struct filled during the
->> early initialization of the platform.
+>> The LBR call stack is used only when the frame pointer approach doesn't work.
+> 
+> And where is that determination made?
+
+check code that is added to perf_callchain_user and perf_callchain_user32 
+
+> 
+>> I think the kernel has frame pointer for the most cases. The second reason is
+>> that the LBR call stack only has 16 entries. I think it's too small to record
+>> both kernel and user call chains.
 >>
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->> Reviewed-by: Yehuda Yitschak <yehuday@marvell.com>
->> ---
->>  arch/arm/boot/dts/armada-370-xp.dtsi |    3 +-
->>  arch/arm/mach-mvebu/addr-map.c       |    3 ++
->>  arch/arm/mach-mvebu/armada-370-xp.c  |    1 +
->>  arch/arm/mach-mvebu/coherency.c      |   87 ++++++++++++++++++++++++++++++++++
->>  arch/arm/mach-mvebu/common.h         |    2 +
->>  5 files changed, 95 insertions(+), 1 deletion(-)
+> It's even too small for many object oriented user programs as well.
+> 
+>> Regards
+>> Yan, Zheng
 >>
->> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
->> index 18ba60b..af22e53 100644
->> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
->> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
->> @@ -38,7 +38,8 @@
->>  
->>  	coherency-fabric@d0020200 {
->>  		compatible = "marvell,coherency-fabric";
->> -		reg = <0xd0020200 0xb0>;
->> +		reg = <0xd0020200 0xb0>,
->> +		      <0xd0021010 0x1c>;
->>  	};
-> 
-> ...
-> 
->>  int __init armada_370_xp_coherency_init(void)
->>  {
->>  	struct device_node *np;
->> @@ -82,7 +159,17 @@ int __init armada_370_xp_coherency_init(void)
->>  	if (np) {
->>  		pr_info("Initializing Coherency fabric\n");
->>  		coherency_base = of_iomap(np, 0);
->> +		coherency_cpu_base = of_iomap(np, 1);
-> 
-> Is this already in the binding documentation?
 
-No indeed, the documentation should be completed. I will do it
-the V2
-
-> 
->    Thanks
-> 	Andrew
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
