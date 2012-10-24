@@ -1,204 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935293Ab2JXRVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:21:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36980 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934679Ab2JXRVb (ORCPT
+	id S1030211Ab2JXRWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:22:11 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:31179 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758654Ab2JXRWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:21:31 -0400
-Date: Wed, 24 Oct 2012 10:20:50 -0700
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Build install-man target when installing
-Message-ID: <20121024172050.GB13993@ghostprotocols.net>
-References: <20120925174658.GD9320@aftab.osrc.amd.com>
- <1348854427-12746-1-git-send-email-bp@amd64.org>
- <20121020111625.GB17563@liondog.tnic>
- <87mwzfj7dn.fsf@sejong.aot.lge.com>
- <20121022100719.GA8352@liondog.tnic>
- <20121022140339.GA8775@ghostprotocols.net>
- <20121022231301.GA13994@liondog.tnic>
- <20121023133951.GA11351@ghostprotocols.net>
- <20121024170316.GA13993@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024170316.GA13993@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 24 Oct 2012 13:22:08 -0400
+Message-ID: <1351098875.19172.21.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support
+ container hot-remove.
+From: Toshi Kani <toshi.kani@hp.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 24 Oct 2012 11:14:35 -0600
+In-Reply-To: <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com>
+References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Oct 24, 2012 at 10:03:16AM -0700, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Oct 23, 2012 at 06:39:51AM -0700, Arnaldo Carvalho de Melo escreveu:
-> > > Ok, how's that: we check the presence of executables on the system and
-> > > error out if not in the path. I found some helpful make functions in
-> > > config/utilities.mak and decided to reuse them because I'm lazy :)
+On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
+> This patch introduces a new function container_device_remove() to do
+> the container hot-remove job. It works like the following:
 > 
-> > Better now:
+> 1. call acpi_bus_trim(device, 0) to stop the container device.
+> 2. generate the KOBJ_OFFLINE uevent. (Did I do this correct ?)
+> 3. call acpi_bus_hot_remove_device(), which will call acpi_bus_trim(device, 1)
+>    to remove the container.
 > 
-> > Makefile:177: *** asciidoc not found, please install it on your distro.
-> > Stop.
-> > make[1]: Leaving directory `/home/git/linux/tools/perf/Documentation'
-> > make: *** [install-man] Error 2
-> > make: Leaving directory `/home/git/linux/tools/perf'
-> > [acme@sandy linux]$ 
+> This patch is based on Lu Yinghai's work.
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
 > 
-> > But it shouldn't stop the build, just warn the user that Documentation
-> > is not going to be installed. It should error like that if 'make
-> > install-man' is called.
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  drivers/acpi/container.c |   58 ++++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 49 insertions(+), 9 deletions(-)
 > 
-> > Trying to do that now.
+> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+> index d300e03..9676578 100644
+> --- a/drivers/acpi/container.c
+> +++ b/drivers/acpi/container.c
+> @@ -166,6 +166,35 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
+>  	return result;
+>  }
+>  
+> +static int container_device_remove(struct acpi_device *device)
+> +{
+> +	int ret;
+> +	struct acpi_eject_event *ej_event;
+> +
+> +	/* stop container device at first */
+> +	ret = acpi_bus_trim(device, 0);
 
-Namhyung, can I have your acked-by for this? I.e. changing the message
-to 'man perf-list' and just warning the user that documentation won't be
-installed if xmlto & asciidoc are not found?
+Hi Tang,
 
-I'm fine with it this way.
+Why do you need to call acpi_bus_trim(device,0) to stop the container
+device first?
 
-- Arnaldo
- 
-> [acme@sandy linux]$ make -j8 -C tools/perf/ O=/home/acme/git/build/perf try-install-man
-> make: Entering directory `/home/git/linux/tools/perf'
-> make -C Documentation try-install-man
-> make[1]: Entering directory `/home/git/linux/tools/perf/Documentation'
-> make[2]: Entering directory `/home/git/linux/tools/perf'
-> make[2]: `/home/acme/git/build/perf/PERF-VERSION-FILE' is up to date.
-> make[2]: Leaving directory `/home/git/linux/tools/perf'
-> Makefile:202: Please install the asciidoc package to have the man pages installed
-> Makefile:202: Please install the xmlto package to have the man pages installed
-> make[1]: `try-install-man' is up to date.
-> make[1]: Leaving directory `/home/git/linux/tools/perf/Documentation'
-> make: Leaving directory `/home/git/linux/tools/perf'
-> [acme@sandy linux]$
-> 
-> The 'install-man' target will use your check-executable-or-error-out
-> stuff, but the main 'install' target will call just 'try-install-man',
-> that will not stop the build if there are missing tools to generate the
-> man pages.
-> 
-> Installing just xmlto makes it ask just for asciidoc, install both and it
-> generates the man pages, please try to check if it works for you so that I can
-> have your Tested-by.
-> 
-> - Arnaldo
+> +	printk(KERN_WARNING "acpi_bus_trim stop return %x\n", ret);
 
-> diff --git a/tools/perf/Documentation/Makefile b/tools/perf/Documentation/Makefile
-> index 9f2e44f..8cb65ea 100644
-> --- a/tools/perf/Documentation/Makefile
-> +++ b/tools/perf/Documentation/Makefile
-> @@ -1,3 +1,5 @@
-> +include ../config/utilities.mak
+Do you need this message in the normal case?  If so, I'd suggest to use
+pr_debug().
+
+> +	if (ret)
+> +		return ret;
 > +
->  OUTPUT := ./
->  ifeq ("$(origin O)", "command line")
->    ifneq ($(O),)
-> @@ -64,6 +66,7 @@ MAKEINFO=makeinfo
->  INSTALL_INFO=install-info
->  DOCBOOK2X_TEXI=docbook2x-texi
->  DBLATEX=dblatex
-> +XMLTO=xmlto
->  ifndef PERL_PATH
->  	PERL_PATH = /usr/bin/perl
->  endif
-> @@ -71,6 +74,15 @@ endif
->  -include ../config.mak.autogen
->  -include ../config.mak
->  
-> +have_asciidoc := $(call get-executable,$(ASCIIDOC))
-> +have_xmlto := $(call get-executable,$(XMLTO))
-> +ifeq ($(have_asciidoc),)
-> +	missing_tools = true
-> +endif
-> +ifeq ($(have_xmlto),)
-> +	missing_tools = true
-> +endif
+> +	/* event originated from ACPI eject notification */
+> +	device->flags.eject_pending = 1;
+
+You do not need to set the eject_pending flag when the handler calls
+acpi_bus_hot_remove_device().  It was set before because the handler did
+not initiate the hot-remove operation.
+
 > +
->  #
->  # For asciidoc ...
->  #	-7.1.2,	no extra settings are needed.
-> @@ -170,7 +182,11 @@ pdf: $(OUTPUT)user-manual.pdf
->  
->  install: install-man
->  
-> -install-man: man
-> +check-man-tools:
-> +	$(call check-executable-or-error-out,$(ASCIIDOC))
-> +	$(call check-executable-or-error-out,$(XMLTO))
+> +	/* send the uevent before remove the device */
+> +	kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
 > +
-> +do-install-man: man
->  	$(INSTALL) -d -m 755 $(DESTDIR)$(man1dir)
->  #	$(INSTALL) -d -m 755 $(DESTDIR)$(man5dir)
->  #	$(INSTALL) -d -m 755 $(DESTDIR)$(man7dir)
-> @@ -178,6 +194,20 @@ install-man: man
->  #	$(INSTALL) -m 644 $(DOC_MAN5) $(DESTDIR)$(man5dir)
->  #	$(INSTALL) -m 644 $(DOC_MAN7) $(DESTDIR)$(man7dir)
->  
-> +install-man: check-man-tools man
+> +	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
+> +	if (!ej_event)
+> +		return -ENOMEM;
 > +
-> +try-install-man:
-> +ifdef missing_tools
-> +ifeq ($(have_asciidoc),)
-> +	$(warning Please install the asciidoc package to have the man pages installed)
-> +endif
-> +ifeq ($(have_xmlto),)
-> +	$(warning Please install the xmlto package to have the man pages installed)
-> +endif
-> +else
-> +	$(MAKE) do-install-man
-> +endif
+> +	ej_event->device = device;
+> +	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
 > +
->  install-info: info
->  	$(INSTALL) -d -m 755 $(DESTDIR)$(infodir)
->  	$(INSTALL) -m 644 $(OUTPUT)perf.info $(OUTPUT)perfman.info $(DESTDIR)$(infodir)
-> @@ -246,7 +276,7 @@ $(MAN_HTML): $(OUTPUT)%.html : %.txt
->  
->  $(OUTPUT)%.1 $(OUTPUT)%.5 $(OUTPUT)%.7 : $(OUTPUT)%.xml
->  	$(QUIET_XMLTO)$(RM) $@ && \
-> -	xmlto -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
-> +	$(XMLTO) -o $(OUTPUT) -m $(MANPAGE_XSL) $(XMLTO_EXTRA) man $<
->  
->  $(OUTPUT)%.xml : %.txt
->  	$(QUIET_ASCIIDOC)$(RM) $@+ $@ && \
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 404fdb4..b14eeb8 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -1041,7 +1041,7 @@ perfexec_instdir = $(prefix)/$(perfexecdir)
->  endif
->  perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
->  
-> -install: all install-man
-> +install: all try-install-man
->  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'
->  	$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'
->  	$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'
-> @@ -1067,6 +1067,9 @@ install-doc:
->  install-man:
->  	$(MAKE) -C Documentation install-man
->  
-> +try-install-man:
-> +	$(MAKE) -C Documentation try-install-man
+> +	acpi_bus_hot_remove_device(ej_event);
 > +
->  install-html:
->  	$(MAKE) -C Documentation install-html
->  
-> diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
-> index ea853c2..42e264a 100644
-> --- a/tools/perf/config/utilities.mak
-> +++ b/tools/perf/config/utilities.mak
-> @@ -168,6 +168,8 @@ _is-executable-sh = $(call shell-sq,test -f $(1) -a -x $(1) && echo y)
->  get-executable = $(if $(1),$(if $(is-absolute),$(_ge-abspath),$(lookup)))
->  _ge-abspath = $(if $(is-executable),$(1))
->  
-> +check-executable-or-error-out = $(if $(call get-executable,$(1)),,$(error $(1) not found, please install it on your distro))
+> +	return 0;
+> +}
 > +
->  # get-supplied-or-default-executable
->  #
->  # Usage: absolute-executable-path-or-empty = $(call get-executable-or-default,variable,default)
+>  static void __container_notify_cb(struct work_struct *work)
+>  {
+>  	struct acpi_device *device = NULL;
+> @@ -181,6 +210,9 @@ static void __container_notify_cb(struct work_struct *work)
+>  	handle = hp_work->handle;
+>  	type = hp_work->type;
+>  
+> +	present = is_device_present(handle);
+> +	status = acpi_bus_get_device(handle, &device);
+> +
+>  	switch (type) {
+>  	case ACPI_NOTIFY_BUS_CHECK:
+>  		/* Fall through */
+> @@ -189,13 +221,14 @@ static void __container_notify_cb(struct work_struct *work)
+>  		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+>  		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
+>  
+> -		present = is_device_present(handle);
+> -		status = acpi_bus_get_device(handle, &device);
+>  		if (!present) {
+>  			if (ACPI_SUCCESS(status)) {
+>  				/* device exist and this is a remove request */
+> -				device->flags.eject_pending = 1;
+> -				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> +				result = container_device_remove(device);
+> +				if (result) {
+> +					printk(KERN_WARNING "Failed to remove container\n");
+> +					break;
+> +				}
+>  				return;
+>  			}
+>  			break;
+> @@ -215,12 +248,19 @@ static void __container_notify_cb(struct work_struct *work)
+>  		break;
+>  
+>  	case ACPI_NOTIFY_EJECT_REQUEST:
+> -		if (!acpi_bus_get_device(handle, &device) && device) {
+> -			device->flags.eject_pending = 1;
+> -			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> -			return;
+> +		printk(KERN_WARNING "Container driver received %s event\n",
+> +			"ACPI_NOTIFY_EJECT_REQUEST");
+
+Same as other comment.  Suggest to use pr_debug().
+
+> +
+> +		if (!present || ACPI_FAILURE(status) || !device)
+> +			break;
+> +
+> +		result = container_device_remove(device);
+> +		if (result) {
+> +			printk(KERN_WARNING "Failed to remove container\n");
+
+Please use pr_warn().
+
+Thanks,
+-Toshi
+
+> +			break;
+>  		}
+> -		break;
+> +
+> +		return;
+>  
+>  	default:
+>  		/* non-hotplug event; possibly handled by other handler */
+
 
