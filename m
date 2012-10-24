@@ -1,82 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964991Ab2JXKJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:09:51 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49852 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932684Ab2JXKJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:09:49 -0400
-Message-ID: <5087BE61.6060704@ti.com>
-Date: Wed, 24 Oct 2012 12:09:37 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S934601Ab2JXKLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:11:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55294 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932684Ab2JXKK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 06:10:58 -0400
+Date: Wed, 24 Oct 2012 03:09:33 -0700
+From: tip-bot for Jiri Olsa <jolsa@redhat.com>
+Message-ID: <tip-3f3a20648797c3ff49c6ebfe10747ef0acd37c50@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, acme@ghostprotocols.net,
+        jolsa@redhat.com, fweisbec@gmail.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, jolsa@redhat.com, fweisbec@gmail.com,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1349873598-12583-9-git-send-email-jolsa@redhat.com>
+References: <1349873598-12583-9-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf test:
+  Add automated tests for pmu sysfs translated events
+Git-Commit-ID: 3f3a20648797c3ff49c6ebfe10747ef0acd37c50
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Sebastien Guiriec <s-guiriec@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and
- interrupts
-References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com> <5087B196.7090804@ti.com> <5087B47B.8080009@ti.com>
-In-Reply-To: <5087B47B.8080009@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 03:09:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 11:27 AM, Sebastien Guiriec wrote:
-> Hi Benoit,
-> 
-> On 10/24/2012 11:15 AM, Benoit Cousson wrote:
->> Hi Seb,
->>
->> Sorry, I missed your previous email, your v2 was the right one.
->> We do have a single INTC in every OMAP, there is no point to repeat the
->> same data hundred times.
->> The DTS are already big enough.
-> 
-> So in such case we should send a series for audio IP interrupt-parent
-> removal for OMAP3/4/5 dtsi file in order to be coherent.
+Commit-ID:  3f3a20648797c3ff49c6ebfe10747ef0acd37c50
+Gitweb:     http://git.kernel.org/tip/3f3a20648797c3ff49c6ebfe10747ef0acd37c50
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Wed, 10 Oct 2012 14:53:18 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 24 Oct 2012 10:41:27 +0200
 
-Yes. AM33xx was as well using that in some other IPs.
+perf test: Add automated tests for pmu sysfs translated events
 
-> Do you want me to do it?
+Add automated tests for all events found under PMU/events
+directory. Tested events are in the 'cpu/event=xxx/u' format,
+where 'xxx' is substituted by every event found.
 
-Thanks, but I've just done the patch, I'll sent it in a couple of minutes.
+The 'event=xxx' term is translated to the cpu specific term.
+We only check that the event is created (not the real config
+numbers) and that the modifier is properly set.
 
-Benoit
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1349873598-12583-9-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ tools/perf/util/parse-events-test.c |   68 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
 
-> 
->>
->> On 10/24/2012 09:07 AM, Sebastien Guiriec wrote:
->>> Since kernel 3.7 the DTS data are not overwriten by hwmod data we can
->>> add the address space
->>> and interrupt line description inside dtsi file for OMAP5. This serie
->>> is updating the
->>> current OMAP5 IP with missing entry.
->>>
->>> It has been tested on OMAP5 with 3.7-audio-display feature tree.
->>> - MMC is probing and functional
->>> - TWL6041 probing (GPIO/I2C)
->>> - booting (UART)
->>>
->>> Update since v1:
->>> - Add Ack and review
->>> - Fix up commit messages.
->>>
->>> Update since v2:
->>> - Add interrupt-parent.
->>
->> I will take the previous one to avoid the duplication of attributes.
->>
->> On top of that I will remove the ones introduce in audio IPs for
->> consistency on OMAP3/4/5 platforms.
->>
->> Regards,
->> Benoit
->>
-> 
-
+diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
+index 516ecd9..b49c2ee 100644
+--- a/tools/perf/util/parse-events-test.c
++++ b/tools/perf/util/parse-events-test.c
+@@ -443,6 +443,23 @@ static int test__checkevent_pmu_name(struct perf_evlist *evlist)
+ 	return 0;
+ }
+ 
++static int test__checkevent_pmu_events(struct perf_evlist *evlist)
++{
++	struct perf_evsel *evsel;
++
++	evsel = list_entry(evlist->entries.next, struct perf_evsel, node);
++	TEST_ASSERT_VAL("wrong number of entries", 1 == evlist->nr_entries);
++	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
++	TEST_ASSERT_VAL("wrong exclude_user",
++			!evsel->attr.exclude_user);
++	TEST_ASSERT_VAL("wrong exclude_kernel",
++			evsel->attr.exclude_kernel);
++	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
++	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
++
++	return 0;
++}
++
+ static int test__checkterms_simple(struct list_head *terms)
+ {
+ 	struct parse_events__term *term;
+@@ -1024,6 +1041,51 @@ static int test_pmu(void)
+ 	return !ret;
+ }
+ 
++static int test_pmu_events(void)
++{
++	struct stat st;
++	char path[PATH_MAX];
++	struct dirent *ent;
++	DIR *dir;
++	int ret;
++
++	snprintf(path, PATH_MAX, "%s/bus/event_source/devices/cpu/events/",
++		 sysfs_find_mountpoint());
++
++	ret = stat(path, &st);
++	if (ret) {
++		pr_debug("ommiting PMU cpu events tests\n");
++		return 0;
++	}
++
++	dir = opendir(path);
++	if (!dir) {
++		pr_debug("can't open pmu event dir");
++		return -1;
++	}
++
++	while (!ret && (ent = readdir(dir))) {
++#define MAX_NAME 100
++		struct test__event_st e;
++		char name[MAX_NAME];
++
++		if (!strcmp(ent->d_name, ".") ||
++		    !strcmp(ent->d_name, ".."))
++			continue;
++
++		snprintf(name, MAX_NAME, "cpu/event=%s/u", ent->d_name);
++
++		e.name  = name;
++		e.check = test__checkevent_pmu_events;
++
++		ret = test_event(&e);
++#undef MAX_NAME
++	}
++
++	closedir(dir);
++	return ret;
++}
++
+ int parse_events__test(void)
+ {
+ 	int ret1, ret2 = 0;
+@@ -1040,6 +1102,12 @@ do {							\
+ 	if (test_pmu())
+ 		TEST_EVENTS(test__events_pmu);
+ 
++	if (test_pmu()) {
++		int ret = test_pmu_events();
++		if (ret)
++			return ret;
++	}
++
+ 	ret1 = test_terms(test__terms, ARRAY_SIZE(test__terms));
+ 	if (!ret2)
+ 		ret2 = ret1;
