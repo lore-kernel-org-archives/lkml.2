@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422671Ab2JXWFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 18:05:23 -0400
-Received: from mout.web.de ([212.227.15.4]:53363 "EHLO mout.web.de"
+	id S1422700Ab2JXWHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 18:07:07 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35707 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758782Ab2JXWFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 18:05:20 -0400
-Message-ID: <5088661D.20608@web.de>
-Date: Thu, 25 Oct 2012 00:05:17 +0200
-From: Jannis Achstetter <jannis_achstetter@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
+	id S1758777Ab2JXWHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 18:07:03 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] [resend] ACPI: Fix memory leak in acpi_bind_one() (fwd)
+Date: Thu, 25 Oct 2012 00:10:59 +0200
+Message-ID: <112621184.6eyltZaVYS@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1210152049550.1038@swampdragon.chaosbits.net>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <20121023221913.GC28626@thunk.org> <k69ejs$vt2$1@ger.gmane.org> <20121024213129.GB5484@thunk.org>
-In-Reply-To: <20121024213129.GB5484@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:aDx5cmrwTI29GFfP627PxngSwWdoUcA6StpWmNo8Zeq
- pFAN3OkAER0m7vi525fFGFVfYawm+xWVWDfZfKhIbAXpTl6YF8
- wtsGOXsSP1ihBiP/SVglQmG+hjt8/JREewZDyL+FOjCdQJrBsN
- EqS/lcEN9AmO5K48XJHBrudXpY6RwHQOuaTnhDWVHyyEkVirwf
- 4PPFnu4TN0TW1x2PKwQGsueS6KSE60T0q7f5xyuA/U=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.10.2012 23:31, schrieb Theodore Ts'o:
-> On Wed, Oct 24, 2012 at 09:13:01PM +0200, Jannis Achstetter wrote:
->>
->> As a "normal linux user" I'm interested in the practical things to do
->> now to avoid data loss. I'm running several systems with 3.6.2 and ext4.
->> Fearing loss of data:
->> - Is there a way to see whether the journal of a specific partition has
->> been wrapped (since mounting) so that umounting and mounting (or doing a
->> reboot to downgrade the kernel) is safe?
-> [...]
-> (Keep in mind this is why commercial software corporations like
-> [...]
-> can all work towards finding the best answer.)
+On Monday 15 of October 2012 20:51:11 Jesper Juhl wrote:
+> Ok, so I had a little problem with my mail servers clock that caused the 
+> mail below to be timestamped a few years in the past, so I assume noone 
+> saw it - thus, resending.
 
-I really appreciate this and I like it since although the root-cause
-hasn't been found for sure yet, it is a transparent process.
-And it's great good thing that we can directly talk to the involved devs
-w/o going through 200 layers of marketing and spokesmen (as it were with
-the two companies you mentioned).
+Applied to linux-pm.git/linux-next as v3.7 material, will be included in the
+next linux-pm push.
 
-> It's a little bit too early for this meme:
->     http://memegenerator.net/instance/28936247
+Thanks,
+Rafael
 
-That's a good one :)
 
-> But do please note that that Fedora !7 users have been using 3.6.2 for
-> [...]
-> with trailing edge kernel sources.  :-)
-
-Yes, the downside of running Gentoo unstable. But even the "stable" tree
-used 3.5.7 and this is the one my NAS uses where I do store my backups.
-Nevertheless, your reply eased my mind to a great extend and I'm
-thankful for it.
-Time for bed now :)
-
-	Jannis
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
