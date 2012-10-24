@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161169Ab2JXUSI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:18:08 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41937 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933789Ab2JXUSE (ORCPT
+	id S935515Ab2JXUT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:19:27 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:42657 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933678Ab2JXUTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:18:04 -0400
-Date: Wed, 24 Oct 2012 13:15:39 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
+	Wed, 24 Oct 2012 16:19:25 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArQYAEFMiFB5LCG2/2dsb2JhbABEvAuEZwKBCIEJgh4BAQQBOhwjBQsIAxguFCUDIRMbh2MFvHcUi00ggWeEZgOVcolChniDA4FIHw
+Date: Thu, 25 Oct 2012 07:19:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: YingHang Zhu <casualfisher@gmail.com>
+Cc: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: lots of suspicious RCU traces
-Message-ID: <20121024201539.GD2340@swordfish>
-References: <20121017034918.GA13295@redhat.com>
- <20121024164235.GA2467@swordfish>
- <20121024180608.GA22840@redhat.com>
- <20121024182111.GA2340@swordfish>
- <20121024185230.GB5025@redhat.com>
- <20121024191716.GB2340@swordfish>
- <20121024194101.GG2465@linux.vnet.ibm.com>
- <20121024195033.GC2340@swordfish>
- <20121024201117.GJ2465@linux.vnet.ibm.com>
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+Message-ID: <20121024201921.GX4291@dastard>
+References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
+ <20121023224706.GR4291@dastard>
+ <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024201117.GJ2465@linux.vnet.ibm.com>
+In-Reply-To: <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/24/12 13:11), Paul E. McKenney wrote:
-> > > > 
-> > > > sorry, I meant idle from RCU point of view:
-> > > > 
-> > > > int rcu_is_cpu_idle(void)
-> > > > {
-> > > >          return !rcu_dynticks_nesting;
-> > > > }
-> > > 
-> > > Hmmm...  This reproduces on UP builds, then?
-> > 
-> > I'll compile UP build (will offlining of N-1 CPUs do the trick?).
-> 
-> Oh -- you quoted the Tiny RCU (CONFIG_SMP=n) variant of rcu_is_cpu_idle(),
+On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
+> Hi Dave,
+> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
+> >> Hi,
+> >>   Recently we ran into the bug that an opened file's ra_pages does not
+> >> synchronize with it's backing device's when the latter is changed
+> >> with blockdev --setra, the application needs to reopen the file
+> >> to know the change,
+> >
+> > or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
+> > window to the (new) bdi default.
+> >
+> >> which is inappropriate under our circumstances.
+> >
+> > Which are? We don't know your circumstances, so you need to tell us
+> > why you need this and why existing methods of handling such changes
+> > are insufficient...
+> >
+> > Optimal readahead windows tend to be a physical property of the
+> > storage and that does not tend to change dynamically. Hence block
+> > device readahead should only need to be set up once, and generally
+> > that can be done before the filesystem is mounted and files are
+> > opened (e.g. via udev rules). Hence you need to explain why you need
+> > to change the default block device readahead on the fly, and why
+> > fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
+> > windows to the new defaults.
+> Our system is a fuse-based file system, fuse creates a
+> pseudo backing device for the user space file systems, the default readahead
+> size is 128KB and it can't fully utilize the backing storage's read ability,
+> so we should tune it.
 
-sorry, that was just an 'illustration'.
+Sure, but that doesn't tell me anything about why you can't do this
+at mount time before the application opens any files. i.e.  you've
+simply stated the reason why readahead is tunable, not why you need
+to be fully dynamic.....
 
-	-ss
+> The above third-party application using our file system maintains
+> some long-opened files, we does not have any chances
+> to force them to call fadvise(POSIX_FADV_NORMAL). :(
 
-> so I just thought that you were reproducing on CONFIG_SMP=n.  You would
-> have to actually rebuild the kernel to get the different version.
-> 
-> But never mind!  RCU_USER_QS depends on CONFIG_SMP=y, so my question
-> was irrelevant.
-> 
-> 							Thanx, Paul
-> 
+So raise a bug/feature request with the third party.  Modifying
+kernel code because you can't directly modify the application isn't
+the best solution for anyone. This really is an application problem
+- the kernel already provides the mechanisms to solve this
+problem...  :/
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
