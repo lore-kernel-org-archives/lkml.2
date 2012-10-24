@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422829Ab2JXWen (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 18:34:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38202 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422652Ab2JXWel (ORCPT
+	id S1161498Ab2JXWfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 18:35:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35628 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161270Ab2JXWft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 18:34:41 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: Re: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-Date: Thu, 25 Oct 2012 00:35:30 +0200
-Message-ID: <2776796.95QghSKdPW@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	Wed, 24 Oct 2012 18:35:49 -0400
+Message-ID: <50886D3F.9050403@jp.fujitsu.com>
+Date: Wed, 24 Oct 2012 18:35:43 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: akpm@linux-foundation.org
+CC: bp@alien8.de, dave@linux.vnet.ibm.com, mhocko@suse.cz, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+References: <20121012125708.GJ10110@dhcp22.suse.cz> <20121023164546.747e90f6.akpm@linux-foundation.org> <20121024062938.GA6119@dhcp22.suse.cz> <20121024125439.c17a510e.akpm@linux-foundation.org> <50884F63.8030606@linux.vnet.ibm.com> <20121024134836.a28d223a.akpm@linux-foundation.org> <20121024210600.GA17037@liondog.tnic> <20121024141303.0797d6a1.akpm@linux-foundation.org>
+In-Reply-To: <20121024141303.0797d6a1.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+>> I have drop_caches in my suspend-to-disk script so that the hibernation
+>> image is kept at minimum and suspend times are as small as possible.
+> 
+> hm, that sounds smart.
+> 
+>> Would that be a valid use-case?
+> 
+> I'd say so, unless we change the kernel to do that internally.  We do
+> have the hibernation-specific shrink_all_memory() in the vmscan code. 
+> We didn't see fit to document _why_ that exists, but IIRC it's there to
+> create enough free memory for hibernation to be able to successfully
+> complete, but no more.
 
-Thanks for the patch.
+shrink_all_memory() drop minimum memory to be needed from hibernation.
+that's trade off matter.
 
-On Tuesday 23 October 2012 16:57:04 Ezequiel Garcia wrote:
-> This kind of memcpy() is error-prone. Its replacement with a struct
-> assignment is prefered because it's type-safe and much easier to read.
-> 
-> Found by coccinelle. Hand patched and reviewed.
-> Tested by compilation only.
+- drop all page cache
+  pros.
+   speed up hibernation time
+  cons.
+   after go back from hibernation, system works very slow a while until
+   system will get enough file cache.
 
-This looks good, but there's one more memcpy that can be replaced by a direct 
-structure assignment in uvc_ctrl_add_info() 
-(drivers/media/usb/uvc/uvc_ctrl.c). You might want to check why it hasn't been 
-caught by the semantic patch.
+- drop minimum page cache
+  pros.
+   system works quickly when go back from hibernation.
+  cons.
+   relative large hibernation time
 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> identifier struct_name;
-> struct struct_name to;
-> struct struct_name from;
-> expression E;
-> @@
-> -memcpy(&(to), &(from), E);
-> +to = from;
-> // </smpl>
-> 
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
->  drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/media/usb/uvc/uvc_v4l2.c
-> b/drivers/media/usb/uvc/uvc_v4l2.c index f00db30..4fc8737 100644
-> --- a/drivers/media/usb/uvc/uvc_v4l2.c
-> +++ b/drivers/media/usb/uvc/uvc_v4l2.c
-> @@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming
-> *stream, goto done;
->  	}
-> 
-> -	memcpy(&stream->ctrl, &probe, sizeof probe);
-> +	stream->ctrl = probe;
->  	stream->cur_format = format;
->  	stream->cur_frame = frame;
-> 
-> @@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming
-> *stream, return -EBUSY;
->  	}
-> 
-> -	memcpy(&probe, &stream->ctrl, sizeof probe);
-> +	probe = stream->ctrl;
->  	probe.dwFrameInterval =
->  		uvc_try_frame_interval(stream->cur_frame, interval);
-> 
-> @@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming
-> *stream, return ret;
->  	}
-> 
-> -	memcpy(&stream->ctrl, &probe, sizeof probe);
-> +	stream->ctrl = probe;
->  	mutex_unlock(&stream->mutex);
-> 
->  	/* Return the actual frame period. */
 
--- 
-Regards,
+So, I'm not fun change hibernation default. hmmm... Does adding tracepint instead of printk
+makes sense?
 
-Laurent Pinchart
 
