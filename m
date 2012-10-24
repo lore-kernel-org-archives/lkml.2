@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab2JXGHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:07:22 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40902 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757836Ab2JXGHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:07:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
-References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
-	<98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
-	<CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
-Date: Wed, 24 Oct 2012 11:37:13 +0530
-Message-ID: <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757882Ab2JXGHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:07:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53191 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757608Ab2JXGHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:07:09 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
+   d="scan'208";a="6057054"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/2] ACPI: container hot remove support.
+Date: Wed, 24 Oct 2012 14:05:48 +0800
+Message-Id: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:06:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 14:06:31,
+	Serialize complete at 2012/10/24 14:06:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> Initially ondemand governor was written and then using its code conservative
->> governor is written. It used a lot of code from ondemand governor, but copy of
->> code was created instead of using the same routines from both governors. Which
->> increased code redundancy, which is difficult to manage.
->>
->> This patch is an attempt to move common part of both the governors to
->> cpufreq_governor.c file to come over above mentioned issues.
->>
->> This shouldn't change anything from functionality point of view.
->>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Hi,
 
-For everybody else, this patch is already pushed by Rafael in his linux-next
-branch.
+The container hotplug handler container_notify_cb() didn't implement
+the hot-remove functionality. So, these 2 patches implement it like
+the following way:
 
---
-viresh
+patch 1. Do not use kacpid_wq/kacpid_notify_wq to handle container hotplug event,
+         use kacpi_hotplug_wq instead to avoid deadlock.
+         Doing this is to reuse acpi_bus_hot_remove_device() in container
+         hot-remove handling.
+
+patch 2. Introduce a new function container_device_remove() to handle
+         ACPI_NOTIFY_EJECT_REQUEST event for container.
+
+
+change log v1 -> v2:
+
+1. In patch1: Based on the lastest for-pci-split-pci-root-hp-2 branch from Lu Yinghai, 
+   use alloc_acpi_hp_work() to add container hotplug work into kacpi_hotplug_wq.
+
+2. In patch2: Allocate ej_event after container is stopped, so that we don't need to
+   kfree the ej_event if stopping container failed.
+
+
+This is based on Lu Yinghai's job.
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
+
+Tang Chen (2):
+  Use kacpi_hotplug_wq to handle container hotplug event.
+  Improve container_notify_cb() to support container hot-remove.
+
+ drivers/acpi/container.c |   75 +++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 65 insertions(+), 10 deletions(-)
+
