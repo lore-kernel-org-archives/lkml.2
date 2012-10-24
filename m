@@ -1,52 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614Ab2JXMb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:31:27 -0400
-Received: from mga03.intel.com ([143.182.124.21]:13788 "EHLO mga03.intel.com"
+	id S1758625Ab2JXMbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:31:37 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:36317 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758385Ab2JXMbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:31:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="159797026"
-Date: Wed, 24 Oct 2012 05:31:24 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user
- callchain
-Message-ID: <20121024123124.GU2095@tassilo.jf.intel.com>
-References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
- <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
- <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
- <5087CF96.7010406@intel.com>
- <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
- <5087D678.1080905@intel.com>
- <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
- <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758017Ab2JXMbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 08:31:34 -0400
+Date: Wed, 24 Oct 2012 14:31:18 +0200
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: sameo@linux.intel.com, rubini@gnudd.com, giancarlo.asnaghi@st.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/10] drivers/mfd/sta2x11-mfd: add regmap support
+Message-ID: <20121024123118.GD26622@mail.gnudd.com>
+References: <1350917441-4478-1-git-send-email-ciminaghi@gnudd.com> <1350917441-4478-3-git-send-email-ciminaghi@gnudd.com> <20121023171837.GE4477@opensource.wolfsonmicro.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121023171837.GE4477@opensource.wolfsonmicro.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M >ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 02:21:43PM +0200, Stephane Eranian wrote:
-> But still, if I do:
-> $  perf record -g -e cpu/cycles/k ........
+On Tue, Oct 23, 2012 at 06:18:38PM +0100, Mark Brown wrote:
+> On Mon, Oct 22, 2012 at 04:50:33PM +0200, ciminaghi@gnudd.com wrote:
 > 
-> Looks like your code will activate LBR cstack for user stack even
-> though I don't use it.
-> I know it won't generate any user samples (theoretically) but you are
-> still commandeering
-> the LBR resource which other events may want to use.
+> > +static bool sta2x11_sctl_writeable_reg(struct device *dev, unsigned int reg)
+> > +{
+> > +	return !__reg_within_range(reg, SCTL_SCPCIECSBRST, SCTL_SCRSTSTA);
+> > +}
+> 
+> This and most of your other readable/writable things look like a
+> framework feature waiting to be written - something data driven which
+> takes a table of register ranges and goes and does the
+> __reg_within_range() check on them.  Seems like it'd be really useful
+> for devices like this.
+>
+I was looking at other drivers with regmap support, and it actually looks
+like this __reg_within_range (or similar) thing is fairly common.
+For instance sound/soc/tegra/tegra30_ahub.c:
 
-You can disable it in sysfs. LBR is a power user feature and they will
-know how to do this.
+#define REG_IN_ARRAY(reg, name) \
+        ((reg >= TEGRA30_AHUB_##name) && \
+         (reg <= LAST_REG(name) && \
+         (!((reg - TEGRA30_AHUB_##name) % TEGRA30_AHUB_##name##_STRIDE))))
 
-See it as a "prefer the needs of the 95+% over the needs of the few" default
+also used for precious and volatile registers.
 
--Andi
+sound/soc/tegra/tegra20_das.c:
+
+static bool tegra20_das_wr_rd_reg(struct device *dev, unsigned int reg)
+{
+        if ((reg >= TEGRA20_DAS_DAP_CTRL_SEL) &&
+            (reg <= LAST_REG(DAP_CTRL_SEL)))
+                return true;
+        if ((reg >= TEGRA20_DAS_DAC_INPUT_DATA_CLK_SEL) &&
+            (reg <= LAST_REG(DAC_INPUT_DATA_CLK_SEL)))
+                return true;
+
+        return false;
+}
+
+My opinion is that passing function pointers for
+readable/writeable/precious/volatile methods could still be useful when
+registers' features or access properties can change at runtime (for instance a
+given register is readable/writeable in working mode X and becomes read-only
+when the device switches to mode Y). Other than that, four tables could just be
+passed via struct regmap_config. regmap_writeable/readable/precious/volatile
+would then invoke a (regmap private) _regmap_reg_in_ranges() function which
+would do the check based on the correct range table. Things would work just
+like now in case of NULL table pointers.
+
+I am planning to submit a regmap patch in the next days (actually I've already
+written something, but it is completely untested). Since sta2x11-mfd is
+blocking the rest of our work on the Connext chip, though, I think the best
+thing would be for me to keep things as they are now, and then doing this
+improvement later on, if you agree.
+
+> > +static bool sta2x11_apb_soc_regs_writeable_reg(struct device *dev,
+> > +					       unsigned int reg)
+> > +{
+> > +	if (!sta2x11_apb_soc_regs_readable_reg(dev, reg))
+> > +		return false;
+> > +	return (!__reg_within_range(reg, PCIE_PM_STATUS_0_PORT_0_4,
+> > +				    PCIE_PM_STATUS_7_0_EP4) &&
+> > +		reg != PCIE_COMMON_CLOCK_CONFIG_0_4_0 &&
+> > +		!__reg_within_range(reg, PCIE_SoC_INT_ROUTER_STATUS0_REG,
+> > +				    PCIE_SoC_INT_ROUTER_STATUS3_REG) &&
+> > +		reg != SYSTEM_CONFIG_STATUS_REG &&
+> > +		reg != COMPENSATION_REG1);
+> 
+> For this I'd write a switch statement with the range checks in the
+> default: case.  Actually you could just use the GCC switch range
+> feature:
+> 
+> 	case PCIE_PM_STATUS_0_PORT_0_4..PCIE_PM_STATUS_7_0_EP4:
+> 
+> Either of these would increase readability.
+> 
+ok, will do that immediately.
+
+> but generally
+> 
+> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+Thanks a lot for your time.
+
+Regards
+Davide
+
+
