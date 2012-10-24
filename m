@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934749Ab2JXNTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:19:40 -0400
+	id S934773Ab2JXNT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:19:56 -0400
 Received: from smtp.citrix.com ([66.165.176.89]:49022 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932162Ab2JXNTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:19:39 -0400
+	id S934733Ab2JXNTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:19:40 -0400
 X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
-   d="scan'208";a="42269816"
+   d="scan'208";a="42269819"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: Stefano Stabellini <stefano.stabellini@citrix.com>,
         xen-devel <xen-devel@lists.xen.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 2/5] xen: arm: enable balloon driver
-Date: Wed, 24 Oct 2012 14:19:34 +0100
-Message-ID: <1351084777-28898-2-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 4/5] xen: arm: implement remap interfaces needed for privcmd mappings.
+Date: Wed, 24 Oct 2012 14:19:36 +0100
+Message-ID: <1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
 References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
@@ -26,78 +26,201 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code is no in a state where can just enable it.
-
-Drop the *_xenballloned_pages duplicates since these are now supplied
-by the balloon code.
+We use XENMEM_add_to_physmap_range which is the preferred interface
+for foreign mappings.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/arm/xen/enlighten.c |   23 +++++------------------
- drivers/xen/Makefile     |    4 ++--
- 2 files changed, 7 insertions(+), 20 deletions(-)
+ arch/arm/include/asm/xen/interface.h |    1 +
+ arch/arm/xen/enlighten.c             |  100 +++++++++++++++++++++++++++++++++-
+ arch/x86/include/asm/xen/interface.h |    1 +
+ include/xen/interface/memory.h       |   18 ++++++
+ 4 files changed, 117 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/include/asm/xen/interface.h b/arch/arm/include/asm/xen/interface.h
+index 5000397..1151188 100644
+--- a/arch/arm/include/asm/xen/interface.h
++++ b/arch/arm/include/asm/xen/interface.h
+@@ -49,6 +49,7 @@ DEFINE_GUEST_HANDLE(void);
+ DEFINE_GUEST_HANDLE(uint64_t);
+ DEFINE_GUEST_HANDLE(uint32_t);
+ DEFINE_GUEST_HANDLE(xen_pfn_t);
++DEFINE_GUEST_HANDLE(xen_ulong_t);
+ 
+ /* Maximum number of virtual CPUs in multi-processor guests. */
+ #define MAX_VIRT_CPUS 1
 diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 59bcb96..ba5cc13 100644
+index ba5cc13..f28fc1a 100644
 --- a/arch/arm/xen/enlighten.c
 +++ b/arch/arm/xen/enlighten.c
-@@ -8,6 +8,7 @@
- #include <xen/features.h>
+@@ -9,6 +9,7 @@
  #include <xen/platform_pci.h>
  #include <xen/xenbus.h>
-+#include <xen/page.h>
+ #include <xen/page.h>
++#include <xen/xen-ops.h>
  #include <asm/xen/hypervisor.h>
  #include <asm/xen/hypercall.h>
  #include <linux/interrupt.h>
-@@ -29,6 +30,10 @@ struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
+@@ -18,6 +19,8 @@
+ #include <linux/of_irq.h>
+ #include <linux/of_address.h>
  
- DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
- 
-+/* These are unused until we support booting "pre-ballooned" */
-+unsigned long xen_released_pages;
-+struct xen_memory_region xen_extra_mem[XEN_EXTRA_MEM_MAX_REGIONS] __initdata;
++#include <linux/mm.h>
 +
- /* TODO: to be removed */
- __read_mostly int xen_have_vector_callback;
- EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-@@ -148,21 +153,3 @@ static int __init xen_init_events(void)
- 	return 0;
- }
- postcore_initcall(xen_init_events);
--
--/* XXX: only until balloon is properly working */
--int alloc_xenballooned_pages(int nr_pages, struct page **pages, bool highmem)
--{
--	*pages = alloc_pages(highmem ? GFP_HIGHUSER : GFP_KERNEL,
--			get_order(nr_pages));
--	if (*pages == NULL)
--		return -ENOMEM;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(alloc_xenballooned_pages);
--
--void free_xenballooned_pages(int nr_pages, struct page **pages)
--{
--	kfree(*pages);
--	*pages = NULL;
--}
--EXPORT_SYMBOL_GPL(free_xenballooned_pages);
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 0e863703..909bb56 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -1,8 +1,8 @@
- ifneq ($(CONFIG_ARM),y)
--obj-y	+= manage.o balloon.o
-+obj-y	+= manage.o
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
--obj-y	+= grant-table.o features.o events.o
-+obj-y	+= grant-table.o features.o events.o balloon.o
- obj-y	+= xenbus/
+ struct start_info _xen_start_info;
+ struct start_info *xen_start_info = &_xen_start_info;
+ EXPORT_SYMBOL_GPL(xen_start_info);
+@@ -43,15 +46,106 @@ EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
  
- nostackp := $(call cc-option, -fno-stack-protector)
+ static __read_mostly int xen_events_irq = -1;
+ 
++/* map fgmfn of domid to lpfn in the current domain */
++static int map_foreign_page(unsigned long lpfn, unsigned long fgmfn,
++			    unsigned int domid)
++{
++	int rc;
++	struct xen_add_to_physmap_range xatp = {
++		.domid = DOMID_SELF,
++		.foreign_domid = domid,
++		.size = 1,
++		.space = XENMAPSPACE_gmfn_foreign,
++	};
++	xen_ulong_t idx = fgmfn;
++	xen_pfn_t gpfn = lpfn;
++
++	set_xen_guest_handle(xatp.idxs, &idx);
++	set_xen_guest_handle(xatp.gpfns, &gpfn);
++
++	rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap_range, &xatp);
++	if (rc) {
++		pr_warn("Failed to map pfn to mfn rc:%d pfn:%lx mfn:%lx\n",
++			rc, lpfn, fgmfn);
++		return 1;
++	}
++	return 0;
++}
++
++struct remap_data {
++	xen_pfn_t fgmfn; /* foreign domain's gmfn */
++	pgprot_t prot;
++	domid_t  domid;
++	struct vm_area_struct *vma;
++	int index;
++	struct page **pages;
++	struct xen_remap_mfn_info *info;
++};
++
++static int remap_pte_fn(pte_t *ptep, pgtable_t token, unsigned long addr,
++			void *data)
++{
++	struct remap_data *info = data;
++	struct page *page = info->pages[info->index++];
++	unsigned long pfn = page_to_pfn(page);
++	pte_t pte = pfn_pte(pfn, info->prot);
++
++	if (map_foreign_page(pfn, info->fgmfn, info->domid))
++		return -EFAULT;
++	set_pte_at(info->vma->vm_mm, addr, ptep, pte);
++
++	return 0;
++}
++
+ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 			       unsigned long addr,
+-			       unsigned long mfn, int nr,
+-			       pgprot_t prot, unsigned domid)
++			       xen_pfn_t mfn, int nr,
++			       pgprot_t prot, unsigned domid,
++			       struct page **pages)
+ {
+-	return -ENOSYS;
++	int err;
++	struct remap_data data;
++
++	/* TBD: Batching, current sole caller only does page at a time */
++	if (nr > 1)
++		return -EINVAL;
++
++	data.fgmfn = mfn;
++	data.prot = prot;
++	data.domid = domid;
++	data.vma = vma;
++	data.index = 0;
++	data.pages = pages;
++	err = apply_to_page_range(vma->vm_mm, addr, nr << PAGE_SHIFT,
++				  remap_pte_fn, &data);
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(xen_remap_domain_mfn_range);
+ 
++int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
++			       int nr, struct page **pages)
++{
++	int i;
++
++	for (i = 0; i < nr; i++) {
++		struct xen_remove_from_physmap xrp;
++		unsigned long rc, pfn;
++
++		pfn = page_to_pfn(pages[i]);
++
++		xrp.domid = DOMID_SELF;
++		xrp.gpfn = pfn;
++		rc = HYPERVISOR_memory_op(XENMEM_remove_from_physmap, &xrp);
++		if (rc) {
++			pr_warn("Failed to unmap pfn:%lx rc:%ld\n",
++				pfn, rc);
++			return rc;
++		}
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
++
+ /*
+  * see Documentation/devicetree/bindings/arm/xen.txt for the
+  * documentation of the Xen Device Tree format.
+diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
+index b459d2e..20e738a 100644
+--- a/arch/x86/include/asm/xen/interface.h
++++ b/arch/x86/include/asm/xen/interface.h
+@@ -63,6 +63,7 @@ DEFINE_GUEST_HANDLE(void);
+ DEFINE_GUEST_HANDLE(uint64_t);
+ DEFINE_GUEST_HANDLE(uint32_t);
+ DEFINE_GUEST_HANDLE(xen_pfn_t);
++DEFINE_GUEST_HANDLE(xen_ulong_t);
+ #endif
+ 
+ #ifndef HYPERVISOR_VIRT_START
+diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+index ad0dff5..5de2b36 100644
+--- a/include/xen/interface/memory.h
++++ b/include/xen/interface/memory.h
+@@ -188,6 +188,24 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
+ /*** REMOVED ***/
+ /*#define XENMEM_translate_gpfn_list  8*/
+ 
++#define XENMEM_add_to_physmap_range 23
++struct xen_add_to_physmap_range {
++    /* Which domain to change the mapping for. */
++    domid_t domid;
++    uint16_t space; /* => enum phys_map_space */
++
++    /* Number of pages to go through */
++    uint16_t size;
++    domid_t foreign_domid; /* IFF gmfn_foreign */
++
++    /* Indexes into space being mapped. */
++    GUEST_HANDLE(xen_ulong_t) idxs;
++
++    /* GPFN in domid where the source mapping page should appear. */
++    GUEST_HANDLE(xen_pfn_t) gpfns;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap_range);
++
+ /*
+  * Returns the pseudo-physical memory map as it was when the domain
+  * was started (specified by XENMEM_set_memory_map).
 -- 
 1.7.2.5
 
