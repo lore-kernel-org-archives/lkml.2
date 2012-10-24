@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab2JXKC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:02:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55130 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933607Ab2JXKCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:02:55 -0400
-Date: Wed, 24 Oct 2012 03:01:36 -0700
-From: tip-bot for Vince Weaver <vincent.weaver@maine.edu>
-Message-ID: <tip-58e9eaf06f5476cb2192ec1d012674ce5e79dd21@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, a.p.zijlstra@chello.nl, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, a.p.zijlstra@chello.nl, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.02.1210191732000.14552@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.02.1210191732000.14552@vincent-weaver-1.um.maine.edu>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86: Remove P6 cpuc->enabled check
-Git-Commit-ID: 58e9eaf06f5476cb2192ec1d012674ce5e79dd21
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S934527Ab2JXKD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:03:57 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:34679 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933607Ab2JXKD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 06:03:56 -0400
+Message-ID: <5087BD06.5010904@parallels.com>
+Date: Wed, 24 Oct 2012 14:03:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 03:01:42 -0700 (PDT)
+To: Pekka Enberg <penberg@kernel.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 2/2] slab: move kmem_cache_free to common code
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-3-git-send-email-glommer@parallels.com> <CAOJsxLEcUJzZnyYDPwzEkjirSKEWXcGM6PxY=nyrktFZgP7ztg@mail.gmail.com>
+In-Reply-To: <CAOJsxLEcUJzZnyYDPwzEkjirSKEWXcGM6PxY=nyrktFZgP7ztg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  58e9eaf06f5476cb2192ec1d012674ce5e79dd21
-Gitweb:     http://git.kernel.org/tip/58e9eaf06f5476cb2192ec1d012674ce5e79dd21
-Author:     Vince Weaver <vincent.weaver@maine.edu>
-AuthorDate: Fri, 19 Oct 2012 17:33:38 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:32:00 +0200
+On 10/24/2012 12:56 PM, Pekka Enberg wrote:
+> On Mon, Oct 22, 2012 at 5:05 PM, Glauber Costa <glommer@parallels.com> wrote:
+>> +/**
+>> + * kmem_cache_free - Deallocate an object
+>> + * @cachep: The cache the allocation was from.
+>> + * @objp: The previously allocated object.
+>> + *
+>> + * Free an object which was previously allocated from this
+>> + * cache.
+>> + */
+>> +void kmem_cache_free(struct kmem_cache *s, void *x)
+>> +{
+>> +       __kmem_cache_free(s, x);
+>> +       trace_kmem_cache_free(_RET_IP_, x);
+>> +}
+>> +EXPORT_SYMBOL(kmem_cache_free);
+> 
+> As Christoph mentioned, this is going to hurt performance. The proper
+> way to do this is to implement the *hook* in mm/slab_common.c and call
+> that from all the allocator specific kmem_cache_free() functions.
+> 
+>                         Pekka
+> 
+We would ideally like the hooks to be inlined as well. Specially for the
+memcg-disabled case, this will only get us a function call for no reason.
 
-perf/x86: Remove P6 cpuc->enabled check
 
-Between 2.6.33 and 2.6.34 the PMU code was made modular.
-
-The x86_pmu_enable() call was extended to disable cpuc->enabled
-and iterate the counters, enabling one at a time, before calling
-enable_all() at the end, followed by re-enabling cpuc->enabled.
-
-Since cpuc->enabled was set to 0, that change effectively caused
-the "val |= ARCH_PERFMON_EVENTSEL_ENABLE;" code in p6_pmu_enable_event()
-and p6_pmu_disable_event() to be dead code that was never called.
-
-This change removes this code (which was confusing) and adds some
-extra commentary to make it more clear what is going on.
-
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1210191732000.14552@vincent-weaver-1.um.maine.edu
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_p6.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index 9582fcb..7d0270b 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -157,25 +157,25 @@ static void p6_pmu_enable_all(int added)
- static inline void
- p6_pmu_disable_event(struct perf_event *event)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	u64 val = P6_NOP_EVENT;
- 
--	if (cpuc->enabled)
--		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
--
- 	(void)wrmsrl_safe(hwc->config_base, val);
- }
- 
- static void p6_pmu_enable_event(struct perf_event *event)
- {
--	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct hw_perf_event *hwc = &event->hw;
- 	u64 val;
- 
- 	val = hwc->config;
--	if (cpuc->enabled)
--		val |= ARCH_PERFMON_EVENTSEL_ENABLE;
-+
-+	/*
-+	 * p6 only has a global event enable, set on PerfEvtSel0
-+	 * We "disable" events by programming P6_NOP_EVENT
-+	 * and we rely on p6_pmu_enable_all() being called
-+	 * to actually enable the events.
-+	 */
- 
- 	(void)wrmsrl_safe(hwc->config_base, val);
- }
