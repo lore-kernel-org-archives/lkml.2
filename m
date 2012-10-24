@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab2JXGAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:00:09 -0400
+	id S1757809Ab2JXGAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:00:35 -0400
 Received: from mga02.intel.com ([134.134.136.20]:54001 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757751Ab2JXF7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 01:59:23 -0400
+	id S1757732Ab2JXF7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 01:59:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,638,1344236400"; 
-   d="scan'208";a="209831825"
+   d="scan'208";a="209831813"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
 Cc: eranian@google.com, ak@linux.intel.com,
         "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH V2 5/7] perf, core: Pass perf_sample_data to perf_callchain()
-Date: Wed, 24 Oct 2012 13:59:08 +0800
-Message-Id: <1351058350-9159-6-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH V2 3/7] perf, x86: Introduce x86 special perf event context
+Date: Wed, 24 Oct 2012 13:59:06 +0800
+Message-Id: <1351058350-9159-4-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
 References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,156 +25,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-New Intel CPU can record call chains by using existing last branch
-record facility. perf_callchain_user() can make use of the call
-chains recorded by hardware in case of there is no frame pointer.
+The x86 special perf event context is named x86_perf_event_context,
+We can enlarge it later to store PMU special data.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/arm/kernel/perf_event.c     | 4 ++--
- arch/powerpc/perf/callchain.c    | 4 ++--
- arch/sparc/kernel/perf_event.c   | 4 ++--
- arch/x86/kernel/cpu/perf_event.c | 4 ++--
- include/linux/perf_event.h       | 3 ++-
- kernel/events/callchain.c        | 8 +++++---
- kernel/events/core.c             | 2 +-
- kernel/events/internal.h         | 3 ++-
- 8 files changed, 18 insertions(+), 14 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 12 ++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |  4 ++++
+ include/linux/perf_event.h       |  5 +++++
+ kernel/events/core.c             | 28 ++++++++++++++++++----------
+ 4 files changed, 39 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 93971b1..7cd3eba 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -567,8 +567,8 @@ user_backtrace(struct frame_tail __user *tail,
- 	return buftail.fp - 1;
- }
- 
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	struct frame_tail __user *tail;
- 
-diff --git a/arch/powerpc/perf/callchain.c b/arch/powerpc/perf/callchain.c
-index 74d1e78..b379ebc 100644
---- a/arch/powerpc/perf/callchain.c
-+++ b/arch/powerpc/perf/callchain.c
-@@ -482,8 +482,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- 	}
- }
- 
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	if (current_is_64bit())
- 		perf_callchain_user_64(entry, regs);
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 885a8af..6e9c62c 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1775,8 +1775,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- 	} while (entry->nr < PERF_MAX_STACK_DEPTH);
- }
- 
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	perf_callchain_store(entry, regs->tpc);
- 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 119687d..8ae8044 100644
+index 08e61a6..3361114 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1839,8 +1839,8 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
+@@ -1606,6 +1606,17 @@ static int x86_pmu_event_idx(struct perf_event *event)
+ 	return idx + 1;
  }
- #endif
  
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	struct stack_frame frame;
- 	const void __user *fp;
++static void *x86_pmu_event_context_alloc(struct perf_event_context *parent_ctx)
++{
++	struct perf_event_context *ctx;
++
++	ctx = kzalloc(sizeof(struct x86_perf_event_context), GFP_KERNEL);
++	if (!ctx)
++		return ERR_PTR(-ENOMEM);
++
++	return ctx;
++}
++
+ static ssize_t get_attr_rdpmc(struct device *cdev,
+ 			      struct device_attribute *attr,
+ 			      char *buf)
+@@ -1695,6 +1706,7 @@ static struct pmu pmu = {
+ 
+ 	.event_idx		= x86_pmu_event_idx,
+ 	.flush_branch_stack	= x86_pmu_flush_branch_stack,
++	.event_context_alloc	= x86_pmu_event_context_alloc,
+ };
+ 
+ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index a555a2c..55ca981 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -419,6 +419,10 @@ enum {
+ 	PERF_SAMPLE_BRANCH_CALL_STACK = 1U << PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT,
+ };
+ 
++struct x86_perf_event_context {
++	struct perf_event_context ctx;
++};
++
+ #define x86_add_quirk(func_)						\
+ do {									\
+ 	static struct x86_pmu_quirk __quirk __initdata = {		\
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 9151bdd..803b511 100644
+index 7e6a4b6..2868fcf 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -706,7 +706,8 @@ extern void perf_event_fork(struct task_struct *tsk);
- /* Callchains */
- DECLARE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry);
+@@ -264,6 +264,11 @@ struct pmu {
+ 	 * flush branch stack on context-switches (needed in cpu-wide mode)
+ 	 */
+ 	void (*flush_branch_stack)	(void);
++
++	/*
++	 * Allocate PMU special perf event context
++	 */
++	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
+ };
  
--extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs);
-+extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs,
-+				struct perf_sample_data *data);
- extern void perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs);
- 
- static inline void perf_callchain_store(struct perf_callchain_entry *entry, u64 ip)
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index c772061..bd7138a 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -30,7 +30,8 @@ __weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
- }
- 
- __weak void perf_callchain_user(struct perf_callchain_entry *entry,
--				struct pt_regs *regs)
-+				struct pt_regs *regs,
-+				struct perf_sample_data *data)
- {
- }
- 
-@@ -154,7 +155,8 @@ put_callchain_entry(int rctx)
- }
- 
- struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs)
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       struct perf_sample_data *data)
- {
- 	int rctx;
- 	struct perf_callchain_entry *entry;
-@@ -195,7 +197,7 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
- 				goto exit_put;
- 
- 			perf_callchain_store(entry, PERF_CONTEXT_USER);
--			perf_callchain_user(entry, regs);
-+			perf_callchain_user(entry, regs, data);
- 		}
- 	}
- 
+ /**
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b15c8a2..b914039 100644
+index 534810d..c886018 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -4228,7 +4228,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
+@@ -2721,13 +2721,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
+ }
  
--		data->callchain = perf_callchain(event, regs);
-+		data->callchain = perf_callchain(event, regs, data);
+ static struct perf_event_context *
+-alloc_perf_context(struct pmu *pmu, struct task_struct *task)
++alloc_perf_context(struct pmu *pmu, struct task_struct *task,
++		   struct perf_event_context *parent_ctx)
+ {
+ 	struct perf_event_context *ctx;
  
- 		if (data->callchain)
- 			size += data->callchain->nr;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index d56a64c..4ce75bf 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -126,7 +126,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
+-	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
+-	if (!ctx)
+-		return NULL;
++	if (pmu->event_context_alloc) {
++		ctx = pmu->event_context_alloc(parent_ctx);
++		if (IS_ERR(ctx))
++			return ctx;
++	} else {
++		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
++		if (!ctx)
++			return ERR_PTR(-ENOMEM);
++	}
  
- /* Callchain handling */
- extern struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs);
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       struct perf_sample_data *data);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
+ 	__perf_event_init_context(ctx);
+ 	if (task) {
+@@ -2813,10 +2820,11 @@ retry:
+ 		++ctx->pin_count;
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+ 	} else {
+-		ctx = alloc_perf_context(pmu, task);
+-		err = -ENOMEM;
+-		if (!ctx)
++		ctx = alloc_perf_context(pmu, task, NULL);
++		if (IS_ERR(ctx)) {
++			err = PTR_ERR(ctx);
+ 			goto errout;
++		}
  
+ 		err = 0;
+ 		mutex_lock(&task->perf_event_mutex);
+@@ -7132,9 +7140,9 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(event->pmu, child);
+-		if (!child_ctx)
+-			return -ENOMEM;
++		child_ctx = alloc_perf_context(event->pmu, child, parent_ctx);
++		if (IS_ERR(child_ctx))
++			return PTR_ERR(child_ctx);
+ 
+ 		child->perf_event_ctxp[ctxn] = child_ctx;
+ 	}
 -- 
 1.7.11.7
 
