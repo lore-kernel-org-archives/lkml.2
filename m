@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161145Ab2JXUUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:20:44 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:45955 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933652Ab2JXUUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:20:41 -0400
+	id S935538Ab2JXUW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:22:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11337 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933660Ab2JXUW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 16:22:56 -0400
+Date: Wed, 24 Oct 2012 16:22:17 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
+In-Reply-To: <20121024162304.GB2465@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.64.1210241616540.11796@file.rdu.redhat.com>
+References: <20121018175747.GA30691@redhat.com> <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com> <20121023165912.GA18712@redhat.com>
+ <20121023180558.GF2585@linux.vnet.ibm.com> <20121023184123.GB24055@redhat.com>
+ <20121023202902.GJ2585@linux.vnet.ibm.com> <20121023203254.GA3410@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210231730270.2689@file.rdu.redhat.com>
+ <20121024162304.GB2465@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20121024175225.GA27553@kroah.com>
-References: <1343340000-7587-1-git-send-email-mjg@redhat.com>
-	<CAA7rmPGL827cgT6hM8h_xhokEbTbTnrptoRekVByM7AcMdRUdw@mail.gmail.com>
-	<20121018182831.GA30905@srcf.ucam.org>
-	<CAA7rmPHSX+nOfQc-rs729g7ibkH5VwvsGkiOLLxX794CAgmYSw@mail.gmail.com>
-	<20121024175225.GA27553@kroah.com>
-Date: Wed, 24 Oct 2012 22:20:41 +0200
-Message-ID: <CAA7rmPGG8X9hJjwHKoCTWwmPf+HgcOKMr0hg+Aw3PJuwK8q9Ww@mail.gmail.com>
-Subject: Re: [PATCH] efi: Build EFI stub with EFI-appropriate options
-From: Daniel Vacek <neelx.g@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, matt.fleming@intel.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 7:52 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Oct 18, 2012 at 10:32:50PM +0200, Daniel Vacek wrote:
->> On Thu, Oct 18, 2012 at 8:28 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->> > On Thu, Oct 18, 2012 at 08:18:51PM +0200, Daniel Vacek wrote:
->> >
->> >> s/CLFAGS/CFLAGS/
->> >>
->> >> should go to stable too?
->> >
->> > Crap. Yes. Feel free to send that.
->
-> Applied, thanks.
 
-Something went wrong. I responded to the other two emails.
 
---nX
+On Wed, 24 Oct 2012, Paul E. McKenney wrote:
+
+> On Tue, Oct 23, 2012 at 05:39:43PM -0400, Mikulas Patocka wrote:
+> > 
+> > 
+> > On Tue, 23 Oct 2012, Paul E. McKenney wrote:
+> > 
+> > > On Tue, Oct 23, 2012 at 01:29:02PM -0700, Paul E. McKenney wrote:
+> > > > On Tue, Oct 23, 2012 at 08:41:23PM +0200, Oleg Nesterov wrote:
+> > > > > On 10/23, Paul E. McKenney wrote:
+> > > > > >
+> > > > > >  * Note that this guarantee implies a further memory-ordering guarantee.
+> > > > > >  * On systems with more than one CPU, when synchronize_sched() returns,
+> > > > > >  * each CPU is guaranteed to have executed a full memory barrier since
+> > > > > >  * the end of its last RCU read-side critical section
+> > > > >          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> > > > > 
+> > > > > Ah wait... I misread this comment.
+> > > > 
+> > > > And I miswrote it.  It should say "since the end of its last RCU-sched
+> > > > read-side critical section."  So, for example, RCU-sched need not force
+> > > > a CPU that is idle, offline, or (eventually) executing in user mode to
+> > > > execute a memory barrier.  Fixed this.
+> > 
+> > Or you can write "each CPU that is executing a kernel code is guaranteed 
+> > to have executed a full memory barrier".
+> 
+> Perhaps I could, but it isn't needed, nor is it particularly helpful.
+> Please see suggestions in preceding email.
+
+It is helpful, because if you add this requirement (that already holds for 
+the current implementation), you can drop rcu_read_lock_sched() and 
+rcu_read_unlock_sched() from the following code that you submitted.
+
+static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+{
+        /*
+         * Decrement our count, but protected by RCU-sched so that
+         * the writer can force proper serialization.
+         */
+        rcu_read_lock_sched();
+        this_cpu_dec(*p->counters);
+        rcu_read_unlock_sched();
+}
+
+> > The current implementation fulfills this requirement, you can just add it 
+> > to the specification so that whoever changes the implementation keeps it.
+> 
+> I will consider doing that if and when someone shows me a situation where
+> adding that requirement makes things simpler and/or faster.  From what I
+> can see, your example does not do so.
+> 
+> 							Thanx, Paul
+
+If you do, the above code can be simplified to:
+{
+	barrier();
+	this_cpu_dec(*p->counters);
+}
+
+Mikulas
