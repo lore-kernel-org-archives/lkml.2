@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161021Ab2JXRck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:32:40 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37421 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935257Ab2JXRci (ORCPT
+	id S935353Ab2JXReJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:34:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59296 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935257Ab2JXReH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:32:38 -0400
+	Wed, 24 Oct 2012 13:34:07 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+IbX175I2IqRIKxKkqr606SSEhFLWAxgTP9GyR5z
+	f0C/K0kla6+JNW
+Message-ID: <5088260D.7080403@gmx.de>
+Date: Wed, 24 Oct 2012 19:31:57 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
-	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-Date: Wed, 24 Oct 2012 19:32:37 +0200
-Message-ID: <CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: EXT4-fs error w/ external USB drive
+References: <507C4BDA.20205@gmx.de> <20121019210723.GA4721@thunk.org> <5085923F.9050801@gmx.de> <20121024011128.GG28626@thunk.org>
+In-Reply-To: <20121024011128.GG28626@thunk.org>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 4:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 10/24/2012 03:11 AM, Theodore Ts'o wrote:
+> Toralf,
+> 
+> Are you using any kind of special mount options on your usb stick?
+> 
+> Thanks,
+> 
+> 						- Ted
+nope
 
-> The clock framework has changed somewhat and it's now better to
-> invoke clock_prepare_enable() and clk_disable_unprepare() rather
-> than the legacy clk_enable() and clk_disable() calls. This patch
-> converts the Nomadik Pin Control driver to the new framework.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+tfoerste@n22 ~/devel/linux $ grep ext4 /etc/fstab
+/dev/sdb3               /               ext4            noatime
+        0 1
 
-(...)
-> -               clk_enable(chip->clk);
-> +               clk_prepare_enable(chip->clk);
-(...)
-> -               clk_disable(chip->clk);
-> +               clk_disable_unprepare(chip->clk);
 
-(Repeated for each occurence.)
-
-Is this *really* causing a regression? I mean the driver
-begin like this in nmk_gpio_probe():
-
-        clk = devm_clk_get(&dev->dev, NULL);
-        if (IS_ERR(clk)) {
-                ret = PTR_ERR(clk);
-                goto out;
-        }
-        clk_prepare(clk);
-
-Then it leaves the clock prepared. So the clock is always
-prepared. You would only need to enable/disable it at times.
-
-And the semantics of the clk_enable/clk_disable call pair
-is such that it is fastpath and should be real quick, and that
-is exactly why we're using it repeatedly like that. Inserting
-clk_unprepare() effectively could make the whole driver a
-lot slower, so convince me on this one. ...
-
-I suspect the real bug (if there is one) must be in the clock
-implementation.
-
-Yours,
-Linus Walleij
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
