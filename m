@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab2JXD1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 23:27:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54355 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934331Ab2JXD1s (ORCPT
+	id S934347Ab2JXDbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:31:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49947 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056Ab2JXDbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 23:27:48 -0400
-Subject: Re: [PATCH 041/193] drivers/dma: remove CONFIG_EXPERIMENTAL
-From: Vinod Koul <vkoul@infradead.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        Dan Williams <djbw@fb.com>
-In-Reply-To: <1351022666-6960-42-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	 <1351022666-6960-42-git-send-email-keescook@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Oct 2012 08:45:37 +0530
-Message-ID: <1351048537.5263.11.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Oct 2012 23:31:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121024031845.GA11255@kroah.com>
+References: <1351046993-2220-1-git-send-email-ming.lei@canonical.com>
+	<20121024031845.GA11255@kroah.com>
+Date: Wed, 24 Oct 2012 11:31:16 +0800
+Message-ID: <CACVXFVNAWcNgf94mY24c7r2jwtciekz=N-Yw_PyY9-4sT+BL_Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] firmware loader: introduce kernel parameter to
+ customize fw search path
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-23 at 13:01 -0700, Kees Cook wrote:
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
-> 
-> CC: Vinod Koul <vinod.koul@intel.com>
-> CC: Dan Williams <djbw@fb.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  drivers/dma/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-> index 677cd6e..dc8f4d1 100644
-> --- a/drivers/dma/Kconfig
-> +++ b/drivers/dma/Kconfig
-> @@ -51,7 +51,7 @@ config ASYNC_TX_ENABLE_CHANNEL_SWITCH
->  
->  config AMBA_PL08X
->  	bool "ARM PrimeCell PL080 or PL081 support"
-> -	depends on ARM_AMBA && EXPERIMENTAL
-> +	depends on ARM_AMBA
->  	select DMA_ENGINE
->  	select DMA_VIRTUAL_CHANNELS
->  	help
+On Wed, Oct 24, 2012 at 11:18 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+>
+> Ick, no, not another kernel boot parameter.  I would prefer the /proc/
+> file solution instead, just like /proc/sys/kernel/hotplug is.
 
-Applied thanks
+OK, got it, but we could use the module parameter(firmware_class.path
+via kernel command) to customize the search path too, couldn't we?
 
--- 
-Vinod Koul
-Intel Corp.
+>
+> But, that really wouldn't work for boot time, so, again just like
+> hotplug works, make it also a Kconfig option for those distros that
+> build their own kernels and keep their firmware in odd places, or don't
+> have a /lib/ directory, can override it easily.
 
+Sound like still a solution, :-)
+
+If you agree on module parameter, that might be more flexible, IMO
+
+
+Thanks,
+--
+Ming Lei
