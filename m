@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab2JXITX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:19:23 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41700 "EHLO mx2.parallels.com"
+	id S1758024Ab2JXIVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:21:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:22223 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab2JXITU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:19:20 -0400
-Message-ID: <50881500.9030604@parallels.com>
-Date: Wed, 24 Oct 2012 20:19:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, David Rientjes <rientjes@google.com>,
-        <devel@openvz.org>, Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 04/18] slab: don't preemptively remove element from
- list in cache destroy
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-5-git-send-email-glommer@parallels.com> <0000013a7a84cb28-334eab12-33c4-4a92-bd9c-e5ad938f83d0-000000@email.amazonses.com> <5085068E.5080304@parallels.com> <CAOJsxLFxQuC9mRb=ZMoqdxS6fyLHCg1LxyfF9wAR1hiOL5i93g@mail.gmail.com>
-In-Reply-To: <CAOJsxLFxQuC9mRb=ZMoqdxS6fyLHCg1LxyfF9wAR1hiOL5i93g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755607Ab2JXIVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 04:21:38 -0400
+Message-Id: <b94cdc$72fm1r@fmsmga001.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
+   d="scan'208";a="237492283"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: drm i915 hangs on heavy io load
+To: Norbert Preining <preining@logic.at>, Dave Airlie <airlied@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org
+In-Reply-To: <20121024003659.GA30962@gamma.logic.tuwien.ac.at>
+References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at>
+Date: Wed, 24 Oct 2012 09:11:03 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 10:54 AM, Pekka Enberg wrote:
-> On Mon, Oct 22, 2012 at 11:40 AM, Glauber Costa <glommer@parallels.com> wrote:
->> On 10/19/2012 11:34 PM, Christoph Lameter wrote:
->>> On Fri, 19 Oct 2012, Glauber Costa wrote:
->>>
->>>> I, however, see no reason why we need to do so, since we are now locked
->>>> during the whole deletion (which wasn't necessarily true before).  I
->>>> propose a simplification in which we delete it only when there is no
->>>> more going back, so we don't need to add it again.
->>>
->>> Ok lets hope that holding the lock does not cause issues.
->>>
->>> Acked-by: Christoph Lameter <cl@linux.com>
->>>
->> BTW: One of the good things about this set, is that we are naturally
->> exercising cache destruction a lot more than we did before. So if there
->> is any problem, either with this or anything related to cache
->> destruction, it should at least show up a lot more frequently. So far,
->> this does not seem to cause any problems.
+On Wed, 24 Oct 2012 09:36:59 +0900, Norbert Preining <preining@logic.at> wrote:
+> Hi Dave, hi Chris,
 > 
-> We no longer hold the mutex the whole time after. See commit 210ed9d
-> ("mm, slab: release slab_mutex earlier in kmem_cache_destroy()") for
-> details.
+> thanks for your answers.
 > 
-I will resubmit then.
+> On Di, 23 Okt 2012, Dave Airlie wrote:
+> > Does booting with i915.i915_enable_rc6=0 help?
+> 
+> No,booted with that, it happened again on a completely idle
+> system (well, I believe completely idle, I was doing the
+> dishes ;-)
+> 
+> [12437.995026] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> [12437.995034] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> [12438.000213] [drm:init_ring_common] *ERROR* failed to set render ring head to zero ctl 00000000 head 5ee06f14 tail 00000000 start 00003000
+> [12438.054894] [drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head 5ee06f14 tail 00000000 start 00003000
+> [12439.583064] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> [12439.583176] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+> [12439.583182] [drm:i915_reset] *ERROR* Failed to reset chip.
+> 
+> New output see here:
+> http://www.logic.at/people/preining/i915_error_state.gz
 
-It doesn't really change the spirit of the patch. I took a look at that
-fix, and what it does, is it releases the mutex right after
-kmem_cache_shutdown() succeeds. Removing from the list in there would do
-the trick.
+That has a very similar look to it, so reasonable to assume that is the
+same issue.
+ 
+> > http://cgit.freedesktop.org/~danvet/drm/commit/?h=ilk-wa-pile&id=0d5fed2de763b49bb1a90140758153481f043757
+> > is the missing ingredient.
+> 
+> I am compiling a kernel with this patch based on current git now.
+> Should I still use the above kernel cmd argument (i915...rc6=0)
+> or try without it?
 
+Without any rc6 parameter would be best. But if rc6=0 wasn't the
+solution for you, then I may have identified the wrong w/a. Can I ask
+you try the patches in that branch until you find one (or more perhaps)
+that stabilise your system?
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
