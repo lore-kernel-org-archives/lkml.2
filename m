@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab2JXML5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:11:57 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62466 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab2JXML4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:11:56 -0400
-Date: Wed, 24 Oct 2012 10:11:49 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Jeff Cook <jeff@deserettechnology.com>
-Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
-Message-ID: <20121024121149.GE13884@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Jeff Cook <jeff@deserettechnology.com>, marcel@holtmann.org,
-	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <5087B517.9090703@deserettechnology.com>
+	id S1758528Ab2JXMOx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:14:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758022Ab2JXMOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 08:14:52 -0400
+Date: Wed, 24 Oct 2012 14:14:07 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 02/11] perf: Do not get values from disabled counters in
+ group format read
+Message-ID: <20121024121406.GA5582@krava.brq.redhat.com>
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+ <1350743599-4805-3-git-send-email-jolsa@redhat.com>
+ <1351008789.13456.37.camel@twins>
+ <20121023165040.GA7553@krava.brq.redhat.com>
+ <1351080078.13456.60.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5087B517.9090703@deserettechnology.com>
+In-Reply-To: <1351080078.13456.60.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
-
-* Jeff Cook <jeff@deserettechnology.com> [2012-10-24 03:29:59 -0600]:
-
-> Hello all,
+On Wed, Oct 24, 2012 at 02:01:18PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-10-23 at 18:50 +0200, Jiri Olsa wrote:
+> > On Tue, Oct 23, 2012 at 06:13:09PM +0200, Peter Zijlstra wrote:
+> > > On Sat, 2012-10-20 at 16:33 +0200, Jiri Olsa wrote:
+> > > > It's possible some of the counters in the group could be
+> > > > disabled when sampling member of the event group is reading
+> > > > the rest via PERF_SAMPLE_READ sample type processing. Disabled
+> > > > counters could then produce wrong numbers.
+> > > > 
+> > > > Fixing that by reading only enabled counters for PERF_SAMPLE_READ
+> > > > sample type processing.
+> > > > 
+> > > 
+> > > However did you run into this?
+> > 
+> > yep, with perf record -a
+> > 
+> > hm, I just checked and we enable/disable event groups atomicaly..
+> > I haven't checked that before because it seemed obvious :-/
+> > 
+> > So, I'm not sure now about the exact code path that triggered it
+> > in my test..  however you could always disable child event from
+> > group and hit this issue, but thats not what happened in perf.
+> > 
+> > might be some other bug... I'll check 
 > 
-> Please see included patch. First-time submitter so let me know if I did 
-> something wrong.
-
-Your patch is good, but you need to improve the way you submit it. We recommend
-using 'git send-email' like this:
-
-$ git send-email HEAD~1..HEAD
-
-For sending the patch on the top of tree. You can also do combined use of 'git
-format-patch' and 'git send-email' in case you want to add some message or to your
-patch like the first-time submitter message you did here and these messages
-needs to be added...
-
+> Right, so I don't object to the patch per-se, I was just curious how you
+> ran into it, because ISTR what you just said, we enable all this stuff
+> together.
 > 
-> Thanks,
-> Jeff
-> --------------------
-> 
-> Vendor-specific ID for BCM20702A0.
-> Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
-> Deluxe.
-> 
-> T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-> D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-> P:  Vendor=0b05 ProdID=17b5 Rev=01.12
-> S:  Manufacturer=Broadcom Corp
-> S:  Product=BCM20702A0
-> S:  SerialNumber=94DBC98AC113
-> C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-> I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-> I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> ---
+> Also, why would disabled counters give strange values? They'd simply
+> return the same old value time after time, right?
 
-... after these 3 dashes lines so they don't go the final commit when I apply
-your patch.
+well, x86_pmu_read calls x86_perf_event_update, which expects the event
+is active.. if it's not it'll update the count from whatever left in
+event.hw.idx counter.. could be uninitialized or used by others..
 
-	Gustavo
+I can easily reproduce this one, so let's see.. ;)
+
+jirka
