@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933845Ab2JXHAM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 03:00:12 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49101 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933282Ab2JXHAK (ORCPT
+	id S934325Ab2JXHAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 03:00:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:63973 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933282Ab2JXHAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 03:00:10 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-e7-508791f8908b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] perf header: Fix numa topology printing
-References: <20121023072702.GB2772@turtle.usersys.redhat.com>
-	<1350999890-6920-1-git-send-email-namhyung@kernel.org>
-	<20121023141218.GD2772@turtle.usersys.redhat.com>
-Date: Wed, 24 Oct 2012 16:00:08 +0900
-In-Reply-To: <20121023141218.GD2772@turtle.usersys.redhat.com> (Andrew Jones's
-	message of "Tue, 23 Oct 2012 16:12:19 +0200")
-Message-ID: <874nlk9wxz.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 24 Oct 2012 03:00:53 -0400
+Date: Wed, 24 Oct 2012 00:00:46 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: Eric Sandeen <sandeen@redhat.com>, Nix <nix@esperi.org.uk>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        =?ISO-8859-15?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+In-Reply-To: <20121024052351.GB21714@thunk.org>
+Message-ID: <alpine.LNX.2.00.1210232359180.29283@eggly.anvils>
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+ <87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com> <20121024052351.GB21714@thunk.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Wed, 24 Oct 2012, Theodore Ts'o wrote:
+> Journal flushes outside of an unmount does
+> happen as part of online resizing, the FIBMAP ioctl, or when the file
+> system is frozen.  But it didn't sound like Toralf or Nix was using
+> any of those features.  (Toralf, Nix, please correct me if my
+> assumptions here is wrong).
 
-On Tue, 23 Oct 2012 16:12:19 +0200, Andrew Jones wrote:
-> On Tue, Oct 23, 2012 at 10:44:49PM +0900, Namhyung Kim wrote:
->> Andrew reported that the commit 7e94cfcc9d20 ("perf header: Use pre-
->> processed session env when printing") regresses the header output.
->> It was because of a missed string pointer calculation in the loop.
->
-> works for me
->
-> Tested-by: Andrew Jones <drjones@redhat.com> 
+I believe it also happens at swapon of a swapfile on the filesystem.
 
-Did you test both of the patches?
-
-Thanks,
-Namhyung
+Hugh
