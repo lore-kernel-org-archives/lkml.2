@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161373Ab2JXVxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:53:19 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35574 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161289Ab2JXVxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:53:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH] cpufreq, powernow-k8: Remove usage of smp_processor_id() in preemptible code
-Date: Wed, 24 Oct 2012 23:57:11 +0200
-Message-ID: <4061311.WJSyxPuklg@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121012151841.GA4571@alberich>
-References: <20121009193844.GC7724@alberich> <20121010124839.GA22448@alberich> <20121012151841.GA4571@alberich>
+	id S1161379Ab2JXVxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:53:37 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:59879 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161224Ab2JXVxe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:53:34 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20121024144442.6253965d.akpm@linux-foundation.org>
+References: <20121024205756.GA12419@www.outflux.net>
+	<20121024140227.299041a9.akpm@linux-foundation.org>
+	<CAGXu5jK2kNgccbbuadjUFn+bbj9_02HbQfjUDeL4sNz1GWtHEQ@mail.gmail.com>
+	<20121024144442.6253965d.akpm@linux-foundation.org>
+Date: Wed, 24 Oct 2012 14:53:33 -0700
+X-Google-Sender-Auth: 8xduLRYO1Q3KATVQenl_XxMc_Cg
+Message-ID: <CAGXu5jJBLcdfhv8=LNkXZ6h4xsXrDZP094fojnPpJ0OcwnCtSA@mail.gmail.com>
+Subject: Re: [RESEND][PATCH] gen_init_cpio: avoid stack overflow when expanding
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 of October 2012 17:18:41 Andreas Herrmann wrote:
-> 
-> Commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9
-> (cpufreq/powernow-k8: workqueue user shouldn't migrate the kworker to another CPU)
-> causes powernow-k8 to trigger a preempt warning, e.g.:
-> 
->   BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq/3776
->   caller is powernowk8_target+0x20/0x49
->   Pid: 3776, comm: cpufreq Not tainted 3.6.0 #9
->   Call Trace:
->    [<ffffffff8125b447>] debug_smp_processor_id+0xc7/0xe0
->    [<ffffffff814877e7>] powernowk8_target+0x20/0x49
->    [<ffffffff81482b02>] __cpufreq_driver_target+0x82/0x8a
->    [<ffffffff81484fc6>] cpufreq_governor_performance+0x4e/0x54
->    [<ffffffff81482c50>] __cpufreq_governor+0x8c/0xc9
->    [<ffffffff81482e6f>] __cpufreq_set_policy+0x1a9/0x21e
->    [<ffffffff814839af>] store_scaling_governor+0x16f/0x19b
->    [<ffffffff81484f16>] ? cpufreq_update_policy+0x124/0x124
->    [<ffffffff8162b4a5>] ? _raw_spin_unlock_irqrestore+0x2c/0x49
->    [<ffffffff81483640>] store+0x60/0x88
->    [<ffffffff811708c0>] sysfs_write_file+0xf4/0x130
->    [<ffffffff8111243b>] vfs_write+0xb5/0x151
->    [<ffffffff811126e0>] sys_write+0x4a/0x71
->    [<ffffffff816319a9>] system_call_fastpath+0x16/0x1b
-> 
-> Fix this by by always using work_on_cpu().
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Wed, Oct 24, 2012 at 2:44 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 24 Oct 2012 14:33:02 -0700
+> Kees Cook <keescook@chromium.org> wrote:
+>
+>> On Wed, Oct 24, 2012 at 2:02 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Wed, 24 Oct 2012 13:57:56 -0700
+>> > Kees Cook <keescook@chromium.org> wrote:
+>> >
+>> >> Fix possible overflow of the buffer used for expanding environment
+>> >> variables when building file list.
+>> >>
+>> >> $ cat usr/crash.list
+>> >> file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
+>> >> $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
+>> >> *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+>> >>
+>> >> This also replaces the space-indenting with tabs.
+>> >>
+>> >> Patch based on existing fix extracted from grsecurity.
+>> >>
+>> >> ...
+>> >>
+>> >> Cc: stable@vger.kernel.org
+>> >
+>> > Why did you feel we need to backport this to -stable?
+>>
+>> It's an extremely hard to hit security issue, but it's a security fix
+>> regardless. I won't cry if it doesn't go to stable, but it seems a
+>> trivial fix, so I included it for stable.
+>
+> Well, I do think that a description of the user impact of the bug
+> should be included in the changelog so that poor old Greg can work out
+> why we sent it at him.
+>
+> If you can suggest some suitable text I can copy-n-slurp that into the
+> changelog.
 
-Applied to linux-pm.git/linux-next as v3.7 material, will be included in the
-next linux-pm push.
+How about replacing the first paragraph with:
 
-Thanks,
-Rafael
+Fix possible overflow of the buffer used for expanding environment
+variables when building file list. In the extremely unlikely case of
+an attacker having control over the environment variables visible to
+gen_init_cpio, control over the contents of the file gen_init_cpio
+parses, and gen_init_cpio was built without compiler hardening, the
+attacker can gain arbitrary execution control via a stack buffer
+overflow.
 
 
+-Kees
 
-> ---
->  drivers/cpufreq/powernow-k8.c | 9 +--------
->  1 file changed, 1 insertion(+), 8 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index 129e80b..c16a3a5 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1052,14 +1052,7 @@ static int powernowk8_target(struct cpufreq_policy *pol,
->  	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
->  					     .relation = relation };
->  
-> -	/*
-> -	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
-> -	 * that we're bound to the current CPU and pol->cpu stays online.
-> -	 */
-> -	if (smp_processor_id() == pol->cpu)
-> -		return powernowk8_target_fn(&pta);
-> -	else
-> -		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
-> +	return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
->  }
->  
->  /* Driver entry point to verify the policy and range of frequencies */
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Kees Cook
+Chrome OS Security
