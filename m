@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934172Ab2JXB7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:59:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52365 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615Ab2JXB7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:59:37 -0400
+	id S934214Ab2JXCAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 22:00:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:6871 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755611Ab2JXCAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 22:00:08 -0400
+X-IronPort-AV: E=Sophos;i="4.80,638,1344182400"; 
+   d="scan'208";a="6054846"
+Message-ID: <508744ED.2040002@cn.fujitsu.com>
+Date: Wed, 24 Oct 2012 09:31:25 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210232301160.2756@ionos>
-References: <alpine.LFD.2.02.1210232301160.2756@ionos>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Tue, 23 Oct 2012 21:59:06 -0400
-X-Google-Sender-Auth: t-vw0Lgdc4fMK1aJjuUjoysPtAw
-Message-ID: <CAP=VYLqF4PPuZFwm9Ft_J_neLPNYv_a-2uZ3bi_cvQoxOQrH8A@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.6.3-rt6
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@alien8.de>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] Replace if statement with WARN_ON_ONCE() in cmci_rediscover().
+References: <1350625528-1385-1-git-send-email-tangchen@cn.fujitsu.com> <1350625528-1385-2-git-send-email-tangchen@cn.fujitsu.com> <20121019164045.GE11958@aftab.osrc.amd.com> <5084AB10.7010807@cn.fujitsu.com> <20121022101442.GB8352@liondog.tnic> <50860711.10807@cn.fujitsu.com> <20121023095234.GA22715@liondog.tnic> <50867FCD.9010907@cn.fujitsu.com> <3908561D78D1C84285E8C5FCA982C28F19D58D8E@ORSMSX108.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D58D8E@ORSMSX108.amr.corp.intel.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 09:31:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/24 09:32:45,
+	Serialize complete at 2012/10/24 09:32:45
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Dear RT Folks,
->
-> I'm pleased to announce the 3.6.3-rt6 release. rt6 is just an update
-> to 3.6.3. The not announced 3.6.2-rt5 is an intermediate release with
-> a single change.
->
-> Changes since 3.6.2-rt4:
->
->         * Make the early printk changes work (hopefully) everywhere
->
-> The new patch queue also contains a non code change (according to
-> Pauls) which adds a missing subject line to a powerpc patch.
+Hi Luck, Borislav,
 
-The rt5 and rt6 changes are now present in the 3.6-rt-patches repo.
-Given the above, there is currently nothing for me to queue on a
-separate  "-fixes" branch against rt6.  The master branch works as-is.
+OK, since you all think it is not necessary, I think I will drop patch1.
+And thanks for your comments. :)
 
-http://git.kernel.org/?p=linux/kernel/git/paulg/3.6-rt-patches.git;a=summary
+So, how about patch2 ?
+If you need more detail, please tell me. Thanks. :)
 
-Paul.
---
+On 10/24/2012 12:16 AM, Luck, Tony wrote:
+>> First of all, I do think I was answering your question. As I said
+>> before, if an online cpu == dying here, there must be something wrong.
+>> Am I right here ?
+>
+> Yes - but there is a fuzzy line over where it is good to check for "something wrong"
+> or whether to trust that the caller of the function knew what they were doing.
+>
+> For example we trust that "dying" is a valid cpu number.  If we were
+> super-paranoid that someone might change the code and call us with a
+> bad argument, we might add:
+>
+> 	BUG_ON(dying<  0 || dying>= MAX_NR_CPUS);
+>
+> This would certainly help debug the case if someone did make a bogus
+> change ... but I think it is clear that this test is way past the fuzzy line and
+> into pointless.
+>
+> Back to the case in question: do we think there is a credible case where
+> the "dying" cpu can show up in our "for_each_cpu_online()" loop? The
+> original author of the code was worried enough to make a test, but thought
+> that the appropriate action was to silently skip it. You want to add a WARN_ON,
+> which will cause users who read the console logs to worry, but that most users
+> will never see.
+>
+> -Tony
 
->
-> The delta patch against 3.6.2-rt4 is appended below and can be found
-> here:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.2-rt4-rt5.patch.xz
->
-> The RT patch against 3.6.3 can be found here:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.3-rt6.patch.xz
->
-> The split quilt queue is available at:
->
->   http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.3-rt6.tar.xz
->
-> Enjoy,
->
->         tglx
->
-> ---------->
+
