@@ -1,45 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934936Ab2JXOXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 10:23:12 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:35063 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934800Ab2JXOXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 10:23:11 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Wed, 24 Oct 2012 10:23:09 -0400
-To: linux-kernel@vger.kernel.org
-Cc: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>, linux@sierrawireless.com,
-        linux-usb@vger.kernel.org
-Subject: Fix memory leak in sierra_release() (this time with signed-off-by)
-Message-ID: <20121024142309.GQ18610@csclub.uwaterloo.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934955Ab2JXOXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:23:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30463 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934800Ab2JXOXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:23:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
+   d="scan'208";a="208475710"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: linus.walleij@stericsson.com
+Cc: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC PATCH v2] gpiolib: add gpio get direction callback support
+Date: Wed, 24 Oct 2012 17:25:27 +0300
+Message-Id: <1351088727-15257-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found a memory leak in sierra_release() (well sierra_probe() I guess)
-that looses 8 bytes each time the driver releases a device.
+Add .get_direction callback to gpio_chip. This allows gpiolib
+to check the current direction of a gpio.
+Used to show the correct gpio direction in sysfs and debug entries.
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+If callback is not set then gpiolib will work as previously;
+e.g. guessing everything is input until a direction is set.
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 01d882c..76ef95b 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -959,6 +959,7 @@ static void sierra_release(struct usb_serial *serial)
- 			continue;
- 		kfree(portdata);
- 	}
-+	kfree(serial->private);
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/gpio/gpiolib.c     |   38 +++++++++++++++++++++++++++++++++++++-
+ include/asm-generic/gpio.h |    5 ++++-
+ 2 files changed, 41 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index de0213c..141f793 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -191,6 +191,32 @@ err:
+ 	return ret;
  }
  
- #ifdef CONFIG_PM
-
++/* caller ensures gpio is valid and requested, chip->get_direction may sleep  */
++static int gpio_get_direction(unsigned gpio)
++{
++	struct gpio_chip	*chip;
++	struct gpio_desc	*desc = &gpio_desc[gpio];
++	int			status = -EINVAL;
++
++	chip = gpio_to_chip(gpio);
++	gpio -= chip->base;
++
++	if (!chip->get_direction)
++		return status;
++
++	status = chip->get_direction(chip, gpio);
++	if (status > 0) {
++		/* GPIOF_DIR_IN, or other positive */
++		status = 1;
++		clear_bit(FLAG_IS_OUT, &desc->flags);
++	}
++	if (status == 0) {
++		/* GPIOF_DIR_OUT */
++		set_bit(FLAG_IS_OUT, &desc->flags);
++	}
++	return status;
++}
++
+ #ifdef CONFIG_GPIO_SYSFS
+ 
+ /* lock protects against unexport_gpio() being called while
+@@ -223,6 +249,7 @@ static ssize_t gpio_direction_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	const struct gpio_desc	*desc = dev_get_drvdata(dev);
++	unsigned		gpio = desc - gpio_desc;
+ 	ssize_t			status;
+ 
+ 	mutex_lock(&sysfs_lock);
+@@ -230,6 +257,7 @@ static ssize_t gpio_direction_show(struct device *dev,
+ 	if (!test_bit(FLAG_EXPORT, &desc->flags))
+ 		status = -EIO;
+ 	else
++		gpio_get_direction(gpio);
+ 		status = sprintf(buf, "%s\n",
+ 			test_bit(FLAG_IS_OUT, &desc->flags)
+ 				? "out" : "in");
+@@ -1073,6 +1101,7 @@ int gpiochip_add(struct gpio_chip *chip)
+ 			 * inputs (often with pullups enabled) so power
+ 			 * usage is minimized.  Linux code should set the
+ 			 * gpio direction first thing; but until it does,
++			 * and in case chip->get_direction is not set,
+ 			 * we may expose the wrong direction in sysfs.
+ 			 */
+ 			gpio_desc[id].flags = !chip->direction_input
+@@ -1224,9 +1253,15 @@ int gpio_request(unsigned gpio, const char *label)
+ 			desc_set_label(desc, NULL);
+ 			module_put(chip->owner);
+ 			clear_bit(FLAG_REQUESTED, &desc->flags);
++			goto done;
+ 		}
+ 	}
+-
++	if (chip->get_direction) {
++		/* chip->get_direction may sleep */
++		spin_unlock_irqrestore(&gpio_lock, flags);
++		gpio_get_direction(gpio);
++		spin_lock_irqsave(&gpio_lock, flags);
++	}
+ done:
+ 	if (status)
+ 		pr_debug("gpio_request: gpio-%d (%s) status %d\n",
+@@ -1762,6 +1797,7 @@ static void gpiolib_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 		if (!test_bit(FLAG_REQUESTED, &gdesc->flags))
+ 			continue;
+ 
++		gpio_get_direction(gpio);
+ 		is_out = test_bit(FLAG_IS_OUT, &gdesc->flags);
+ 		seq_printf(s, " gpio-%-3d (%-20.20s) %s %s",
+ 			gpio, gdesc->label,
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 365ea09..d8e8c26 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -56,6 +56,8 @@ struct device_node;
+  *	enabling module power and clock; may sleep
+  * @free: optional hook for chip-specific deactivation, such as
+  *	disabling module power and clock; may sleep
++ * @get_direction: returns direction for signal "offset", 0=out, 1=in,
++ *	(same as GPIOF_DIR_XXX), or negative error
+  * @direction_input: configures signal "offset" as input, or returns error
+  * @get: returns value for signal "offset"; for output signals this
+  *	returns either the value actually sensed, or zero
+@@ -98,7 +100,8 @@ struct gpio_chip {
+ 						unsigned offset);
+ 	void			(*free)(struct gpio_chip *chip,
+ 						unsigned offset);
+-
++	int			(*get_direction)(struct gpio_chip *chip,
++						unsigned offset);
+ 	int			(*direction_input)(struct gpio_chip *chip,
+ 						unsigned offset);
+ 	int			(*get)(struct gpio_chip *chip,
 -- 
-Len Sorensen
+1.7.4.1
+
