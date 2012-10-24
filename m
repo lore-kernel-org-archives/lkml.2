@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756Ab2JXAjx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:39:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33899 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933692Ab2JXAjw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:39:52 -0400
-Date: Wed, 24 Oct 2012 11:39:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@chromium.org>
-Cc: David Miller <davem@davemloft.net>, johannes@sipsolutions.net,
-        linux-kernel@vger.kernel.org, linville@tuxdriver.com
-Subject: Re: [PATCH 173/193] net/mac80211: remove CONFIG_EXPERIMENTAL
-Message-Id: <20121024113941.bbc15e2f317f4307706fae7a@canb.auug.org.au>
-In-Reply-To: <CAGXu5j+wRzsYy1WWo5tbffz6p0hnRAkS+DV3Jv1e35ppGFrchA@mail.gmail.com>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-	<1351022666-6960-174-git-send-email-keescook@chromium.org>
-	<1351023350.10322.21.camel@jlt4.sipsolutions.net>
-	<20121023.161630.969990145069865276.davem@davemloft.net>
-	<CAGXu5j+wRzsYy1WWo5tbffz6p0hnRAkS+DV3Jv1e35ppGFrchA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__24_Oct_2012_11_39_41_+1100_pDo8MfRh44tj2/0o"
+	id S964860Ab2JXAlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:41:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55045 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933591Ab2JXAla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 20:41:30 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Jean Pihet <jean.pihet@newoldbits.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        lm-sensors@lm-sensors.org, linaro-dev@lists.linaro.org
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+Date: Wed, 24 Oct 2012 02:40:49 +0200
+Message-ID: <4317776.evLpJapyim@hammer82.arch.suse.de>
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1351013449.9070.5.camel@hornet>
+References: <1351013449.9070.5.camel@hornet>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__24_Oct_2012_11_39_41_+1100_pDo8MfRh44tj2/0o
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi All,
+On Tuesday, October 23, 2012 06:30:49 PM Pawel Moll wrote:
+> Greetings All,
+> 
+> More and more of people are getting interested in the subject of power
+> (energy) consumption monitoring. We have some external tools like
+> "battery simulators", energy probes etc., but some targets can measure
+> their power usage on their own.
+> 
+> Traditionally such data should be exposed to the user via hwmon sysfs
+> interface, and that's exactly what I did for "my" platform - I have
+> a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
+> enough to draw pretty graphs in userspace. Everyone was happy...
+> 
+> Now I am getting new requests to do more with this data. In particular
+> I'm asked how to add such information to ftrace/perf output.
+Why? What is the gain?
 
-On Tue, 23 Oct 2012 13:22:23 -0700 Kees Cook <keescook@chromium.org> wrote:
->
-> On Tue, Oct 23, 2012 at 1:16 PM, David Miller <davem@davemloft.net> wrote:
-> > From: Johannes Berg <johannes@sipsolutions.net>
-> > Date: Tue, 23 Oct 2012 22:15:50 +0200
-> >
-> >> On Tue, 2012-10-23 at 13:04 -0700, Kees Cook wrote:
-> >>> This config item has not carried much meaning for a while now and is
-> >>> almost always enabled by default. As agreed during the Linux kernel
-> >>> summit, remove it.
-> >>>
-> >>> CC: "John W. Linville" <linville@tuxdriver.com>
-> >>> CC: Johannes Berg <johannes@sipsolutions.net>
-> >>> CC: "David S. Miller" <davem@davemloft.net>
-> >>> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >>
-> >> Acked-by: Johannes Berg <johannes@sipsolutions.net>
-> >>
-> >> Presumably somebody is going to submit a git tree with the entire seri=
-es
-> >> and you don't want me to pick up this piece, right?
-> >
-> > He better not expect us to take this stuff.
->=20
-> I'm going to do whatever each maintainer wants. :)
->=20
-> Sounds like you guys would like me to carry these in my tree, so I'll
-> add them to linux-next.
+Perf events can be triggered at any point in the kernel.
+A cpufreq event is triggered when the frequency gets changed.
+CPU idle events are triggered when the kernel requests to enter an idle state
+or exits one.
 
-I would much prefer that they are merged via each maintainers tree as that
-will eliminate the inevitable conflicts (for which I will bear the
-pain :-().
+When would you trigger a thermal or a power event?
+There is the possibility of (critical) thermal limits.
+But if I understand this correctly you want this for debugging and
+I guess you have everything interesting one can do with temperature
+values:
+  - read the temperature
+  - draw some nice graphs from the results
 
-These are not big hard patches and have no dependencies on anything, so
-what is the problem?
+Hm, I guess I know what you want to do:
+In your temperature/energy graph, you want to have some dots
+when relevant HW states (frequency, sleep states,  DDR power,...)
+changed. Then you are able to see the effects over a timeline.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So you have to bring the existing frequency/idle perf events together
+with temperature readings
 
---Signature=_Wed__24_Oct_2012_11_39_41_+1100_pDo8MfRh44tj2/0o
-Content-Type: application/pgp-signature
+Cleanest solution could be to enhance the exisiting userspace apps
+(pytimechart/perf timechart) and let them add another line
+(temperature/energy), but the data would not come from perf, but
+from sysfs/hwmon.
+Not sure whether this works out with the timechart tools.
+Anyway, this sounds like a userspace only problem.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQhzjNAAoJEECxmPOUX5FEkSwQAILTnEalwssOKd6tK8OTnMkr
-nQMzv0amRTgJdS5YGsg0nmfhU+62nXNdkkmPqfrQjM/UOGzSoyc89y2z9VsAZ41G
-ei5Z9WOx06GrFbPCgepx12fpmo3tc19zXlczcsMr1WXWHJKoaYPK9FeEY75Sa0FX
-aaZHRyrALwKqAaFQyMlZeqGV07mL2yiuZpogQ+KlhxjbZsPhA3ppaNmxxvi4lbV0
-jhcIulHruN5Vcbp0PEorDrEQDyKMqCDWXSyJpzrN+wYYe5Ar1kHmEQvKZElOyDko
-u9ykHo1CR2EJFowlnyOWrU6+5MZm70gih81AFm2jKQUUHtCqSMWPLJ+4oL9tgDNM
-gMVEQjjtQ2/js7Yv4XrjtBFZ1iSeXNdlxJ7wyFjKERzjepgrpMO9dxyJJrXBxPFk
-sKFc35XLYgq4SWanSv3+UcfosQl8lANm8rzpAamFSdEmX7ifJl48UFKnO+XFctRr
-sMQ9QOxoFzvarDszVao8njd/E4ajxSV5O90ekk2gMBFyUPR44su5P6tWr6DKEtFD
-lLWBjo4Gk5D8sx2EJP0WNVY2apcuOU3f/FHtIFn+O95szNcY8n8uhtH1V9h2IQKr
-y/u4chE8twDBb77GEm3rtQNGJ5niKL8AnhjxCMi2IZZZVGUFrS/JdFu1eXlOI8D7
-1dKkCpuLiieJMA0oVtjB
-=nI8j
------END PGP SIGNATURE-----
-
---Signature=_Wed__24_Oct_2012_11_39_41_+1100_pDo8MfRh44tj2/0o--
+   Thomas
