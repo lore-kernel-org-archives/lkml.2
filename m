@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933922Ab2JXMvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:51:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2086 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932517Ab2JXMvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:51:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="237564021"
-Date: Wed, 24 Oct 2012 05:41:14 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user
- callchain
-Message-ID: <20121024124114.GV2095@tassilo.jf.intel.com>
-References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
- <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
- <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
- <5087CF96.7010406@intel.com>
- <CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
- <5087D678.1080905@intel.com>
- <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
- <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
- <20121024123124.GU2095@tassilo.jf.intel.com>
- <CABPqkBQ7dOFpGOLu_Dbyr=HPeBj6mC8Roov7ZpD6v6qUO2JsFA@mail.gmail.com>
+	id S934113Ab2JXMvb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:51:31 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:12382 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933636Ab2JXMvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 08:51:18 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
+   d="scan'208";a="15358174"
+Message-ID: <5087E444.60008@citrix.com>
+Date: Wed, 24 Oct 2012 14:51:16 +0200
+From: =?GB2312?B?Um9nZXIgUGF1IE1vbm6opg==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQ7dOFpGOLu_Dbyr=HPeBj6mC8Roov7ZpD6v6qUO2JsFA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: liuxiaolei1124 <liuxiaolei1124@163.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: about the patch: Persistent grant maps for xen blk drivers
+References: <6fa672f0.1d1fd.13a92ca063b.Coremail.liuxiaolei1124@163.com>
+In-Reply-To: <6fa672f0.1d1fd.13a92ca063b.Coremail.liuxiaolei1124@163.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But isn't the whole point of the patch to hide LBR cstack from users so they
-> won't know they're using it for user cstack?
+On 24/10/12 14:40, liuxiaolei1124 wrote:
+> Dear Roger:
+>  
+>      i have put the patch "Persistent grant maps for xen blk drivers"
+> (https://lkml.org/lkml/2012/10/18/191) into my Dom0 which is 2.6.32.36.
+> And when i start a vm, sometimes the blkback go to the BUG_ON.
 
-The point of the patch is to get user backtraces where you can't
-get them today.
+I'm working on top of the next release (3.7.0-rc1), so I cannot assure
+that this patch will work correctly on top of 2.6.32.36. I would
+recommend you to switch to
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git and apply
+my patch on top of the linux-next branch to perform the testing.
 
-> 
-> To disable it in sysfs, I need to know it's being used in the first place.
+> + for (i = 0, j = 0; i < nseg; i++) {
+> + if (!persistent_gnts[i] || !persistent_gnts[i]->handle) {
+> + /* This is a newly mapped grant */
+> + BUG_ON(j >= segs_to_map);       // BUG_ON here
+> + if (unlikely(map[j].status != 0)) {
+> + pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
+> + map[j].handle = BLKBACK_INVALID_HANDLE;
+> + ret |= 1;
+> + if (persistent_gnts[i]) {
+> + rb_erase(&persistent_gnts[i]->node,
+> + &blkif->persistent_gnts);
+> + blkif->persistent_gnt_c--;
+> + kfree(persistent_gnts[i]);
+> + persistent_gnts[i] = NULL;
+> + }
+> + }
+> + }
+>  
+> i don't understand when j  >=  segs_to_unmap ?
 
-You can always disable unconditionally it if you want to use LBR.
+It should never happen, if j >= segs_to_unmap and we hit the bug it
+means we are trying to process more segments than the ones we have mapped.
 
-> I think in x86_pmu_hw_config(), you could simply check the priv level
-> restrictions on the event. If exclude_user is set, then don't active LBR cstack
-> and that's it. That's what I was trying to get to...
+> And i make a test,  i don't put the patch which in xen-blkfront.c into
+> kernel, no matter i forced set pers_grants = 1 or set pers_grants = 0
+> ,it's OK when i start a vm.
 
-Ok that sounds reasonable. Yes it only makes sense for user sampling
-currently. However the restriction may be fixed at some point, then
-it could be also used for the kernel.
+Do you have the dmesg from the DomU? Does it even start? Could you also
+post the serial output of the crash (and the lines before the crash)?
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks for the testing, Roger.
+
