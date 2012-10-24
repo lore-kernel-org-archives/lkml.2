@@ -1,111 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934253Ab2JXChH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 22:37:07 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:48003 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755872Ab2JXChC (ORCPT
+	id S1755962Ab2JXClJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 22:41:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49808 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2JXClI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 22:37:02 -0400
+	Tue, 23 Oct 2012 22:41:08 -0400
+Date: Tue, 23 Oct 2012 19:41:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: axel.lin@ingics.com, anish198519851985@gmail.com, jenny.tc@intel.com,
+        cw00.choi@samsung.com, sachin.kamat@linaro.org, peterhuewe@gmx.de,
+        develkernel412222@gmail.com, myungjoo.ham@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL v2] extcon fixes for Linux 3.7
+Message-ID: <20121024024136.GA8551@kroah.com>
+References: <20121022195606.GA13640@kroah.com>
+ <1350980300-15397-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <50871695.2040904@gmail.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1350387889-15324-2-git-send-email-hongbo.zhang@linaro.com>
-	<5083C8E4.7090007@gmail.com>
-	<CAJLyvQyrZ56_KhUTpuv=2fet=12QHSCUjgUKHF9n3cmaATke5w@mail.gmail.com>
-	<50871695.2040904@gmail.com>
-Date: Wed, 24 Oct 2012 10:37:01 +0800
-Message-ID: <CAJLyvQwKxVA7xz_KQsDAznJXr+OnFSHFyxGGL6DQucobA+JO4w@mail.gmail.com>
-Subject: Re: [PATCH 1/5] Thermal: do bind operation after thermal zone or
- cooling device register returns.
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Francesco Lavra <francescolavra.fl@gmail.com>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, linaro-kernel@lists.linaro.org,
-        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org,
-        amit.kachhap@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350980300-15397-1-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 06:13, Francesco Lavra <francescolavra.fl@gmail.com> wrote:
-> Hi,
-> On 10/23/2012 10:23 AM, Hongbo Zhang wrote:
->> Hi Francesco,
->> I found out more points about this issue.
->>
->> [1]
->> cdev should be ready when get_max_state callback be called, otherwise
->> parameter cdev is useless, imagine there may be cases that
->> get_max_state call back is shared by more than one cooling devices of
->> same kind, like this:
->> common_get_max_state(*cdev, *state)
->> {
->>     if (cdev == cdev1)  *state = 3;
->>     else if (cdev == cdev)  *state = 5;
->>     else
->> }
->>
->> [2]
->> In my cpufreq cooling case(in fact cdev is not used to calculate
->> max_state), the cooling_cpufreq_list should be ready when
->> get_max_state call back is called. In this patch I defer the binding
->> when registration finished, but this is not perfect now, see this
->> routine in cpufreq_cooling_register:
->>
->> thermal_cooling_device_register;
->> at this time: thermal_bind_work -> get_max_state -> get NULL
->> cooling_cpufreq_list
->> and then: list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list)
->> This is due to we cannot know exactly when the bind work is executed.
->> (and this can be fixed by moving mutex_lock(&cooling_cpufreq_lock)
->> aheadof thermal_cooling_device_register and other corresponding
->> modifications, but I found another way as below)
->>
->> [3]
->> Root cause of this problem is calling get_max_state in register -> bind routine.
->> Better solution is to add another parameter in cooling device register
->> function, also add a max_state member in struct cdev, like:
->> thermal_cooling_device_register(char *type, void *devdata, const
->> struct thermal_cooling_device_ops *ops, unsigned long max_state)
->> and then in the bind function:
->> if(cdev->max_state)
->>     max_state = cdev->max_state;
->> else
->>     cdev->get_max_state(cdev, &max_state)
->>
->> It is common sense that the cooling driver should know its cooling
->> max_state(ability) before registration, and it can be offered when
->> register.
->> I think this way doesn't change both thermal and cooling layer much,
->> it is more clear.
->> I will update this patch soon.
->
-> I still believe the thermal layer doesn't need any change to work around
-> this problem, and I still believe that when a cooling device is being
-> registered, all of its ops should be fully functional.
-> The problem with the cpufreq cooling device driver is that its callbacks
-> use the internal list of devices to retrieve the struct
-> cpufreq_cooling_device instance corresponding to a given struct
-> thermal_cooling_device. This is not necessary, because the struct
-> thermal_cooling_device has a private data pointer (devdata) which in
-> this case is exactly a reference to the struct cpufreq_cooling_device
-> instance the callbacks are looking for. In fact, I think the
-> cooling_cpufreq_list is not necessary at all, and should be removed from
-> the cpufreq cooling driver.
-> So the 3 callbacks, instead of iterating through the device list, should
-> have something like:
-> struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
-> That would do the trick.
+On Tue, Oct 23, 2012 at 05:18:20PM +0900, MyungJoo Ham wrote:
+> 
+> 
+> Hello Greg,
+> 
+> Please pull:
+> The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+> 
+>   Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git bugfixes
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/extcon.git tags/fixes-for-3.7
 
-Hi Francesco,
-When I found out this issue, I was hesitating to select the best
-solution among several ideas.
-It is clear now after talk with you, I will send patch for cpufreq
-cooling layer.
-Thank you.
->
-> --
-> Francesco
+Why two things to pull from?  I just pulled from the last one, that
+worked properly for me, was signed, and showed the same diffstat.  I've
+pulled and pushed it out now.
+
+thanks,
+
+greg k-h
