@@ -1,228 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2JXPdy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:33:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:22762 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755131Ab2JXPdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:33:51 -0400
-Subject: [PATCH v8 3/5] ipc: message queue receive cleanup
-To: akpm@linux-foundation.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: serge.hallyn@canonical.com, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org, xemul@parallels.com,
-        catalin.marinas@arm.com, will.deacon@arm.com, jmorris@namei.org,
-        cmetcalf@tilera.com, joe.korty@ccur.com, dhowells@redhat.com,
-        dledford@redhat.com, viro@zeniv.linux.org.uk,
-        kosaki.motohiro@jp.fujitsu.com, linux-api@vger.kernel.org,
-        serue@us.ibm.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        devel@openvz.org, mtk.manpages@gmail.com
-Date: Wed, 24 Oct 2012 19:35:15 +0400
-Message-ID: <20121024153515.5642.78383.stgit@localhost.localdomain>
-In-Reply-To: <20121024151555.5642.79086.stgit@localhost.localdomain>
-References: <20121024151555.5642.79086.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S934675Ab2JXPeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 11:34:06 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:11020 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758303Ab2JXPeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 11:34:00 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <plagnioj@jcrosoft.com>, <ludovic.desroches@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <nicolas.ferre@atmel.com>, <voice.shen@atmel.com>,
+        <marek.belisko@open-nandra.com>, <ivan.shugov@gmail.com>,
+        <josh.wu@atmel.com>
+Subject: [PATCH 0/8] at91: 3.7 fixes patch series
+Date: Wed, 24 Oct 2012 17:33:49 +0200
+Message-ID: <cover.1351092432.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves all message related manipulation into one function msg_fill().
-Actually, two functions because of the compat one.
+Hi all,
+I am posting this patch series just before sending a pull-request to Arnd and
+Olof.
+There are 2 new patches that I have just cooked today about external IRQ
+handling: please review.
+I would like you to double check that I have not made any mistake while
+collecting the other patches...
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- include/linux/msg.h |    5 +++--
- ipc/compat.c        |   45 +++++++++++++++++++--------------------------
- ipc/msg.c           |   44 +++++++++++++++++++++++---------------------
- 3 files changed, 45 insertions(+), 49 deletions(-)
+Thanks, best regards,
 
-diff --git a/include/linux/msg.h b/include/linux/msg.h
-index 7a4b9e9..f38edba 100644
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -34,7 +34,8 @@ struct msg_queue {
- /* Helper routines for sys_msgsnd and sys_msgrcv */
- extern long do_msgsnd(int msqid, long mtype, void __user *mtext,
- 			size_t msgsz, int msgflg);
--extern long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
--			size_t msgsz, long msgtyp, int msgflg);
-+extern long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
-+		      int msgflg,
-+		      long (*msg_fill)(void __user *, struct msg_msg *, size_t ));
- 
- #endif /* _LINUX_MSG_H */
-diff --git a/ipc/compat.c b/ipc/compat.c
-index ad9518e..eb3ea16 100644
---- a/ipc/compat.c
-+++ b/ipc/compat.c
-@@ -306,6 +306,20 @@ static long do_compat_semctl(int first, int second, int third, u32 pad)
- 	return err;
- }
- 
-+long compat_do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
-+{
-+	struct compat_msgbuf __user *msgp = dest;
-+	size_t msgsz;
-+
-+	if (put_user(msg->m_type, &msgp->mtype))
-+		return -EFAULT;
-+
-+	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
-+	if (store_msg(msgp->mtext, msg, msgsz))
-+		return -EFAULT;
-+	return msgsz;
-+}
-+
- #ifdef CONFIG_ARCH_WANT_OLD_COMPAT_IPC
- long compat_sys_semctl(int first, int second, int third, void __user *uptr)
- {
-@@ -337,10 +351,6 @@ long compat_sys_msgsnd(int first, int second, int third, void __user *uptr)
- long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
- 			   int version, void __user *uptr)
- {
--	struct compat_msgbuf __user *up;
--	long type;
--	int err;
--
- 	if (first < 0)
- 		return -EINVAL;
- 	if (second < 0)
-@@ -348,23 +358,14 @@ long compat_sys_msgrcv(int first, int second, int msgtyp, int third,
- 
- 	if (!version) {
- 		struct compat_ipc_kludge ipck;
--		err = -EINVAL;
- 		if (!uptr)
--			goto out;
--		err = -EFAULT;
-+			return -EINVAL;
- 		if (copy_from_user (&ipck, uptr, sizeof(ipck)))
--			goto out;
-+			return -EFAULT;
- 		uptr = compat_ptr(ipck.msgp);
- 		msgtyp = ipck.msgtyp;
- 	}
--	up = uptr;
--	err = do_msgrcv(first, &type, up->mtext, second, msgtyp, third);
--	if (err < 0)
--		goto out;
--	if (put_user(type, &up->mtype))
--		err = -EFAULT;
--out:
--	return err;
-+	return do_msgrcv(first, uptr, second, msgtyp, third, compat_do_msg_fill);
- }
- #else
- long compat_sys_semctl(int semid, int semnum, int cmd, int arg)
-@@ -385,16 +386,8 @@ long compat_sys_msgsnd(int msqid, struct compat_msgbuf __user *msgp,
- long compat_sys_msgrcv(int msqid, struct compat_msgbuf __user *msgp,
- 		       compat_ssize_t msgsz, long msgtyp, int msgflg)
- {
--	long err, mtype;
--
--	err =  do_msgrcv(msqid, &mtype, msgp->mtext, (ssize_t)msgsz, msgtyp, msgflg);
--	if (err < 0)
--		goto out;
--
--	if (put_user(mtype, &msgp->mtype))
--		err = -EFAULT;
-- out:
--	return err;
-+	return do_msgrcv(msqid, msgp, (ssize_t)msgsz, msgtyp, msgflg,
-+			 compat_do_msg_fill);
- }
- #endif
- 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 2f272fa..532ebc3 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -755,15 +755,30 @@ static inline int convert_mode(long *msgtyp, int msgflg)
- 	return SEARCH_EQUAL;
- }
- 
--long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
--		size_t msgsz, long msgtyp, int msgflg)
-+static long do_msg_fill(void __user *dest, struct msg_msg *msg, size_t bufsz)
-+{
-+	struct msgbuf __user *msgp = dest;
-+	size_t msgsz;
-+
-+	if (put_user(msg->m_type, &msgp->mtype))
-+		return -EFAULT;
-+
-+	msgsz = (bufsz > msg->m_ts) ? msg->m_ts : bufsz;
-+	if (store_msg(msgp->mtext, msg, msgsz))
-+		return -EFAULT;
-+	return msgsz;
-+}
-+
-+long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
-+	       int msgflg,
-+	       long (*msg_handler)(void __user *, struct msg_msg *, size_t ))
- {
- 	struct msg_queue *msq;
- 	struct msg_msg *msg;
- 	int mode;
- 	struct ipc_namespace *ns;
- 
--	if (msqid < 0 || (long) msgsz < 0)
-+	if (msqid < 0 || (long) bufsz < 0)
- 		return -EINVAL;
- 	mode = convert_mode(&msgtyp, msgflg);
- 	ns = current->nsproxy->ipc_ns;
-@@ -804,7 +819,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
- 			 * Found a suitable message.
- 			 * Unlink it from the queue.
- 			 */
--			if ((msgsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
-+			if ((bufsz < msg->m_ts) && !(msgflg & MSG_NOERROR)) {
- 				msg = ERR_PTR(-E2BIG);
- 				goto out_unlock;
- 			}
-@@ -831,7 +846,7 @@ long do_msgrcv(int msqid, long *pmtype, void __user *mtext,
- 		if (msgflg & MSG_NOERROR)
- 			msr_d.r_maxsize = INT_MAX;
- 		else
--			msr_d.r_maxsize = msgsz;
-+			msr_d.r_maxsize = bufsz;
- 		msr_d.r_msg = ERR_PTR(-EAGAIN);
- 		current->state = TASK_INTERRUPTIBLE;
- 		msg_unlock(msq);
-@@ -894,29 +909,16 @@ out_unlock:
- 	if (IS_ERR(msg))
- 		return PTR_ERR(msg);
- 
--	msgsz = (msgsz > msg->m_ts) ? msg->m_ts : msgsz;
--	*pmtype = msg->m_type;
--	if (store_msg(mtext, msg, msgsz))
--		msgsz = -EFAULT;
--
-+	bufsz = msg_handler(buf, msg, bufsz);
- 	free_msg(msg);
- 
--	return msgsz;
-+	return bufsz;
- }
- 
- SYSCALL_DEFINE5(msgrcv, int, msqid, struct msgbuf __user *, msgp, size_t, msgsz,
- 		long, msgtyp, int, msgflg)
- {
--	long err, mtype;
--
--	err =  do_msgrcv(msqid, &mtype, msgp->mtext, msgsz, msgtyp, msgflg);
--	if (err < 0)
--		goto out;
--
--	if (put_user(mtype, &msgp->mtype))
--		err = -EFAULT;
--out:
--	return err;
-+	return do_msgrcv(msqid, msgp, msgsz, msgtyp, msgflg, do_msg_fill);
- }
- 
- #ifdef CONFIG_PROC_FS
+
+Bo Shen (2):
+  ARM: at91/i2c: change id to let i2c-gpio work
+  ARM: at91/i2c: change id to let i2c-at91 work
+
+Ivan Shugov (1):
+  ARM: at91: at91sam9g10: fix SOC type detection
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+  ARM: at91: drop duplicated config SOC_AT91SAM9 entry
+
+Josh Wu (1):
+  ARM: at91/tc: fix typo in the DT document
+
+Marek Belisko (1):
+  ARM: at91/dts: at91sam9g20ek_common: Fix typos in buttons labels.
+
+Nicolas Ferre (2):
+  ARM: at91: fix external interrupts in non-DT case
+  ARM: at91: fix external interrupt specification in board code
+
+ Documentation/devicetree/bindings/arm/atmel-at91.txt |  2 +-
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi          |  4 ++--
+ arch/arm/mach-at91/Kconfig                           | 10 ++--------
+ arch/arm/mach-at91/at91rm9200.c                      |  2 +-
+ arch/arm/mach-at91/at91rm9200_devices.c              |  4 ++--
+ arch/arm/mach-at91/at91sam9260.c                     |  4 ++--
+ arch/arm/mach-at91/at91sam9260_devices.c             |  4 ++--
+ arch/arm/mach-at91/at91sam9261.c                     |  4 ++--
+ arch/arm/mach-at91/at91sam9261_devices.c             |  4 ++--
+ arch/arm/mach-at91/at91sam9263.c                     |  2 +-
+ arch/arm/mach-at91/at91sam9263_devices.c             |  4 ++--
+ arch/arm/mach-at91/at91sam9rl_devices.c              |  4 ++--
+ arch/arm/mach-at91/board-neocore926.c                |  2 +-
+ arch/arm/mach-at91/board-sam9261ek.c                 |  2 +-
+ arch/arm/mach-at91/board-sam9263ek.c                 |  2 +-
+ arch/arm/mach-at91/generic.h                         |  3 ++-
+ arch/arm/mach-at91/irq.c                             |  9 +++++++--
+ arch/arm/mach-at91/setup.c                           |  4 ++--
+ 18 files changed, 35 insertions(+), 35 deletions(-)
+
+-- 
+1.7.11.3
 
