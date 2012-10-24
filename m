@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161447Ab2JXV5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:57:13 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43238 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161299Ab2JXV5H (ORCPT
+	id S1161411Ab2JXV5Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:57:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37124 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161299Ab2JXV5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:57:07 -0400
+	Wed, 24 Oct 2012 17:57:22 -0400
 From: Juri Lelli <juri.lelli@gmail.com>
 To: peterz@infradead.org, tglx@linutronix.de
 Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
         raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
         jkacur@redhat.com, harald.gustafsson@ericsson.com,
         vincent.guittot@linaro.org
-Subject: [PATCH 10/16] sched: add latency tracing for -deadline tasks.
-Date: Wed, 24 Oct 2012 14:53:48 -0700
-Message-Id: <1351115634-8420-11-git-send-email-juri.lelli@gmail.com>
+Subject: [PATCH 11/16] rtmutex: turn the plist into an rb-tree.
+Date: Wed, 24 Oct 2012 14:53:49 -0700
+Message-Id: <1351115634-8420-12-git-send-email-juri.lelli@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
 References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
@@ -29,192 +29,592 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dario Faggioli <raistlin@linux.it>
+From: Peter Zijlstra <peterz@infradead.org>
 
-It is very likely that systems that wants/needs to use the new
-SCHED_DEADLINE policy also want to have the scheduling latency of
-the -deadline tasks under control.
+Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
+and provide a proper comparison function for -deadline and
+-priority tasks.
 
-For this reason a new version of the scheduling wakeup latency,
-called "wakeup_dl", is introduced.
+This is done mainly because:
+ - classical prio field of the plist is just an int, which might
+   not be enough for representing a deadline;
+ - manipulating such a list would become O(nr_deadline_tasks),
+   which might be to much, as the number of -deadline task increases.
 
-As a consequence of applying this patch there will be three wakeup
-latency tracer:
- * "wakeup", that deals with all tasks in the system;
- * "wakeup_rt", that deals with -rt and -deadline tasks only;
- * "wakeup_dl", that deals with -deadline tasks only.
+Therefore, an rb-tree is used, and tasks are queued in it according
+to the following logic:
+ - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
+   one with the higher (lower, actually!) prio wins;
+ - among a -priority and a -deadline task, the latter always wins;
+ - among two -deadline tasks, the one with the earliest deadline
+   wins.
 
+Queueing and dequeueing functions are changed accordingly, for both
+the list of a task's pi-waiters and the list of tasks blocked on
+a pi-lock.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Dario Faggioli <raistlin@linux.it>
 Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
 ---
- kernel/trace/trace_sched_wakeup.c |   44 +++++++++++++++++++++++++++++++++----
- kernel/trace/trace_selftest.c     |   28 +++++++++++++----------
- 2 files changed, 57 insertions(+), 15 deletions(-)
+ include/linux/init_task.h |   10 +++
+ include/linux/rtmutex.h   |   18 ++----
+ include/linux/sched.h     |    4 +-
+ kernel/fork.c             |    3 +-
+ kernel/futex.c            |    2 +
+ kernel/rtmutex-debug.c    |   10 ++-
+ kernel/rtmutex.c          |  152 ++++++++++++++++++++++++++++++++++++---------
+ kernel/rtmutex_common.h   |   22 +++----
+ kernel/sched/core.c       |    4 --
+ 9 files changed, 159 insertions(+), 66 deletions(-)
 
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 02170c0..8050c80 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -27,6 +27,7 @@ static int			wakeup_cpu;
- static int			wakeup_current_cpu;
- static unsigned			wakeup_prio = -1;
- static int			wakeup_rt;
-+static int			wakeup_dl;
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 6d087c5..7d2634b 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -10,6 +10,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/user_namespace.h>
+ #include <linux/securebits.h>
++#include <linux/rbtree.h>
+ #include <net/net_namespace.h>
  
- static arch_spinlock_t wakeup_lock =
- 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-@@ -429,9 +430,17 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
- 	tracing_record_cmdline(p);
- 	tracing_record_cmdline(current);
+ #ifdef CONFIG_SMP
+@@ -143,6 +144,14 @@ extern struct task_group root_task_group;
  
--	if ((wakeup_rt && !rt_task(p)) ||
--			p->prio >= wakeup_prio ||
--			p->prio >= current->prio)
-+	/*
-+	 * Semantic is like this:
-+	 *  - wakeup tracer handles all tasks in the system, independently
-+	 *    from their scheduling class;
-+	 *  - wakeup_rt tracer handles tasks belonging to sched_dl and
-+	 *    sched_rt class;
-+	 *  - wakeup_dl handles tasks belonging to sched_dl class only.
-+	 */
-+	if ((wakeup_dl && !dl_task(p)) ||
-+	    (wakeup_rt && !dl_task(p) && !rt_task(p)) ||
-+	    (p->prio >= wakeup_prio || p->prio >= current->prio))
- 		return;
+ #define INIT_TASK_COMM "swapper"
  
- 	pc = preempt_count();
-@@ -443,7 +452,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
- 	arch_spin_lock(&wakeup_lock);
- 
- 	/* check for races. */
--	if (!tracer_enabled || p->prio >= wakeup_prio)
-+	if (!tracer_enabled || (!dl_task(p) && p->prio >= wakeup_prio))
- 		goto out_locked;
- 
- 	/* reset the trace */
-@@ -551,16 +560,25 @@ static int __wakeup_tracer_init(struct trace_array *tr)
- 
- static int wakeup_tracer_init(struct trace_array *tr)
- {
-+	wakeup_dl = 0;
- 	wakeup_rt = 0;
- 	return __wakeup_tracer_init(tr);
++#ifdef CONFIG_RT_MUTEXES
++# define INIT_RT_MUTEXES(tsk)						\
++	.pi_waiters = RB_ROOT,						\
++	.pi_waiters_leftmost = NULL,
++#else
++# define INIT_RT_MUTEXES(tsk)
++#endif
++
+ /*
+  *  INIT_TASK is used to set up the first task table, touch at
+  * your own risk!. Base=0, limit=0x1fffff (=2MB)
+@@ -210,6 +219,7 @@ extern struct task_group root_task_group;
+ 	INIT_TRACE_RECURSION						\
+ 	INIT_TASK_RCU_PREEMPT(tsk)					\
+ 	INIT_CPUSET_SEQ							\
++	INIT_RT_MUTEXES(tsk)						\
  }
  
- static int wakeup_rt_tracer_init(struct trace_array *tr)
+ 
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index de17134..3aed8d7 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -13,7 +13,7 @@
+ #define __LINUX_RT_MUTEX_H
+ 
+ #include <linux/linkage.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/spinlock_types.h>
+ 
+ extern int max_lock_depth; /* for sysctl */
+@@ -22,12 +22,14 @@ extern int max_lock_depth; /* for sysctl */
+  * The rt_mutex structure
+  *
+  * @wait_lock:	spinlock to protect the structure
+- * @wait_list:	pilist head to enqueue waiters in priority order
++ * @waiters:	rbtree root to enqueue waiters in priority order
++ * @waiters_leftmost: top waiter
+  * @owner:	the mutex owner
+  */
+ struct rt_mutex {
+ 	raw_spinlock_t		wait_lock;
+-	struct plist_head	wait_list;
++	struct rb_root          waiters;
++	struct rb_node          *waiters_leftmost;
+ 	struct task_struct	*owner;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+ 	int			save_state;
+@@ -66,7 +68,7 @@ struct hrtimer_sleeper;
+ 
+ #define __RT_MUTEX_INITIALIZER(mutexname) \
+ 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
+-	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
++	, .waiters = RB_ROOT \
+ 	, .owner = NULL \
+ 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
+ 
+@@ -98,12 +100,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
+ 
+ extern void rt_mutex_unlock(struct rt_mutex *lock);
+ 
+-#ifdef CONFIG_RT_MUTEXES
+-# define INIT_RT_MUTEXES(tsk)						\
+-	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
+-	INIT_RT_MUTEX_DEBUG(tsk)
+-#else
+-# define INIT_RT_MUTEXES(tsk)
+-#endif
+-
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 6416517..1f0f5de 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -16,6 +16,7 @@ struct sched_param {
+ #include <linux/types.h>
+ #include <linux/timex.h>
+ #include <linux/jiffies.h>
++#include <linux/plist.h>
+ #include <linux/rbtree.h>
+ #include <linux/thread_info.h>
+ #include <linux/cpumask.h>
+@@ -1500,7 +1501,8 @@ struct task_struct {
+ 
+ #ifdef CONFIG_RT_MUTEXES
+ 	/* PI waiters blocked on a rt_mutex held by this task */
+-	struct plist_head pi_waiters;
++	struct rb_root pi_waiters;
++	struct rb_node *pi_waiters_leftmost;
+ 	/* Deadlock detection and priority inheritance handling */
+ 	struct rt_mutex_waiter *pi_blocked_on;
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index d34cc64..d8928dd 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1092,7 +1092,8 @@ static void rt_mutex_init_task(struct task_struct *p)
  {
-+	wakeup_dl = 0;
- 	wakeup_rt = 1;
- 	return __wakeup_tracer_init(tr);
+ 	raw_spin_lock_init(&p->pi_lock);
+ #ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&p->pi_waiters);
++	p->pi_waiters = RB_ROOT;
++	p->pi_waiters_leftmost = NULL;
+ 	p->pi_blocked_on = NULL;
+ #endif
+ }
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 3717e7b..cdf5267 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2294,6 +2294,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	 */
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
+ 	rt_waiter.task = NULL;
++	//rb_init_node(&rt_waiter.tree_entry);
++	//rb_init_node(&rt_waiter.pi_tree_entry);
+ 
+ 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
+ 	if (unlikely(ret != 0))
+diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
+index 16502d3..0f339ca 100644
+--- a/kernel/rtmutex-debug.c
++++ b/kernel/rtmutex-debug.c
+@@ -23,7 +23,7 @@
+ #include <linux/kallsyms.h>
+ #include <linux/syscalls.h>
+ #include <linux/interrupt.h>
+-#include <linux/plist.h>
++#include <linux/rbtree.h>
+ #include <linux/fs.h>
+ #include <linux/debug_locks.h>
+ 
+@@ -56,7 +56,7 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
+ 
+ void rt_mutex_debug_task_free(struct task_struct *task)
+ {
+-	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
++	DEBUG_LOCKS_WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
+ 	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
  }
  
-+static int wakeup_dl_tracer_init(struct trace_array *tr)
+@@ -153,16 +153,14 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
+ void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	memset(waiter, 0x11, sizeof(*waiter));
+-	plist_node_init(&waiter->list_entry, MAX_PRIO);
+-	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
++	RB_CLEAR_NODE(&waiter->pi_tree_entry);
++	RB_CLEAR_NODE(&waiter->tree_entry);
+ 	waiter->deadlock_task_pid = NULL;
+ }
+ 
+ void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
+ {
+ 	put_pid(waiter->deadlock_task_pid);
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
+-	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+ 	memset(waiter, 0x22, sizeof(*waiter));
+ }
+ 
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index a242e69..aca58e6 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -90,10 +90,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
+ }
+ #endif
+ 
++static inline int
++rt_mutex_waiter_less(struct rt_mutex_waiter *left,
++		     struct rt_mutex_waiter *right)
 +{
-+	wakeup_dl = 1;
-+	wakeup_rt = 0;
-+	return __wakeup_tracer_init(tr);
++	if (left->task->prio < right->task->prio)
++		return 1;
++
++	/*
++	 * If both tasks are dl_task(), we check their deadlines.
++	 */
++	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
++		return (left->task->dl.deadline < right->task->dl.deadline);
++
++	return 0;
 +}
 +
- static void wakeup_tracer_reset(struct trace_array *tr)
++static void
++rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link = &lock->waiters.rb_node;
++	struct rb_node *parent = NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost = 1;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link = &parent->rb_left;
++		} else {
++			link = &parent->rb_right;
++			leftmost = 0;
++		}
++	}
++
++	if (leftmost)
++		lock->waiters_leftmost = &waiter->tree_entry;
++
++	rb_link_node(&waiter->tree_entry, parent, link);
++	rb_insert_color(&waiter->tree_entry, &lock->waiters);
++}
++
++static void
++rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
++{
++	if (RB_EMPTY_NODE(&waiter->tree_entry))
++		return;
++
++	if (lock->waiters_leftmost == &waiter->tree_entry)
++		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
++
++	rb_erase(&waiter->tree_entry, &lock->waiters);
++	RB_CLEAR_NODE(&waiter->tree_entry);
++}
++
++static void
++rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
++{
++	struct rb_node **link = &task->pi_waiters.rb_node;
++	struct rb_node *parent = NULL;
++	struct rt_mutex_waiter *entry;
++	int leftmost = 1;
++
++	while (*link) {
++		parent = *link;
++		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
++		if (rt_mutex_waiter_less(waiter, entry)) {
++			link = &parent->rb_left;
++		} else {
++			link = &parent->rb_right;
++			leftmost = 0;
++		}
++	}
++
++	if (leftmost)
++		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
++
++	rb_link_node(&waiter->pi_tree_entry, parent, link);
++	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
++}
++
++static void
++rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
++{
++	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
++		return;
++
++	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
++		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
++
++	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
++	RB_CLEAR_NODE(&waiter->pi_tree_entry);
++}
++
+ /*
+- * Calculate task priority from the waiter list priority
++ * Calculate task priority from the waiter tree priority
+  *
+- * Return task->normal_prio when the waiter list is empty or when
++ * Return task->normal_prio when the waiter tree is empty or when
+  * the waiter is not allowed to do priority boosting
+  */
+ int rt_mutex_getprio(struct task_struct *task)
+@@ -101,7 +195,7 @@ int rt_mutex_getprio(struct task_struct *task)
+ 	if (likely(!task_has_pi_waiters(task)))
+ 		return task->normal_prio;
+ 
+-	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
++	return min(task_top_pi_waiter(task)->task->prio,
+ 		   task->normal_prio);
+ }
+ 
+@@ -219,7 +313,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	 * When deadlock detection is off then we check, if further
+ 	 * priority adjustment is necessary.
+ 	 */
+-	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
++	if (!detect_deadlock && waiter->task->prio == task->prio)
+ 		goto out_unlock_pi;
+ 
+ 	lock = waiter->lock;
+@@ -240,9 +334,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 	top_waiter = rt_mutex_top_waiter(lock);
+ 
+ 	/* Requeue the waiter */
+-	plist_del(&waiter->list_entry, &lock->wait_list);
+-	waiter->list_entry.prio = task->prio;
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
++	waiter->task->prio = task->prio;
++	rt_mutex_enqueue(lock, waiter);
+ 
+ 	/* Release the task */
+ 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+@@ -266,17 +360,15 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		/* Boost the owner */
+-		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, top_waiter);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 
+ 	} else if (top_waiter == waiter) {
+ 		/* Deboost the owner */
+-		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_dequeue_pi(task, waiter);
+ 		waiter = rt_mutex_top_waiter(lock);
+-		waiter->pi_list_entry.prio = waiter->list_entry.prio;
+-		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
++		rt_mutex_enqueue_pi(task, waiter);
+ 		__rt_mutex_adjust_prio(task);
+ 	}
+ 
+@@ -341,7 +433,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 	 * 3) it is top waiter
+ 	 */
+ 	if (rt_mutex_has_waiters(lock)) {
+-		if (task->prio >= rt_mutex_top_waiter(lock)->list_entry.prio) {
++		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
+ 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
+ 				return 0;
+ 		}
+@@ -355,7 +447,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 
+ 		/* remove the queued waiter. */
+ 		if (waiter) {
+-			plist_del(&waiter->list_entry, &lock->wait_list);
++			rt_mutex_dequeue(lock, waiter);
+ 			task->pi_blocked_on = NULL;
+ 		}
+ 
+@@ -365,8 +457,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
+ 		 */
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			top = rt_mutex_top_waiter(lock);
+-			top->pi_list_entry.prio = top->list_entry.prio;
+-			plist_add(&top->pi_list_entry, &task->pi_waiters);
++			rt_mutex_enqueue_pi(task, top);
+ 		}
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 	}
+@@ -402,13 +493,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 	__rt_mutex_adjust_prio(task);
+ 	waiter->task = task;
+ 	waiter->lock = lock;
+-	plist_node_init(&waiter->list_entry, task->prio);
+-	plist_node_init(&waiter->pi_list_entry, task->prio);
+-
++	
+ 	/* Get the top priority waiter on the lock */
+ 	if (rt_mutex_has_waiters(lock))
+ 		top_waiter = rt_mutex_top_waiter(lock);
+-	plist_add(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_enqueue(lock, waiter);
+ 
+ 	task->pi_blocked_on = waiter;
+ 
+@@ -419,8 +508,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
+ 
+ 	if (waiter == rt_mutex_top_waiter(lock)) {
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+-		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
+-		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, top_waiter);
++		rt_mutex_enqueue_pi(owner, waiter);
+ 
+ 		__rt_mutex_adjust_prio(owner);
+ 		if (owner->pi_blocked_on)
+@@ -472,7 +561,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
+ 	 * boosted mode and go back to normal after releasing
+ 	 * lock->wait_lock.
+ 	 */
+-	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
++	rt_mutex_dequeue_pi(current, waiter);
+ 
+ 	rt_mutex_set_owner(lock, NULL);
+ 
+@@ -496,7 +585,7 @@ static void remove_waiter(struct rt_mutex *lock,
+ 	int chain_walk = 0;
+ 
+ 	raw_spin_lock_irqsave(&current->pi_lock, flags);
+-	plist_del(&waiter->list_entry, &lock->wait_list);
++	rt_mutex_dequeue(lock, waiter);
+ 	current->pi_blocked_on = NULL;
+ 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+ 
+@@ -507,13 +596,13 @@ static void remove_waiter(struct rt_mutex *lock,
+ 
+ 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
+ 
+-		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
++		rt_mutex_dequeue_pi(owner, waiter);
+ 
+ 		if (rt_mutex_has_waiters(lock)) {
+ 			struct rt_mutex_waiter *next;
+ 
+ 			next = rt_mutex_top_waiter(lock);
+-			plist_add(&next->pi_list_entry, &owner->pi_waiters);
++			rt_mutex_enqueue_pi(owner, next);
+ 		}
+ 		__rt_mutex_adjust_prio(owner);
+ 
+@@ -523,8 +612,6 @@ static void remove_waiter(struct rt_mutex *lock,
+ 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
+ 	}
+ 
+-	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
+-
+ 	if (!chain_walk)
+ 		return;
+ 
+@@ -551,7 +638,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
+ 	raw_spin_lock_irqsave(&task->pi_lock, flags);
+ 
+ 	waiter = task->pi_blocked_on;
+-	if (!waiter || waiter->list_entry.prio == task->prio) {
++	if (!waiter || waiter->task->prio == task->prio) {
+ 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
+ 		return;
+ 	}
+@@ -624,6 +711,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+ 	int ret = 0;
+ 
+ 	debug_rt_mutex_init_waiter(&waiter);
++	//rb_init_node(&waiter.tree_entry);
++	//rb_init_node(&waiter.pi_tree_entry);
+ 
+ 	raw_spin_lock(&lock->wait_lock);
+ 
+@@ -890,7 +979,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
  {
- 	stop_wakeup_tracer(tr);
-@@ -623,6 +641,20 @@ static struct tracer wakeup_rt_tracer __read_mostly =
- 	.use_max_tr	= 1,
+ 	lock->owner = NULL;
+ 	raw_spin_lock_init(&lock->wait_lock);
+-	plist_head_init(&lock->wait_list);
++	lock->waiters = RB_ROOT;
++	lock->waiters_leftmost = NULL;
+ 
+ 	debug_rt_mutex_init(lock, name);
+ }
+diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
+index 53a66c8..b65442f 100644
+--- a/kernel/rtmutex_common.h
++++ b/kernel/rtmutex_common.h
+@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *lock);
+  * This is the control structure for tasks blocked on a rt_mutex,
+  * which is allocated on the kernel stack on of the blocked task.
+  *
+- * @list_entry:		pi node to enqueue into the mutex waiters list
+- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
++ * @tree_entry:		pi node to enqueue into the mutex waiters tree
++ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
+  * @task:		task reference to the blocked task
+  */
+ struct rt_mutex_waiter {
+-	struct plist_node	list_entry;
+-	struct plist_node	pi_list_entry;
++	struct rb_node          tree_entry;
++	struct rb_node          pi_tree_entry;
+ 	struct task_struct	*task;
+ 	struct rt_mutex		*lock;
+ #ifdef CONFIG_DEBUG_RT_MUTEXES
+@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
  };
  
-+static struct tracer wakeup_dl_tracer __read_mostly =
-+{
-+	.name		= "wakeup_dl",
-+	.init		= wakeup_dl_tracer_init,
-+	.reset		= wakeup_tracer_reset,
-+	.start		= wakeup_tracer_start,
-+	.stop		= wakeup_tracer_stop,
-+	.wait_pipe	= poll_wait_pipe,
-+	.print_max	= 1,
-+#ifdef CONFIG_FTRACE_SELFTEST
-+	.selftest    = trace_selftest_startup_wakeup,
-+#endif
-+};
-+
- __init static int init_wakeup_tracer(void)
+ /*
+- * Various helpers to access the waiters-plist:
++ * Various helpers to access the waiters-tree:
+  */
+ static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
  {
- 	int ret;
-@@ -635,6 +667,10 @@ __init static int init_wakeup_tracer(void)
- 	if (ret)
- 		return ret;
- 
-+	ret = register_tracer(&wakeup_dl_tracer);
-+	if (ret)
-+		return ret;
-+
- 	return 0;
+-	return !plist_head_empty(&lock->wait_list);
++	return !RB_EMPTY_ROOT(&lock->waiters);
  }
- device_initcall(init_wakeup_tracer);
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 2c00a69..45cd1e2 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -1028,11 +1028,17 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
- #ifdef CONFIG_SCHED_TRACER
- static int trace_wakeup_test_thread(void *data)
+ 
+ static inline struct rt_mutex_waiter *
+@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
  {
--	/* Make this a RT thread, doesn't need to be too high */
--	static const struct sched_param param = { .sched_priority = 5 };
-+	/* Make this a -deadline thread */
-+	struct sched_param2 paramx = {
-+		.sched_priority = 0,
-+		.sched_runtime = 100000ULL,
-+		.sched_deadline = 10000000ULL,
-+		.sched_period = 10000000ULL
-+		.sched_flags = 0
-+	};
- 	struct completion *x = data;
+ 	struct rt_mutex_waiter *w;
  
--	sched_setscheduler(current, SCHED_FIFO, &param);
-+	sched_setscheduler2(current, SCHED_DEADLINE, &paramx);
+-	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
+-			       list_entry);
++	w = rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
++		     tree_entry);
+ 	BUG_ON(w->lock != lock);
  
- 	/* Make it know we have a new prio */
- 	complete(x);
-@@ -1046,8 +1052,8 @@ static int trace_wakeup_test_thread(void *data)
- 	/* we are awake, now wait to disappear */
- 	while (!kthread_should_stop()) {
- 		/*
--		 * This is an RT task, do short sleeps to let
--		 * others run.
-+		 * This will likely be the system top priority
-+		 * task, do short sleeps to let others run.
- 		 */
- 		msleep(100);
- 	}
-@@ -1060,21 +1066,21 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
+ 	return w;
+@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
+ 
+ static inline int task_has_pi_waiters(struct task_struct *p)
  {
- 	unsigned long save_max = tracing_max_latency;
- 	struct task_struct *p;
--	struct completion isrt;
-+	struct completion is_ready;
- 	unsigned long count;
- 	int ret;
+-	return !plist_head_empty(&p->pi_waiters);
++	return !RB_EMPTY_ROOT(&p->pi_waiters);
+ }
  
--	init_completion(&isrt);
-+	init_completion(&is_ready);
+ static inline struct rt_mutex_waiter *
+ task_top_pi_waiter(struct task_struct *p)
+ {
+-	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
+-				  pi_list_entry);
++	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
++			pi_tree_entry);
+ }
  
--	/* create a high prio thread */
--	p = kthread_run(trace_wakeup_test_thread, &isrt, "ftrace-test");
-+	/* create a -deadline thread */
-+	p = kthread_run(trace_wakeup_test_thread, &is_ready, "ftrace-test");
- 	if (IS_ERR(p)) {
- 		printk(KERN_CONT "Failed to create ftrace wakeup test thread ");
- 		return -1;
- 	}
+ /*
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9b6b988..4a96c44 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7084,10 +7084,6 @@ void __init sched_init(void)
+ 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
+ #endif
  
--	/* make sure the thread is running at an RT prio */
--	wait_for_completion(&isrt);
-+	/* make sure the thread is running at -deadline policy */
-+	wait_for_completion(&is_ready);
- 
- 	/* start the tracing */
- 	ret = tracer_init(trace, tr);
+-#ifdef CONFIG_RT_MUTEXES
+-	plist_head_init(&init_task.pi_waiters);
+-#endif
+-
+ 	/*
+ 	 * The boot idle thread does lazy MMU switching as well:
+ 	 */
 -- 
 1.7.9.5
 
