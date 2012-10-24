@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab2JXROA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:14:00 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:37600 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab2JXRN6 (ORCPT
+	id S935170Ab2JXRRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:17:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53577 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756417Ab2JXRRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:13:58 -0400
+	Wed, 24 Oct 2012 13:17:31 -0400
+Date: Wed, 24 Oct 2012 12:17:23 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 155/193] init: remove CONFIG_EXPERIMENTAL
+Message-ID: <20121024171723.GA7698@sergelap>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+ <1351022666-6960-156-git-send-email-keescook@chromium.org>
+ <20121024134831.GB7217@sergelap>
+ <CAGXu5jJZxY4k2Xpg=nuUn6p6V8NqYBPmvAt4Y35eogZfYWSM+g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121024165215.GA32220@arwen.pp.htv.fi>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
-	<20121022155028.GA13791@core.coreip.homeip.net>
-	<508660D4.9030507@ti.com>
-	<20121023200249.GA2712@core.coreip.homeip.net>
-	<20121024083704.GF5665@arwen.pp.htv.fi>
-	<20121024161429.GA16350@core.coreip.homeip.net>
-	<20121024165215.GA32220@arwen.pp.htv.fi>
-Date: Wed, 24 Oct 2012 19:13:57 +0200
-Message-ID: <CACRpkdYVAgO25s2RRYvt-KLS_4=NDJNfxQ+ThJuyWtksg27dhA@mail.gmail.com>
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: balbi@ti.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jJZxY4k2Xpg=nuUn6p6V8NqYBPmvAt4Y35eogZfYWSM+g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 6:52 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Wed, Oct 24, 2012 at 09:14:29AM -0700, Dmitry Torokhov wrote:
+Quoting Kees Cook (keescook@chromium.org):
+> On Wed, Oct 24, 2012 at 6:48 AM, Serge Hallyn
+> <serge.hallyn@canonical.com> wrote:
+> > Quoting Kees Cook (keescook@chromium.org):
+> >> This config item has not carried much meaning for a while now and is
+> >> almost always enabled by default. As agreed during the Linux kernel
+> >> summit, remove it.
+> >>
+> >> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> >> CC: Serge Hallyn <serge.hallyn@canonical.com>
+> >> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >> CC: Andrew Morton <akpm@linux-foundation.org>
+> >> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >> ---
+> >>  init/Kconfig |   23 ++++++++++-------------
+> >>  1 file changed, 10 insertions(+), 13 deletions(-)
+> >>
+> >> diff --git a/init/Kconfig b/init/Kconfig
+> >> index 2bf7b83..4b65c1c 100644
+> >> --- a/init/Kconfig
+> >> +++ b/init/Kconfig
+> >> @@ -220,7 +220,7 @@ config SYSVIPC_SYSCTL
+> >>
+> >>  config POSIX_MQUEUE
+> >>       bool "POSIX Message Queues"
+> >> -     depends on NET && EXPERIMENTAL
+> >> +     depends on NET
+> >>       ---help---
+> >>         POSIX variant of message queues is a part of IPC. In POSIX message
+> >>         queues every message has a priority which decides about succession
+> >> @@ -366,7 +366,7 @@ config BSD_PROCESS_ACCT_V3
+> >>         at <http://www.gnu.org/software/acct/>.
+> >>
+> >>  config TASKSTATS
+> >> -     bool "Export task/process statistics through netlink (EXPERIMENTAL)"
+> >> +     bool "Export task/process statistics through netlink"
+> >
+> > In these cases, should we keep the '(EXPERIMENTAL)' text since it is just
+> > a hint to anyone running make menuconfig?  I think removing the 'depends on
+> > EXPERIMENTAL's is fine, but cases we should leave it (or replace it) as
+> > a textual hint, except in cases where we're sure that is no longer the case.
+> 
+> I covered this in the 000 intro email (https://lkml.org/lkml/2012/10/23/580):
 
->> All of _their_ resources, exactly. They do not own nor control pins so
->> they should not be bothered with them either. Look, when you see that
->
-> except that they *own* the pins. Now that the muxer has been setup
-> properly, this particular IP owns the pins.
+intro email is an appreciated courtesy, but should not take the place of
+info in the individual patch changelogs, especially as the intro emails
+won't go into git history.
 
-This is true. It is then also reflected in the device model.
-And in debugfs, which is very helpful when debugging. If I
-cat
-/sys/kernel/debug/pinctrl/pinctrl-db8500/pins
+> Some patches remove "(EXPERIMENTAL)" from Kconfig titles when there was
+> no "depends on EXPERIMENTAL". I've removed the cases of these where I
 
-I can see a list of all pins on this ASIC and what device
-is using it. It is all due to the fact that each driver use
-[devm_]pinctrl_get(&dev) ad the struct device * pointer
-is used with dev_name() to print the corresponding
-device name.
+Hm, I was under the impression that taskstats are not quite trusted yet,
+but I could be way out of date with that.
 
-When using hogs it just says the name of the pin
-controller and the pins aren't really connected to their
-real consumers :-P
-
-Example:
-
-Pinmux settings per pin
-Format: pin (name): mux_owner gpio_owner hog?
-pin 0 (GPIO0_AJ5): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 1 (GPIO1_AJ3): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 2 (GPIO2_AH4): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 3 (GPIO3_AH3): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 4 (GPIO4_AH6): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 5 (GPIO5_AG6): (MUX UNCLAIMED) DB8500:5
-pin 6 (GPIO6_AF6): pinctrl-db8500 (GPIO UNCLAIMED) function ipgpio
-group ipgpio0_c_1
-pin 7 (GPIO7_AG5): pinctrl-db8500 (GPIO UNCLAIMED) function ipgpio
-group ipgpio1_c_1
-pin 8 (GPIO8_AD5): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 9 (GPIO9_AE4): (MUX UNCLAIMED) (GPIO UNCLAIMED)
-pin 10 (GPIO10_AF5): nmk-i2c.2 (GPIO UNCLAIMED) function i2c2 group i2c2_b_2
-pin 11 (GPIO11_AG4): nmk-i2c.2 (GPIO UNCLAIMED) function i2c2 group i2c2_b_2
-pin 12 (GPIO12_AC4): pinctrl-db8500 (GPIO UNCLAIMED) function msp0
-group msp0txrx_a_1
-pin 13 (GPIO13_AF3): pinctrl-db8500 (GPIO UNCLAIMED) function msp0
-group msp0tfstck_a_1
-pin 14 (GPIO14_AE3): pinctrl-db8500 (GPIO UNCLAIMED) function msp0
-group msp0tfstck_a_1
-pin 15 (GPIO15_AC3): pinctrl-db8500 (GPIO UNCLAIMED) function msp0
-group msp0txrx_a_1
-pin 16 (GPIO16_AD3): nmk-i2c.1 (GPIO UNCLAIMED) function i2c1 group i2c1_b_2
-pin 17 (GPIO17_AD4): nmk-i2c.1 (GPIO UNCLAIMED) function i2c1 group i2c1_b_2
-
-As you can see pins 6,7,12-15 are using hogs. Sure I can see
-the name of the function but that is just a string albeit
-helpful.
-
-Pins 10,11,16,17 are requested directly from the i2c driver
-and shows up connected to its device.
-
-Yours,
-Linus Walleij
+> know the maintainer intended it that way. I've left the others in case a
+> "depends on EXPERIMENTAL" had been removed in the past and it had been
+> accidentally forgotten in the title. If the title is correct as-is,
+> just let me know, and I'll drop the patch from my series.
+> 
+> 
+> So, if some of these need to be adjusted, I'm fine with that. I opted
+> for aggressive removal in this first series.
+> 
+> -Kees
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
