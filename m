@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670Ab2JXP67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 11:58:59 -0400
-Received: from 8bytes.org ([85.214.48.195]:52781 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab2JXP66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 11:58:58 -0400
-Date: Wed, 24 Oct 2012 17:58:55 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU Fixes for v3.7-rc2
-Message-ID: <20121024155854.GA7010@8bytes.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Oct 24 17:58:56 2012
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5088104022979442280725
+	id S1758689Ab2JXQAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:00:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33126 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757859Ab2JXQAj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 12:00:39 -0400
+Message-ID: <1351094432.23327.42.camel@hornet>
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+From: Pawel Moll <pawel.moll@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Date: Wed, 24 Oct 2012 17:00:32 +0100
+In-Reply-To: <1351014187.8467.24.camel@gandalf.local.home>
+References: <1351013449.9070.5.camel@hornet>
+	 <1351014187.8467.24.camel@gandalf.local.home>
+X-Mailer: Evolution 3.6.0-0ubuntu3
+Mime-Version: 1.0
+X-OriginalArrivalTime: 24 Oct 2012 16:00:32.0822 (UTC) FILETIME=[B281FD60:01CDB200]
+X-MC-Unique: 112102417003600801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-10-23 at 18:43 +0100, Steven Rostedt wrote:
+> > <...>212.673126: hwmon_attr_update: hwmon4 temp1_input 34361
+> > 
+> > One issue with this is that some external knowledge is required to
+> > relate a number to a processor core. Or maybe it's not an issue at all
+> > because it should be left for the user(space)?
+> 
+> If the external knowledge can be characterized in a userspace tool with
+> the given data here, I see no issues with this.
 
---UlVJffcvxoiEqYs2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, fine.
 
-Hi Linus,
+> > 	TP_fast_assign(
+> > 		memcpy(__entry->cpus, cpus, sizeof(struct cpumask));
+> 
+> Copying the entire cpumask seems like overkill. Especially when you have
+> 4096 CPU machines.
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+Uh, right. I didn't consider such use case...
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+> Perhaps making a field that can be a subset of cpus may be better. That
+> way we don't waste the ring buffer with lots of zeros. I'm guessing that
+> it will only be a group of cpus, and not a scattered list? Of course,
+> I've seen boxes where the cpu numbers went from core to core. That is,
+> cpu 0 was on core 1, cpu 1 was on core 2, and then it would repeat. 
+> cpu 8 was on core 1, cpu 9 was on core 2, etc.
+> 
+> But still, this could be compressed somehow.
 
-are available in the git repository at:
+Sure thing. Or I could simply use cpumask_scnprintf() on the assign
+stage and keep an already-formatted string. Or, as the cpumask per
+sensor would be de-facto constant, I could assume keep only a pointer to
+it. Will keep it in mind if this event was supposed to happen.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-v3.7-rc2
+Thanks!
 
-for you to fetch changes up to d0078e72314df2e5ede03f2102cddde06767c374:
+Paweł
 
-  iommu/tegra: smmu: Fix deadly typo (2012-10-24 16:58:53 +0200)
-
-----------------------------------------------------------------
-IOMMU Fixes for Linux 3.7-rc2
-
-Two fixes this time:
-
-	1. Another fix for a broken BIOS to detect when AMD IOMMU
-	   interrupt remapping can not work reliably
-	2. Typo fix for NVidia IOMMU driver
-
-----------------------------------------------------------------
-Hiro Sugawara (1):
-      iommu/tegra: smmu: Fix deadly typo
-
-Joerg Roedel (1):
-      iommu/amd: Work around wrong IOAPIC device-id in IVRS table
-
- drivers/iommu/amd_iommu_init.c |   39 ++++++++++++++++++++++++++++++++-------
- drivers/iommu/tegra-smmu.c     |    2 +-
- 2 files changed, 33 insertions(+), 8 deletions(-)
-
-Please pull.
-
-Regards,
-
-	Joerg
-
-
---UlVJffcvxoiEqYs2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiBA+AAoJECvwRC2XARrjIzsQALWA5wN+w6mKMa0RimQMtoem
-i7d4eJv2vdawtc7uC2aZxfb7p4c1AWJr4EZeB4qf2uW4kUKU4PASYjzI19nz8WHa
-xSe56lbWgrrj0jsYKzgZ9mUlBkZZUP22hvw65QTBoVrETJhboJO2Hik5DhoerAze
-3nSOFkYQ+fnt/4L/yARxpKQvDu34IvPSwabvGMF1Ha/F5DlDV+w3CvISUUNH13ic
-+MfLb7EC8sgAMDr6OwXxXgjmdzAHpnjOYNQKC5U+W8+4azgMOBQfbF0YzTOIuVzn
-FGWU6nfvRNt52sQxLSPSZMG6d3AngQZoysSS1hbEofjwq/eRSJc92/MDPKdqgRXo
-IwjYTbpcI6LYbmfidQRnXYozkNpv0s7r3vKAJbT6K9h7G4USJlFQ+YJET/PBguG7
-i+A6X0icUKZElI/mKQbO054I2lv+6TiIvrDGrS/W1ezjJJGbr1jtPROKKrH9qVoE
-BJgBygLOL/nE70Opj3dTCzoM2UwJPqK01B5LcIJFYE9klIqLyg6EnciQL5QleWde
-gPxrJlnp/uK8guG26C3tJkbVCUmZ8KMDUXqAfHC270JeZeDVJ9Uf2UgUR/UlHdFs
-tdKKDSYklSdjxS6hF7H8LHizHPqjOm2Cn4E6sPLZ3a7J6jYJ6BxU9oYpyNTB9sjE
-0jG1nb90b2WlRzV+vDfp
-=it0i
------END PGP SIGNATURE-----
-
---UlVJffcvxoiEqYs2--
 
 
