@@ -1,166 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab2JXT5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:57:22 -0400
-Received: from mail-1.atlantis.sk ([80.94.52.57]:51144 "EHLO mail.atlantis.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab2JXT5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:57:18 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Wed, 24 Oct 2012 21:56:42 +0200
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201210240847.52417.linux@rainbow-software.org> <450396555.xT2D53NWjT@vostro.rjw.lan> <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com>
-In-Reply-To: <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com>
-X-KMail-QuotePrefix: > 
+	id S1758051Ab2JXUAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:00:32 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51575 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757503Ab2JXUAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 16:00:30 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 24 Oct 2012 13:01:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
+        Jean Pihet <jean.pihet@newoldbits.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Subject: Re: [RFC] Energy/power monitoring within the kernel
+Message-ID: <20121024200144.GA21137@roeck-us.net>
+References: <1351013449.9070.5.camel@hornet>
+ <20121023220240.GA25895@roeck-us.net>
+ <1351096647.23327.64.camel@hornet>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Message-Id: <201210242156.43233.linux@rainbow-software.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1351096647.23327.64.camel@hornet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 October 2012 21:36:04 H. Peter Anvin wrote:
-> Minor concern: it should do the wait for ready before sending each command.
+On Wed, Oct 24, 2012 at 05:37:27PM +0100, Pawel Moll wrote:
+> On Tue, 2012-10-23 at 23:02 +0100, Guenter Roeck wrote:
+> > > Traditionally such data should be exposed to the user via hwmon sysfs
+> > > interface, and that's exactly what I did for "my" platform - I have
+> > > a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
+> > > enough to draw pretty graphs in userspace. Everyone was happy...
+> > > 
+> > Only driver supporting "energy" output so far is ibmaem, and the reported energy
+> > is supposed to be cumulative, as in energy = power * time. Do you mean power,
+> > possibly ?
+> 
+> So the vexpress would be the second one, than :-) as the energy
+> "monitor" actually on the latest tiles reports 64-bit value of
+> microJoules consumed (or produced) since the power-up.
+> 
+> Some of the older boards were able to report instant power, but this
+> metrics is less useful in our case.
+> 
+> > > Now I am getting new requests to do more with this data. In particular
+> > > I'm asked how to add such information to ftrace/perf output. The second
+> > > most frequent request is about providing it to a "energy aware"
+> > > cpufreq governor.
+> > 
+> > Anything energy related would have to be along the line of "do something after a
+> > certain amount of work has been performed", which at least at the surface does
+> > not make much sense to me, unless you mean something along the line of a
+> > process scheduler which schedules a process not based on time slices but based
+> > on energy consumed, ie if you want to define a time slice not in milli-seconds
+> > but in Joule.
+> 
+> Actually there is some research being done in this direction, but it's
+> way too early to draw any conclusions...
+> 
+> > If so, I would argue that a similar behavior could be achieved by varying the
+> > duration of time slices with the current CPU speed, or simply by using cycle
+> > count instead of time as time slice parameter. Not that I am sure if such an
+> > approach would really be of interest for anyone. 
+> > 
+> > Or do you really mean power, not energy, such as in "reduce CPU speed if its
+> > power consumption is above X Watt" ?
+> 
+> Uh. To be completely honest I must answer: I'm not sure how the "energy
+> aware" cpufreq governor is supposed to work. I have been simply asked to
+> provide the data in some standard way, if possible.
+> 
+> > I am not sure how this would be expected to work. hwmon is, by its very nature,
+> > a passive subsystem: It doesn't do anything unless data is explicitly requested
+> > from it. It does not update an attribute unless that attribute is read.
+> > That does not seem to fit well with the idea of tracing - which assumes
+> > that some activity is happening, ultimately, all by itself, presumably
+> > periodically. The idea to have a user space application read hwmon data only
+> > for it to trigger trace events does not seem to be very compelling to me.
+> 
+> What I had in mind was similar to what adt7470 driver does. The driver
+> would automatically access the device every now and then to update it's
+> internal state and generate the trace event on the way. This
+> auto-refresh "feature" is particularly appealing for me, as on some of
+> "my" platforms can take up to 500 microseconds to actually get the data.
+> So doing this in background (and providing users with the last known
+> value in the meantime) seems attractive.
+> 
+A bad example doesn't mean it should be used elsewhere.
 
-It was a hack and then I forgot to add the waits... Should I redo the patch? 
-I'll not be able to test it as I have to return the machine.
+adt7470 needs up to two seconds for a temperature measurement cycle, and it
+can not perform automatic cycles all by itself. In this context, executing
+temperature measurement cycles in the background makes a lot of sense,
+especially since one does not want to wait for two seconds when reading
+a sysfs attribute.
 
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> >On Wednesday 24 of October 2012 08:47:52 Ondrej Zary wrote:
-> >> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
-> >
-> >enable A20
-> >
-> >> line but resume code assumes that KBC was used.
-> >> The laptop will not resume from S3 otherwise but powers off after a
-> >
-> >while
-> >
-> >> and then powers on again stuck with a blank screen.
-> >>
-> >> Fix it by enabling A20 using KBC. Affected laptop list and DMI data
-> >
-> >are from
-> >
-> >> bug reports at Ubuntu Launchpad.
-> >>
-> >> Tested with EX600 and PR200.
-> >>
-> >> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-> >>
-> >> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> >
-> >Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >
-> >> --- a/arch/x86/kernel/acpi/boot.c
-> >> +++ b/arch/x86/kernel/acpi/boot.c
-> >> @@ -1349,6 +1349,20 @@ static int __init
-> >
-> >dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
-> >
-> >>  }
-> >>
-> >>  /*
-> >> + * Enable A20 line using KBC even if it's already enabled using
-> >
-> >other method.
-> >
-> >> + * This is needed for some MSI laptops to resume from S3.
-> >> + */
-> >> +static int __init a20_enable_kbc(const struct dmi_system_id *d)
-> >> +{
-> >> +	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n",
-> >
-> >d->ident);
-> >
-> >> +	outb(0xd1, 0x64);	/* Command write */
-> >> +	outb(0xdf, 0x60);	/* A20 on */
-> >> +	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +/*
-> >>   * If your system is blacklisted here, but you find that acpi=force
-> >>   * works for you, please contact linux-acpi@vger.kernel.org
-> >>   */
-> >> @@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata
-> >
-> >acpi_dmi_table[] = {
-> >
-> >>  		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
-> >>  		     },
-> >>  	 },
-> >> +	/*
-> >> +	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h
-> >
-> >to
-> >
-> >> +	 * enable A20 line but resume code assumes that KBC was used.
-> >> +	 * The laptop will not resume from S3 otherwise but powers off
-> >> +	 * after a while and then powers on again stuck with a blank
-> >
-> >screen.
-> >
-> >> +	 */
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI EX600 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
-> >> +		     },
-> >> +	 },
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI EX700 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
-> >> +		     },
-> >> +	 },
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI GX700 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
-> >> +		     },
-> >> +	 },
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI VR201 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
-> >> +		     },
-> >> +	 },
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI VR601 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
-> >> +		     },
-> >> +	 },
-> >> +	{
-> >> +	 .callback = a20_enable_kbc,
-> >> +	 .ident = "MSI PR200 Laptop",
-> >> +	 .matches = {
-> >> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> >> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
-> >> +		     },
-> >> +	 },
-> >>  	{}
-> >>  };
+But that only means that the chip is most likely not a good choice when selecting
+a temperature sensor, not that the code necessary to get it working should be used
+as an example for other drivers. 
 
+Guenter
 
--- 
-Ondrej Zary
+> > An exception is if a monitoring device suppports interrupts, and if its driver
+> > actually implements those interrupts. This is, however, not the case for most of
+> > the current drivers (if any), mostly because interrupt support for hardware
+> > monitoring devices is very platform dependent and thus difficult to implement.
+> 
+> Interestingly enough the newest version of our platform control micro
+> (doing the energy monitoring as well) can generate and interrupt when a
+> transaction is finished, so I was planning to periodically update the
+> all sort of values. And again, generating a trace event on this
+> opportunity would be trivial.
+> 
+> > > Of course a particular driver could register its own perf PMU on its
+> > > own. It's certainly an option, just very suboptimal in my opinion.
+> > > Or maybe not? Maybe the task is so specialized that it makes sense?
+> > > 
+> > We had a couple of attempts to provide an in-kernel API. Unfortunately,
+> > the result was, at least so far, more complexity on the driver side.
+> > So the difficulty is really to define an API which is really simple, and does
+> > not just complicate driver development for a (presumably) rare use case.
+> 
+> Yes, I appreciate this. That's why this option is actually my least
+> favourite. Anyway, what I was thinking about was just a thin shin that
+> *can* be used by a driver to register some particular value with the
+> core (so it can be enumerated and accessed by in-kernel clients) and the
+> core could (or not) create a sysfs attribute for this value on behalf of
+> the driver. Seems lightweight enough, unless previous experience
+> suggests otherwise?
+> 
+> Cheers!
+> 
+> Paweł
+> 
+> 
+> 
