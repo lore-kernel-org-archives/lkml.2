@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965158Ab2JXUOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:14:11 -0400
-Received: from woodbine.london.02.net ([87.194.255.145]:41540 "EHLO
-	woodbine.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757988Ab2JXUOK convert rfc822-to-8bit (ORCPT
+	id S1161127Ab2JXUOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:14:34 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:41743 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161047Ab2JXUOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:14:10 -0400
-From: Matthew Leach <matthew@mattleach.net>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org,
-        Martin =?utf-8?Q?P=C3=A4rtel?= <martin.partel@gmail.com>
-Subject: Re: [REGRESSION] uml: signal.c build errors
-References: <87pq48lqut.fsf@mattleach.net>
-	<20121024213919.5543e90b@spider.haslach.nod.at>
-	<87objr3b2z.fsf@mattleach.net>
-	<20121024215445.04d53d0d@spider.haslach.nod.at>
-	<87hapj3a9q.fsf@mattleach.net>
-	<20121024220917.239390bf@spider.haslach.nod.at>
-Date: Wed, 24 Oct 2012 21:13:55 +0100
-In-Reply-To: <20121024220917.239390bf@spider.haslach.nod.at> (Richard
-	Weinberger's message of "Wed, 24 Oct 2012 22:09:17 +0200")
-Message-ID: <87d30739x8.fsf@mattleach.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	Wed, 24 Oct 2012 16:14:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20121012145114.GZ29125@suse.de>
+References: <20121012145114.GZ29125@suse.de>
+Date: Wed, 24 Oct 2012 17:14:31 -0300
+Message-ID: <CALF0-+UBq8kgC-uUkuk_akoyBgvkytgn0v+2uBTDLZcFCPeHrQ@mail.gmail.com>
+Subject: Re: MMTests 0.06
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=f46d044787d302cf6d04ccd3bc51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger <richard@nod.at> writes:
+--f46d044787d302cf6d04ccd3bc51
+Content-Type: text/plain; charset=ISO-8859-1
 
-> Am Wed, 24 Oct 2012 21:06:25 +0100
-> schrieb Matthew Leach <matthew@mattleach.net>:
+Hi,
+
+On Fri, Oct 12, 2012 at 11:51 AM, Mel Gorman <mgorman@suse.de> wrote:
+> MMTests 0.06 is a configurable test suite that runs a number of common
+> workloads of interest to MM developers. There are multiple additions
+> all but in many respects the most useful will be automatic package
+> installation. The package names are based on openSUSE but it's easy to
+> create mappings in bin/install-depends where the package names differ. The
+> very basics of monitoring NUMA efficiency is there as well and the autonuma
+> benchmark has a test. The stats it reports for NUMA need significant
+> improvement but for the most part that should be straight forward.
 >
->> Richard Weinberger <richard@nod.at> writes:
->> > Am Wed, 24 Oct 2012 20:48:52 +0100
->> > schrieb Matthew Leach <matthew@mattleach.net>:
->> >
->> >> 
->> >> Richard Weinberger <richard@nod.at> writes:
->> >> > Am Wed, 24 Oct 2012 00:18:34 +0100
->> >> >> I have tracked this down to [1] where, indeed, the type of
->> >> >> sig_info is different; the second parameter in signal.c is
->> >> >> 'siginfo_t' where as in as-layout.h the second parameter's type
->> >> >> is declared as 'struct siginfo'.
->> >> >> 
->> >> >> [1]: d3c1cfcdb43e023ab1b1c7a555cd9e929026500a
->> >> >
->> >> > Looks like we have to revert that commit.
->> >> > Moving everything to siginfo_t requires a non-trivial header
->> >> > cleanup and may introduce new regressions.
->> >> >
->> >> > Matthew, does the attached revert patch help?
->> >> 
->> >> The revert did remove the errors for the compilation of signal.c,
->> >> so that seems fine. I still get the following errors, however:
->> >> 
->> >>   CC      arch/um/os-Linux/sigio.o
->> >>   CC      arch/um/os-Linux/signal.o
->> >>   CC      arch/um/os-Linux/start_up.o
->> >> arch/um/os-Linux/start_up.c: In function ‘check_coredump_limit’:
->> >> arch/um/os-Linux/start_up.c:338:16: error: storage size of ‘lim’
->> >> isn’t known arch/um/os-Linux/start_up.c:339:2: error: implicit
->> >> declaration of function
->> >> ‘getrlimit’ [-Werror=implicit-function-declaration]
->> >> arch/um/os-Linux/start_up.c:339:22: error: ‘RLIMIT_CORE’ undeclared
->> >> (first use in this function) arch/um/os-Linux/start_up.c:339:22:
->> >> note: each undeclared identifier is reported only once for each
->> >> function it appears in arch/um/os-Linux/start_up.c:347:22: error:
->> >> ‘RLIM_INFINITY’ undeclared (first use in this function)
->> >> arch/um/os-Linux/start_up.c:338:16: warning: unused variable
->> >> ‘lim’ [-Wunused-variable] cc1: some warnings being treated as
->> >> errors make[1]: *** [arch/um/os-Linux/start_up.o] Error 1 make: ***
->> >> [arch/um/os-Linux] Error 2
->> >
->> > Does adding
->> > #include <sys/time.h>
->> > #include <sys/resource.h>
->> >
->> > to arch/um/os-Linux/start_up.c help?
->> 
->> Adding the above includes and the revert commit did the trick!
+> Changelog since v0.05
+> o Automatically install packages (need name mappings for other distros)
+> o Add benchmark for autonumabench
+> o Add support for benchmarking NAS with MPI
+> o Add pgbench for autonumabench (may need a bit more work)
+> o Upgrade postgres version to 9.2.1
+> o Upgrade kernel verion used for kernbench to 3.0 for newer toolchains
+> o Alter mailserver config to finish in a reasonable time
+> o Add monitor for perf sched
+> o Add moinitor that gathers ftrace information with trace-cmd
+> o Add preliminary monitors for NUMA stats (very basic)
+> o Specify ftrace events to monitor from config file
+> o Remove the bulk of whats left of VMRegress
+> o Convert shellpacks to a template format to auto-generate boilerplate code
+> o Collect lock_stat information if enabled
+> o Run multiple iterations of aim9
+> o Add basic regression tests for Cross Memory Attach
+> o Copy with preempt being enabled in highalloc stres tests
+> o Have largedd cope with a missing large file to work with
+> o Add a monitor-only mode to just capture logs
+> o Report receive-side throughput in netperf for results
 >
-> Thanks a lot for being my build bot. ;)
+> At LSF/MM at some point a request was made that a series of tests
+> be identified that were of interest to MM developers and that could be
+> used for testing the Linux memory management subsystem. There is renewed
+> interest in some sort of general testing framework during discussions for
+> Kernel Summit 2012 so here is what I use.
+>
+> http://www.csn.ul.ie/~mel/projects/mmtests/
+> http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.06-mmtests-0.01.tar.gz
+>
+> There are a number of stock configurations stored in configs/.  For example
+> config-global-dhp__pagealloc-performance runs a number of tests that
+> may be able to identify performance regressions or gains in the page
+> allocator. Similarly there network and scheduler configs. There are also
+> more complex options. config-global-dhp__parallelio-memcachetest will run
+> memcachetest in the foreground while doing IO of different sizes in the
+> background to measure how much unrelated IO affects the throughput of an
+> in-memory database.
+>
+> This release is also a little rough and the extraction scripts could
+> have been tidier but they were mostly written in an airport and for the
+> most part they work as advertised. I'll fix bugs as according as they are
+> brought to my attention.
+>
+> The stats reporting still needs work because while some tests know how
+> to make a better estimate of mean by filtering outliers it is not being
+> handled consistently and the methodology needs work. I know filtering
+> statistics like this is a major flaw in the methodology but the decision
+> was made in this case in the interest of the benchmarks with unstable
+> results completing in a reasonable time.
+>
 
-Not a problem :).
+FWIW, I found a minor problem with sudo and yum incantation when trying this.
 
-> I'm not able to reproduce the issue on any of my machines.
+I'm attaching a patch.
 
-Strange - well I'm using a fully up-to-date Arch Linux x86_64 distro, if
-that helps.
+Hope it helps,
 
-Thanks,
-Matt
+    Ezequiel
+
+--f46d044787d302cf6d04ccd3bc51
+Content-Type: application/octet-stream; name="yum-fix-install-option.patch"
+Content-Disposition: attachment; filename="yum-fix-install-option.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h8ovsfl60
+
+ZGlmZiAtTmF1ciBtbXRlc3RzLTAuMDYtbW10ZXN0cy0wLjAxL2Jpbi9pbnN0YWxsLWRlcGVuZHMg
+bW10ZXN0cy0wLjA2LW1tdGVzdHMtMC4wMS1taW5lL2Jpbi9pbnN0YWxsLWRlcGVuZHMKLS0tIG1t
+dGVzdHMtMC4wNi1tbXRlc3RzLTAuMDEvYmluL2luc3RhbGwtZGVwZW5kcwkyMDEyLTEwLTEyIDEx
+OjI4OjQyLjAwMDAwMDAwMCAtMDMwMAorKysgbW10ZXN0cy0wLjA2LW1tdGVzdHMtMC4wMS1taW5l
+L2Jpbi9pbnN0YWxsLWRlcGVuZHMJMjAxMi0xMC0yNCAxNjo1OTo0MS4wMjk0MTcxOTMgLTAzMDAK
+QEAgLTExLDcgKzExLDcgQEAKIAlteSAkYmluYXJ5ID0gJF9bMF07CiAKIAlvcGVuKEJPREdFLCAi
+d2hpY2ggJGJpbmFyeSAyPi9kZXYvbnVsbCB8IikgfHwgZGllKCJGYWlsZWQgdG8gb3BlbiBwaXBl
+IHRvIHdoaWNoIik7Ci0JbXkgJGxpbmUgPSA8Qk9ER0U+OworCWNob21wKG15ICRsaW5lID0gPEJP
+REdFPik7CiAJY2xvc2UoQk9ER0UpOwogCXJldHVybiAkbGluZTsKIH0KQEAgLTI2LDcgKzI2LDcg
+QEAKIG15ICVwYWNrYWdlX2JpbiA9ICgKIAkic3VzZSIgICA9PiAienlwcGVyIGluc3RhbGwgLXki
+LAogCSJkZWJpYW4iID0+ICJhcHQtZ2V0IGluc3RhbGwgLXkgLS1mb3JjZS15ZXMiLAotCSJyZWRo
+YXQiID0+ICJ5dW0gaW5zdGFsbCAtaSIsCisJInJlZGhhdCIgPT4gInl1bSBpbnN0YWxsIC15IiwK
+ICk7CiAKIGlmICgkRU5WeyJBU1NVTUVfUEFDS0FHRV9JTlNUQUxMRUQifSBlcSAieWVzIikgewo=
+--f46d044787d302cf6d04ccd3bc51--
