@@ -1,81 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964967Ab2JXAlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 20:41:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55060 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933591Ab2JXAlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 20:41:35 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jesper Juhl <jj@chaosbits.net>, Jean Pihet <jean.pihet@newoldbits.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        lm-sensors@lm-sensors.org, linaro-dev@lists.linaro.org
-Subject: Re: [RFC] Energy/power monitoring within the kernel
-Date: Wed, 24 Oct 2012 02:41:09 +0200
-Message-ID: <2863728.eWy5qxh2lp@hammer82.arch.suse.de>
-User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1351013449.9070.5.camel@hornet>
-References: <1351013449.9070.5.camel@hornet>
+	id S964923Ab2JXAua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 20:50:30 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60949 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933705Ab2JXAu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 20:50:27 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1351022246-8201-4-git-send-email-elezegarcia@gmail.com>
+References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
+	<1351022246-8201-4-git-send-email-elezegarcia@gmail.com>
+Date: Tue, 23 Oct 2012 21:50:27 -0300
+Message-ID: <CALF0-+XQHAC=eGigmA6QOO27PPG39Q1yGFiebtJ5sJyqbF55vw@mail.gmail.com>
+Subject: Re: [PATCH 04/23] sn9c102: Replace memcpy with struct assignment
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Andy Walls <awalls@md.metrocast.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Oct 23, 2012 at 4:57 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
+> This kind of memcpy() is error-prone. Its replacement with a struct
+> assignment is prefered because it's type-safe and much easier to read.
+>
+> Found by coccinelle. Hand patched and reviewed.
+> Tested by compilation only.
+>
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> identifier struct_name;
+> struct struct_name to;
+> struct struct_name from;
+> expression E;
+> @@
+> -memcpy(&(to), &(from), E);
+> +to = from;
+> // </smpl>
+>
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
+> ---
+>  drivers/media/usb/sn9c102/sn9c102_core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/media/usb/sn9c102/sn9c102_core.c b/drivers/media/usb/sn9c102/sn9c102_core.c
+> index 5bfc8e2..4cae6f8 100644
+> --- a/drivers/media/usb/sn9c102/sn9c102_core.c
+> +++ b/drivers/media/usb/sn9c102/sn9c102_core.c
+> @@ -2824,7 +2824,7 @@ sn9c102_vidioc_querybuf(struct sn9c102_device* cam, void __user * arg)
+>             b.index >= cam->nbuffers || cam->io != IO_MMAP)
+>                 return -EINVAL;
+>
+> -       memcpy(&b, &cam->frame[b.index].buf, sizeof(b));
+> +       b = cam->frame[b.index].buf;
+>
+>         if (cam->frame[b.index].vma_use_count)
+>                 b.flags |= V4L2_BUF_FLAG_MAPPED;
+> @@ -2927,7 +2927,7 @@ sn9c102_vidioc_dqbuf(struct sn9c102_device* cam, struct file* filp,
+>
+>         f->state = F_UNUSED;
+>
+> -       memcpy(&b, &f->buf, sizeof(b));
+> +       b = f->buf;
+>         if (f->vma_use_count)
+>                 b.flags |= V4L2_BUF_FLAG_MAPPED;
+>
 
-On Tuesday, October 23, 2012 06:30:49 PM Pawel Moll wrote:
-> Greetings All,
-> 
-> More and more of people are getting interested in the subject of power
-> (energy) consumption monitoring. We have some external tools like
-> "battery simulators", energy probes etc., but some targets can measure
-> their power usage on their own.
-> 
-> Traditionally such data should be exposed to the user via hwmon sysfs
-> interface, and that's exactly what I did for "my" platform - I have
-> a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
-> enough to draw pretty graphs in userspace. Everyone was happy...
-> 
-> Now I am getting new requests to do more with this data. In particular
-> I'm asked how to add such information to ftrace/perf output.
-Why? What is the gain?
+Andy: you got me thinking on performance.
+Most patches are initialization or setup code.
 
-Perf events can be triggered at any point in the kernel.
-A cpufreq event is triggered when the frequency gets changed.
-CPU idle events are triggered when the kernel requests to enter an idle state
-or exits one.
+Here we patch a xxx_vidioc_dqbuf() function.
+Is this a speed sensitive path?
 
-When would you trigger a thermal or a power event?
-There is the possibility of (critical) thermal limits.
-But if I understand this correctly you want this for debugging and
-I guess you have everything interesting one can do with temperature
-values:
-  - read the temperature
-  - draw some nice graphs from the results
+I still think this change can't hurt performance,
+but I may be wrong!
 
-Hm, I guess I know what you want to do:
-In your temperature/energy graph, you want to have some dots
-when relevant HW states (frequency, sleep states,  DDR power,...)
-changed. Then you are able to see the effects over a timeline.
 
-So you have to bring the existing frequency/idle perf events together
-with temperature readings
-
-Cleanest solution could be to enhance the exisiting userspace apps
-(pytimechart/perf timechart) and let them add another line
-(temperature/energy), but the data would not come from perf, but
-from sysfs/hwmon.
-Not sure whether this works out with the timechart tools.
-Anyway, this sounds like a userspace only problem.
-
-   Thomas
+    Ezequiel
