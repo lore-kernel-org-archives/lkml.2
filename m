@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934293Ab2JXDSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 23:18:13 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54117 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933960Ab2JXDSM (ORCPT
+	id S934316Ab2JXDVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 23:21:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54280 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933960Ab2JXDVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 23:18:12 -0400
-Date: Tue, 23 Oct 2012 20:18:45 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] firmware loader: introduce kernel parameter to
- customize fw search path
-Message-ID: <20121024031845.GA11255@kroah.com>
-References: <1351046993-2220-1-git-send-email-ming.lei@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351046993-2220-1-git-send-email-ming.lei@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Oct 2012 23:21:20 -0400
+Subject: Re: [RFC PATCH 1/3] dmaengine: add dma_get_channel_caps()
+From: Vinod Koul <vkoul@infradead.org>
+To: Dan Williams <djbw@fb.com>
+Cc: vinod.koul@intel.com, Matt Porter <mporter@ti.com>,
+        Chris Ball <cjb@laptop.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+In-Reply-To: <CAA9_cmdVfbO+T0iSEf4uTPcejx1Mx+aQ5LidYZkJ89dVR=ydXw@mail.gmail.com>
+References: <1350615088-14562-1-git-send-email-mporter@ti.com>
+	 <1350615088-14562-2-git-send-email-mporter@ti.com>
+	 <CAA9_cmdVfbO+T0iSEf4uTPcejx1Mx+aQ5LidYZkJ89dVR=ydXw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Oct 2012 08:39:01 +0530
+Message-ID: <1351048141.5263.5.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:49:53AM +0800, Ming Lei wrote:
-> This patch introduces one kernel parameter of 'fw_path' to support
-> customizing firmware image search path, so that people can use its
-> own firmware path if the default built-in paths can't meet their demand[1].
+On Tue, 2012-10-23 at 15:54 -0700, Dan Williams wrote:
+> > +struct dmaengine_chan_caps {
+> > +       enum dmaengine_apis ops;
+> > +       int seg_nr;
+> > +       int seg_len;
+> > +};
 > 
-> [1], https://lkml.org/lkml/2012/10/11/337
-> 
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> This makes sense for the potentially dynamic capability properties
+> that get set after configuration, but why do we need the operation
+> types here?  They can be retrieved from the parent device. 
+I was thinking that each channel can have different capabilities.
+You can assign one channel for mempcy operations exclusively and some
+others for slave usage exclusively.
+I believe some h/w do have such assignment so would help in doing that.
 
-Ick, no, not another kernel boot parameter.  I would prefer the /proc/
-file solution instead, just like /proc/sys/kernel/hotplug is.
+-- 
+Vinod Koul
+Intel Corp.
 
-But, that really wouldn't work for boot time, so, again just like
-hotplug works, make it also a Kconfig option for those distros that
-build their own kernels and keep their firmware in odd places, or don't
-have a /lib/ directory, can override it easily.
-
-thanks,
-
-greg k-h
