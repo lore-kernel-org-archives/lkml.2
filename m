@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935253Ab2JXQkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:40:00 -0400
-Received: from nm19.access.bullet.mail.sp2.yahoo.com ([98.139.44.146]:23324
-	"EHLO nm19.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932967Ab2JXQj5 (ORCPT
+	id S935270Ab2JXQkK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:40:10 -0400
+Received: from nm20-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.174]:25166
+	"EHLO nm20-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932967Ab2JXQkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:39:57 -0400
-X-Yahoo-Newman-Id: 476342.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+	Wed, 24 Oct 2012 12:40:02 -0400
+X-Yahoo-Newman-Id: 347829.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IJX.73AVM1ll1vnhcTvP7leIhqRpIJlf5ZcINogU5lAHjYJ
- OvQMiKS08QgIHzkb1c0_y2Hy5Trm7XQjoN3twU5SWzLakTHBNDJinZ8dcJMp
- HvA0vONwvQZIbU.dV8DmoFLHvulzSwelwpgbk94CJnQNzSMk1wkG_CYmzARx
- 7Rcup7CY.IRnyzPvEbgJwY0drVkec9DefYrbpyWwcO17W7N.3RKFCGXK7l6g
- pX4bBlRCAtLfUz9IKxhhhaAUosnvqm.DY4MqlA3C.9s2O327Vatsv4pNhJ.9
- rHgJ6HQ6ww.Q5HGMFZysmX8y4wcOxBk.uX8xnD6bzUm1_x1Vz4I.P4Qba7PB
- TkYLWiirAxgTJVcVs3euE2F7sErypY47vqjlWTUofYNYkmATNzSGHL9qmiQx
- qScHdbrRDYbzorNKXhl5cTBRh5HqY74zc2K0GDPQ2on2VmyQTPft5Yxf_e0C
- NaSpi.tzpk3o7UBgW9DobhcI4eo84xw--
+X-YMail-OSG: uowUZfYVM1nD.rBUs7RqqYLxYJOTo8Oj4bTFMJrX1kz22iR
+ JFniSFQX5bGu_Ksu3359rJphAQMSzfxQ3psJ_THPV4aRRn6eqfmIdyr_vEwy
+ .Eh0pY.l1jKAyxe81kipJ5Im2dzDjh1I_7Ur23Slueh9flp.DhyoBiZJMgQq
+ FbuIKo55aLkX3.HQ0YR.BH..W.cq02ZF6inE_0dFwKgXayhTSnDDHxu7xBr3
+ o1fM0iFPnnX1TLKYV4GEjaJeEiic4lb_DPgAmSD3gg.xAvbQ2McjRAiQd8KB
+ lPzBesm.NlOcUEN4NKop2NER2TgmFZ.Hh9A93ouLPiPltDCJMbIgHFWQ9kw4
+ hDVcg93eNRgnOa2zt6URfbuf7vMrWNhxIxt66zhQeKWb85rSrPJmYjcmWMN4
+ hiHlDOGkUqkt0AgXUT0iOFmBp4YmEZPZO1aEZl8Mbug6wyEZbmPFW
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -35,9 +34,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v3 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Date: Wed, 24 Oct 2012 11:33:54 -0500
-Message-Id: <1351096441-12388-3-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v3 08/10] bug.h: Fix BUILD_BUG_ON macro in __CHECKER__
+Date: Wed, 24 Oct 2012 11:33:59 -0500
+Message-Id: <1351096441-12388-8-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
@@ -45,100 +44,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using GCC_VERSION reduces complexity, is easier to read and is GCC's
-recommended mechanism for doing version checks. (Just don't ask me why
-they didn't define it in the first place.)  This also makes it easy to
-merge compiler-gcc{,3,4}.h should somebody want to.
+When __CHECKER__ is defined, we disable all of the BUILD_BUG.* macros.
+However, BUILD_BUG_ON was evaluating to nothing in this case, and we
+want (0) since this is a function-like macro that will be followed by a
+semicolon.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/compiler-gcc3.h |    8 ++++----
- include/linux/compiler-gcc4.h |   14 +++++++-------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ include/linux/bug.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
-index 37d4124..7d89feb 100644
---- a/include/linux/compiler-gcc3.h
-+++ b/include/linux/compiler-gcc3.h
-@@ -2,22 +2,22 @@
- #error "Please don't include <linux/compiler-gcc3.h> directly, include <linux/compiler.h> instead."
- #endif
+diff --git a/include/linux/bug.h b/include/linux/bug.h
+index f8eae31..1b43ea2 100644
+--- a/include/linux/bug.h
++++ b/include/linux/bug.h
+@@ -16,7 +16,7 @@ struct pt_regs;
+ #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
+ #define BUILD_BUG_ON_ZERO(e) (0)
+ #define BUILD_BUG_ON_NULL(e) ((void*)0)
+-#define BUILD_BUG_ON(condition)
++#define BUILD_BUG_ON(condition) (0)
+ #define BUILD_BUG() (0)
+ #else /* __CHECKER__ */
  
--#if __GNUC_MINOR__ < 2
-+#if GCC_VERSION < 30200
- # error Sorry, your compiler is too old - please upgrade it.
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 30300
- # define __used			__attribute__((__used__))
- #else
- # define __used			__attribute__((__unused__))
- #endif
- 
--#if __GNUC_MINOR__ >= 4
-+#if GCC_VERSION >= 30400
- #define __must_check		__attribute__((warn_unused_result))
- #endif
- 
- #ifdef CONFIG_GCOV_KERNEL
--# if __GNUC_MINOR__ < 4
-+# if GCC_VERSION < 30400
- #   error "GCOV profiling support for gcc versions below 3.4 not included"
- # endif /* __GNUC_MINOR__ */
- #endif /* CONFIG_GCOV_KERNEL */
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 8914293..9755029 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -4,7 +4,7 @@
- 
- /* GCC 4.1.[01] miscompiles __weak */
- #ifdef __KERNEL__
--# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
-+# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
- #  error Your version of gcc miscompiles the __weak directive
- # endif
- #endif
-@@ -13,11 +13,11 @@
- #define __must_check 		__attribute__((warn_unused_result))
- #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
- 
--#if __GNUC_MINOR__ > 0
-+#if GCC_VERSION >= 40100
- # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 40300
- /* Mark functions as cold. gcc will assume any path leading to a call
-    to them will be unlikely.  This means a lot of manual unlikely()s
-    are unnecessary now for any paths leading to the usual suspects
-@@ -39,9 +39,9 @@
- # define __compiletime_warning(message) __attribute__((warning(message)))
- # define __compiletime_error(message) __attribute__((error(message)))
- #endif /* __CHECKER__ */
--#endif /* __GNUC_MINOR__ >= 3 */
-+#endif /* GCC_VERSION >= 40300 */
- 
--#if __GNUC_MINOR__ >= 5
-+#if GCC_VERSION >= 40500
- /*
-  * Mark a position in code as unreachable.  This can be used to
-  * suppress control flow warnings after asm blocks that transfer
-@@ -56,9 +56,9 @@
- /* Mark a function definition as prohibited from being cloned. */
- #define __noclone	__attribute__((__noclone__))
- 
--#endif /* __GNUC_MINOR__ >= 5 */
-+#endif /* GCC_VERSION >= 40500 */
- 
--#if __GNUC_MINOR__ >= 6
-+#if GCC_VERSION >= 40600
- /*
-  * Tell the optimizer that something else uses this function or variable.
-  */
 -- 
 1.7.3.4
 
