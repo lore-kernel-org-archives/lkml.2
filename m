@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935189Ab2JXQaw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:30:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56128 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab2JXQau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:30:50 -0400
+	id S935200Ab2JXQbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:31:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36037 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757502Ab2JXQbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 12:31:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,640,1344236400"; 
+   d="scan'208";a="208535900"
+Message-ID: <508817C9.2080604@intel.com>
+Date: Wed, 24 Oct 2012 09:31:05 -0700
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351053164.6537.95.camel@edumazet-glaptop>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	<1350925299.8609.978.camel@edumazet-glaptop>
-	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
-	<CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
-	<1351053164.6537.95.camel@edumazet-glaptop>
-Date: Wed, 24 Oct 2012 09:30:49 -0700
-X-Google-Sender-Auth: VF-X-qfQp8pmxpD3KnGGPlojlsM
-Message-ID: <CAN8Q1EeF3g8O7=Vn9ufj-3Kd9Qhg4xcTPKkcqBmbsXWW-BnHcQ@mail.gmail.com>
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Peter LaDow <petela@gocougs.wsu.edu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: Ingo Molnar <mingo@kernel.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86: Improve 64 bit __phys_addr call performance
+References: <20121009185057.15478.86075.stgit@gitlad.jf.intel.com> <20121024102533.GA10447@gmail.com>
+In-Reply-To: <20121024102533.GA10447@gmail.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 9:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Could you try following patch ?
+On 10/24/2012 03:25 AM, Ingo Molnar wrote:
+> * Alexander Duyck <alexander.h.duyck@intel.com> wrote:
+>
+>> This patch is meant to improve overall system performance when 
+>> making use of the __phys_addr call on 64 bit x86 systems.  To 
+>> do this I have implemented several changes.
+>>
+>> First if CONFIG_DEBUG_VIRTUAL is not defined __phys_addr is 
+>> made an inline, similar to how this is currently handled in 32 
+>> bit.  However in order to do this it is required to export 
+>> phys_base so that it is available if __phys_addr is used in 
+>> kernel modules.
+>>
+>> The second change was to streamline the code by making use of 
+>> the carry flag on an add operation instead of performing a 
+>> compare on a 64 bit value.  The advantage to this is that it 
+>> allows us to reduce the overall size of the call. On my Xeon 
+>> E5 system the entire __phys_addr inline call consumes 30 bytes 
+>> and 5 instructions.  I also applied similar logic to the debug 
+>> version of the function.  My testing shows that the debug 
+>> version of the function with this patch applied is slightly 
+>> faster than the non-debug version without the patch.
+>>
+>> Finally, when building the kernel with the first two changes 
+>> applied I saw build warnings about __START_KERNEL_map and 
+>> PAGE_OFFSET constants not fitting in their type.  In order to 
+>> resolve the build warning I changed their type from UL to ULL.
+>>
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> ---
+>>
+>>  arch/x86/include/asm/page_64_types.h |   16 ++++++++++++++--
+>>  arch/x86/kernel/x8664_ksyms_64.c     |    3 +++
+>>  arch/x86/mm/physaddr.c               |   20 ++++++++++++++------
+>>  3 files changed, 31 insertions(+), 8 deletions(-)
+>> +#ifdef CONFIG_DEBUG_VIRTUAL
+>>  extern unsigned long __phys_addr(unsigned long);
+>> +#else
+>> +static inline unsigned long __phys_addr(unsigned long x)
+>> +{
+>> +	unsigned long y = x - __START_KERNEL_map;
+>> +
+>> +	/* use the carry flag to determine if x was < __START_KERNEL_map */
+>> +	x = y + ((x > y) ? phys_base : (__START_KERNEL_map - PAGE_OFFSET));
+>> +
+>> +	return x;
+>> +}
+> This is a rather frequently used primitive. By how much does 
+> this patch increase a 'make defconfig' kernel's vmlinux, as 
+> measured via 'size vmlinux'?
+>
+> Thanks,
+>
+> 	Ingo
 
-Thanks for the suggestion. But I have a question about the patch below.
+Here is the before and after:
 
-> +       /* Note : cmpxchg() is a memory barrier, we dont need smp_wmb() */
-> +       if (old != new && cmpxchg(&ptr->sequence, old, new) == old)
-> +               return 1;
-> +       return 0;
+Before
+    text    data     bss      dec    hex filename
+10368528 1047480 1122304 12538312 bf51c8 vmlinux
 
-Looking at arch/powerpc/include/asm/system.h, cmpxchg is defined as a
-call to __cmpxchg_u32 (we are 32-bit, and I presume the size is 32
-bits):
+After
+    text    data     bss      dec    hex filename
+10372216 1047480 1122304 12542000 bf6030 vmlinux
 
-static __always_inline unsigned long
-__cmpxchg_u32(volatile unsigned int *p, unsigned long old, unsigned long new)
-{
-        unsigned int prev;
+I also have some patches are going into the swiotlb.  With them in it
+reduces the size a bit but still doesn't get us back to the original size:
 
-        __asm__ __volatile__ (
-        PPC_RELEASE_BARRIER
-"1:     lwarx   %0,0,%2         # __cmpxchg_u32\n\
-        cmpw    0,%0,%3\n\
-        bne-    2f\n"
-        PPC405_ERR77(0,%2)
-"       stwcx.  %4,0,%2\n\
-        bne-    1b"
-        PPC_ACQUIRE_BARRIER
-        "\n\
-2:"
-        : "=&r" (prev), "+m" (*p)
-        : "r" (p), "r" (old), "r" (new)
-        : "cc", "memory");
+After SWIOTLB
+    text    data     bss      dec    hex filename
+10371860 1047480 1122304 12541644 bf5ecc vmlinux
 
-        return prev;
-}
-
-And the interesting part is PPC_RELEASE_BARRIER and
-PPC_ACQUIRE_BARRIER.  Both of these are noops in non SMP systems.
->From arch/powerpc/include/asm/sync.h:
-
-#ifdef CONFIG_SMP
-#define __PPC_ACQUIRE_BARRIER                           \
-        START_LWSYNC_SECTION(97);                       \
-        isync;                                          \
-        MAKE_LWSYNC_SECTION_ENTRY(97, __lwsync_fixup);
-#define PPC_ACQUIRE_BARRIER     "\n" stringify_in_c(__PPC_ACQUIRE_BARRIER)
-#define PPC_RELEASE_BARRIER     stringify_in_c(LWSYNC) "\n"
-#else
-#define PPC_ACQUIRE_BARRIER
-#define PPC_RELEASE_BARRIER
-#endif
-
-So, if these are noops, does this really become an atomic operation?
+The total increase in size amounts to about 3.6K without the SWIOTLB
+changes, and about 3.3K with.
 
 Thanks,
-Pete
+
+Alex
