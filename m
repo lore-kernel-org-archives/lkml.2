@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab2JXN6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:58:41 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43484 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756111Ab2JXN6j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:58:39 -0400
-Date: Wed, 24 Oct 2012 15:58:34 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
-Message-ID: <20121024135834.GA4368@breakpoint.cc>
-References: <1349729943-28995-1-git-send-email-milinevskyy@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349729943-28995-1-git-send-email-milinevskyy@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934851Ab2JXN70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:59:26 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:25143 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934675Ab2JXN7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:59:25 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-mm@kvack.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/2] common entry point for kmem_cache_free
+Date: Wed, 24 Oct 2012 17:59:16 +0400
+Message-Id: <1351087158-8524-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+CC: Joonsoo Kim <js1304@gmail.com>
+CC: David Rientjes <rientjes@google.com>
+CC: Pekka Enberg <penberg@kernel.org>
+CC: Christoph Lameter <cl@linux.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 08, 2012 at 11:59:03PM +0300, Dmytro Milinevskyy wrote:
-> Convert USB descriptor's fields to CPU byte order before using locally in USB NCM gadget driver.
-> Tested on MIPS32 big-endian device.
-> 
-> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
-> ---
->  drivers/usb/gadget/f_ncm.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/f_ncm.c b/drivers/usb/gadget/f_ncm.c
-> index b651b52..fce45ab 100644
-> --- a/drivers/usb/gadget/f_ncm.c
-> +++ b/drivers/usb/gadget/f_ncm.c
-> @@ -869,11 +869,11 @@ static struct sk_buff *ncm_wrap_ntb(struct gether *port,
->  	struct sk_buff	*skb2;
->  	int		ncb_len = 0;
->  	__le16		*tmp;
-> -	int		div = ntb_parameters.wNdpInDivisor;
-> -	int		rem = ntb_parameters.wNdpInPayloadRemainder;
-> -	int		pad;
-> -	int		ndp_align = ntb_parameters.wNdpInAlignment;
-> -	int		ndp_pad;
-> +	int	div = le16_to_cpu(ntb_parameters.wNdpInDivisor);
-> +	int	rem = le16_to_cpu(ntb_parameters.wNdpInPayloadRemainder);
-> +	int	pad;
-> +	int	ndp_align = le16_to_cpu(ntb_parameters.wNdpInAlignment);
-> +	int	ndp_pad;
+The goal of this patchset is to provide a single entry point for
+kmem_cache_free. Other functions, such as the allocation itself, and kmalloc
+could easily follow.
 
-It would be nice to keep the two tabs between int and variable. One question: 
-In ntb_parameters the member wLength is 16bit and not using cpu_to_le16(). How
-does it work? Is the test on host side not strict enough?
+The main problem here, is that if we keep the allocator-specific functions
+in their .c file, we lose the ability to inline their fast paths. Being this
+such a critical path, we would like to keep doing so.
 
->  	unsigned	max_size = ncm->port.fixed_in_len;
->  	struct ndp_parser_opts *opts = ncm->parser_opts;
->  	unsigned	crc_len = ncm->is_crc ? sizeof(uint32_t) : 0;
+During the last discussion around this (https://lkml.org/lkml/2012/10/22/639),
+JoonSoo Kim suggested that we could achieve this by just including the
+allocator-specific .c files in slab_common.c, a suggestion I considered but
+quickly disregarding fearing a quite ugly end result.
 
-Sebastian
+Turns out it doesn't look so bad. So please let me know what you think.
+
+Thanks
+
+Glauber Costa (2):
+  kmem_cache: include allocators code directly into slab_common
+  slab: move kmem_cache_free to common code
+
+ mm/Makefile      |  3 ---
+ mm/slab.c        | 23 ++---------------------
+ mm/slab_common.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/slob.c        | 11 ++++-------
+ mm/slub.c        |  5 +----
+ 5 files changed, 57 insertions(+), 35 deletions(-)
+
+-- 
+1.7.11.7
+
