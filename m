@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932900Ab2JXJ4y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:56:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55032 "EHLO
+	id S1758081Ab2JXJ6I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:58:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55047 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755677Ab2JXJ4w (ORCPT
+	with ESMTP id S1755206Ab2JXJ6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:56:52 -0400
-Date: Wed, 24 Oct 2012 02:55:40 -0700
+	Wed, 24 Oct 2012 05:58:05 -0400
+Date: Wed, 24 Oct 2012 02:56:39 -0700
 From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-f269ae0469fc882332bdfb5db15d3c1315fe2a10@git.kernel.org>
+Message-ID: <tip-5b51f2f80b3b906ce59bd4dce6eca3c7f34cb1b9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
         mingo@kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
         tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
         tglx@linutronix.de
-In-Reply-To: <20120823141507.200772172@google.com>
-References: <20120823141507.200772172@google.com>
+In-Reply-To: <20120823141507.277808946@google.com>
+References: <20120823141507.277808946@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Update_cfs_shares at period edge
-Git-Commit-ID: f269ae0469fc882332bdfb5db15d3c1315fe2a10
+Subject: [tip:sched/core] sched: Make __update_entity_runnable_avg() fast
+Git-Commit-ID: 5b51f2f80b3b906ce59bd4dce6eca3c7f34cb1b9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,113 +29,267 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:55:45 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:56:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f269ae0469fc882332bdfb5db15d3c1315fe2a10
-Gitweb:     http://git.kernel.org/tip/f269ae0469fc882332bdfb5db15d3c1315fe2a10
+Commit-ID:  5b51f2f80b3b906ce59bd4dce6eca3c7f34cb1b9
+Gitweb:     http://git.kernel.org/tip/5b51f2f80b3b906ce59bd4dce6eca3c7f34cb1b9
 Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 4 Oct 2012 13:18:31 +0200
+AuthorDate: Thu, 4 Oct 2012 13:18:32 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:29 +0200
+CommitDate: Wed, 24 Oct 2012 10:27:30 +0200
 
-sched: Update_cfs_shares at period edge
+sched: Make __update_entity_runnable_avg() fast
 
-Now that our measurement intervals are small (~1ms) we can amortize the posting
-of update_shares() to be about each period overflow.  This is a large cost
-saving for frequently switching tasks.
+__update_entity_runnable_avg forms the core of maintaining an entity's runnable
+load average.  In this function we charge the accumulated run-time since last
+update and handle appropriate decay.  In some cases, e.g. a waking task, this
+time interval may be much larger than our period unit.
 
+Fortunately we can exploit some properties of our series to perform decay for a
+blocked update in constant time and account the contribution for a running
+update in essentially-constant* time.
+
+[*]: For any running entity they should be performing updates at the tick which
+gives us a soft limit of 1 jiffy between updates, and we can compute up to a
+32 jiffy update in a single pass.
+
+C program to generate the magic constants in the arrays:
+
+  #include <math.h>
+  #include <stdio.h>
+
+  #define N 32
+  #define WMULT_SHIFT 32
+
+  const long WMULT_CONST = ((1UL << N) - 1);
+  double y;
+
+  long runnable_avg_yN_inv[N];
+  void calc_mult_inv() {
+  	int i;
+  	double yn = 0;
+
+  	printf("inverses\n");
+  	for (i = 0; i < N; i++) {
+  		yn = (double)WMULT_CONST * pow(y, i);
+  		runnable_avg_yN_inv[i] = yn;
+  		printf("%2d: 0x%8lx\n", i, runnable_avg_yN_inv[i]);
+  	}
+  	printf("\n");
+  }
+
+  long mult_inv(long c, int n) {
+  	return (c * runnable_avg_yN_inv[n]) >>  WMULT_SHIFT;
+  }
+
+  void calc_yn_sum(int n)
+  {
+  	int i;
+  	double sum = 0, sum_fl = 0, diff = 0;
+
+  	/*
+  	 * We take the floored sum to ensure the sum of partial sums is never
+  	 * larger than the actual sum.
+  	 */
+  	printf("sum y^n\n");
+  	printf("   %8s  %8s %8s\n", "exact", "floor", "error");
+  	for (i = 1; i <= n; i++) {
+  		sum = (y * sum + y * 1024);
+  		sum_fl = floor(y * sum_fl+ y * 1024);
+  		printf("%2d: %8.0f  %8.0f %8.0f\n", i, sum, sum_fl,
+  			sum_fl - sum);
+  	}
+  	printf("\n");
+  }
+
+  void calc_conv(long n) {
+  	long old_n;
+  	int i = -1;
+
+  	printf("convergence (LOAD_AVG_MAX, LOAD_AVG_MAX_N)\n");
+  	do {
+  		old_n = n;
+  		n = mult_inv(n, 1) + 1024;
+  		i++;
+  	} while (n != old_n);
+  	printf("%d> %ld\n", i - 1, n);
+  	printf("\n");
+  }
+
+  void main() {
+  	y = pow(0.5, 1/(double)N);
+  	calc_mult_inv();
+  	calc_conv(1024);
+  	calc_yn_sum(N);
+  }
+
+[ Compile with -lm ]
 Signed-off-by: Paul Turner <pjt@google.com>
 Reviewed-by: Ben Segall <bsegall@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120823141507.200772172@google.com
+Link: http://lkml.kernel.org/r/20120823141507.277808946@google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+ kernel/sched/fair.c |  125 +++++++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 101 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dcc27d8..002a769 100644
+index 002a769..6ecf455 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1187,6 +1187,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+@@ -884,17 +884,92 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
+ 
+ #ifdef CONFIG_SMP
+ /*
++ * We choose a half-life close to 1 scheduling period.
++ * Note: The tables below are dependent on this value.
++ */
++#define LOAD_AVG_PERIOD 32
++#define LOAD_AVG_MAX 47742 /* maximum possible load avg */
++#define LOAD_AVG_MAX_N 345 /* number of full periods to produce LOAD_MAX_AVG */
++
++/* Precomputed fixed inverse multiplies for multiplication by y^n */
++static const u32 runnable_avg_yN_inv[] = {
++	0xffffffff, 0xfa83b2da, 0xf5257d14, 0xefe4b99a, 0xeac0c6e6, 0xe5b906e6,
++	0xe0ccdeeb, 0xdbfbb796, 0xd744fcc9, 0xd2a81d91, 0xce248c14, 0xc9b9bd85,
++	0xc5672a10, 0xc12c4cc9, 0xbd08a39e, 0xb8fbaf46, 0xb504f333, 0xb123f581,
++	0xad583ee9, 0xa9a15ab4, 0xa5fed6a9, 0xa2704302, 0x9ef5325f, 0x9b8d39b9,
++	0x9837f050, 0x94f4efa8, 0x91c3d373, 0x8ea4398a, 0x8b95c1e3, 0x88980e80,
++	0x85aac367, 0x82cd8698,
++};
++
++/*
++ * Precomputed \Sum y^k { 1<=k<=n }.  These are floor(true_value) to prevent
++ * over-estimates when re-combining.
++ */
++static const u32 runnable_avg_yN_sum[] = {
++	    0, 1002, 1982, 2941, 3880, 4798, 5697, 6576, 7437, 8279, 9103,
++	 9909,10698,11470,12226,12966,13690,14398,15091,15769,16433,17082,
++	17718,18340,18949,19545,20128,20698,21256,21802,22336,22859,23371,
++};
++
++/*
+  * Approximate:
+  *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
+  */
+ static __always_inline u64 decay_load(u64 val, u64 n)
+ {
+-	for (; n && val; n--) {
+-		val *= 4008;
+-		val >>= 12;
++	unsigned int local_n;
++
++	if (!n)
++		return val;
++	else if (unlikely(n > LOAD_AVG_PERIOD * 63))
++		return 0;
++
++	/* after bounds checking we can collapse to 32-bit */
++	local_n = n;
++
++	/*
++	 * As y^PERIOD = 1/2, we can combine
++	 *    y^n = 1/2^(n/PERIOD) * k^(n%PERIOD)
++	 * With a look-up table which covers k^n (n<PERIOD)
++	 *
++	 * To achieve constant time decay_load.
++	 */
++	if (unlikely(local_n >= LOAD_AVG_PERIOD)) {
++		val >>= local_n / LOAD_AVG_PERIOD;
++		local_n %= LOAD_AVG_PERIOD;
  	}
  
- 	__update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
-+	update_cfs_shares(cfs_rq);
- }
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
-@@ -1396,9 +1397,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
- 	account_entity_enqueue(cfs_rq, se);
--	update_cfs_shares(cfs_rq);
-+	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
- 
- 	if (flags & ENQUEUE_WAKEUP) {
- 		place_entity(cfs_rq, se, 0);
-@@ -1471,7 +1471,6 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
- 
- 	update_stats_dequeue(cfs_rq, se);
- 	if (flags & DEQUEUE_SLEEP) {
-@@ -1491,8 +1490,8 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 
- 	if (se != cfs_rq->curr)
- 		__dequeue_entity(cfs_rq, se);
--	se->on_rq = 0;
- 	account_entity_dequeue(cfs_rq, se);
-+	dequeue_entity_load_avg(cfs_rq, se, flags & DEQUEUE_SLEEP);
- 
- 	/*
- 	 * Normalize the entity after updating the min_vruntime because the
-@@ -1506,7 +1505,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	return_cfs_rq_runtime(cfs_rq);
- 
- 	update_min_vruntime(cfs_rq);
--	update_cfs_shares(cfs_rq);
-+	se->on_rq = 0;
+-	return val;
++	val *= runnable_avg_yN_inv[local_n];
++	/* We don't use SRR here since we always want to round down. */
++	return val >> 32;
++}
++
++/*
++ * For updates fully spanning n periods, the contribution to runnable
++ * average will be: \Sum 1024*y^n
++ *
++ * We can compute this reasonably efficiently by combining:
++ *   y^PERIOD = 1/2 with precomputed \Sum 1024*y^n {for  n <PERIOD}
++ */
++static u32 __compute_runnable_contrib(u64 n)
++{
++	u32 contrib = 0;
++
++	if (likely(n <= LOAD_AVG_PERIOD))
++		return runnable_avg_yN_sum[n];
++	else if (unlikely(n >= LOAD_AVG_MAX_N))
++		return LOAD_AVG_MAX;
++
++	/* Compute \Sum k^n combining precomputed values for k^i, \Sum k^j */
++	do {
++		contrib /= 2; /* y^LOAD_AVG_PERIOD = 1/2 */
++		contrib += runnable_avg_yN_sum[LOAD_AVG_PERIOD];
++
++		n -= LOAD_AVG_PERIOD;
++	} while (n > LOAD_AVG_PERIOD);
++
++	contrib = decay_load(contrib, n);
++	return contrib + runnable_avg_yN_sum[n];
  }
  
  /*
-@@ -2518,8 +2517,8 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		if (cfs_rq_throttled(cfs_rq))
- 			break;
+@@ -929,7 +1004,8 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 							struct sched_avg *sa,
+ 							int runnable)
+ {
+-	u64 delta;
++	u64 delta, periods;
++	u32 runnable_contrib;
+ 	int delta_w, decayed = 0;
  
--		update_cfs_shares(cfs_rq);
- 		update_entity_load_avg(se, 1);
-+		update_cfs_rq_blocked_load(cfs_rq, 0);
+ 	delta = now - sa->last_runnable_update;
+@@ -963,25 +1039,26 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		 * period and accrue it.
+ 		 */
+ 		delta_w = 1024 - delta_w;
+-		BUG_ON(delta_w > delta);
+-		do {
+-			if (runnable)
+-				sa->runnable_avg_sum += delta_w;
+-			sa->runnable_avg_period += delta_w;
+-
+-			/*
+-			 * Remainder of delta initiates a new period, roll over
+-			 * the previous.
+-			 */
+-			sa->runnable_avg_sum =
+-				decay_load(sa->runnable_avg_sum, 1);
+-			sa->runnable_avg_period =
+-				decay_load(sa->runnable_avg_period, 1);
+-
+-			delta -= delta_w;
+-			/* New period is empty */
+-			delta_w = 1024;
+-		} while (delta >= 1024);
++		if (runnable)
++			sa->runnable_avg_sum += delta_w;
++		sa->runnable_avg_period += delta_w;
++
++		delta -= delta_w;
++
++		/* Figure out how many additional periods this update spans */
++		periods = delta / 1024;
++		delta %= 1024;
++
++		sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
++						  periods + 1);
++		sa->runnable_avg_period = decay_load(sa->runnable_avg_period,
++						     periods + 1);
++
++		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
++		runnable_contrib = __compute_runnable_contrib(periods);
++		if (runnable)
++			sa->runnable_avg_sum += runnable_contrib;
++		sa->runnable_avg_period += runnable_contrib;
  	}
  
- 	if (!se) {
-@@ -2579,8 +2578,8 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- 		if (cfs_rq_throttled(cfs_rq))
- 			break;
- 
--		update_cfs_shares(cfs_rq);
- 		update_entity_load_avg(se, 1);
-+		update_cfs_rq_blocked_load(cfs_rq, 0);
- 	}
- 
- 	if (!se) {
-@@ -5639,8 +5638,11 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- 		se = tg->se[i];
- 		/* Propagate contribution to hierarchy */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
--		for_each_sched_entity(se)
-+		for_each_sched_entity(se) {
- 			update_cfs_shares(group_cfs_rq(se));
-+			/* update contribution to parent */
-+			update_entity_load_avg(se, 1);
-+		}
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
- 	}
- 
+ 	/* Remainder of delta accrued against u_0` */
