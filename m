@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935468Ab2JXSRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:17:08 -0400
-Received: from mailserver5.natinst.com ([130.164.80.5]:45720 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756417Ab2JXSRG (ORCPT
+	id S1161072Ab2JXSUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:20:45 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53935 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505Ab2JXSUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:17:06 -0400
-Date: Wed, 24 Oct 2012 13:16:56 -0500
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>
-Subject: Re: [PATCH v3 3/5] zynq: remove use of CLKDEV_LOOKUP
-Message-ID: <20121024181656.GS20593@beefymiracle.amer.corp.natinst.com>
-References: <20121024003218.GA31625@beefymiracle.amer.corp.natinst.com>
- <20121024003442.GD31625@beefymiracle.amer.corp.natinst.com>
- <20121024133231.GA28661@elliptictech.com>
+	Wed, 24 Oct 2012 14:20:44 -0400
+Date: Wed, 24 Oct 2012 11:20:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
+Message-ID: <20121024182005.GF2465@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com>
+ <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com>
+ <20121024161638.GA2465@linux.vnet.ibm.com>
+ <20121024171855.GA22371@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121024133231.GA28661@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/24/2012 01:16:52 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/24/2012 01:16:52 PM,
-	Serialize complete at 10/24/2012 01:16:52 PM
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MWF3YmTHhoLNIVQC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-24_05:2012-10-24,2012-10-24,1970-01-01 signatures=0
+In-Reply-To: <20121024171855.GA22371@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102418-5518-0000-0000-000008B24D89
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 24, 2012 at 07:18:55PM +0200, Oleg Nesterov wrote:
+> On 10/24, Paul E. McKenney wrote:
+> >
+> > static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> > {
+> > 	/*
+> > 	 * Decrement our count, but protected by RCU-sched so that
+> > 	 * the writer can force proper serialization.
+> > 	 */
+> > 	rcu_read_lock_sched();
+> > 	this_cpu_dec(*p->counters);
+> > 	rcu_read_unlock_sched();
+> > }
+> 
+> Yes, the explicit lock/unlock makes the new assumptions about
+> synchronize_sched && barriers unnecessary. And iiuc this could
+> even written as
+> 
+> 	rcu_read_lock_sched();
+> 	rcu_read_unlock_sched();
+> 
+> 	this_cpu_dec(*p->counters);
 
---MWF3YmTHhoLNIVQC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+But this would lose the memory barrier that is inserted by
+synchronize_sched() after the CPU's last RCU-sched read-side critical
+section.
 
-On Wed, Oct 24, 2012 at 09:32:32AM -0400, Nick Bowler wrote:
-> On 2012-10-23 19:34 -0500, Josh Cartwright wrote:
-> > The Zynq support in mainline does not (yet) make use of any of the
-> > generic clk or clk lookup functionality.  Remove what is upstream for
-> > now, until the out-of-tree implementation is in suitable form for
-> > merging.
-> >=20
-> > An important side effect of this patch is that it allows the building of
-> > a Zynq kernel without running into unresolved symbol problems:
-> >=20
-> >    drivers/built-in.o: In function `amba_get_enable_pclk':
-> >    clkdev.c:(.text+0x444): undefined reference to `clk_enable'
->=20
-> For the record, I think this was introduced by commit 56a34b03ff427
-> ("ARM: versatile: Make plat-versatile clock optional") which forgot to
-> select PLAT_VERSATILE_CLOCK on Zynq.  This is not all that surprising,
-> because the fact that Zynq "uses" PLAT_VERSATILE is secretly hidden in
-> the Makefile.
+> > Of course, it would be nice to get rid of the extra synchronize_sched().
+> > One way to do this is to use SRCU, which allows blocking operations in
+> > its read-side critical sections (though also increasing read-side overhead
+> > a bit, and also untested):
+> >
+> > ------------------------------------------------------------------------
+> >
+> > struct percpu_rw_semaphore {
+> > 	bool locked;
+> > 	struct mutex mtx; /* Could also be rw_semaphore. */
+> > 	struct srcu_struct s;
+> > 	wait_queue_head_t wq;
+> > };
+> 
+> but in this case I don't understand
+> 
+> > static inline void percpu_up_write(struct percpu_rw_semaphore *p)
+> > {
+> > 	/* Allow others to proceed, but not yet locklessly. */
+> > 	mutex_unlock(&p->mtx);
+> >
+> > 	/*
+> > 	 * Ensure that all calls to percpu_down_read() that did not
+> > 	 * start unambiguously after the above mutex_unlock() still
+> > 	 * acquire the lock, forcing their critical sections to be
+> > 	 * serialized with the one terminated by this call to
+> > 	 * percpu_up_write().
+> > 	 */
+> > 	synchronize_sched();
+> 
+> how this synchronize_sched() can help...
 
-Yes, indeed.  I did try to fix my problems by having ARCH_ZYNQ select
-PLAT_VERSATILE_CLOCK, but I recall running into additional build
-problems...
+Indeed it cannot!  It should instead be synchronize_srcu(&p->s).  I guess that
+I really meant it when I said it was untested.  ;-)
 
-But now that I just tried it again, it all seems to work, barring
-Kconfig complaining I've selected PLAT_VERSATILE_CLOCK, but not
-PLAT_VERSATILE.  (Having ARCH_ZYNQ select PLAT_VERSATILE, however, leads
-to additional build problems).
+							Thanx, Paul
 
-> Nevertheless, the only feature from versatile that Zynq needed was the
-> clock support, so this patch should *also* delete the secret use of
-> plat-versatile by removing this line from arch/arm/Makefile:
->=20
->   plat-$(CONFIG_ARCH_ZYNQ)	+=3D versatile
-
-Yes, indeed it should.
-
-Thanks,
-
-  Josh
-
---MWF3YmTHhoLNIVQC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiDCYAAoJEEef0niEbw+lUn0P/3nQG85jLu2uV1eCps/1skh8
-rAAfEeS9j9QyUVAcg03WC0mW4k5rDj1LKusYw+S9AYKD8RTz7ZLNG4rEVnXZ04l8
-TRIFBr7MLNLhm2xDC8oXxJ62Hj22t5ffQGwHzkAA2Ue0GD6PMW1mXO6lQRIPnl8g
-cW/qpPBZ4utmwTF9JnhoVqQByP6Q0hK1fsN4rVNpXNwy44vRcbE8UpwywlmG24/K
-KC7pDsLnXrHpTybM7tYaGAU6uGdOunawbHLBOsRk0OXHdfAK2w/AERgmE25xymkq
-ub592VfsfPfM3vDKJ883R4w0+IcEA/OFoiOvmHbVwJNgmxs/Tz/DA9nkdb9lTHg9
-0ittT4rjNMk0W6d0ARRrG2+6LGLMNn/8X5saxl6z6oW06lsIFyqKNaprh3BsMhGU
-iesltyMThgu7RjWlJfyzh2jAbbfp8V4ygJXXgbT801NIAc779iGMEszR9sNEYYIm
-s0FYU9J6HVJrpu5mV995M3NGPlocuI3153e3t7YHWvI0uDp4HEimLuxkh+wMV3Tr
-+xAMnwlzNRFulhchYsgYHWcJEABj8l9ZI05Au2SOCAJAMSjvePXPAsnxq/r+7p44
-TzxvxiEag6S6jUnYZhUdgod0N84w+a+dryG9nKHbekh9hrHIiIrpLQLCeCloMpTz
-jfmylHQhqYTyf7hNXZ7H
-=WLR+
------END PGP SIGNATURE-----
-
---MWF3YmTHhoLNIVQC--
