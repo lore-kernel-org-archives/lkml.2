@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935225Ab2JXQjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:39:48 -0400
-Received: from nm11.access.bullet.mail.sp2.yahoo.com ([98.139.44.138]:48579
-	"EHLO nm11.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934468Ab2JXQjp (ORCPT
+	id S935253Ab2JXQkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:40:00 -0400
+Received: from nm19.access.bullet.mail.sp2.yahoo.com ([98.139.44.146]:23324
+	"EHLO nm19.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932967Ab2JXQj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:39:45 -0400
-X-Yahoo-Newman-Id: 524141.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
+	Wed, 24 Oct 2012 12:39:57 -0400
+X-Yahoo-Newman-Id: 476342.79197.bm@smtp105.sbc.mail.gq1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: I4hNqs0VM1mgcwo1.yH8Z0TZr1J3u.kHdLqn_IS0YwiY4RF
- bEkDf4gwU3gN7PrnuVBO0cFst28.cerqyPF8lndDqAGq67biqq3hh8rx57o5
- bc5rpjX86EgMOG2FhM7lmX17.s9Kxo2cK6onrdZHiVhAuRBkBKtCtP93ZI1B
- 6P2TWFfUKYAA4ugPGP7W._Ag_KlKqmV9ubJprpdE_sq.b75kmAaj9ywDQ4rw
- OkCQm0m.NM2IYVGwjRUzJrXJHP6rxq2Jk3OP9GyW0AxZt3gzWZ4sUVFZICM8
- shT5FbkRRjWwXl.LZf_UDC6d16S2O.5mFYb_e86aGgtomkEfoTJZdoskgifG
- iqjl_64O71xFjnvWOYIKsRgwt6XcWbjbqc8_rlJDmlbwV.Q.fbeYUBE9V5tV
- 4DoH2NhuuMnEiZKqn3o0xM9Cp.nNISB0FsI5QsO1bDcaHy4rmhUeDFQ--
+X-YMail-OSG: IJX.73AVM1ll1vnhcTvP7leIhqRpIJlf5ZcINogU5lAHjYJ
+ OvQMiKS08QgIHzkb1c0_y2Hy5Trm7XQjoN3twU5SWzLakTHBNDJinZ8dcJMp
+ HvA0vONwvQZIbU.dV8DmoFLHvulzSwelwpgbk94CJnQNzSMk1wkG_CYmzARx
+ 7Rcup7CY.IRnyzPvEbgJwY0drVkec9DefYrbpyWwcO17W7N.3RKFCGXK7l6g
+ pX4bBlRCAtLfUz9IKxhhhaAUosnvqm.DY4MqlA3C.9s2O327Vatsv4pNhJ.9
+ rHgJ6HQ6ww.Q5HGMFZysmX8y4wcOxBk.uX8xnD6bzUm1_x1Vz4I.P4Qba7PB
+ TkYLWiirAxgTJVcVs3euE2F7sErypY47vqjlWTUofYNYkmATNzSGHL9qmiQx
+ qScHdbrRDYbzorNKXhl5cTBRh5HqY74zc2K0GDPQ2on2VmyQTPft5Yxf_e0C
+ NaSpi.tzpk3o7UBgW9DobhcI4eo84xw--
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -34,9 +35,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v3 05/10] compiler{,-gcc4}.h, bug.h: Remove duplicate macros
-Date: Wed, 24 Oct 2012 11:33:56 -0500
-Message-Id: <1351096441-12388-5-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v3 03/10] compiler-gcc{3,4}.h: Use GCC_VERSION macro
+Date: Wed, 24 Oct 2012 11:33:54 -0500
+Message-Id: <1351096441-12388-3-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
 References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
@@ -44,60 +45,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__linktime_error() does the same thing as __compiletime_error() and is
-only used in bug.h.  Since the macro defines a function attribute that
-will cause a failure at compile-time (not link-time), it makes more
-sense to keep __compiletime_error(), which is also neatly mated with
-__compiletime_warning().
+Using GCC_VERSION reduces complexity, is easier to read and is GCC's
+recommended mechanism for doing version checks. (Just don't ask me why
+they didn't define it in the first place.)  This also makes it easy to
+merge compiler-gcc{,3,4}.h should somebody want to.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
 Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/bug.h           |    2 +-
- include/linux/compiler-gcc4.h |    2 --
- include/linux/compiler.h      |    3 ---
- 3 files changed, 1 insertions(+), 6 deletions(-)
+ include/linux/compiler-gcc3.h |    8 ++++----
+ include/linux/compiler-gcc4.h |   14 +++++++-------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/bug.h b/include/linux/bug.h
-index 4bd74d8..a03c3ef 100644
---- a/include/linux/bug.h
-+++ b/include/linux/bug.h
-@@ -74,7 +74,7 @@ extern int __build_bug_on_failed;
- #define BUILD_BUG()						\
- 	do {							\
- 		extern void __build_bug_failed(void)		\
--			__linktime_error("BUILD_BUG failed");	\
-+			__compiletime_error("BUILD_BUG failed");\
- 		__build_bug_failed();				\
- 	} while (0)
+diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
+index 37d4124..7d89feb 100644
+--- a/include/linux/compiler-gcc3.h
++++ b/include/linux/compiler-gcc3.h
+@@ -2,22 +2,22 @@
+ #error "Please don't include <linux/compiler-gcc3.h> directly, include <linux/compiler.h> instead."
+ #endif
  
+-#if __GNUC_MINOR__ < 2
++#if GCC_VERSION < 30200
+ # error Sorry, your compiler is too old - please upgrade it.
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 3
++#if GCC_VERSION >= 30300
+ # define __used			__attribute__((__used__))
+ #else
+ # define __used			__attribute__((__unused__))
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 4
++#if GCC_VERSION >= 30400
+ #define __must_check		__attribute__((warn_unused_result))
+ #endif
+ 
+ #ifdef CONFIG_GCOV_KERNEL
+-# if __GNUC_MINOR__ < 4
++# if GCC_VERSION < 30400
+ #   error "GCOV profiling support for gcc versions below 3.4 not included"
+ # endif /* __GNUC_MINOR__ */
+ #endif /* CONFIG_GCOV_KERNEL */
 diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 9755029..7f143ac 100644
+index 8914293..9755029 100644
 --- a/include/linux/compiler-gcc4.h
 +++ b/include/linux/compiler-gcc4.h
-@@ -33,8 +33,6 @@
-    the kernel context */
- #define __cold			__attribute__((__cold__))
+@@ -4,7 +4,7 @@
  
--#define __linktime_error(message) __attribute__((__error__(message)))
--
- #ifndef __CHECKER__
+ /* GCC 4.1.[01] miscompiles __weak */
+ #ifdef __KERNEL__
+-# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
++# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
+ #  error Your version of gcc miscompiles the __weak directive
+ # endif
+ #endif
+@@ -13,11 +13,11 @@
+ #define __must_check 		__attribute__((warn_unused_result))
+ #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
+ 
+-#if __GNUC_MINOR__ > 0
++#if GCC_VERSION >= 40100
+ # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+ #endif
+ 
+-#if __GNUC_MINOR__ >= 3
++#if GCC_VERSION >= 40300
+ /* Mark functions as cold. gcc will assume any path leading to a call
+    to them will be unlikely.  This means a lot of manual unlikely()s
+    are unnecessary now for any paths leading to the usual suspects
+@@ -39,9 +39,9 @@
  # define __compiletime_warning(message) __attribute__((warning(message)))
  # define __compiletime_error(message) __attribute__((error(message)))
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index b121554..cbf6d9d 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -299,9 +299,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #ifndef __compiletime_error
- # define __compiletime_error(message)
- #endif
--#ifndef __linktime_error
--# define __linktime_error(message)
--#endif
+ #endif /* __CHECKER__ */
+-#endif /* __GNUC_MINOR__ >= 3 */
++#endif /* GCC_VERSION >= 40300 */
+ 
+-#if __GNUC_MINOR__ >= 5
++#if GCC_VERSION >= 40500
  /*
-  * Prevent the compiler from merging or refetching accesses.  The compiler
-  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+  * Mark a position in code as unreachable.  This can be used to
+  * suppress control flow warnings after asm blocks that transfer
+@@ -56,9 +56,9 @@
+ /* Mark a function definition as prohibited from being cloned. */
+ #define __noclone	__attribute__((__noclone__))
+ 
+-#endif /* __GNUC_MINOR__ >= 5 */
++#endif /* GCC_VERSION >= 40500 */
+ 
+-#if __GNUC_MINOR__ >= 6
++#if GCC_VERSION >= 40600
+ /*
+  * Tell the optimizer that something else uses this function or variable.
+  */
 -- 
 1.7.3.4
 
