@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933819Ab2JXGyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:54:10 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47358 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757835Ab2JXGyH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:54:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <5085068E.5080304@parallels.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
-	<1350656442-1523-5-git-send-email-glommer@parallels.com>
-	<0000013a7a84cb28-334eab12-33c4-4a92-bd9c-e5ad938f83d0-000000@email.amazonses.com>
-	<5085068E.5080304@parallels.com>
-Date: Wed, 24 Oct 2012 09:54:05 +0300
-X-Google-Sender-Auth: _R38PfDSyMGym_OMSYZedGH_EWI
-Message-ID: <CAOJsxLFxQuC9mRb=ZMoqdxS6fyLHCg1LxyfF9wAR1hiOL5i93g@mail.gmail.com>
-Subject: Re: [PATCH v5 04/18] slab: don't preemptively remove element from
- list in cache destroy
-From: Pekka Enberg <penberg@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        devel@openvz.org, Suleiman Souhlal <suleiman@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933903Ab2JXGyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:54:25 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38773 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964799Ab2JXGyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:54:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
+   d="scan'208";a="237472544"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>
+Subject: [BUGFIX 2/2] PCI/PM: Resume device before shutdown
+Date: Wed, 24 Oct 2012 14:54:14 +0800
+Message-Id: <1351061654-8339-2-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
+References: <1351061654-8339-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 11:40 AM, Glauber Costa <glommer@parallels.com> wrote:
-> On 10/19/2012 11:34 PM, Christoph Lameter wrote:
->> On Fri, 19 Oct 2012, Glauber Costa wrote:
->>
->>> I, however, see no reason why we need to do so, since we are now locked
->>> during the whole deletion (which wasn't necessarily true before).  I
->>> propose a simplification in which we delete it only when there is no
->>> more going back, so we don't need to add it again.
->>
->> Ok lets hope that holding the lock does not cause issues.
->>
->> Acked-by: Christoph Lameter <cl@linux.com>
->>
-> BTW: One of the good things about this set, is that we are naturally
-> exercising cache destruction a lot more than we did before. So if there
-> is any problem, either with this or anything related to cache
-> destruction, it should at least show up a lot more frequently. So far,
-> this does not seem to cause any problems.
+Some actions during shutdown need device to be in D0 state, such as
+MSI shutdown etc, so resume device before shutdown.
 
-We no longer hold the mutex the whole time after. See commit 210ed9d
-("mm, slab: release slab_mutex earlier in kmem_cache_destroy()") for
-details.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/pci/pci-driver.c |   12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -398,6 +398,8 @@ static void pci_device_shutdown(struct d
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
+ 	struct pci_driver *drv = pci_dev->driver;
+ 
++	pm_runtime_resume(dev);
++
+ 	if (drv && drv->shutdown)
+ 		drv->shutdown(pci_dev);
+ 	pci_msi_shutdown(pci_dev);
+@@ -408,16 +410,6 @@ static void pci_device_shutdown(struct d
+ 	 * continue to do DMA
+ 	 */
+ 	pci_disable_device(pci_dev);
+-
+-	/*
+-	 * Devices may be enabled to wake up by runtime PM, but they need not
+-	 * be supposed to wake up the system from its "power off" state (e.g.
+-	 * ACPI S5).  Therefore disable wakeup for all devices that aren't
+-	 * supposed to wake up the system at this point.  The state argument
+-	 * will be ignored by pci_enable_wake().
+-	 */
+-	if (!device_may_wakeup(dev))
+-		pci_enable_wake(pci_dev, PCI_UNKNOWN, false);
+ }
+ 
+ #ifdef CONFIG_PM
