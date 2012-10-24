@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2JXJ1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:27:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47854 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab2JXJ1e (ORCPT
+	id S1756298Ab2JXJ15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:27:57 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:23904 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446Ab2JXJ1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:27:34 -0400
-Message-ID: <5087B47B.8080009@ti.com>
-Date: Wed, 24 Oct 2012 11:27:23 +0200
-From: Sebastien Guiriec <s-guiriec@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 24 Oct 2012 05:27:55 -0400
+X-IronPort-AV: E=Sophos;i="4.80,639,1344211200"; 
+   d="scan'208";a="15352279"
+Message-ID: <1351070872.2237.122.camel@zakaz.uk.xensource.com>
+Subject: Re: [PATCH 1/6] xen/pvh: Support ParaVirtualized Hardware
+ extensions.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Date: Wed, 24 Oct 2012 10:27:52 +0100
+In-Reply-To: <20121023144614.GC1052@phenom.dumpdata.com>
+References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
+	 <1350695882-12820-2-git-send-email-konrad.wilk@oracle.com>
+	 <20121023144614.GC1052@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.3-1 
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [PATCH v3 0/4] ARM: dts: Update OMAP5 with address space and
- interrupts
-References: <1351062434-22514-1-git-send-email-s-guiriec@ti.com> <5087B196.7090804@ti.com>
-In-Reply-To: <5087B196.7090804@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+On Tue, 2012-10-23 at 15:46 +0100, Konrad Rzeszutek Wilk wrote:
+> > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
+> > index b66d04c..8beebdb 100644
+> > --- a/include/xen/interface/memory.h
+> > +++ b/include/xen/interface/memory.h
+> > @@ -169,7 +169,13 @@ struct xen_add_to_physmap {
+> >      /* Source mapping space. */
+> >  #define XENMAPSPACE_shared_info 0 /* shared info page */
+> >  #define XENMAPSPACE_grant_table 1 /* grant table page */
+> > -    unsigned int space;
+> > +#define XENMAPSPACE_gmfn        2 /* GMFN */
+> > +#define XENMAPSPACE_gmfn_range  3 /* GMFN range */
+> > +#define XENMAPSPACE_gmfn_foreign 4 /* GMFN from another guest */
+> > +    uint16_t space;
+> > +    domid_t foreign_domid;         /* IFF XENMAPSPACE_gmfn_foreign */
+> > +
+> > +#define XENMAPIDX_grant_table_status 0x80000000
+> >  
+> >      /* Index into source mapping space. */
+> >      xen_ulong_t idx;
+> 
+> And this breaks 32-bit PVHVM :-(
+> 
+> The reason being that in xen_hvm_init_shared_info we allocate the
+> structure on the stack, and do not clear the foreign_domid to zero.
+> 
+> This means we can (and do get) for the argument space, something
+> like this:
+> 	xatp.space == 0xffff0001;
+> instead of
+> 	xatp.space = 0x1;
 
-On 10/24/2012 11:15 AM, Benoit Cousson wrote:
-> Hi Seb,
->
-> Sorry, I missed your previous email, your v2 was the right one.
-> We do have a single INTC in every OMAP, there is no point to repeat the
-> same data hundred times.
-> The DTS are already big enough.
+We should be reverting this patch and using XENMEM_add_to_physmap range
+instead, see my "xen: x86 pvh: use XENMEM_add_to_physmap_range for
+foreign gmfn mappings" from last week.
 
-So in such case we should send a series for audio IP interrupt-parent 
-removal for OMAP3/4/5 dtsi file in order to be coherent.
+Mukesh wanted to go with this original version in the interim so
+probably fixing it as you have makes sense anyhow.
 
-Do you want me to do it?
+> 
+> This fixes it:
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index e3497f2..b679f86 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1509,6 +1509,7 @@ void __ref xen_hvm_init_shared_info(void)
+>  	xatp.domid = DOMID_SELF;
+>  	xatp.idx = 0;
+>  	xatp.space = XENMAPSPACE_shared_info;
+> +	xatp.foreign_domid = 0;
+>  	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+>  	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+>  		BUG();
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index b2b0a37..cbfd929 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -1044,6 +1044,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>  		do {
+>  			xatp.domid = DOMID_SELF;
+>  			xatp.idx = i;
+> +			xatp.foreign_domid = 0;
+>  			xatp.space = XENMAPSPACE_grant_table;
+>  			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
+>  			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
 
->
-> On 10/24/2012 09:07 AM, Sebastien Guiriec wrote:
->> Since kernel 3.7 the DTS data are not overwriten by hwmod data we can add the address space
->> and interrupt line description inside dtsi file for OMAP5. This serie is updating the
->> current OMAP5 IP with missing entry.
->>
->> It has been tested on OMAP5 with 3.7-audio-display feature tree.
->> - MMC is probing and functional
->> - TWL6041 probing (GPIO/I2C)
->> - booting (UART)
->>
->> Update since v1:
->> - Add Ack and review
->> - Fix up commit messages.
->>
->> Update since v2:
->> - Add interrupt-parent.
->
-> I will take the previous one to avoid the duplication of attributes.
->
-> On top of that I will remove the ones introduce in audio IPs for
-> consistency on OMAP3/4/5 platforms.
->
-> Regards,
-> Benoit
->
 
