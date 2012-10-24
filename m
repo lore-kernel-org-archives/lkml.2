@@ -1,109 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757698Ab2JXGBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:01:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50240 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2JXGBw (ORCPT
+	id S1757682Ab2JXGC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:02:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57238 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757499Ab2JXGC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:01:52 -0400
-Date: Wed, 24 Oct 2012 08:01:38 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kim, Milo" <Milo.Kim@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] lp855x_bl: use generic PWM functions
-Message-ID: <20121024060138.GE9787@avionic-0098.mockup.avionic-design.de>
-References: <A874F61F95741C4A9BA573A70FE3998F6417916D@DQHE02.ent.ti.com>
- <20121019082107.GA20659@avionic-0098.mockup.avionic-design.de>
- <A874F61F95741C4A9BA573A70FE3998F641791BB@DQHE02.ent.ti.com>
- <20121022153012.253a6954.akpm@linux-foundation.org>
+	Wed, 24 Oct 2012 02:02:27 -0400
+Date: Wed, 24 Oct 2012 08:02:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jeff King <peff@peff.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Chris Metcalf <cmetcalf@tilera.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>, git@vger.kernel.org,
+        Junio C Hamano <gitster@pobox.com>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+ GENERIC_KERNEL_EXECVE
+Message-ID: <20121024060222.GA20007@gmail.com>
+References: <20121019213548.GR2616@ZenIV.linux.org.uk>
+ <5082A1F1.3080303@tilera.com>
+ <20121020153401.GT2616@ZenIV.linux.org.uk>
+ <20121020171643.GU2616@ZenIV.linux.org.uk>
+ <5086D432.4070008@tilera.com>
+ <20121023184122.GZ2616@ZenIV.linux.org.uk>
+ <alpine.LFD.2.02.1210232232070.2756@ionos>
+ <20121023205119.GA27729@sigill.intra.peff.net>
+ <alpine.LFD.2.02.1210232307480.2756@ionos>
+ <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ryJZkp9/svQ58syV"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121022153012.253a6954.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:VvAMuHdcalshlpSTwYBtPQ5MUlhsZWbfmfiPj52Cx8D
- zSZXadfXmlyR4qUG+iHUI09ttDlKqkTFT8rLW+WzP/mPjKiKEL
- 7GWqKsyjmj/in06gqUZneQ5f3xaRDUAPlYgDeLbScdqxuWEBAQ
- CtHiu/s/89Oi957u5IkKKvHL8iJis500oGUQ91O05X1k+QTyDb
- AjCLtpNtRK/zKApZ7EZDbq6zb2Y5LV1JJr9qnWCKXv0Vg6Ikzf
- 9SXAlwIVd5CdAxIZKnSpf6bSeVqt/3kcf3VlS3oEcRaJ5FgYRe
- A4gKTTaHVvPZnQGG/WshGjTm056rw5Ve4qMiu18dXZMiRaIEi8
- gqtaCDJLpWTG8in0oF76ZIc2lL7XOoI/Wb3uGUTwSI44EsGwKF
- W90dpHzeaulDaaD1BhJD+2BfR4ckCxRULsP2Jw7zhO3xtjd9f4
- RwNqo
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ryJZkp9/svQ58syV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Mon, Oct 22, 2012 at 03:30:12PM -0700, Andrew Morton wrote:
-> On Fri, 19 Oct 2012 08:45:14 +0000
-> "Kim, Milo" <Milo.Kim@ti.com> wrote:
->=20
-> > > Generally this looks good. Obviously you'll need to update any users =
-of
-> > > this driver as well. It might make sense to include those changes in
-> > > this patch to avoid interim build failures.
-> >=20
-> > Thanks for your review.
-> > So far no usages for this driver in the mainline.
-> > I've tested it in my own development environment instead.
-> >=20
-> > > Other than that I have just one smaller comment below.
-> > >=20
-> > > > +	pwm_config(lp->pwm, duty, period);
-> > > > +	duty =3D=3D 0 ? pwm_disable(lp->pwm) : pwm_enable(lp->pwm);
-> > >=20
-> > > This is really ugly and should be written explicitly:
-> > >=20
-> > > 	if (duty =3D=3D 0)
-> > > 		pwm_disable(lp->pwm);
-> > > 	else
-> > > 		pwm_enable(lp->pwm);
-> >=20
-> > Oh, I prefer using '?' to if-sentence because it looks clear to me.
-> > But if it's difficult to read/understand, I'll fix it.
-> > I'd like to have others' opinion.
-> >=20
->=20
-> Hey, it's better than
->=20
-> 	(*(duty ? pwm_enable : pwm_disable))(lp->pwm);
->=20
-> !
+> On Wed, Oct 24, 2012 at 12:25 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>
+> >> It is spelled:
+> >>
+> >>   git notes add -m <comment> SHA1
+> >
+> > Cool!
+> 
+> Don't use them for anything global.
+> 
+> Use them for local codeflow, but don't expect them to be 
+> distributed. It's a separate "flow", and while it *can* be 
+> distributed, it's not going to be for the kernel, for example. 
+> So no, don't start using this to ack things, because the acks 
+> *will* get lost.
 
-Indeed. Fortunately there don't seem to be overly many of those. Anyway,
-thanks for taking these patches.
+I'd also add a small meta argument: that it would be actively 
+wrong to *allow* 'belated' acks to be added. In practice acks 
+are most useful *before* a commit gets created and they often 
+have a mostly buerocratic role afterwards.
 
-Thierry
+So we should encourage timely acks (which actually help 
+development), and accept ack-less patches as long as they are 
+correct and create no problems. More utility, less buerocracy. 
+Incorrect, ack-less patches causing problems will get all the 
+flames they deserve.
 
---ryJZkp9/svQ58syV
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQh4RCAAoJEN0jrNd/PrOhRiYP/RXJl1gSBQ4DBS8D9RzSGMpz
-uFyh88nfXvXqlBieD6UFE1CaYL9u68ByR7XHMRSkxyqfft4QQWrZaj5LQXokxdfM
-yilPeCqFbDHVR7mxYG/tIVcP5g8QpiyF7EecboAScjkST0mjh7gFZ+GHC2S2s2qq
-PgZQUXWcanKXpv338quekrr3NUTTf9BdIK+fLqdpDn6G7qIp1apN9J4Q2DKZEko5
-egiFh2LYnz5Kuy5S2rvd+jUQHKmipYG9anOZuJCYkqFsxOYSOqH5bOT0hRfBJnjK
-CmDJixY2ShHlbNxdvOBEW4GbtBfjRV0CO06ZLNW1Gsx3kiYOsq+L1ojBvfBM/zK5
-VaqqxSyXIh9N5tITbEJR4z2uPX91gkL2pAZRyKy9dtsCnRjCe3isurNmCyazmb54
-fx904ZOphJAWYFq+NT3slsquChZnq47rWeheAR8g0AgaPXeC0jmyA1Y12nXBRriF
-/L2GNywW4VQziB/IDqj2ewtKLaj6g0dRuOp9GTXRj0q/jVXDTVTw+q807QcwYs2L
-uGkOpGTotpIzFt3AxfmKYHgRU8uSHu5cfEdr9uRGll7E2kVAQ+wzn9UCnkxtS6j5
-8OkYmgIlbQ/YUkRxGLNANGtGIRqP/CkdPavklglHOqjZLge5fnKbDsoFxNMLnjeR
-k3PD2oc+HET3bSfIR71t
-=hfNc
------END PGP SIGNATURE-----
-
---ryJZkp9/svQ58syV--
+	Ingo
