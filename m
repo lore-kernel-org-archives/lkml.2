@@ -1,73 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab2JXMVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:21:42 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51925 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab2JXMVk (ORCPT
+	id S1758584Ab2JXMVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:21:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45074 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab2JXMVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:21:40 -0400
-Date: Wed, 24 Oct 2012 13:26:03 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "David Laight" <David.Laight@ACULAB.COM>
-Cc: "Ming Lei" <ming.lei@canonical.com>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        <linux-kernel@vger.kernel.org>, "Oliver Neukum" <oneukum@suse.de>,
-        "Minchan Kim" <minchan@kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, "Jens Axboe" <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [RFC PATCH v2 2/6] PM / Runtime: introduce
- pm_runtime_set_memalloc_noio()
-Message-ID: <20121024132603.6c52cc47@pyramind.ukuu.org.uk>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B7060@saturn3.aculab.com>
-References: <CACVXFVMmszZWHaeNS6LSG4nHR4wWBLwM_BvynRwUW8X=nO+JWA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1210231022230.1635-100000@iolanthe.rowland.org>
-	<CACVXFVN+=XH_f5BmRkXeagTNowz0o0-Pd7GcxCneO0FSq8xqEw@mail.gmail.com>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B7060@saturn3.aculab.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 08:21:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
+	<1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+	<5087CF96.7010406@intel.com>
+	<CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+	<5087D678.1080905@intel.com>
+	<CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
+Date: Wed, 24 Oct 2012 14:21:43 +0200
+Message-ID: <CABPqkBQ+YMRvR6mv7NrW4-MZOgW6ztntJV5RMehr+SB9ymkYLw@mail.gmail.com>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 10:06:36 +0100
-"David Laight" <David.Laight@ACULAB.COM> wrote:
+But still, if I do:
+$  perf record -g -e cpu/cycles/k ........
 
-> > Looks the problem is worse than above, not only bitfields are affected, the
-> > adjacent fields might be involved too, see:
-> > 
-> >            http://lwn.net/Articles/478657/
-> 
-> Not mentioned in there is that even with x86/amd64 given
-> a struct with the following adjacent fields:
-> 	char a;
-> 	char b;
-> 	char c;
-> then foo->b |= 0x80; might do a 32bit RMW cycle.
+Looks like your code will activate LBR cstack for user stack even
+though I don't use it.
+I know it won't generate any user samples (theoretically) but you are
+still commandeering
+the LBR resource which other events may want to use.
 
-There are processors that will do this for the char case at least as they
-do byte ops by a mix of 32bit ops and rotate.
-
-> This will (well might - but probably does) happen
-> if compiled to a 'BTS' instruction.
-> The x86 instruction set docs are actually unclear
-> as to whether the 32bit cycle might even be misaligned!
-> amd64 might do a 64bit cycle (not checked the docs).
-
-Even with a suitably aligned field the compiler is at liberty to generate
-things like
-
-	reg = 0x80
-	reg |= foo->b
-	foo->b = reg;
-
-One reason it's a good idea to use set_bit/test_bit and friends.
-
-Alan
+On Wed, Oct 24, 2012 at 2:11 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Wed, Oct 24, 2012 at 1:52 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> On 10/24/2012 07:47 PM, Stephane Eranian wrote:
+>>> On Wed, Oct 24, 2012 at 1:23 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>> On 10/24/2012 04:57 PM, Stephane Eranian wrote:
+>>>>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>>>>
+>>>>>> Try enabling the LBR call stack feature if event request recording
+>>>>>> callchain. Try utilizing the LBR call stack to get user callchain
+>>>>>> in case of there is no frame pointer.
+>>>>>>
+>>>>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>>>>> ---
+>>>>>>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
+>>>>>>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>>>>>>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>>>>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>>>>>>  include/linux/perf_event.h                 |   6 ++
+>>>>>>  kernel/events/core.c                       |  11 ++-
+>>>>>>  6 files changed, 124 insertions(+), 49 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>>>>>> index 8ae8044..3bf2100 100644
+>>>>>> --- a/arch/x86/kernel/cpu/perf_event.c
+>>>>>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>>>>>> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
+>>>>>>
+>>>>>>                 if (event->attr.precise_ip > precise)
+>>>>>>                         return -EOPNOTSUPP;
+>>>>>> -               /*
+>>>>>> -                * check that PEBS LBR correction does not conflict with
+>>>>>> -                * whatever the user is asking with attr->branch_sample_type
+>>>>>> -                */
+>>>>>> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>>>> -                       u64 *br_type = &event->attr.branch_sample_type;
+>>>>>> -
+>>>>>> -                       if (has_branch_stack(event)) {
+>>>>>> -                               if (!precise_br_compat(event))
+>>>>>> -                                       return -EOPNOTSUPP;
+>>>>>> -
+>>>>>> -                               /* branch_sample_type is compatible */
+>>>>>> -
+>>>>>> -                       } else {
+>>>>>> -                               /*
+>>>>>> -                                * user did not specify  branch_sample_type
+>>>>>> -                                *
+>>>>>> -                                * For PEBS fixups, we capture all
+>>>>>> -                                * the branches at the priv level of the
+>>>>>> -                                * event.
+>>>>>> -                                */
+>>>>>> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>>>> -
+>>>>>> -                               if (!event->attr.exclude_user)
+>>>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>>>> -
+>>>>>> -                               if (!event->attr.exclude_kernel)
+>>>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>>>> -                       }
+>>>>>> +       }
+>>>>>> +       /*
+>>>>>> +        * check that PEBS LBR correction does not conflict with
+>>>>>> +        * whatever the user is asking with attr->branch_sample_type
+>>>>>> +        */
+>>>>>> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>>>> +               u64 *br_type = &event->attr.branch_sample_type;
+>>>>>> +
+>>>>>> +               if (has_branch_stack(event)) {
+>>>>>> +                       if (!precise_br_compat(event))
+>>>>>> +                               return -EOPNOTSUPP;
+>>>>>> +
+>>>>>> +                       /* branch_sample_type is compatible */
+>>>>>> +
+>>>>>> +               } else {
+>>>>>> +                       /*
+>>>>>> +                        * user did not specify  branch_sample_type
+>>>>>> +                        *
+>>>>>> +                        * For PEBS fixups, we capture all
+>>>>>> +                        * the branches at the priv level of the
+>>>>>> +                        * event.
+>>>>>> +                        */
+>>>>>> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>>>> +
+>>>>>> +                       if (!event->attr.exclude_user)
+>>>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>>>> +
+>>>>>> +                       if (!event->attr.exclude_kernel)
+>>>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>>>> +               }
+>>>>>> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>>>>>> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
+>>>>>> +                       /*
+>>>>>> +                        * user did not specify branch_sample_type,
+>>>>>> +                        * try using the LBR call stack facility to
+>>>>>> +                        * record call chains in the user space.
+>>>>>> +                        */
+>>>>>> +                       event->attr.branch_sample_type =
+>>>>>> +                               PERF_SAMPLE_BRANCH_USER |
+>>>>>> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
+>>>>>
+>>>>> You are forcing user level here, but how do you know the user wanted
+>>>>> ONLY user level
+>>>>> callchains?
+>>>>>
+>>>>>
+>>>>
+>>>> The LBR call stack is used only when the frame pointer approach doesn't work.
+>>>
+>>> And where is that determination made?
+>>
+>> check code that is added to perf_callchain_user and perf_callchain_user32
+>>
+> Are you saying you can run in a mode where you get kernel call stack via
+> frame-pointer and the user call stack via LBR cstack for a single event?
+>
+>
+>>>
+>>>> I think the kernel has frame pointer for the most cases. The second reason is
+>>>> that the LBR call stack only has 16 entries. I think it's too small to record
+>>>> both kernel and user call chains.
+>>>>
+>>> It's even too small for many object oriented user programs as well.
+>>>
+>>>> Regards
+>>>> Yan, Zheng
+>>>>
+>>
