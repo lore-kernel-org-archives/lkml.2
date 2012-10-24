@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965011Ab2JXQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 12:06:16 -0400
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:43024 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab2JXQGP (ORCPT
+	id S933817Ab2JXQJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 12:09:01 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:49213 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab2JXQJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 12:06:15 -0400
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Wed, 24 Oct 2012 12:06:13 -0400
-To: Johan Hovold <jhovold@gmail.com>
-Cc: linux-kernel@vger.kernel.org, =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
-        linux@sierrawireless.com, linux-usb@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: Fix memory leak in sierra_release() (this time with
- signed-off-by)
-Message-ID: <20121024160613.GR18610@csclub.uwaterloo.ca>
-References: <20121024142309.GQ18610@csclub.uwaterloo.ca>
- <20121024145644.GB3131@localhost>
+	Wed, 24 Oct 2012 12:09:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024145644.GB3131@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121024160253.GB6567@Super-MAGI>
+References: <20121024160253.GB6567@Super-MAGI>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Wed, 24 Oct 2012 17:08:37 +0100
+X-Google-Sender-Auth: b54qISQ4zPDQvS8uHLd_2f0eV2Y
+Message-ID: <CAHkRjk7r2sRtSPXo4HY1U6T_XtUXRrc7fz3fwqW7NYkrs1Q=QA@mail.gmail.com>
+Subject: Re: [PATCH]Documentation:Chinese translation of Documentation/arm64/memory.txt
+To: Tekkaman Ninja <tekkamanninja@gmail.com>
+Cc: Harry Wei <harryxiyou@gmail.com>,
+        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel@vger.linux-kernel.cn
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 04:56:44PM +0200, Johan Hovold wrote:
-> Good catch! I missed this one when I fixed a bunch of other memory
-> leaks in the sierra with recent kernels:
-> 
-> 	http://marc.info/?l=linux-usb&m=135100550421848&w=2
-> 
-> I'll rebase my patch on top of this one as your patch should be
-> backported to all stable kernels, whereas mine is only required for
-> v3.6 and later.
+2012/10/24 Tekkaman Ninja <tekkamanninja@gmail.com>:
+> This is a Chinese translated version of
+> Documentation/arm64/memory.txt
+>
+> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
 
-Oh that looks useful.  I was trying to track down if there were more
-leaks in the driver.  I just fixed the one that was most obvious to me.
+As long as you maintain it and you keep it in sync:
+
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+
+I used google translate and it seems close to the original document :)
 
 -- 
-Len Sorensen
+Catalin
