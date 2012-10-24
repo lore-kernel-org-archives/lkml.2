@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965152Ab2JXRWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 13:22:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6833 "EHLO mx1.redhat.com"
+	id S965239Ab2JXRW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 13:22:58 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:59362 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758654Ab2JXRWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 13:22:43 -0400
-Message-ID: <508823D4.4010407@redhat.com>
-Date: Wed, 24 Oct 2012 12:22:28 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+	id S965173Ab2JXRW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 13:22:57 -0400
+Date: Wed, 24 Oct 2012 10:22:43 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Witten <mfwitten@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH] README: document "make olddefconfig"
+Message-ID: <20121024172243.GA6707@www.outflux.net>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        =?UTF-8?B?VG9yYWw=?= =?UTF-8?B?ZiBGw7Zyc3Rlcg==?= 
-	<toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com> <87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com> <20121024052351.GB21714@thunk.org>
-In-Reply-To: <20121024052351.GB21714@thunk.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 12:23 AM, Theodore Ts'o wrote:
-> On Tue, Oct 23, 2012 at 11:27:09PM -0500, Eric Sandeen wrote:
->>
->> Ok, fair enough.  If the BBU is working, nobarrier is ok; I don't trust
->> journal_async_commit, but that doesn't mean this isn't a regression.
-> 
-> Note that Toralf has reported almost exactly the same set of symptoms,
-> but he's using an external USB stick --- and as far as I know he
-> wasn't using nobarrier and/or the journal_async_commit.  Toralf, can
-> you confirm what, if any, mount options you were using when you saw
-> it.
-> 
-> I've been looking at this some more, and there's one other thing that
-> the short circuit code does, which is neglects setting the
-> JBD2_FLUSHED flag, which is used by the commit code to know when it
-> needs to reset the s_start fields in the superblock when we make our
-> next commit.  However, this would only happen if the short circuit
-> code is getting hit some time other than when the file system is
-> getting unmounted --- and that's what Eric and I can't figure out how
-> it might be happening.  Journal flushes outside of an unmount does
-> happen as part of online resizing, the FIBMAP ioctl, or when the file
-> system is frozen.  But it didn't sound like Toralf or Nix was using
-> any of those features.  (Toralf, Nix, please correct me if my
-> assumptions here is wrong).
+While "olddefconfig" was documented in "make help", it was not mentioned
+in the README.
 
-If I freeze w/ anything in the log, then s_start !=0 and we proceed
-normally.  If I re-freeze w/o anything in the log, it's already set to
-FLUSHED (which makes sense) so not re-setting it doesn't matter.  So I
-don't see that that's an issue.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ README |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-As for FIBMAP I think we only do journal_flush if it's data=journal.
+diff --git a/README b/README
+index f32710a..a24ec89 100644
+--- a/README
++++ b/README
+@@ -180,6 +180,10 @@ CONFIGURING the kernel:
+                         with questions already answered.
+                         Additionally updates the dependencies.
+ 
++     "make olddefconfig"
++                        Like above, but sets new symbols to their default
++                        values without prompting.
++
+      "make defconfig"   Create a ./.config file by using the default
+                         symbol values from either arch/$ARCH/defconfig
+                         or arch/$ARCH/configs/${PLATFORM}_defconfig,
+-- 
+1.7.9.5
 
-In other news, Phoronix is on the case, so expect escalating freakouts ;)
 
--Eric
+-- 
+Kees Cook
+Chrome OS Security
