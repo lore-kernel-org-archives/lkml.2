@@ -1,70 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab2JXMKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:10:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53882 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab2JXMKB (ORCPT
+	id S1758252Ab2JXMLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:11:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39492 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab2JXMLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:10:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Cartwright <josh.cartwright@ni.com>
-Subject: Re: [PATCH v3 0/5] zynq subarch cleanups
-Date: Wed, 24 Oct 2012 12:09:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, John Linn <john.linn@xilinx.com>,
-        Nick Bowler <nbowler@elliptictech.com>
-References: <20121024003218.GA31625@beefymiracle.amer.corp.natinst.com>
-In-Reply-To: <20121024003218.GA31625@beefymiracle.amer.corp.natinst.com>
+	Wed, 24 Oct 2012 08:11:03 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210241209.58655.arnd@arndb.de>
-X-Provags-ID: V02:K0:ajlkjRIPUuQgxFSIDt5xqbXjbluZiVtM0rLv4r/Y4y9
- rISSd0yyfyMuqtB9FoCSScaluk7Dkvpsa3i+6KMfDQ2ATHCqw9
- nKH5Hk5vO78ey6ONezPfGoU5lUVwrTnVFroJE9hGz2dhiwvj4N
- 4ODy694LKHDZetCdEGiFnlcPaCYZ3bBdb/9Z9ylsAvrNfKk0j2
- S/wEdskt4OZu4GXRN8i/kqSIe/6AkesgyEwc/dQRYnKlqWSx4W
- tHlMJ6eoWgygQS0rQ3OVSkUCvCuTC6T+6Vi/X732MAeP0A6Ksx
- MRIOlL3f8oJcOyxkWhNLpigTCOSFykovqKa51xg4jVHm5yLvoG
- D4hdZ8l8m0OseMeWTCsE=
+In-Reply-To: <5087D678.1080905@intel.com>
+References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com>
+	<1351058350-9159-7-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
+	<5087CF96.7010406@intel.com>
+	<CABPqkBRPf-xTozCP75SOLFSLc9OcAvMhKqwfqj_BhLcK-DZK_w@mail.gmail.com>
+	<5087D678.1080905@intel.com>
+Date: Wed, 24 Oct 2012 14:11:00 +0200
+Message-ID: <CABPqkBS+td3UGSqiSW0+p_B+8SnWhZa38k-bojxHu9k1SGzBLg@mail.gmail.com>
+Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
+From: Stephane Eranian <eranian@google.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 October 2012, Josh Cartwright wrote:
-> Things have been relatively quiet on the Zynq front lately.  This patchset does
-> a bit of cleanup of the Zynq subarchitecture.  It was the necessary set of
-> things I had to do to get a zynq target booting with the upstream qemu model.
-> 
-> Patches 1 and 2 move zynq to use the GIC and pl310 L2 cache controller device
-> tree mappings respectively.
-> 
-> Patch 3 removes unused clock infrastructure.  the plan is to rework the
-> out-of-tree Xilinx generic clk support into something suitable for merging.
-> What's in tree now just isn't used at all, and can be removed.
-> 
-> Patch 4 and 5 move around the static peripheral mappings into the vmalloc area.
+On Wed, Oct 24, 2012 at 1:52 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+> On 10/24/2012 07:47 PM, Stephane Eranian wrote:
+>> On Wed, Oct 24, 2012 at 1:23 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>> On 10/24/2012 04:57 PM, Stephane Eranian wrote:
+>>>> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>>>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>>>>
+>>>>> Try enabling the LBR call stack feature if event request recording
+>>>>> callchain. Try utilizing the LBR call stack to get user callchain
+>>>>> in case of there is no frame pointer.
+>>>>>
+>>>>> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+>>>>> ---
+>>>>>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
+>>>>>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
+>>>>>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
+>>>>>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
+>>>>>  include/linux/perf_event.h                 |   6 ++
+>>>>>  kernel/events/core.c                       |  11 ++-
+>>>>>  6 files changed, 124 insertions(+), 49 deletions(-)
+>>>>>
+>>>>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>>>>> index 8ae8044..3bf2100 100644
+>>>>> --- a/arch/x86/kernel/cpu/perf_event.c
+>>>>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>>>>> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
+>>>>>
+>>>>>                 if (event->attr.precise_ip > precise)
+>>>>>                         return -EOPNOTSUPP;
+>>>>> -               /*
+>>>>> -                * check that PEBS LBR correction does not conflict with
+>>>>> -                * whatever the user is asking with attr->branch_sample_type
+>>>>> -                */
+>>>>> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>>> -                       u64 *br_type = &event->attr.branch_sample_type;
+>>>>> -
+>>>>> -                       if (has_branch_stack(event)) {
+>>>>> -                               if (!precise_br_compat(event))
+>>>>> -                                       return -EOPNOTSUPP;
+>>>>> -
+>>>>> -                               /* branch_sample_type is compatible */
+>>>>> -
+>>>>> -                       } else {
+>>>>> -                               /*
+>>>>> -                                * user did not specify  branch_sample_type
+>>>>> -                                *
+>>>>> -                                * For PEBS fixups, we capture all
+>>>>> -                                * the branches at the priv level of the
+>>>>> -                                * event.
+>>>>> -                                */
+>>>>> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>>> -
+>>>>> -                               if (!event->attr.exclude_user)
+>>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>>> -
+>>>>> -                               if (!event->attr.exclude_kernel)
+>>>>> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>>> -                       }
+>>>>> +       }
+>>>>> +       /*
+>>>>> +        * check that PEBS LBR correction does not conflict with
+>>>>> +        * whatever the user is asking with attr->branch_sample_type
+>>>>> +        */
+>>>>> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
+>>>>> +               u64 *br_type = &event->attr.branch_sample_type;
+>>>>> +
+>>>>> +               if (has_branch_stack(event)) {
+>>>>> +                       if (!precise_br_compat(event))
+>>>>> +                               return -EOPNOTSUPP;
+>>>>> +
+>>>>> +                       /* branch_sample_type is compatible */
+>>>>> +
+>>>>> +               } else {
+>>>>> +                       /*
+>>>>> +                        * user did not specify  branch_sample_type
+>>>>> +                        *
+>>>>> +                        * For PEBS fixups, we capture all
+>>>>> +                        * the branches at the priv level of the
+>>>>> +                        * event.
+>>>>> +                        */
+>>>>> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
+>>>>> +
+>>>>> +                       if (!event->attr.exclude_user)
+>>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
+>>>>> +
+>>>>> +                       if (!event->attr.exclude_kernel)
+>>>>> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
+>>>>> +               }
+>>>>> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
+>>>>> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
+>>>>> +                       /*
+>>>>> +                        * user did not specify branch_sample_type,
+>>>>> +                        * try using the LBR call stack facility to
+>>>>> +                        * record call chains in the user space.
+>>>>> +                        */
+>>>>> +                       event->attr.branch_sample_type =
+>>>>> +                               PERF_SAMPLE_BRANCH_USER |
+>>>>> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
+>>>>
+>>>> You are forcing user level here, but how do you know the user wanted
+>>>> ONLY user level
+>>>> callchains?
+>>>>
+>>>>
+>>>
+>>> The LBR call stack is used only when the frame pointer approach doesn't work.
+>>
+>> And where is that determination made?
+>
+> check code that is added to perf_callchain_user and perf_callchain_user32
+>
+Are you saying you can run in a mode where you get kernel call stack via
+frame-pointer and the user call stack via LBR cstack for a single event?
 
-Looks all good to me now.
 
-> 
-> I intentionally did not Cc stable on patch 5, even though you had
-> suggested otherwise.  I do not think it will apply cleanly to the stable
-> trees independent of the other patches.  Additionally, with the current
-> state of zynq upstream, I'm not convinced there would be enough users to
-> make it worth the effort.
-
-Ok, fair enough.
-
-> Additionally, I've left the SCU static mapping around, even though its
-> currently unused.  We'll eventually need it around (maybe in a different form)
-> when SMP support is added.
-
-Right.
-
-John, are you going to pick up these patches and send a pull request?
-
-	Arnd
+>>
+>>> I think the kernel has frame pointer for the most cases. The second reason is
+>>> that the LBR call stack only has 16 entries. I think it's too small to record
+>>> both kernel and user call chains.
+>>>
+>> It's even too small for many object oriented user programs as well.
+>>
+>>> Regards
+>>> Yan, Zheng
+>>>
+>
