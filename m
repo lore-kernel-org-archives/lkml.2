@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2JXJv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:51:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54957 "EHLO
+	id S932086Ab2JXJxN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:53:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54974 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab2JXJv4 (ORCPT
+	with ESMTP id S1754546Ab2JXJxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:51:56 -0400
-Date: Wed, 24 Oct 2012 02:50:42 -0700
+	Wed, 24 Oct 2012 05:53:11 -0400
+Date: Wed, 24 Oct 2012 02:51:43 -0700
 From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-8165e145ceb62fc338e099c9b12b3239c83d2f8e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-In-Reply-To: <20120823141506.855074415@google.com>
-References: <20120823141506.855074415@google.com>
+Message-ID: <tip-bb17f65571e97a7ec0297571fb1154fbd107ad00@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de
+In-Reply-To: <20120823141506.930124292@google.com>
+References: <20120823141506.930124292@google.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched:
-  Compute load contribution by a group entity
-Git-Commit-ID: 8165e145ceb62fc338e099c9b12b3239c83d2f8e
+  Normalize tg load contributions against runnable time
+Git-Commit-ID: bb17f65571e97a7ec0297571fb1154fbd107ad00
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,86 +28,168 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:50:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:51:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8165e145ceb62fc338e099c9b12b3239c83d2f8e
-Gitweb:     http://git.kernel.org/tip/8165e145ceb62fc338e099c9b12b3239c83d2f8e
+Commit-ID:  bb17f65571e97a7ec0297571fb1154fbd107ad00
+Gitweb:     http://git.kernel.org/tip/bb17f65571e97a7ec0297571fb1154fbd107ad00
 Author:     Paul Turner <pjt@google.com>
 AuthorDate: Thu, 4 Oct 2012 13:18:31 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:25 +0200
+CommitDate: Wed, 24 Oct 2012 10:27:26 +0200
 
-sched: Compute load contribution by a group entity
+sched: Normalize tg load contributions against runnable time
 
-Unlike task entities who have a fixed weight, group entities instead own a
-fraction of their parenting task_group's shares as their contributed weight.
+Entities of equal weight should receive equitable distribution of cpu time.
+This is challenging in the case of a task_group's shares as execution may be
+occurring on multiple cpus simultaneously.
 
-Compute this fraction so that we can correctly account hierarchies and shared
-entity nodes.
+To handle this we divide up the shares into weights proportionate with the load
+on each cfs_rq.  This does not however, account for the fact that the sum of
+the parts may be less than one cpu and so we need to normalize:
+  load(tg) = min(runnable_avg(tg), 1) * tg->shares
+Where runnable_avg is the aggregate time in which the task_group had runnable
+children.
 
 Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Ben Segall <bsegall@google.com>
+Reviewed-by: Ben Segall <bsegall@google.com>.
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120823141506.855074415@google.com
+Link: http://lkml.kernel.org/r/20120823141506.930124292@google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |   33 +++++++++++++++++++++++++++------
- 1 files changed, 27 insertions(+), 6 deletions(-)
+ kernel/sched/debug.c |    4 +++
+ kernel/sched/fair.c  |   56 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h |    2 +
+ 3 files changed, 62 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2908923..71b0ea3 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -234,6 +234,10 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			atomic64_read(&cfs_rq->tg->load_avg));
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
++	SEQ_printf(m, "  .%-30s: %d\n", "tg_runnable_contrib",
++			cfs_rq->tg_runnable_contrib);
++	SEQ_printf(m, "  .%-30s: %d\n", "tg->runnable_avg",
++			atomic_read(&cfs_rq->tg->runnable_avg));
+ #endif
+ 
+ 	print_cfs_group_stats(m, cpu, cfs_rq->tg);
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index db78822..e20cb26 100644
+index e20cb26..9e49722 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1117,22 +1117,43 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
- 		cfs_rq->tg_load_contrib += tg_contrib;
+@@ -1118,19 +1118,73 @@ static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
  	}
  }
-+
-+static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 
++/*
++ * Aggregate cfs_rq runnable averages into an equivalent task_group
++ * representation for computing load contributions.
++ */
++static inline void __update_tg_runnable_avg(struct sched_avg *sa,
++						  struct cfs_rq *cfs_rq)
 +{
-+	struct cfs_rq *cfs_rq = group_cfs_rq(se);
 +	struct task_group *tg = cfs_rq->tg;
-+	u64 contrib;
++	long contrib;
 +
-+	contrib = cfs_rq->tg_load_contrib * tg->shares;
-+	se->avg.load_avg_contrib = div64_u64(contrib,
-+					     atomic64_read(&tg->load_avg) + 1);
++	/* The fraction of a cpu used by this cfs_rq */
++	contrib = div_u64(sa->runnable_avg_sum << NICE_0_SHIFT,
++			  sa->runnable_avg_period + 1);
++	contrib -= cfs_rq->tg_runnable_contrib;
++
++	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
++		atomic_add(contrib, &tg->runnable_avg);
++		cfs_rq->tg_runnable_contrib += contrib;
++	}
 +}
++
+ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ {
+ 	struct cfs_rq *cfs_rq = group_cfs_rq(se);
+ 	struct task_group *tg = cfs_rq->tg;
++	int runnable_avg;
++
+ 	u64 contrib;
+ 
+ 	contrib = cfs_rq->tg_load_contrib * tg->shares;
+ 	se->avg.load_avg_contrib = div64_u64(contrib,
+ 					     atomic64_read(&tg->load_avg) + 1);
++
++	/*
++	 * For group entities we need to compute a correction term in the case
++	 * that they are consuming <1 cpu so that we would contribute the same
++	 * load as a task of equal weight.
++	 *
++	 * Explicitly co-ordinating this measurement would be expensive, but
++	 * fortunately the sum of each cpus contribution forms a usable
++	 * lower-bound on the true value.
++	 *
++	 * Consider the aggregate of 2 contributions.  Either they are disjoint
++	 * (and the sum represents true value) or they are disjoint and we are
++	 * understating by the aggregate of their overlap.
++	 *
++	 * Extending this to N cpus, for a given overlap, the maximum amount we
++	 * understand is then n_i(n_i+1)/2 * w_i where n_i is the number of
++	 * cpus that overlap for this interval and w_i is the interval width.
++	 *
++	 * On a small machine; the first term is well-bounded which bounds the
++	 * total error since w_i is a subset of the period.  Whereas on a
++	 * larger machine, while this first term can be larger, if w_i is the
++	 * of consequential size guaranteed to see n_i*w_i quickly converge to
++	 * our upper bound of 1-cpu.
++	 */
++	runnable_avg = atomic_read(&tg->runnable_avg);
++	if (runnable_avg < NICE_0_LOAD) {
++		se->avg.load_avg_contrib *= runnable_avg;
++		se->avg.load_avg_contrib >>= NICE_0_SHIFT;
++	}
+ }
  #else
  static inline void __update_cfs_rq_tg_load_contrib(struct cfs_rq *cfs_rq,
  						 int force_update) {}
-+static inline void __update_group_entity_contrib(struct sched_entity *se) {}
++static inline void __update_tg_runnable_avg(struct sched_avg *sa,
++						  struct cfs_rq *cfs_rq) {}
+ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
  #endif
  
-+static inline void __update_task_entity_contrib(struct sched_entity *se)
-+{
-+	u32 contrib;
-+
-+	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
-+	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
-+	contrib /= (se->avg.runnable_avg_period + 1);
-+	se->avg.load_avg_contrib = scale_load(contrib);
-+}
-+
- /* Compute the current contribution to load_avg by se, return any delta */
- static long __update_entity_load_avg_contrib(struct sched_entity *se)
+@@ -1152,6 +1206,7 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
+ 	if (entity_is_task(se)) {
+ 		__update_task_entity_contrib(se);
+ 	} else {
++		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
+ 		__update_group_entity_contrib(se);
+ 	}
+ 
+@@ -1220,6 +1275,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
  {
- 	long old_contrib = se->avg.load_avg_contrib;
- 
--	if (!entity_is_task(se))
--		return 0;
--
--	se->avg.load_avg_contrib = div64_u64(se->avg.runnable_avg_sum *
--					     se->load.weight,
--					     se->avg.runnable_avg_period + 1);
-+	if (entity_is_task(se)) {
-+		__update_task_entity_contrib(se);
-+	} else {
-+		__update_group_entity_contrib(se);
-+	}
- 
- 	return se->avg.load_avg_contrib - old_contrib;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
++	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
  }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 924a990..134928d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -113,6 +113,7 @@ struct task_group {
+ 
+ 	atomic_t load_weight;
+ 	atomic64_t load_avg;
++	atomic_t runnable_avg;
+ #endif
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+@@ -234,6 +235,7 @@ struct cfs_rq {
+ 	atomic64_t decay_counter, removed_load;
+ 	u64 last_decay;
+ #ifdef CONFIG_FAIR_GROUP_SCHED
++	u32 tg_runnable_contrib;
+ 	u64 tg_load_contrib;
+ #endif
+ #endif
