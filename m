@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934566Ab2JXJaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:30:07 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60771 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934550Ab2JXJaB (ORCPT
+	id S934555Ab2JXJeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 05:34:04 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:41190 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab2JXJeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:30:01 -0400
-Message-ID: <5087B517.9090703@deserettechnology.com>
-Date: Wed, 24 Oct 2012 03:29:59 -0600
-From: Jeff Cook <jeff@deserettechnology.com>
-Reply-To: jeff@deserettechnology.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121012 Thunderbird/16.0.1
+	Wed, 24 Oct 2012 05:34:01 -0400
 MIME-Version: 1.0
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com
-CC: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1350306806-5688-2-git-send-email-lee.jones@linaro.org>
+References: <1350306806-5688-1-git-send-email-lee.jones@linaro.org>
+	<1350306806-5688-2-git-send-email-lee.jones@linaro.org>
+Date: Wed, 24 Oct 2012 11:34:00 +0200
+Message-ID: <CAPDyKFqrS0QT+UO0L3B29UcnjX0bSv3XvWTmC6E_ubgr8NTDiQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ASoC: ux500_msp_i2s: Fix devm_* and return code merge error
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linus.walleij@stericsson.com,
+        arnd@arndb.de, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-Please see included patch. First-time submitter so let me know if I did 
-something wrong.
+I assume this shall go into 3.7, right?
 
-Thanks,
-Jeff
---------------------
+Kind regards
+Ulf Hansson
 
-Vendor-specific ID for BCM20702A0.
-Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
-Deluxe.
-
-T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0b05 ProdID=17b5 Rev=01.12
-S:  Manufacturer=Broadcom Corp
-S:  Product=BCM20702A0
-S:  SerialNumber=94DBC98AC113
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
----
- drivers/bluetooth/btusb.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 654e248..1d7b126 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[] = {
- 	{ USB_DEVICE(0x0c10, 0x0000) },
- 
- 	/* Broadcom BCM20702A0 */
-+	{ USB_DEVICE(0x0b05, 0x17b5) },
- 	{ USB_DEVICE(0x0489, 0xe042) },
- 	{ USB_DEVICE(0x413c, 0x8197) },
- 
--- 
-1.8.0
+On 15 October 2012 15:13, Lee Jones <lee.jones@linaro.org> wrote:
+> Some ux500_msp_i2s patches clashed with:
+>
+> b18e93a493626c1446f9788ebd5844d008bbf71c
+> ASoC: ux500_msp_i2s: better use devm functions and fix error return code
+>
+> ... leaving the driver uncompilable. This patch fixes the
+> issues encountered.
+>
+> Cc: alsa-devel@alsa-project.org
+> Cc: Liam Girdwood <lrg@ti.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  sound/soc/ux500/ux500_msp_i2s.c |    8 +++-----
+>  1 file changed, 3 insertions(+), 5 deletions(-)
+>
+> diff --git a/sound/soc/ux500/ux500_msp_i2s.c b/sound/soc/ux500/ux500_msp_i2s.c
+> index b7c996e..a26c6bf 100644
+> --- a/sound/soc/ux500/ux500_msp_i2s.c
+> +++ b/sound/soc/ux500/ux500_msp_i2s.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/pinctrl/consumer.h>
+>  #include <linux/delay.h>
+>  #include <linux/slab.h>
+> +#include <linux/io.h>
+>  #include <linux/of.h>
+>
+>  #include <mach/hardware.h>
+> @@ -697,14 +698,11 @@ int ux500_msp_i2s_init_msp(struct platform_device *pdev,
+>                         platform_data = devm_kzalloc(&pdev->dev,
+>                                 sizeof(struct msp_i2s_platform_data), GFP_KERNEL);
+>                         if (!platform_data)
+> -                               ret = -ENOMEM;
+> +                               return -ENOMEM;
+>                 }
+>         } else
+>                 if (!platform_data)
+> -                       ret = -EINVAL;
+> -
+> -       if (ret)
+> -               goto err_res;
+> +                       return -EINVAL;
+>
+>         dev_dbg(&pdev->dev, "%s: Enter (name: %s, id: %d).\n", __func__,
+>                 pdev->name, platform_data->id);
+> --
+> 1.7.9.5
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
