@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab2JXNAu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:00:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56724 "EHLO
+	id S933780Ab2JXNBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:01:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56733 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab2JXNAs (ORCPT
+	with ESMTP id S932176Ab2JXNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:00:48 -0400
-Date: Wed, 24 Oct 2012 05:59:24 -0700
-From: tip-bot for Dimitri Sivanich <sivanich@sgi.com>
-Message-ID: <tip-94777fc51b3ad85ff9f705ddf7cdd0eb3bbad5a6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, yinghai@kernel.org, joerg.roedel@amd.com,
-        sivanich@sgi.com, suresh.b.siddha@intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, agordeev@redhat.com,
-        linux-kernel@vger.kernel.org, yinghai@kernel.org, joerg.roedel@amd.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, sivanich@sgi.com
-In-Reply-To: <20121016125021.GA22935@sgi.com>
-References: <20121016125021.GA22935@sgi.com>
+	Wed, 24 Oct 2012 09:01:47 -0400
+Date: Wed, 24 Oct 2012 06:00:23 -0700
+From: tip-bot for David Vrabel <david.vrabel@citrix.com>
+Message-ID: <tip-ce37f400336a34bb6e72c4700f9dcc2a41ff7163@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, david.vrabel@citrix.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, fweisbec@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, david.vrabel@citrix.com
+In-Reply-To: <1349698050-6560-1-git-send-email-david.vrabel@citrix.com>
+References: <1349698050-6560-1-git-send-email-david.vrabel@citrix.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/irq/ioapic:
-  Check for valid irq_cfg pointer in smp_irq_move_cleanup_interrupt
-Git-Commit-ID: 94777fc51b3ad85ff9f705ddf7cdd0eb3bbad5a6
+Subject: [tip:perf/core] x86: Allow tracing of functions in arch/x86/kernel
+ /rtc.c
+Git-Commit-ID: ce37f400336a34bb6e72c4700f9dcc2a41ff7163
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,64 +30,78 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 05:59:30 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 06:00:30 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  94777fc51b3ad85ff9f705ddf7cdd0eb3bbad5a6
-Gitweb:     http://git.kernel.org/tip/94777fc51b3ad85ff9f705ddf7cdd0eb3bbad5a6
-Author:     Dimitri Sivanich <sivanich@sgi.com>
-AuthorDate: Tue, 16 Oct 2012 07:50:21 -0500
+Commit-ID:  ce37f400336a34bb6e72c4700f9dcc2a41ff7163
+Gitweb:     http://git.kernel.org/tip/ce37f400336a34bb6e72c4700f9dcc2a41ff7163
+Author:     David Vrabel <david.vrabel@citrix.com>
+AuthorDate: Mon, 8 Oct 2012 13:07:30 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 12:53:51 +0200
+CommitDate: Wed, 24 Oct 2012 13:14:22 +0200
 
-x86/irq/ioapic: Check for valid irq_cfg pointer in smp_irq_move_cleanup_interrupt
+x86: Allow tracing of functions in arch/x86/kernel/rtc.c
 
-Posting this patch to fix an issue concerning sparse irq's that
-I raised a while back.  There was discussion about adding
-refcounting to sparse irqs (to fix other potential race
-conditions), but that does not appear to have been addressed
-yet.  This covers the only issue of this type that I've
-encountered in this area.
+Move native_read_tsc() to tsc.c to allow profiling to be
+re-enabled for rtc.c.
 
-A NULL pointer dereference can occur in
-smp_irq_move_cleanup_interrupt() if we haven't yet setup the
-irq_cfg pointer in the irq_desc.irq_data.chip_data.
-
-In create_irq_nr() there is a window where we have set
-vector_irq in __assign_irq_vector(), but not yet called
-irq_set_chip_data() to set the irq_cfg pointer.
-
-Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during
-this time, smp_irq_move_cleanup_interrupt() will attempt to
-process the aforementioned irq, but panic when accessing
-irq_cfg.
-
-Only continue processing the irq if irq_cfg is non-NULL.
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/20121016125021.GA22935@sgi.com
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1349698050-6560-1-git-send-email-david.vrabel@citrix.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/apic/io_apic.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/kernel/Makefile |    1 -
+ arch/x86/kernel/rtc.c    |    6 ------
+ arch/x86/kernel/tsc.c    |    6 ++++++
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c265593..1817fa9 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2257,6 +2257,9 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
- 			continue;
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 91ce48f..9fd5eed 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -9,7 +9,6 @@ CPPFLAGS_vmlinux.lds += -U$(UTS_MACHINE)
+ ifdef CONFIG_FUNCTION_TRACER
+ # Do not profile debug and lowlevel utilities
+ CFLAGS_REMOVE_tsc.o = -pg
+-CFLAGS_REMOVE_rtc.o = -pg
+ CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
+ CFLAGS_REMOVE_pvclock.o = -pg
+ CFLAGS_REMOVE_kvmclock.o = -pg
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index 4929c1b..801602b 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -195,12 +195,6 @@ void read_persistent_clock(struct timespec *ts)
+ 	ts->tv_nsec = 0;
+ }
  
- 		cfg = irq_cfg(irq);
-+		if (!cfg)
-+			continue;
+-unsigned long long native_read_tsc(void)
+-{
+-	return __native_read_tsc();
+-}
+-EXPORT_SYMBOL(native_read_tsc);
+-
+ 
+ static struct resource rtc_resources[] = {
+ 	[0] = {
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index cfa5d4f..06ccb50 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -77,6 +77,12 @@ unsigned long long
+ sched_clock(void) __attribute__((alias("native_sched_clock")));
+ #endif
+ 
++unsigned long long native_read_tsc(void)
++{
++	return __native_read_tsc();
++}
++EXPORT_SYMBOL(native_read_tsc);
 +
- 		raw_spin_lock(&desc->lock);
- 
- 		/*
+ int check_tsc_unstable(void)
+ {
+ 	return tsc_unstable;
