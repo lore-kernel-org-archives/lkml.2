@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab2JXUAc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:00:32 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:51575 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757503Ab2JXUAa (ORCPT
+	id S965077Ab2JXUC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:02:29 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:44680 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab2JXUC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:00:30 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 24 Oct 2012 13:01:44 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Jean Delvare <khali@linux-fr.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jesper Juhl <jj@chaosbits.net>, Thomas Renninger <trenn@suse.de>,
-        Jean Pihet <jean.pihet@newoldbits.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Subject: Re: [RFC] Energy/power monitoring within the kernel
-Message-ID: <20121024200144.GA21137@roeck-us.net>
-References: <1351013449.9070.5.camel@hornet>
- <20121023220240.GA25895@roeck-us.net>
- <1351096647.23327.64.camel@hornet>
+	Wed, 24 Oct 2012 16:02:27 -0400
+Date: Wed, 24 Oct 2012 15:02:22 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: [PATCH v4 0/5] zynq subarch cleanups
+Message-ID: <20121024200222.GA6713@beefymiracle.amer.corp.natinst.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 03:02:17 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/24/2012 03:02:17 PM,
+	Serialize complete at 10/24/2012 03:02:17 PM
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1351096647.23327.64.camel@hornet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-24_05:2012-10-24,2012-10-24,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 05:37:27PM +0100, Pawel Moll wrote:
-> On Tue, 2012-10-23 at 23:02 +0100, Guenter Roeck wrote:
-> > > Traditionally such data should be exposed to the user via hwmon sysfs
-> > > interface, and that's exactly what I did for "my" platform - I have
-> > > a /sys/class/hwmon/hwmon*/device/energy*_input and this was good
-> > > enough to draw pretty graphs in userspace. Everyone was happy...
-> > > 
-> > Only driver supporting "energy" output so far is ibmaem, and the reported energy
-> > is supposed to be cumulative, as in energy = power * time. Do you mean power,
-> > possibly ?
-> 
-> So the vexpress would be the second one, than :-) as the energy
-> "monitor" actually on the latest tiles reports 64-bit value of
-> microJoules consumed (or produced) since the power-up.
-> 
-> Some of the older boards were able to report instant power, but this
-> metrics is less useful in our case.
-> 
-> > > Now I am getting new requests to do more with this data. In particular
-> > > I'm asked how to add such information to ftrace/perf output. The second
-> > > most frequent request is about providing it to a "energy aware"
-> > > cpufreq governor.
-> > 
-> > Anything energy related would have to be along the line of "do something after a
-> > certain amount of work has been performed", which at least at the surface does
-> > not make much sense to me, unless you mean something along the line of a
-> > process scheduler which schedules a process not based on time slices but based
-> > on energy consumed, ie if you want to define a time slice not in milli-seconds
-> > but in Joule.
-> 
-> Actually there is some research being done in this direction, but it's
-> way too early to draw any conclusions...
-> 
-> > If so, I would argue that a similar behavior could be achieved by varying the
-> > duration of time slices with the current CPU speed, or simply by using cycle
-> > count instead of time as time slice parameter. Not that I am sure if such an
-> > approach would really be of interest for anyone. 
-> > 
-> > Or do you really mean power, not energy, such as in "reduce CPU speed if its
-> > power consumption is above X Watt" ?
-> 
-> Uh. To be completely honest I must answer: I'm not sure how the "energy
-> aware" cpufreq governor is supposed to work. I have been simply asked to
-> provide the data in some standard way, if possible.
-> 
-> > I am not sure how this would be expected to work. hwmon is, by its very nature,
-> > a passive subsystem: It doesn't do anything unless data is explicitly requested
-> > from it. It does not update an attribute unless that attribute is read.
-> > That does not seem to fit well with the idea of tracing - which assumes
-> > that some activity is happening, ultimately, all by itself, presumably
-> > periodically. The idea to have a user space application read hwmon data only
-> > for it to trigger trace events does not seem to be very compelling to me.
-> 
-> What I had in mind was similar to what adt7470 driver does. The driver
-> would automatically access the device every now and then to update it's
-> internal state and generate the trace event on the way. This
-> auto-refresh "feature" is particularly appealing for me, as on some of
-> "my" platforms can take up to 500 microseconds to actually get the data.
-> So doing this in background (and providing users with the last known
-> value in the meantime) seems attractive.
-> 
-A bad example doesn't mean it should be used elsewhere.
+Hey all-
 
-adt7470 needs up to two seconds for a temperature measurement cycle, and it
-can not perform automatic cycles all by itself. In this context, executing
-temperature measurement cycles in the background makes a lot of sense,
-especially since one does not want to wait for two seconds when reading
-a sysfs attribute.
+I think everything is in a good state to merge now, from here its a
+discussion of process.
 
-But that only means that the chip is most likely not a good choice when selecting
-a temperature sensor, not that the code necessary to get it working should be used
-as an example for other drivers. 
+Thanks to everyone involved.
 
-Guenter
+---
+Things have been relatively quiet on the Zynq front lately.  This patchset does
+a bit of cleanup of the Zynq subarchitecture.  It was the necessary set of
+things I had to do to get a zynq target booting with the upstream qemu model.
 
-> > An exception is if a monitoring device suppports interrupts, and if its driver
-> > actually implements those interrupts. This is, however, not the case for most of
-> > the current drivers (if any), mostly because interrupt support for hardware
-> > monitoring devices is very platform dependent and thus difficult to implement.
-> 
-> Interestingly enough the newest version of our platform control micro
-> (doing the energy monitoring as well) can generate and interrupt when a
-> transaction is finished, so I was planning to periodically update the
-> all sort of values. And again, generating a trace event on this
-> opportunity would be trivial.
-> 
-> > > Of course a particular driver could register its own perf PMU on its
-> > > own. It's certainly an option, just very suboptimal in my opinion.
-> > > Or maybe not? Maybe the task is so specialized that it makes sense?
-> > > 
-> > We had a couple of attempts to provide an in-kernel API. Unfortunately,
-> > the result was, at least so far, more complexity on the driver side.
-> > So the difficulty is really to define an API which is really simple, and does
-> > not just complicate driver development for a (presumably) rare use case.
-> 
-> Yes, I appreciate this. That's why this option is actually my least
-> favourite. Anyway, what I was thinking about was just a thin shin that
-> *can* be used by a driver to register some particular value with the
-> core (so it can be enumerated and accessed by in-kernel clients) and the
-> core could (or not) create a sysfs attribute for this value on behalf of
-> the driver. Seems lightweight enough, unless previous experience
-> suggests otherwise?
-> 
-> Cheers!
-> 
-> Paweł
-> 
-> 
-> 
+Patches 1 and 2 move zynq to use the GIC and pl310 L2 cache controller device
+tree bindings respectively.
+
+Patch 3 removes unused clock infrastructure.  The plan is to rework the
+out-of-tree Xilinx generic clk support into something suitable for merging.
+What's in tree now just isn't used at all, and can be removed.
+
+Patch 4 and 5 move around the static peripheral mappings into the vmalloc area.
+
+---
+Changes since v3:
+  - Patch 3 also removes the zynq "use" of versatile
+
+Changes since v2:
+  - Reordered patchset to prevent remapping peripherals that were subsequently
+    removed from the static map
+  - Use DT bindings for the L2 cache controller
+
+Changes since v1:
+  - Make sure arm@kernel.org was included
+  - Rebased on arm-soc/for-next
+  - Added a cover letter
+  - Elaborated a bit on why I removed CLKDEV_LOOKUP
+
+---
+Josh Cartwright (5):
+  zynq: use GIC device tree bindings
+  zynq: use pl310 device tree bindings
+  zynq: remove use of CLKDEV_LOOKUP
+  ARM: annotate VMALLOC_END definition with _AC
+  zynq: move static peripheral mappings
+
+ arch/arm/Kconfig                           |  1 -
+ arch/arm/Makefile                          |  1 -
+ arch/arm/boot/dts/zynq-ep107.dts           | 17 +++++++++++++---
+ arch/arm/include/asm/pgtable.h             |  2 +-
+ arch/arm/mach-zynq/common.c                | 23 ++++++++++-----------
+ arch/arm/mach-zynq/include/mach/clkdev.h   | 32 ------------------------------
+ arch/arm/mach-zynq/include/mach/zynq_soc.h | 29 ++++++++++++---------------
+ 7 files changed, 38 insertions(+), 67 deletions(-)
+ delete mode 100644 arch/arm/mach-zynq/include/mach/clkdev.h
+
+-- 
+1.8.0
