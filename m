@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab2JXBzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:55:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53139 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754702Ab2JXBzw (ORCPT
+	id S934013Ab2JXB40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:56:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33728 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785Ab2JXB4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:55:52 -0400
-Date: Tue, 23 Oct 2012 18:55:49 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Julian Wollrath <jwollrath@web.de>, Hugh Dickins <hughd@google.com>,
-        Patrik Kullman <patrik.kullman@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: [patch for-3.7] mm, numa: avoid setting zone_reclaim_mode unless a
- node is sufficiently distant
-In-Reply-To: <CAJL_dMtS-rc1b3s9YZ+9Eapc21vF06aCT23GV8eMp13ZxURvBA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1210231853360.11290@chino.kir.corp.google.com>
-References: <CAGPN=9Qx1JAr6CGO-JfoR2ksTJG_CLLZY_oBA_TFMzA_OSfiFg@mail.gmail.com> <20121022173315.7b0da762@ilfaris> <20121022214502.0fde3adc@ilfaris> <20121022170452.cc8cc629.akpm@linux-foundation.org> <alpine.LNX.2.00.1210222059120.1136@eggly.anvils>
- <20121023110434.021d100b@ilfaris> <CAJL_dMvUktOx9BqFm5jn2JbWbL_RWH412rdU+=rtDUvkuaPRUw@mail.gmail.com> <alpine.DEB.2.00.1210231541350.1221@chino.kir.corp.google.com> <CAJL_dMtS-rc1b3s9YZ+9Eapc21vF06aCT23GV8eMp13ZxURvBA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 23 Oct 2012 21:56:23 -0400
+Date: Wed, 24 Oct 2012 02:56:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jeff King <peff@peff.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>, git@vger.kernel.org,
+        Junio C Hamano <gitster@pobox.com>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+ GENERIC_KERNEL_EXECVE
+Message-ID: <20121024015613.GB2616@ZenIV.linux.org.uk>
+References: <20121019213548.GR2616@ZenIV.linux.org.uk>
+ <5082A1F1.3080303@tilera.com>
+ <20121020153401.GT2616@ZenIV.linux.org.uk>
+ <20121020171643.GU2616@ZenIV.linux.org.uk>
+ <5086D432.4070008@tilera.com>
+ <20121023184122.GZ2616@ZenIV.linux.org.uk>
+ <alpine.LFD.2.02.1210232232070.2756@ionos>
+ <20121023205119.GA27729@sigill.intra.peff.net>
+ <alpine.LFD.2.02.1210232307480.2756@ionos>
+ <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyYD2jvD3+TSe=GhBgg5UQt2RNFdYf6HGiKRX-xWzFmdw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 957f822a0ab9 ("mm, numa: reclaim from all nodes within reclaim
-distance") caused zone_reclaim_mode to be set for all systems where two
-nodes are within RECLAIM_DISTANCE of each other.  This is the opposite of
-what we actually want: zone_reclaim_mode should be set if two nodes are
-sufficiently distant.
+On Wed, Oct 24, 2012 at 04:02:49AM +0300, Linus Torvalds wrote:
+> On Wed, Oct 24, 2012 at 12:25 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>
+> >> It is spelled:
+> >>
+> >>   git notes add -m <comment> SHA1
+> >
+> > Cool!
+> 
+> Don't use them for anything global.
+> 
+> Use them for local codeflow, but don't expect them to be distributed.
+> It's a separate "flow", and while it *can* be distributed, it's not
+> going to be for the kernel, for example. So no, don't start using this
+> to ack things, because the acks *will* get lost.
 
-Reported-by: Julian Wollrath <jwollrath@web.de>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- mm/page_alloc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+How about git commit --allow-empty, with
+"belated ACK for <commit>
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1809,10 +1809,10 @@ static void __paginginit init_zone_allows_reclaim(int nid)
- 	int i;
- 
- 	for_each_online_node(i)
--		if (node_distance(nid, i) <= RECLAIM_DISTANCE) {
-+		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
- 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
-+		else
- 			zone_reclaim_mode = 1;
--		}
- }
- 
- #else	/* CONFIG_NUMA */
+Acked-by: <...>
+" as commit message?  I mean, that ought to work and propagate sanely,
+but I'm really not sure if that's something in a good taste and should
+be allowed as a common practice...
