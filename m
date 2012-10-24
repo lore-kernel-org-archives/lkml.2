@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934849Ab2JXNoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:44:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932462Ab2JXNob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:44:31 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: MITSUNARI Shigeo <herumi@nifty.com>
-Cc: linux-fsdevel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: fs: page cache wrongly left invalidated after revalidate_disk
-References: <28086318.27561350944959337.herumi@nifty.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 24 Oct 2012 09:44:23 -0400
-In-Reply-To: <28086318.27561350944959337.herumi@nifty.com> (MITSUNARI Shigeo's
-	message of "Tue, 23 Oct 2012 07:29:19 +0900 (JST)")
-Message-ID: <x491ugo6l3c.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756498Ab2JXNp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:45:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33057 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab2JXNpz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 09:45:55 -0400
+Message-ID: <1351086300.23337.4.camel@twins>
+Subject: Re: [RFC][PATCH] sched: Fix a deadlock of cpu-hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: =?UTF-8?Q?=E9=99=88=E5=8D=8E=E6=89=8D?= <chenhc@lemote.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>
+Date: Wed, 24 Oct 2012 15:45:00 +0200
+In-Reply-To: <4259.58.209.249.125.1351082073.squirrel@mail.lemote.com>
+References: <4259.58.209.249.125.1351082073.squirrel@mail.lemote.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MITSUNARI Shigeo <herumi@nifty.com> writes:
+On Wed, 2012-10-24 at 20:34 +0800, 陈华才 wrote:
+> I see, this is an arch-specific bug, sorry for my carelessness and thank
+> you for your tips. 
 
-> Hi, 
->
-> We found that bdev->bd_invalidated was left set once revalidate_disk() 
-> is called, which results in page cache flush every time that device 
-> is open. 
->
-> Specifically, we found this problem in MD block device.  Once we 
-> resize a MD device, mdadm --monitor periodically flush all page cache 
-> for that device every 60 or 1000 seconds when it opens the device. 
->
-> This bug lies since at least 3.2.0 till the latest kernel(3.6.2). 
-> Patch is attached. 
->
-> Anyone please review this?  Thanks in advance.
+What arch are you using? And what exactly did the arch do wrong? Most of
+the code involved seems to be common code.
 
-rescan_partitions (called in the bdev open path) should reset
-bd_invalidated.  I think you need to dig into why that isn't happening.
-
-Cheers,
-Jeff
+Going by c0_compare_interrupt, this is some MIPS device.
