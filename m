@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933956Ab2JXTym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:54:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41356 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2JXTyk (ORCPT
+	id S934480Ab2JXTyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:54:47 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:60245 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab2JXTyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:54:40 -0400
-Date: Wed, 24 Oct 2012 12:54:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-Id: <20121024125439.c17a510e.akpm@linux-foundation.org>
-In-Reply-To: <20121024062938.GA6119@dhcp22.suse.cz>
-References: <20121012125708.GJ10110@dhcp22.suse.cz>
-	<20121023164546.747e90f6.akpm@linux-foundation.org>
-	<20121024062938.GA6119@dhcp22.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 15:54:43 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+Emacs: don't cry -- it won't help.
+Date: Wed, 24 Oct 2012 20:54:32 +0100
+In-Reply-To: <878vavveee.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
+	"Wed, 24 Oct 2012 20:49:45 +0100")
+Message-ID: <87wqyftzlz.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 08:29:45 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+On 24 Oct 2012, nix@esperi.org.uk uttered the following:
+> So, the net effect of this is that normally I get no journal recovery on
+> anything at all -- but sometimes, if umounting takes longer than a few
+> seconds, I reboot with not everything unmounted, and journal recovery
+> kicks in on reboot. My post-test fscks this time suggest that only when
+> journal recovery kicks in after rebooting out of 2.6.3 do I see
+> corruption. So this is indeed an unclean shutdown journal-replay
+> situation: it just happens that I routinely have one or two fses
+> uncleanly unmounted when all the rest are cleanly unmounted. This
+> perhaps explains the scattershot nature of the corruption I see, and why
+> most of my ext4 filesystems get off scot-free.
 
-> > >
-> > > +		printk(KERN_NOTICE "%s (%d): dropped kernel caches: %d\n",
-> > > +			current->comm, task_pid_nr(current), sysctl_drop_caches);
-> > 
-> > urgh.  Are we really sure we want to do this?  The system operators who
-> > are actually using this thing will hate us :(
-> 
-> I have no problems with lowering the priority (how do you see
-> KERN_INFO?) but shouldn't this message kick them that they are doing
-> something wrong? Or if somebody uses that for "benchmarking" to have a
-> clean table before start is this really that invasive?
+Note that two umounts are not required: fsck found corruption on /var
+after a single boot+shutdown round in 3.6.3+this patch. (It did do a
+journal replay on /var first.)
 
-hmpf.  This patch worries me.  If there are people out there who are
-regularly using drop_caches because the VM sucks, it seems pretty
-obnoxious of us to go dumping stuff into their syslog.  What are they
-supposed to do?  Stop using drop_caches?  But that would unfix the
-problem which they fixed with drop_caches in the first case.
-
-And they might not even have control over the code - they need to go
-back to their supplier and say "please send me a new version", along
-with all the additional costs and risks involed in an update.
-
-> > More friendly alternatives might be:
-> > 
-> > - Taint the kernel.  But that will only become apparent with an oops
-> >   trace or similar.
-> > 
-> > - Add a drop_caches counter and make that available in /proc/vmstat,
-> >   show_mem() output and perhaps other places.
-> 
-> We would loose timing and originating process name in both cases which
-> can be really helpful while debugging. It is fair to say that we could
-> deduce the timing if we are collecting /proc/meminfo or /proc/vmstat
-> already and we do collect them often but this is not the case all of the
-> time and sometimes it is important to know _who_ is doing all this.
-
-But how important is all that?  The main piece of information the
-kernel developer wants is "this guy is using drop_caches a lot".  All
-the other info is peripheral and can be gathered by other means if so
-desired.
+-- 
+NULL && (void)
