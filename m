@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935371Ab2JXSXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:23:37 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55791 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934943Ab2JXSXf (ORCPT
+	id S935474Ab2JXSZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:25:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:60869 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246Ab2JXSZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:23:35 -0400
-Date: Wed, 24 Oct 2012 11:21:11 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: lots of suspicious RCU traces
-Message-ID: <20121024182111.GA2340@swordfish>
-References: <20121017034918.GA13295@redhat.com>
- <20121024164235.GA2467@swordfish>
- <20121024180608.GA22840@redhat.com>
+	Wed, 24 Oct 2012 14:25:50 -0400
+Date: Wed, 24 Oct 2012 11:25:46 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com
+Subject: Re: [stable 2.6.32..2.6.34] x86, ioapic: initialize
+ nr_ioapic_registers early in mp_register_ioapic()
+Message-ID: <20121024182546.GB3338@elie.Belkin>
+References: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024180608.GA22840@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/24/12 20:06), Oleg Nesterov wrote:
-> On 10/24, Sergey Senozhatsky wrote:
-> >
-> > small question,
-> >
-> > ptrace_notify() and forward calls are able to both indirectly and directly call schedule(),
-> > /* direct call from ptrace_stop()*/,
-> > should, in this case, rcu_user_enter() be called before tracehook_report_syscall_exit(regs, step)
-> > and ptrace chain?
-> 
-> Well, I don't really understand this magic... but why?
+Hi Suresh,
+
+Suresh Siddha wrote:
+
+[...]
+> This problem doesn't happen with more recent kernels and closer
+> look at the 2.6.32 kernel shows that the code which masks
+> the IO-APIC RTE's is not working as expected as the nr_ioapic_registers
+> for each IO-APIC is not yet initialized at this point. In the later
+> kernels we initialize nr_ioapic_registers much before and
+> everything works as expected.
 >
+> For 2.6.[32..34] kernels, fix this issue by initializing
+> nr_ioapic_registers early in mp_register_ioapic()
+>
+> Relevant upstream commit info:
+>
+> commit 7716a5c4ff5f1f3dc5e9edcab125cbf7fceef0af
 
-My understanding is (I may be wrong) that we can schedule() from ptrace chain to
-some arbitrary task, which will continue its execution from the point where RCU assumes
-CPU as not idle, while CPU in fact still in idle state -- no one said rcu_idle_exit()
-(or similar) prior to schedule() call. 
+Why not cherry-pick 7716a5c4ff5 in full?
 
-if so, does the same apply to in_user?
-
-	-ss
-
-> Until we return to user-mode this CPU should be in "in_user = false" state.
-> 
-> I am not sure I understand how it is guaranteed that rcu_user_exit() was
-> called... probably TIF_NOHZ should trigger the slow path and ensure that
-> syscall_trace_enter()->rcu_user_exit() will be called.
-> 
-> Oleg.
-> 
+Curious,
+Jonathan
