@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422761Ab2JXVvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:51:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40973 "EHLO
+	id S1422748Ab2JXVvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:51:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40975 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422709Ab2JXVvG (ORCPT
+	with ESMTP id S1422710Ab2JXVvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:51:06 -0400
+	Wed, 24 Oct 2012 17:51:07 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Irina Tirdea <irina.tirdea@intel.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Pekka Enberg <penberg@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/12] perf tools: Diplays more output on features check for make V=1
-Date: Wed, 24 Oct 2012 19:50:12 -0200
-Message-Id: <1351115423-9025-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 03/12] perf tools: Try to find cross-built objdump path
+Date: Wed, 24 Oct 2012 19:50:14 -0200
+Message-Id: <1351115423-9025-4-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1351115423-9025-1-git-send-email-acme@infradead.org>
 References: <1351115423-9025-1-git-send-email-acme@infradead.org>
@@ -28,223 +29,312 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Irina Tirdea <irina.tirdea@intel.com>
 
-Adding more verbose output for compile time features checking, to ease
-up debuging of feature detection failures.
+As we have architecture information of saved perf.data file, we can try
+to find cross-built objdump path.
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
+The triplets include support for Android (arm, x86 and mips
+architectures).
+
+Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+Originally-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Paul Mackerras <paulus@samba.org>
+Cc: Pekka Enberg <penberg@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-fbjha6xs5soyaiek8j4142xg@git.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1350344020-8071-5-git-send-email-irina.tirdea@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile             |   46 +++++++++++++++++++--------------------
- tools/perf/config/utilities.mak |   11 ++++++++--
- 2 files changed, 32 insertions(+), 25 deletions(-)
+ tools/perf/Makefile           |    2 +
+ tools/perf/arch/common.c      |  178 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/arch/common.h      |   10 +++
+ tools/perf/builtin-annotate.c |    7 ++
+ tools/perf/builtin-report.c   |    7 ++
+ tools/perf/util/annotate.h    |    1 -
+ 6 files changed, 204 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/arch/common.c
+ create mode 100644 tools/perf/arch/common.h
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index f530502..6790cb4 100644
+index 6790cb4..78a81ed 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -155,15 +155,15 @@ SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+@@ -426,6 +426,8 @@ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/hist.o
+ LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
  
- -include config/feature-tests.mak
- 
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all),y)
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -fstack-protector-all,-fstack-protector-all),y)
- 	CFLAGS := $(CFLAGS) -fstack-protector-all
- endif
- 
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector),y)
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wstack-protector,-Wstack-protector),y)
-        CFLAGS := $(CFLAGS) -Wstack-protector
- endif
- 
--ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var),y)
-+ifeq ($(call try-cc,$(SOURCE_HELLO),$(CFLAGS) -Werror -Wvolatile-register-var,-Wvolatile-register-var),y)
-        CFLAGS := $(CFLAGS) -Wvolatile-register-var
- endif
- 
-@@ -172,7 +172,7 @@ endif
- BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- BASIC_LDFLAGS =
- 
--ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS)),y)
-+ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
- 	BIONIC := 1
- 	EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
- 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
-@@ -477,9 +477,9 @@ ifdef NO_LIBELF
- 	NO_LIBUNWIND := 1
- else
- FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
--ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
-+ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
- 	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
--	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC)),y)
-+	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
- 		LIBC_SUPPORT := 1
- 	endif
- 	ifeq ($(BIONIC),1)
-@@ -494,7 +494,7 @@ ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF)),y)
- 	endif
- else
- 	FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
--	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
-+	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
- 		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
- 		NO_DWARF := 1
- 	endif # Dwarf support
-@@ -510,7 +510,7 @@ ifdef LIBUNWIND_DIR
- endif
- 
- FLAGS_UNWIND=$(LIBUNWIND_CFLAGS) $(ALL_CFLAGS) $(LIBUNWIND_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(LIBUNWIND_LIBS)
--ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND)),y)
-+ifneq ($(call try-cc,$(SOURCE_LIBUNWIND),$(FLAGS_UNWIND),libunwind),y)
- 	msg := $(warning No libunwind found, disabling post unwind support. Please install libunwind-dev[el] >= 0.99);
- 	NO_LIBUNWIND := 1
- endif # Libunwind support
-@@ -539,7 +539,7 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
- else # NO_LIBELF
- BASIC_CFLAGS += -DLIBELF_SUPPORT
- 
--ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON)),y)
-+ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON),-DLIBELF_MMAP),y)
- 	BASIC_CFLAGS += -DLIBELF_MMAP
- endif
- 
-@@ -565,7 +565,7 @@ endif
- 
- ifndef NO_LIBAUDIT
- 	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
--	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT)),y)
-+	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
- 		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
- 	else
- 		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
-@@ -576,7 +576,7 @@ endif
- 
- ifndef NO_NEWT
- 	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
--	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT)),y)
-+	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT),libnewt),y)
- 		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
- 	else
- 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
-@@ -605,10 +605,10 @@ endif
- 
- ifndef NO_GTK2
- 	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2)),y)
-+	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
- 		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
- 	else
--		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2)),y)
-+		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
- 			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
- 		endif
- 		BASIC_CFLAGS += -DGTK2_SUPPORT
-@@ -635,7 +635,7 @@ else
- 	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
- 	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
- 
--	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
-+	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
- 		BASIC_CFLAGS += -DNO_LIBPERL
- 	else
-                ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
-@@ -689,11 +689,11 @@ else
-       PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-       FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
- 
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
-+      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
-         $(call disable-python,Python.h (for Python 2.x))
-       else
- 
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED)),y)
-+        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-           $(warning Python 3 is not yet supported; please set)
-           $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-           $(warning If you also have Python 2 installed, then)
-@@ -727,22 +727,22 @@ else
- 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-         else
- 		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
--		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD))
-+		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
- 		ifeq ($(has_bfd),y)
- 			EXTLIBS += -lbfd
- 		else
- 			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
--			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY))
-+			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
- 			ifeq ($(has_bfd_iberty),y)
- 				EXTLIBS += -lbfd -liberty
- 			else
- 				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
--				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z))
-+				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
- 				ifeq ($(has_bfd_iberty_z),y)
- 					EXTLIBS += -lbfd -liberty -lz
- 				else
- 					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
--					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE))
-+					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
- 					ifeq ($(has_cplus_demangle),y)
- 						EXTLIBS += -liberty
- 						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
-@@ -764,19 +764,19 @@ ifeq ($(NO_PERF_REGS),0)
- endif
- 
- ifndef NO_STRLCPY
--	ifeq ($(call try-cc,$(SOURCE_STRLCPY),),y)
-+	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
- 		BASIC_CFLAGS += -DHAVE_STRLCPY
- 	endif
- endif
- 
- ifndef NO_ON_EXIT
--	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),),y)
-+	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
- 		BASIC_CFLAGS += -DHAVE_ON_EXIT
- 	endif
- endif
- 
- ifndef NO_BACKTRACE
--       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),),y)
-+       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
-                BASIC_CFLAGS += -DBACKTRACE_SUPPORT
-        endif
- endif
-diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
-index 8046182..ea853c2 100644
---- a/tools/perf/config/utilities.mak
-+++ b/tools/perf/config/utilities.mak
-@@ -180,9 +180,16 @@ _gea_warn = $(warning The path '$(1)' is not executable.)
- _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
- 
- # try-cc
--# Usage: option = $(call try-cc, source-to-build, cc-options)
-+# Usage: option = $(call try-cc, source-to-build, cc-options, msg)
-+ifndef V
-+TRY_CC_OUTPUT= > /dev/null 2>&1
-+else
-+TRY_CC_MSG=echo "CHK $(3)" 1>&2;
-+endif
++LIB_OBJS += $(OUTPUT)arch/common.o
 +
- try-cc = $(shell sh -c						  \
- 	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
-+	 $(TRY_CC_MSG)						  \
- 	 echo "$(1)" |						  \
--	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
-+	 $(CC) -x c - $(2) -o "$$TMP" $(TRY_CC_OUTPUT) && echo y; \
- 	 rm -f "$$TMP"')
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+ # Benchmark modules
+diff --git a/tools/perf/arch/common.c b/tools/perf/arch/common.c
+new file mode 100644
+index 0000000..2367b25
+--- /dev/null
++++ b/tools/perf/arch/common.c
+@@ -0,0 +1,178 @@
++#include <stdio.h>
++#include <sys/utsname.h>
++#include "common.h"
++#include "../util/debug.h"
++
++const char *const arm_triplets[] = {
++	"arm-eabi-",
++	"arm-linux-androideabi-",
++	"arm-unknown-linux-",
++	"arm-unknown-linux-gnu-",
++	"arm-unknown-linux-gnueabi-",
++	NULL
++};
++
++const char *const powerpc_triplets[] = {
++	"powerpc-unknown-linux-gnu-",
++	"powerpc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const s390_triplets[] = {
++	"s390-ibm-linux-",
++	NULL
++};
++
++const char *const sh_triplets[] = {
++	"sh-unknown-linux-gnu-",
++	"sh64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const sparc_triplets[] = {
++	"sparc-unknown-linux-gnu-",
++	"sparc64-unknown-linux-gnu-",
++	NULL
++};
++
++const char *const x86_triplets[] = {
++	"x86_64-pc-linux-gnu-",
++	"x86_64-unknown-linux-gnu-",
++	"i686-pc-linux-gnu-",
++	"i586-pc-linux-gnu-",
++	"i486-pc-linux-gnu-",
++	"i386-pc-linux-gnu-",
++	"i686-linux-android-",
++	"i686-android-linux-",
++	NULL
++};
++
++const char *const mips_triplets[] = {
++	"mips-unknown-linux-gnu-",
++	"mipsel-linux-android-",
++	NULL
++};
++
++static bool lookup_path(char *name)
++{
++	bool found = false;
++	char *path, *tmp;
++	char buf[PATH_MAX];
++	char *env = getenv("PATH");
++
++	if (!env)
++		return false;
++
++	env = strdup(env);
++	if (!env)
++		return false;
++
++	path = strtok_r(env, ":", &tmp);
++	while (path) {
++		scnprintf(buf, sizeof(buf), "%s/%s", path, name);
++		if (access(buf, F_OK) == 0) {
++			found = true;
++			break;
++		}
++		path = strtok_r(NULL, ":", &tmp);
++	}
++	free(env);
++	return found;
++}
++
++static int lookup_triplets(const char *const *triplets, const char *name)
++{
++	int i;
++	char buf[PATH_MAX];
++
++	for (i = 0; triplets[i] != NULL; i++) {
++		scnprintf(buf, sizeof(buf), "%s%s", triplets[i], name);
++		if (lookup_path(buf))
++			return i;
++	}
++	return -1;
++}
++
++static int perf_session_env__lookup_binutils_path(struct perf_session_env *env,
++						  const char *name,
++						  const char **path)
++{
++	int idx;
++	char *arch, *cross_env;
++	struct utsname uts;
++	const char *const *path_list;
++	char *buf = NULL;
++
++	if (uname(&uts) < 0)
++		goto out;
++
++	/*
++	 * We don't need to try to find objdump path for native system.
++	 * Just use default binutils path (e.g.: "objdump").
++	 */
++	if (!strcmp(uts.machine, env->arch))
++		goto out;
++
++	cross_env = getenv("CROSS_COMPILE");
++	if (cross_env) {
++		if (asprintf(&buf, "%s%s", cross_env, name) < 0)
++			goto out_error;
++		if (buf[0] == '/') {
++			if (access(buf, F_OK) == 0)
++				goto out;
++			goto out_error;
++		}
++		if (lookup_path(buf))
++			goto out;
++		free(buf);
++	}
++
++	arch = env->arch;
++
++	if (!strcmp(arch, "arm"))
++		path_list = arm_triplets;
++	else if (!strcmp(arch, "powerpc"))
++		path_list = powerpc_triplets;
++	else if (!strcmp(arch, "sh"))
++		path_list = sh_triplets;
++	else if (!strcmp(arch, "s390"))
++		path_list = s390_triplets;
++	else if (!strcmp(arch, "sparc"))
++		path_list = sparc_triplets;
++	else if (!strcmp(arch, "x86") || !strcmp(arch, "i386") ||
++		 !strcmp(arch, "i486") || !strcmp(arch, "i586") ||
++		 !strcmp(arch, "i686"))
++		path_list = x86_triplets;
++	else if (!strcmp(arch, "mips"))
++		path_list = mips_triplets;
++	else {
++		ui__error("binutils for %s not supported.\n", arch);
++		goto out_error;
++	}
++
++	idx = lookup_triplets(path_list, name);
++	if (idx < 0) {
++		ui__error("Please install %s for %s.\n"
++			  "You can add it to PATH, set CROSS_COMPILE or "
++			  "override the default using --%s.\n",
++			  name, arch, name);
++		goto out_error;
++	}
++
++	if (asprintf(&buf, "%s%s", path_list[idx], name) < 0)
++		goto out_error;
++
++out:
++	*path = buf;
++	return 0;
++out_error:
++	free(buf);
++	*path = NULL;
++	return -1;
++}
++
++int perf_session_env__lookup_objdump(struct perf_session_env *env)
++{
++	return perf_session_env__lookup_binutils_path(env, "objdump",
++						      &objdump_path);
++}
+diff --git a/tools/perf/arch/common.h b/tools/perf/arch/common.h
+new file mode 100644
+index 0000000..ede246e
+--- /dev/null
++++ b/tools/perf/arch/common.h
+@@ -0,0 +1,10 @@
++#ifndef ARCH_PERF_COMMON_H
++#define ARCH_PERF_COMMON_H
++
++#include "../util/session.h"
++
++extern const char *objdump_path;
++
++int perf_session_env__lookup_objdump(struct perf_session_env *env);
++
++#endif /* ARCH_PERF_COMMON_H */
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 690fa9a..c4bb645 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -28,6 +28,7 @@
+ #include "util/hist.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "arch/common.h"
+ 
+ #include <linux/bitmap.h>
+ 
+@@ -186,6 +187,12 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 			goto out_delete;
+ 	}
+ 
++	if (!objdump_path) {
++		ret = perf_session_env__lookup_objdump(&session->header.env);
++		if (ret)
++			goto out_delete;
++	}
++
+ 	ret = perf_session__process_events(session, &ann->tool);
+ 	if (ret)
+ 		goto out_delete;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5104a40..90d1162 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -33,6 +33,7 @@
+ #include "util/thread.h"
+ #include "util/sort.h"
+ #include "util/hist.h"
++#include "arch/common.h"
+ 
+ #include <linux/bitmap.h>
+ 
+@@ -672,6 +673,12 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	has_br_stack = perf_header__has_feat(&session->header,
+ 					     HEADER_BRANCH_STACK);
+ 
++	if (!objdump_path) {
++		ret = perf_session_env__lookup_objdump(&session->header.env);
++		if (ret)
++			goto error;
++	}
++
+ 	if (sort__branch_mode == -1 && has_br_stack)
+ 		sort__branch_mode = 1;
+ 
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index 39242dc..a4dd25a 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -154,6 +154,5 @@ static inline int symbol__tui_annotate(struct symbol *sym __maybe_unused,
+ #endif
+ 
+ extern const char	*disassembler_style;
+-extern const char	*objdump_path;
+ 
+ #endif	/* __PERF_ANNOTATE_H */
 -- 
 1.7.9.2.358.g22243
 
