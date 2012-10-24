@@ -1,181 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab2JXKAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 06:00:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55085 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758108Ab2JXKAF (ORCPT
+	id S933381Ab2JXKAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:00:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34008 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755206Ab2JXKAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 06:00:05 -0400
-Date: Wed, 24 Oct 2012 02:58:38 -0700
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-e9c84cb8d5f1b1ea6fcbe6190d51dc84b6975938@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1341316406.23484.64.camel@twins>
-References: <1341316406.23484.64.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Describe CFS load-balancer
-Git-Commit-ID: e9c84cb8d5f1b1ea6fcbe6190d51dc84b6975938
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Oct 2012 06:00:49 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+Date: Wed, 24 Oct 2012 11:00:47 +0100
+Message-ID: <CAHR064jXag-0pHv4LMXJ7NQ30TMRurxBa8hTTL-8OnzG-kew3Q@mail.gmail.com>
+Subject: Re: [PATCH] Platform: x86: Add Chrome OS Laptop driver
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Benson Leung <bleung@chromium.org>
+Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:58:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9c84cb8d5f1b1ea6fcbe6190d51dc84b6975938
-Gitweb:     http://git.kernel.org/tip/e9c84cb8d5f1b1ea6fcbe6190d51dc84b6975938
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 3 Jul 2012 13:53:26 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:33 +0200
+On Wed, Jul 11, 2012 at 12:03 AM, Benson Leung <bleung@chromium.org> wrote:
+> This adds the chromeos_laptop driver. It supports
+> the Cypress APA SMBUS touchpad as well as the isl29018 i2c ambient
+> light sensor on the Samsung Series 5 550 Chromebook.
+>
+> Signed-off-by: Benson Leung <bleung@chromium.org>
+> ---
+>  drivers/platform/x86/Kconfig           |   11 ++
+>  drivers/platform/x86/Makefile          |    1 +
+>  drivers/platform/x86/chromeos_laptop.c |  202 ++++++++++++++++++++++++++++++++
+>  3 files changed, 214 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/platform/x86/chromeos_laptop.c
+>
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 2a262f5..42a177b 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -79,6 +79,17 @@ config ASUS_LAPTOP
+>
+>           If you have an ACPI-compatible ASUS laptop, say Y or M here.
+>
+> +config CHROMEOS_LAPTOP
+> +       tristate "Chrome OS Laptop"
+> +       depends on I2C
+> +       depends on DMI
+> +       ---help---
+> +         This driver instantiates i2c and smbus devices such as
+> +         light sensors and touchpads.
+> +
+> +         If you have a supported Chromebook, choose Y or M here.
+> +         The module will be called chromeos_laptop.
+> +
+>  config DELL_LAPTOP
+>         tristate "Dell Laptop Extras (EXPERIMENTAL)"
+>         depends on X86
+> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> index bf7e4f9..ace2b38 100644
+> --- a/drivers/platform/x86/Makefile
+> +++ b/drivers/platform/x86/Makefile
+> @@ -50,3 +50,4 @@ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)  += intel_mid_powerbtn.o
+>  obj-$(CONFIG_INTEL_OAKTRAIL)   += intel_oaktrail.o
+>  obj-$(CONFIG_SAMSUNG_Q10)      += samsung-q10.o
+>  obj-$(CONFIG_APPLE_GMUX)       += apple-gmux.o
+> +obj-$(CONFIG_CHROMEOS_LAPTOP)  += chromeos_laptop.o
+> diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+> new file mode 100644
+> index 0000000..c5486f0
+> --- /dev/null
+> +++ b/drivers/platform/x86/chromeos_laptop.c
+> @@ -0,0 +1,202 @@
+> +/*
+> + *  chromeos_laptop.c - Driver to instantiate Chromebook i2c/smbus devices.
+> + *
+> + *  Author : Benson Leung <bleung@chromium.org>
+> + *
+> + *  Copyright (C) 2012 Google, Inc.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include <linux/dmi.h>
+> +#include <linux/i2c.h>
+> +#include <linux/module.h>
+> +
+> +#define CYAPA_TP_I2C_ADDR      0x67
+> +#define ISL_ALS_I2C_ADDR       0x44
+> +
+> +static struct i2c_client *als;
+> +static struct i2c_client *tp;
+> +
+> +const char *i2c_adapter_names[] = {
+> +       "SMBus I801 adapter",
+> +};
+> +
+> +/* Keep this enum consistent with i2c_adapter_names */
+> +enum i2c_adapter_type {
+> +       I2C_ADAPTER_SMBUS = 0,
+> +};
+> +
+> +static struct i2c_board_info __initdata cyapa_device = {
+> +       I2C_BOARD_INFO("cyapa", CYAPA_TP_I2C_ADDR),
+> +       .flags          = I2C_CLIENT_WAKE,
+> +};
+> +
+> +static struct i2c_board_info __initdata isl_als_device = {
+> +       I2C_BOARD_INFO("isl29018", ISL_ALS_I2C_ADDR),
+> +};
+> +
+> +static __init struct i2c_client *__add_probed_i2c_device(
+> +               const char *name,
+> +               int bus,
+> +               struct i2c_board_info *info,
+> +               const unsigned short *addrs)
+> +{
+> +       const struct dmi_device *dmi_dev;
+> +       const struct dmi_dev_onboard *dev_data;
+> +       struct i2c_adapter *adapter;
+> +       struct i2c_client *client;
+> +
+> +       if (bus < 0)
+> +               return NULL;
+> +       /*
+> +        * If a name is specified, look for irq platform information stashed
+> +        * in DMI_DEV_TYPE_DEV_ONBOARD by the Chrome OS custom system firmware.
+> +        */
+> +       if (name) {
+> +               dmi_dev = dmi_find_device(DMI_DEV_TYPE_DEV_ONBOARD, name, NULL);
+> +               if (!dmi_dev) {
+> +                       pr_err("%s failed to dmi find device %s.\n",
+> +                              __func__,
+> +                              name);
+> +                       return NULL;
+> +               }
+> +               dev_data = (struct dmi_dev_onboard *)dmi_dev->device_data;
+> +               if (!dev_data) {
+> +                       pr_err("%s failed to get data from dmi for %s.\n",
+> +                              __func__, name);
+> +                       return NULL;
+> +               }
+> +               info->irq = dev_data->instance;
+> +       }
+> +
+> +       adapter = i2c_get_adapter(bus);
+> +       if (!adapter) {
+> +               pr_err("%s failed to get i2c adapter %d.\n", __func__, bus);
+> +               return NULL;
+> +       }
+> +
+> +       /* add the i2c device */
+> +       client = i2c_new_probed_device(adapter, info, addrs, NULL);
+> +       if (!client)
+> +               pr_err("%s failed to register device %d-%02x\n",
+> +                      __func__, bus, info->addr);
+> +       else
+> +               pr_debug("%s added i2c device %d-%02x\n",
+> +                        __func__, bus, info->addr);
+> +
+> +       i2c_put_adapter(adapter);
+> +       return client;
+> +}
+> +
+> +static int __init __find_i2c_adap(struct device *dev, void *data)
+> +{
+> +       const char *name = data;
+> +       const char *prefix = "i2c-";
 
-sched: Describe CFS load-balancer
+static const ?
 
-Add some scribbles on how and why the load-balancer works..
+> +       struct i2c_adapter *adapter;
+> +       if (strncmp(dev_name(dev), prefix, strlen(prefix)))
+> +               return 0;
+> +       adapter = to_i2c_adapter(dev);
+> +       return !strncmp(adapter->name, name, strlen(name));
+> +}
+> +
+> +static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
+> +{
+> +       struct device *dev = NULL;
+> +       struct i2c_adapter *adapter;
+> +       const char *name = i2c_adapter_names[type];
+> +       /* find the adapter by name */
+> +       dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
+> +                             __find_i2c_adap);
+> +       if (!dev) {
+> +               pr_err("%s: i2c adapter %s not found on system.\n", __func__,
+> +                      name);
+> +               return -ENODEV;
+> +       }
+> +       adapter = to_i2c_adapter(dev);
+> +       return adapter->nr;
+> +}
+> +
+> +/*
+> + * Probes for a device at a single address, the one provided by
+> + * info->addr.
+> + * Returns NULL if no device found.
+> + */
+> +static __init struct i2c_client *add_smbus_device(const char *name,
+> +                                                 struct i2c_board_info *info)
+> +{
+> +       const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
+> +       return __add_probed_i2c_device(name,
+> +                                      find_i2c_adapter_num(I2C_ADAPTER_SMBUS),
+> +                                      info,
+> +                                      addr_list);
+> +}
+> +
+> +static int __init setup_lumpy_tp(const struct dmi_system_id *id)
+> +{
+> +       /* add cyapa touchpad on smbus */
+> +       tp = add_smbus_device("trackpad", &cyapa_device);
+> +       return 0;
+> +}
+> +
+> +static int __init setup_isl29018_als(const struct dmi_system_id *id)
+> +{
+> +       /* add isl29018 light sensor */
+> +       als = add_smbus_device("lightsensor", &isl_als_device);
+> +       return 0;
+> +}
+> +
+> +static const struct __initdata dmi_system_id chromeos_laptop_dmi_table[] = {
+> +       {
+> +               .ident = "Samsung Series 5 550 - Touchpad",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
+> +               },
+> +               .callback = setup_lumpy_tp,
+> +       },
+> +       {
+> +               .ident = "Samsung Series 5 550 - Light Sensor",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
+> +               },
+> +               .callback = setup_isl29018_als,
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1341316406.23484.64.camel@twins
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c |  118 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 116 insertions(+), 2 deletions(-)
+Maybe you should match on something more specific that only product name ?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3e6a353..a319d56c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3456,8 +3456,122 @@ static bool yield_to_task_fair(struct rq *rq, struct task_struct *p, bool preemp
- 
- #ifdef CONFIG_SMP
- /**************************************************
-- * Fair scheduling class load-balancing methods:
-- */
-+ * Fair scheduling class load-balancing methods.
-+ *
-+ * BASICS
-+ *
-+ * The purpose of load-balancing is to achieve the same basic fairness the
-+ * per-cpu scheduler provides, namely provide a proportional amount of compute
-+ * time to each task. This is expressed in the following equation:
-+ *
-+ *   W_i,n/P_i == W_j,n/P_j for all i,j                               (1)
-+ *
-+ * Where W_i,n is the n-th weight average for cpu i. The instantaneous weight
-+ * W_i,0 is defined as:
-+ *
-+ *   W_i,0 = \Sum_j w_i,j                                             (2)
-+ *
-+ * Where w_i,j is the weight of the j-th runnable task on cpu i. This weight
-+ * is derived from the nice value as per prio_to_weight[].
-+ *
-+ * The weight average is an exponential decay average of the instantaneous
-+ * weight:
-+ *
-+ *   W'_i,n = (2^n - 1) / 2^n * W_i,n + 1 / 2^n * W_i,0               (3)
-+ *
-+ * P_i is the cpu power (or compute capacity) of cpu i, typically it is the
-+ * fraction of 'recent' time available for SCHED_OTHER task execution. But it
-+ * can also include other factors [XXX].
-+ *
-+ * To achieve this balance we define a measure of imbalance which follows
-+ * directly from (1):
-+ *
-+ *   imb_i,j = max{ avg(W/P), W_i/P_i } - min{ avg(W/P), W_j/P_j }    (4)
-+ *
-+ * We them move tasks around to minimize the imbalance. In the continuous
-+ * function space it is obvious this converges, in the discrete case we get
-+ * a few fun cases generally called infeasible weight scenarios.
-+ *
-+ * [XXX expand on:
-+ *     - infeasible weights;
-+ *     - local vs global optima in the discrete case. ]
-+ *
-+ *
-+ * SCHED DOMAINS
-+ *
-+ * In order to solve the imbalance equation (4), and avoid the obvious O(n^2)
-+ * for all i,j solution, we create a tree of cpus that follows the hardware
-+ * topology where each level pairs two lower groups (or better). This results
-+ * in O(log n) layers. Furthermore we reduce the number of cpus going up the
-+ * tree to only the first of the previous level and we decrease the frequency
-+ * of load-balance at each level inv. proportional to the number of cpus in
-+ * the groups.
-+ *
-+ * This yields:
-+ *
-+ *     log_2 n     1     n
-+ *   \Sum       { --- * --- * 2^i } = O(n)                            (5)
-+ *     i = 0      2^i   2^i
-+ *                               `- size of each group
-+ *         |         |     `- number of cpus doing load-balance
-+ *         |         `- freq
-+ *         `- sum over all levels
-+ *
-+ * Coupled with a limit on how many tasks we can migrate every balance pass,
-+ * this makes (5) the runtime complexity of the balancer.
-+ *
-+ * An important property here is that each CPU is still (indirectly) connected
-+ * to every other cpu in at most O(log n) steps:
-+ *
-+ * The adjacency matrix of the resulting graph is given by:
-+ *
-+ *             log_2 n     
-+ *   A_i,j = \Union     (i % 2^k == 0) && i / 2^(k+1) == j / 2^(k+1)  (6)
-+ *             k = 0
-+ *
-+ * And you'll find that:
-+ *
-+ *   A^(log_2 n)_i,j != 0  for all i,j                                (7)
-+ *
-+ * Showing there's indeed a path between every cpu in at most O(log n) steps.
-+ * The task movement gives a factor of O(m), giving a convergence complexity
-+ * of:
-+ *
-+ *   O(nm log n),  n := nr_cpus, m := nr_tasks                        (8)
-+ *
-+ *
-+ * WORK CONSERVING
-+ *
-+ * In order to avoid CPUs going idle while there's still work to do, new idle
-+ * balancing is more aggressive and has the newly idle cpu iterate up the domain
-+ * tree itself instead of relying on other CPUs to bring it work.
-+ *
-+ * This adds some complexity to both (5) and (8) but it reduces the total idle
-+ * time.
-+ *
-+ * [XXX more?]
-+ *
-+ *
-+ * CGROUPS
-+ *
-+ * Cgroups make a horror show out of (2), instead of a simple sum we get:
-+ *
-+ *                                s_k,i
-+ *   W_i,0 = \Sum_j \Prod_k w_k * -----                               (9)
-+ *                                 S_k
-+ *
-+ * Where
-+ *
-+ *   s_k,i = \Sum_j w_i,j,k  and  S_k = \Sum_i s_k,i                 (10)
-+ *
-+ * w_i,j,k is the weight of the j-th runnable task in the k-th cgroup on cpu i.
-+ *
-+ * The big problem is S_k, its a global sum needed to compute a local (W_i)
-+ * property.
-+ *
-+ * [XXX write more on how we solve this.. _after_ merging pjt's patches that
-+ *      rewrite all of this once again.]
-+ */ 
- 
- static unsigned long __read_mostly max_load_balance_interval = HZ/10;
- 
+> +       },
+> +       { }
+> +};
+> +
+> +static int __init chromeos_laptop_init(void)
+> +{
+> +       if (!dmi_check_system(chromeos_laptop_dmi_table)) {
+> +               pr_debug("%s unsupported system.\n", __func__);
+> +               return -ENODEV;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void __exit chromeos_laptop_exit(void)
+> +{
+> +       if (als)
+> +               i2c_unregister_device(als);
+> +       if (tp)
+> +               i2c_unregister_device(tp);
+> +}
+> +
+> +module_init(chromeos_laptop_init);
+> +module_exit(chromeos_laptop_exit);
+> +
+> +MODULE_DESCRIPTION("Chrome OS Laptop driver");
+> +MODULE_AUTHOR("Benson Leung <bleung@chromium.org>");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.7.7.3
+
+Some __initdata and __init keywords are positioned before type, others
+after, please fix that to be consistent.
+Thanks,
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
