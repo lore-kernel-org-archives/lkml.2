@@ -1,176 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab2JXJ6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 05:58:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55057 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756369Ab2JXJ6v (ORCPT
+	id S1758126Ab2JXKAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 06:00:06 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54166 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756847Ab2JXKAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 05:58:51 -0400
-Date: Wed, 24 Oct 2012 02:57:38 -0700
-From: tip-bot for Paul Turner <pjt@google.com>
-Message-ID: <tip-f4e26b120b9de84cb627bc7361ba43cfdc51341f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, bsegall@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        tglx@linutronix.de
-In-Reply-To: <20120823141507.422162369@google.com>
-References: <20120823141507.422162369@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Introduce temporary FAIR_GROUP_SCHED dependency for load-tracking
-Git-Commit-ID: f4e26b120b9de84cb627bc7361ba43cfdc51341f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 24 Oct 2012 06:00:03 -0400
+Date: Wed, 24 Oct 2012 13:59:59 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: akpm@linux-foundation.org, a.p.zijlstra@chello.nl, xemul@parallels.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: + procfs-add-vmflags-field-in-smaps-output-v3-fix-2.patch added
+ to -mm tree
+Message-ID: <20121024095959.GA30240@moon>
+References: <20121023220300.1185C200057@hpza10.eem.corp.google.com>
+ <20121024084515.GB30983@moon>
+ <20121024204746.8a8c0fa14b6495b5d5013db4@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 02:57:44 -0700 (PDT)
+In-Reply-To: <20121024204746.8a8c0fa14b6495b5d5013db4@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f4e26b120b9de84cb627bc7361ba43cfdc51341f
-Gitweb:     http://git.kernel.org/tip/f4e26b120b9de84cb627bc7361ba43cfdc51341f
-Author:     Paul Turner <pjt@google.com>
-AuthorDate: Thu, 4 Oct 2012 13:18:32 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 24 Oct 2012 10:27:31 +0200
+On Wed, Oct 24, 2012 at 08:47:46PM +1100, Stephen Rothwell wrote:
+> Hi Cyrill,
+> 
+> On Wed, 24 Oct 2012 12:45:15 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> >
+> >  static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
+> >  {
+> > +#define __VM_FLAG(_f, _s)	[ilog2(_f)] = {(const char [2]){_s}}
+> 
+> I really don't think you need the cast (and it may hide bad usages) or
+> the second set of braces.  Thus:
 
-sched: Introduce temporary FAIR_GROUP_SCHED dependency for load-tracking
+Hi Stephen, could you please elaborate, which bad usage hiding could be there?
 
-While per-entity load-tracking is generally useful, beyond computing shares
-distribution, e.g. runnable based load-balance (in progress), governors,
-power-management, etc.
+> Further is there any reason for the struct?
+> 
+> #define __VM_FLAG(_f, _s)	[ilog2(_f)] = _s
+> 
+> static const char mnemonics[BITS_PER_LONG][2] = {
+> ...
+> };
 
-These facilities are not yet consumers of this data.  This may be trivially
-reverted when the information is required; but avoid paying the overhead for
-calculations we will not use until then.
+Well, good point, though the benefit of using stucture here
+could be easier way for extension if needed. The compiled result
+is the same as for plain array or structure, so I would rather
+stick with struct here, until contrary proved (I mean it's not
+a problem to update the patch and use array here but I still
+think struct it better in long term). If you guys think that I
+should move it to array -- no problem, i may update ;)
 
-Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120823141507.422162369@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h |    8 +++++++-
- kernel/sched/core.c   |    7 ++++++-
- kernel/sched/fair.c   |   13 +++++++++++--
- kernel/sched/sched.h  |    9 ++++++++-
- 4 files changed, 32 insertions(+), 5 deletions(-)
+> >  	seq_puts(m, "VmFlags: ");
+> >  	for (i = 0; i < BITS_PER_LONG; i++) {
+> > -		if (vma->vm_flags & (1 << i))
+> > +		if (vma->vm_flags & (1ul << i)) {
+> >  			seq_printf(m, "%c%c ",
+> >  				   mnemonics[i].l[0],
+> >  				   mnemonics[i].l[1]);
+> 
+> 				   mnemonics[i][0], mnemonics[i][1]
+> 
+> /me looks for another bike shed :-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e483ccb..e1581a0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1168,7 +1168,13 @@ struct sched_entity {
- 	/* rq "owned" by this entity/group: */
- 	struct cfs_rq		*my_q;
- #endif
--#ifdef CONFIG_SMP
-+/*
-+ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-+ * removed when useful for applications beyond shares distribution (e.g.
-+ * load-balance).
-+ */
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-+	/* Per-entity load-tracking */
- 	struct sched_avg	avg;
- #endif
- };
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f268600..5dae0d2 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1526,7 +1526,12 @@ static void __sched_fork(struct task_struct *p)
- 	p->se.vruntime			= 0;
- 	INIT_LIST_HEAD(&p->se.group_node);
- 
--#ifdef CONFIG_SMP
-+/*
-+ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-+ * removed when useful for applications beyond shares distribution (e.g.
-+ * load-balance).
-+ */
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
- 	p->se.avg.runnable_avg_period = 0;
- 	p->se.avg.runnable_avg_sum = 0;
- #endif
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6ecf455..3e6a353 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -882,7 +882,8 @@ static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
- }
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
--#ifdef CONFIG_SMP
-+/* Only depends on SMP, FAIR_GROUP_SCHED may be removed when useful in lb */
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
- /*
-  * We choose a half-life close to 1 scheduling period.
-  * Note: The tables below are dependent on this value.
-@@ -3174,6 +3175,12 @@ unlock:
- }
- 
- /*
-+ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-+ * removed when useful for applications beyond shares distribution (e.g.
-+ * load-balance).
-+ */
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+/*
-  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
-  * cfs_rq_of(p) references at time of call are still valid and identify the
-  * previous cpu.  However, the caller only guarantees p->pi_lock is held; no
-@@ -3196,6 +3203,7 @@ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
- 		atomic64_add(se->avg.load_avg_contrib, &cfs_rq->removed_load);
- 	}
- }
-+#endif
- #endif /* CONFIG_SMP */
- 
- static unsigned long
-@@ -5773,8 +5781,9 @@ const struct sched_class fair_sched_class = {
- 
- #ifdef CONFIG_SMP
- 	.select_task_rq		= select_task_rq_fair,
-+#ifdef CONFIG_FAIR_GROUP_SCHED
- 	.migrate_task_rq	= migrate_task_rq_fair,
--
-+#endif
- 	.rq_online		= rq_online_fair,
- 	.rq_offline		= rq_offline_fair,
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 0a75a43..5eca173 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -225,6 +225,12 @@ struct cfs_rq {
- #endif
- 
- #ifdef CONFIG_SMP
-+/*
-+ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
-+ * removed when useful for applications beyond shares distribution (e.g.
-+ * load-balance).
-+ */
-+#ifdef CONFIG_FAIR_GROUP_SCHED
- 	/*
- 	 * CFS Load tracking
- 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
-@@ -234,7 +240,8 @@ struct cfs_rq {
- 	u64 runnable_load_avg, blocked_load_avg;
- 	atomic64_t decay_counter, removed_load;
- 	u64 last_decay;
--
-+#endif /* CONFIG_FAIR_GROUP_SCHED */
-+/* These always depend on CONFIG_FAIR_GROUP_SCHED */
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	u32 tg_runnable_contrib;
- 	u64 tg_load_contrib;
+Heh :)
