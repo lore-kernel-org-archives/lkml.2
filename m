@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935474Ab2JXSZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:25:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60869 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935246Ab2JXSZu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:25:50 -0400
-Date: Wed, 24 Oct 2012 11:25:46 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com
-Subject: Re: [stable 2.6.32..2.6.34] x86, ioapic: initialize
- nr_ioapic_registers early in mp_register_ioapic()
-Message-ID: <20121024182546.GB3338@elie.Belkin>
-References: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
+	id S1161044Ab2JXS1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:27:07 -0400
+Received: from dupo.coraid.com ([208.71.232.133]:52307 "EHLO coraid.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935245Ab2JXS1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:27:05 -0400
+From: Ed Cashin <ecashin@coraid.com>
+Subject: [PATCH] aoe: avoid using skb member after dev_queue_xmit
+To: akpm@linux-foundation.org
+Cc: ecashin@coraid.com, dan.carpenter@oracle.com,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Ed Cashin <ecashin@coraid.com>
+X-Mailer: nedmail
+Date: Wed, 24 Oct 2012 14:26:13 -0400
+Message-ID: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suresh,
+After calling dev_queue_xmit it is no longer safe to access the
+members of the skb.
 
-Suresh Siddha wrote:
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ drivers/block/aoe/aoenet.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-[...]
-> This problem doesn't happen with more recent kernels and closer
-> look at the 2.6.32 kernel shows that the code which masks
-> the IO-APIC RTE's is not working as expected as the nr_ioapic_registers
-> for each IO-APIC is not yet initialized at this point. In the later
-> kernels we initialize nr_ioapic_registers much before and
-> everything works as expected.
->
-> For 2.6.[32..34] kernels, fix this issue by initializing
-> nr_ioapic_registers early in mp_register_ioapic()
->
-> Relevant upstream commit info:
->
-> commit 7716a5c4ff5f1f3dc5e9edcab125cbf7fceef0af
+diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
+index ae56828..2e47404 100644
+--- a/drivers/block/aoe/aoenet.c
++++ b/drivers/block/aoe/aoenet.c
+@@ -55,12 +55,14 @@ static int
+ tx(void) __must_hold(&txlock)
+ {
+ 	struct sk_buff *skb;
++	struct net_device *ifp;
+ 
+ 	while ((skb = skb_dequeue(&skbtxq))) {
+ 		spin_unlock_irq(&txlock);
++		ifp = skb->dev;
+ 		if (dev_queue_xmit(skb) == NET_XMIT_DROP && net_ratelimit())
+ 			pr_warn("aoe: packet could not be sent on %s.  %s\n",
+-				skb->dev ? skb->dev->name : "netif",
++				ifp ? ifp->name : "netif",
+ 				"consider increasing tx_queue_len");
+ 		spin_lock_irq(&txlock);
+ 	}
+-- 
+1.7.1
 
-Why not cherry-pick 7716a5c4ff5 in full?
-
-Curious,
-Jonathan
