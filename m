@@ -1,76 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758394Ab2JXMFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:05:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57880 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755603Ab2JXMFs (ORCPT
+	id S1758505Ab2JXMG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:06:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40869 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab2JXMG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:05:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Josh Cartwright <josh.cartwright@ni.com>
-Subject: Re: [PATCH v3 3/5] zynq: remove use of CLKDEV_LOOKUP
-Date: Wed, 24 Oct 2012 12:05:34 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, John Linn <john.linn@xilinx.com>,
-        Nick Bowler <nbowler@elliptictech.com>
-References: <20121024003442.GD31625@beefymiracle.amer.corp.natinst.com>
-In-Reply-To: <20121024003442.GD31625@beefymiracle.amer.corp.natinst.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210241205.34557.arnd@arndb.de>
-X-Provags-ID: V02:K0:f1Su12690Ai2LvN+0MHE16nf2XInmNAKSbgTy6RWRG/
- xu9bwI5gswXPBfBwlkzCw16lyFECpwKRdhjlMw3C84qzhpK62q
- uQrL/nlCQ8UMei8bbCBHG2NZ8Gs1QeX2YXUn0pwU5/KC3cdk1v
- fIyH+bqcoFRsRdP9Car4kNVXzXQ7taeazMxQupOdgvkYMvhZLs
- v97Iu4CpiB50jolIscLdnE5n47dRCCMhMqKvOJvHaEze/Ox+0B
- f1fSwq/KQi0vmp7Cc1F37uNG8sY5HGOUZc3QueT2CV1jdSyKUR
- v3P0hugzq9zrOMLqtdmfSJR8O1FVL7iG1qld+AQrA8s4SIxM6A
- Rg/MLSsBQCD3lmoMpPO4=
+	Wed, 24 Oct 2012 08:06:26 -0400
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH v2] staging/comedi: Use pr_ or dev_ printks in drivers/unioxx5.c
+Date: Wed, 24 Oct 2012 21:06:17 +0900
+Message-Id: <1351080378-4802-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20121022195115.GB8567@kroah.com>
+References: <20121022195115.GB8567@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 October 2012, Josh Cartwright wrote:
-> The Zynq support in mainline does not (yet) make use of any of the
-> generic clk or clk lookup functionality.  Remove what is upstream for
-> now, until the out-of-tree implementation is in suitable form for
-> merging.
-> 
-> An important side effect of this patch is that it allows the building of
-> a Zynq kernel without running into unresolved symbol problems:
-> 
->    drivers/built-in.o: In function `amba_get_enable_pclk':
->    clkdev.c:(.text+0x444): undefined reference to `clk_enable'
->    drivers/built-in.o: In function `amba_remove':
->    clkdev.c:(.text+0x488): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `amba_probe':
->    clkdev.c:(.text+0x540): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `amba_device_add':
->    clkdev.c:(.text+0x77c): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `enable_clock':
->    clkdev.c:(.text+0x29738): undefined reference to `clk_enable'
->    drivers/built-in.o: In function `disable_clock':
->    clkdev.c:(.text+0x29778): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `__pm_clk_remove':
->    clkdev.c:(.text+0x297f8): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `pm_clk_suspend':
->    clkdev.c:(.text+0x29bc8): undefined reference to `clk_disable'
->    drivers/built-in.o: In function `pm_clk_resume':
->    clkdev.c:(.text+0x29c28): undefined reference to `clk_enable'
->    make[2]: *** [vmlinux] Error 1
->    make[1]: *** [sub-make] Error 2
->    make: *** [all] Error 2
-> 
-> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> Cc: John Linn <john.linn@xilinx.com>
+fixed below checkpatch warnings.
+- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
+- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+and added pr_fmt.
 
-I think I forgot to mention in the previous review round that it would be nice
-to just enable CONFIG_COMMON_CLK right away. Not important though.
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/comedi/drivers/unioxx5.c |   44 ++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 23 deletions(-)
 
-	Arnd
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 9f1fdec..c9ded93 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -42,6 +42,8 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
+ 
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include "../comedidev.h"
+ #include <linux/ioport.h>
+ #include <linux/slab.h>
+@@ -144,8 +146,7 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++		pr_err("comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+ 		       minor, channel);
+ 		return 0;
+ 	}
+@@ -171,8 +172,7 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
+ 
+ 	/* defining if given module can work on input */
+ 	if (usp->usp_module_type[module_no] & MODULE_OUTPUT_MASK) {
+-		printk(KERN_ERR
+-		       "comedi%d: module in position %d with id 0x%02x is for output only",
++		pr_err("comedi%d: module in position %d with id 0x%02x is for output only",
+ 		       minor, module_no, usp->usp_module_type[module_no]);
+ 		return 0;
+ 	}
+@@ -209,8 +209,7 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++		pr_err("comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+ 		       minor, channel);
+ 		return 0;
+ 	}
+@@ -240,8 +239,7 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
+ 
+ 	/* defining if given module can work on output */
+ 	if (!(usp->usp_module_type[module] & MODULE_OUTPUT_MASK)) {
+-		printk(KERN_ERR
+-		       "comedi%d: module in position %d with id 0x%0x is for input only!\n",
++		pr_err("comedi%d: module in position %d with id 0x%0x is for input only!\n",
+ 		       minor, module, usp->usp_module_type[module]);
+ 		return 0;
+ 	}
+@@ -323,17 +321,17 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 	type = usp->usp_module_type[channel / 2];
+ 
+ 	if (type != MODULE_DIGITAL) {
+-		printk(KERN_ERR
+-		       "comedi%d: channel configuration accessible only for digital modules\n",
+-		       dev->minor);
++		dev_err(dev->class_dev,
++			"comedi%d: channel configuration accessible only for digital modules\n",
++			dev->minor);
+ 		return -1;
+ 	}
+ 
+ 	channel_offset = __unioxx5_define_chan_offset(channel);
+ 	if (channel_offset < 0) {
+-		printk(KERN_ERR
+-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+-		       dev->minor, channel);
++		dev_err(dev->class_dev,
++			"comedi%d: undefined channel %d. channel range is 0 .. 23\n",
++			dev->minor, channel);
+ 		return -1;
+ 	}
+ 
+@@ -348,7 +346,8 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 		flags |= mask;
+ 		break;
+ 	default:
+-		printk(KERN_ERR "comedi%d: unknown flag\n", dev->minor);
++		dev_err(dev->class_dev,
++			"comedi%d: unknown flag\n", dev->minor);
+ 		return -1;
+ 	}
+ 
+@@ -375,19 +374,21 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	int i, to, ndef_flag = 0;
+ 
+ 	if (!request_region(subdev_iobase, UNIOXX5_SIZE, DRIVER_NAME)) {
+-		printk(KERN_ERR "comedi%d: I/O port conflict\n", minor);
++		dev_err(subdev->class_dev,
++			"comedi%d: I/O port conflict\n", minor);
+ 		return -EIO;
+ 	}
+ 
+ 	usp = kzalloc(sizeof(*usp), GFP_KERNEL);
+ 
+ 	if (usp == NULL) {
+-		printk(KERN_ERR "comedi%d: error! --> out of memory!\n", minor);
++		dev_err(subdev->class_dev,
++			"comedi%d: error! --> out of memory!\n", minor);
+ 		return -1;
+ 	}
+ 
+ 	usp->usp_iobase = subdev_iobase;
+-	printk(KERN_INFO "comedi%d: |", minor);
++	dev_info(subdev->class_dev, "comedi%d: |", minor);
+ 
+ 	/* defining modules types */
+ 	for (i = 0; i < 12; i++) {
+@@ -433,8 +434,6 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 	/* for digital modules only!!! */
+ 	subdev->insn_config = unioxx5_insn_config;
+ 
+-	printk(KERN_INFO "subdevice configured\n");
+-
+ 	return 0;
+ }
+ 
+@@ -464,8 +463,8 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 
+ 	/* unioxx5 can has from two to four subdevices */
+ 	if (n_subd < 2) {
+-		printk(KERN_ERR
+-		       "your card must has at least 2 'g01' subdevices\n");
++		dev_err(dev->class_dev,
++			"your card must has at least 2 'g01' subdevices\n");
+ 		return -1;
+ 	}
+ 
+@@ -480,7 +479,6 @@ static int unioxx5_attach(struct comedi_device *dev,
+ 			return -1;
+ 	}
+ 
+-	printk(KERN_INFO "attached\n");
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
