@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161214Ab2JXVLx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:11:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5829 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161186Ab2JXVLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:11:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,642,1344236400"; 
-   d="scan'208";a="231932310"
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Howells <dhowells@redhat.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [PATCH] Makefile: Documentation for external tool should be correct
-Date: Wed, 24 Oct 2012 14:11:48 -0700
-Message-Id: <1351113108-23277-1-git-send-email-hpa@linux.intel.com>
-X-Mailer: git-send-email 1.7.6.5
+	id S1161221Ab2JXVNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:13:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41935 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161186Ab2JXVNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:13:04 -0400
+Date: Wed, 24 Oct 2012 14:13:03 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-Id: <20121024141303.0797d6a1.akpm@linux-foundation.org>
+In-Reply-To: <20121024210600.GA17037@liondog.tnic>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+	<20121023164546.747e90f6.akpm@linux-foundation.org>
+	<20121024062938.GA6119@dhcp22.suse.cz>
+	<20121024125439.c17a510e.akpm@linux-foundation.org>
+	<50884F63.8030606@linux.vnet.ibm.com>
+	<20121024134836.a28d223a.akpm@linux-foundation.org>
+	<20121024210600.GA17037@liondog.tnic>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Wed, 24 Oct 2012 23:06:00 +0200
+Borislav Petkov <bp@alien8.de> wrote:
 
-If one includes documentation for an external tool, it should be
-correct.  This is not:
+> On Wed, Oct 24, 2012 at 01:48:36PM -0700, Andrew Morton wrote:
+> > Well who knows. Could be that people's vm *does* suck. Or they have
+> > some particularly peculiar worklosd or requirement[*]. Or their VM
+> > *used* to suck, and the drop_caches is not really needed any more but
+> > it's there in vendor-provided code and they can't practically prevent
+> > it.
+> 
+> I have drop_caches in my suspend-to-disk script so that the hibernation
+> image is kept at minimum and suspend times are as small as possible.
 
-1. Overriding the input to rngd should typically be neither
-   necessary nor desired.  This is especially so since newer
-   versions of rngd support a number of different *types* of sources.
-2. The default kernel-exported device is called /dev/hwrng not
-   /dev/hwrandom nor /dev/hw_random (both of which were used in the
-   past; however, kernel and udev seem to have converged on
-   /dev/hwrng.)
+hm, that sounds smart.
 
-Overall it is better if the documentation for rngd is kept with rngd
-rather than in a kernel Makefile.
+> Would that be a valid use-case?
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>
----
- kernel/Makefile |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+I'd say so, unless we change the kernel to do that internally.  We do
+have the hibernation-specific shrink_all_memory() in the vmscan code. 
+We didn't see fit to document _why_ that exists, but IIRC it's there to
+create enough free memory for hibernation to be able to successfully
+complete, but no more.
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 0dfeca4..86e3285 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -174,10 +174,8 @@ signing_key.priv signing_key.x509: x509.genkey
- 	@echo "###"
- 	@echo "### If this takes a long time, you might wish to run rngd in the"
- 	@echo "### background to keep the supply of entropy topped up.  It"
--	@echo "### needs to be run as root, and should use a hardware random"
--	@echo "### number generator if one is available, eg:"
--	@echo "###"
--	@echo "###     rngd -r /dev/hwrandom"
-+	@echo "### needs to be run as root, and uses a hardware random"
-+	@echo "### number generator if one is available."
- 	@echo "###"
- 	openssl req -new -nodes -utf8 $(sign_key_with_hash) -days 36500 -batch \
- 		-x509 -config x509.genkey \
--- 
-1.7.6.5
-
+Who owns hibernaton nowadays?  Rafael, I guess?
