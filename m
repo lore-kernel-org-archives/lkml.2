@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964841Ab2JXTjy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:39:54 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35189 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933098Ab2JXTju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:39:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
-Date: Wed, 24 Oct 2012 21:43:46 +0200
-Message-ID: <1597360.JT7plJlUsZ@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com>
-References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org> <CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com> <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com>
+	id S934101Ab2JXTlU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:41:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63639 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933046Ab2JXTlS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:41:18 -0400
+Date: Wed, 24 Oct 2012 12:41:14 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, linbao.zhang@hp.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [RFC/PATCH 2.6.32.y 0/3] Re: [stable 2.6.32..2.6.34] x86, ioapic:
+ initialize nr_ioapic_registers early in mp_register_ioapic()
+Message-ID: <20121024194114.GC3120@elie.Belkin>
+References: <1351102644.6017.72.camel@sbsiddha-desk.sc.intel.com>
+ <20121024182546.GB3338@elie.Belkin>
+ <1351103872.6017.80.camel@sbsiddha-desk.sc.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351103872.6017.80.camel@sbsiddha-desk.sc.intel.com>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 of October 2012 11:37:13 Viresh Kumar wrote:
-> On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> Initially ondemand governor was written and then using its code conservative
-> >> governor is written. It used a lot of code from ondemand governor, but copy of
-> >> code was created instead of using the same routines from both governors. Which
-> >> increased code redundancy, which is difficult to manage.
-> >>
-> >> This patch is an attempt to move common part of both the governors to
-> >> cpufreq_governor.c file to come over above mentioned issues.
-> >>
-> >> This shouldn't change anything from functionality point of view.
-> >>
-> >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> 
-> For everybody else, this patch is already pushed by Rafael in his linux-next
-> branch.
+Suresh Siddha wrote:
+> On Wed, 2012-10-24 at 11:25 -0700, Jonathan Nieder wrote:
 
-Well, not yet, although I'm going to do that.
+>> Why not cherry-pick 7716a5c4ff5 in full?
+>
+> As that depends on the other commits like:
+> commit 4b6b19a1c7302477653d799a53d48063dd53d555
 
-Thanks,
-Rafael
+More importantly, if I understand correctly it might depend on
 
+ commit cf7500c0ea13
+ Author: Eric W. Biederman <ebiederm@xmission.com>
+ Date:   Tue Mar 30 01:07:11 2010 -0700
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+     x86, ioapic: In mpparse use mp_register_ioapic
+
+Here's a series, completely untested, that is closer to what I
+expected.  But the approach you took seems reasonable, too, as long
+as the commit message is tweaked to explain it.
+
+Thanks again,
+Jonathan
+
+Eric W. Biederman (3):
+  x86, ioapic: Teach mp_register_ioapic to compute a global gsi_end
+  x86, ioapic: In mpparse use mp_register_ioapic
+  x86, ioapic: Move nr_ioapic_registers calculation to
+    mp_register_ioapic.
+
+ arch/x86/include/asm/io_apic.h |  1 +
+ arch/x86/kernel/apic/io_apic.c | 28 ++++++++++++++--------------
+ arch/x86/kernel/mpparse.c      | 25 +------------------------
+ arch/x86/kernel/sfi.c          |  4 +---
+ 4 files changed, 17 insertions(+), 41 deletions(-)
