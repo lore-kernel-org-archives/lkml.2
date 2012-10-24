@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965317Ab2JXS53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 14:57:29 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35116 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965177Ab2JXS50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 14:57:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ondrej Zary <linux@rainbow-software.org>, hpa@zytor.com
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
-Date: Wed, 24 Oct 2012 21:01:16 +0200
-Message-ID: <450396555.xT2D53NWjT@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <201210240847.52417.linux@rainbow-software.org>
-References: <201210240847.52417.linux@rainbow-software.org>
+	id S965343Ab2JXS5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 14:57:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36921 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934943Ab2JXS5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 14:57:46 -0400
+Date: Wed, 24 Oct 2012 11:57:42 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        linux@arm.linux.org.uk, Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [PATCH] Revert "serial: omap: fix software flow control"
+Message-ID: <20121024185742.GA26995@kroah.com>
+References: <1350396562-32579-1-git-send-email-balbi@ti.com>
+ <20121016151357.GN15569@atomide.com>
+ <20121024100254.GG5665@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024100254.GG5665@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 of October 2012 08:47:52 Ondrej Zary wrote:
-> Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-> line but resume code assumes that KBC was used.
-> The laptop will not resume from S3 otherwise but powers off after a while
-> and then powers on again stuck with a blank screen.
+On Wed, Oct 24, 2012 at 01:02:55PM +0300, Felipe Balbi wrote:
+> Hi Greg,
 > 
-> Fix it by enabling A20 using KBC. Affected laptop list and DMI data are from
-> bug reports at Ubuntu Launchpad.
+> On Tue, Oct 16, 2012 at 08:13:59AM -0700, Tony Lindgren wrote:
+> > * Felipe Balbi <balbi@ti.com> [121016 07:16]:
+> > > This reverts commit 957ee7270d632245b43f6feb0e70d9a5e9ea6cf6
+> > > (serial: omap: fix software flow control).
+> > > 
+> > > As Russell has pointed out, that commit isn't fixing
+> > > Software Flow Control at all, and it actually makes
+> > > it even more broken.
+> > > 
+> > > It was agreed to revert this commit and use Russell's
+> > > latest UART patches instead.
+> > > 
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > 
+> > This seems like the best way to go for the -rc series:
+> > 
+> > Acked-by: Tony Lindgren <tony@atomide.com>
 > 
-> Tested with EX600 and PR200.
-> 
-> Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-> 
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> Any chance you can pick this one up for v3.7-rc3 ?
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Now queued up, sorry for the delay.
 
-
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -1349,6 +1349,20 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
->  }
->  
->  /*
-> + * Enable A20 line using KBC even if it's already enabled using other method.
-> + * This is needed for some MSI laptops to resume from S3.
-> + */
-> +static int __init a20_enable_kbc(const struct dmi_system_id *d)
-> +{
-> +	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n", d->ident);
-> +	outb(0xd1, 0x64);	/* Command write */
-> +	outb(0xdf, 0x60);	/* A20 on */
-> +	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
-> +
-> +	return 0;
-> +}
-> +
-> +/*
->   * If your system is blacklisted here, but you find that acpi=force
->   * works for you, please contact linux-acpi@vger.kernel.org
->   */
-> @@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
->  		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
->  		     },
->  	 },
-> +	/*
-> +	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
-> +	 * enable A20 line but resume code assumes that KBC was used.
-> +	 * The laptop will not resume from S3 otherwise but powers off
-> +	 * after a while and then powers on again stuck with a blank screen.
-> +	 */
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI EX600 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
-> +		     },
-> +	 },
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI EX700 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
-> +		     },
-> +	 },
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI GX700 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
-> +		     },
-> +	 },
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI VR201 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
-> +		     },
-> +	 },
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI VR601 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
-> +		     },
-> +	 },
-> +	{
-> +	 .callback = a20_enable_kbc,
-> +	 .ident = "MSI PR200 Laptop",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
-> +		     },
-> +	 },
->  	{}
->  };
->  
-> 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
