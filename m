@@ -1,43 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613Ab2JXGnO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 02:43:14 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61434 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757887Ab2JXGnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:43:11 -0400
+	id S964793Ab2JXGsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:48:35 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:39923 "EHLO mail.atlantis.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933722Ab2JXGsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 02:48:33 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: hpa@zytor.com
+Subject: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
+Date: Wed, 24 Oct 2012 08:47:52 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1350656442-1523-2-git-send-email-glommer@parallels.com>
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
-	<1350656442-1523-2-git-send-email-glommer@parallels.com>
-Date: Wed, 24 Oct 2012 09:43:09 +0300
-X-Google-Sender-Auth: PucGCVwG5sEkcCsbH1kx8g-iNO4
-Message-ID: <CAOJsxLFuHVKSnpN=+-7Z-C0mNgYu_pnS0jJgUmDkoPkdkgDteQ@mail.gmail.com>
-Subject: Re: [PATCH v5 01/18] move slabinfo processing to slab_common.c
-From: Pekka Enberg <penberg@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>, devel@openvz.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201210240847.52417.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 19, 2012 at 5:20 PM, Glauber Costa <glommer@parallels.com> wrote:
-> This patch moves all the common machinery to slabinfo processing
-> to slab_common.c. We can do better by noticing that the output is
-> heavily common, and having the allocators to just provide finished
-> information about this. But after this first step, this can be done
-> easier.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> CC: David Rientjes <rientjes@google.com>
+Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+line but resume code assumes that KBC was used.
+The laptop will not resume from S3 otherwise but powers off after a while
+and then powers on again stuck with a blank screen.
 
-I've applied patches 1-3. Thanks, Glauber!
+Fix it by enabling A20 using KBC. Affected laptop list and DMI data are from
+bug reports at Ubuntu Launchpad.
+
+Tested with EX600 and PR200.
+
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1349,6 +1349,20 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ }
+ 
+ /*
++ * Enable A20 line using KBC even if it's already enabled using other method.
++ * This is needed for some MSI laptops to resume from S3.
++ */
++static int __init a20_enable_kbc(const struct dmi_system_id *d)
++{
++	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n", d->ident);
++	outb(0xd1, 0x64);	/* Command write */
++	outb(0xdf, 0x60);	/* A20 on */
++	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
++
++	return 0;
++}
++
++/*
+  * If your system is blacklisted here, but you find that acpi=force
+  * works for you, please contact linux-acpi@vger.kernel.org
+  */
+@@ -1423,6 +1437,60 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
+ 		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
+ 		     },
+ 	 },
++	/*
++	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
++	 * enable A20 line but resume code assumes that KBC was used.
++	 * The laptop will not resume from S3 otherwise but powers off
++	 * after a while and then powers on again stuck with a blank screen.
++	 */
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI EX600 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI EX700 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI GX700 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI VR201 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI VR601 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI PR200 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
++		     },
++	 },
+ 	{}
+ };
+ 
+
+
+-- 
+Ondrej Zary
