@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965336Ab2JXTCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:02:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60504 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab2JXTCo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:02:44 -0400
-Date: Wed, 24 Oct 2012 12:02:27 -0700
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-1f2ff682ac951ed82cc043cf140d2851084512df@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, stable@vger.kernel.org, jacob.shin@amd.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
-        stable@vger.kernel.org, hpa@linux.intel.com
-In-Reply-To: <CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com>
-References: <CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm:
-  Use memblock memory loop instead of e820_RAM
-Git-Commit-ID: 1f2ff682ac951ed82cc043cf140d2851084512df
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1161123Ab2JXTEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:04:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60169 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756505Ab2JXTEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:04:10 -0400
+Date: Wed, 24 Oct 2012 21:58:19 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Sourav Poddar <sourav.poddar@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-input@vger.kernel.org>
+Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
+Message-ID: <20121024185818.GB772@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
+ <20121024161429.GA16350@core.coreip.homeip.net>
+ <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
+ <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 24 Oct 2012 12:02:33 -0700 (PDT)
+In-Reply-To: <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1f2ff682ac951ed82cc043cf140d2851084512df
-Gitweb:     http://git.kernel.org/tip/1f2ff682ac951ed82cc043cf140d2851084512df
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 22 Oct 2012 16:35:18 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 24 Oct 2012 11:52:36 -0700
+--61jdw2sOBCFtR2d/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-x86, mm: Use memblock memory loop instead of e820_RAM
+Hi,
 
-We need to handle E820_RAM and E820_RESERVED_KERNEL at the same time.
+On Wed, Oct 24, 2012 at 10:28:46AM -0700, Dmitry Torokhov wrote:
+> > for more complex pinctrl use cases. These are my dogfood drivers ...
+> > Most of these will request more than one state and switch the driver
+> > between these different states at runtime, in these examples for power
+> > saving there are states named "default", "sleep" and in the I2C driver
+> > also "idle".
+> >=20
+> > These examples are more typical to how the ux500 platform will
+> > look, also the SKE input driver will move the devise to sleep/default
+> > states but we need to merge PM code before we can do that.
+>=20
+> I do not say that no drivers should ever touch pinctrl, just that most
+> of them do not have to if you have other layers to the right thing for
+> them.
 
-Also memblock has page aligned range for ram, so we could avoid mapping
-partial pages.
+It will be a much bigger mess. Some drivers don't need to care about
+pinctrl because drivers/base handle it for them, while some others will
+need a way to tell drivers/base "hey, don't touch pinctrl at all because
+I know what I'm doing" and that has to happen before probe() too,
+otherwise it's already too late and, according to what you suggest,
+drivers/base will already have touched pinctrl. The only way I see would
+be to add an extra "dont_touch_my_pins" field to every driver structure
+in the kernel. Clearly what you say is nonsense.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org>
----
- arch/x86/kernel/setup.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+--=20
+balbi
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 468e98d..5d888af 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -921,18 +921,19 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
- 		int i;
--		for (i = 0; i < e820.nr_map; i++) {
--			struct e820entry *ei = &e820.map[i];
-+		unsigned long start, end;
-+		unsigned long start_pfn, end_pfn;
- 
--			if (ei->addr + ei->size <= 1UL << 32)
--				continue;
-+		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
-+							 NULL) {
- 
--			if (ei->type == E820_RESERVED)
-+			end = PFN_PHYS(end_pfn);
-+			if (end <= (1UL<<32))
- 				continue;
- 
-+			start = PFN_PHYS(start_pfn);
- 			max_pfn_mapped = init_memory_mapping(
--				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
--				ei->addr + ei->size);
-+						max((1UL<<32), start), end);
- 		}
- 
- 		/* can we preseve max_low_pfn ?*/
+--61jdw2sOBCFtR2d/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQiDpKAAoJEIaOsuA1yqREDIsP/0uhC5y1maA2qGHjnTqaWgxv
+DarRiOqoDKkQfsqIzF4D+Vm0pYzmy4u2zODrTZ/OicBIcoc3jzf9EmxeuR3FjQhZ
+KhUY0sxzii/5xSDKVThx2F4H0Cg8AgUCHKf6yq+3CUrQuxEatm30H0q9jJaYAcN7
+mvPEjgiKnd9U/xZqzKkU3OJX5Sblr1DN2Qg4YmHR0jB8QHVIU4p5FHMT7oV668ks
+SQjcvwDIzUc88rR4YkjpWKvWGTllZZnHK0yMbP1T8XRTyU5Gu3DbXM+NeMN7jUMw
+J/x9BOl20zLIhuCRUymidTCD79JP4rLhFS0fUrQN4ZEqXS5iW6ADoJahUa/6BE6s
+78XCqrj+Cwbpdb0/ROe2VK+gkbzFBQSG6GZ0+tOicwG76gnFTd8LJaoO2E+VOafH
+C3m+abV1MuEoNRNtQ4HgF9hmsPitZPujfGcMxGvT+L/H0iJ7ajKdp7A0btvOhrvg
+M+bk6KKY7I/QB0DifHpkBNo0bUNl+84dFekTcBquuV6I6cnMQMQrHKEh5ezFlW+u
+UNVhJ/LqYRLU8oPNwB8lN/fubc29Yrsndk+Y+k6Y3iXT+WLtPghF9H23NRg1tvp8
+9LIeCrGQQH1do3A4F6MOBR6xQkOictl32IlOkPUpVI0JTp9A4P1asencbYDzrfQV
+GX/RvXQmlTh+jtQp2+5S
+=vJXe
+-----END PGP SIGNATURE-----
+
+--61jdw2sOBCFtR2d/--
