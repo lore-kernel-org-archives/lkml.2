@@ -1,144 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab2JXGHO (ORCPT <rfc822;w@1wt.eu>);
+	id S1757860Ab2JXGHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 02:07:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40902 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757836Ab2JXGHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Oct 2012 02:07:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:27354 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757644Ab2JXGHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 02:07:10 -0400
-X-IronPort-AV: E=Sophos;i="4.80,639,1344182400"; 
-   d="scan'208";a="6057055"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] Improve container_notify_cb() to support container hot-remove.
-Date: Wed, 24 Oct 2012 14:05:50 +0800
-Message-Id: <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 14:06:30,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/24 14:06:32,
-	Serialize complete at 2012/10/24 14:06:32
+MIME-Version: 1.0
+In-Reply-To: <CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
+References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org>
+	<98478a02ae69afc01b3c7860e42a4d763b2045e8.1350677395.git.viresh.kumar@linaro.org>
+	<CAKohpo=Jsy9az4PgJ-mkq_U49EOpHGES+-DaROanCOTn-L2s3Q@mail.gmail.com>
+Date: Wed, 24 Oct 2012 11:37:13 +0530
+Message-ID: <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new function container_device_remove() to do
-the container hot-remove job. It works like the following:
+On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> Initially ondemand governor was written and then using its code conservative
+>> governor is written. It used a lot of code from ondemand governor, but copy of
+>> code was created instead of using the same routines from both governors. Which
+>> increased code redundancy, which is difficult to manage.
+>>
+>> This patch is an attempt to move common part of both the governors to
+>> cpufreq_governor.c file to come over above mentioned issues.
+>>
+>> This shouldn't change anything from functionality point of view.
+>>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-1. call acpi_bus_trim(device, 0) to stop the container device.
-2. generate the KOBJ_OFFLINE uevent. (Did I do this correct ?)
-3. call acpi_bus_hot_remove_device(), which will call acpi_bus_trim(device, 1)
-   to remove the container.
+For everybody else, this patch is already pushed by Rafael in his linux-next
+branch.
 
-This patch is based on Lu Yinghai's work.
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-split-pci-root-hp-2
-
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
----
- drivers/acpi/container.c |   58 ++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 49 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
-index d300e03..9676578 100644
---- a/drivers/acpi/container.c
-+++ b/drivers/acpi/container.c
-@@ -166,6 +166,35 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
- 	return result;
- }
- 
-+static int container_device_remove(struct acpi_device *device)
-+{
-+	int ret;
-+	struct acpi_eject_event *ej_event;
-+
-+	/* stop container device at first */
-+	ret = acpi_bus_trim(device, 0);
-+	printk(KERN_WARNING "acpi_bus_trim stop return %x\n", ret);
-+	if (ret)
-+		return ret;
-+
-+	/* event originated from ACPI eject notification */
-+	device->flags.eject_pending = 1;
-+
-+	/* send the uevent before remove the device */
-+	kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+
-+	ej_event = kmalloc(sizeof(*ej_event), GFP_KERNEL);
-+	if (!ej_event)
-+		return -ENOMEM;
-+
-+	ej_event->device = device;
-+	ej_event->event = ACPI_NOTIFY_EJECT_REQUEST;
-+
-+	acpi_bus_hot_remove_device(ej_event);
-+
-+	return 0;
-+}
-+
- static void __container_notify_cb(struct work_struct *work)
- {
- 	struct acpi_device *device = NULL;
-@@ -181,6 +210,9 @@ static void __container_notify_cb(struct work_struct *work)
- 	handle = hp_work->handle;
- 	type = hp_work->type;
- 
-+	present = is_device_present(handle);
-+	status = acpi_bus_get_device(handle, &device);
-+
- 	switch (type) {
- 	case ACPI_NOTIFY_BUS_CHECK:
- 		/* Fall through */
-@@ -189,13 +221,14 @@ static void __container_notify_cb(struct work_struct *work)
- 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
- 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
- 
--		present = is_device_present(handle);
--		status = acpi_bus_get_device(handle, &device);
- 		if (!present) {
- 			if (ACPI_SUCCESS(status)) {
- 				/* device exist and this is a remove request */
--				device->flags.eject_pending = 1;
--				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+				result = container_device_remove(device);
-+				if (result) {
-+					printk(KERN_WARNING "Failed to remove container\n");
-+					break;
-+				}
- 				return;
- 			}
- 			break;
-@@ -215,12 +248,19 @@ static void __container_notify_cb(struct work_struct *work)
- 		break;
- 
- 	case ACPI_NOTIFY_EJECT_REQUEST:
--		if (!acpi_bus_get_device(handle, &device) && device) {
--			device->flags.eject_pending = 1;
--			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
--			return;
-+		printk(KERN_WARNING "Container driver received %s event\n",
-+			"ACPI_NOTIFY_EJECT_REQUEST");
-+
-+		if (!present || ACPI_FAILURE(status) || !device)
-+			break;
-+
-+		result = container_device_remove(device);
-+		if (result) {
-+			printk(KERN_WARNING "Failed to remove container\n");
-+			break;
- 		}
--		break;
-+
-+		return;
- 
- 	default:
- 		/* non-hotplug event; possibly handled by other handler */
--- 
-1.7.1
-
+--
+viresh
