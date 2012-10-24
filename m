@@ -1,54 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757823Ab2JXXjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 19:39:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42927 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab2JXXjF (ORCPT
+	id S1758876Ab2JXXj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 19:39:28 -0400
+Received: from mail-qc0-f202.google.com ([209.85.216.202]:58603 "EHLO
+	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758853Ab2JXXj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 19:39:05 -0400
-Date: Wed, 24 Oct 2012 16:39:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: MITSUNARI Shigeo <herumi@nifty.com>, linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: fs: page cache wrongly left invalidated after revalidate_disk
-Message-Id: <20121024163903.2a5bb819.akpm@linux-foundation.org>
-In-Reply-To: <x491ugo6l3c.fsf@segfault.boston.devel.redhat.com>
-References: <28086318.27561350944959337.herumi@nifty.com>
-	<x491ugo6l3c.fsf@segfault.boston.devel.redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 19:39:27 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-iio@vger.kernel.org, jic23@cam.ac.uk, gregkh@linuxfoundation.org,
+        lars@metafoo.de, Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH] iio: isl29018: Support suspend and resume.
+Date: Wed, 24 Oct 2012 16:39:15 -0700
+Message-Id: <1351121955-25788-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 09:44:23 -0400
-Jeff Moyer <jmoyer@redhat.com> wrote:
+The driver leaves the device in power-down state anyway,
+so there is nothing to do on suspend.
+On resume, we just have to make sure the range and ADC
+values are updated in the device since it may have been
+powered down in suspend.
 
-> MITSUNARI Shigeo <herumi@nifty.com> writes:
-> 
-> > Hi, 
-> >
-> > We found that bdev->bd_invalidated was left set once revalidate_disk() 
-> > is called, which results in page cache flush every time that device 
-> > is open. 
-> >
-> > Specifically, we found this problem in MD block device.  Once we 
-> > resize a MD device, mdadm --monitor periodically flush all page cache 
-> > for that device every 60 or 1000 seconds when it opens the device. 
-> >
-> > This bug lies since at least 3.2.0 till the latest kernel(3.6.2). 
-> > Patch is attached. 
-> >
-> > Anyone please review this?  Thanks in advance.
-> 
-> rescan_partitions (called in the bdev open path) should reset
-> bd_invalidated.  I think you need to dig into why that isn't happening.
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ drivers/staging/iio/light/isl29018.c |   45 ++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
-I suspect it's because I_NEW is no longer set on the inode.
+diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+index 6ee5567..3b03f6f 100644
+--- a/drivers/staging/iio/light/isl29018.c
++++ b/drivers/staging/iio/light/isl29018.c
+@@ -67,6 +67,7 @@ struct isl29018_chip {
+ 	unsigned int		range;
+ 	unsigned int		adc_bit;
+ 	int			prox_scheme;
++	bool			suspended;
+ };
+ 
+ static int isl29018_set_range(struct isl29018_chip *chip, unsigned long range,
+@@ -368,6 +369,10 @@ static int isl29018_read_raw(struct iio_dev *indio_dev,
+ 	struct isl29018_chip *chip = iio_priv(indio_dev);
+ 
+ 	mutex_lock(&chip->lock);
++	if (chip->suspended) {
++		mutex_unlock(&chip->lock);
++		return -EBUSY;
++	}
+ 	switch (mask) {
+ 	case IIO_CHAN_INFO_RAW:
+ 	case IIO_CHAN_INFO_PROCESSED:
+@@ -561,6 +566,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
+ 	chip->lux_scale = 1;
+ 	chip->range = 1000;
+ 	chip->adc_bit = 16;
++	chip->suspended = false;
+ 
+ 	chip->regmap = devm_regmap_init_i2c(client, &isl29018_regmap_config);
+ 	if (IS_ERR(chip->regmap)) {
+@@ -603,6 +609,44 @@ static int __devexit isl29018_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++static int isl29018_suspend(struct device *dev)
++{
++	struct isl29018_chip *chip = iio_priv(dev_get_drvdata(dev));
++
++	mutex_lock(&chip->lock);
++
++	/* Since this driver uses only polling commands, we are by default in
++	 * auto shutdown (ie, power-down) mode.
++	 * So we do not have much to do here.
++	 */
++	chip->suspended = true;
++
++	mutex_unlock(&chip->lock);
++	return 0;
++}
++
++static int isl29018_resume(struct device *dev)
++{
++	struct isl29018_chip *chip = iio_priv(dev_get_drvdata(dev));
++	int err;
++
++	mutex_lock(&chip->lock);
++
++	err = isl29018_chip_init(chip);
++	if (!err)
++		chip->suspended = false;
++
++	mutex_unlock(&chip->lock);
++	return err;
++}
++
++static SIMPLE_DEV_PM_OPS(isl29018_pm_ops, isl29018_suspend, isl29018_resume);
++#define ISL29018_PM_OPS (&isl29018_pm_ops)
++#else
++#define ISL29018_PM_OPS NULL
++#endif
++
+ static const struct i2c_device_id isl29018_id[] = {
+ 	{"isl29018", 0},
+ 	{}
+@@ -620,6 +664,7 @@ static struct i2c_driver isl29018_driver = {
+ 	.class	= I2C_CLASS_HWMON,
+ 	.driver	 = {
+ 			.name = "isl29018",
++			.pm = ISL29018_PM_OPS,
+ 			.owner = THIS_MODULE,
+ 			.of_match_table = isl29018_of_match,
+ 		    },
+-- 
+1.7.7.3
 
-I queued this one for some viro attention ;)
