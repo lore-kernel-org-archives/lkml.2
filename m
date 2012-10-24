@@ -1,139 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463Ab2JXLdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 07:33:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36317 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758266Ab2JXLdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 07:33:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,639,1344236400"; 
-   d="scan'208";a="239459086"
-Message-ID: <5087CF96.7010406@intel.com>
-Date: Wed, 24 Oct 2012 19:23:02 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1758480Ab2JXLgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 07:36:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53538 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758274Ab2JXLgl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 07:36:41 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 2/2] arm: mvebu: Add hardware I/O Coherency support
+Date: Wed, 24 Oct 2012 11:36:12 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <rob.herring@calxeda.com>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, "Eran Ben-Avi" <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <1351065841-18654-1-git-send-email-gregory.clement@free-electrons.com> <1351065841-18654-3-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1351065841-18654-3-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH V2 6/7] perf, x86: Use LBR call stack to get user callchain
-References: <1351058350-9159-1-git-send-email-zheng.z.yan@intel.com> <1351058350-9159-7-git-send-email-zheng.z.yan@intel.com> <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
-In-Reply-To: <CABPqkBRzwsmzaGFKK9+zOed8HK=Q9T9++hMHW+tSKh4EF0cKjg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201210241136.12779.arnd@arndb.de>
+X-Provags-ID: V02:K0:d7XU2qSx/ELGe62RtVrV3RNtrStFp50leu6sV+i6IX1
+ jwLiqL1eMIo3RICQJvSukPk5n+fmNOeZoONSpSYlYsRR+YV+NT
+ 8AozW0pvuH4RrSYuaMN7bNGvbNSD9Ha7N6iHbxFZDWfR16cnj7
+ W6Nt1n/95ZrSHfCtfnaARI2jxzgXtAKDlixH6ExT1a9f9+Ignh
+ JeATHQ4MOolPhNPoupTnEYgpObyFgeHVpMi0aIvcWDxNc82ab8
+ MzL2KcRLM9c70QcPaNIz03htOP+9XQwRP4gPghrk/PjndxsXop
+ KbknhkGZRn/NusvADoV+7iEBy8L4fYexMqM3EfOkL2+1WvKWjb
+ eMjFOMeNNMvWxtNFNmDk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 04:57 PM, Stephane Eranian wrote:
-> On Wed, Oct 24, 2012 at 7:59 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->>
->> Try enabling the LBR call stack feature if event request recording
->> callchain. Try utilizing the LBR call stack to get user callchain
->> in case of there is no frame pointer.
->>
->> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
->> ---
->>  arch/x86/kernel/cpu/perf_event.c           | 126 +++++++++++++++++++++--------
->>  arch/x86/kernel/cpu/perf_event.h           |   7 ++
->>  arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
->>  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
->>  include/linux/perf_event.h                 |   6 ++
->>  kernel/events/core.c                       |  11 ++-
->>  6 files changed, 124 insertions(+), 49 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
->> index 8ae8044..3bf2100 100644
->> --- a/arch/x86/kernel/cpu/perf_event.c
->> +++ b/arch/x86/kernel/cpu/perf_event.c
->> @@ -398,35 +398,46 @@ int x86_pmu_hw_config(struct perf_event *event)
->>
->>                 if (event->attr.precise_ip > precise)
->>                         return -EOPNOTSUPP;
->> -               /*
->> -                * check that PEBS LBR correction does not conflict with
->> -                * whatever the user is asking with attr->branch_sample_type
->> -                */
->> -               if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
->> -                       u64 *br_type = &event->attr.branch_sample_type;
->> -
->> -                       if (has_branch_stack(event)) {
->> -                               if (!precise_br_compat(event))
->> -                                       return -EOPNOTSUPP;
->> -
->> -                               /* branch_sample_type is compatible */
->> -
->> -                       } else {
->> -                               /*
->> -                                * user did not specify  branch_sample_type
->> -                                *
->> -                                * For PEBS fixups, we capture all
->> -                                * the branches at the priv level of the
->> -                                * event.
->> -                                */
->> -                               *br_type = PERF_SAMPLE_BRANCH_ANY;
->> -
->> -                               if (!event->attr.exclude_user)
->> -                                       *br_type |= PERF_SAMPLE_BRANCH_USER;
->> -
->> -                               if (!event->attr.exclude_kernel)
->> -                                       *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
->> -                       }
->> +       }
->> +       /*
->> +        * check that PEBS LBR correction does not conflict with
->> +        * whatever the user is asking with attr->branch_sample_type
->> +        */
->> +       if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
->> +               u64 *br_type = &event->attr.branch_sample_type;
->> +
->> +               if (has_branch_stack(event)) {
->> +                       if (!precise_br_compat(event))
->> +                               return -EOPNOTSUPP;
->> +
->> +                       /* branch_sample_type is compatible */
->> +
->> +               } else {
->> +                       /*
->> +                        * user did not specify  branch_sample_type
->> +                        *
->> +                        * For PEBS fixups, we capture all
->> +                        * the branches at the priv level of the
->> +                        * event.
->> +                        */
->> +                       *br_type = PERF_SAMPLE_BRANCH_ANY;
->> +
->> +                       if (!event->attr.exclude_user)
->> +                               *br_type |= PERF_SAMPLE_BRANCH_USER;
->> +
->> +                       if (!event->attr.exclude_kernel)
->> +                               *br_type |= PERF_SAMPLE_BRANCH_KERNEL;
->> +               }
->> +       } else if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
->> +               if (!has_branch_stack(event) && x86_pmu.attr_lbr_callstack) {
->> +                       /*
->> +                        * user did not specify branch_sample_type,
->> +                        * try using the LBR call stack facility to
->> +                        * record call chains in the user space.
->> +                        */
->> +                       event->attr.branch_sample_type =
->> +                               PERF_SAMPLE_BRANCH_USER |
->> +                               PERF_SAMPLE_BRANCH_CALL_STACK;
-> 
-> You are forcing user level here, but how do you know the user wanted
-> ONLY user level
-> callchains?
-> 
-> 
+On Wednesday 24 October 2012, Gregory CLEMENT wrote:
+> +void __init armada_370_xp_coherency_iocache_init(void)
+> +{
+> +       /* When the coherency fabric is available, the Armada XP and
+> +        * Aramada 370 are close to a coherent architecture, so we based
+> +        * our dma ops on the coherent one, and just changes the
+> +        * operations which need a arch io sync */
+> +       if (of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric")) {
+> +               struct dma_map_ops *dma_ops = &armada_xp_dma_ops;
+> +               memcpy(dma_ops, &arm_coherent_dma_ops, sizeof(*dma_ops));
+> +               dma_ops->map_page = armada_xp_dma_map_page;
+> +               dma_ops->unmap_page = armada_xp_dma_unmap_page;
+> +               dma_ops->unmap_sg = arm_dma_ops.unmap_sg;
+> +               dma_ops->sync_single_for_cpu = armada_xp_dma_sync;
+> +               dma_ops->sync_single_for_device = armada_xp_dma_sync;
+> +               dma_ops->sync_sg_for_cpu = arm_dma_ops.sync_sg_for_cpu;
+> +               dma_ops->sync_sg_for_device = arm_dma_ops.sync_sg_for_device;
+> +       }
+> +       bus_register_notifier(&platform_bus_type, &armada_xp_platform_nb);
 
-The LBR call stack is used only when the frame pointer approach doesn't work.
-I think the kernel has frame pointer for the most cases. The second reason is
-that the LBR call stack only has 16 entries. I think it's too small to record
-both kernel and user call chains.
+I think it would be cleaner to statically define the operations in a constant
+structure and point directly to the functions you need. If necessary, use
+multiple structures.
 
-Regards
-Yan, Zheng
-
+	Arnd
