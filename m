@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934183Ab2JXI6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 04:58:21 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53589 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933474Ab2JXI6T (ORCPT
+	id S934477Ab2JXI6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 04:58:41 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49799 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933474Ab2JXI6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 04:58:19 -0400
-Date: Wed, 24 Oct 2012 10:58:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH] perf/x86/uncore: Handle pci_read_config_dword() error.
-Message-ID: <20121024085813.GA2509@gmail.com>
-References: <1351068140-13456-1-git-send-email-zheng.z.yan@intel.com>
+	Wed, 24 Oct 2012 04:58:38 -0400
+Date: Wed, 24 Oct 2012 11:58:33 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 1/2] slab: commonize slab_cache field in struct page
+In-Reply-To: <1350914737-4097-2-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.LFD.2.02.1210241158190.13035@tux.localdomain>
+References: <1350914737-4097-1-git-send-email-glommer@parallels.com> <1350914737-4097-2-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351068140-13456-1-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yan, Zheng <zheng.z.yan@intel.com> wrote:
-
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+On Mon, 22 Oct 2012, Glauber Costa wrote:
+> Right now, slab and slub have fields in struct page to derive which
+> cache a page belongs to, but they do it slightly differently.
 > 
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 43 +++++++++++++++++----------
->  1 file changed, 28 insertions(+), 15 deletions(-)
+> slab uses a field called slab_cache, that lives in the third double
+> word. slub, uses a field called "slab", living outside of the
+> doublewords area.
+> 
+> Ideally, we could use the same field for this. Since slub heavily makes
+> use of the doubleword region, there isn't really much room to move
+> slub's slab_cache field around. Since slab does not have such strict
+> placement restrictions, we can move it outside the doubleword area.
+> 
+> The naming used by slab, "slab_cache", is less confusing, and it is
+> preferred over slub's generic "slab".
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@kernel.org>
+> CC: David Rientjes <rientjes@google.com>
 
-Thanks, nice fixes.
-
-Was this runtime tested on a real Sandy Bridge-EP et al CPU so 
-that we know that it does not regress anything?
-
-Thanks,
-
-	Ingo
+Applied, thanks!
