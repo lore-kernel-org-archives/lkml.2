@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab2JXTTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 15:19:40 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:42191 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab2JXTTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 15:19:38 -0400
-Date: Wed, 24 Oct 2012 12:17:16 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: lots of suspicious RCU traces
-Message-ID: <20121024191716.GB2340@swordfish>
-References: <20121017034918.GA13295@redhat.com>
- <20121024164235.GA2467@swordfish>
- <20121024180608.GA22840@redhat.com>
- <20121024182111.GA2340@swordfish>
- <20121024185230.GB5025@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024185230.GB5025@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933998Ab2JXTTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 15:19:49 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59637 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757994Ab2JXTTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 15:19:39 -0400
+Message-ID: <1351106379.24165.13.camel@joe-AO722>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Date: Wed, 24 Oct 2012 12:19:39 -0700
+In-Reply-To: <20121023130234.827aa5df.akpm@linux-foundation.org>
+References: <20121023144221.5ae3061a11766df8175b959d@canb.auug.org.au>
+	 <20121023124414.61568323.akpm@linux-foundation.org>
+	 <1351021889.7502.55.camel@joe-AO722>
+	 <20121023130234.827aa5df.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/24/12 20:52), Oleg Nesterov wrote:
-> On 10/24, Sergey Senozhatsky wrote:
-> >
-> > On (10/24/12 20:06), Oleg Nesterov wrote:
-> > > On 10/24, Sergey Senozhatsky wrote:
-> > > >
-> > > > small question,
-> > > >
-> > > > ptrace_notify() and forward calls are able to both indirectly and directly call schedule(),
-> > > > /* direct call from ptrace_stop()*/,
-> > > > should, in this case, rcu_user_enter() be called before tracehook_report_syscall_exit(regs, step)
-> > > > and ptrace chain?
-> > >
-> > > Well, I don't really understand this magic... but why?
-> > >
-> >
-> > My understanding is (I may be wrong)
+On Tue, 2012-10-23 at 13:02 -0700, Andrew Morton wrote:
+> On Tue, 23 Oct 2012 12:51:29 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> Oh, I bet I have much more chances to be wrong ;)
+> > > btw, what's up with printk_syslog.h?  It includes two header files which it
+> > > doesn't need but fails to include the two it *does* need: printk_log.h
+> > > and types.h.
+> > > 
+> > > 
+> > 
+> > printk_syslog.c includes kernel.h (it includes types.h)
+> > and printk_log.h.
+> > 
+> > I think printk_syslog.h doesn't need printk_log.h
 > 
-> > that we can schedule() from ptrace chain to
+> A general rule is that the header file shouldn't know or care what else
+> it's includer has included.  Ideally it shouldn't know or care what
+> else its includees have included, either.
 > 
-> I don't understand how ptrace chain differs from, say, audit_syscall_exit().
-> There is nothing special in ptrace_stop() in this respect.
->
-
-hm.
-
-> > some arbitrary task, which will continue its execution from the point where RCU assumes
-> > CPU as not idle, while CPU in fact still in idle state -- no one said rcu_idle_exit()
+> A fun test would be
 > 
-> confused... of course it would be wrong if syscall_trace_leave() is
-> called when CPU is considered idle,
-> 
+> for i in *.h
+> 	echo $i > foo.c
+> 	make foo.o
+> done
 
-sorry, I meant idle from RCU point of view:
+A whole lot of things in include/ fail this.
 
-int rcu_is_cpu_idle(void)                                                                                                                                                                                                      
-{
-         return !rcu_dynticks_nesting;
-}
-
+Do you really think that anything using u8/16/32/64
+should include types.h?
 
 
-> > if so, does the same apply to in_user?
-> 
-> Not sure we understand each other. But I believe that ->in_user should be
-> already false when syscall_trace_leave() is called.
->
-
-oh, my apology. I was very wrong about this.
-
-	-ss
-
-> 
-> Oleg.
-> 
