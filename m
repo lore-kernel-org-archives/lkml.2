@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829Ab2JXNmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:42:07 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:40991 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934681Ab2JXNmF (ORCPT
+	id S934824Ab2JXNnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 09:43:53 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:49396 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932462Ab2JXNnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:42:05 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 24 Oct 2012 15:41:41 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Peter Hurley <peter@hurleysoftware.com>, devel@driverdev.osuosl.org,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 0/1] staging: Add firewire-serial driver
-Message-ID: <20121024154141.3029ad92@stein>
-In-Reply-To: <20121022224505.GD24489@kroah.com>
-References: <1350565015.23730.4.camel@thor>
-	<20121022224505.GD24489@kroah.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 24 Oct 2012 09:43:52 -0400
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Oct 2012 09:43:52 EDT
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
+	c=simple; q=dns; h=message-id:from;
+	b=B72E+5AReoHFOm9k9cHzrmIJDvR8WWhEivKVH6f7yM5c1BKoX83FR+/ulFRl
+	De2va5uiH9MfeWIYAKoZ+dK/xYbUb/TPYsNs9iEbQvSiaKDA6R6z4Fyi3
+	kEaeFFzx/eUUDyM/HsZ1vf+yw2NTnj2po80oG32J+oiYZ02HHRh09I=;
+X-Spam-Processed: mail.digidescorp.com, Wed, 24 Oct 2012 08:37:04 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.142.27.113
+X-Return-Path: prvs=164424fc81=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Message-ID: <1351085817.2362.2.camel@iscandar>
+Subject: Re: 3.6.0 kernel - ext4 corruption, or?
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 24 Oct 2012 08:36:57 -0500
+In-Reply-To: <002101cdb1e1$47972c60$d6c58520$@lucidpixels.com>
+References: <002101cdb1e1$47972c60$d6c58520$@lucidpixels.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 22 Greg Kroah-Hartman wrote:
-> On Thu, Oct 18, 2012 at 08:56:55AM -0400, Peter Hurley wrote:
-> > Please consider this serial driver for review for submission to staging.
-> > The firewire-serial driver implements TTY over IEEE 1394. In its default
-> > configuration, it creates 4 TTY devices and one loopback device per
-> > firewire card (respectively, named fwtty<n>~fwtty<n+3> and fwloop<n>).
-> > 
-> > Currently, the TTY devices auto-connect to every cabled peer (the TODO
-> > list includes plans for providing a sysfs interface to control virtual
-> > cabling with whitelist/blacklist support per GUID).
-> > 
-> > Efforts are still ongoing for a companion console driver, with plans to
-> > eventually add early_printk & kgdb support (via additional drivers).
-> > 
-> > Some issues did arise with both the TTY and Firewire subsystems which
-> > are noted in the TODO file. Please review these workarounds.
-> > 
-> > Peter Hurley (1):
-> >   staging: fwserial: Add TTY-over-Firewire serial driver
+False alarm? : 
+
+On Wed, 2012-10-24 at 08:15 -0400, Justin Piszcz wrote: 
+> # grep 10.0.0.11 -r /etc
+> /etc/posfix.old/master.cf:10.0.0.11:smtp         inet  n       -       -
+> -        1    postscreen
 > 
-> I'd like to get an Ack from Stefan here, before I'll add this to the
-> staging tree.
+> # ls -l /etc/posfix.old/master.cf
+> -rw-r--r-- 1 root root 13236 Oct 28  2011 /etc/posfix.old/master.cf
+> 
+> # ls -ld /etc/postfix.old 
+> ls: cannot access /etc/postfix.old: No such file or directory
 
-I have not formed an opinion yet, and have not taken the time to look over
-the code yet.  Personally, I am entirely unfamiliar with the application
-domain of tty drivers in general and with the tty-over-"high"speed-bus
-application domain in particular.  IOW, I don't know who is going to use
-this for which purposes.
+This is not the same directory (posTfix).
 
-On the FireWire side, this driver implements an own transport protocol.
-AFAIK a standardized serial-over-1394 does not exist.  This means that
-interoperability of this driver will initially be limited to
-Linux-to-Linux.  Devices or other operating systems which implement this
-do not exist.
+------------------------------------------------------------------------
+Steven J. Magnani               "I claim this network for MARS!
+www.digidescorp.com              Earthling, return my space modulator!"
 
-Apart from that aspect, the proposed fwserial driver looks to have
-requirements similar to the existing IPv4-over-1394 and SBP target-mode
-drivers (drivers/firewire/net.* and drivers/target/sbp/*).  This means that
-(a) fw-serial motivated changes to the firewire subsystem and (b) firewire
-subsystem motivated changes to fwserial could quite possibly also be
-interesting for or required by those other drivers as well, meaning that
-maintenance overhead should not increase much.
+#include <standard.disclaimer>
 
-> >  drivers/staging/fwserial/dma_fifo.c |  310 ++++
-> >  drivers/staging/fwserial/dma_fifo.h |  130 ++
-> >  drivers/staging/fwserial/fwserial.c | 2885 +++++++++++++++++++++++++++++++++++
-> >  drivers/staging/fwserial/fwserial.h |  355 +++++
 
-drivers/firewire/net.c is 1721 lines, sbp_target is 2868 lines.
-Why is fwserial bigger?
--- 
-Stefan Richter
--=====-===-- =-=- ==---
-http://arcgraph.de/sr/
+
