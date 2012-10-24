@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934892Ab2JXN7s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 09:59:48 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28497 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934879Ab2JXN7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 09:59:45 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH v2 1/2] kmem_cache: include allocators code directly into slab_common
-Date: Wed, 24 Oct 2012 17:59:17 +0400
-Message-Id: <1351087158-8524-2-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351087158-8524-1-git-send-email-glommer@parallels.com>
-References: <1351087158-8524-1-git-send-email-glommer@parallels.com>
+	id S934884Ab2JXOBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 10:01:54 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:49215 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934820Ab2JXOBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 10:01:53 -0400
+Date: Wed, 24 Oct 2012 16:01:39 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and
+ config update
+Message-ID: <20121024160139.6dbf5e16@skate>
+In-Reply-To: <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com>
+References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com>
+	<1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While the goal of slab_common.c is to have a common place for all
-allocators, we face two different goals that are in opposition to each
-other:
+Hello,
 
-1) Have the different layouts be the business of each allocator, in
-their .c
-2) inline as much as we can for fast paths
+Shouldn't you split into one commit adding the SATA definition in
+the .dtsi + doing the defconfig change (the "SoC" level modifications),
+and then another commit for the .dts change? I don't really care
+personally, it's really up to Jason/Andrew on this.
 
-Because of that, we either have to move all the entry points to the
-mm/slab.h and rely heavily on the pre-processor, or include all .c files
-in here.
+Another comment below, though.
 
-The pre-processor solution has the disadvantage that some quite
-non-trivial code gets even more non-trivial, and we end up leaving for
-readers a non-pleasant indirection.
+On Wed, 24 Oct 2012 15:49:21 +0200, Gregory CLEMENT wrote:
 
-To keep this sane, we'll include the allocators .c files in here.  Which
-means we will be able to inline any code they produced, but never the
-other way around!
+> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+> index 94b4b9e..3f08233 100644
+> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
+> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+> @@ -69,6 +69,16 @@
+>  			compatible = "marvell,armada-addr-decoding-controller";
+>  			reg = <0xd0020000 0x258>;
+>  		};
+> +
+> +		sata@d00a0000 {
+> +                        compatible = "marvell,orion-sata";
+> +                        reg = <0xd00a0000 0x2400>;
+> +                        interrupts = <55>;
+> +                        nr-ports = <2>;
+> +			clocks = <&coreclk 0>;//,  <&coreclk 0>;
 
-Doing this produced a name clash. This was resolved in this patch
-itself.
+Alignment problem + remainings of tests or something like that.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Joonsoo Kim <js1304@gmail.com>
-CC: David Rientjes <rientjes@google.com>
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Christoph Lameter <cl@linux.com>
----
- mm/Makefile      |  3 ---
- mm/slab.c        |  9 ---------
- mm/slab_common.c | 33 +++++++++++++++++++++++++++++++++
- 3 files changed, 33 insertions(+), 12 deletions(-)
-
-diff --git a/mm/Makefile b/mm/Makefile
-index 6b025f8..796d893 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -36,12 +36,9 @@ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
- obj-$(CONFIG_NUMA) 	+= mempolicy.o
- obj-$(CONFIG_SPARSEMEM)	+= sparse.o
- obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
--obj-$(CONFIG_SLOB) += slob.o
- obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
- obj-$(CONFIG_KSM) += ksm.o
- obj-$(CONFIG_PAGE_POISONING) += debug-pagealloc.o
--obj-$(CONFIG_SLAB) += slab.o
--obj-$(CONFIG_SLUB) += slub.o
- obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
- obj-$(CONFIG_FAILSLAB) += failslab.o
- obj-$(CONFIG_MEMORY_HOTPLUG) += memory_hotplug.o
-diff --git a/mm/slab.c b/mm/slab.c
-index 98b3460..72dadce 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4583,15 +4583,6 @@ static const struct file_operations proc_slabstats_operations = {
- 	.release	= seq_release_private,
- };
- #endif
--
--static int __init slab_proc_init(void)
--{
--#ifdef CONFIG_DEBUG_SLAB_LEAK
--	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
--#endif
--	return 0;
--}
--module_init(slab_proc_init);
- #endif
- 
- /**
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 06f87db..66416ee 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -21,6 +21,36 @@
- 
- #include "slab.h"
- 
-+/*
-+ * While the goal of this file is to have a common place for all allocators,
-+ * we face two different goals that are in opposition to each other:
-+ *
-+ * 1) Have the different layouts be the business of each allocator, in their .c
-+ * 2) inline as much as we can for fast paths
-+ *
-+ * Because of that, we either have to move all the entry points to the mm/slab.h
-+ * and rely heavily on the pre-processor, or include all .c files in here.
-+ *
-+ * The pre-processor solution has the disadvantage that some quite non-trivial
-+ * code gets even more non-trivial, and we end up leaving for readers a
-+ * non-pleasant indirection.
-+ *
-+ * To keep this sane, we'll include the allocators .c files in here. Which
-+ * means we will be able to inline any code they produced, but never the other
-+ * way around!
-+ *
-+ * Please also always make sure that the functions being called have the same
-+ * name and signature in all alocators to avoid cumbersome conditionals in
-+ * here.
-+ */
-+#ifdef CONFIG_SLUB
-+#include "slub.c"
-+#elif defined(CONFIG_SLOB)
-+#include "slob.c"
-+#else
-+#include "slab.c"
-+#endif
-+
- enum slab_state slab_state;
- LIST_HEAD(slab_caches);
- DEFINE_MUTEX(slab_mutex);
-@@ -302,6 +332,9 @@ static const struct file_operations proc_slabinfo_operations = {
- static int __init slab_proc_init(void)
- {
- 	proc_create("slabinfo", S_IRUSR, NULL, &proc_slabinfo_operations);
-+#ifdef CONFIG_DEBUG_SLAB_LEAK
-+	proc_create("slab_allocators", 0, NULL, &proc_slabstats_operations);
-+#endif
- 	return 0;
- }
- module_init(slab_proc_init);
+Thomas
 -- 
-1.7.11.7
-
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
