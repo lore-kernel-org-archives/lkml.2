@@ -1,40 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934185Ab2JXBLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Oct 2012 21:11:32 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57131 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934053Ab2JXBLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Oct 2012 21:11:31 -0400
-Date: Tue, 23 Oct 2012 21:11:28 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: linux-ext4@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: EXT4-fs error w/ external USB drive
-Message-ID: <20121024011128.GG28626@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-	linux-ext4@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <507C4BDA.20205@gmx.de>
- <20121019210723.GA4721@thunk.org>
- <5085923F.9050801@gmx.de>
+	id S965229Ab2JXBNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Oct 2012 21:13:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933806Ab2JXBNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Oct 2012 21:13:38 -0400
+Message-ID: <508740B2.2030401@redhat.com>
+Date: Tue, 23 Oct 2012 20:13:22 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5085923F.9050801@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Nix <nix@esperi.org.uk>
+CC: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+In-Reply-To: <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Toralf,
+On 10/23/12 3:57 PM, Nix wrote:
 
-Are you using any kind of special mount options on your usb stick?
+<snip>
 
-Thanks,
+> (I'd provide more sample errors, but this bug has been eating
+> newly-written logs in /var all day, so not much has survived.)
+> 
+> I rebooted into 3.6.1 rescue mode and fscked everything: lots of
+> orphans, block group corruption and cross-linked files. The problems did
+> not recur upon booting from 3.6.1 into 3.6.1 again. It is quite clear
+> that metadata changes made in 3.6.3 are not making it to disk reliably,
+> thus leading to corrupted filesystems marked clean on reboot into other
+> kernels: pretty much every file appended to in 3.6.3 loses some or all
+> of its appended data, and newly allocated blocks often end up
+> cross-linked between multiple files.
+> 
+> The curious thing is this doesn't affect every filesystem: for a while
+> it affected only /var, and now it's affecting only /var and /home. The
+> massive writes to the ext4 filesystem mounted on /usr/src seem to have
+> gone off without incident: fsck reports no problems.
+> 
+> 
+> The only unusual thing about the filesystems on this machine are that
+> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
+> 'nobarrier': 
 
-						- Ted
+I should have read more.  :(  More questions follow:
+
+* Does the Areca have a battery backed write cache?
+* Are you crashing or rebooting cleanly?
+* Do you see log recovery messages in the logs for this filesystem?
+
+> the full set of options for all my ext4 filesystems are:
+> 
+> rw,nosuid,nodev,relatime,journal_checksum,journal_async_commit,nobarrier,quota,
+> usrquota,grpquota,commit=30,stripe=16,data=ordered,usrquota,grpquota
+
+ok journal_async_commit is off the reservation a bit; that's really not
+tested, and Jan had serious reservations about its safety.
+
+* Can you reproduce this w/o journal_async_commit?
+
+-Eric
+
+> If there's anything I can do to help, I'm happy to do it, once I've
+> restored my home directory from backup :(
+> 
+> 
+> tune2fs output for one of the afflicted filesystems (after fscking):
+> 
+> tune2fs 1.42.2 (9-Apr-2012)
+> Filesystem volume name:   home
+> Last mounted on:          /home
+> Filesystem UUID:          95bd22c2-253c-456f-8e36-b6cfb9ecd4ef
+> Filesystem magic number:  0xEF53
+> Filesystem revision #:    1 (dynamic)
+> Filesystem features:      has_journal ext_attr resize_inode dir_index filetype needs_recovery extent flex_bg sparse_super large_file huge_file uninit_bg dir_nlink extra_isize
+> Filesystem flags:         signed_directory_hash
+> Default mount options:    (none)
+> Filesystem state:         clean
+> Errors behavior:          Continue
+> Filesystem OS type:       Linux
+> Inode count:              3276800
+> Block count:              13107200
+> Reserved block count:     655360
+> Free blocks:              5134852
+> Free inodes:              3174777
+> First block:              0
+> Block size:               4096
+> Fragment size:            4096
+> Reserved GDT blocks:      20
+> Blocks per group:         32768
+> Fragments per group:      32768
+> Inodes per group:         8192
+> Inode blocks per group:   512
+> RAID stripe width:        16
+> Flex block group size:    64
+> Filesystem created:       Tue May 26 21:29:41 2009
+> Last mount time:          Tue Oct 23 21:32:07 2012
+> Last write time:          Tue Oct 23 21:32:07 2012
+> Mount count:              2
+> Maximum mount count:      20
+> Last checked:             Tue Oct 23 21:22:16 2012
+> Check interval:           15552000 (6 months)
+> Next check after:         Sun Apr 21 21:22:16 2013
+> Lifetime writes:          1092 GB
+> Reserved blocks uid:      0 (user root)
+> Reserved blocks gid:      0 (group root)
+> First inode:              11
+> Inode size:               256
+> Required extra isize:     28
+> Desired extra isize:      28
+> Journal inode:            8
+> First orphan inode:       1572907
+> Default directory hash:   half_md4
+> Directory Hash Seed:      a201983d-d8a3-460b-93ca-eb7804b62c23
+> Journal backup:           inode blocks
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
