@@ -1,620 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161411Ab2JXV5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:57:25 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37124 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161299Ab2JXV5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:57:22 -0400
-From: Juri Lelli <juri.lelli@gmail.com>
-To: peterz@infradead.org, tglx@linutronix.de
-Cc: mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, juri.lelli@gmail.com,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org
-Subject: [PATCH 11/16] rtmutex: turn the plist into an rb-tree.
-Date: Wed, 24 Oct 2012 14:53:49 -0700
-Message-Id: <1351115634-8420-12-git-send-email-juri.lelli@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	id S1161458Ab2JXV5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:57:38 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35627 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161399Ab2JXV5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:57:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-pm <linux-pm@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kevin Hilman <khilman@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] PM / OPP: predictable fail results for opp_find* functions
+Date: Thu, 25 Oct 2012 00:01:28 +0200
+Message-ID: <2369752.l80tmojpSQ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1350912799-17323-1-git-send-email-nm@ti.com>
+References: <1350912799-17323-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
+On Monday 22 of October 2012 08:33:19 Nishanth Menon wrote:
+> Currently the opp_find* functions return -ENODEV when:
+> a) it cant find a device (e.g. request for an OPP search on device
+>    which was not registered)
+> b) When it cant find a match for the search strategy used
+> 
+> This makes life a little in-efficient for users such as devfreq
+> to make reasonable judgement before switching search strategies.
+> 
+> So, standardize the return results as following:
+>  -EINVAL for bad pointer parameters
+>  -ENODEV when device cannot be found
+>  -ERANGE when search fails
+> 
+> This has the following benefit for devfreq implementation:
+> The search fails when an unregistered device pointer is provided.
+> This is a trigger to change the search direction and search for
+> a better fit, however, if we cannot differentiate between a valid
+> search range failure Vs an unregistered device, second search goes
+> through the same fail return condition. This can be avoided by
+> appropriate handling of error return code.
+> 
+> With this change, we also fix devfreq for the improved search
+> strategy with updated error code.
+> 
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> 
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Turn the pi-chains from plist to rb-tree, in the rt_mutex code,
-and provide a proper comparison function for -deadline and
--priority tasks.
+Applied to linux-pm.git/linux-next as v3.8 material.
 
-This is done mainly because:
- - classical prio field of the plist is just an int, which might
-   not be enough for representing a deadline;
- - manipulating such a list would become O(nr_deadline_tasks),
-   which might be to much, as the number of -deadline task increases.
+Thanks,
+Rafael
 
-Therefore, an rb-tree is used, and tasks are queued in it according
-to the following logic:
- - among two -priority (i.e., SCHED_BATCH/OTHER/RR/FIFO) tasks, the
-   one with the higher (lower, actually!) prio wins;
- - among a -priority and a -deadline task, the latter always wins;
- - among two -deadline tasks, the one with the earliest deadline
-   wins.
 
-Queueing and dequeueing functions are changed accordingly, for both
-the list of a task's pi-waiters and the list of tasks blocked on
-a pi-lock.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Dario Faggioli <raistlin@linux.it>
-Signed-off-by: Juri Lelli <juri.lelli@gmail.com>
----
- include/linux/init_task.h |   10 +++
- include/linux/rtmutex.h   |   18 ++----
- include/linux/sched.h     |    4 +-
- kernel/fork.c             |    3 +-
- kernel/futex.c            |    2 +
- kernel/rtmutex-debug.c    |   10 ++-
- kernel/rtmutex.c          |  152 ++++++++++++++++++++++++++++++++++++---------
- kernel/rtmutex_common.h   |   22 +++----
- kernel/sched/core.c       |    4 --
- 9 files changed, 159 insertions(+), 66 deletions(-)
-
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 6d087c5..7d2634b 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -10,6 +10,7 @@
- #include <linux/pid_namespace.h>
- #include <linux/user_namespace.h>
- #include <linux/securebits.h>
-+#include <linux/rbtree.h>
- #include <net/net_namespace.h>
- 
- #ifdef CONFIG_SMP
-@@ -143,6 +144,14 @@ extern struct task_group root_task_group;
- 
- #define INIT_TASK_COMM "swapper"
- 
-+#ifdef CONFIG_RT_MUTEXES
-+# define INIT_RT_MUTEXES(tsk)						\
-+	.pi_waiters = RB_ROOT,						\
-+	.pi_waiters_leftmost = NULL,
-+#else
-+# define INIT_RT_MUTEXES(tsk)
-+#endif
-+
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -210,6 +219,7 @@ extern struct task_group root_task_group;
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
- 	INIT_CPUSET_SEQ							\
-+	INIT_RT_MUTEXES(tsk)						\
- }
- 
- 
-diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
-index de17134..3aed8d7 100644
---- a/include/linux/rtmutex.h
-+++ b/include/linux/rtmutex.h
-@@ -13,7 +13,7 @@
- #define __LINUX_RT_MUTEX_H
- 
- #include <linux/linkage.h>
--#include <linux/plist.h>
-+#include <linux/rbtree.h>
- #include <linux/spinlock_types.h>
- 
- extern int max_lock_depth; /* for sysctl */
-@@ -22,12 +22,14 @@ extern int max_lock_depth; /* for sysctl */
-  * The rt_mutex structure
-  *
-  * @wait_lock:	spinlock to protect the structure
-- * @wait_list:	pilist head to enqueue waiters in priority order
-+ * @waiters:	rbtree root to enqueue waiters in priority order
-+ * @waiters_leftmost: top waiter
-  * @owner:	the mutex owner
-  */
- struct rt_mutex {
- 	raw_spinlock_t		wait_lock;
--	struct plist_head	wait_list;
-+	struct rb_root          waiters;
-+	struct rb_node          *waiters_leftmost;
- 	struct task_struct	*owner;
- #ifdef CONFIG_DEBUG_RT_MUTEXES
- 	int			save_state;
-@@ -66,7 +68,7 @@ struct hrtimer_sleeper;
- 
- #define __RT_MUTEX_INITIALIZER(mutexname) \
- 	{ .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(mutexname.wait_lock) \
--	, .wait_list = PLIST_HEAD_INIT(mutexname.wait_list) \
-+	, .waiters = RB_ROOT \
- 	, .owner = NULL \
- 	__DEBUG_RT_MUTEX_INITIALIZER(mutexname)}
- 
-@@ -98,12 +100,4 @@ extern int rt_mutex_trylock(struct rt_mutex *lock);
- 
- extern void rt_mutex_unlock(struct rt_mutex *lock);
- 
--#ifdef CONFIG_RT_MUTEXES
--# define INIT_RT_MUTEXES(tsk)						\
--	.pi_waiters	= PLIST_HEAD_INIT(tsk.pi_waiters),	\
--	INIT_RT_MUTEX_DEBUG(tsk)
--#else
--# define INIT_RT_MUTEXES(tsk)
--#endif
--
- #endif
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 6416517..1f0f5de 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -16,6 +16,7 @@ struct sched_param {
- #include <linux/types.h>
- #include <linux/timex.h>
- #include <linux/jiffies.h>
-+#include <linux/plist.h>
- #include <linux/rbtree.h>
- #include <linux/thread_info.h>
- #include <linux/cpumask.h>
-@@ -1500,7 +1501,8 @@ struct task_struct {
- 
- #ifdef CONFIG_RT_MUTEXES
- 	/* PI waiters blocked on a rt_mutex held by this task */
--	struct plist_head pi_waiters;
-+	struct rb_root pi_waiters;
-+	struct rb_node *pi_waiters_leftmost;
- 	/* Deadlock detection and priority inheritance handling */
- 	struct rt_mutex_waiter *pi_blocked_on;
- #endif
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d34cc64..d8928dd 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1092,7 +1092,8 @@ static void rt_mutex_init_task(struct task_struct *p)
- {
- 	raw_spin_lock_init(&p->pi_lock);
- #ifdef CONFIG_RT_MUTEXES
--	plist_head_init(&p->pi_waiters);
-+	p->pi_waiters = RB_ROOT;
-+	p->pi_waiters_leftmost = NULL;
- 	p->pi_blocked_on = NULL;
- #endif
- }
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3717e7b..cdf5267 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2294,6 +2294,8 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 */
- 	debug_rt_mutex_init_waiter(&rt_waiter);
- 	rt_waiter.task = NULL;
-+	//rb_init_node(&rt_waiter.tree_entry);
-+	//rb_init_node(&rt_waiter.pi_tree_entry);
- 
- 	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2, VERIFY_WRITE);
- 	if (unlikely(ret != 0))
-diff --git a/kernel/rtmutex-debug.c b/kernel/rtmutex-debug.c
-index 16502d3..0f339ca 100644
---- a/kernel/rtmutex-debug.c
-+++ b/kernel/rtmutex-debug.c
-@@ -23,7 +23,7 @@
- #include <linux/kallsyms.h>
- #include <linux/syscalls.h>
- #include <linux/interrupt.h>
--#include <linux/plist.h>
-+#include <linux/rbtree.h>
- #include <linux/fs.h>
- #include <linux/debug_locks.h>
- 
-@@ -56,7 +56,7 @@ static void printk_lock(struct rt_mutex *lock, int print_owner)
- 
- void rt_mutex_debug_task_free(struct task_struct *task)
- {
--	DEBUG_LOCKS_WARN_ON(!plist_head_empty(&task->pi_waiters));
-+	DEBUG_LOCKS_WARN_ON(!RB_EMPTY_ROOT(&task->pi_waiters));
- 	DEBUG_LOCKS_WARN_ON(task->pi_blocked_on);
- }
- 
-@@ -153,16 +153,14 @@ void debug_rt_mutex_proxy_unlock(struct rt_mutex *lock)
- void debug_rt_mutex_init_waiter(struct rt_mutex_waiter *waiter)
- {
- 	memset(waiter, 0x11, sizeof(*waiter));
--	plist_node_init(&waiter->list_entry, MAX_PRIO);
--	plist_node_init(&waiter->pi_list_entry, MAX_PRIO);
-+	RB_CLEAR_NODE(&waiter->pi_tree_entry);
-+	RB_CLEAR_NODE(&waiter->tree_entry);
- 	waiter->deadlock_task_pid = NULL;
- }
- 
- void debug_rt_mutex_free_waiter(struct rt_mutex_waiter *waiter)
- {
- 	put_pid(waiter->deadlock_task_pid);
--	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->list_entry));
--	DEBUG_LOCKS_WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
- 	memset(waiter, 0x22, sizeof(*waiter));
- }
- 
-diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
-index a242e69..aca58e6 100644
---- a/kernel/rtmutex.c
-+++ b/kernel/rtmutex.c
-@@ -90,10 +90,104 @@ static inline void mark_rt_mutex_waiters(struct rt_mutex *lock)
- }
- #endif
- 
-+static inline int
-+rt_mutex_waiter_less(struct rt_mutex_waiter *left,
-+		     struct rt_mutex_waiter *right)
-+{
-+	if (left->task->prio < right->task->prio)
-+		return 1;
-+
-+	/*
-+	 * If both tasks are dl_task(), we check their deadlines.
-+	 */
-+	if (dl_prio(left->task->prio) && dl_prio(right->task->prio))
-+		return (left->task->dl.deadline < right->task->dl.deadline);
-+
-+	return 0;
-+}
-+
-+static void
-+rt_mutex_enqueue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
-+{
-+	struct rb_node **link = &lock->waiters.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct rt_mutex_waiter *entry;
-+	int leftmost = 1;
-+
-+	while (*link) {
-+		parent = *link;
-+		entry = rb_entry(parent, struct rt_mutex_waiter, tree_entry);
-+		if (rt_mutex_waiter_less(waiter, entry)) {
-+			link = &parent->rb_left;
-+		} else {
-+			link = &parent->rb_right;
-+			leftmost = 0;
-+		}
-+	}
-+
-+	if (leftmost)
-+		lock->waiters_leftmost = &waiter->tree_entry;
-+
-+	rb_link_node(&waiter->tree_entry, parent, link);
-+	rb_insert_color(&waiter->tree_entry, &lock->waiters);
-+}
-+
-+static void
-+rt_mutex_dequeue(struct rt_mutex *lock, struct rt_mutex_waiter *waiter)
-+{
-+	if (RB_EMPTY_NODE(&waiter->tree_entry))
-+		return;
-+
-+	if (lock->waiters_leftmost == &waiter->tree_entry)
-+		lock->waiters_leftmost = rb_next(&waiter->tree_entry);
-+
-+	rb_erase(&waiter->tree_entry, &lock->waiters);
-+	RB_CLEAR_NODE(&waiter->tree_entry);
-+}
-+
-+static void
-+rt_mutex_enqueue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-+{
-+	struct rb_node **link = &task->pi_waiters.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct rt_mutex_waiter *entry;
-+	int leftmost = 1;
-+
-+	while (*link) {
-+		parent = *link;
-+		entry = rb_entry(parent, struct rt_mutex_waiter, pi_tree_entry);
-+		if (rt_mutex_waiter_less(waiter, entry)) {
-+			link = &parent->rb_left;
-+		} else {
-+			link = &parent->rb_right;
-+			leftmost = 0;
-+		}
-+	}
-+
-+	if (leftmost)
-+		task->pi_waiters_leftmost = &waiter->pi_tree_entry;
-+
-+	rb_link_node(&waiter->pi_tree_entry, parent, link);
-+	rb_insert_color(&waiter->pi_tree_entry, &task->pi_waiters);
-+}
-+
-+static void
-+rt_mutex_dequeue_pi(struct task_struct *task, struct rt_mutex_waiter *waiter)
-+{
-+	if (RB_EMPTY_NODE(&waiter->pi_tree_entry))
-+		return;
-+
-+	if (task->pi_waiters_leftmost == &waiter->pi_tree_entry)
-+		task->pi_waiters_leftmost = rb_next(&waiter->pi_tree_entry);
-+
-+	rb_erase(&waiter->pi_tree_entry, &task->pi_waiters);
-+	RB_CLEAR_NODE(&waiter->pi_tree_entry);
-+}
-+
- /*
-- * Calculate task priority from the waiter list priority
-+ * Calculate task priority from the waiter tree priority
-  *
-- * Return task->normal_prio when the waiter list is empty or when
-+ * Return task->normal_prio when the waiter tree is empty or when
-  * the waiter is not allowed to do priority boosting
-  */
- int rt_mutex_getprio(struct task_struct *task)
-@@ -101,7 +195,7 @@ int rt_mutex_getprio(struct task_struct *task)
- 	if (likely(!task_has_pi_waiters(task)))
- 		return task->normal_prio;
- 
--	return min(task_top_pi_waiter(task)->pi_list_entry.prio,
-+	return min(task_top_pi_waiter(task)->task->prio,
- 		   task->normal_prio);
- }
- 
-@@ -219,7 +313,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	 * When deadlock detection is off then we check, if further
- 	 * priority adjustment is necessary.
- 	 */
--	if (!detect_deadlock && waiter->list_entry.prio == task->prio)
-+	if (!detect_deadlock && waiter->task->prio == task->prio)
- 		goto out_unlock_pi;
- 
- 	lock = waiter->lock;
-@@ -240,9 +334,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 	top_waiter = rt_mutex_top_waiter(lock);
- 
- 	/* Requeue the waiter */
--	plist_del(&waiter->list_entry, &lock->wait_list);
--	waiter->list_entry.prio = task->prio;
--	plist_add(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_dequeue(lock, waiter);
-+	waiter->task->prio = task->prio;
-+	rt_mutex_enqueue(lock, waiter);
- 
- 	/* Release the task */
- 	raw_spin_unlock_irqrestore(&task->pi_lock, flags);
-@@ -266,17 +360,15 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
- 
- 	if (waiter == rt_mutex_top_waiter(lock)) {
- 		/* Boost the owner */
--		plist_del(&top_waiter->pi_list_entry, &task->pi_waiters);
--		waiter->pi_list_entry.prio = waiter->list_entry.prio;
--		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_dequeue_pi(task, top_waiter);
-+		rt_mutex_enqueue_pi(task, waiter);
- 		__rt_mutex_adjust_prio(task);
- 
- 	} else if (top_waiter == waiter) {
- 		/* Deboost the owner */
--		plist_del(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_dequeue_pi(task, waiter);
- 		waiter = rt_mutex_top_waiter(lock);
--		waiter->pi_list_entry.prio = waiter->list_entry.prio;
--		plist_add(&waiter->pi_list_entry, &task->pi_waiters);
-+		rt_mutex_enqueue_pi(task, waiter);
- 		__rt_mutex_adjust_prio(task);
- 	}
- 
-@@ -341,7 +433,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 	 * 3) it is top waiter
- 	 */
- 	if (rt_mutex_has_waiters(lock)) {
--		if (task->prio >= rt_mutex_top_waiter(lock)->list_entry.prio) {
-+		if (task->prio >= rt_mutex_top_waiter(lock)->task->prio) {
- 			if (!waiter || waiter != rt_mutex_top_waiter(lock))
- 				return 0;
- 		}
-@@ -355,7 +447,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 
- 		/* remove the queued waiter. */
- 		if (waiter) {
--			plist_del(&waiter->list_entry, &lock->wait_list);
-+			rt_mutex_dequeue(lock, waiter);
- 			task->pi_blocked_on = NULL;
- 		}
- 
-@@ -365,8 +457,7 @@ static int try_to_take_rt_mutex(struct rt_mutex *lock, struct task_struct *task,
- 		 */
- 		if (rt_mutex_has_waiters(lock)) {
- 			top = rt_mutex_top_waiter(lock);
--			top->pi_list_entry.prio = top->list_entry.prio;
--			plist_add(&top->pi_list_entry, &task->pi_waiters);
-+			rt_mutex_enqueue_pi(task, top);
- 		}
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 	}
-@@ -402,13 +493,11 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 	__rt_mutex_adjust_prio(task);
- 	waiter->task = task;
- 	waiter->lock = lock;
--	plist_node_init(&waiter->list_entry, task->prio);
--	plist_node_init(&waiter->pi_list_entry, task->prio);
--
-+	
- 	/* Get the top priority waiter on the lock */
- 	if (rt_mutex_has_waiters(lock))
- 		top_waiter = rt_mutex_top_waiter(lock);
--	plist_add(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_enqueue(lock, waiter);
- 
- 	task->pi_blocked_on = waiter;
- 
-@@ -419,8 +508,8 @@ static int task_blocks_on_rt_mutex(struct rt_mutex *lock,
- 
- 	if (waiter == rt_mutex_top_waiter(lock)) {
- 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
--		plist_del(&top_waiter->pi_list_entry, &owner->pi_waiters);
--		plist_add(&waiter->pi_list_entry, &owner->pi_waiters);
-+		rt_mutex_dequeue_pi(owner, top_waiter);
-+		rt_mutex_enqueue_pi(owner, waiter);
- 
- 		__rt_mutex_adjust_prio(owner);
- 		if (owner->pi_blocked_on)
-@@ -472,7 +561,7 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
- 	 * boosted mode and go back to normal after releasing
- 	 * lock->wait_lock.
- 	 */
--	plist_del(&waiter->pi_list_entry, &current->pi_waiters);
-+	rt_mutex_dequeue_pi(current, waiter);
- 
- 	rt_mutex_set_owner(lock, NULL);
- 
-@@ -496,7 +585,7 @@ static void remove_waiter(struct rt_mutex *lock,
- 	int chain_walk = 0;
- 
- 	raw_spin_lock_irqsave(&current->pi_lock, flags);
--	plist_del(&waiter->list_entry, &lock->wait_list);
-+	rt_mutex_dequeue(lock, waiter);
- 	current->pi_blocked_on = NULL;
- 	raw_spin_unlock_irqrestore(&current->pi_lock, flags);
- 
-@@ -507,13 +596,13 @@ static void remove_waiter(struct rt_mutex *lock,
- 
- 		raw_spin_lock_irqsave(&owner->pi_lock, flags);
- 
--		plist_del(&waiter->pi_list_entry, &owner->pi_waiters);
-+		rt_mutex_dequeue_pi(owner, waiter);
- 
- 		if (rt_mutex_has_waiters(lock)) {
- 			struct rt_mutex_waiter *next;
- 
- 			next = rt_mutex_top_waiter(lock);
--			plist_add(&next->pi_list_entry, &owner->pi_waiters);
-+			rt_mutex_enqueue_pi(owner, next);
- 		}
- 		__rt_mutex_adjust_prio(owner);
- 
-@@ -523,8 +612,6 @@ static void remove_waiter(struct rt_mutex *lock,
- 		raw_spin_unlock_irqrestore(&owner->pi_lock, flags);
- 	}
- 
--	WARN_ON(!plist_node_empty(&waiter->pi_list_entry));
--
- 	if (!chain_walk)
- 		return;
- 
-@@ -551,7 +638,7 @@ void rt_mutex_adjust_pi(struct task_struct *task)
- 	raw_spin_lock_irqsave(&task->pi_lock, flags);
- 
- 	waiter = task->pi_blocked_on;
--	if (!waiter || waiter->list_entry.prio == task->prio) {
-+	if (!waiter || waiter->task->prio == task->prio) {
- 		raw_spin_unlock_irqrestore(&task->pi_lock, flags);
- 		return;
- 	}
-@@ -624,6 +711,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
- 	int ret = 0;
- 
- 	debug_rt_mutex_init_waiter(&waiter);
-+	//rb_init_node(&waiter.tree_entry);
-+	//rb_init_node(&waiter.pi_tree_entry);
- 
- 	raw_spin_lock(&lock->wait_lock);
- 
-@@ -890,7 +979,8 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
- {
- 	lock->owner = NULL;
- 	raw_spin_lock_init(&lock->wait_lock);
--	plist_head_init(&lock->wait_list);
-+	lock->waiters = RB_ROOT;
-+	lock->waiters_leftmost = NULL;
- 
- 	debug_rt_mutex_init(lock, name);
- }
-diff --git a/kernel/rtmutex_common.h b/kernel/rtmutex_common.h
-index 53a66c8..b65442f 100644
---- a/kernel/rtmutex_common.h
-+++ b/kernel/rtmutex_common.h
-@@ -40,13 +40,13 @@ extern void schedule_rt_mutex_test(struct rt_mutex *lock);
-  * This is the control structure for tasks blocked on a rt_mutex,
-  * which is allocated on the kernel stack on of the blocked task.
-  *
-- * @list_entry:		pi node to enqueue into the mutex waiters list
-- * @pi_list_entry:	pi node to enqueue into the mutex owner waiters list
-+ * @tree_entry:		pi node to enqueue into the mutex waiters tree
-+ * @pi_tree_entry:	pi node to enqueue into the mutex owner waiters tree
-  * @task:		task reference to the blocked task
-  */
- struct rt_mutex_waiter {
--	struct plist_node	list_entry;
--	struct plist_node	pi_list_entry;
-+	struct rb_node          tree_entry;
-+	struct rb_node          pi_tree_entry;
- 	struct task_struct	*task;
- 	struct rt_mutex		*lock;
- #ifdef CONFIG_DEBUG_RT_MUTEXES
-@@ -57,11 +57,11 @@ struct rt_mutex_waiter {
- };
- 
- /*
-- * Various helpers to access the waiters-plist:
-+ * Various helpers to access the waiters-tree:
-  */
- static inline int rt_mutex_has_waiters(struct rt_mutex *lock)
- {
--	return !plist_head_empty(&lock->wait_list);
-+	return !RB_EMPTY_ROOT(&lock->waiters);
- }
- 
- static inline struct rt_mutex_waiter *
-@@ -69,8 +69,8 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
- {
- 	struct rt_mutex_waiter *w;
- 
--	w = plist_first_entry(&lock->wait_list, struct rt_mutex_waiter,
--			       list_entry);
-+	w = rb_entry(lock->waiters_leftmost, struct rt_mutex_waiter,
-+		     tree_entry);
- 	BUG_ON(w->lock != lock);
- 
- 	return w;
-@@ -78,14 +78,14 @@ rt_mutex_top_waiter(struct rt_mutex *lock)
- 
- static inline int task_has_pi_waiters(struct task_struct *p)
- {
--	return !plist_head_empty(&p->pi_waiters);
-+	return !RB_EMPTY_ROOT(&p->pi_waiters);
- }
- 
- static inline struct rt_mutex_waiter *
- task_top_pi_waiter(struct task_struct *p)
- {
--	return plist_first_entry(&p->pi_waiters, struct rt_mutex_waiter,
--				  pi_list_entry);
-+	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
-+			pi_tree_entry);
- }
- 
- /*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9b6b988..4a96c44 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7084,10 +7084,6 @@ void __init sched_init(void)
- 	INIT_HLIST_HEAD(&init_task.preempt_notifiers);
- #endif
- 
--#ifdef CONFIG_RT_MUTEXES
--	plist_head_init(&init_task.pi_waiters);
--#endif
--
- 	/*
- 	 * The boot idle thread does lazy MMU switching as well:
- 	 */
+> ---
+> V2:
+>  * commit message change - updated frome example code, to verbose description
+>  * picked up Acked-by and Reviewed-by tags from V1.
+>  * rebased to v3.7-rc2
+> V1: https://patchwork.kernel.org/patch/1582111/
+> 
+>  drivers/base/power/opp.c  |   27 +++++++++++++++++++--------
+>  drivers/devfreq/devfreq.c |    4 ++--
+>  2 files changed, 21 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+> index 4730a58..99d0573 100644
+> --- a/drivers/base/power/opp.c
+> +++ b/drivers/base/power/opp.c
+> @@ -234,7 +234,10 @@ EXPORT_SYMBOL(opp_get_opp_count);
+>   *
+>   * Searches for exact match in the opp list and returns pointer to the matching
+>   * opp if found, else returns ERR_PTR in case of error and should be handled
+> - * using IS_ERR.
+> + * using IS_ERR. Error return values can be:
+> + * EINVAL:	for bad pointer
+> + * ERANGE:	no match found for search
+> + * ENODEV:	if device not found in list of registered devices
+>   *
+>   * Note: available is a modifier for the search. if available=true, then the
+>   * match is for exact matching frequency and is available in the stored OPP
+> @@ -253,7 +256,7 @@ struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
+>  				bool available)
+>  {
+>  	struct device_opp *dev_opp;
+> -	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+> +	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+>  	dev_opp = find_device_opp(dev);
+>  	if (IS_ERR(dev_opp)) {
+> @@ -283,7 +286,11 @@ EXPORT_SYMBOL(opp_find_freq_exact);
+>   * for a device.
+>   *
+>   * Returns matching *opp and refreshes *freq accordingly, else returns
+> - * ERR_PTR in case of error and should be handled using IS_ERR.
+> + * ERR_PTR in case of error and should be handled using IS_ERR. Error return
+> + * values can be:
+> + * EINVAL:	for bad pointer
+> + * ERANGE:	no match found for search
+> + * ENODEV:	if device not found in list of registered devices
+>   *
+>   * Locking: This function must be called under rcu_read_lock(). opp is a rcu
+>   * protected pointer. The reason for the same is that the opp pointer which is
+> @@ -294,7 +301,7 @@ EXPORT_SYMBOL(opp_find_freq_exact);
+>  struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
+>  {
+>  	struct device_opp *dev_opp;
+> -	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+> +	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+>  	if (!dev || !freq) {
+>  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+> @@ -303,7 +310,7 @@ struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
+>  
+>  	dev_opp = find_device_opp(dev);
+>  	if (IS_ERR(dev_opp))
+> -		return opp;
+> +		return ERR_CAST(dev_opp);
+>  
+>  	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
+>  		if (temp_opp->available && temp_opp->rate >= *freq) {
+> @@ -326,7 +333,11 @@ EXPORT_SYMBOL(opp_find_freq_ceil);
+>   * for a device.
+>   *
+>   * Returns matching *opp and refreshes *freq accordingly, else returns
+> - * ERR_PTR in case of error and should be handled using IS_ERR.
+> + * ERR_PTR in case of error and should be handled using IS_ERR. Error return
+> + * values can be:
+> + * EINVAL:	for bad pointer
+> + * ERANGE:	no match found for search
+> + * ENODEV:	if device not found in list of registered devices
+>   *
+>   * Locking: This function must be called under rcu_read_lock(). opp is a rcu
+>   * protected pointer. The reason for the same is that the opp pointer which is
+> @@ -337,7 +348,7 @@ EXPORT_SYMBOL(opp_find_freq_ceil);
+>  struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
+>  {
+>  	struct device_opp *dev_opp;
+> -	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
+> +	struct opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+>  
+>  	if (!dev || !freq) {
+>  		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+> @@ -346,7 +357,7 @@ struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
+>  
+>  	dev_opp = find_device_opp(dev);
+>  	if (IS_ERR(dev_opp))
+> -		return opp;
+> +		return ERR_CAST(dev_opp);
+>  
+>  	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
+>  		if (temp_opp->available) {
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index 0920d75..bee1c29 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -656,14 +656,14 @@ struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+>  		opp = opp_find_freq_floor(dev, freq);
+>  
+>  		/* If not available, use the closest opp */
+> -		if (opp == ERR_PTR(-ENODEV))
+> +		if (opp == ERR_PTR(-ERANGE))
+>  			opp = opp_find_freq_ceil(dev, freq);
+>  	} else {
+>  		/* The freq is an lower bound. opp should be higher */
+>  		opp = opp_find_freq_ceil(dev, freq);
+>  
+>  		/* If not available, use the closest opp */
+> -		if (opp == ERR_PTR(-ENODEV))
+> +		if (opp == ERR_PTR(-ERANGE))
+>  			opp = opp_find_freq_floor(dev, freq);
+>  	}
+>  
+> 
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
