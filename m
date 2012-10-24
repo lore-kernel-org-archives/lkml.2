@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161118Ab2JXUe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 16:34:59 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:60405 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab2JXUe6 (ORCPT
+	id S935548Ab2JXUfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 16:35:51 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33534 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934209Ab2JXUft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 16:34:58 -0400
-From: Nix <nix@esperi.org.uk>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<50884FF6.7030107@redhat.com>
-Emacs: because you deserve a brk today.
-Date: Wed, 24 Oct 2012 21:34:45 +0100
-In-Reply-To: <50884FF6.7030107@redhat.com> (Eric Sandeen's message of "Wed, 24
-	Oct 2012 15:30:46 -0500")
-Message-ID: <87hapjtxqy.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Wed, 24 Oct 2012 16:35:49 -0400
+Message-ID: <5088510B.7010400@xenotime.net>
+Date: Wed, 24 Oct 2012 13:35:23 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Robert Love <rlove@rlove.org>, linux-kbuild@vger.kernel.org
+Subject: Re: [Q] CONFIG_INOTIFY_USER doesn't get enabled upon defconfig
+References: <Pine.LNX.4.64.1210241057590.31768@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1210241057590.31768@axis700.grange>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 Oct 2012, Eric Sandeen uttered the following:
+On 10/24/2012 03:02 AM, Guennadi Liakhovetski wrote:
 
-> On 10/24/2012 02:49 PM, Nix wrote:
->> On 24 Oct 2012, Theodore Ts'o spake thusly:
->>> Toralf, Nix, if you could try applying this patch (at the end of this
->>> message), and let me know how and when the WARN_ON triggers, and if it
->>> does, please send the empty_bug_workaround plus the WARN_ON(1) report.
->>> I know about the case where a file system is mounted and then
->>> immediately unmounted, but we don't think that's the problematic case.
->>> If you see any other cases where WARN_ON is triggering, it would be
->>> really good to know....
->> 
->> Confirmed, it triggers. Traceback below.
->
-> <giant snip>
->
-> The warn on triggers, but I can't tell - did the corruption still occur
-> with Ted's patch?
+> Hi all
+> 
+> CONFIG_INOTIFY_USER is marked default "y" in fs/notify/inotify/Kconfig, 
+> so, I would expect it to be enabled by any make *_defconfig. However, for 
+> some reason, this doesn't happen (e.g. with mackerel_defconfig), which 
+> leads to non-functional udev, among others. Any idea why this could be 
+> happening?
 
-Yes. I fscked the filesystems in 3.6.1 after rebooting: /var had a
-journal replay, and the usual varieties of corruption (free space bitmap
-problems and multiply-claimed blocks). (The other filesystems for which
-the warning triggered had neither a journal replay nor corruption.
-At least one of them, /home, likely had a few writes but not enough to
-cause a journal wrap.)
+I think it's because arch/arm/configs/mackerel_defconfig says:
 
-I note that the warning may well *not* have triggered for /var: if the
-reason it had a journal replay was simply that it was still in use by
-something that hadn't died, the umount -l will have avoided doing a full
-umount for that filesystem alone.
-
-Also, the corrupted filesystem was mounted in 3.6.3 exactly once.
-Multiple umounts are not necessary, but an unclean umount apparently is.
+# CONFIG_INOTIFY_USER is not set
 
 -- 
-NULL && (void)
+~Randy
