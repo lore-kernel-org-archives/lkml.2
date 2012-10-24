@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383Ab2JXMcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 08:32:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46716 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755645Ab2JXMcM (ORCPT
+	id S1758601Ab2JXMdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 08:33:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60203 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab2JXMdN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 08:32:12 -0400
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, LMML <linux-media@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Subject: [PATCH v3] ARM: davinci: dm365 evm: replace V4L2_OUT_CAP_CUSTOM_TIMINGS with V4L2_OUT_CAP_DV_TIMINGS
-Date: Wed, 24 Oct 2012 18:00:47 +0530
-Message-Id: <1351081847-4061-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 24 Oct 2012 08:33:13 -0400
+Message-ID: <1351081942.23337.1.camel@twins>
+Subject: Re: [PATCH 02/11] perf: Do not get values from disabled counters in
+ group format read
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Wed, 24 Oct 2012 14:32:22 +0200
+In-Reply-To: <20121024121406.GA5582@krava.brq.redhat.com>
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+	 <1350743599-4805-3-git-send-email-jolsa@redhat.com>
+	 <1351008789.13456.37.camel@twins>
+	 <20121023165040.GA7553@krava.brq.redhat.com>
+	 <1351080078.13456.60.camel@twins>
+	 <20121024121406.GA5582@krava.brq.redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.lad@ti.com>
-
-This patch replaces V4L2_OUT_CAP_CUSTOM_TIMINGS macro with
-V4L2_OUT_CAP_DV_TIMINGS. As V4L2_OUT_CAP_CUSTOM_TIMINGS is being phased
-out.
-
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>
----
- This patch is based on the following patch series,
- ARM: davinci: dm365 EVM: add support for VPBE display
- (https://patchwork.kernel.org/patch/1295071/)
-
- Changes for v3:
- 1: Changed the commit header appropriately as pointed by
-    Sekhar and Sergei.
- Changes for v2:
- 1: Fixed code alignment as pointed by Sergei.
-
- arch/arm/mach-davinci/board-dm365-evm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davinci/board-dm365-evm.c
-index 2924d61..8519d2d 100644
---- a/arch/arm/mach-davinci/board-dm365-evm.c
-+++ b/arch/arm/mach-davinci/board-dm365-evm.c
-@@ -514,7 +514,7 @@ static struct vpbe_output dm365evm_vpbe_outputs[] = {
- 			.index		= 1,
- 			.name		= "Component",
- 			.type		= V4L2_OUTPUT_TYPE_ANALOG,
--			.capabilities	= V4L2_OUT_CAP_CUSTOM_TIMINGS,
-+			.capabilities	= V4L2_OUT_CAP_DV_TIMINGS,
- 		},
- 		.subdev_name	= VPBE_VENC_SUBDEV_NAME,
- 		.default_mode	= "480p59_94",
--- 
-1.7.0.4
-
+On Wed, 2012-10-24 at 14:14 +0200, Jiri Olsa wrote:
+> 
+> well, x86_pmu_read calls x86_perf_event_update, which expects the
+> event
+> is active.. if it's not it'll update the count from whatever left in
+> event.hw.idx counter.. could be uninitialized or used by others..
+> 
+Oh right, we shouldn't call ->read() unless ->state ==
+PERF_EVENT_STATE_ACTIVE. Aside from that, perf_event_count() should
+return the 'right' value regardless state (although excluding ERROR
+might make sense).
