@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab2JXVIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 17:08:21 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35430 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447Ab2JXVIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 17:08:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com
-Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
-Date: Wed, 24 Oct 2012 23:12:13 +0200
-Message-ID: <3245066.cWfgP9Ikey@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.2-6-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1597360.JT7plJlUsZ@vostro.rjw.lan>
-References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org> <CAKohpomUD-JQbkyEom+_BaRqJSvw8P_hBUsrjTU3vH6bM1+scQ@mail.gmail.com> <1597360.JT7plJlUsZ@vostro.rjw.lan>
+	id S1161203Ab2JXVIh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 17:08:37 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57316 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161051Ab2JXVIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 17:08:34 -0400
+Date: Wed, 24 Oct 2012 17:08:19 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121024210819.GA5484@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org,
+	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+References: <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508740B2.2030401@redhat.com>
+ <87txtkld4h.fsf@spindle.srvr.nix>
+ <50876E1D.3040501@redhat.com>
+ <20121024052351.GB21714@thunk.org>
+ <878vavveee.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878vavveee.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 of October 2012 21:43:46 Rafael J. Wysocki wrote:
-> On Wednesday 24 of October 2012 11:37:13 Viresh Kumar wrote:
-> > On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > > On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > >> Initially ondemand governor was written and then using its code conservative
-> > >> governor is written. It used a lot of code from ondemand governor, but copy of
-> > >> code was created instead of using the same routines from both governors. Which
-> > >> increased code redundancy, which is difficult to manage.
-> > >>
-> > >> This patch is an attempt to move common part of both the governors to
-> > >> cpufreq_governor.c file to come over above mentioned issues.
-> > >>
-> > >> This shouldn't change anything from functionality point of view.
-> > >>
-> > >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
-> > For everybody else, this patch is already pushed by Rafael in his linux-next
-> > branch.
+On Wed, Oct 24, 2012 at 09:45:47PM +0100, Nix wrote:
 > 
-> Well, not yet, although I'm going to do that.
+> It occurs to me that it is possible that this bug hits only those
+> filesystems for which a umount has started but been unable to complete.
+> If so, this is a relatively rare and unimportant bug which probably hits
+> only me and users of slow removable filesystems in the whole world...
 
-Or I would if it still applied.  Unfortunately, though, it doesn't apply any
-more to my linux-next branch due to some previous changes in it.
+Can you verify this?  Does the bug show up if you just hit the power
+switch while the system is booted?
 
-Care to rebase?
+How about changing the "sleep 2" to "sleep 0.5"?  (Feel free to
+unmount your other partitions, and just leave a test file system
+mounted to minimize the chances that you lose partitions that require
+hours and hours to restore...)
 
-Rafael
+If you can get a very reliable repro, we might have to ask you to try
+the following experiments:
 
+0) Make sure the reliable repro does _not_ work with 3.6.1 booted
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1) Try a 3.6.2 kernel
+
+2) (If the problem shows up above) try a 3.6.2 kernel with 14b4ed2 reverted
+
+3) (If the problem shows up above) try a 3.6.2 kernel with all of ext4
+   related patches reverted:
+92b7722 ext4: fix mtime update in nodelalloc mode
+34414b2 ext4: fix fdatasync() for files with only i_size changes
+12ebdf0 ext4: always set i_op in ext4_mknod()
+22a5672 ext4: online defrag is not supported for journaled files
+ba57d9e ext4: move_extent code cleanup
+2fdb112 ext4: fix crash when accessing /proc/mounts concurrently
+1638f1f ext4: fix potential deadlock in ext4_nonda_switch()
+5018ddd ext4: avoid duplicate writes of the backup bg descriptor blocks
+256ae46 ext4: don't copy non-existent gdt blocks when resizing
+416a688 ext4: ignore last group w/o enough space when resizing instead of BUG'ing
+14b4ed2 jbd2: don't write superblock when if its empty
+
+4) (If the problem still shows up) then we may need to do a full
+   bisect to figure out what is going on....
+
+   	     	     	    	     	- Ted
