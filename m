@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992644Ab2JYUEV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:04:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34426 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992570Ab2JYUEI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:04:08 -0400
-Date: Thu, 25 Oct 2012 13:04:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irq: tsk->comm is an array
-In-Reply-To: <20121025150056.17719.94347.stgit@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1210251300140.17938@chino.kir.corp.google.com>
-References: <20121025150056.17719.94347.stgit@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S2992628Ab2JYUJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:09:11 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37692 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760158Ab2JYUJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 16:09:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
+Date: Thu, 25 Oct 2012 22:13:05 +0200
+Message-ID: <18773928.vP4l182XdI@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAOS58YPAVVr=itauGD9eTpfRLSBLuM8Bpyuq9AP73MDr8dPmiQ@mail.gmail.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <20121025173756.GB7650@redhat.com> <CAOS58YPAVVr=itauGD9eTpfRLSBLuM8Bpyuq9AP73MDr8dPmiQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Alan Cox wrote:
-
-> From: Alan Cox <alan@linux.intel.com>
+On Thursday, October 25, 2012 10:37:31 AM Tejun Heo wrote:
+> Hello,
 > 
-> More relevantly what about termination and locks ?
+> On Thu, Oct 25, 2012 at 10:37 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> How should this be routed?  -mm?  Andrew, can you please pick this up?
+> >
+> > or perhaps Rafael can take it?
 > 
+> Yeah, that works too.  Rafael?
 
-The string is always properly terminated with a trailing zero no matter 
-how it is written.  For threads other than current, the locking is 
-task_lock(task); for current, there are hundreds of places without locking 
-and it is generally considered acceptable for a race to print a mangled 
-string from a concurrent write to /proc/pid/comm.
+Yup, I'm taking it.
 
-> Anyway the array check is useless so remove it.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
->  kernel/irq/manage.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 4c69326..ea39714 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -792,8 +792,9 @@ static void irq_thread_dtor(struct callback_head *unused)
->  
->  	action = kthread_data(tsk);
->  
-> +	/* FIXME: locking */
->  	pr_err("exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
-> -	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
-> +	       tsk->comm, tsk->pid, action->irq);
+Thanks,
+Rafael
 
-Ack without the comment, no locking necessary.
 
->  
->  
->  	desc = irq_to_desc(action->irq);
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
