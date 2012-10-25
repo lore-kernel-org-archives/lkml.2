@@ -1,147 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab2JYGMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:12:31 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:35553 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932123Ab2JYGMa (ORCPT
+	id S965297Ab2JYGOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:14:14 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49647 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab2JYGON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:12:30 -0400
-Message-ID: <1351145401.18115.78.camel@falcor>
-Subject: Re: Kdump with signed images
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Date: Thu, 25 Oct 2012 02:10:01 -0400
-In-Reply-To: <20121024173651.GE1821@redhat.com>
-References: <1350588121.30243.7.camel@rhapsody>
-	 <20121018193831.GD18147@redhat.com> <874nlrv2ni.fsf@xmission.com>
-	 <20121019020630.GA27052@redhat.com> <877gqnnnf0.fsf@xmission.com>
-	 <20121019143112.GB27052@redhat.com> <871ugqb4gj.fsf@xmission.com>
-	 <20121023131854.GA16496@redhat.com> <20121023145920.GD16496@redhat.com>
-	 <87fw552mb4.fsf_-_@xmission.com> <20121024173651.GE1821@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Thu, 25 Oct 2012 02:14:13 -0400
+Message-ID: <5088D877.8010707@linux.vnet.ibm.com>
+Date: Thu, 25 Oct 2012 11:43:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Huacai Chen <chenhc@lemote.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC][PATCH] sched: Fix a deadlock of cpu-hotplug
+References: <1351070714-17676-1-git-send-email-chenhc@lemote.com> <1351071502.13456.54.camel@twins> <5088B2DF.9050705@linux.vnet.ibm.com>
+In-Reply-To: <5088B2DF.9050705@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102506-5518-0000-0000-000008B5354D
+x-cbid: 12102506-1618-0000-0000-000002B5B8F1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-24 at 13:36 -0400, Vivek Goyal wrote:
-> On Tue, Oct 23, 2012 at 09:19:27AM -0700, Eric W. Biederman wrote:
-> > Vivek Goyal <vgoyal@redhat.com> writes:
-> > 
-> > > On Tue, Oct 23, 2012 at 09:18:54AM -0400, Vivek Goyal wrote:
-> > >
-> > > [..]
-> > >> > >> There are 3 options for trusting /sbin/kexec.  There are IMA and EMA,
-> > >> > >> and it is conceivable to have ELF note sections with signatures for
-> > >> > >> executables.
-> > >> > >
-> > >> > > Can you please tell more about what is EMA and IMA. I did quick google
-> > >> > > and could not find much.
-> > >> > 
-> > >> > That should have been EVM and IMA.  Look under security/integrity/.  I
-> > >> > don't know much about them but they appear to be security modules with a
-> > >> > focus on verifying checksum or perhaps encrypted hashes of executables
-> > >> > are consistent.
-> > >> 
-> > >> I will do some quick search there and I see if I can understand something.
-> > >> 
-> > >
-> > > Ok, I quickly went through following paper.
-> > >
-> > > http://mirror.transact.net.au/sourceforge/l/project/li/linux-ima/linux-ima/Integrity_overview.pdf
-> > >
-> > > So it looks like that IMA can store the hashes of files and at execute
-> > > time ensure those hashes are unchanged to protect against the possibility
-> > > of modification of files.
-
-IMA-appraisal originally was hashed based, but Dmitry Kasatkin added
-digital signature support.  Both have been upstreamed.
-
-> > > But what about creation of a new program which can call kexec_load()
-> > > and execute an unsigned kernel. Doesn't look like that will be
-> > > prevented using IMA.
-
-Assuming the IMA policy syntax is updated to require 'security.ima' to
-contain a digital signature, then it is only a question of protecting
-the _ima and _evm keyrings. (Dmitry has such a patch waiting to be
-reviewed.)  So the new program would have to be vetted by someone
-trusted.
-
-> > > Whole idea behind UEFI secure boot seems to be that all signing happens
-> > > outside the running system and now only signed code can run with higher
-> > > priviliges.
-> > 
-> > No.  UEFI secure boot has absolutely nothing todo with this.
-> > 
-> > UEFI secure boot is about not being able to hijack the code EFI runs
-> > directly.  Full stop.
-> > 
-> > Some people would like to implment a security policy that says
-> > you can't boot an untrusted version of windows from linux if you have
-> > booted with UEFI secure boot, so they don't get their bootloader
-> > signatures revoked by microsoft.
-> > 
-> > A security model relying on Microsoft's key is totally uniteresting to
-> > me.  Either signing at the UEFI level is of no use or Microsofts key
-> > will fall again to the combined assult of every cracker and every
-> > governmental dirty cyber ops division attacking it.  Not to mention that
-> > Microsoft has little incentive to keep linux booting.
-> > 
-> > I think it is reasonable to be able to support a policy where we can't
-> > boot unsigned versions of Microsoft windows.  However beyond being able
-> > to exclude booting windows being one criteria for our policy mechanism
-> > please don't even start to justify things with that ridiculous security
-> > policy even indirectly.
-> > 
-> > > IMA seems to be only protecting against only making sure
-> > > existing binaries are not modifed but it does not seem to prevent against
-> > > installation of new binaries and these binaries take advantage of kexec
-> > > system call to load an unsigned kernel. 
-
-The IMA/IMA-appraisal policy dictates what needs to be appraised.  The
-default ima-appraisal policy appraises all files owned by root.
- 
-> > I believe you can combine IMA with EVM signed security attributes where
-> > the EVM signing key is offline, and the verification key is in the
-> > kernel.
-> > 
-> > The combination of IMA and EVM gets very close to being able to sign
-> > executables offline and be able to update them.
+On 10/25/2012 09:02 AM, Michael Wang wrote:
+> On 10/24/2012 05:38 PM, Peter Zijlstra wrote:
+>> On Wed, 2012-10-24 at 17:25 +0800, Huacai Chen wrote:
+>>> We found poweroff sometimes fails on our computers, so we have the
+>>> lock debug options configured. Then, when we do poweroff or take a
+>>> cpu down via cpu-hotplug, kernel complain as below. To resove this,
+>>> we modify sched_ttwu_pending(), disable the local irq when acquire
+>>> rq->lock.
+>>>
+>>> [   83.066406] =================================
+>>> [   83.066406] [ INFO: inconsistent lock state ]
+>>> [   83.066406] 3.5.0-3.lemote #428 Not tainted
+>>> [   83.066406] ---------------------------------
+>>> [   83.066406] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+>>> [   83.066406] migration/1/7 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>>> [   83.066406]  (&rq->lock){?.-.-.}, at: [<ffffffff802585ac>] sched_ttwu_pending+0x64/0x98
+>>> [   83.066406] {IN-HARDIRQ-W} state was registered at:
+>>> [   83.066406]   [<ffffffff8027c9ac>] __lock_acquire+0x80c/0x1cc0
+>>> [   83.066406]   [<ffffffff8027e3d0>] lock_acquire+0x60/0x9c
+>>> [   83.066406]   [<ffffffff8074ba04>] _raw_spin_lock+0x3c/0x50
+>>> [   83.066406]   [<ffffffff8025a2fc>] scheduler_tick+0x48/0x178
+>>> [   83.066406]   [<ffffffff8023b334>] update_process_times+0x54/0x70
+>>> [   83.066406]   [<ffffffff80277568>] tick_handle_periodic+0x2c/0x9c
+>>> [   83.066406]   [<ffffffff8020a818>] c0_compare_interrupt+0x8c/0x94
+>>> [   83.066406]   [<ffffffff8029ec8c>] handle_irq_event_percpu+0x7c/0x248
+>>> [   83.066406]   [<ffffffff802a2774>] handle_percpu_irq+0x8c/0xc0
+>>> [   83.066406]   [<ffffffff8029e2c8>] generic_handle_irq+0x48/0x58
+>>> [   83.066406]   [<ffffffff80205c04>] do_IRQ+0x18/0x24
+>>> [   83.066406]   [<ffffffff802016e4>] mach_irq_dispatch+0xe4/0x124
+>>> [   83.066406]   [<ffffffff80203ca0>] ret_from_irq+0x0/0x4
+>>> [   83.066406]   [<ffffffff8022d114>] console_unlock+0x3e8/0x4c0
+>>> [   83.066406]   [<ffffffff811ff0d0>] con_init+0x370/0x398
+>>> [   83.066406]   [<ffffffff811fe3e0>] console_init+0x34/0x50
+>>> [   83.066406]   [<ffffffff811e4844>] start_kernel+0x2f8/0x4e0
+>>> [   83.066406] irq event stamp: 971
+>>> [   83.066406] hardirqs last  enabled at (971): [<ffffffff8021c384>] local_flush_tlb_all+0x134/0x17c
+>>> [   83.066406] hardirqs last disabled at (970): [<ffffffff8021c298>] local_flush_tlb_all+0x48/0x17c
+>>> [   83.066406] softirqs last  enabled at (0): [<ffffffff802298a4>] copy_process+0x510/0x117c
+>>> [   83.066406] softirqs last disabled at (0): [<          (null)>] (null)
+>>> [   83.066406]
+>>> [   83.066406] other info that might help us debug this:
+>>> [   83.066406]  Possible unsafe locking scenario:
+>>> [   83.066406]
+>>> [   83.066406]        CPU0
+>>> [   83.066406]        ----
+>>> [   83.066406]   lock(&rq->lock);
+>>> [   83.066406]   <Interrupt>
+>>> [   83.066406]     lock(&rq->lock);
+>>> [   83.066406]
+>>> [   83.066406]  *** DEADLOCK ***
+>>> [   83.066406]
+>>> [   83.066406] no locks held by migration/1/7.
+>>> [   83.066406]
+>>> [   83.066406] stack backtrace:
+>>> [   83.066406] Call Trace:
+>>> [   83.066406] [<ffffffff80747544>] dump_stack+0x8/0x34
+>>> [   83.066406] [<ffffffff8027ba04>] print_usage_bug+0x2ec/0x314
+>>> [   83.066406] [<ffffffff8027be28>] mark_lock+0x3fc/0x774
+>>> [   83.066406] [<ffffffff8027ca48>] __lock_acquire+0x8a8/0x1cc0
+>>> [   83.066406] [<ffffffff8027e3d0>] lock_acquire+0x60/0x9c
+>>> [   83.066406] [<ffffffff8074ba04>] _raw_spin_lock+0x3c/0x50
+>>> [   83.066406] [<ffffffff802585ac>] sched_ttwu_pending+0x64/0x98
+>>> [   83.066406] [<ffffffff80745ff4>] migration_call+0x10c/0x2e0
+>>> [   83.066406] [<ffffffff80253110>] notifier_call_chain+0x44/0x94
+>>> [   83.066406] [<ffffffff8022eae0>] __cpu_notify+0x30/0x5c
+>>> [   83.066406] [<ffffffff8072b598>] take_cpu_down+0x5c/0x70
+>>> [   83.066406] [<ffffffff80299ba4>] stop_machine_cpu_stop+0x104/0x1e8
+>>> [   83.066406] [<ffffffff802997cc>] cpu_stopper_thread+0x110/0x1ac
+>>> [   83.066406] [<ffffffff8024c940>] kthread+0x88/0x90
+>>> [   83.066406] [<ffffffff80205ee4>] kernel_thread_helper+0x10/0x18
+>>
+>> Weird, that's from a CPU_DYING call, I thought those were with IRQs
+>> disabled. 
+>>
+>> Look at how __stop_machine() calls the function with IRQs disabled for !
+>> stop_machine_initialized or !SMP. Also stop_machine_cpu_stop() seems to
+>> disabled interrupts, so how do we end up calling take_cpu_down() with
+>> IRQs enabled?
 > 
-> [ Again CCing lkml and IMA/EVM folks ]
+> The patch is no doubt wrong...
 > 
-> After little reading, my understanding is EVM also does not support
-> offline signing. 
+> The discuss in:
 > 
-> http://sourceforge.net/apps/mediawiki/linux-ima/index.php?title=Main_Page
+> https://lkml.org/lkml/2012/7/19/164
 > 
-> Given the fact EVM protects IMA data (security.ima), which is generated
-> inline, I am not sure how EVM can sign images offline.
-> 
-> I might have misunderstood things, please correct me if that's not the
-> case.
-> 
-> Thanks
-> Vivek
-> 
+> Which also faced the issue that the timer interrupt come in after apic
+> was shut down, I'm not sure whether this could do help to Huacai, just
+> as a clue...
+>
 
-IMA-appraisal verifies the integrity of file data, while EVM verifies
-the integrity of the file metadata, such as LSM and IMA-appraisal
-labels.  Both 'security.ima' and 'security.evm' can contain digital
-signatures.
+One interesting thing that I noted in that case was that we noticed that
+(stale) interrupt exactly at the call to local_irq_restore() in
+stop_machine_cpu_stop().
 
-thanks,
+However, as Peter pointed out, migration_call's CPU_DYING notifier runs
+right in the middle of the stop machine dance, much much before the call
+to local_irq_restore().. so it doesn't look like a case of a stale interrupt
+being recognized.. it looks as if the sequence of local_irq_disable(),
+hard_irq_disable() and __cpu_disable() somehow managed to wrongly keep the
+interrupts still enabled...
 
-Mimi
+Regards,
+Srivatsa S. Bhat
+
+> 
+>>
+>> That simply doesn't make any sense.
+>>
+>>> Signed-off-by: Huacai Chen <chenhc@lemote.com>
+>>> ---
+>>>  kernel/sched/core.c |    5 +++--
+>>>  1 files changed, 3 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>> index 36e2666..703754a 100644
+>>> --- a/kernel/sched/core.c
+>>> +++ b/kernel/sched/core.c
+>>> @@ -1468,9 +1468,10 @@ static void sched_ttwu_pending(void)
+>>>  {
+>>>  	struct rq *rq = this_rq();
+>>>  	struct llist_node *llist = llist_del_all(&rq->wake_list);
+>>> +	unsigned long flags;
+>>>  	struct task_struct *p;
+>>>  
+>>> -	raw_spin_lock(&rq->lock);
+>>> +	raw_spin_lock_irqsave(&rq->lock, flags);
+>>>  
+>>>  	while (llist) {
+>>>  		p = llist_entry(llist, struct task_struct, wake_entry);
+>>> @@ -1478,7 +1479,7 @@ static void sched_ttwu_pending(void)
+>>>  		ttwu_do_activate(rq, p, 0);
+>>>  	}
+>>>  
+>>> -	raw_spin_unlock(&rq->lock);
+>>> +	raw_spin_unlock_irqrestore(&rq->lock, flags);
+>>>  }
+>>>  
+>>>  void scheduler_ipi(void)
+>>
+>>
+>> That's wrong though, you add the cost to the common case instead of the
+>> hardly ever ran hotplug case.
 
