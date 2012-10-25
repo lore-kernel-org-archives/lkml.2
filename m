@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab2JYNJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:09:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51601 "EHLO
+	id S1759525Ab2JYNKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:10:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51606 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759487Ab2JYNJ4 (ORCPT
+	with ESMTP id S934858Ab2JYNJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:09:56 -0400
-Message-Id: <20121025124832.545895263@chello.nl>
+	Thu, 25 Oct 2012 09:09:59 -0400
+Message-Id: <20121025124833.785487250@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:18 +0200
+Date: Thu, 25 Oct 2012 14:16:34 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -18,75 +18,215 @@ To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 01/31] sched, numa, mm: Make find_busiest_queue() a method
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 17/31] mm/migrate: Introduce migrate_misplaced_page()
 References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0001-sched-numa-mm-Make-find_busiest_queue-a-method.patch
+Content-Disposition: inline; filename=0017-mm-migrate-Introduce-migrate_misplaced_page.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Its a bit awkward but it was the least painful means of modifying the
-queue selection. Used in a later patch to conditionally use a random
-queue.
+Add migrate_misplaced_page() which deals with migrating pages from
+faults. 
 
+This includes adding a new MIGRATE_FAULT migration mode to
+deal with the extra page reference required due to having to look up
+the page.
+
+Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c |   20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ include/linux/migrate.h      |    7 +++
+ include/linux/migrate_mode.h |    3 +
+ mm/migrate.c                 |   85 ++++++++++++++++++++++++++++++++++++++-----
+ 3 files changed, 87 insertions(+), 8 deletions(-)
 
-Index: tip/kernel/sched/fair.c
+Index: tip/include/linux/migrate.h
 ===================================================================
---- tip.orig/kernel/sched/fair.c
-+++ tip/kernel/sched/fair.c
-@@ -3063,6 +3063,9 @@ struct lb_env {
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
+--- tip.orig/include/linux/migrate.h
++++ tip/include/linux/migrate.h
+@@ -30,6 +30,7 @@ extern int migrate_vmas(struct mm_struct
+ extern void migrate_page_copy(struct page *newpage, struct page *page);
+ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
+ 				  struct page *newpage, struct page *page);
++extern int migrate_misplaced_page(struct page *page, int node);
+ #else
+ 
+ static inline void putback_lru_pages(struct list_head *l) {}
+@@ -63,5 +64,11 @@ static inline int migrate_huge_page_move
+ #define migrate_page NULL
+ #define fail_migrate_page NULL
+ 
++static inline
++int migrate_misplaced_page(struct page *page, int node)
++{
++	return -EAGAIN; /* can't migrate now */
++}
+ #endif /* CONFIG_MIGRATION */
 +
-+	struct rq *		(*find_busiest_queue)(struct lb_env *,
-+						      struct sched_group *);
+ #endif /* _LINUX_MIGRATE_H */
+Index: tip/include/linux/migrate_mode.h
+===================================================================
+--- tip.orig/include/linux/migrate_mode.h
++++ tip/include/linux/migrate_mode.h
+@@ -6,11 +6,14 @@
+  *	on most operations but not ->writepage as the potential stall time
+  *	is too significant
+  * MIGRATE_SYNC will block when migrating pages
++ * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
++ *	this path has an extra reference count
+  */
+ enum migrate_mode {
+ 	MIGRATE_ASYNC,
+ 	MIGRATE_SYNC_LIGHT,
+ 	MIGRATE_SYNC,
++	MIGRATE_FAULT,
  };
  
- /*
-@@ -4236,13 +4239,14 @@ static int load_balance(int this_cpu, st
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+ #endif		/* MIGRATE_MODE_H_INCLUDED */
+Index: tip/mm/migrate.c
+===================================================================
+--- tip.orig/mm/migrate.c
++++ tip/mm/migrate.c
+@@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(
+ 	struct buffer_head *bh = head;
  
- 	struct lb_env env = {
--		.sd		= sd,
--		.dst_cpu	= this_cpu,
--		.dst_rq		= this_rq,
--		.dst_grpmask    = sched_group_cpus(sd->groups),
--		.idle		= idle,
--		.loop_break	= sched_nr_migrate_break,
--		.cpus		= cpus,
-+		.sd		    = sd,
-+		.dst_cpu	    = this_cpu,
-+		.dst_rq		    = this_rq,
-+		.dst_grpmask        = sched_group_cpus(sd->groups),
-+		.idle		    = idle,
-+		.loop_break	    = sched_nr_migrate_break,
-+		.cpus		    = cpus,
-+		.find_busiest_queue = find_busiest_queue,
- 	};
+ 	/* Simple case, sync compaction */
+-	if (mode != MIGRATE_ASYNC) {
++	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
+ 		do {
+ 			get_bh(bh);
+ 			lock_buffer(bh);
+@@ -279,12 +279,22 @@ static int migrate_page_move_mapping(str
+ 		struct page *newpage, struct page *page,
+ 		struct buffer_head *head, enum migrate_mode mode)
+ {
+-	int expected_count;
++	int expected_count = 0;
+ 	void **pslot;
  
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4261,7 +4265,7 @@ redo:
- 		goto out_balanced;
++	if (mode == MIGRATE_FAULT) {
++		/*
++		 * MIGRATE_FAULT has an extra reference on the page and
++		 * otherwise acts like ASYNC, no point in delaying the
++		 * fault, we'll try again next time.
++		 */
++		expected_count++;
++	}
++
+ 	if (!mapping) {
+ 		/* Anonymous page without mapping */
+-		if (page_count(page) != 1)
++		expected_count += 1;
++		if (page_count(page) != expected_count)
+ 			return -EAGAIN;
+ 		return 0;
  	}
+@@ -294,7 +304,7 @@ static int migrate_page_move_mapping(str
+ 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
+  					page_index(page));
  
--	busiest = find_busiest_queue(&env, group);
-+	busiest = env.find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+-	expected_count = 2 + page_has_private(page);
++	expected_count += 2 + page_has_private(page);
+ 	if (page_count(page) != expected_count ||
+ 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -313,7 +323,7 @@ static int migrate_page_move_mapping(str
+ 	 * the mapping back due to an elevated page count, we would have to
+ 	 * block waiting on other references to be dropped.
+ 	 */
+-	if (mode == MIGRATE_ASYNC && head &&
++	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
+ 			!buffer_migrate_lock_buffers(head, mode)) {
+ 		page_unfreeze_refs(page, expected_count);
+ 		spin_unlock_irq(&mapping->tree_lock);
+@@ -521,7 +531,7 @@ int buffer_migrate_page(struct address_s
+ 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
+ 	 * need to be locked now
+ 	 */
+-	if (mode != MIGRATE_ASYNC)
++	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
+ 		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
+ 
+ 	ClearPagePrivate(page);
+@@ -687,7 +697,7 @@ static int __unmap_and_move(struct page
+ 	struct anon_vma *anon_vma = NULL;
+ 
+ 	if (!trylock_page(page)) {
+-		if (!force || mode == MIGRATE_ASYNC)
++		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
+ 			goto out;
+ 
+ 		/*
+@@ -1403,4 +1413,63 @@ int migrate_vmas(struct mm_struct *mm, c
+  	}
+  	return err;
+ }
+-#endif
++
++/*
++ * Attempt to migrate a misplaced page to the specified destination
++ * node.
++ */
++int migrate_misplaced_page(struct page *page, int node)
++{
++	struct address_space *mapping = page_mapping(page);
++	int page_lru = page_is_file_cache(page);
++	struct page *newpage;
++	int ret = -EAGAIN;
++	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
++
++	/*
++	 * Don't migrate pages that are mapped in multiple processes.
++	 */
++	if (page_mapcount(page) != 1)
++		goto out;
++
++	/*
++	 * Never wait for allocations just to migrate on fault, but don't dip
++	 * into reserves. And, only accept pages from the specified node. No
++	 * sense migrating to a different "misplaced" page!
++	 */
++	if (mapping)
++		gfp = mapping_gfp_mask(mapping);
++	gfp &= ~__GFP_WAIT;
++	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
++
++	newpage = alloc_pages_node(node, gfp, 0);
++	if (!newpage) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	if (isolate_lru_page(page)) {
++		ret = -EBUSY;
++		goto put_new;
++	}
++
++	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
++	/*
++	 * A page that has been migrated has all references removed and will be
++	 * freed. A page that has not been migrated will have kepts its
++	 * references and be restored.
++	 */
++	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
++	putback_lru_page(page);
++put_new:
++	/*
++	 * Move the new page to the LRU. If migration was not successful
++	 * then this will free the page.
++	 */
++	putback_lru_page(newpage);
++out:
++	return ret;
++}
++
++#endif /* CONFIG_NUMA */
 
 
