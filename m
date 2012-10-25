@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381Ab2JYLG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:06:58 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:34299 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab2JYLG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:06:57 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
-References: <20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
-	<20121025011056.GC4559@thunk.org>
-Emacs: if it payed rent for disk space, you'd be rich.
-Date: Thu, 25 Oct 2012 12:06:42 +0100
-In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
-	"Wed, 24 Oct 2012 21:10:56 -0400")
-Message-ID: <871ugm6cal.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1759412Ab2JYLKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755602Ab2JYLJ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 07:09:58 -0400
+Date: Thu, 25 Oct 2012 07:09:54 -0400
+From: Dave Jones <davej@redhat.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pi futex oops in __lock_acquire
+Message-ID: <20121025110954.GA24886@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Darren Hart <dvhart@linux.intel.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20121018015312.GA29865@redhat.com>
+ <507F9944.50505@kernel.dk>
+ <20121019052136.GA30852@redhat.com>
+ <1350650972.30157.34.camel@twins>
+ <20121023195026.GA2872@redhat.com>
+ <20121024202411.GA20597@redhat.com>
+ <5088C397.3000501@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=10 Fuz1=10 Fuz2=10
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5088C397.3000501@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 Oct 2012, Theodore Ts'o stated:
-> Also, can you reproduce the problem with the nobarrier and
-> journal_async_commit options *removed*?  Yes, I know you have battery
-> backup, but it would be interesting to see if the problem shows up in
-> the default configuration with none of the more specialist options.
-> (So it would probably be good to test with journal_checksum removed as
-> well.)
+On Wed, Oct 24, 2012 at 09:44:07PM -0700, Darren Hart wrote:
+ > 
+ > 
+ > On 10/24/2012 01:24 PM, Dave Jones wrote:
+ > > I've been able to trigger this for the last week or so.
+ > > Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
+ > > pi-futex code hasn't changed since the last time it found something..
+ > > 
+ > >  > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+ > >
+ > > It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
+ > > 
+ > > Darren, any idea how this could happen ?
+ > 
+ > I'm digging. Can you get trinity to provide the arguments it used that
+ > trigger the crash? That might help hone in on the exact path.
+ 
+Happens pretty quickly with -c futex for me. (30 seconds or so)
 
-I'm going to spend some time after work today trying to reproduce this
-in a virtual machine. If rebooting while umounting is truly all it
-takes, as it seems, this should eliminate a bunch of variables and make
-it a lot easier to reproduce. (Assuming Eric hasn't already done just
-that, that is.)
-
--- 
-NULL && (void)
+	Dave
