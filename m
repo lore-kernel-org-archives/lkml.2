@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab2JYS1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:27:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28577 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759429Ab2JYS1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:27:40 -0400
-Message-ID: <50898490.20409@redhat.com>
-Date: Thu, 25 Oct 2012 13:27:28 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1760058Ab2JYSaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:30:04 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57577 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758569Ab2JYSaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 14:30:00 -0400
+Date: Thu, 25 Oct 2012 14:29:48 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: david@lang.hm
+Cc: Nico Williams <nico@cryptonector.com>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121025182948.GB16257@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, david@lang.hm,
+	Nico Williams <nico@cryptonector.com>,
+	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+	linux-fsdevel@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+References: <5086F5A7.9090406@vlnb.net>
+ <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+ <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+ <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
+ <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
+ <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
+ <20121025060231.GC9860@thunk.org>
+ <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
+ <20121025140327.GB13562@thunk.org>
+ <alpine.DEB.2.02.1210251048280.8519@asgard.lang.hm>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
-        linux-ext4@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: EXT4-fs error w/ external USB drive
-References: <507C4BDA.20205@gmx.de> <20121019210723.GA4721@thunk.org> <5085923F.9050801@gmx.de> <20121024011128.GG28626@thunk.org> <5088260D.7080403@gmx.de> <20121024183505.GA6142@thunk.org> <50896B42.90606@gmx.de> <20121025182004.GA16257@thunk.org>
-In-Reply-To: <20121025182004.GA16257@thunk.org>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1210251048280.8519@asgard.lang.hm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/12 1:20 PM, Theodore Ts'o wrote:
-> On Thu, Oct 25, 2012 at 06:39:30PM +0200, Toralf Förster wrote:
->> After a lot of file operations (Gentoo emerging, kernel build, git
->> pulls, ...) I s2disk the system (that with the external USB drive)
->> yesterday, wake it up today, rebooted it -
->> and had to manually repair the file system, because the automatic fsck
->> gave up.
+On Thu, Oct 25, 2012 at 11:03:13AM -0700, david@lang.hm wrote:
+> I agree, this is why I'm trying to figure out the recommended way to
+> do this without needing to do full commits.
 > 
-> OK, I'm going to send another patch series which I'd hope you could
-> test to see if reduces the rate at which this happens.
-> 
->> Nevertheless there's another Linux system I have (64bit RH EL,internal
->> drive), where with kernel 3.5.4-1.el6.elrepo.x86_64 EXT4 errors occurred.
->> I attached the whole appropriate section of /var/log/message.
-> 
-> I don't have easy access to the RHEL kernel sources, and so I don't
+> Since in most cases it's acceptable to loose the last few chunks
+> written, if we had some way of specifying ordering, without having
+> to specify "write this NOW", the solution would be pretty obvious.
 
-Just FWIW, that's a 3rd party kernel, not something Red Hat
-ships.  (see "elrepo")
+Well, using data journalling with ext3/4 may do what you want.  If you
+don't do any fsync, the changes will get written every 5 seconds when
+the automatic journal sync happens (and sub-4k writes will also get
+coalesced to a 5 second granularity).  Even with plain text files,
+it's pretty easy to tell whether or not the final record is a
+partially written or not after a crash; just look for a trailing
+newline.
 
--Eric
+Better yet, if you are writing to multiple log files with data
+journalling, all of the writes will happen at the same time, and they
+will be streamed to the file system journal, minimizing random writes
+for at least the journal writes.
 
+						- Ted
