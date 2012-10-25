@@ -1,69 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab2JYE3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 00:29:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:22987 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab2JYE3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 00:29:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,643,1344236400"; 
-   d="scan'208";a="239951972"
-Date: Thu, 25 Oct 2012 10:58:26 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-Cc: YingHang Zhu <casualfisher@gmail.com>, Dave Chinner <david@fromorbit.com>,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-Message-ID: <20121025025826.GB23462@localhost>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
- <20121023224706.GR4291@dastard>
- <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
- <20121024201921.GX4291@dastard>
- <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
- <20121025015014.GC29378@dastard>
- <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
- <50889FF1.9030107@gmail.com>
+	id S1752390Ab2JYEcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 00:32:47 -0400
+Received: from emcscan.emc.com.tw ([192.72.220.5]:44466 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab2JYEcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 00:32:45 -0400
+From: =?big5?B?vEK5xcJA?= <scott.liu@emc.com.tw>
+To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Cc: <linux-input@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
+        "'Jesse'" <jesse@emc.com.tw>,
+        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
+        "'Paul'" <paul.liang@emc.com.tw>
+Subject: RE: [PATCH v2] Support Elan Touchscreen eKTF product.
+Date: Thu, 25 Oct 2012 12:32:39 +0800
+Message-ID: <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50889FF1.9030107@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="big5"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac2yE0VGGG6xXG/PR7WcIJ+qyjetVAARimWg
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <20121024181323.GA18122@core.coreip.homeip.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
+Hi Dmitry,
+	Thanks for review.
 
-> But how can bdi related ra_pages reflect different files' readahead
-> window? Maybe these different files are sequential read, random read
-> and so on.
+> -----Original Message-----
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: Thursday, October 25, 2012 2:13 AM
+> To: Scott Liu
+> Cc: linux-input@vger.kernel.org; linux-i2c@vger.kernel.org;
+linux-kernel@vger.kernel.org;
+> Benjamin Tissoires; Jesse; Vincent Wang; Paul
+> Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
+> 
+> Hi Scott,
+> 
+> On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
+> > This patch is for Elan eKTF Touchscreen product, I2C adpater module.
+> >
+> > Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
+> > ---
+> >
+> > Hi,
+> >         v2 revision I have fixed some bug as your advise.
+> >         1. To target the mainline
+> >         2. No Android dependency
+> >         3. reuse those duplication code from Henrik's patchset.
+> >                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
+> 
+> Just a quick run through the code, so:
+> 
+> - please remove polling support, it is not useful in production;
 
-It's simple: sequential reads will get ra_pages readahead size while
-random reads will not get readahead at all.
+OK.
 
-Talking about the below chunk, it might hurt someone that explicitly
-takes advantage of the behavior, however the ra_pages*2 seems more
-like a hack than general solution to me: if the user will need
-POSIX_FADV_SEQUENTIAL to double the max readahead window size for
-improving IO performance, then why not just increase bdi->ra_pages and
-benefit all reads? One may argue that it offers some differential
-behavior to specific applications, however it may also present as a
-counter-optimization: if the root already tuned bdi->ra_pages to the
-optimal size, the doubled readahead size will only cost more memory
-and perhaps IO latency.
+> - why do you need a separate probe work instead of doing what you
+>   need in elants_probe()
 
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
-                spin_unlock(&file->f_lock);
-                break;
-        case POSIX_FADV_SEQUENTIAL:
--               file->f_ra.ra_pages = bdi->ra_pages * 2;
-                spin_lock(&file->f_lock);
-                file->f_mode &= ~FMODE_RANDOM;
-                spin_unlock(&file->f_lock);
+will fix.
+
+> - it is not a good idea to register input device first and then
+>   allocating memory for MT handling.
+
+Ooop...will fix.
+
+> - I do not understand why kfifo is needed
+
+The firmware and the host would conflict by read command and finger report
+simultaneously. So I'm simply using kfifo in IRQ thread function.
+
+* read command: writing 4 bytes commands and the device asserts GPIO
+interrupt and then response 4 bytes data.
+
+There was an error if we do not use kfifo:
+	With heavy loading by finger report / read command, the driver may
+get finger report as response data.
+
+So, do you understand my meaning? 
+
+> - please remove the rest of the custom threads
+OK
+
+> - you do not need to call input_mt_destroy_slots() explicitly
+OK
+> - use request_firmware() instead of special character device to upload
+>   firmware.
+OK, but I'll remove firmware update function at this patch first.
+
+> - please use standard kernel-doc markup.
+> - consider what attributes are there only for debugging and move them to
+>   debugfs.
+OK.
+
+> - I find the use of enums in this driver quite unconventional, just
+>   standard #defines would probably be more straightforward.
+OK.
 
 Thanks,
-Fengguang
+Scott
+
+> 
+> Thanks.
+> 
+> --
+> Dmitry
+
