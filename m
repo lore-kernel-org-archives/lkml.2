@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966231Ab2JZTlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:41:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:42276 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab2JZTlf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:41:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <508AE611.3020504@mvista.com>
-References: <1350420820-7156-1-git-send-email-minyard@acm.org>
- <1350420820-7156-5-git-send-email-minyard@acm.org> <20121022164902.9b204646.akpm@linux-foundation.org>
- <508AE611.3020504@mvista.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 26 Oct 2012 12:41:13 -0700
-X-Google-Sender-Auth: 6RvVep1lXytSQTxqNTobkD6QwhY
-Message-ID: <CA+55aFw+Vbj0i=1TGqCR5vQkCzWJ0QxK6CernOU6eedsudAixw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] IPMI: Fix some uninitialized warning
-To: Corey Minyard <cminyard@mvista.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, minyard@acm.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966237Ab2JZTnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:43:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39895 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S966153Ab2JZTnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 15:43:18 -0400
+Message-ID: <1351199661.2581.4.camel@joe-AO722>
+Subject: Re: [pci:pci/misc 1/2] drivers/staging/telephony/ixj.c:7732:38:
+ error: expected ';' before 'pci_resource_start'
+From: Joe Perches <joe@perches.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <50898531.SQlMpMyNVfj8BHXY%fengguang.wu@intel.com>
+References: <50898531.SQlMpMyNVfj8BHXY%fengguang.wu@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 25 Oct 2012 14:14:21 -0700
+Mime-Version: 1.0
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 12:35 PM, Corey Minyard <cminyard@mvista.com> wrote:
->
-> I'll do a patch to switch it to uninitialized_var() for the next set of
-> things I send.  Thanks.
+On Fri, 2012-10-26 at 02:30 +0800, Fengguang Wu wrote:
+> Hi Joe,
+> 
+> FYI, kernel build failed on
+> 
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/misc
+> head:   334a57560cf08a04f530aa5546b4c9379c622544
+> commit: f23a277e64d8173e8cddd9e1903c3f9a564aaae5 [1/2] PCI: Convert pci_resource_<foo> macros to static inlines
+> config: x86_64-allmodconfig # make ARCH=x86_64 allmodconfig
+> 
+> All error/warnings:
+> 
+> drivers/staging/telephony/ixj.c: In function 'ixj_probe_pci':
+> drivers/staging/telephony/ixj.c:7732:13: warning: assignment makes integer from pointer without a cast [enabled by default]
+> drivers/staging/telephony/ixj.c:7732:38: error: expected ';' before 'pci_resource_start'
+> --
+> drivers/scsi/gdth.c: In function 'gdth_init_pci':
+> drivers/scsi/gdth.c:1111:34: error: lvalue required as left operand of assignment
+> 
+> vim +7732 drivers/staging/telephony/ixj.c
+> 
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7726  		if (pci_enable_device(pci))
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7727  			break;
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7728  		j = new_ixj(pci_resource_start(pci, 0));
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7729  		if (!j)
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7730  			break;
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7731  
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16 @7732  		j->serial = (PCIEE_GetSerialNumber)pci_resource_start(pci, 2);
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7733  		j->XILINXbase = j->DSPbase + 0x10;
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7734  		j->cardtype = QTI_PHONEJACK_PCI;
+> ^1da177e drivers/telephony/ixj.c Linus Torvalds 2005-04-16  7735  		j->board = *cnt;
+> 
 
-Actually, I'm seriously considering getting rid of uninitialized_var().
+Hi Fengguang.
 
-The thing is an abomination, and we've already had one bug due to it
-(real uninitialized variable that was incorrectly hidden by
-uninitialized_var()).
+telephony is scheduled for removal one day soon.
+Likely no one has a working card.
 
-The thing is moronic. The whole thing is almost entirely due to
-compiler bugs (*stupid* gcc behavior), and we would have been better
-off with an explicit (unnecessary) initialization that at least
-doesn't cause random crashes etc if it turns out to be wrong.
+I presume that's an existing bug in the code that this
+change exposed only for x86-64 as there's no failure for
+this code x86-32.  Likely too this code never worked for
+x86-64.
 
-So please don't use that abortion. Just initialize things to
-0/NULL/whatever if gcc complains and you want to get rid of them.
-Better than the crap that is uninitialized_var(), which just causes
-silent random behavior if it is wrong.
+I presume that line should have been something like this
+as otherwise PCIEE_GetSerialNumber is not called.
 
-              Linus
+ drivers/staging/telephony/ixj.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/telephony/ixj.c b/drivers/staging/telephony/ixj.c
+index 1cfa0b0..df45ad0 100644
+--- a/drivers/staging/telephony/ixj.c
++++ b/drivers/staging/telephony/ixj.c
+@@ -7729,7 +7729,7 @@ static int __init ixj_probe_pci(int *cnt)
+ 		if (!j)
+ 			break;
+ 
+-		j->serial = (PCIEE_GetSerialNumber)pci_resource_start(pci, 2);
++		j->serial = PCIEE_GetSerialNumber(pci_resource_start(pci, 2));
+ 		j->XILINXbase = j->DSPbase + 0x10;
+ 		j->cardtype = QTI_PHONEJACK_PCI;
+ 		j->board = *cnt;
+
+
