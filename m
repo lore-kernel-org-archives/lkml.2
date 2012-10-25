@@ -1,145 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390Ab2JYLC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:02:26 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:63341 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2JYLCY (ORCPT
+	id S1759409Ab2JYLDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:03:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:46006 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759393Ab2JYLDX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:02:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351051850.5263.17.camel@vkoul-udesk3>
-References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
-	<1349432276-22919-3-git-send-email-inderpal.singh@linaro.org>
-	<1351051850.5263.17.camel@vkoul-udesk3>
-Date: Thu, 25 Oct 2012 16:32:23 +0530
-Message-ID: <CAG17yqQuLLvULov3h637HfBgfO6YJ7_ZBOwS7zZan8tGkTn0Eg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] DMA: PL330: Change allocation method to properly
- free DMA descriptors
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: Vinod Koul <vkoul@infradead.org>
-Cc: vinod.koul@intel.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jassisinghbrar@gmail.com,
-        boojin.kim@samsung.com, patches@linaro.org, kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 07:03:23 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-c6-50891c79138e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'H Hartley Sweeten'" <hsweeten@visionengravers.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/3] backlight: ep93xx: fix section mismatch
+Date: Thu, 25 Oct 2012 20:03:21 +0900
+Message-id: <001001cdb2a0$58c17f80$0a447e80$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2yoFiqa8gwXpqqSuWkk7J8877xPg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd1Kmc4Ag7ffLS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGtflWBYt4Km7t28zewLiHq4uRk0NCwESi+dM5FghbTOLCvfVs
+	XYxcHEICixglXi09zA7hzGaS2PxiPyNIFZuAmsSXLyAJTg4RgQiJ5hmzmEGKmAVaGCWuvLzA
+	DJIQFrCRuHKiGWwsi4CqxJUrbUwgNq+ArcSp3gOMELagxI/J98BqmAW0JNbvPM4EYctLbF7z
+	FmgOB9BJ6hKP/upC7NKT+Pv1NDtEiYjEvhfvGCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILk
+	guKk9FwjveLE3OLSvHS95PzcTYzgwHwmvYNxVYPFIUYBDkYlHt6DHh0BQqyJZcWVuYcYJTiY
+	lUR4t78HCvGmJFZWpRblxxeV5qQWH2KU5mBREudt9kgJEBJITyxJzU5NLUgtgskycXBKNTDK
+	3vi8a+oGvUo52xPZOwSnzp7kn+co6RieNnVvRpR56B3v2Xbv3fiiPogHWBd/uSW8y4jFMfcl
+	s2RksHJdy5VQmed+z1iCa3Ztq5gxV4nn0VaTnwvkrr32s7kbnri0V9/o38H1s4KXxD9ty/nv
+	+rXtnmty0lnB/40xDq/+TBDSyJjj5iH7ulWJpTgj0VCLuag4EQAlmRKESAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 09:40, Vinod Koul <vkoul@infradead.org> wrote:
-> On Fri, 2012-10-05 at 15:47 +0530, Inderpal Singh wrote:
->> In probe, memory for multiple DMA descriptors were being allocated at once
->> and then it was being split and added into DMA pool one by one. The address
->> of this memory allocation is not being saved anywhere. To free this memory,
->> the address is required. Initially the first node of the pool will be
->> pointed by this address but as we use this pool the descs will shuffle and
->> hence we will lose the track of the address.
->>
->> This patch does following:
->>
->> 1. Allocates DMA descs one by one and then adds them to pool so that all
->>    descs can be fetched and memory freed one by one. This way runtime
->>    added descs can also be freed.
->> 2. Free DMA descs in case of error in probe and in module's remove function
-> For probe, again you have cleaner code by using devm_kzalloc.
->
-> On 1, if we use the devm_kzalloc then we don't need to allocate in
-> chunks right?
->
+Fix section mismatch warning as below:
 
-Yes, if we use devm_kzalloc we wont have to allocate in chunks.
-I will update this patch to use devm_kzalloc and send it again.
+WARNING: drivers/video/backlight/built-in.o(.data+0x110): Section mismatch in reference from the variable ep93xxbl_driver to the
+function .init.text:ep93xxbl_probe()
+The variable ep93xxbl_driver references
+the function __init ep93xxbl_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
+ drivers/video/backlight/ep93xx_bl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
+index 08214e1..d0c688b 100644
+--- a/drivers/video/backlight/ep93xx_bl.c
++++ b/drivers/video/backlight/ep93xx_bl.c
+@@ -60,7 +60,7 @@ static const struct backlight_ops ep93xxbl_ops = {
+ 	.get_brightness	= ep93xxbl_get_brightness,
+ };
+ 
+-static int __init ep93xxbl_probe(struct platform_device *dev)
++static int __devinit ep93xxbl_probe(struct platform_device *dev)
+ {
+ 	struct ep93xxbl *ep93xxbl;
+ 	struct backlight_device *bl;
+@@ -106,7 +106,7 @@ static int __init ep93xxbl_probe(struct platform_device *dev)
+ 	return 0;
+ }
+ 
+-static int ep93xxbl_remove(struct platform_device *dev)
++static int __devexit ep93xxbl_remove(struct platform_device *dev)
+ {
+ 	struct backlight_device *bl = platform_get_drvdata(dev);
+ 
+-- 
+1.7.1
 
 
->>
->> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
->> ---
->>  drivers/dma/pl330.c |   35 +++++++++++++++++++++++++----------
->>  1 file changed, 25 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
->> index 10c6b6a..bf71ff7 100644
->> --- a/drivers/dma/pl330.c
->> +++ b/drivers/dma/pl330.c
->> @@ -2541,20 +2541,20 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
->>       if (!pdmac)
->>               return 0;
->>
->> -     desc = kmalloc(count * sizeof(*desc), flg);
->> -     if (!desc)
->> -             return 0;
->> +     for (i = 0; i < count; i++) {
->> +             desc = kmalloc(sizeof(*desc), flg);
->> +             if (!desc)
->> +                     break;
->> +             _init_desc(desc);
->>
->> -     spin_lock_irqsave(&pdmac->pool_lock, flags);
->> +             spin_lock_irqsave(&pdmac->pool_lock, flags);
->>
->> -     for (i = 0; i < count; i++) {
->> -             _init_desc(&desc[i]);
->> -             list_add_tail(&desc[i].node, &pdmac->desc_pool);
->> -     }
->> +             list_add_tail(&desc->node, &pdmac->desc_pool);
->>
->> -     spin_unlock_irqrestore(&pdmac->pool_lock, flags);
->> +             spin_unlock_irqrestore(&pdmac->pool_lock, flags);
->> +     }
->>
->> -     return count;
->> +     return i;
->>  }
->>
->>  static struct dma_pl330_desc *
->> @@ -2857,6 +2857,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->>       struct dma_pl330_platdata *pdat;
->>       struct dma_pl330_dmac *pdmac;
->>       struct dma_pl330_chan *pch;
->> +     struct dma_pl330_desc *desc;
->>       struct pl330_info *pi;
->>       struct dma_device *pd;
->>       struct resource *res;
->> @@ -2978,6 +2979,12 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->>  probe_err5:
->>       kfree(pdmac->peripherals);
->>  probe_err4:
->> +     while (!list_empty(&pdmac->desc_pool)) {
->> +             desc = list_entry(pdmac->desc_pool.next,
->> +                             struct dma_pl330_desc, node);
->> +             list_del(&desc->node);
->> +             kfree(desc);
->> +     }
->>       pl330_del(pi);
->>  probe_err3:
->>       free_irq(irq, pi);
->> @@ -2994,6 +3001,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
->>  {
->>       struct dma_pl330_dmac *pdmac = amba_get_drvdata(adev);
->>       struct dma_pl330_chan *pch, *_p;
->> +     struct dma_pl330_desc *desc;
->>       struct pl330_info *pi;
->>       struct resource *res;
->>       int irq;
->> @@ -3015,6 +3023,13 @@ static int __devexit pl330_remove(struct amba_device *adev)
->>               pl330_free_chan_resources(&pch->chan);
->>       }
->>
->> +     while (!list_empty(&pdmac->desc_pool)) {
->> +             desc = list_entry(pdmac->desc_pool.next,
->> +                             struct dma_pl330_desc, node);
->> +             list_del(&desc->node);
->> +             kfree(desc);
->> +     }
->> +
->>       pi = &pdmac->pif;
->>
->>       pl330_del(pi);
->
->
-> --
-> Vinod Koul
-> Intel Corp.
->
-Regards,
-Inder
