@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935367Ab2JYJnC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:43:02 -0400
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:48676 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934884Ab2JYJm6 (ORCPT
+	id S935336Ab2JYJpG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:45:06 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48483 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934884Ab2JYJpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:42:58 -0400
-Message-ID: <50890931.3050906@ce.jp.nec.com>
-Date: Thu, 25 Oct 2012 18:41:05 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 25 Oct 2012 05:45:03 -0400
+Date: Thu, 25 Oct 2012 10:44:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
+ pinctrl-nomadik GPIO driver
+Message-ID: <20121025094458.GB4008@gmail.com>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+ <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+ <20121025073127.GB971@gmail.com>
+ <5088F0EE.8030900@stericsson.com>
+ <20121025082341.GC3348@gmail.com>
+ <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH 1/2] block: move blk_queue_bypass_{start,end} to include/linux/blkdev.h
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] block: move blk_queue_bypass_{start,end} to include/linux/blkdev.h
+On Thu, 25 Oct 2012, Ulf Hansson wrote:
 
-dm wants to use those functions to control the bypass status of
-half-initialized device.
+> On 25 October 2012 10:23, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Thu, 25 Oct 2012, Linus Walleij wrote:
+> >
+> >> On 10/25/2012 09:31 AM, Lee Jones wrote:
+> >> >
+> >> >This certainly doesn't fix the bug we spoke about. I believe Ulf
+> >> >is still working on that one.
+> >> >
+> >> >So do you want me to remove this patch?
+> >> >
+> >>
+> >> Yeah drop it for now.
+> >
+> > Actually, a quick question before I do:
+> >
+> > If it's better/faster to prepare the clock and keep it prepared
+> > while you do clk_enable/clk_disable, why don't we do that in all
+> > drivers? Why do we bother to prepare/unprepare each time if all
+> > it does is take up cycles?
+> >
+> 
+> Depending on clock type, a clk_disable is actually not going to "gate"
+> the clock, that might happen only in unprepare. This depends on if the
+> clock is a fast or slow clock.
+> To save as much power as possible, in general, we should do both
+> disable and unprepare. Although it will be device driver dependent
+> were it is most convenient to do this things.
+> Sometimes it is possible to group them sometimes not.
 
-This patch is a preparation for:
-  [PATCH] dm: stay in blk_queue_bypass until queue becomes initialized
+And in this case, it's better to ... ?
 
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Alasdair G Kergon <agk@redhat.com>
-
----
- block/blk.h            |    2 --
- include/linux/blkdev.h |    2 ++
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk.h b/block/blk.h
-index ca51543..48bac5b 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -26,8 +26,6 @@ void blk_rq_bio_prep(struct request_queue *q, struct request *rq,
- 			struct bio *bio);
- int blk_rq_append_bio(struct request_queue *q, struct request *rq,
- 		      struct bio *bio);
--void blk_queue_bypass_start(struct request_queue *q);
--void blk_queue_bypass_end(struct request_queue *q);
- void blk_dequeue_request(struct request *rq);
- void __blk_queue_free_tags(struct request_queue *q);
- bool __blk_end_bidi_request(struct request *rq, int error,
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 1756001..86ba153 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -949,6 +949,8 @@ bool __must_check blk_get_queue(struct request_queue *);
- struct request_queue *blk_alloc_queue(gfp_t);
- struct request_queue *blk_alloc_queue_node(gfp_t, int);
- extern void blk_put_queue(struct request_queue *);
-+void blk_queue_bypass_start(struct request_queue *q);
-+void blk_queue_bypass_end(struct request_queue *q);
- 
- /*
-  * blk_plug permits building a queue of related requests by holding the I/O
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
