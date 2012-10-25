@@ -1,145 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992540Ab2JYRhp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:37:45 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:42716 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759929Ab2JYRhn (ORCPT
+	id S936029Ab2JYRjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:39:48 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:35636 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935887Ab2JYRjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:37:43 -0400
-Message-ID: <201210251737.q9PHbgev032681@farm-0012.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 25 Oct 2012 13:25:20 -0400
-Subject: [PATCH] tilegx: fix some issues in the SW TSO support
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+	Thu, 25 Oct 2012 13:39:47 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
+References: <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
+	<20121025011056.GC4559@thunk.org> <87y5iv5noq.fsf@spindle.srvr.nix>
+	<20121025141226.GC13562@thunk.org> <8739124oyz.fsf@spindle.srvr.nix>
+Emacs: or perhaps you'd prefer Russian Roulette, after all?
+Date: Thu, 25 Oct 2012 18:39:32 +0100
+In-Reply-To: <8739124oyz.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
+	"Thu, 25 Oct 2012 15:15:48 +0100")
+Message-ID: <87y5iu30yz.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change correctly computes the header length and data length in
-the fragments to avoid a bug where we would end up with extremely
-slow performance.  Also adopt use of skb_frag_size() accessor.
+On 25 Oct 2012, nix@esperi.org.uk said:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Cc: stable@vger.kernel.org [v3.6]
----
- drivers/net/ethernet/tile/tilegx.c |   35 +++++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
+> This I can verify, sometime this evening.
 
-diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 4e2a162..4e98100 100644
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -1334,11 +1334,11 @@ static int tso_count_edescs(struct sk_buff *skb)
- {
- 	struct skb_shared_info *sh = skb_shinfo(skb);
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int num_edescs = 0;
- 	int segment;
-@@ -1353,7 +1353,7 @@ static int tso_count_edescs(struct sk_buff *skb)
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_used = 0;
- 			}
- 
-@@ -1384,13 +1384,13 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 	struct iphdr *ih;
- 	struct tcphdr *th;
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned char *data = skb->data;
- 	unsigned int ih_off, th_off, p_len;
- 	unsigned int isum_seed, tsum_seed, id, seq;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int segment;
- 
-@@ -1405,7 +1405,7 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 	isum_seed = ((0xFFFF - ih->check) +
- 		     (0xFFFF - ih->tot_len) +
- 		     (0xFFFF - ih->id));
--	tsum_seed = th->check + (0xFFFF ^ htons(sh_len + data_len));
-+	tsum_seed = th->check + (0xFFFF ^ htons(skb->len));
- 	id = ntohs(ih->id);
- 	seq = ntohl(th->seq);
- 
-@@ -1444,7 +1444,7 @@ static void tso_headers_prepare(struct sk_buff *skb, unsigned char *headers,
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_used = 0;
- 			}
- 
-@@ -1478,14 +1478,14 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	struct skb_shared_info *sh = skb_shinfo(skb);
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	gxio_mpipe_edesc_t edesc_head = { { 0 } };
- 	gxio_mpipe_edesc_t edesc_body = { { 0 } };
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
--	void *f_data = skb->data;
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
-+	void *f_data = skb->data + sh_len;
- 	long n;            /* size of the current piece of payload */
- 	unsigned long tx_packets = 0, tx_bytes = 0;
- 	unsigned int csum_start;
-@@ -1516,15 +1516,18 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 
- 		/* Egress the payload. */
- 		while (p_used < p_len) {
-+			void *va;
- 
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
--				f_used = 0;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_data = tile_net_frag_buf(&sh->frags[f_id]);
-+				f_used = 0;
- 			}
- 
-+			va = f_data + f_used;
-+
- 			/* Use bytes from the current fragment. */
- 			n = p_len - p_used;
- 			if (n > f_size - f_used)
-@@ -1533,7 +1536,7 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 			p_used += n;
- 
- 			/* Egress a piece of the payload. */
--			edesc_body.va = va_to_tile_io_addr(f_data) + f_used;
-+			edesc_body.va = va_to_tile_io_addr(va);
- 			edesc_body.xfer_size = n;
- 			edesc_body.bound = !(p_used < p_len);
- 			gxio_mpipe_equeue_put_at(equeue, edesc_body, slot);
+Sometime *tomorrow* evening. This has been quite stressful and I can
+hardly keep my eyes open. I'm not doing anything risky in this state.
+
 -- 
-1.7.10.3
-
+NULL && (void)
