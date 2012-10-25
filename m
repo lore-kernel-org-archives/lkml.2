@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759885Ab2JYOZj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:25:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40762 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759115Ab2JYOZf (ORCPT
+	id S1759895Ab2JYOZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:25:47 -0400
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:46326
+	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759628Ab2JYOZn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:25:35 -0400
-Date: Thu, 25 Oct 2012 17:19:44 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Benoit Cousson <b-cousson@ti.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <sshtylyov@mvista.com>
-Subject: Re: [PATCH v4 2/7] usb: dwc3-omap: use of_platform API to create
- dwc3 core pdev
-Message-ID: <20121025141944.GF16564@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350307680-24938-1-git-send-email-kishon@ti.com>
- <1350307680-24938-3-git-send-email-kishon@ti.com>
- <508946FC.7090704@ti.com>
+	Thu, 25 Oct 2012 10:25:43 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: 0
+X-BigFish: PS0(za62pz98dI9371I542M1432Izz1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 3/3] Drivers: hv: Get rid of hv_ringbuffer_cleanup()
+Thread-Topic: [PATCH 3/3] Drivers: hv: Get rid of hv_ringbuffer_cleanup()
+Thread-Index: AQHNqLSODguR4KuZZkulpaQY6eE9PpfJIR4AgAD65hA=
+Date: Thu, 25 Oct 2012 14:13:28 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930A468BC@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1350073335-10575-1-git-send-email-kys@microsoft.com>
+ <1350073363-10614-1-git-send-email-kys@microsoft.com>
+ <1350073363-10614-3-git-send-email-kys@microsoft.com>
+ <20121024224528.GA30009@kroah.com>
+In-Reply-To: <20121024224528.GA30009@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GLp9dJVi+aaipsRk"
-Content-Disposition: inline
-In-Reply-To: <508946FC.7090704@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OrganizationHeadersPreserved: SN2PRD0310HT002.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(377454001)(24454001)(13464001)(5343635001)(47446002)(16696001)(50986001)(47976001)(16616001)(16676001)(20776001)(46102001)(49866001)(74502001)(876001)(50466001)(1076001)(51856001)(4396001)(5836001)(2666001)(74662001)(47776002)(44976002)(31966008)(3846001)(6806001)(8716001)(47736001)(53806001)(33656001)(48376001)(54356001)(4196001)(54316001)(316001)(26583001)(3746001)(3556001);DIR:OUT;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0645BEB7AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GLp9dJVi+aaipsRk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Oct 25, 2012 at 04:04:44PM +0200, Benoit Cousson wrote:
-> On 10/15/2012 03:27 PM, Kishon Vijay Abraham I wrote:
-> > Used of_platform_populate() to populate dwc3 core platform_device
-> > from device tree data. Since now the allocation of unique device id is
-> > handled by of_*, removed the call to dwc3_get_device_id.
->=20
-> Just for my understanding: How are these devices organized exactly?
->=20
-> Do we have : omap_wrapper -> dwc3-omap -> dwc3-core ?
 
-omap_wrapper =3D=3D dwc3-omap, so it becomes:
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, October 24, 2012 6:45 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH 3/3] Drivers: hv: Get rid of hv_ringbuffer_cleanup()
+> 
+> On Fri, Oct 12, 2012 at 01:22:43PM -0700, K. Y. Srinivasan wrote:
+> > hv_ringbuffer_cleanup() is an empty function; get rid of it.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reported-by: Jason Wang <jasowang@redhat.com>
+> > Acked-by: Jason Wang <jasowang@redhat.com>
+> > ---
+> >  drivers/hv/channel.c      |    4 ----
+> >  drivers/hv/hyperv_vmbus.h |    1 -
+> >  drivers/hv/ring_buffer.c  |   11 -----------
+> >  3 files changed, 0 insertions(+), 16 deletions(-)
+> 
+> That's nice, but this patch causes build failures, so I can't accept it.
+> 
+> Please test your patches better (hint, a simple 'git grep' would have
+> worked here...)
 
-dwc3-omap -> dwc3-core
+Sorry about that. I am pretty sure I built (with this patch) both vmbus and the util drivers.
+This function is  a private function for the vmbus driver and in fact I went back and rebuilt the
+drivers in the hv directory without any problem (with this patch applied) in the same tree where
+I developed these patches (linux-next tree dated October 2, 2012). Specifically, what was
+the build problem you ran into.
 
---=20
-balbi
+Regards,
 
---GLp9dJVi+aaipsRk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+K. Y
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQiUqAAAoJEIaOsuA1yqRE/kcP/07hQMsC45EW6YHymHu5x4cD
-wmUq5XivfkYzu9vM2TsnNBEjn8AzHqXQgXMorvT6XEDQukyE6p9k/maGtTdG/SxH
-dKbIpiZLnMUJ1Zzbr0TB6ye2l7y1HJuvnd0/ieojsjOEHfKgNTauxes+4Pi4DWjm
-OrIbAY9fUOLVHk3kR0+MAcTTIuZ4tqm3CmInAHHG3h8NBx2Um8rbHr8E4/KK8SqV
-pkP+leF1V0HrpMtFGejmuFsBDlax/4xWEcbiShScwBbuplaMw7JFSFBLmwxbNv/e
-rOWmOVSu7LQRwvLIfPV4gbvveDY3OLZL5XXjyKJ+LkzYPcw092y9DKaDD4CDSWLN
-Az+t3Y7yW2/wq0uw22ELAbEZXRGTt3+TDi3TH/xECIKH3uzBNhpzg76SDMt1RFrp
-ctdBGiYp0fa62ti+oWtW93psYBR9a6P/hcoRG5kD3dc6X2nSo/JDY+upV2fFblPu
-cGO626GH6ApR9qi0KkbSKqx+N4L7CHjyw/SrExBcBnwLsUt35Ae2OnkWZmP64JhJ
-mEitOAdOBJGluGWv9WDoSwCaC7ujYiGSZZedgrrZrCbLKKaD0H7ueLpbJfQg3g3q
-/VSkDrhcnnkf3Rzc+wf6bf5GRggowaRIRlH3jp1D8jZ4u6IR7yep0X0gJVNwumpl
-yOQ3t7pJy+0qH6E0IrSO
-=EIey
------END PGP SIGNATURE-----
-
---GLp9dJVi+aaipsRk--
