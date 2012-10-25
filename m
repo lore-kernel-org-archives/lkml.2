@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab2JYVUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:20:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:65424 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2JYVUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:20:20 -0400
+	id S1751153Ab2JYVVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:21:36 -0400
+Received: from shutemov.name ([176.9.204.213]:59991 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750703Ab2JYVVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 17:21:34 -0400
+Date: Fri, 26 Oct 2012 00:22:51 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
+Message-ID: <20121025212251.GA31749@shutemov.name>
+References: <20121023063532.GA15870@shutemov.name>
+ <20121022234349.27f33f62.akpm@linux-foundation.org>
+ <20121023070018.GA18381@otc-wbsnb-06>
+ <20121023155915.7d5ef9d1.akpm@linux-foundation.org>
+ <20121023233801.GA21591@shutemov.name>
+ <20121024122253.5ecea992.akpm@linux-foundation.org>
+ <20121024194552.GA24460@otc-wbsnb-06>
+ <20121024132552.5f9a5f5b.akpm@linux-foundation.org>
+ <20121025204959.GA27251@otc-wbsnb-06>
+ <20121025140524.17083937.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D413889905@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
- <CAGTjWtDVZGq7VKou10xC-zJXGmane_kKjGo1xMjgPUkKAedFqQ@mail.gmail.com>
- <A5ED84D3BB3A384992CBB9C77DEDA4D413889851@USINDEM103.corp.hds.com>
- <CAGTjWtAUv=HzOGPDeDuTb_6z81bnSQ-F7DDERZ2tqmfaP4wXwQ@mail.gmail.com> <A5ED84D3BB3A384992CBB9C77DEDA4D413889905@USINDEM103.corp.hds.com>
-From: Mike Waychison <mikew@google.com>
-Date: Thu, 25 Oct 2012 14:19:59 -0700
-Message-ID: <CAGTjWtDEQx8mCKtNTGGSOMajAoSCJTaKWG8TBmYinQMPfx5DQQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from a
- write callback to hold multiple logs
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121025140524.17083937.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 1:51 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
->> So doesn't this break erasing of existing dumps in pstore-efivars?
->> Unless efi_pstore_read still understands the older variable name formats, users will be stranded with dumps consuming space in
->> efivars that aren't exported via pstore anymore.
->
-> Patch 2/5, 3/5 and 4/5 don't change an existing format of a variable name and don't break anything.
-> The existing format consists of type, id and ctime. And it is not moditied by these patches.
-> Here is a variable name (and guid) of efi_pstore in curret linus-tree.
->
->         ls /sys/firmware/efi/vars/
->         dump-type0-1-1351113059-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->         dump-type0-2-1351113059-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->         dump-type0-3-1351113059-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->
->         Variable Name: dump-type0-1-1351113059
->         GUID: cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+On Thu, Oct 25, 2012 at 02:05:24PM -0700, Andrew Morton wrote:
+> On Thu, 25 Oct 2012 23:49:59 +0300
+> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> 
+> > On Wed, Oct 24, 2012 at 01:25:52PM -0700, Andrew Morton wrote:
+> > > On Wed, 24 Oct 2012 22:45:52 +0300
+> > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > > 
+> > > > On Wed, Oct 24, 2012 at 12:22:53PM -0700, Andrew Morton wrote:
+> > > > > 
+> > > > > I'm thinking that such a workload would be the above dd in parallel
+> > > > > with a small app which touches the huge page and then exits, then gets
+> > > > > executed again.  That "small app" sounds realistic to me.  Obviously
+> > > > > one could exercise the zero page's refcount at higher frequency with a
+> > > > > tight map/touch/unmap loop, but that sounds less realistic.  It's worth
+> > > > > trying that exercise as well though.
+> > > > > 
+> > > > > Or do something else.  But we should try to probe this code's
+> > > > > worst-case behaviour, get an understanding of its effects and then
+> > > > > decide whether any such workload is realisic enough to worry about.
+> > > > 
+> > > > Okay, I'll try few memory pressure scenarios.
+> > 
+> > A test program:
+> > 
+> >         while (1) {
+> >                 posix_memalign((void **)&p, 2 * MB, 2 * MB);
+> >                 assert(*p == 0);
+> >                 free(p);
+> >         }
+> > 
+> > With this code in background we have pretty good chance to have huge zero
+> > page freeable (refcount == 1) when shrinker callback called - roughly one
+> > of two.
+> > 
+> > Pagecache hog (dd if=hugefile of=/dev/null bs=1M) creates enough pressure
+> > to get shrinker callback called, but it was only asked about cache size
+> > (nr_to_scan == 0).
+> > I was not able to get it called with nr_to_scan > 0 on this scenario, so
+> > hzp never freed.
+> 
+> hm.  It's odd that the kernel didn't try to shrink slabs in this case. 
+> Why didn't it??
 
-Okay, this alleviates most of my concerns for ctime.
+nr_to_scan == 0 asks for the fast path. shrinker callback can shink, if
+it thinks it's good idea.
 
->
-> On the other hand, patch 5/5 changes the format by adding sequence counter.
-> But efi_pstore_read is modied to work correctly in it.
->
->         dump-type0-1-1-1351113059-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->
->         Variable Name: dump-type0-1-1-1351113059
->         GUID: cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
->
-> If I need to elaborate more, please feel free to ask me:)
-> I'm not sure if I understand your question completely.
+> 
+> > I also tried another scenario: usemem -n16 100M -r 1000. It creates real
+> > memory pressure - no easy reclaimable memory. This time callback called
+> > with nr_to_scan > 0 and we freed hzp. Under pressure we fails to allocate
+> > hzp and code goes to fallback path as it supposed to.
+> > 
+> > Do I need to check any other scenario?
+> 
+> I'm thinking that if we do hit problems in this area, we could avoid
+> freeing the hugepage unless the scan_control.priority is high enough. 
+> That would involve adding a magic number or a tunable to set the
+> threshold.
 
-In this case, I think efi_pstore_read in patch 5/5 should probably
-fall-back to trying to do a sscanf(...) == 3 if the sscanf(...) == 4
-test fails so that dumps for older dumps from previous kernels are
-still visible to users, no?  They can perhaps get a default count of
-0?  efi_pstore_erase would have to be updated to understand this as
-well.
+What about ratelimit on alloc path to force fallback if we allocate
+to often? Is it good idea?
+
+> Also, it would be beneficial if we can monitor this easily.  Perhaps
+> add a counter to /proc/vmstat which tells us how many times that page
+> has been reallocated?  And perhaps how many times we tried to allocate
+> it but failed?
+
+Okay, I'll prepare patch.
+
+-- 
+ Kirill A. Shutemov
