@@ -1,80 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562Ab2JYOMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:12:37 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33526 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab2JYOLM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:11:12 -0400
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] HID: hid-multitouch: fix Win 8 protocol
-Date: Thu, 25 Oct 2012 16:09:46 +0200
-Message-Id: <1351174189-24719-8-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
+	id S1759599Ab2JYOMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:12:49 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57500 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758321Ab2JYOMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:12:43 -0400
+Date: Thu, 25 Oct 2012 10:12:26 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6
+ (when rebooting during umount)
+Message-ID: <20121025141226.GC13562@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org,
+	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+References: <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508740B2.2030401@redhat.com>
+ <87txtkld4h.fsf@spindle.srvr.nix>
+ <50876E1D.3040501@redhat.com>
+ <20121024052351.GB21714@thunk.org>
+ <878vavveee.fsf@spindle.srvr.nix>
+ <20121024210819.GA5484@thunk.org>
+ <87y5iv78op.fsf_-_@spindle.srvr.nix>
+ <20121025011056.GC4559@thunk.org>
+ <87y5iv5noq.fsf@spindle.srvr.nix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y5iv5noq.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Win 8 specification is much more precise than the Win 7 one.
-Moreover devices that need to take certification must be submitted
-to Microsoft.
+I've been thinking about this some more, and if you don't have a lot
+of time, perhaps the most important test to do is this.  Does the
+chance of your seeing corrupted files in v3.6.3 go down if you run
+3.6.3 with commit 14b4ed22a6 reverted?  Keep your current
+configuration, using nobarrier, et. al, constant.  If reverting the
+commit makes things better, then that's what would be most useful to
+know as soon as possible, since the correct short-term solution is to
+revert that commit for 3.7-rcX, as well as the 3.6 and 3.5 stable
+kernels.
 
-The result is a better protocol support and we can rely on that to
-skip all the messy tests we used to do.
+We can investigate later whether nobarrier, journal_async_commit seem
+to make the problem worse, and whether the less common corruption case
+that you were seeing with 3.6.1 was actually a change which was
+introduced between 3.3 and 3.4.
 
-The protocol specify the fact that each valid touch must be reported
-within a frame, and that the release touch coordinate must be the
-same than the last known touch.
-So we can use the always_valid quirk and dismiss reports when we
-touch coordiante do not follow this rule.
+But most importantly, even if the bug doesn't show up with the default
+mount options at all (which explains why Eric and I weren't able to
+reproduce it), there are probably other users using nobarrier, so if
+the frequency with which you were seeing corruptions went up
+significantly between 3.6.1 and 3.6.3, and reverting 14b4ed22a6 brings
+the frequency back down to what you were seeing with 3.6.1, we should
+do that ASAP.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-multitouch.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+Regards,
 
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index c8290e2..6d4ad30 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -510,6 +510,18 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
- 		int slotnum = mt_compute_slot(td, input);
- 		struct mt_slot *s = &td->curdata;
- 
-+		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
-+		    !s->touch_state) {
-+			struct input_mt_slot *slot = &input->mt->slots[slotnum];
-+			int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
-+			int prv_y = input_mt_get_value(slot, ABS_MT_POSITION_Y);
-+			/* valid releases occurs when the last x and y positions
-+			 * are the same as the last known touch. */
-+			if (!input_mt_is_active(slot) ||
-+			    prv_x != s->x || prv_y != s->y)
-+				return;
-+		}
-+
- 		if (slotnum < 0 || slotnum >= td->maxcontacts)
- 			return;
- 
-@@ -681,8 +693,8 @@ static void mt_post_parse_default_settings(struct mt_device *td)
- {
- 	__s32 quirks = td->mtclass.quirks;
- 
--	/* unknown serial device needs special quirks */
--	if (td->touches_by_report == 1) {
-+	/* unknown serial devices or win8 ones need special quirks */
-+	if (td->touches_by_report == 1 || quirks & MT_QUIRK_WIN_8_CERTIFIED) {
- 		quirks |= MT_QUIRK_ALWAYS_VALID;
- 		quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
- 		quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
--- 
-1.7.11.7
-
+						- Ted
