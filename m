@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935072Ab2JYJAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:00:36 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:20850 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934647Ab2JYJAd (ORCPT
+	id S965557Ab2JYJDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:03:16 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:36541 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964967Ab2JYJDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:00:33 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll387qFkE=
-X-RZG-CLASS-ID: mo00
-From: Olaf Hering <olaf@aepfle.de>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Olaf Hering <olaf@aepfle.de>
-Subject: [PATCH] x86: remove obsolete comment from asm/xen/hypervisor.h
-Date: Thu, 25 Oct 2012 11:00:24 +0200
-Message-Id: <1351155624-25512-1-git-send-email-olaf@aepfle.de>
-X-Mailer: git-send-email 1.7.12.4
+	Thu, 25 Oct 2012 05:03:14 -0400
+Message-ID: <1351155783.15388.0.camel@phoenix>
+Subject: mfd: rc5t583-irq.c build warning: array subscript is above array
+ bounds
+From: Axel Lin <axel.lin@ingics.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Date: Thu, 25 Oct 2012 17:03:03 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
----
- arch/x86/include/asm/xen/hypervisor.h | 1 -
- 1 file changed, 1 deletion(-)
+hi Laxman,
 
-diff --git a/arch/x86/include/asm/xen/hypervisor.h b/arch/x86/include/asm/xen/hypervisor.h
-index 66d0fff..125f344 100644
---- a/arch/x86/include/asm/xen/hypervisor.h
-+++ b/arch/x86/include/asm/xen/hypervisor.h
-@@ -33,7 +33,6 @@
- #ifndef _ASM_X86_XEN_HYPERVISOR_H
- #define _ASM_X86_XEN_HYPERVISOR_H
- 
--/* arch/i386/kernel/setup.c */
- extern struct shared_info *HYPERVISOR_shared_info;
- extern struct start_info *xen_start_info;
- 
--- 
-1.7.12.4
+I got below compile warning when build this driver.
+
+  CC      drivers/mfd/rc5t583-irq.o
+drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_sync_unlock':
+drivers/mfd/rc5t583-irq.c:227: warning: array subscript is above array bounds
+drivers/mfd/rc5t583-irq.c: In function 'rc5t583_irq_init':
+drivers/mfd/rc5t583-irq.c:349: warning: array subscript is above array bounds
+
+Regards,
+Axel
+
 
