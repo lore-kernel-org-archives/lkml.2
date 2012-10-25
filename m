@@ -1,68 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935441Ab2JYJtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:49:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36255 "EHLO mail.skyhub.de"
+	id S935343Ab2JYJvp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:51:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34844 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934884Ab2JYJtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:49:18 -0400
-Date: Thu, 25 Oct 2012 11:49:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ivan Hu <ivan.hu@canonical.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        alex.shi@intel.com, borislav.petkov@amd.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, intel, power: Modify the MSR_IA32_ENERGY_PERF_BIAS
- message from warning to info
-Message-ID: <20121025094914.GA17169@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ivan Hu <ivan.hu@canonical.com>, tglx@linutronix.de,
-	mingo@redhat.com, hpa@zytor.com, x86@kernel.org, alex.shi@intel.com,
-	borislav.petkov@amd.com, linux-kernel@vger.kernel.org
-References: <1351157280-9935-1-git-send-email-ivan.hu@canonical.com>
+	id S1751754Ab2JYJvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 05:51:42 -0400
+Date: Thu, 25 Oct 2012 10:44:10 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Mike Yoknis <mike.yoknis@hp.com>
+Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
+        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
+        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: memmap_init_zone() performance improvement
+Message-ID: <20121025094410.GA2558@suse.de>
+References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
+ <20121008151656.GM29125@suse.de>
+ <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
+ <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
+ <20121020082858.GA2698@suse.de>
+ <1351093667.1205.11.camel@MikesLinux.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1351157280-9935-1-git-send-email-ivan.hu@canonical.com>
+In-Reply-To: <1351093667.1205.11.camel@MikesLinux.fc.hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 05:28:00PM +0800, Ivan Hu wrote:
-> Intel IA32 program guild doesn't mention that this MSR should be set by
-> BIOS, instead, it mentions "Software can use whatever criteria it sees
-> fit to program the MSR with the appropriate value.". Discuss with IBV,
-> they'd like to keep this MSR as default, and let OS to change value if desired.
-> This message should be more proper set as an info than a warning.
-
-What is the difference? It'll appear in default dmesg loglevel settings
-anyway.
-
-> Signed-off-by: Ivan Hu <ivan.hu@canonical.com>
-> ---
->  arch/x86/kernel/cpu/intel.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Wed, Oct 24, 2012 at 09:47:47AM -0600, Mike Yoknis wrote:
+> On Sat, 2012-10-20 at 09:29 +0100, Mel Gorman wrote:
+> > On Fri, Oct 19, 2012 at 01:53:18PM -0600, Mike Yoknis wrote:
+> > > On Tue, 2012-10-09 at 08:56 -0600, Mike Yoknis wrote:
+> > > > On Mon, 2012-10-08 at 16:16 +0100, Mel Gorman wrote:
+> > > > > On Wed, Oct 03, 2012 at 08:56:14AM -0600, Mike Yoknis wrote:
+> > > > > > memmap_init_zone() loops through every Page Frame Number (pfn),
+> > > > > > including pfn values that are within the gaps between existing
+> > > > > > memory sections.  The unneeded looping will become a boot
+> > > > > > performance issue when machines configure larger memory ranges
+> > > > > > that will contain larger and more numerous gaps.
+> > > > > > 
+> > > > > > The code will skip across invalid sections to reduce the
+> > > > > > number of loops executed.
+> > > > > > 
+> > > > > > Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
+> > > > > 
+> > > > > I do not see the need for
+> > > > > the additional complexity unless you can show it makes a big difference
+> > > > > to boot times.
+> > > > > 
+> > > > 
+> > > > Mel,
+> > > > 
+> > > > Let me pass along the numbers I have.  We have what we call an
+> > > > "architectural simulator".  It is a computer program that pretends that
+> > > > it is a computer system.  We use it to test the firmware before real
+> > > > hardware is available.  We have booted Linux on our simulator.  As you
+> > > > would expect it takes longer to boot on the simulator than it does on
+> > > > real hardware.
+> > > > 
+> > > > With my patch - boot time 41 minutes
+> > > > Without patch - boot time 94 minutes
+> > > > 
+> > > > These numbers do not scale linearly to real hardware.  But indicate to
+> > > > me a place where Linux can be improved.
+> > > > 
+> > > > Mike Yoknis
+> > > > 
+> > > Mel,
+> > > I finally got access to prototype hardware.  
+> > > It is a relatively small machine with only 64GB of RAM.
+> > >  
+> > > I put in a time measurement by reading the TSC register.
+> > > I booted both with and without my patch -
+> > >  
+> > > Without patch -
+> > > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
+> > > [    0.000000] memmap_init_zone() enter 1404184834218
+> > > [    0.000000] memmap_init_zone() exit  1411174884438  diff = 6990050220
+> > >  
+> > > With patch -
+> > > [    0.000000]   Normal zone: 13400064 pages, LIFO batch:31
+> > > [    0.000000] memmap_init_zone() enter 1555530050778
+> > > [    0.000000] memmap_init_zone() exit  1559379204643  diff = 3849153865
+> > >  
+> > > This shows that without the patch the routine spends 45% 
+> > > of its time spinning unnecessarily.
+> > >  
+> > 
+> > I'm travelling at the moment so apologies that I have not followed up on
+> > this. My problem is still the same with the patch - it changes more
+> > headers than is necessary and it is sparsemem specific. At minimum, try
+> > the suggestion of 
+> > 
+> > if (!early_pfn_valid(pfn)) {
+> >       pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES, MAX_ORDER_NR_PAGES) - 1;
+> >       continue;
+> > }
+> > 
+> > and see how much it gains you as it should work on all memory models. If
+> > it turns out that you really need to skip whole sections then the strice
+> > could MAX_ORDER_NR_PAGES on all memory models except sparsemem where the
+> > stride would be PAGES_PER_SECTION
+> > 
+> Mel,
+> I tried your suggestion.  I re-ran all 3 methods on our latest firmware.
 > 
-> diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> index 198e019..2bdc6bf 100644
-> --- a/arch/x86/kernel/cpu/intel.c
-> +++ b/arch/x86/kernel/cpu/intel.c
-> @@ -466,7 +466,7 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
->  
->  		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
->  		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
-> -			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-> +			printk_once(KERN_INFO "ENERGY_PERF_BIAS:"
+> The following are TSC difference numbers (*10^6) to execute
+> memmap_init_zone() -
+> 
+> No patch   - 7010
+> Mel's patch- 3918
+> My patch   - 3847
+> 
+> The incremental improvement of my method is not significant vs. yours.
+> 
+> If you believe your suggested change is worthwhile I will create a v2
+> patch.
 
-While you're at it, you can do pr_info_once to shorten this line a bit.
-
->  				" Set to 'normal', was 'performance'\n"
->  				"ENERGY_PERF_BIAS: View and update with"
->  				" x86_energy_perf_policy(8)\n");
-> -- 
-> 1.7.10.4
+I think it is a reasonable change and I prefer my suggestion because it
+should work for all memory models. Please do a V2 of the patch. I'm still
+travelling at the moment (writing this from an airport) but I'll be back
+online next Tuesday and will review it when I can.
 
 -- 
-Regards/Gruss,
-    Boris.
+Mel Gorman
+SUSE Labs
