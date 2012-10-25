@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab2JYBuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:50:20 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:12459 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759116Ab2JYBuS (ORCPT
+	id S1759137Ab2JYBvl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:51:41 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:53068 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759010Ab2JYBvj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:50:18 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtsXAJiZiFB5LCG2/2dsb2JhbABEhSu3AoRnAoELgQmCHgEBBAE6HCMFCwgDGBUZFCUDIROHfgW9ChSLTQEfgWeBNoJPYQOVcolChniDA4FICBc
-Date: Thu, 25 Oct 2012 12:50:14 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: YingHang Zhu <casualfisher@gmail.com>
-Cc: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-Message-ID: <20121025015014.GC29378@dastard>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
- <20121023224706.GR4291@dastard>
- <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
- <20121024201921.GX4291@dastard>
- <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
+	Wed, 24 Oct 2012 21:51:39 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v2 1/5] efi_pstore: Check remaining space with
+ QueryVariableInfo() before writing data
+Thread-Topic: [PATCH v2 1/5] efi_pstore: Check remaining space with
+ QueryVariableInfo() before writing data
+Thread-Index: Ac2yUzWAAGu/E7YYTt6SMLfP+tNyfA==
+Date: Thu, 25 Oct 2012 01:51:25 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388897F@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-24_09:2012-10-24,2012-10-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210240325
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 08:17:05AM +0800, YingHang Zhu wrote:
-> On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
-> >> Hi Dave,
-> >> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
-> >> > On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
-> >> >> Hi,
-> >> >>   Recently we ran into the bug that an opened file's ra_pages does not
-> >> >> synchronize with it's backing device's when the latter is changed
-> >> >> with blockdev --setra, the application needs to reopen the file
-> >> >> to know the change,
-> >> >
-> >> > or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
-> >> > window to the (new) bdi default.
-> >> >
-> >> >> which is inappropriate under our circumstances.
-> >> >
-> >> > Which are? We don't know your circumstances, so you need to tell us
-> >> > why you need this and why existing methods of handling such changes
-> >> > are insufficient...
-> >> >
-> >> > Optimal readahead windows tend to be a physical property of the
-> >> > storage and that does not tend to change dynamically. Hence block
-> >> > device readahead should only need to be set up once, and generally
-> >> > that can be done before the filesystem is mounted and files are
-> >> > opened (e.g. via udev rules). Hence you need to explain why you need
-> >> > to change the default block device readahead on the fly, and why
-> >> > fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
-> >> > windows to the new defaults.
-> >> Our system is a fuse-based file system, fuse creates a
-> >> pseudo backing device for the user space file systems, the default readahead
-> >> size is 128KB and it can't fully utilize the backing storage's read ability,
-> >> so we should tune it.
-> >
-> > Sure, but that doesn't tell me anything about why you can't do this
-> > at mount time before the application opens any files. i.e.  you've
-> > simply stated the reason why readahead is tunable, not why you need
-> > to be fully dynamic.....
-> We store our file system's data on different disks so we need to change ra_pages
-> dynamically according to where the data resides, it can't be fixed at mount time
-> or when we open files.
+[Issue]
 
-That doesn't make a whole lot of sense to me. let me try to get this
-straight.
+As discussed in a thread below, Running out of space in EFI isn't a well-tested scenario.
+And we wouldn't expect all firmware to handle it gracefully.
+http://marc.info/?l=linux-kernel&m=134305325801789&w=2
 
-There is data that resides on two devices (A + B), and a fuse
-filesystem to access that data. There is a single file in the fuse
-fs has data on both devices. An app has the file open, and when the
-data it is accessing is on device A you need to set the readahead to
-what is best for device A? And when the app tries to access data for
-that file that is on device B, you need to set the readahead to what
-is best for device B? And you are changing the fuse BDI readahead
-settings according to where the data in the back end lies?
+On the other hand, current efi_pstore doesn't check a remaining space of storage at writing time.
+Therefore, efi_pstore may not work if it tries to write a large amount of data.
 
-It seems to me that you should be setting the fuse readahead to the
-maximum of the readahead windows the data devices have configured at
-mount time and leaving it at that....
+[Patch Description]
 
-> The abstract bdi of fuse and btrfs provides some dynamically changing
-> bdi.ra_pages
-> based on the real backing device. IMHO this should not be ignored.
+To avoid handling the situation above, this patch checks if there is a space enough to log with
+QueryVariableInfo() before writing data.
 
-btrfs simply takes into account the number of disks it has for a
-given storage pool when setting up the default bdi ra_pages during
-mount.  This is basically doing what I suggested above.  Same with
-the generic fuse code - it's simply setting a sensible default value
-for the given fuse configuration.
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+---
+ drivers/firmware/efivars.c |   18 ++++++++++++++++++
+ include/linux/efi.h        |    1 +
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-Neither are dynamic in the sense you are talking about, though.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index d10c987..37ac21a 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -707,12 +707,29 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
++	u64 storage_space, remaining_space, max_variable_size;
++	efi_status_t status = EFI_NOT_FOUND;
+ 
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
+ 
+ 	spin_lock(&efivars->lock);
+ 
++	/*
++	 * Check if there is a space enough to log.
++	 * size: a size of logging data
++	 * DUMP_NAME_LEN * 2: a maximum size of variable name
++	 */
++	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
++						   &storage_space,
++						   &remaining_space,
++						   &max_variable_size);
++	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++		spin_unlock(&efivars->lock);
++		*id = part;
++		return -ENOSPC;
++	}
++
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = stub_name[i];
+ 
+@@ -1237,6 +1254,7 @@ efivars_init(void)
+ 	ops.get_variable = efi.get_variable;
+ 	ops.set_variable = efi.set_variable;
+ 	ops.get_next_variable = efi.get_next_variable;
++	ops.query_variable_info = efi.query_variable_info;
+ 	error = register_efivars(&__efivars, &ops, efi_kobj);
+ 	if (error)
+ 		goto err_put;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 8670eb1..c47ec36 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -643,6 +643,7 @@ struct efivar_operations {
+ 	efi_get_variable_t *get_variable;
+ 	efi_get_next_variable_t *get_next_variable;
+ 	efi_set_variable_t *set_variable;
++	efi_query_variable_info_t *query_variable_info;
+ };
+ 
+ struct efivars {
+-- 1.7.1
