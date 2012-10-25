@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934280Ab2JYAJj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:09:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35481 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2JYAJi (ORCPT
+	id S1757798Ab2JYAMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:12:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58363 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab2JYAMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:09:38 -0400
+	Wed, 24 Oct 2012 20:12:10 -0400
+Message-ID: <508883D6.70706@wwwdotorg.org>
+Date: Wed, 24 Oct 2012 18:12:06 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351123698.8467.28.camel@gandalf.local.home>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
- <1351115634-8420-2-git-send-email-juri.lelli@gmail.com> <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
- <1351123698.8467.28.camel@gandalf.local.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 24 Oct 2012 17:09:16 -0700
-X-Google-Sender-Auth: GRD0z-wH_LjUyh7t4KI3ViUirII
-Message-ID: <CA+55aFwERdk6PaKPe0PMSa_muuRVQqv6u-dc3zZitHn+wgbXMA@mail.gmail.com>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>
+Subject: Re: [PATCH 03/23] printk: Move braille console support into separate
+ braille.[ch] files
+References: <cover.1350449851.git.joe@perches.com> <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>
+In-Reply-To: <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>
+X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 5:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
->
-> I'm assuming you meant the last include to be:
->
->   #include <linux/generic32bit-128bit.h>
+On 10/17/2012 12:06 AM, Joe Perches wrote:
+> Create files with prototypes and static inlines for braille
+> support.  Make braille_console functions return 1 on success.
 
-That's a safe assumption.
+Joe,
 
-> Cut and paste should be a federal crime.
+Between next-20121022 and next-20121023, the serial console (on the ARM
+SoC Tegra at least) stopped working. The issue bisects down to this
+commit. I haven't had a chance to investigate why yet, I just finished
+bisected.
 
-We'd all be serving some hard time, I'm afraid.
+earlyprintk over the same UART works. Once the system has booted, a few
+late kernel messages do appear, and then getty/login over the UART
+works. So, it's just the printk messages that disappeared.
 
-         Linus
+In case it's relevant, my command-line is:
+
+console=ttyS0,115200n8 loglevel=8 rootwait rw earlyprintk
+root=PARTUUID=b2f82cda-2535-4779-b467-094a210fbae7
+
+I'll continue to investigate further tomorrow, but just wanted to give
+you a heads-up in case you could immediately see anything obvious in the
+code.
