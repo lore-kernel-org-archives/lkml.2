@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933394Ab2JYGCp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:02:45 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57412 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab2JYGCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:02:42 -0400
-Date: Thu, 25 Oct 2012 02:02:31 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Nico Williams <nico@cryptonector.com>
-Cc: david@lang.hm,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121025060231.GC9860@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Nico Williams <nico@cryptonector.com>, david@lang.hm,
-	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-	linux-fsdevel@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
- <m2fw5mtffg.fsf_-_@firstfloor.org>
- <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
- <5086F5A7.9090406@vlnb.net>
- <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
- <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
- <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
- <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
- <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S933530Ab2JYGMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:12:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:35553 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2JYGMa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 02:12:30 -0400
+Message-ID: <1351145401.18115.78.camel@falcor>
+Subject: Re: Kdump with signed images
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg@redhat.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Date: Thu, 25 Oct 2012 02:10:01 -0400
+In-Reply-To: <20121024173651.GE1821@redhat.com>
+References: <1350588121.30243.7.camel@rhapsody>
+	 <20121018193831.GD18147@redhat.com> <874nlrv2ni.fsf@xmission.com>
+	 <20121019020630.GA27052@redhat.com> <877gqnnnf0.fsf@xmission.com>
+	 <20121019143112.GB27052@redhat.com> <871ugqb4gj.fsf@xmission.com>
+	 <20121023131854.GA16496@redhat.com> <20121023145920.GD16496@redhat.com>
+	 <87fw552mb4.fsf_-_@xmission.com> <20121024173651.GE1821@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102506-5518-0000-0000-000008B5354D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 12:18:47AM -0500, Nico Williams wrote:
+On Wed, 2012-10-24 at 13:36 -0400, Vivek Goyal wrote:
+> On Tue, Oct 23, 2012 at 09:19:27AM -0700, Eric W. Biederman wrote:
+> > Vivek Goyal <vgoyal@redhat.com> writes:
+> > 
+> > > On Tue, Oct 23, 2012 at 09:18:54AM -0400, Vivek Goyal wrote:
+> > >
+> > > [..]
+> > >> > >> There are 3 options for trusting /sbin/kexec.  There are IMA and EMA,
+> > >> > >> and it is conceivable to have ELF note sections with signatures for
+> > >> > >> executables.
+> > >> > >
+> > >> > > Can you please tell more about what is EMA and IMA. I did quick google
+> > >> > > and could not find much.
+> > >> > 
+> > >> > That should have been EVM and IMA.  Look under security/integrity/.  I
+> > >> > don't know much about them but they appear to be security modules with a
+> > >> > focus on verifying checksum or perhaps encrypted hashes of executables
+> > >> > are consistent.
+> > >> 
+> > >> I will do some quick search there and I see if I can understand something.
+> > >> 
+> > >
+> > > Ok, I quickly went through following paper.
+> > >
+> > > http://mirror.transact.net.au/sourceforge/l/project/li/linux-ima/linux-ima/Integrity_overview.pdf
+> > >
+> > > So it looks like that IMA can store the hashes of files and at execute
+> > > time ensure those hashes are unchanged to protect against the possibility
+> > > of modification of files.
+
+IMA-appraisal originally was hashed based, but Dmitry Kasatkin added
+digital signature support.  Both have been upstreamed.
+
+> > > But what about creation of a new program which can call kexec_load()
+> > > and execute an unsigned kernel. Doesn't look like that will be
+> > > prevented using IMA.
+
+Assuming the IMA policy syntax is updated to require 'security.ima' to
+contain a digital signature, then it is only a question of protecting
+the _ima and _evm keyrings. (Dmitry has such a patch waiting to be
+reviewed.)  So the new program would have to be vetted by someone
+trusted.
+
+> > > Whole idea behind UEFI secure boot seems to be that all signing happens
+> > > outside the running system and now only signed code can run with higher
+> > > priviliges.
+> > 
+> > No.  UEFI secure boot has absolutely nothing todo with this.
+> > 
+> > UEFI secure boot is about not being able to hijack the code EFI runs
+> > directly.  Full stop.
+> > 
+> > Some people would like to implment a security policy that says
+> > you can't boot an untrusted version of windows from linux if you have
+> > booted with UEFI secure boot, so they don't get their bootloader
+> > signatures revoked by microsoft.
+> > 
+> > A security model relying on Microsoft's key is totally uniteresting to
+> > me.  Either signing at the UEFI level is of no use or Microsofts key
+> > will fall again to the combined assult of every cracker and every
+> > governmental dirty cyber ops division attacking it.  Not to mention that
+> > Microsoft has little incentive to keep linux booting.
+> > 
+> > I think it is reasonable to be able to support a policy where we can't
+> > boot unsigned versions of Microsoft windows.  However beyond being able
+> > to exclude booting windows being one criteria for our policy mechanism
+> > please don't even start to justify things with that ridiculous security
+> > policy even indirectly.
+> > 
+> > > IMA seems to be only protecting against only making sure
+> > > existing binaries are not modifed but it does not seem to prevent against
+> > > installation of new binaries and these binaries take advantage of kexec
+> > > system call to load an unsigned kernel. 
+
+The IMA/IMA-appraisal policy dictates what needs to be appraised.  The
+default ima-appraisal policy appraises all files owned by root.
+ 
+> > I believe you can combine IMA with EVM signed security attributes where
+> > the EVM signing key is offline, and the verification key is in the
+> > kernel.
+> > 
+> > The combination of IMA and EVM gets very close to being able to sign
+> > executables offline and be able to update them.
 > 
-> By trusting fsync().  And if you don't care about immediate Durability
-> you can run the fsync() in a background thread and mark the associated
-> transaction as completed in the next transaction to be written after
-> the fsync() completes.
+> [ Again CCing lkml and IMA/EVM folks ]
+> 
+> After little reading, my understanding is EVM also does not support
+> offline signing. 
+> 
+> http://sourceforge.net/apps/mediawiki/linux-ima/index.php?title=Main_Page
+> 
+> Given the fact EVM protects IMA data (security.ima), which is generated
+> inline, I am not sure how EVM can sign images offline.
+> 
+> I might have misunderstood things, please correct me if that's not the
+> case.
+> 
+> Thanks
+> Vivek
+> 
 
-The challenge is when you have entagled metadata updates.  That is,
-you update file A, and file B, and file A and B might share metadata.
-In order to sync file A, you also have to update part of the metadata
-for the updates to file B, which means calculating the dependencies of
-what you have to drag in can get very complicated.  You can keep track
-of what bits of the metadata you have to undo and then redo before
-writing out the metadata for fsync(A), but that basically means you
-have to implement soft updates, and all of the complexity this
-implies: http://lwn.net/Articles/339337/
+IMA-appraisal verifies the integrity of file data, while EVM verifies
+the integrity of the file metadata, such as LSM and IMA-appraisal
+labels.  Both 'security.ima' and 'security.evm' can contain digital
+signatures.
 
-If you can keep all of the metadata separate, this can be somewhat
-mitigated, but usually the block allocation records (regardless of
-whether you use a tree, or a bitmap, or some other data structure)
-tends of have entanglement problems.
+thanks,
 
-It certainly is not impossible; RDBMS's have implemented this.  On the
-other hand, they generally aren't as fast as file systems for
-non-transactional workloads, and people really care about performance
-on those sorts of workloads for file systems.  (About a decade ago,
-Oracle tried to claim that you could run file system workloads using
-an Oracle databsae as a back-end.  Everyone laughed at them, and the
-idea died a quick, merciful death.)
+Mimi
 
-Still, if you want to try to implement such a thing, by all means,
-give it a try.  But I think you'll find that creating a file system
-that can compete with existing file systems for performance, and
-*then* also supports a transactional model, is going to be quite a
-challenge.
-
-     	      		      	     	      	 - Ted
