@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935845Ab2JYQEE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:04:04 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47767 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933074Ab2JYQEB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:04:01 -0400
+	id S1759938Ab2JYQEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:04:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51178 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057Ab2JYQEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:04:38 -0400
+Date: Thu, 25 Oct 2012 18:04:33 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Michael Witten <mfwitten@gmail.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] README: document "make olddefconfig"
+In-Reply-To: <20121024172243.GA6707@www.outflux.net>
+Message-ID: <alpine.LNX.2.00.1210251804230.26510@pobox.suse.cz>
+References: <20121024172243.GA6707@www.outflux.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20121025155143.GK4008@gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
-	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkda2NQok7kzh0pFmZPYd4nky1kUw=67DZAYAJAXGuc1yzQ@mail.gmail.com>
-	<CACRpkdbNWE6hOdVFPxHv7MVHkZUBW3LC035CxJkZVmr8j05Kqw@mail.gmail.com>
-	<20121025155143.GK4008@gmail.com>
-Date: Thu, 25 Oct 2012 18:03:59 +0200
-Message-ID: <CACRpkdbkcgE-qwuGgOvK9jGTj-0qy3eTFLsN3LYe1G17LmHk9g@mail.gmail.com>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 5:51 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 25 Oct 2012, Linus Walleij wrote:
+On Wed, 24 Oct 2012, Kees Cook wrote:
 
->> Probably some driver is needing a clk_get() or a clk_get_sys() is
->> needs to be added somewhere to bring up some vital cluster,
->> or there may be some out-of-tree driver needed to bring up the
->> cluster properly I have no clue... Maybe some cluster just
->> cannot be declocked like that.
->
-> I leave work in 10 mins and won't be coding again for ~2.5 weeks.
-> So if this is something you could squeeze in and fix-up, I'd be
-> very grateful.
+> While "olddefconfig" was documented in "make help", it was not mentioned
+> in the README.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  README |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/README b/README
+> index f32710a..a24ec89 100644
+> --- a/README
+> +++ b/README
+> @@ -180,6 +180,10 @@ CONFIGURING the kernel:
+>                          with questions already answered.
+>                          Additionally updates the dependencies.
+>  
+> +     "make olddefconfig"
+> +                        Like above, but sets new symbols to their default
+> +                        values without prompting.
+> +
+>       "make defconfig"   Create a ./.config file by using the default
+>                          symbol values from either arch/$ARCH/defconfig
 
-I'll try. It doesn't look right that a clk_prepare() in the pinctrl
-driver is saving the day for somebody else...
+OK, I am taking this one, thanks.
 
-Yours,
-Linus Walleij
+-- 
+Jiri Kosina
+SUSE Labs
