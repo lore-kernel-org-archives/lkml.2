@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab2JYPcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:32:11 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53859 "EHLO
+	id S1759841Ab2JYPh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:37:27 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39983 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab2JYPcJ (ORCPT
+	with ESMTP id S1758614Ab2JYPh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:32:09 -0400
-Message-ID: <50895B75.2010102@wwwdotorg.org>
-Date: Thu, 25 Oct 2012 09:32:05 -0600
+	Thu, 25 Oct 2012 11:37:26 -0400
+Message-ID: <50895CB2.8040103@wwwdotorg.org>
+Date: Thu, 25 Oct 2012 09:37:22 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Ming Lei <tom.leiming@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>
-Subject: Re: [PATCH 03/23] printk: Move braille console support into separate
- braille.[ch] files
-References: <cover.1350449851.git.joe@perches.com>  <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>  <508883D6.70706@wwwdotorg.org> <1351125084.7130.16.camel@joe-AO722>
-In-Reply-To: <1351125084.7130.16.camel@joe-AO722>
+To: Mark Zhang <markz@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dt: tegra: ventana: define pinmux for ddc
+References: <1350626311-18131-1-git-send-email-markz@nvidia.com> <50817668.6020709@wwwdotorg.org> <5084F5D1.7050005@nvidia.com> <50857EEF.2070707@wwwdotorg.org> <5088DCF2.7030000@nvidia.com>
+In-Reply-To: <5088DCF2.7030000@nvidia.com>
 X-Enigmail-Version: 1.4.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,38 +28,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 06:31 PM, Joe Perches wrote:
-> On Wed, 2012-10-24 at 18:12 -0600, Stephen Warren wrote:
->> On 10/17/2012 12:06 AM, Joe Perches wrote:
->>> Create files with prototypes and static inlines for braille
->>> support.  Make braille_console functions return 1 on success.
->>
->> Joe,
->>
->> Between next-20121022 and next-20121023, the serial console (on the ARM
->> SoC Tegra at least) stopped working. The issue bisects down to this
->> commit. I haven't had a chance to investigate why yet, I just finished
->> bisected.
->>
->> earlyprintk over the same UART works. Once the system has booted, a few
->> late kernel messages do appear, and then getty/login over the UART
->> works. So, it's just the printk messages that disappeared.
->>
->> In case it's relevant, my command-line is:
->>
->> console=ttyS0,115200n8 loglevel=8 rootwait rw earlyprintk
->> root=PARTUUID=b2f82cda-2535-4779-b467-094a210fbae7
->>
->> I'll continue to investigate further tomorrow, but just wanted to give
->> you a heads-up in case you could immediately see anything obvious in the
->> code.
+On 10/25/2012 12:32 AM, Mark Zhang wrote:
+> On 10/23/2012 01:14 AM, Stephen Warren wrote:
+...
+>> I don't recall why pta was defined to be HDMI. The issue isn't that this
+>> patch changes the pinmux selection for the pta pingroup, but simply that
+>> both the pinctrl node's state definition, and the new I2C mux node's
+>> state definition both attempt to configure pingroup pta. The solution is
+>> most likely to simply remove the pta configuration from the main pinctrl
+>> node.
 > 
-> Hi Stephen.
-> 
-> Thanks, I appreciate the heads-up.  This should be solved
-> by Ming Lei's patch (which I've incorporated into a V2
-> series I will post shortly).
-> 
-> https://lkml.org/lkml/2012/10/23/307
+> Understood. I tried to remove the hdmi function definition of pta
+> pingroup yesterday then found HDMI can't work anymore. The EDID of HDMI
+> monitor can't be fetched. After some debugging, I have found that it's
+> caused by "i2c-mux-pinctrl" driver is loaded after drm driver. That
+> makes drm driver can't get EDID data via this i2c mux adapter because it
+> doesn't exist at that time. So I think we need to promote the load level
+> of "i2c-mux-pinctrl" driver. Any other ideas?
 
-Thanks. I can confirmed that patch does fix my issue.
+(BTW, your message that I'm replying to wasn't word-wrapped correctly)
+
+No, i2c-mux-pinctrl shouldn't need to change. It sounds like tegra-drm
+isn't supporting deferred probe correctly; when it needs access to an
+I2C adapter that doesn't exist, it should defer its own probe until the
+I2C adapter does exist.
