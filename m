@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946082Ab2JYOJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:09:42 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:34957 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945971Ab2JYOJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:09:39 -0400
-Date: Thu, 25 Oct 2012 16:09:28 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, "Eran Ben-Avi" <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 1/2] arm: mvebu: increase atomic coherent pool size for
- armada 370/XP
-Message-ID: <20121025160928.53daf18a@skate>
-In-Reply-To: <201210251346.41596.arnd@arndb.de>
-References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com>
-	<201210251127.36960.arnd@arndb.de>
-	<20121025134352.16a8ef81@skate>
-	<201210251346.41596.arnd@arndb.de>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965624Ab2JYOJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:09:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965084Ab2JYOJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:09:55 -0400
+Date: Thu, 25 Oct 2012 10:09:31 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Dave Chinner <david@fromorbit.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+In-Reply-To: <20121024030845.GT4291@dastard>
+Message-ID: <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com>
+References: <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com> <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
+ <1350650286.30157.28.camel@twins> <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com>
+ <1350668451.2768.60.camel@twins> <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com>
+ <20121024030845.GT4291@dastard>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Thu, 25 Oct 2012 13:46:41 +0000, Arnd Bergmann wrote:
 
-> > Seems like the driver is too lazy and allocates everything coherent
-> > to avoid the hassle of doing dma_map/dma_unmap operations when
-> > needed, but I haven't looked in details at the driver yet to see if
-> > it would be possible to switch those DMA coherent allocations into
-> > non-coherent allocations + appropriate calls to the DMA operations.
+On Wed, 24 Oct 2012, Dave Chinner wrote:
+
+> On Fri, Oct 19, 2012 at 06:54:41PM -0400, Mikulas Patocka wrote:
+> > 
+> > 
+> > On Fri, 19 Oct 2012, Peter Zijlstra wrote:
+> > 
+> > > > Yes, I tried this approach - it involves doing LOCK instruction on read 
+> > > > lock, remembering the cpu and doing another LOCK instruction on read 
+> > > > unlock (which will hopefully be on the same CPU, so no cacheline bouncing 
+> > > > happens in the common case). It was slower than the approach without any 
+> > > > LOCK instructions (43.3 seconds seconds for the implementation with 
+> > > > per-cpu LOCKed access, 42.7 seconds for this implementation without atomic 
+> > > > instruction; the benchmark involved doing 512-byte direct-io reads and 
+> > > > writes on a ramdisk with 8 processes on 8-core machine).
+> > > 
+> > > So why is that a problem? Surely that's already tons better then what
+> > > you've currently got.
+> > 
+> > Percpu rw-semaphores do not improve performance at all. I put them there 
+> > to avoid performance regression, not to improve performance.
+> > 
+> > All Linux kernels have a race condition - when you change block size of a 
+> > block device and you read or write the device at the same time, a crash 
+> > may happen. This bug is there since ever. Recently, this bug started to 
+> > cause major trouble - multiple high profile business sites report crashes 
+> > because of this race condition.
+> >
+> > You can fix this race by using a read lock around I/O paths and write lock 
+> > around block size changing, but normal rw semaphore cause cache line 
+> > bouncing when taken for read by multiple processors and I/O performance 
+> > degradation because of it is measurable.
 > 
-> Using coherent allocations is fine, I was wondering whether they need
-> to be atomic or not.
+> This doesn't sound like a new problem.  Hasn't this global access,
+> single modifier exclusion problem been solved before in the VFS?
+> e.g. mnt_want_write()/mnt_make_readonly()
+> 
+> Cheers,
+> 
+> Dave.
 
-You're raising a good point here: all the dma_pool_alloc()
-allocations done by sata_mv are GFP_KERNEL. So why are we having
-problems with the /atomic/ coherent pool size? Is it the libata core
-that's doing GFP_ATOMIC DMA coherent allocations. It doesn't seem so.
-Something's odd.
+Yes, mnt_want_write()/mnt_make_readonly() do the same thing as percpu rw 
+semaphores. I think you can convert mnt_want_write()/mnt_make_readonly() 
+to use percpu rw semaphores and remove the duplicated code.
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Mikulas
