@@ -1,32 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758975Ab2JYAwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:52:17 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61109 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758948Ab2JYAwJ (ORCPT
+	id S1759013Ab2JYAwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:52:44 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:44516 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758949Ab2JYAwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:52:09 -0400
+	Wed, 24 Oct 2012 20:52:13 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 3/5] kvm: Directly account vtime to system on guest switch
-Date: Thu, 25 Oct 2012 02:51:51 +0200
-Message-Id: <1351126313-17804-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] cputime: Separate irqtime accounting from generic vtime
+Date: Thu, 25 Oct 2012 02:51:53 +0200
+Message-Id: <1351126313-17804-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
 References: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
@@ -34,84 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switching to or from guest context is done on ioctl context.
-So by the time we call kvm_guest_enter() or kvm_guest_exit()
-we know we are not running the idle task.
+vtime_account() doesn't have the same role in
+CONFIG_VIRT_CPU_ACCOUNTING and CONFIG_IRQ_TIME_ACCOUNTING.
 
-As a result, we can directly account the cputime using
-vtime_account_system_irqsafe().
+In the first case it handles time accounting in any context. In
+the second case it only handles irq time accounting.
 
-There are two good reasons to do this:
+So when vtime_account() is called from outside vtime_account_irq_*()
+this call is pointless to CONFIG_IRQ_TIME_ACCOUNTING.
 
-* We avoid some useless checks on guest switch. It optimizes
-a bit this fast path.
-
-* In the case of CONFIG_IRQ_TIME_ACCOUNTING, calling vtime_account()
-checks for irq time to account. This is pointless since we know
-we are not in an irq on guest switch. This is wasting cpu cycles
-for no good reason. vtime_account_system() OTOH is a no-op in
-this config option.
-
-* s390 doesn't disable irqs in its implementation of vtime_account().
-If vtime_account() in kvm races with an irq, the pending time might
-be accounted twice. With vtime_account_system_irqsafe() we are protected.
-
-A further optimization may consist in introducing a vtime_account_guest()
-that directly calls account_guest_time().
+To fix the confusion, change vtime_account() to irqtime_account_irq()
+in CONFIG_IRQ_TIME_ACCOUNTING. This way we ensure future account_vtime()
+calls won't waste useless cycles in the irqtime APIs.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Xiantao Zhang <xiantao.zhang@intel.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/kvm_host.h |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ include/linux/vtime.h  |   19 +++++++++----------
+ kernel/sched/cputime.c |    4 ++--
+ 2 files changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 93bfc9f..f17158b 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -737,7 +737,11 @@ static inline int kvm_deassign_device(struct kvm *kvm,
- static inline void kvm_guest_enter(void)
- {
- 	BUG_ON(preemptible());
--	vtime_account(current);
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system_irqsafe(current);
- 	current->flags |= PF_VCPU;
- 	/* KVM does not hold any references to rcu protected data when it
- 	 * switches CPU into a guest mode. In fact switching to a guest mode
-@@ -751,7 +755,11 @@ static inline void kvm_guest_enter(void)
+diff --git a/include/linux/vtime.h b/include/linux/vtime.h
+index 40634fb..f1f91ac 100644
+--- a/include/linux/vtime.h
++++ b/include/linux/vtime.h
+@@ -8,17 +8,18 @@ extern void vtime_task_switch(struct task_struct *prev);
+ extern void vtime_account_system(struct task_struct *tsk);
+ extern void vtime_account_system_irqsafe(struct task_struct *tsk);
+ extern void vtime_account_idle(struct task_struct *tsk);
++extern void vtime_account(struct task_struct *tsk);
+ #else
+ static inline void vtime_task_switch(struct task_struct *prev) { }
++static inline void vtime_account_system(struct task_struct *tsk) { }
+ static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
++static inline void vtime_account(struct task_struct *tsk) { }
+ #endif
  
- static inline void kvm_guest_exit(void)
- {
--	vtime_account(current);
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system_irqsafe(current);
- 	current->flags &= ~PF_VCPU;
+-#if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
+-static inline void vtime_account(struct task_struct *tsk)
+-{
+-}
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++extern void irqtime_account_irq(struct task_struct *tsk);
+ #else
+-extern void vtime_account(struct task_struct *tsk);
++static inline void irqtime_account_irq(struct task_struct *tsk) { }
+ #endif
+ 
+ static inline void vtime_account_irq_enter(struct task_struct *tsk)
+@@ -33,17 +34,15 @@ static inline void vtime_account_irq_enter(struct task_struct *tsk)
+ 	 * the idle time is flushed on hardirq time already.
+ 	 */
+ 	vtime_account(tsk);
++	irqtime_account_irq(tsk);
  }
  
+ static inline void vtime_account_irq_exit(struct task_struct *tsk)
+ {
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
+ 	/* On hard|softirq exit we always account to hard|softirq cputime */
+ 	vtime_account_system(tsk);
+-#endif
+-#ifdef CONFIG_IRQ_TIME_ACCOUNTING
+-	vtime_account(tsk);
+-#endif
++	irqtime_account_irq(tsk);
++
+ }
+ 
+ #endif /* _LINUX_KERNEL_VTIME_H */
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 3ccbea0..1a7e1369 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -43,7 +43,7 @@ DEFINE_PER_CPU(seqcount_t, irq_time_seq);
+  * Called before incrementing preempt_count on {soft,}irq_enter
+  * and before decrementing preempt_count on {soft,}irq_exit.
+  */
+-void vtime_account(struct task_struct *curr)
++void irqtime_account_irq(struct task_struct *curr)
+ {
+ 	unsigned long flags;
+ 	s64 delta;
+@@ -73,7 +73,7 @@ void vtime_account(struct task_struct *curr)
+ 	irq_time_write_end();
+ 	local_irq_restore(flags);
+ }
+-EXPORT_SYMBOL_GPL(vtime_account);
++EXPORT_SYMBOL_GPL(irqtime_account_irq);
+ 
+ static int irqtime_account_hi_update(void)
+ {
 -- 
 1.7.5.4
 
