@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab2JYJ0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:26:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58388 "EHLO mail.skyhub.de"
+	id S1759319Ab2JYJ06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:26:58 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1818 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758574Ab2JYJ0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:26:18 -0400
-Date: Thu, 25 Oct 2012 11:26:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: danielfsantos@att.net
-Cc: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 05/10] compiler{,-gcc4}.h, bug.h: Remove duplicate
- macros
-Message-ID: <20121025092616.GB16601@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, danielfsantos@att.net,
-	LKML <linux-kernel@vger.kernel.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Christopher Li <sparse@chrisli.org>,
-	Daniel Santos <daniel.santos@pobox.com>,
-	David Daney <david.daney@cavium.com>,
-	David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-	Josh Triplett <josh@joshtriplett.org>,
-	Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	David Rientjes <rientjes@google.com>
-References: <1351096132-12244-1-git-send-email-daniel.santos@pobox.com>
- <1351096441-12388-5-git-send-email-daniel.santos@pobox.com>
+	id S1759306Ab2JYJ0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 05:26:54 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <508905D2.9070907@broadcom.com>
+Date: Thu, 25 Oct 2012 11:26:42 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
+ Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1351096441-12388-5-git-send-email-daniel.santos@pobox.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ben Skeggs" <bskeggs@redhat.com>
+cc: "Stanislaw Gruszka" <sgruszka@redhat.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG 3.7-rc1] nouveau cli->mutex possible recursive locking
+ detected
+References: <20121016124348.GB2274@redhat.com>
+ <5087CD85.4010201@broadcom.com> <5087E2D8.9010703@broadcom.com>
+In-Reply-To: <5087E2D8.9010703@broadcom.com>
+X-WSS-ID: 7C97DA1841411478182-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 11:33:56AM -0500, danielfsantos@att.net wrote:
-> __linktime_error() does the same thing as __compiletime_error() and is
-> only used in bug.h.  Since the macro defines a function attribute that
-> will cause a failure at compile-time (not link-time), it makes more
-> sense to keep __compiletime_error(), which is also neatly mated with
-> __compiletime_warning().
-> 
-> Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+On 10/24/2012 02:45 PM, Arend van Spriel wrote:
+> On 10/24/2012 01:14 PM, Arend van Spriel wrote:
+>> On 10/16/2012 02:43 PM, Stanislaw Gruszka wrote:
+>>> I have this lockdep warning on wireless-testing tree based
+>>> on 3.7-rc1 (no other patches except wireless bits).
+>>>
+>>> =============================================
+>>> Restarting tasks ... done.
+>>> [ INFO: possible recursive locking detected ]
+>>> 3.7.0-rc1-wl+ #2 Not tainted
+>>> ---------------------------------------------
+>>> Xorg/2269 is trying to acquire lock:
+>>>   (&cli->mutex){+.+.+.}, at: [<ffffffffa012a27f>]
+>>> nouveau_bo_move_m2mf+0x5f/0x170 [nouveau]
+>>>
+>>> but task is already holding lock:
+>>>   (&cli->mutex){+.+.+.}, at: [<ffffffffa012f3c4>]
+>>> nouveau_abi16_get+0x34/0x100 [nouveau]
+>>>
+>>
+>> I have observed the same bug so I built and tested v3.7-rc2 tag with
+>> lockdep enabled. It has the same problem and it results in a failure to
+>> resume after suspend. See below.
+>>
+>> Gr. AvS
+>
+> digging into the trace:
+>
+>
+> nouveau_gem_ioctl_pushbuf() calls nouveau_abi16_get() which grabs the
+> mutex. Assume this should protect the chan variable passed to
+> nouveau_gem_pushbuf_validate(), which does a bit more that validate as
+> it ends up in nouveau_bo_move_m2mf() which uses the drm->chan. However,
+> it deadlocks before that.
+>
+> Gr. AvS
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+Maybe this helps. The two locations where the lock is grabbed are from 
+the same commit (see below).
 
--- 
-Regards/Gruss,
-    Boris.
+Gr. AvS
+
+commit ebb945a94bba2ce8dff7b0942ff2b3f2a52a0a69
+Author: Ben Skeggs <bskeggs@redhat.com>
+Date:   Fri Jul 20 08:17:34 2012 +1000
+
+     drm/nouveau: port all engines to new engine module format
+
+     This is a HUGE commit, but it's not nearly as bad as it looks - any 
+problems
+     can be isolated to a particular chipset and engine combination.  It was
+     simply too difficult to port each one at a time, the compat layers are
+     *already* ridiculous.
+
+     Most of the changes here are simply to the glue, the process for 
+each of the
+     engine modules was to start with a standard skeleton and copy+paste 
+the old
+     code into the appropriate places, fixing up variable names etc as 
+needed.
+
+     v2: Marcin Slusarz <marcin.slusarz@gmail.com>
+     - fix find/replace bug in license header
+
+     v3: Ben Skeggs <bskeggs@redhat.com>
+     - bump indirect pushbuf size to 8KiB, 4KiB barely enough for 
+userspace and
+       left no space for kernel's requirements during GEM pushbuf 
+submission.
+     - fix duplicate assignments noticed by clang
+
+     v4: Marcin Slusarz <marcin.slusarz@gmail.com>
+     - add sparse annotations to nv04_fifo_pause/nv04_fifo_start
+     - use ioread32_native/iowrite32_native for fifo control registers
+
+     v5: Ben Skeggs <bskeggs@redhat.com>
+     - rebase on v3.6-rc4, modified to keep copy engine fix intact
+     - nv10/fence: unmap fence bo before destroying
+     - fixed fermi regression when using nvidia gr fuc
+     - fixed typo in supported dma_mask checking
+
+     Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+
+
+
