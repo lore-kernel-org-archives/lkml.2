@@ -1,110 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab2JYJTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:19:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48088 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab2JYJTN convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Thu, 25 Oct 2012 05:19:13 -0400
-Message-Id: <5089202E02000078000A45E7@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 25 Oct 2012 10:19:10 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Olaf Hering" <olaf@aepfle.de>
-Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>, <xen-devel@lists.xensource.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: move shared_info to
- reserved memory area
-References: <1351155873-26500-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1351155873-26500-1-git-send-email-olaf@aepfle.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1759265Ab2JYJVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:21:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58548 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757836Ab2JYJVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 05:21:49 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-f4-5089049f8b24
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, "'Bob Liu'" <lliubbo@gmail.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH] mm: fix build warning in try_to_unmap_cluster()
+Date: Thu, 25 Oct 2012 18:21:34 +0900
+Message-id: <000f01cdb292$20df5910$629e0b30$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2ykiCFL5JQQOd7QSCIyo4ugvXrLg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd35LJ0BBg19vBaXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvj05o1jAWb2CvOzX7I2MDYwdbFyMkhIWAi8ejBNihbTOLCvfVA
+	NheHkMB0Rolr9/rZIZzZTBJ3Xk9nBaliE1CT+PLlMDuILSLgK/F98QYmEJtZIFriwL8tzCC2
+	sICDxKZb9xlBbBYBVYkTkxaCbeAVsJX42zMfyhaU+DH5HgtEr5bE+p3HoebIS2xe8xZoDgfQ
+	ReoSj/7qQqzSk2g5eQqqXERi34t3jBMYBWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6R
+	XnFibnFpXrpecn7uJkZwYD6T3sG4qsHiEKMAB6MSD+9Bj44AIdbEsuLK3EOMEhzMSiK8298D
+	hXhTEiurUovy44tKc1KLDzFKc7AoifM2e6QECAmkJ5akZqemFqQWwWSZODilGhjr9VZyvvvj
+	uCrXdIZm4N3zwosWX5ry3LY3OiXIO5FrZ+aNZu9Wm+ys2w/vGolYBUxy/eha4tDxNuGE41YL
+	DYH3+/nXe50RFY2JKgvae7OZ6zXDc62fduKaZ4Sv7NI5Ok3Zt3vN082OmrNc3utcimo+8X2y
+	08YcUwGDoyIB+Y5nzG6dvjrlRZUSS3FGoqEWc1FxIgB3IWMXSAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.10.12 at 11:04, Olaf Hering <olaf@aepfle.de> wrote:
-> @@ -1495,38 +1494,53 @@ asmlinkage void __init xen_start_kernel(void)
->  #endif
->  }
->  
-> -void __ref xen_hvm_init_shared_info(void)
+Fix build warning in try_to_unmap_cluster() as below:
 
-Was the __ref here in fact unnecessary (i.e. did you check that
-its removal doesn't cause any section mismatch warnings)?
+mm/rmap.c: In function 'try_to_unmap_cluster':
+mm/rmap.c:1364:9: warning: unused variable 'pud' [-Wunused-variable]
+mm/rmap.c:1363:9: warning: unused variable 'pgd' [-Wunused-variable]
 
-> +#ifdef CONFIG_XEN_PVHVM
-> +#define HVM_SHARED_INFO_ADDR 0xFE700000UL
-> +static struct shared_info *xen_hvm_shared_info;
-> +
-> +static void xen_hvm_connect_shared_info(unsigned long pfn)
->  {
-> -	int cpu;
->  	struct xen_add_to_physmap xatp;
-> -	static struct shared_info *shared_info_page = 0;
->  
-> -	if (!shared_info_page)
-> -		shared_info_page = (struct shared_info *)
-> -			extend_brk(PAGE_SIZE, PAGE_SIZE);
->  	xatp.domid = DOMID_SELF;
->  	xatp.idx = 0;
->  	xatp.space = XENMAPSPACE_shared_info;
-> -	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-> +	xatp.gpfn = pfn;
->  	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
->  		BUG();
->  
-> -	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-> +}
-> +static void xen_hvm_set_shared_info(struct shared_info *sip)
+This build warning is introduced by commit 0981230
+"mm: introduce mm_find_pmd()".
 
-With its sole caller being __init, this should also be __init.
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Bob Liu <lliubbo@gmail.com>
+---
+This patch is based on linux-next-20121025 code tree.
 
-Jan
+ mm/rmap.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-> +{
-> +	int cpu;
-> +
-> +	HYPERVISOR_shared_info = sip;
->  
->  	/* xen_vcpu is a pointer to the vcpu_info struct in the shared_info
->  	 * page, we use it in the event channel upcall and in some pvclock
->  	 * related functions. We don't need the vcpu_info placement
->  	 * optimizations because we don't use any pv_mmu or pv_irq op on
-> -	 * HVM.
-> -	 * When xen_hvm_init_shared_info is run at boot time only vcpu 0 is
-> -	 * online but xen_hvm_init_shared_info is run at resume time too and
-> -	 * in that case multiple vcpus might be online. */
-> -	for_each_online_cpu(cpu) {
-> +	 * HVM. */
-> +	for_each_online_cpu(cpu)
->  		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
-> -	}
->  }
->  
-> -#ifdef CONFIG_XEN_PVHVM
-> +/* Reconnect the shared_info pfn to a (new) mfn */
-> +void xen_hvm_resume_shared_info(void)
-> +{
-> +	xen_hvm_connect_shared_info(HVM_SHARED_INFO_ADDR >> PAGE_SHIFT);
-> +}
-> +
-> +/* Obtain an address to the pfn in reserved area */
-> +void __init xen_hvm_init_shared_info(void)
-> +{
-> +	set_fixmap(FIX_PARAVIRT_BOOTMAP, HVM_SHARED_INFO_ADDR);
-> +	xen_hvm_shared_info =
-> +		(struct shared_info *)fix_to_virt(FIX_PARAVIRT_BOOTMAP);
-> +	xen_hvm_connect_shared_info(HVM_SHARED_INFO_ADDR >> PAGE_SHIFT);
-> +	xen_hvm_set_shared_info(xen_hvm_shared_info);
-> +}
-> +
->  static void __init init_hvm_pv_info(void)
->  {
->  	int major, minor;
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 6c686c2..98b100e 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1360,8 +1360,6 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
+ 		struct vm_area_struct *vma, struct page *check_page)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+-	pgd_t *pgd;
+-	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
+ 	pte_t pteval;
+-- 
+1.7.1
 
 
