@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265Ab2JYNHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:07:22 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39982 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933014Ab2JYNHV (ORCPT
+	id S934973Ab2JYNIb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:08:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51353 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933162Ab2JYNI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:07:21 -0400
-Date: Thu, 25 Oct 2012 14:07:15 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-Message-ID: <20121025130715.GG4008@gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
- <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
- <CACRpkda2NQok7kzh0pFmZPYd4nky1kUw=67DZAYAJAXGuc1yzQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkda2NQok7kzh0pFmZPYd4nky1kUw=67DZAYAJAXGuc1yzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Oct 2012 09:08:28 -0400
+Message-Id: <20121025124832.996734608@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 25 Oct 2012 14:16:24 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 07/31] sched, numa, mm, s390/thp: Implement pmd_pgprot() for s390
+References: <20121025121617.617683848@chello.nl>
+Content-Disposition: inline; filename=0007-sched-numa-mm-s390-thp-Implement-pmd_pgprot-for-s390.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Linus Walleij wrote:
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-> On Wed, Oct 24, 2012 at 4:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > The clock framework has changed somewhat and it's now better to
-> > invoke clock_prepare_enable() and clk_disable_unprepare() rather
-> > than the legacy clk_enable() and clk_disable() calls. This patch
-> > converts the Nomadik Pin Control driver to the new framework.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> I was convinced that this is a good change but no regression,
-> so applied to the devel branch for 3.8.
-> 
-> I also removed the initial clk_prepare() so the reference count
-> may actually go down to 0 for the GPIO block and the peripheral
-> cluster eventually gets relaxed.
+This patch adds an implementation of pmd_pgprot() for s390,
+in preparation to future THP changes.
 
-Nice. Thanks Linus.
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/s390/include/asm/pgtable.h |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Index: tip/arch/s390/include/asm/pgtable.h
+===================================================================
+--- tip.orig/arch/s390/include/asm/pgtable.h
++++ tip/arch/s390/include/asm/pgtable.h
+@@ -1240,6 +1240,19 @@ static inline void set_pmd_at(struct mm_
+ 	*pmdp = entry;
+ }
+ 
++static inline pgprot_t pmd_pgprot(pmd_t pmd)
++{
++	pgprot_t prot = PAGE_RW;
++
++	if (pmd_val(pmd) & _SEGMENT_ENTRY_RO) {
++		if (pmd_val(pmd) & _SEGMENT_ENTRY_INV)
++			prot = PAGE_NONE;
++		else
++			prot = PAGE_RO;
++	}
++	return prot;
++}
++
+ static inline unsigned long massage_pgprot_pmd(pgprot_t pgprot)
+ {
+ 	unsigned long pgprot_pmd = 0;
+
+
