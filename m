@@ -1,67 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935887Ab2JYTpa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:45:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45997 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934077Ab2JYTp3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:45:29 -0400
-Date: Thu, 25 Oct 2012 20:45:25 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
-Cc: hverkuil@xs4all.nl, mchehab@redhat.com, sameo@linux.intel.com,
-        perex@perex.cz, tiwai@suse.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/6] Add the main bulk of core driver for SI476x code
-Message-ID: <20121025194524.GV18814@opensource.wolfsonmicro.com>
-References: <1351017872-32488-1-git-send-email-andrey.smirnov@convergeddevices.net>
- <1351017872-32488-3-git-send-email-andrey.smirnov@convergeddevices.net>
+	id S936015Ab2JYTpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:45:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60538 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934077Ab2JYTpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:45:53 -0400
+Date: Thu, 25 Oct 2012 21:45:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 3/3] ext3: introduce ext3_error_remove_page
+Message-ID: <20121025194551.GE3262@quack.suse.cz>
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1351177969-893-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="buDNgeHiu+HCsDEc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351017872-32488-3-git-send-email-andrey.smirnov@convergeddevices.net>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351177969-893-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 25-10-12 11:12:49, Naoya Horiguchi wrote:
+> What I suggested in the previous patch for ext4 is ditto with ext3,
+> so do the same thing for ext3.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/ext3/inode.c | 33 ++++++++++++++++++++++++++++++---
+>  1 file changed, 30 insertions(+), 3 deletions(-)
+> 
+> diff --git v3.7-rc2.orig/fs/ext3/inode.c v3.7-rc2/fs/ext3/inode.c
+> index 7e87e37..7f708bf 100644
+> --- v3.7-rc2.orig/fs/ext3/inode.c
+> +++ v3.7-rc2/fs/ext3/inode.c
+> @@ -1967,6 +1967,33 @@ static int ext3_journalled_set_page_dirty(struct page *page)
+>  	return __set_page_dirty_nobuffers(page);
+>  }
+>  
+> +static int ext3_error_remove_page(struct address_space *mapping,
+> +				struct page *page)
+> +{
+> +	struct inode *inode = mapping->host;
+> +	struct buffer_head *bh, *head;
+> +	ext3_fsblk_t block = 0;
+> +
+> +	if (!PageDirty(page) || !page_has_buffers(page))
+> +		goto remove_page;
+> +
+> +	/* Lost data. Handle as critical fs error. */
+> +	bh = head = page_buffers(page);
+> +	do {
+> +		if (buffer_dirty(bh)) {
+  For ext3, you should check that buffer_mapped() is set because we can
+have dirty and unmapped buffers. Otherwise the patch looks OK.
 
---buDNgeHiu+HCsDEc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> +			block = bh->b_blocknr;
+> +			ext3_error(inode->i_sb, "ext3_error_remove_page",
+> +				"inode #%lu: block %lu: "
+> +				"Removing dirty pagecache page",
+> +				inode->i_ino, block);
+> +		}
+> +		bh = bh->b_this_page;
+> +	} while (bh != head);
+> +
+> +remove_page:
+> +	return generic_error_remove_page(mapping, page);
+> +}
+> +
+>  static const struct address_space_operations ext3_ordered_aops = {
+>  	.readpage		= ext3_readpage,
+>  	.readpages		= ext3_readpages,
+> @@ -1979,7 +2006,7 @@ static const struct address_space_operations ext3_ordered_aops = {
+>  	.direct_IO		= ext3_direct_IO,
+>  	.migratepage		= buffer_migrate_page,
+>  	.is_partially_uptodate  = block_is_partially_uptodate,
+> -	.error_remove_page	= generic_error_remove_page,
+> +	.error_remove_page	= ext3_error_remove_page,
+>  };
+>  
+>  static const struct address_space_operations ext3_writeback_aops = {
+> @@ -1994,7 +2021,7 @@ static const struct address_space_operations ext3_writeback_aops = {
+>  	.direct_IO		= ext3_direct_IO,
+>  	.migratepage		= buffer_migrate_page,
+>  	.is_partially_uptodate  = block_is_partially_uptodate,
+> -	.error_remove_page	= generic_error_remove_page,
+> +	.error_remove_page	= ext3_error_remove_page,
+>  };
+>  
+>  static const struct address_space_operations ext3_journalled_aops = {
+> @@ -2008,7 +2035,7 @@ static const struct address_space_operations ext3_journalled_aops = {
+>  	.invalidatepage		= ext3_invalidatepage,
+>  	.releasepage		= ext3_releasepage,
+>  	.is_partially_uptodate  = block_is_partially_uptodate,
+> -	.error_remove_page	= generic_error_remove_page,
+> +	.error_remove_page	= ext3_error_remove_page,
+>  };
+>  
+>  void ext3_set_aops(struct inode *inode)
 
-On Tue, Oct 23, 2012 at 11:44:28AM -0700, Andrey Smirnov wrote:
-
-> +	core->regmap = devm_regmap_init_si476x(core);
-> +	if (IS_ERR(core->regmap)) {
-
-This really makes little sense to me, why are you doing this?  Does the
-device *really* layer a byte stream on top of I2C for sending messages
-that look like marshalled register reads and writes?
-
---buDNgeHiu+HCsDEc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiZbLAAoJELSic+t+oim9LPsP/0Vm/MQazZiGXS+B/pNjIHFy
-iHEBnSuX5Kt8PHQzxd/OqgZ9olHw7QNYsbv7wItWJgJXxESFMZaQTPgsKB+8MXLy
-6xO/YmHDvPK0OACJWhFom78vYAYaNf8OcejXn6k8v6JyI5vJqJOlS207tqu/Ce+w
-yGokL33lHxvU+2C8DLMYmQOTEknDr1FwlhvteBFvLSaU0IDEq0hPWSoEVtqpaAy1
-4GkRNbdmM7DqrI69LQJACAD5Vrw5RcKv0skzBWtaxcANAVYOZkE/2PpxsxcacZPw
-jNsjhp0lN0KNWtNDwQ7HGkxD53UmS+mlZbnS+RP4ikfc2R8ME0s5xapXYQ3mlPId
-l8Qmo+TFUYALvFXOlzA4HKagPzHEKvSUqXxiPVGqgtvWt6r5cgddRJqvzZkeEQwk
-eIGMhaYJubqvAO8PNIYPA4cK5rh4YS7NwCLkBLd8XH2H0BSsAXXaT4PZGUb3FJEm
-s+o/x7F1+CFTyVl5rsJu+MTKubG7UxkdTgwMsYJfNusw8h65SKq1I/S9zsuWIt6X
-08/AnPnwF1cF1ZDzIURDV0PpqDc80nqPFFE7WICb/3+DesA3Fw5KaetOWA49LNUv
-6kS52H9YFVG9w0nbVSdgcHAp4UdEAwwjeM8Q461JfOKOUuRjo9zatIOOuuWchMQ4
-7lx/s2sV/qsIYOoCS7Ex
-=uXIx
------END PGP SIGNATURE-----
-
---buDNgeHiu+HCsDEc--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
