@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946178Ab2JYPPZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:15:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64552 "EHLO mx1.redhat.com"
+	id S935841Ab2JYPPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:15:44 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:37174 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946106Ab2JYPOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:14:00 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org
-Subject: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-Date: Thu, 25 Oct 2012 11:12:48 -0400
-Message-Id: <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S933628Ab2JYPPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 11:15:40 -0400
+Date: Thu, 25 Oct 2012 08:07:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
+Message-ID: <20121025150755.GV2465@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121017224430.GC2518@linux.vnet.ibm.com>
+ <20121018162409.GA28504@redhat.com>
+ <20121018163833.GK2518@linux.vnet.ibm.com>
+ <20121018175747.GA30691@redhat.com>
+ <20121019192838.GM2518@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
+ <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com>
+ <20121024161638.GA2465@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210251050400.14454@file.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1210251050400.14454@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102515-3534-0000-0000-00000E30007C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ext4 has its own configurable error handling policy, so it's helpful
-if we can use it also in the context of memory error handling.
-With this patch, when we detect a memory error on a dirty pagecache in
-ext4 filesystem, we can allow users to choose to trigger kernel panic
-to avoid consuming corrupted data.
+On Thu, Oct 25, 2012 at 10:54:11AM -0400, Mikulas Patocka wrote:
+> 
+> 
+> On Wed, 24 Oct 2012, Paul E. McKenney wrote:
+> 
+> > On Mon, Oct 22, 2012 at 07:39:16PM -0400, Mikulas Patocka wrote:
+> > > Use rcu_read_lock_sched / rcu_read_unlock_sched / synchronize_sched
+> > > instead of rcu_read_lock / rcu_read_unlock / synchronize_rcu.
+> > > 
+> > > This is an optimization. The RCU-protected region is very small, so
+> > > there will be no latency problems if we disable preempt in this region.
+> > > 
+> > > So we use rcu_read_lock_sched / rcu_read_unlock_sched that translates
+> > > to preempt_disable / preempt_disable. It is smaller (and supposedly
+> > > faster) than preemptible rcu_read_lock / rcu_read_unlock.
+> > > 
+> > > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> > 
+> > OK, as promised/threatened, I finally got a chance to take a closer look.
+> > 
+> > The light_mb() and heavy_mb() definitions aren't doing much for me,
+> > the code would be cleared with them expanded inline.  And while the
+> > approach of pairing barrier() with synchronize_sched() is interesting,
+> > it would be simpler to rely on RCU's properties.  The key point is that
+> > if RCU cannot prove that a given RCU-sched read-side critical section
+> > is seen by all CPUs to have started after a given synchronize_sched(),
+> > then that synchronize_sched() must wait for that RCU-sched read-side
+> > critical section to complete.
+> 
+> Also note that you can define both light_mb() and heavy_mb() to be 
+> smp_mb() and slow down the reader path a bit and speed up the writer path.
+> 
+> On architectures with in-order memory access (and thus smp_mb() equals 
+> barrier()), it doesn't hurt the reader but helps the writer, for example:
+> #ifdef ARCH_HAS_INORDER_MEMORY_ACCESS
+> #define light_mb()      smp_mb()
+> #define heavy_mb()      smp_mb()
+> #else
+> #define light_mb()      barrier()
+> #define heavy_mb()      synchronize_sched()
+> #endif
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
----
- fs/ext4/inode.c | 35 +++++++++++++++++++++++++++++++----
- 1 file changed, 31 insertions(+), 4 deletions(-)
+Except that there are no systems running Linux with in-order memory
+access.  Even x86 and s390 require a barrier instruction for smp_mb()
+on SMP=y builds.
 
-diff --git v3.7-rc2.orig/fs/ext4/inode.c v3.7-rc2/fs/ext4/inode.c
-index b3c243b..513badb 100644
---- v3.7-rc2.orig/fs/ext4/inode.c
-+++ v3.7-rc2/fs/ext4/inode.c
-@@ -3163,6 +3163,33 @@ static int ext4_journalled_set_page_dirty(struct page *page)
- 	return __set_page_dirty_nobuffers(page);
- }
- 
-+static int ext4_error_remove_page(struct address_space *mapping,
-+				struct page *page)
-+{
-+	struct inode *inode = mapping->host;
-+	struct buffer_head *bh, *head;
-+	ext4_fsblk_t block;
-+
-+	if (!PageDirty(page) || !page_has_buffers(page))
-+		goto remove_page;
-+
-+	/* Lost data. Handle as critical fs error. */
-+	bh = head = page_buffers(page);
-+	do {
-+		if (buffer_dirty(bh) && !buffer_delay(bh)) {
-+			block = bh->b_blocknr;
-+			EXT4_ERROR_INODE_BLOCK(inode, block,
-+						"Removing dirty pagecache page");
-+		} else
-+			EXT4_ERROR_INODE(inode,
-+					"Removing dirty pagecache page");
-+		bh = bh->b_this_page;
-+	} while (bh != head);
-+
-+remove_page:
-+	return generic_error_remove_page(mapping, page);
-+}
-+
- static const struct address_space_operations ext4_ordered_aops = {
- 	.readpage		= ext4_readpage,
- 	.readpages		= ext4_readpages,
-@@ -3175,7 +3202,7 @@ static const struct address_space_operations ext4_ordered_aops = {
- 	.direct_IO		= ext4_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext4_error_remove_page,
- };
- 
- static const struct address_space_operations ext4_writeback_aops = {
-@@ -3190,7 +3217,7 @@ static const struct address_space_operations ext4_writeback_aops = {
- 	.direct_IO		= ext4_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext4_error_remove_page,
- };
- 
- static const struct address_space_operations ext4_journalled_aops = {
-@@ -3205,7 +3232,7 @@ static const struct address_space_operations ext4_journalled_aops = {
- 	.releasepage		= ext4_releasepage,
- 	.direct_IO		= ext4_direct_IO,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext4_error_remove_page,
- };
- 
- static const struct address_space_operations ext4_da_aops = {
-@@ -3221,7 +3248,7 @@ static const struct address_space_operations ext4_da_aops = {
- 	.direct_IO		= ext4_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext4_error_remove_page,
- };
- 
- void ext4_set_aops(struct inode *inode)
--- 
-1.7.11.7
+							Thanx, Paul
 
