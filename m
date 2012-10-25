@@ -1,47 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935647Ab2JYNWn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:22:43 -0400
-Received: from forward1.mail.yandex.net ([77.88.46.6]:54462 "EHLO
-	forward1.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756873Ab2JYNWl (ORCPT
+	id S935658Ab2JYNYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:24:15 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:55468 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965376Ab2JYNYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:22:41 -0400
-From: Igor Murzov <e-mail@date.by>
-To: Alex Deucher <alexander.deucher@amd.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Igor Murzov <e-mail@date.by>
-Subject: [PATCH 1/2] drm/radeon: fix ATPX function documentation
-Date: Thu, 25 Oct 2012 17:09:00 +0400
-Message-Id: <1351170541-22570-1-git-send-email-e-mail@date.by>
-X-Mailer: git-send-email 1.7.12.1
+	Thu, 25 Oct 2012 09:24:12 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        devel@openvz.org
+Subject: Re: [PATCH 07/11] fuse: add per-page descriptor <offset, length> to fuse_req (v2)
+In-Reply-To: <20121001111432.11376.46219.stgit@maximpc.sw.ru> (Maxim
+	Patlasov's message of "Mon, 01 Oct 2012 15:20:00 +0400")
+References: <20120919163242.29482.83047.stgit@maximpc.sw.ru>
+	<20121001111432.11376.46219.stgit@maximpc.sw.ru>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Thu, 25 Oct 2012 15:24:17 +0200
+Message-ID: <87k3ue3cse.fsf@tucsk.pomaz.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a copy&pasted documentation.
+Maxim Patlasov <mpatlasov@parallels.com> writes:
 
-Signed-off-by: Igor Murzov <e-mail@date.by>
----
- drivers/gpu/drm/radeon/radeon_atpx_handler.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> The ability to save page pointers along with lengths and offsets in fuse_req
+> will be useful to cover several iovec-s with a single fuse_req.
+>
+> Per-request page_offset is removed because anybody who need it can use
+> req->page_descs[0].offset instead.
+>
+> Changed in v2:
+>  - replaced structure page_desc with fuse_page_desc
+>
+> Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
+> ---
+>  fs/fuse/dev.c    |   26 +++++++++++++++++++-------
+>  fs/fuse/file.c   |   10 +++++-----
+>  fs/fuse/fuse_i.h |   15 ++++++++++++---
+>  3 files changed, 36 insertions(+), 15 deletions(-)
+>
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index b241a7d..72ad962 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -35,14 +35,17 @@ static struct fuse_conn *fuse_get_conn(struct file *file)
+>  }
+>  
+>  static void fuse_request_init(struct fuse_req *req, struct page **pages,
+> +			      struct fuse_page_desc *page_descs,
+>  			      unsigned npages)
+>  {
+>  	memset(req, 0, sizeof(*req));
+> +	memset(page_descs, 0, sizeof(*page_descs) * npages);
 
-diff --git a/drivers/gpu/drm/radeon/radeon_atpx_handler.c b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-index 37f6a90..15f5ded 100644
---- a/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-+++ b/drivers/gpu/drm/radeon/radeon_atpx_handler.c
-@@ -352,9 +352,9 @@ static int radeon_atpx_switchto(enum vga_switcheroo_client_id id)
- }
- 
- /**
-- * radeon_atpx_switchto - switch to the requested GPU
-+ * radeon_atpx_power_state - power down/up the requested GPU
-  *
-- * @id: GPU to switch to
-+ * @id: GPU to power down/up
-  * @state: requested power state (0 = off, 1 = on)
-  *
-  * Execute the necessary ATPX function to power down/up the discrete GPU
--- 
-1.7.12.1
+Makes me wonder:  why aren't we zeroing out the page array too?
 
+>  	INIT_LIST_HEAD(&req->list);
+>  	INIT_LIST_HEAD(&req->intr_entry);
+>  	init_waitqueue_head(&req->waitq);
+>  	atomic_set(&req->count, 1);
+>  	req->pages = pages;
+> +	req->page_descs = page_descs;
+>  	req->max_pages = npages;
+>  }
+>  
+> @@ -51,18 +54,25 @@ static struct fuse_req *__fuse_request_alloc(int npages, gfp_t flags)
+>  	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, flags);
+>  	if (req) {
+>  		struct page **pages;
+> +		struct fuse_page_desc *page_descs;
+>  
+> -		if (npages <= FUSE_REQ_INLINE_PAGES)
+> +		if (npages <= FUSE_REQ_INLINE_PAGES) {
+>  			pages = req->inline_pages;
+> -		else
+> +			page_descs = req->inline_page_descs;
+> +		} else {
+>  			pages = kmalloc(sizeof(struct page *) * npages, flags);
+> +			page_descs = kmalloc(sizeof(struct fuse_page_desc) *
+> +					     npages, flags);
+> +		}
+>  
+> -		if (!pages) {
+> +		if (!pages || !page_descs) {
+> +			kfree(pages);
+> +			kfree(page_descs);
+>  			kmem_cache_free(fuse_req_cachep, req);
+>  			return NULL;
+>  		}
+>  
+> -		fuse_request_init(req, pages, npages);
+> +		fuse_request_init(req, pages, page_descs, npages);
+>  	}
+>  	return req;
+>  }
+> @@ -82,6 +92,8 @@ void fuse_request_free(struct fuse_req *req)
+>  {
+>  	if (req->pages != req->inline_pages)
+>  		kfree(req->pages);
+> +	if (req->page_descs != req->inline_page_descs)
+> +		kfree(req->page_descs);
+
+You allocate them together, you can free them together.  Just add a
+BUG_ON() if you feel paranoid.
+
+>  	kmem_cache_free(fuse_req_cachep, req);
+>  }
+>  
+> @@ -186,7 +198,7 @@ static void put_reserved_req(struct fuse_conn *fc, struct fuse_req *req)
+>  	struct fuse_file *ff = file->private_data;
+>  
+>  	spin_lock(&fc->lock);
+> -	fuse_request_init(req, req->pages, req->max_pages);
+> +	fuse_request_init(req, req->pages, req->page_descs, req->max_pages);
+>  	BUG_ON(ff->reserved_req);
+>  	ff->reserved_req = req;
+>  	wake_up_all(&fc->reserved_req_waitq);
+> @@ -877,7 +889,7 @@ static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
+>  {
+>  	unsigned i;
+>  	struct fuse_req *req = cs->req;
+> -	unsigned offset = req->page_offset;
+> +	unsigned offset = req->page_descs[0].offset;
+>  	unsigned count = min(nbytes, (unsigned) PAGE_SIZE - offset);
+>  
+>  	for (i = 0; i < req->num_pages && (nbytes || zeroing); i++) {
+> @@ -1585,7 +1597,7 @@ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
+>  	req->in.h.nodeid = outarg->nodeid;
+>  	req->in.numargs = 2;
+>  	req->in.argpages = 1;
+> -	req->page_offset = offset;
+> +	req->page_descs[0].offset = offset;
+>  	req->end = fuse_retrieve_end;
+>  
+>  	index = outarg->offset >> PAGE_CACHE_SHIFT;
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 08899a6..b68cf3b 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -798,7 +798,7 @@ static size_t fuse_send_write_pages(struct fuse_req *req, struct file *file,
+>  
+>  	res = fuse_send_write(req, file, pos, count, NULL);
+>  
+> -	offset = req->page_offset;
+> +	offset = req->page_descs[0].offset;
+>  	count = res;
+>  	for (i = 0; i < req->num_pages; i++) {
+>  		struct page *page = req->pages[i];
+> @@ -829,7 +829,7 @@ static ssize_t fuse_fill_write_pages(struct fuse_req *req,
+>  	int err;
+>  
+>  	req->in.argpages = 1;
+> -	req->page_offset = offset;
+> +	req->page_descs[0].offset = offset;
+>  
+>  	do {
+>  		size_t tmp;
+> @@ -1070,14 +1070,14 @@ static int fuse_get_user_pages(struct fuse_req *req, const char __user *buf,
+>  		return npages;
+>  
+>  	req->num_pages = npages;
+> -	req->page_offset = offset;
+> +	req->page_descs[0].offset = offset;
+>  
+>  	if (write)
+>  		req->in.argpages = 1;
+>  	else
+>  		req->out.argpages = 1;
+>  
+> -	nbytes = (req->num_pages << PAGE_SHIFT) - req->page_offset;
+> +	nbytes = (req->num_pages << PAGE_SHIFT) - req->page_descs[0].offset;
+>  	*nbytesp = min(*nbytesp, nbytes);
+>  
+>  	return 0;
+> @@ -1314,7 +1314,7 @@ static int fuse_writepage_locked(struct page *page)
+>  	req->in.argpages = 1;
+>  	req->num_pages = 1;
+>  	req->pages[0] = tmp_page;
+> -	req->page_offset = 0;
+> +	req->page_descs[0].offset = 0;
+>  	req->end = fuse_writepage_end;
+>  	req->inode = inode;
+>  
+> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> index fd69d62..c07e454 100644
+> --- a/fs/fuse/fuse_i.h
+> +++ b/fs/fuse/fuse_i.h
+> @@ -203,6 +203,12 @@ struct fuse_out {
+>  	struct fuse_arg args[3];
+>  };
+>  
+> +/** FUSE page descriptor */
+> +struct fuse_page_desc {
+> +	unsigned int length;
+> +	unsigned int offset;
+> +};
+> +
+>  /** The request state */
+>  enum fuse_req_state {
+>  	FUSE_REQ_INIT = 0,
+> @@ -296,18 +302,21 @@ struct fuse_req {
+>  	/** page vector */
+>  	struct page **pages;
+>  
+> +	/** page-descriptor vector */
+> +	struct fuse_page_desc *page_descs;
+> +
+>  	/** size of the 'pages' array */
+>  	unsigned max_pages;
+>  
+>  	/** inline page vector */
+>  	struct page *inline_pages[FUSE_REQ_INLINE_PAGES];
+>  
+> +	/** inline page-descriptor vector */
+> +	struct fuse_page_desc inline_page_descs[FUSE_REQ_INLINE_PAGES];
+> +
+>  	/** number of pages in vector */
+>  	unsigned num_pages;
+>  
+> -	/** offset of data on first page */
+> -	unsigned page_offset;
+> -
+>  	/** File used in the request (or NULL) */
+>  	struct fuse_file *ff;
+>  
