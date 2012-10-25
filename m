@@ -1,41 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751582Ab2JYVao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:30:44 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:55914 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab2JYVam (ORCPT
+	id S1751450Ab2JYVhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:37:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55086 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab2JYVhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:30:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121012173205.49844867@pyramind.ukuu.org.uk>
-References: <1349884592-32485-1-git-send-email-rmorell@nvidia.com>
-	<20121010191702.404edace@pyramind.ukuu.org.uk>
-	<CAF6AEGvzfr2-QHpX4zwm2EPz-vxCDe9SaLUjo4_Fn7HhjWJFsg@mail.gmail.com>
-	<201210110857.15660.hverkuil@xs4all.nl>
-	<20121011123407.63b5ecbe@pyramind.ukuu.org.uk>
-	<CAPM=9txkSXAOu5Q_H3LWuMrJ+Q_paLPrORtRuHNg6qvsukNdyw@mail.gmail.com>
-	<20121012173205.49844867@pyramind.ukuu.org.uk>
-Date: Fri, 26 Oct 2012 07:30:40 +1000
-Message-ID: <CAPM=9twFedvRKHZjy=2wO1X0s_8DDetOk3Zb7Jb5e-vztP1yyw@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [PATCH] dma-buf: Use EXPORT_SYMBOL
-From: Dave Airlie <airlied@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 17:37:09 -0400
+Date: Thu, 25 Oct 2012 14:37:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
+Message-Id: <20121025143707.b212d958.akpm@linux-foundation.org>
+In-Reply-To: <20121025212251.GA31749@shutemov.name>
+References: <20121023063532.GA15870@shutemov.name>
+	<20121022234349.27f33f62.akpm@linux-foundation.org>
+	<20121023070018.GA18381@otc-wbsnb-06>
+	<20121023155915.7d5ef9d1.akpm@linux-foundation.org>
+	<20121023233801.GA21591@shutemov.name>
+	<20121024122253.5ecea992.akpm@linux-foundation.org>
+	<20121024194552.GA24460@otc-wbsnb-06>
+	<20121024132552.5f9a5f5b.akpm@linux-foundation.org>
+	<20121025204959.GA27251@otc-wbsnb-06>
+	<20121025140524.17083937.akpm@linux-foundation.org>
+	<20121025212251.GA31749@shutemov.name>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Unlikely as most of the code I've written belongs to Intel or Red Hat. I
-> also have better things to do with life than sue Nvidia and start an all
-> out copyright and patent war in Linuxspace.
+On Fri, 26 Oct 2012 00:22:51 +0300
+"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-I forgot to ask, but after your petty G+ trolling, if most of the code
-belings to Intel or Red Hat, why do we need to listen to *your*
-lawyers advice? It seems like you aren't a major rights holder but a
-troll.
+> On Thu, Oct 25, 2012 at 02:05:24PM -0700, Andrew Morton wrote:
+> > On Thu, 25 Oct 2012 23:49:59 +0300
+> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > 
+> > > On Wed, Oct 24, 2012 at 01:25:52PM -0700, Andrew Morton wrote:
+> > > > On Wed, 24 Oct 2012 22:45:52 +0300
+> > > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > > > 
+> > > > > On Wed, Oct 24, 2012 at 12:22:53PM -0700, Andrew Morton wrote:
+> > > > > > 
+> > > > > > I'm thinking that such a workload would be the above dd in parallel
+> > > > > > with a small app which touches the huge page and then exits, then gets
+> > > > > > executed again.  That "small app" sounds realistic to me.  Obviously
+> > > > > > one could exercise the zero page's refcount at higher frequency with a
+> > > > > > tight map/touch/unmap loop, but that sounds less realistic.  It's worth
+> > > > > > trying that exercise as well though.
+> > > > > > 
+> > > > > > Or do something else.  But we should try to probe this code's
+> > > > > > worst-case behaviour, get an understanding of its effects and then
+> > > > > > decide whether any such workload is realisic enough to worry about.
+> > > > > 
+> > > > > Okay, I'll try few memory pressure scenarios.
+> > > 
+> > > A test program:
+> > > 
+> > >         while (1) {
+> > >                 posix_memalign((void **)&p, 2 * MB, 2 * MB);
+> > >                 assert(*p == 0);
+> > >                 free(p);
+> > >         }
+> > > 
+> > > With this code in background we have pretty good chance to have huge zero
+> > > page freeable (refcount == 1) when shrinker callback called - roughly one
+> > > of two.
+> > > 
+> > > Pagecache hog (dd if=hugefile of=/dev/null bs=1M) creates enough pressure
+> > > to get shrinker callback called, but it was only asked about cache size
+> > > (nr_to_scan == 0).
+> > > I was not able to get it called with nr_to_scan > 0 on this scenario, so
+> > > hzp never freed.
+> > 
+> > hm.  It's odd that the kernel didn't try to shrink slabs in this case. 
+> > Why didn't it??
+> 
+> nr_to_scan == 0 asks for the fast path. shrinker callback can shink, if
+> it thinks it's good idea.
 
-Dave.
+What nr_objects does your shrinker return in that case?  If it's "1"
+then it wouild be unsurprising that the core code decides not to
+shrink.
+
+> > 
+> > > I also tried another scenario: usemem -n16 100M -r 1000. It creates real
+> > > memory pressure - no easy reclaimable memory. This time callback called
+> > > with nr_to_scan > 0 and we freed hzp. Under pressure we fails to allocate
+> > > hzp and code goes to fallback path as it supposed to.
+> > > 
+> > > Do I need to check any other scenario?
+> > 
+> > I'm thinking that if we do hit problems in this area, we could avoid
+> > freeing the hugepage unless the scan_control.priority is high enough. 
+> > That would involve adding a magic number or a tunable to set the
+> > threshold.
+> 
+> What about ratelimit on alloc path to force fallback if we allocate
+> to often? Is it good idea?
+
+mmm...  ratelimit via walltime is always a bad idea.  We could
+ratelimit by "number of times the shrinker was called", and maybe that
+would work OK, unsure.
+
+It *is* appropriate to use sc->priority to be more reluctant to release
+expensive-to-reestablish objects.  But there is already actually a
+mechanism in the shrinker code to handle this: the shrink_control.seeks
+field.  That was originally added to provide an estimate of "how
+expensive will it be to recreate this object if we were to reclaim it".
+So perhaps we could generalise that a bit, and state that the zero
+hugepage is an expensive thing.
+
+I don't think the shrink_control.seeks facility had ever been used much,
+so it's possible that it is presently mistuned or not working very
+well.
+
+
