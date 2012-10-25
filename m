@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab2JYXLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 19:11:45 -0400
-Received: from exprod7og103.obsmtp.com ([64.18.2.159]:59350 "EHLO
-	exprod7og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab2JYXLo (ORCPT
+	id S1752124Ab2JYXMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 19:12:18 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:47618 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab2JYXMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 19:11:44 -0400
-Message-ID: <5089C70B.1020007@genband.com>
-Date: Thu, 25 Oct 2012 17:11:07 -0600
-From: Chris Friesen <chris.friesen@genband.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Wallak <wallak@free.fr>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linix-3.6.3 sda, sdb drives in reverse order (with a USB 2.0
- drives and a monolithic kernel configuration)
-References: <5089C20E.4090707@free.fr>
-In-Reply-To: <5089C20E.4090707@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 25 Oct 2012 19:12:16 -0400
+Message-ID: <1351206731.6851.10.camel@lorien2>
+Subject: [PATCH RFT] hexagon: dma-mapping: support debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: rkuo@codeaurora.org, arnd@arndb.de, linas@codeaurora.org,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com
+Cc: linux-hexagon@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Thu, 25 Oct 2012 17:12:11 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Oct 2012 23:11:08.0198 (UTC) FILETIME=[04014460:01CDB306]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-19310.000
-X-TM-AS-Result: No--7.736600-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 04:49 PM, Wallak wrote:
-> I've a very annoying behavior with the linux-3.6.x kernels release, and
-> a monolithic configuration. The USB 2.0 drives are mapped first with
-> /dev/sda, /dev/sdb... devices, and than the SATA AHCI drives come after.
-> This is out of order with the BIOS configuration and breaks a program
-> like lilo. This is also annoying when we use a static partition mapping.
->
-> Linux-3.5 works fine. Where this bug come from ? Is this a patch to get
-> the old, and classical behavior ?
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-As you have discovered it's fragile to rely on /dev/sd* names since a 
-BIOS update, kernel update, or motherboard replacement could conceivably 
-cause them to change.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/hexagon/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Better to use something like partition labels that you control and that 
-don't change.
+diff --git a/arch/hexagon/include/asm/dma-mapping.h b/arch/hexagon/include/asm/dma-mapping.h
+index 85e9935..1957c4c 100644
+--- a/arch/hexagon/include/asm/dma-mapping.h
++++ b/arch/hexagon/include/asm/dma-mapping.h
+@@ -65,6 +65,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
+ 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+ 
++	debug_dma_mapping_error(dev, dma_addr);
+ 	if (dma_ops->mapping_error)
+ 		return dma_ops->mapping_error(dev, dma_addr);
+ 
+-- 
+1.7.9.5
 
-Chris
+
+
