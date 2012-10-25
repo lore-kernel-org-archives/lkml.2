@@ -1,52 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab2JYAMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:12:12 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58363 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab2JYAMK (ORCPT
+	id S1755851Ab2JYAOV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:14:21 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34167 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab2JYAOU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:12:10 -0400
-Message-ID: <508883D6.70706@wwwdotorg.org>
-Date: Wed, 24 Oct 2012 18:12:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>
-Subject: Re: [PATCH 03/23] printk: Move braille console support into separate
- braille.[ch] files
-References: <cover.1350449851.git.joe@perches.com> <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>
-In-Reply-To: <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Oct 2012 20:14:20 -0400
+Date: Wed, 24 Oct 2012 17:14:12 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
+ needed for privcmd mappings.
+Message-ID: <20121024171412.7d2e8d3b@mantra.us.oracle.com>
+In-Reply-To: <20121024170746.7c89a790@mantra.us.oracle.com>
+References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
+	<1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
+	<20121024164411.5b000087@mantra.us.oracle.com>
+	<20121024170746.7c89a790@mantra.us.oracle.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/17/2012 12:06 AM, Joe Perches wrote:
-> Create files with prototypes and static inlines for braille
-> support.  Make braille_console functions return 1 on success.
+On Wed, 24 Oct 2012 17:07:46 -0700
+Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
 
-Joe,
+> On Wed, 24 Oct 2012 16:44:11 -0700
+> Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+> 
+> > >  
+> > >  #ifndef HYPERVISOR_VIRT_START
+> > > diff --git a/include/xen/interface/memory.h
+> > > b/include/xen/interface/memory.h index ad0dff5..5de2b36 100644
+> > > --- a/include/xen/interface/memory.h
+> > > +++ b/include/xen/interface/memory.h
+> > > @@ -188,6 +188,24 @@
+> > > DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap); /*** REMOVED ***/
+> > >  /*#define XENMEM_translate_gpfn_list  8*/
+> > >  
+> > > +#define XENMEM_add_to_physmap_range 23
+> > > +struct xen_add_to_physmap_range {
+> > > +    /* Which domain to change the mapping for. */
+> > > +    domid_t domid;
+> > > +    uint16_t space; /* => enum phys_map_space */
+> > > +
+> > > +    /* Number of pages to go through */
+> > > +    uint16_t size;
+> > > +    domid_t foreign_domid; /* IFF gmfn_foreign */
+> > > +
+> > > +    /* Indexes into space being mapped. */
+> > > +    GUEST_HANDLE(xen_ulong_t) idxs;
+> > > +
+> > > +    /* GPFN in domid where the source mapping page should appear.
+> > > */
+> > > +    GUEST_HANDLE(xen_pfn_t) gpfns;
+> > 
+> > 
+> > Looking at your arm implementation in xen, doesn't look like you are
+> > expecting idxs and gpfns to be contigous. In that case, shouldn't
+> > idxs and gpfns be pointers, ie, they are sent down as arrays? Or
+> > does GUEST_HANDLE do that, I can't seem to find where it's defined
+> > quickly.
+> 
+> Never mind, I see it got corrected to XEN_GUEST_HANDLE in staging
+> tree. Still doesn't compile tho:
+> 
+> public/memory.h:246: error: expected specifier-qualifier-list before
+> ‘__guest_handle_xen_ulong_t’
+> 
+> I'll figure it out.
 
-Between next-20121022 and next-20121023, the serial console (on the ARM
-SoC Tegra at least) stopped working. The issue bisects down to this
-commit. I haven't had a chance to investigate why yet, I just finished
-bisected.
+Oh, yeah, missed:
++DEFINE_XEN_GUEST_HANDLE(xen_ulong_t);
 
-earlyprintk over the same UART works. Once the system has booted, a few
-late kernel messages do appear, and then getty/login over the UART
-works. So, it's just the printk messages that disappeared.
+compiles now.
 
-In case it's relevant, my command-line is:
-
-console=ttyS0,115200n8 loglevel=8 rootwait rw earlyprintk
-root=PARTUUID=b2f82cda-2535-4779-b467-094a210fbae7
-
-I'll continue to investigate further tomorrow, but just wanted to give
-you a heads-up in case you could immediately see anything obvious in the
-code.
