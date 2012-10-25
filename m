@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab2JYMis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:38:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45615 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2JYMiq (ORCPT
+	id S933145Ab2JYMjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:39:06 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23248 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932994Ab2JYMjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:38:46 -0400
-Date: Thu, 25 Oct 2012 13:38:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: P J P <ppandit@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-Message-ID: <20121025123843.GJ2616@ZenIV.linux.org.uk>
-References: <20121024232032.GA31129@www.outflux.net>
- <20121025041620.GH2616@ZenIV.linux.org.uk>
- <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
- <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
- <20121025120952.GI2616@ZenIV.linux.org.uk>
+	Thu, 25 Oct 2012 08:39:01 -0400
+Date: Thu, 25 Oct 2012 08:38:46 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Mukesh Rathor <mukesh.rathor@oracle.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 4/6] xen/pvh: bootup and setup related
+ changes.
+Message-ID: <20121025123828.GA25640@localhost.localdomain>
+References: <1350695882-12820-1-git-send-email-konrad.wilk@oracle.com>
+ <1350695882-12820-5-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.02.1210221428050.2689@kaball.uk.xensource.com>
+ <20121022155717.GB25200@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1210231406490.2689@kaball.uk.xensource.com>
+ <20121023164729.0ed51a1d@mantra.us.oracle.com>
+ <20121023170310.3b2a7e20@mantra.us.oracle.com>
+ <20121023171051.2ed9af3c@mantra.us.oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121025120952.GI2616@ZenIV.linux.org.uk>
+In-Reply-To: <20121023171051.2ed9af3c@mantra.us.oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 01:09:53PM +0100, Al Viro wrote:
-> On Thu, Oct 25, 2012 at 05:16:22PM +0530, P J P wrote:
+> > > > Yes, I think that this version looks better
+> > > 
+> > > But doesn't boot:
+> > > 
+> > > (XEN) vmx_hybrid.c:710:d0 Dom:0 EPT violation 0x181 (r--/---), gpa
+> > > 0x000000bf421e1c, mfn 0xffffffffffffffff, type 4. (XEN)
+> > > p2m-ept.c:642:d0 Walking EPT tables for domain 0 gfn bf421 (XEN)
+> > > p2m-ept.c:648:d0  gfn exceeds max_mapped_pfn 4b062 (XEN)
+> > > vmx_hybrid.c:717:d0  --- GLA 0xffffffffff477e1c
+> > > 
+> > > 
+> > > I'll have to debug it, or we can go back to the prev version, which
+> > > I don't think is that un-pretty :).
+> > > 
 > > 
-> >   Hello Kees,
+> > The reason being:
+> > xen_set_identity_and_release_chunk():
+> > NEW : > for (pfn = start_pfn; pfn <= max_pfn_mapped && pfn < end_pfn;
+> > pfn++) {
 > > 
-> > +-- On Wed, 24 Oct 2012, Kees Cook wrote --+
-> > | What should the code here _actually_ be doing? The _script and _misc 
-> > | handlers expect to rewrite the bprm contents and recurse, but the module 
-> > | loader want to try again. It's not clear to me what the binfmt module 
-> > | handler is even there for; I don't see any binfmt-XXXX aliases in the tree. 
-> > | If nothing uses it, should we just rip it out? That would solve it too.
+> > xen_pvh_identity_map_chunk():
+> > OLD: for (pfn = start_pfn; pfn < end_pfn; pfn++)
+> > 
+> > IOW, for PVH we need to avoid testing for max_pfn_mapped, as we are
+> > mapping the entire IO space. 
 > 
-> ; grep binfmt- /etc/*/* 2>/dev/null 
-> /etc/modprobe.d/aliases.conf:install binfmt-0000 /bin/true
-> /etc/modprobe.d/aliases.conf:alias binfmt-204 binfmt_aout
-> /etc/modprobe.d/aliases.conf:alias binfmt-263 binfmt_aout
-> /etc/modprobe.d/aliases.conf:alias binfmt-264 binfmt_aout
-> /etc/modprobe.d/aliases.conf:alias binfmt-267 binfmt_aout
-> /etc/modprobe.d/aliases.conf:alias binfmt-387 binfmt_aout
-> ; dpkg -S /etc/modprobe.d/aliases.conf 
-> module-init-tools: /etc/modprobe.d/aliases.conf
-> 
-> > I've been following this issue and updated versions of HDs patch. Below is a 
-> > small patch to search_binary_handler() routine, which attempts to make the 
-> > request_module call before calling load_script routine.
-> > 
-> > Besides fixing the stack disclosure issue it also helps to *simplify* the 
-> > search_binary_handler routine by removing the -for (try=0;try<2;try++)- loop.
-> > 
-> > I'd really appreciate any comments/suggestions you may have.
-> 
-> Suggestion: try testing your patches once in a while.  Stopping to think
-> for a minute would also help - you've turned every execve() into "do
-> request_module() first".  How do you suppose request_module() works?  And
-> how would modprobe be able to run?  IOW, this request_module() will be
-> stopped by protection against infinite loops, at which point execve will
-> proceed with already present binfmt, without having loaded anything.
-> But that's even worse than slowdown on each execve (with a lot of whining
-> in process), because *every* request_module() will fail now due to the same
-> loop prevention.
+> Also, now your counts for released and identity are off. Can we please
+> go back to the way it was? 
 
-... and after the second look at your patch, looks like another breakage
-in there will have a different effect - it doesn't just eliminate the
-first pass through the loop, it inverts the test for "should I try
-request_module()".  Overall result is a bit less painful - request_module()
-isn't broken on loop prevention, but
-	* every bleeding script will have bogus execution of modprobe done
-at execve time (and you'd better pray that /sbin/modprobe isn't a shell
-script wrapper around the actual binary, or you *will* get loop prevention
-kick in)
-	* none of the existing binfmt-<...> aliases is going to be hit
-now; IOW, all usecases got broken.  Granted, realistically it just means
-broken modular aout support, but then it's the only reason to have that
-request_module() there in the first place.
+Lets drop this patch then for right now. Can you post an alpha-RFC of your
+Xen hypervisor patches so that I can wrangle the PV and PVH in the E820
+code to use same paths as much as possible.
