@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935687Ab2JYQWi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:22:38 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:41076 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab2JYQWg (ORCPT
+	id S935875Ab2JYQWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:22:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58036 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935784Ab2JYQWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:22:36 -0400
-Message-ID: <1351182152.2432.25.camel@lorien2>
-Subject: [PATCH] ioat: Fix DMA memory sync direction correct flag
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: vinod.koul@intel.com, djbw@fb.com, rmk+kernel@arm.linux.org.uk,
-        linus.walleij@linaro.org, jassisinghbrar@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        shuahkhan@gmail.com
-Date: Thu, 25 Oct 2012 10:22:32 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Oct 2012 12:22:53 -0400
+Date: Thu, 25 Oct 2012 17:22:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lrg@ti.com, perex@perex.cz, tiwai@suse.de,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: wm5102: Correct micbias DAPM supplies
+Message-ID: <20121025162251.GP18814@opensource.wolfsonmicro.com>
+References: <20121025142442.GA32126@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FRaepaAnLTQkJ4tS"
+Content-Disposition: inline
+In-Reply-To: <20121025142442.GA32126@opensource.wolfsonmicro.com>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ioat does DMA memory sync with DMA_TO_DEVICE direction on a buffer allocated
-for DMA_FROM_DEVICE dma, resulting in the following warning from dma debug.
-Fixed the dma_sync_single_for_device() call to use the correct direction.
 
-[  226.288947] WARNING: at lib/dma-debug.c:990 check_sync+0x132/0x550()
-[  226.288948] Hardware name: ProLiant DL380p Gen8
-[  226.288951] ioatdma 0000:00:04.0: DMA-API: device driver syncs DMA memory with different direction [device address=0x00000000ffff7000] [size=4096 bytes] [mapped with DMA_FROM_DEVICE] [synced with DMA_TO_DEVICE]
-[  226.288953] Modules linked in: iTCO_wdt(+) sb_edac(+) ioatdma(+) microcode serio_raw pcspkr edac_core hpwdt(+) iTCO_vendor_support hpilo(+) dca acpi_power_meter ata_generic pata_acpi sd_mod crc_t10dif ata_piix libata hpsa tg3 netxen_nic(+) sunrpc dm_mirror dm_region_hash dm_log dm_mod
-[  226.288967] Pid: 1055, comm: work_for_cpu Tainted: G        W    3.3.0-0.20.el7.x86_64 #1
-[  226.288968] Call Trace:
-[  226.288974]  [<ffffffff810644cf>] warn_slowpath_common+0x7f/0xc0
-[  226.288977]  [<ffffffff810645c6>] warn_slowpath_fmt+0x46/0x50
-[  226.288980]  [<ffffffff81345502>] check_sync+0x132/0x550
-[  226.288983]  [<ffffffff81345c9f>] debug_dma_sync_single_for_device+0x3f/0x50
-[  226.288988]  [<ffffffff81661002>] ? wait_for_common+0x72/0x180
-[  226.288995]  [<ffffffffa019590f>] ioat_xor_val_self_test+0x3e5/0x832 [ioatdma]
-[  226.288999]  [<ffffffff811a5739>] ? kfree+0x259/0x270
-[  226.289004]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289008]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
-[  226.289011]  [<ffffffffa0195f51>] ioat3_dma_probe+0x1d5/0x2aa [ioatdma]
-[  226.289016]  [<ffffffffa0194d12>] ioat_pci_probe+0x139/0x17c [ioatdma]
-[  226.289020]  [<ffffffff81354b8c>] local_pci_probe+0x5c/0xd0
-[  226.289023]  [<ffffffff81083e50>] ? destroy_work_on_stack+0x20/0x20
-[  226.289025]  [<ffffffff81083e68>] do_work_for_cpu+0x18/0x30
-[  226.289029]  [<ffffffff8108d997>] kthread+0xb7/0xc0
-[  226.289033]  [<ffffffff8166cef4>] kernel_thread_helper+0x4/0x10
-[  226.289036]  [<ffffffff81662d20>] ? _raw_spin_unlock_irq+0x30/0x50
-[  226.289038]  [<ffffffff81663234>] ? retint_restore_args+0x13/0x13
-[  226.289041]  [<ffffffff8108d8e0>] ? kthread_worker_fn+0x1a0/0x1a0
-[  226.289044]  [<ffffffff8166cef0>] ? gs_change+0x13/0x13
-[  226.289045] ---[ end trace e1618afc7a606089 ]---
-[  226.289047] Mapped at:
-[  226.289048]  [<ffffffff81345307>] debug_dma_map_page+0x87/0x150
-[  226.289050]  [<ffffffffa019653c>] dma_map_page.constprop.18+0x70/0xb34 [ioatdma]
-[  226.289054]  [<ffffffffa0195702>] ioat_xor_val_self_test+0x1d8/0x832 [ioatdma]
-[  226.289058]  [<ffffffffa0195d77>] ioat3_dma_self_test+0x1b/0x20 [ioatdma]
-[  226.289061]  [<ffffffffa01952c3>] ioat_probe+0x2f8/0x348 [ioatdma]
+--FRaepaAnLTQkJ4tS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Thu, Oct 25, 2012 at 03:24:42PM +0100, Charles Keepax wrote:
+> ARIZONA_MICB1_ENA_SHIFT was used for micbias 2 and 3. This change
+> correctly uses the ARIZONA_MICBX_ENA_SHIFT for each corresponding DAPM
+> supply. This should not have caused any problems as the micbias enables
+> are in the same place in each register.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
-CC: <stable@vger.kernel.org>
----
- drivers/dma/ioat/dma_v3.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Applied, thanks.
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index f7f1dc6..ed0e8b7 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -951,7 +951,7 @@ static int __devinit ioat_xor_val_self_test(struct ioatdma_device *device)
- 			goto free_resources;
- 		}
- 	}
--	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_TO_DEVICE);
-+	dma_sync_single_for_device(dev, dest_dma, PAGE_SIZE, DMA_FROM_DEVICE);
- 
- 	/* skip validate if the capability is not present */
- 	if (!dma_has_cap(DMA_XOR_VAL, dma_chan->device->cap_mask))
--- 
-1.7.9.5
+--FRaepaAnLTQkJ4tS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQiWbxAAoJELSic+t+oim9gSsP/3I0JRSgp4HEgffLYeQ1PADD
++NoQLBbyBFlRfnYiVdw2KbvYKwAn5E0WXUj0AtpOmQXdiz/a589Hlai7FiN5a+VD
+/C4D3ohm1Cjlqra9Gzh/zliQcYP8HtIXNH4y/d6KvXlqUVQww/kZxDLkevPfgqMW
+ZmS2MHzlt8CKOQgNDCFIu02s9SObVwUBjokVAsGv/CRnK58GeNufWjdUCA/LEPOq
+sYnHjSJgMMKP4cODO4mw6TrnSMzdY+QgTU6oqvYGV1otZ/XCanyn5KQy1xS1L1nl
+bigbWeHwzIHJfGOrbjF8U0XZ2QWpvAFikG6XfzuWm6IFAS58st1Tc5x968n+NarI
+UNowsIrZrw5EW0pDEksfZSHzGPv5+Jh/3OQe2DGqUIPR9zcf7GPurZDQiwrMDmee
+K1BmK6/PAbuN0co2dyQWqYYOcas6XOkbPDVD9eTuNBp5HC1HB2S3D8WCnekkur3+
+/kRMFbGgNe1v9PZm9mEG0hU4z0zD7HABappEkQv/Gzx+6M75EPCJHAdKiuV8Blj5
+PrZh8tRToovyuuvTBwjr5tA2NYs26LkJERdA5ZR0yZ/GZid+54LsWm/Hg4+WA/Nu
+o6ELvBpnrEmbr7EcgfKEX/5NpWPARIcMjrZOkDkOq+vbp7T17WWgoEiKjjS9rDSN
+hGB/5/IETa1g+p0ANlKZ
+=OXsG
+-----END PGP SIGNATURE-----
 
+--FRaepaAnLTQkJ4tS--
