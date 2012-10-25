@@ -1,274 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935557Ab2JYNNU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:13:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39537 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934023Ab2JYNNO (ORCPT
+	id S935628Ab2JYNNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:13:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51640 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422901Ab2JYNKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:13:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1350920203-21978-1-git-send-email-m-karicheri2@ti.com>
-References: <1350920203-21978-1-git-send-email-m-karicheri2@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 25 Oct 2012 18:42:52 +0530
-Message-ID: <CA+V-a8sbCyTTAm-x2Jr2_XxccRo0kjhVAYaVAibXHCqjZL7-nA@mail.gmail.com>
-Subject: Re: [RESEND-PATCH] media:davinci: clk - {prepare/unprepare} for
- common clk
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: mchehab@infradead.org, laurent.pinchart@ideasonboard.com,
-        manjunath.hadli@ti.com, prabhakar.lad@ti.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux-davincidsp.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 09:10:13 -0400
+Message-Id: <20121025124834.592333415@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 25 Oct 2012 14:16:45 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 28/31] sched, numa, mm: Implement constant, per task Working Set Sampling (WSS) rate
+References: <20121025121617.617683848@chello.nl>
+Content-Disposition: inline; filename=0028-sched-numa-mm-Implement-constant-per-task-Working-Se.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Murali,
+Previously, to probe the working set of a task, we'd use
+a very simple and crude method: mark all of its address
+space PROT_NONE.
 
-Thanks for the patch.  I'll  queue this patch for 3.8.
+That method has various (obvious) disadvantages:
 
-On Mon, Oct 22, 2012 at 9:06 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> As a first step towards migrating davinci platforms to use common clock
-> framework, replace all instances of clk_enable() with clk_prepare_enable()
-> and clk_disable() with clk_disable_unprepare().
->
-> Also fixes some issues related to clk clean up in the driver
->
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+ - it samples the working set at dissimilar rates,
+   giving some tasks a sampling quality advantage
+   over others.
 
-Acked-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Tested-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+ - creates performance problems for tasks with very
+   large working sets
 
-Regards,
---Prabhakar
+ - over-samples processes with large address spaces but
+   which only very rarely execute
 
-> ---
-> rebased to v3.7-rc1
->
->  drivers/media/platform/davinci/dm355_ccdc.c  |    8 ++++++--
->  drivers/media/platform/davinci/dm644x_ccdc.c |   16 ++++++++++------
->  drivers/media/platform/davinci/isif.c        |    5 ++++-
->  drivers/media/platform/davinci/vpbe.c        |   10 +++++++---
->  drivers/media/platform/davinci/vpif.c        |    8 ++++----
->  5 files changed, 31 insertions(+), 16 deletions(-)
->
-> diff --git a/drivers/media/platform/davinci/dm355_ccdc.c b/drivers/media/platform/davinci/dm355_ccdc.c
-> index ce0e413..030950d 100644
-> --- a/drivers/media/platform/davinci/dm355_ccdc.c
-> +++ b/drivers/media/platform/davinci/dm355_ccdc.c
-> @@ -1003,7 +1003,7 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
->                 status = PTR_ERR(ccdc_cfg.mclk);
->                 goto fail_nomap;
->         }
-> -       if (clk_enable(ccdc_cfg.mclk)) {
-> +       if (clk_prepare_enable(ccdc_cfg.mclk)) {
->                 status = -ENODEV;
->                 goto fail_mclk;
->         }
-> @@ -1014,7 +1014,7 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
->                 status = PTR_ERR(ccdc_cfg.sclk);
->                 goto fail_mclk;
->         }
-> -       if (clk_enable(ccdc_cfg.sclk)) {
-> +       if (clk_prepare_enable(ccdc_cfg.sclk)) {
->                 status = -ENODEV;
->                 goto fail_sclk;
->         }
-> @@ -1034,8 +1034,10 @@ static int __devinit dm355_ccdc_probe(struct platform_device *pdev)
->         printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->         return 0;
->  fail_sclk:
-> +       clk_disable_unprepare(ccdc_cfg.sclk);
->         clk_put(ccdc_cfg.sclk);
->  fail_mclk:
-> +       clk_disable_unprepare(ccdc_cfg.mclk);
->         clk_put(ccdc_cfg.mclk);
->  fail_nomap:
->         iounmap(ccdc_cfg.base_addr);
-> @@ -1050,6 +1052,8 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
->  {
->         struct resource *res;
->
-> +       clk_disable_unprepare(ccdc_cfg.sclk);
-> +       clk_disable_unprepare(ccdc_cfg.mclk);
->         clk_put(ccdc_cfg.mclk);
->         clk_put(ccdc_cfg.sclk);
->         iounmap(ccdc_cfg.base_addr);
-> diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
-> index ee7942b..0215ab6 100644
-> --- a/drivers/media/platform/davinci/dm644x_ccdc.c
-> +++ b/drivers/media/platform/davinci/dm644x_ccdc.c
-> @@ -994,7 +994,7 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
->                 status = PTR_ERR(ccdc_cfg.mclk);
->                 goto fail_nomap;
->         }
-> -       if (clk_enable(ccdc_cfg.mclk)) {
-> +       if (clk_prepare_enable(ccdc_cfg.mclk)) {
->                 status = -ENODEV;
->                 goto fail_mclk;
->         }
-> @@ -1005,7 +1005,7 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
->                 status = PTR_ERR(ccdc_cfg.sclk);
->                 goto fail_mclk;
->         }
-> -       if (clk_enable(ccdc_cfg.sclk)) {
-> +       if (clk_prepare_enable(ccdc_cfg.sclk)) {
->                 status = -ENODEV;
->                 goto fail_sclk;
->         }
-> @@ -1013,8 +1013,10 @@ static int __devinit dm644x_ccdc_probe(struct platform_device *pdev)
->         printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
->         return 0;
->  fail_sclk:
-> +       clk_disable_unprepare(ccdc_cfg.sclk);
->         clk_put(ccdc_cfg.sclk);
->  fail_mclk:
-> +       clk_disable_unprepare(ccdc_cfg.mclk);
->         clk_put(ccdc_cfg.mclk);
->  fail_nomap:
->         iounmap(ccdc_cfg.base_addr);
-> @@ -1029,6 +1031,8 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
->  {
->         struct resource *res;
->
-> +       clk_disable_unprepare(ccdc_cfg.mclk);
-> +       clk_disable_unprepare(ccdc_cfg.sclk);
->         clk_put(ccdc_cfg.mclk);
->         clk_put(ccdc_cfg.sclk);
->         iounmap(ccdc_cfg.base_addr);
-> @@ -1046,8 +1050,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
->         /* Disable CCDC */
->         ccdc_enable(0);
->         /* Disable both master and slave clock */
-> -       clk_disable(ccdc_cfg.mclk);
-> -       clk_disable(ccdc_cfg.sclk);
-> +       clk_disable_unprepare(ccdc_cfg.mclk);
-> +       clk_disable_unprepare(ccdc_cfg.sclk);
->
->         return 0;
->  }
-> @@ -1055,8 +1059,8 @@ static int dm644x_ccdc_suspend(struct device *dev)
->  static int dm644x_ccdc_resume(struct device *dev)
->  {
->         /* Enable both master and slave clock */
-> -       clk_enable(ccdc_cfg.mclk);
-> -       clk_enable(ccdc_cfg.sclk);
-> +       clk_prepare_enable(ccdc_cfg.mclk);
-> +       clk_prepare_enable(ccdc_cfg.sclk);
->         /* Restore CCDC context */
->         ccdc_restore_context();
->
-> diff --git a/drivers/media/platform/davinci/isif.c b/drivers/media/platform/davinci/isif.c
-> index b99d542..2c26c3e 100644
-> --- a/drivers/media/platform/davinci/isif.c
-> +++ b/drivers/media/platform/davinci/isif.c
-> @@ -1053,7 +1053,7 @@ static int __devinit isif_probe(struct platform_device *pdev)
->                 status = PTR_ERR(isif_cfg.mclk);
->                 goto fail_mclk;
->         }
-> -       if (clk_enable(isif_cfg.mclk)) {
-> +       if (clk_prepare_enable(isif_cfg.mclk)) {
->                 status = -ENODEV;
->                 goto fail_mclk;
->         }
-> @@ -1125,6 +1125,7 @@ fail_nobase_res:
->                 i--;
->         }
->  fail_mclk:
-> +       clk_disable_unprepare(isif_cfg.mclk);
->         clk_put(isif_cfg.mclk);
->         vpfe_unregister_ccdc_device(&isif_hw_dev);
->         return status;
-> @@ -1145,6 +1146,8 @@ static int isif_remove(struct platform_device *pdev)
->                 i++;
->         }
->         vpfe_unregister_ccdc_device(&isif_hw_dev);
-> +       clk_disable_unprepare(isif_cfg.mclk);
-> +       clk_put(isif_cfg.mclk);
->         return 0;
->  }
->
-> diff --git a/drivers/media/platform/davinci/vpbe.c b/drivers/media/platform/davinci/vpbe.c
-> index 69d7a58..7f5cf9b 100644
-> --- a/drivers/media/platform/davinci/vpbe.c
-> +++ b/drivers/media/platform/davinci/vpbe.c
-> @@ -612,7 +612,7 @@ static int vpbe_initialize(struct device *dev, struct vpbe_device *vpbe_dev)
->                         ret =  PTR_ERR(vpbe_dev->dac_clk);
->                         goto fail_mutex_unlock;
->                 }
-> -               if (clk_enable(vpbe_dev->dac_clk)) {
-> +               if (clk_prepare_enable(vpbe_dev->dac_clk)) {
->                         ret =  -ENODEV;
->                         goto fail_mutex_unlock;
->                 }
-> @@ -759,8 +759,10 @@ fail_kfree_encoders:
->  fail_dev_unregister:
->         v4l2_device_unregister(&vpbe_dev->v4l2_dev);
->  fail_clk_put:
-> -       if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-> +       if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-> +               clk_disable_unprepare(vpbe_dev->dac_clk);
->                 clk_put(vpbe_dev->dac_clk);
-> +       }
->  fail_mutex_unlock:
->         mutex_unlock(&vpbe_dev->lock);
->         return ret;
-> @@ -777,8 +779,10 @@ fail_mutex_unlock:
->  static void vpbe_deinitialize(struct device *dev, struct vpbe_device *vpbe_dev)
->  {
->         v4l2_device_unregister(&vpbe_dev->v4l2_dev);
-> -       if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0)
-> +       if (strcmp(vpbe_dev->cfg->module_name, "dm644x-vpbe-display") != 0) {
-> +               clk_disable_unprepare(vpbe_dev->dac_clk);
->                 clk_put(vpbe_dev->dac_clk);
-> +       }
->
->         kfree(vpbe_dev->amp);
->         kfree(vpbe_dev->encoders);
-> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-> index cff3c0a..0d6cc8e 100644
-> --- a/drivers/media/platform/davinci/vpif.c
-> +++ b/drivers/media/platform/davinci/vpif.c
-> @@ -444,7 +444,7 @@ static int __devinit vpif_probe(struct platform_device *pdev)
->                 status = PTR_ERR(vpif_clk);
->                 goto clk_fail;
->         }
-> -       clk_enable(vpif_clk);
-> +       clk_prepare_enable(vpif_clk);
->
->         spin_lock_init(&vpif_lock);
->         dev_info(&pdev->dev, "vpif probe success\n");
-> @@ -460,7 +460,7 @@ fail:
->  static int __devexit vpif_remove(struct platform_device *pdev)
->  {
->         if (vpif_clk) {
-> -               clk_disable(vpif_clk);
-> +               clk_disable_unprepare(vpif_clk);
->                 clk_put(vpif_clk);
->         }
->
-> @@ -472,13 +472,13 @@ static int __devexit vpif_remove(struct platform_device *pdev)
->  #ifdef CONFIG_PM
->  static int vpif_suspend(struct device *dev)
->  {
-> -       clk_disable(vpif_clk);
-> +       clk_disable_unprepare(vpif_clk);
->         return 0;
->  }
->
->  static int vpif_resume(struct device *dev)
->  {
-> -       clk_enable(vpif_clk);
-> +       clk_prepare_enable(vpif_clk);
->         return 0;
->  }
->
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Improve that method by keeping a rotating offset into the
+address space that marks the current position of the scan,
+and advance it by a constant rate (in a CPU cycles execution
+proportional manner). If the offset reaches the last mapped
+address of the mm then it then it starts over at the first
+address.
+
+The per-task nature of the working set sampling functionality
+in this tree allows such constant rate, per task,
+execution-weight proportional sampling of the working set,
+with an adaptive sampling interval/frequency that goes from
+once per 100 msecs up to just once per 1.6 seconds.
+The current sampling volume is 256 MB per interval.
+
+As tasks mature and converge their working set, so does the
+sampling rate slow down to just a trickle, 256 MB per 1.6
+seconds of CPU time executed.
+
+This, beyond being adaptive, also rate-limits rarely
+executing systems and does not over-sample on overloaded
+systems.
+
+[ In AutoNUMA speak, this patch deals with the effective sampling
+  rate of the 'hinting page fault'. AutoNUMA's scanning is
+  currently rate-limited, but it is also fundamentally
+  single-threaded, executing in the knuma_scand kernel thread,
+  so the limit in AutoNUMA is global and does not scale up with
+  the number of CPUs, nor does it scan tasks in an execution
+  proportional manner.
+
+  So the idea of rate-limiting the scanning was first implemented
+  in the AutoNUMA tree via a global rate limit. This patch goes
+  beyond that by implementing an execution rate proportional
+  working set sampling rate that is not implemented via a single
+  global scanning daemon. ]
+
+[ Dan Carpenter pointed out a possible NULL pointer dereference in the
+  first version of this patch. ]
+
+Based-on-idea-by: Andrea Arcangeli <aarcange@redhat.com>
+Bug-Found-By: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+[ Wrote changelog and fixed bug. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/mm_types.h |    1 +
+ include/linux/sched.h    |    1 +
+ kernel/sched/fair.c      |   43 ++++++++++++++++++++++++++++++-------------
+ kernel/sysctl.c          |    7 +++++++
+ 4 files changed, 39 insertions(+), 13 deletions(-)
+
+Index: tip/include/linux/mm_types.h
+===================================================================
+--- tip.orig/include/linux/mm_types.h
++++ tip/include/linux/mm_types.h
+@@ -405,6 +405,7 @@ struct mm_struct {
+ #endif
+ #ifdef CONFIG_SCHED_NUMA
+ 	unsigned long numa_next_scan;
++	unsigned long numa_scan_offset;
+ 	int numa_scan_seq;
+ #endif
+ 	struct uprobes_state uprobes_state;
+Index: tip/include/linux/sched.h
+===================================================================
+--- tip.orig/include/linux/sched.h
++++ tip/include/linux/sched.h
+@@ -2022,6 +2022,7 @@ extern enum sched_tunable_scaling sysctl
+ 
+ extern unsigned int sysctl_sched_numa_scan_period_min;
+ extern unsigned int sysctl_sched_numa_scan_period_max;
++extern unsigned int sysctl_sched_numa_scan_size;
+ extern unsigned int sysctl_sched_numa_settle_count;
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+Index: tip/kernel/sched/fair.c
+===================================================================
+--- tip.orig/kernel/sched/fair.c
++++ tip/kernel/sched/fair.c
+@@ -829,8 +829,9 @@ static void account_numa_dequeue(struct
+ /*
+  * numa task sample period in ms: 5s
+  */
+-unsigned int sysctl_sched_numa_scan_period_min = 5000;
+-unsigned int sysctl_sched_numa_scan_period_max = 5000*16;
++unsigned int sysctl_sched_numa_scan_period_min = 100;
++unsigned int sysctl_sched_numa_scan_period_max = 100*16;
++unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
+ 
+ /*
+  * Wait for the 2-sample stuff to settle before migrating again
+@@ -904,6 +905,9 @@ void task_numa_work(struct callback_head
+ 	unsigned long migrate, next_scan, now = jiffies;
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
++	struct vm_area_struct *vma;
++	unsigned long offset, end;
++	long length;
+ 
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
+ 
+@@ -930,18 +934,31 @@ void task_numa_work(struct callback_head
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
+-	ACCESS_ONCE(mm->numa_scan_seq)++;
+-	{
+-		struct vm_area_struct *vma;
+-
+-		down_write(&mm->mmap_sem);
+-		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			if (!vma_migratable(vma))
+-				continue;
+-			change_protection(vma, vma->vm_start, vma->vm_end, vma_prot_none(vma), 0);
+-		}
+-		up_write(&mm->mmap_sem);
++	offset = mm->numa_scan_offset;
++	length = sysctl_sched_numa_scan_size;
++	length <<= 20;
++
++	down_write(&mm->mmap_sem);
++	vma = find_vma(mm, offset);
++	if (!vma) {
++		ACCESS_ONCE(mm->numa_scan_seq)++;
++		offset = 0;
++		vma = mm->mmap;
++	}
++	for (; vma && length > 0; vma = vma->vm_next) {
++		if (!vma_migratable(vma))
++			continue;
++
++		offset = max(offset, vma->vm_start);
++		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
++		length -= end - offset;
++
++		change_prot_none(vma, offset, end);
++
++		offset = end;
+ 	}
++	mm->numa_scan_offset = offset;
++	up_write(&mm->mmap_sem);
+ }
+ 
+ /*
+Index: tip/kernel/sysctl.c
+===================================================================
+--- tip.orig/kernel/sysctl.c
++++ tip/kernel/sysctl.c
+@@ -367,6 +367,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sched_numa_scan_size_mb",
++		.data		= &sysctl_sched_numa_scan_size,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "sched_numa_settle_count",
+ 		.data		= &sysctl_sched_numa_settle_count,
+ 		.maxlen		= sizeof(unsigned int),
+
+
