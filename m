@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935224Ab2JYLPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:15:48 -0400
-Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:38103 "EHLO
-	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759405Ab2JYLPq (ORCPT
+	id S935588Ab2JYLP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:15:57 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:34775 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754849Ab2JYLPw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:15:46 -0400
-Message-ID: <1351163742.2513.16.camel@offbook>
-Subject: [PATCH RESEND 2/3] partitions: efi: verify header is outside usable
- area
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Date: Thu, 25 Oct 2012 13:15:42 +0200
-Organization: GNU
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Oct 2012 07:15:52 -0400
+Date: Thu, 25 Oct 2012 13:15:43 +0200
+From: Claudio Fontana <Claudio.Fontana@huawei.com>
+Subject: [PATCH resend 2] net/ipv4/ipconfig: add device address to a KERN_INFO
+ message
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <50891F5F.7060003@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010
+ Thunderbird/16.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first usable logical block can be used by a GUID partition
-entry, and therefore cannot be used by the header.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+adds a "hwaddr" to the "IP-Config: Complete" KERN_INFO message
+with the dev_addr of the device selected for auto configuration.
+
+Signed-off-by: Claudio Fontana <claudio.fontana@huawei.com>
 ---
- block/partitions/efi.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/ipv4/ipconfig.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/block/partitions/efi.c b/block/partitions/efi.c
-index 7795bb4..abf33a2 100644
---- a/block/partitions/efi.c
-+++ b/block/partitions/efi.c
-@@ -363,6 +363,13 @@ static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
- 		goto fail;
- 	}
- 
-+	/* The header must be outside usable range */
-+	if (le64_to_cpu((*gpt)->first_usable_lba) < lba &&
-+	    le64_to_cpu((*gpt)->last_usable_lba) > lba) {
-+		pr_debug("GPT: Header is inside usable area\n");
-+		goto fail;
-+	}
+diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
+index 798358b..d763701 100644
+--- a/net/ipv4/ipconfig.c
++++ b/net/ipv4/ipconfig.c
+@@ -1500,8 +1500,10 @@ static int __init ip_auto_config(void)
+ 	 * Clue in the operator.
+ 	 */
+ 	pr_info("IP-Config: Complete:\n");
+-	pr_info("     device=%s, addr=%pI4, mask=%pI4, gw=%pI4\n",
+-		ic_dev->name, &ic_myaddr, &ic_netmask, &ic_gateway);
 +
- 	/* Check that sizeof_partition_entry has the correct value */
- 	if (le32_to_cpu((*gpt)->sizeof_partition_entry) != sizeof(gpt_entry)) {
- 		pr_debug("GUID Partitition Entry Size check failed.\n");
++	pr_info("     device=%s, hwaddr=%*phC, ipaddr=%pI4, mask=%pI4, gw=%pI4\n",
++		ic_dev->name, ic_dev->addr_len, ic_dev->dev_addr,
++		&ic_myaddr, &ic_netmask, &ic_gateway);
+ 	pr_info("     host=%s, domain=%s, nis-domain=%s\n",
+ 		utsname()->nodename, ic_domain, utsname()->domainname);
+ 	pr_info("     bootserver=%pI4, rootserver=%pI4, rootpath=%s",
 -- 
-1.7.9.5
+1.7.4.4
 
+I tried to disable the mail client unwanted features.
+I hope it works this time.. sorry for that.
 
+Claudio Fontana
 
 
