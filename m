@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946053Ab2JYOJa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:09:30 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:31350 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945971Ab2JYOJ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:09:28 -0400
-Message-ID: <1351173714.19172.27.camel@misato.fc.hp.com>
-Subject: Re: [PATCH 2/2] ACPI: Remove unused lockable in acpi_device_flags
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, liuj97@gmail.com
-Date: Thu, 25 Oct 2012 08:01:54 -0600
-In-Reply-To: <4977274.iWiO0dh4FZ@vostro.rjw.lan>
-References: <1350318870-5700-1-git-send-email-toshi.kani@hp.com>
-	 <507E0942.1080708@jp.fujitsu.com>
-	 <1350482209.28185.2.camel@misato.fc.hp.com>
-	 <4977274.iWiO0dh4FZ@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1946067Ab2JYOJg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:09:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45044 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1945971Ab2JYOJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:09:33 -0400
+Date: Thu, 25 Oct 2012 16:09:31 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121025140930.GF11105@dhcp22.suse.cz>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+ <20121023164546.747e90f6.akpm@linux-foundation.org>
+ <20121024062938.GA6119@dhcp22.suse.cz>
+ <20121024125439.c17a510e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024125439.c17a510e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-25 at 00:08 +0200, Rafael J. Wysocki wrote:
-> On Wednesday 17 of October 2012 07:56:49 Toshi Kani wrote:
-> > On Wed, 2012-10-17 at 10:26 +0900, Yasuaki Ishimatsu wrote:
-> > > 2012/10/16 1:34, Toshi Kani wrote:
-> > > > Removed lockable in struct acpi_device_flags since it is no
-> > > > longer used by any code. acpi_bus_hot_remove_device() cannot
-> > > > use this flag because acpi_bus_trim() frees up its acpi_device
-> > > > object. Furthermore, the dock driver calls _LCK method without
-> > > > using this lockable flag.
-> > > > 
-> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > 
-> > > Looks good to me.
-> > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > 
-> > Thanks Yasuaki for reviewing!
+On Wed 24-10-12 12:54:39, Andrew Morton wrote:
+> On Wed, 24 Oct 2012 08:29:45 +0200
+> Michal Hocko <mhocko@suse.cz> wrote:
+[...]
+> hmpf.  This patch worries me.  If there are people out there who are
+> regularly using drop_caches because the VM sucks, it seems pretty
+> obnoxious of us to go dumping stuff into their syslog.  What are they
+> supposed to do?  Stop using drop_caches?  But that would unfix the
+> problem which they fixed with drop_caches in the first case.
 > 
-> Applied to linux-pm.git/acpi-next as v3.8 material.
+> And they might not even have control over the code - they need to go
+> back to their supplier and say "please send me a new version", along
+> with all the additional costs and risks involed in an update.
 
-Cool! Thanks Rafael!
--Toshi
+I understand your worries and that's why I suggested a higher log level
+which is under admin's control. Does even that sound too excessive?
 
+> > > More friendly alternatives might be:
+> > > 
+> > > - Taint the kernel.  But that will only become apparent with an oops
+> > >   trace or similar.
+> > > 
+> > > - Add a drop_caches counter and make that available in /proc/vmstat,
+> > >   show_mem() output and perhaps other places.
+> > 
+> > We would loose timing and originating process name in both cases which
+> > can be really helpful while debugging. It is fair to say that we could
+> > deduce the timing if we are collecting /proc/meminfo or /proc/vmstat
+> > already and we do collect them often but this is not the case all of the
+> > time and sometimes it is important to know _who_ is doing all this.
+> 
+> But how important is all that?  The main piece of information the
+> kernel developer wants is "this guy is using drop_caches a lot".  All
+> the other info is peripheral and can be gathered by other means if so
+> desired.
 
-> Thanks,
-> Rafael
-
-
+Well, I have experienced a debugging session where I suspected that an
+excessive drop_caches is going on but I had hard time to prove who is
+doing that (customer, of course, claimed they are not doing anything
+like that) so we went through many loops until we could point the
+finger.
+-- 
+Michal Hocko
+SUSE Labs
