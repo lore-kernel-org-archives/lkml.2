@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946098Ab2JYOLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:11:10 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46798 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759417Ab2JYOLG (ORCPT
+	id S1758584Ab2JYONm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:13:42 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60191 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2JYOLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:11:06 -0400
+	Thu, 25 Oct 2012 10:11:08 -0400
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] HID: hid-multitouch: get maxcontacts also from logical_max value
-Date: Thu, 25 Oct 2012 16:09:43 +0200
-Message-Id: <1351174189-24719-5-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH 05/10] HID: hid-multitouch: support T and C for win8 devices
+Date: Thu, 25 Oct 2012 16:09:44 +0200
+Message-Id: <1351174189-24719-6-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,41 +23,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Win8 devices are required to present the feature "Maximum Contact Number".
-Fortunately all win7 devices I've seen presents this feature.
-If the current value is 0, then, the driver can get the actual supported
-contact count by refering to the logical_max.
-This win8 specification ensures that logical_max may not be above 250.
-This also allows us to detect when devices like irtouch or stantum reports
-an obviously wrong value of 255.
+Win8 input specification clarifies the X and Y sent by devices.
+It distincts the position where the user wants to Touch (T) from
+the center of the ellipsoide (C). This patch enable supports for this
+distinction in hid-multitouch.
+
+We recognize Win8 certified devices from their vendor feature 0xff0000c5
+where Microsoft put a signed blob in the report to check if the device
+passed the certification.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/hid/hid-multitouch.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/hid/hid-multitouch.c | 53 ++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 44 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index e96ecc3..38a4feb 100644
+index 38a4feb..ff2354c 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -121,6 +121,7 @@ struct mt_device {
- #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0109
+@@ -52,9 +52,10 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
+ #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
+ #define MT_QUIRK_NO_AREA		(1 << 9)
++#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 10)
  
- #define MT_DEFAULT_MAXCONTACT	10
-+#define MT_MAX_MAXCONTACT	250
- 
- #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
- #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
-@@ -283,6 +284,9 @@ static void mt_feature_mapping(struct hid_device *hdev,
- 	case HID_DG_CONTACTMAX:
- 		td->maxcontact_report_id = field->report->id;
- 		td->maxcontacts = field->value[0];
-+		if (!td->maxcontacts &&
-+		    field->logical_maximum <= MT_MAX_MAXCONTACT)
-+			td->maxcontacts = field->logical_maximum;
- 		if (td->mtclass.maxcontacts)
- 			/* check if the maxcontacts is given by the class */
+ struct mt_slot {
+-	__s32 x, y, p, w, h;
++	__s32 x, y, cx, cy, p, w, h;
+ 	__s32 contactid;	/* the device ContactID assigned to this slot */
+ 	bool touch_state;	/* is the touch valid? */
+ };
+@@ -292,6 +293,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
  			td->maxcontacts = td->mtclass.maxcontacts;
+ 
+ 		break;
++	case 0xff0000c5:
++		if (field->report_count == 256 && field->report_size == 8)
++			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
++		break;
+ 	}
+ }
+ 
+@@ -350,18 +355,36 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	case HID_UP_GENDESK:
+ 		switch (usage->hid) {
+ 		case HID_GD_X:
+-			hid_map_usage(hi, usage, bit, max,
++			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
++				usage_index) {
++				hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOOL_X);
++				set_abs(hi->input, ABS_MT_TOOL_X, field,
++					cls->sn_move);
++			} else {
++				hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_X);
+-			set_abs(hi->input, ABS_MT_POSITION_X, field,
+-				cls->sn_move);
++				set_abs(hi->input, ABS_MT_POSITION_X, field,
++					cls->sn_move);
++			}
++
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+ 		case HID_GD_Y:
+-			hid_map_usage(hi, usage, bit, max,
++			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
++				usage_index) {
++				hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_TOOL_Y);
++				set_abs(hi->input, ABS_MT_TOOL_Y, field,
++					cls->sn_move);
++			} else {
++				hid_map_usage(hi, usage, bit, max,
+ 					EV_ABS, ABS_MT_POSITION_Y);
+-			set_abs(hi->input, ABS_MT_POSITION_Y, field,
+-				cls->sn_move);
++				set_abs(hi->input, ABS_MT_POSITION_Y, field,
++					cls->sn_move);
++			}
++
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -502,6 +525,12 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+ 
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
+ 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
++			if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED) {
++				input_event(input, EV_ABS, ABS_MT_TOOL_X,
++					s->cx);
++				input_event(input, EV_ABS, ABS_MT_TOOL_Y,
++					s->cy);
++			}
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+ 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
+ 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
+@@ -553,10 +582,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+ 			td->curdata.p = value;
+ 			break;
+ 		case HID_GD_X:
+-			td->curdata.x = value;
++			if (usage->code == ABS_MT_POSITION_X)
++				td->curdata.x = value;
++			else
++				td->curdata.cx = value;
+ 			break;
+ 		case HID_GD_Y:
+-			td->curdata.y = value;
++			if (usage->code == ABS_MT_POSITION_Y)
++				td->curdata.y = value;
++			else
++				td->curdata.cy = value;
+ 			break;
+ 		case HID_DG_WIDTH:
+ 			td->curdata.w = value;
 -- 
 1.7.11.7
 
