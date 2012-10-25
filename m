@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab2JYXMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 19:12:18 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:47618 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab2JYXMQ (ORCPT
+	id S1752272Ab2JYXVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 19:21:31 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:8539 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2JYXVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 19:12:16 -0400
-Message-ID: <1351206731.6851.10.camel@lorien2>
-Subject: [PATCH RFT] hexagon: dma-mapping: support debug_dma_mapping_error
+	Thu, 25 Oct 2012 19:21:30 -0400
+Message-ID: <1351207286.6851.13.camel@lorien2>
+Subject: [PATCH RFT] ia64: dma-mapping: support debug_dma_mapping_error
 From: Shuah Khan <shuah.khan@hp.com>
 Reply-To: shuah.khan@hp.com
-To: rkuo@codeaurora.org, arnd@arndb.de, linas@codeaurora.org,
-        kyungmin.park@samsung.com, m.szyprowski@samsung.com
-Cc: linux-hexagon@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+To: tony.luck@intel.com, fenghua.yu@intel.com, kyungmin.park@samsung.com,
+        m.szyprowski@samsung.com, arnd@arndb.de, andrzej.p@samsung.com
+Cc: linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
         shuahkhan@gmail.com
-Date: Thu, 25 Oct 2012 17:12:11 -0600
+Date: Thu, 25 Oct 2012 17:21:26 -0600
 Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
@@ -32,20 +32,20 @@ warning is generated.
 
 Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 ---
- arch/hexagon/include/asm/dma-mapping.h |    1 +
+ arch/ia64/include/asm/dma-mapping.h |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/hexagon/include/asm/dma-mapping.h b/arch/hexagon/include/asm/dma-mapping.h
-index 85e9935..1957c4c 100644
---- a/arch/hexagon/include/asm/dma-mapping.h
-+++ b/arch/hexagon/include/asm/dma-mapping.h
-@@ -65,6 +65,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+diff --git a/arch/ia64/include/asm/dma-mapping.h b/arch/ia64/include/asm/dma-mapping.h
+index 4f5e814..cf3ab7e 100644
+--- a/arch/ia64/include/asm/dma-mapping.h
++++ b/arch/ia64/include/asm/dma-mapping.h
+@@ -58,6 +58,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t daddr)
  {
- 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
- 
-+	debug_dma_mapping_error(dev, dma_addr);
- 	if (dma_ops->mapping_error)
- 		return dma_ops->mapping_error(dev, dma_addr);
+ 	struct dma_map_ops *ops = platform_dma_get_ops(dev);
++	debug_dma_mapping_error(dev, daddr);
+ 	return ops->mapping_error(dev, daddr);
+ }
  
 -- 
 1.7.9.5
