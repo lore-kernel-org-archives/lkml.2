@@ -1,123 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab2JYHxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:53:39 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38233 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932829Ab2JYHxi convert rfc822-to-8bit (ORCPT
+	id S933795Ab2JYHzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:55:17 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:57051 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932796Ab2JYHzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:53:38 -0400
-Message-ID: <5088EFE6.2040900@parallels.com>
-Date: Thu, 25 Oct 2012 11:53:10 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 25 Oct 2012 03:55:14 -0400
+Date: Thu, 25 Oct 2012 09:55:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, jacob.shin@amd.com,
+        tglx@linutronix.de, trini@ti.com, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86, mm: Find_early_table_space based on ranges
+ that are actually being mapped
+Message-ID: <20121025075508.GD3712@gmail.com>
+References: <20121024195311.GB11779@jshin-Toonie>
+ <tip-844ab6f993b1d32eb40512503d35ff6ad0c57030@git.kernel.org>
+ <CAE9FiQX0MvxAsZKFwH50joR5qz1oGhbXz+BD9W-QC_BrD9zKFQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "serge.hallyn@canonical.com" <serge.hallyn@canonical.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "joe.korty@ccur.com" <joe.korty@ccur.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "dledford@redhat.com" <dledford@redhat.com>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "serue@us.ibm.com" <serue@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH v8 2/5] ipc: add sysctl to specify desired next object
- id
-References: <20121024151555.5642.79086.stgit@localhost.localdomain> <20121024153509.5642.76385.stgit@localhost.localdomain> <20121024144123.0a77584b.akpm@linux-foundation.org>
-In-Reply-To: <20121024144123.0a77584b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQX0MvxAsZKFwH50joR5qz1oGhbXz+BD9W-QC_BrD9zKFQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.10.2012 01:41, Andrew Morton пишет:
-> On Wed, 24 Oct 2012 19:35:09 +0400
-> Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
->
->> This patch adds 3 new variables and sysctls to tune them (by one "next_id"
->> variable for messages, semaphores and shared memory respectively).
->> This variable can be used to set desired id for next allocated IPC object.
->> By default it's equal to -1 and old behaviour is preserved.
->> If this variable is non-negative, then desired idr will be extracted from it
->> and used as a start value to search for free IDR slot.
->>
->> Notes:
->> 1) this patch doesn't garantee, that new object will have desired id. So it's
->> up to user space how to handle new object with wrong id.
->> 2) After sucessfull id allocation attempt, "next_id" will be set back to -1
->> (if it was non-negative).
->>
->> --- a/ipc/ipc_sysctl.c
->> +++ b/ipc/ipc_sysctl.c
->> @@ -158,6 +158,7 @@ static int proc_ipcauto_dointvec_minmax(ctl_table *table, int write,
->>
->>   static int zero;
->>   static int one = 1;
->> +static int int_max = INT_MAX;
->>
->>   static struct ctl_table ipc_kern_table[] = {
->>   	{
->> @@ -227,6 +228,33 @@ static struct ctl_table ipc_kern_table[] = {
->>   		.extra1		= &zero,
->>   		.extra2		= &one,
->>   	},
->> +	{
->> +		.procname	= "sem_next_id",
->> +		.data		= &init_ipc_ns.ids[IPC_SEM_IDS].next_id,
->> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_SEM_IDS].next_id),
->> +		.mode		= 0644,
->> +		.proc_handler	= proc_ipc_dointvec_minmax,
->> +		.extra1		= &zero,
->> +		.extra2		= &int_max,
->> +	},
->> +	{
->> +		.procname	= "msg_next_id",
->> +		.data		= &init_ipc_ns.ids[IPC_MSG_IDS].next_id,
->> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_MSG_IDS].next_id),
->> +		.mode		= 0644,
->> +		.proc_handler	= proc_ipc_dointvec_minmax,
->> +		.extra1		= &zero,
->> +		.extra2		= &int_max,
->> +	},
->> +	{
->> +		.procname	= "shm_next_id",
->> +		.data		= &init_ipc_ns.ids[IPC_SHM_IDS].next_id,
->> +		.maxlen		= sizeof(init_ipc_ns.ids[IPC_SHM_IDS].next_id),
->> +		.mode		= 0644,
->> +		.proc_handler	= proc_ipc_dointvec_minmax,
->> +		.extra1		= &zero,
->> +		.extra2		= &int_max,
->> +	},
->>   	{}
->>   };
->
-> ipc_kern_table[] is (badly) documented in
-> Documentation/sysctl/kernel.txt.  Can we at least mention these
-> controls in there?  Better, create a new way of properly documenting
-> each control and document these three in that manner?  Better still,
-> document all the other ones as well ;)
->
 
-Yes, sure. I'll do my best.
+* Yinghai Lu <yinghai@kernel.org> wrote:
 
-> The patch adds these controls to CONFIG_CHECKPOINT_RESTORE=n kernels.
-> Why is this?
->
+> On Wed, Oct 24, 2012 at 2:49 PM, tip-bot for Jacob Shin
+> <jacob.shin@amd.com> wrote:
+> > Commit-ID:  844ab6f993b1d32eb40512503d35ff6ad0c57030
+> > Gitweb:     http://git.kernel.org/tip/844ab6f993b1d32eb40512503d35ff6ad0c57030
+> > Author:     Jacob Shin <jacob.shin@amd.com>
+> > AuthorDate: Wed, 24 Oct 2012 14:24:44 -0500
+> > Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> > CommitDate: Wed, 24 Oct 2012 13:37:04 -0700
+> >
+> > x86, mm: Find_early_table_space based on ranges that are actually being mapped
+> >
+> > Current logic finds enough space for direct mapping page tables from 0
+> > to end. Instead, we only need to find enough space to cover mr[0].start
+> > to mr[nr_range].end -- the range that is actually being mapped by
+> > init_memory_mapping()
+> >
+> > This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
+> > the panic reported here:
+> >
+> >   https://lkml.org/lkml/2012/10/20/160
+> >   https://lkml.org/lkml/2012/10/21/157
+> >
+> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
+> > Tested-by: Tom Rini <trini@ti.com>
+> > Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > ---
+> >  arch/x86/mm/init.c |   70 ++++++++++++++++++++++++++++++---------------------
+> >  1 files changed, 41 insertions(+), 29 deletions(-)
+> >
+> > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> > index 8653b3a..bc287d6 100644
+> > --- a/arch/x86/mm/init.c
+> > +++ b/arch/x86/mm/init.c
+> > @@ -29,36 +29,54 @@ int direct_gbpages
+> >  #endif
+> >  ;
+> >
+> > -static void __init find_early_table_space(unsigned long end, int use_pse,
+> > -                                         int use_gbpages)
+> > +struct map_range {
+> > +       unsigned long start;
+> > +       unsigned long end;
+> > +       unsigned page_size_mask;
+> > +};
+> > +
+> > +/*
+> > + * First calculate space needed for kernel direct mapping page tables to cover
+> > + * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
+> > + * pages. Then find enough contiguous space for those page tables.
+> > + */
+> > +static void __init find_early_table_space(struct map_range *mr, int nr_range)
+> >  {
+> > -       unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
+> > +       int i;
+> > +       unsigned long puds = 0, pmds = 0, ptes = 0, tables;
+> > +       unsigned long start = 0, good_end;
+> >         phys_addr_t base;
+> >
+> > -       puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+> > -       tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
+> > +       for (i = 0; i < nr_range; i++) {
+> > +               unsigned long range, extra;
+> >
+> > -       if (use_gbpages) {
+> > -               unsigned long extra;
+> > +               range = mr[i].end - mr[i].start;
+> > +               puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+> >
+> > -               extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+> > -               pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+> > -       } else
+> > -               pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
+> > -
+> > -       tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+> > +               if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
+> > +                       extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
+> > +                       pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+> > +               } else {
+> > +                       pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
+> > +               }
+> >
+> > -       if (use_pse) {
+> > -               unsigned long extra;
+> > -
+> > -               extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
+> > +               if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
+> > +                       extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+> >  #ifdef CONFIG_X86_32
+> > -               extra += PMD_SIZE;
+> > +                       extra += PMD_SIZE;
+> >  #endif
+> > -               ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > -       } else
+> > -               ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > +                       /* The first 2/4M doesn't use large pages. */
+> > +                       if (mr[i].start < PMD_SIZE)
+> > +                               extra += range;
+> 
+> those three lines should be added back.
+> 
+> it just get reverted in 7b16bbf9
 
-I'll fix this.
+Could you please send a delta patch against tip:x86/urgent?
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Thanks,
+
+	Ingo
