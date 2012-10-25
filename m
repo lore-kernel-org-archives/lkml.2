@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab2JYFvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 01:51:45 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53981 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756645Ab2JYFvm (ORCPT
+	id S1757979Ab2JYFxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:53:20 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:50382 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab2JYFxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 01:51:42 -0400
-From: SeongJae Park <sj38.park@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH 2/2] Remove struct CsrEvent
-Date: Thu, 25 Oct 2012 14:51:11 +0900
-Message-Id: <1351144271-24443-2-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351144271-24443-1-git-send-email-sj38.park@gmail.com>
-References: <1351144271-24443-1-git-send-email-sj38.park@gmail.com>
+	Thu, 25 Oct 2012 01:53:18 -0400
+Date: Wed, 24 Oct 2012 22:50:56 -0700
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: lots of suspicious RCU traces
+Message-ID: <20121025055056.GA2661@swordfish>
+References: <20121017034918.GA13295@redhat.com>
+ <20121024164235.GA2467@swordfish>
+ <20121024180608.GA22840@redhat.com>
+ <20121024182111.GA2340@swordfish>
+ <CAFTL4hxmh7yV8ePUhY_7hOuG=JrbZZcNvV88bWcUmwG9X0W04A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hxmh7yV8ePUhY_7hOuG=JrbZZcNvV88bWcUmwG9X0W04A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody use struct CsrEvent. Remove it.
+On (10/25/12 00:32), Frederic Weisbecker wrote:
+> First of all, thanks a lot for your report.
+> 
+> 2012/10/24 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
+> > On (10/24/12 20:06), Oleg Nesterov wrote:
+> >> On 10/24, Sergey Senozhatsky wrote:
+> >> >
+> >> > small question,
+> >> >
+> >> > ptrace_notify() and forward calls are able to both indirectly and directly call schedule(),
+> >> > /* direct call from ptrace_stop()*/,
+> >> > should, in this case, rcu_user_enter() be called before tracehook_report_syscall_exit(regs, step)
+> >> > and ptrace chain?
+> >>
+> >> Well, I don't really understand this magic... but why?
+> >>
+> >
+> > My understanding is (I may be wrong) that we can schedule() from ptrace chain to
+> > some arbitrary task, which will continue its execution from the point where RCU assumes
+> > CPU as not idle, while CPU in fact still in idle state -- no one said rcu_idle_exit()
+> > (or similar) prior to schedule() call.
+> 
+> Yeah but when we are in syscall_trace_leave(), the CPU shouldn't be in
+> RCU idle mode. That's where the bug is. How do you manage to trigger
+> this bug?
+>
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- drivers/staging/csr/csr_framework_ext_types.h |   14 --------------
- 1 file changed, 14 deletions(-)
+strace -f <anything>
 
-diff --git a/drivers/staging/csr/csr_framework_ext_types.h b/drivers/staging/csr/csr_framework_ext_types.h
-index d97c2de..9623eec 100644
---- a/drivers/staging/csr/csr_framework_ext_types.h
-+++ b/drivers/staging/csr/csr_framework_ext_types.h
-@@ -30,25 +30,11 @@ struct CsrThread
-     char                name[16];
- };
  
--struct CsrEvent
--{
--    /* wait_queue for waking the kernel thread */
--    wait_queue_head_t wakeup_q;
--    unsigned int      wakeup_flag;
--};
--
- typedef struct semaphore CsrMutexHandle;
- typedef struct CsrThread CsrThreadHandle;
- 
- #else /* __KERNEL __ */
- 
--struct CsrEvent
--{
--    pthread_cond_t  event;
--    pthread_mutex_t mutex;
--    u32       eventBits;
--};
--
- typedef pthread_mutex_t CsrMutexHandle;
- typedef pthread_t CsrThreadHandle;
- 
--- 
-1.7.9.5
-
+	-ss
