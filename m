@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759340Ab2JYK1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:27:24 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:53598 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422800Ab2JYK1S (ORCPT
+	id S1759351Ab2JYK1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:27:52 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:60142 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965531Ab2JYK0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:27:18 -0400
-Subject: [RFC PATCH 13/13] sched: Modifying wake_affine to use PJT's metric
+	Thu, 25 Oct 2012 06:26:52 -0400
+Subject: [RFC PATCH 07/13] sched: Change move_tasks to use PJT's metric
 To: svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Cc: mingo@kernel.org, venki@google.com, robin.randhawa@arm.com,
@@ -20,107 +20,79 @@ Cc: mingo@kernel.org, venki@google.com, robin.randhawa@arm.com,
         tglx@linutronix.de, Arvind.Chauhan@arm.com, pjt@google.com,
         Morten.Rasmussen@arm.com, linux-arm-kernel@lists.infradead.org,
         suresh.b.siddha@intel.com
-Date: Thu, 25 Oct 2012 15:56:22 +0530
-Message-ID: <20121025102622.21022.59828.stgit@preeti.in.ibm.com>
+Date: Thu, 25 Oct 2012 15:55:43 +0530
+Message-ID: <20121025102543.21022.97196.stgit@preeti.in.ibm.com>
 In-Reply-To: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
 References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12102510-1618-0000-0000-000002B617BA
+x-cbid: 12102510-8878-0000-0000-0000048204C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Additional parameters introduced to perform this function which are
-calculated using PJT's metrics and its helpers.
+Make decisions based on PJT's metrics and the dependent metrics
+about which tasks to move to reduce the imbalance.
 
 Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- kernel/sched/fair.c |   34 +++++++++++++++-------------------
- 1 file changed, 15 insertions(+), 19 deletions(-)
+ kernel/sched/fair.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 15ec528..b4b572c 100644
+index bb1c71b..bd7b69d 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2931,19 +2931,6 @@ static unsigned long power_of(int cpu)
- 	return cpu_rq(cpu)->cpu_power;
- }
+@@ -3957,7 +3957,7 @@ static int move_tasks(struct lb_env *env)
+ 	unsigned long load;
+ 	int pulled = 0;
  
--static unsigned long cpu_avg_load_per_task(int cpu)
--{
--	struct rq *rq = cpu_rq(cpu);
--	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
--
--	if (nr_running) {
--		return rq->load.weight / nr_running;
--	}
--
--	return 0;
--}
--
--
- static void task_waking_fair(struct task_struct *p)
- {
- 	struct sched_entity *se = &p->se;
-@@ -3085,16 +3072,18 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
- 	int idx, this_cpu, prev_cpu;
--	unsigned long tl_per_task;
-+	u64 tl_per_task; /* Modified to reflect PJT's metric */
- 	struct task_group *tg;
--	unsigned long weight;
-+	unsigned long weight, nr_running;
- 	int balanced;
+-	if (env->imbalance <= 0)
++	if (env->load_imbalance <= 0)
+ 		return 0;
  
- 	idx	  = sd->wake_idx;
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
--	load	  = source_load(prev_cpu, idx);
--	this_load = target_load(this_cpu, idx);
-+	/* Both of the below have been modified to use PJT's metric */
-+	load      = cpu_rq(prev_cpu)->cfs.runnable_load_avg;
-+	this_load = cpu_rq(this_cpu)->cfs.runnable_load_avg;
-+	nr_running = cpu_rq(this_cpu)->nr_running;
+ again:
+@@ -3984,7 +3984,8 @@ again:
+ 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+ 			goto next;
  
- 	/*
- 	 * If sync wakeup then subtract the (maximum possible)
-@@ -3104,6 +3093,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	if (sync) {
- 		tg = task_group(current);
- 		weight = current->se.load.weight;
-+		weight = current->se.avg.load_avg_contrib;
+-		if ((load / 2) > env->imbalance)
++		/* The below being changed to use the PJT's metric */
++		if ((load / 2) > env->load_imbalance)
+ 			goto next;
  
- 		this_load += effective_load(tg, this_cpu, -weight, -weight);
- 		load += effective_load(tg, prev_cpu, 0, -weight);
-@@ -3111,6 +3101,8 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 		if (!can_migrate_task(p, env))
+@@ -3992,7 +3993,8 @@ again:
  
- 	tg = task_group(p);
- 	weight = p->se.load.weight;
-+	/* The below change to reflect PJT's metric */
-+	weight = p->se.avg.load_avg_contrib;
+ 		move_task(p, env);
+ 		pulled++;
+-		env->imbalance -= load;
++		/* Using PJT's metric */
++		env->load_imbalance -= load;
  
- 	/*
- 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
-@@ -3146,11 +3138,15 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 		return 1;
- 
- 	schedstat_inc(p, se.statistics.nr_wakeups_affine_attempts);
--	tl_per_task = cpu_avg_load_per_task(this_cpu);
-+	/* Below modification to use PJT's metric */
-+	if (nr_running)
-+		tl_per_task = cpu_rq(this_cpu)->cfs.runnable_load_avg / nr_running;
-+	else
-+		tl_per_task = 0;
- 
- 	if (balanced ||
- 	    (this_load <= load &&
--	     this_load + target_load(prev_cpu, idx) <= tl_per_task)) {
-+	     this_load + cpu_rq(prev_cpu)->cfs.runnable_load_avg <= tl_per_task)) {
+ #ifdef CONFIG_PREEMPT
  		/*
- 		 * This domain has SD_WAKE_AFFINE and
- 		 * p is cache cold in this domain, and
+@@ -4007,8 +4009,9 @@ again:
+ 		/*
+ 		 * We only want to steal up to the prescribed amount of
+ 		 * weighted load.
++		 * But the below modification is to use PJT's metric
+ 		 */
+-		if (env->imbalance <= 0)
++		if (env->load_imbalance <= 0)
+ 			goto out;
+ 
+ 		continue;
+@@ -4145,7 +4148,8 @@ static inline void update_h_load(long cpu)
+ 
+ static unsigned long task_h_load(struct task_struct *p)
+ {
+-	return p->se.load.weight;
++	/* The below is changed to use PJT's metric*/
++	return p->se.avg.load_avg_contrib;
+ }
+ #endif
+ 
 
