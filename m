@@ -1,101 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab2JYO1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:27:19 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:45182 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759662Ab2JYO1R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:27:17 -0400
-Message-ID: <50894C3F.6040205@gmail.com>
-Date: Thu, 25 Oct 2012 09:27:11 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1759845Ab2JYO2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:28:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:4221 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759692Ab2JYO2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:28:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,646,1344236400"; 
+   d="scan'208";a="232438437"
+From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Anton Vorontsov (cbouatmailru@gmail.com)" <cbouatmailru@gmail.com>
+Subject: RE: [PATCH RESEND] max17042: missing assignment
+Thread-Topic: [PATCH RESEND] max17042: missing assignment
+Thread-Index: AQHNsrtB+yb5DR8q3UW4KkURDVKBMZfKFA6A
+Date: Thu, 25 Oct 2012 14:28:03 +0000
+Message-ID: <D854C92F57B1B347B57E531E78D05EAD24510D25@BGSMSX102.gar.corp.intel.com>
+References: <20121025141638.16300.43943.stgit@localhost.localdomain>
+In-Reply-To: <20121025141638.16300.43943.stgit@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Lior Amsalem <alior@marvell.com>,
-        Andrew Lunn <andrew@lunn.ch>, Ike Pan <ike.pan@canonical.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
-        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and config
- update
-References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com> <20121024160139.6dbf5e16@skate> <5087F5B9.0@free-electrons.com> <20121025131818.GF18811@titan.lakedaemon.net> <50894471.9040000@gmail.com> <508948A5.3020005@free-electrons.com>
-In-Reply-To: <508948A5.3020005@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9PESFTk018011
 
-On 10/25/2012 09:11 AM, Gregory CLEMENT wrote:
-> On 10/25/2012 03:53 PM, Rob Herring wrote:
->> On 10/25/2012 08:18 AM, Jason Cooper wrote:
->>> On Wed, Oct 24, 2012 at 04:05:45PM +0200, Gregory CLEMENT wrote:
->>>> On 10/24/2012 04:01 PM, Thomas Petazzoni wrote:
->>>>> Hello,
->>>>>
->>>>> Shouldn't you split into one commit adding the SATA definition in
->>>>> the .dtsi + doing the defconfig change (the "SoC" level modifications),
->>>>> and then another commit for the .dts change? I don't really care
->>>>> personally, it's really up to Jason/Andrew on this.
->>>>>
->>>>> Another comment below, though.
->>>>>
->>>>> On Wed, 24 Oct 2012 15:49:21 +0200, Gregory CLEMENT wrote:
->>>>>
->>>>>> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
->>>>>> index 94b4b9e..3f08233 100644
->>>>>> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
->>>>>> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
->>>>>> @@ -69,6 +69,16 @@
->>>>>>  			compatible = "marvell,armada-addr-decoding-controller";
->>>>>>  			reg = <0xd0020000 0x258>;
->>>>>>  		};
->>>>>> +
->>>>>> +		sata@d00a0000 {
->>>>>> +                        compatible = "marvell,orion-sata";
->>>>>> +                        reg = <0xd00a0000 0x2400>;
->>>>>> +                        interrupts = <55>;
->>>>>> +                        nr-ports = <2>;
->>>>>> +			clocks = <&coreclk 0>;//,  <&coreclk 0>;
->>>>>
->>>>> Alignment problem + remainings of tests or something like that.
->>>>
->>>> True I missed this one.
->>>>
->>>> Jason, Andrew, do you want I split this patch as suggested by Thomas or
->>>> are you fine with having one single patch?
->>>
->>> Yes, please make the defconfig changes a separate patch.  Also, please
->>> make sure only the minimum is enabled (eq RAID... isn't needed).
->>
->> What about updating multi_v7_defconfig instead?
+
+Thanks Alan.
+
+> The second error check is unreachable because the lock function isn't assigned
+> to ret
 > 
-> About the _instead_, when I proposed to removed mvebu_defconfig Thomas
-> argued that it was more convenient to build a mvebu-only kernel when
-> doing kernel development, and Andrew also pointed that this defconfig
-> should be useful for kisskb.
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
 
-Okay, missed that discussion.
+> ---
+> 
+>  drivers/power/max17042_battery.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/power/max17042_battery.c
+> b/drivers/power/max17042_battery.c
+> index 74abc6c..73b432d 100644
+> --- a/drivers/power/max17042_battery.c
+> +++ b/drivers/power/max17042_battery.c
+> @@ -572,7 +572,7 @@ static int max17042_init_chip(struct max17042_chip
+> *chip)
+>  			__func__);
+>  		return -EIO;
+>  	}
+> -	max17042_verify_model_lock(chip);
+> +	ret = max17042_verify_model_lock(chip);
+>  	if (ret) {
+>  		dev_err(&chip->client->dev, "%s lock verify failed\n",
+>  			__func__);
 
-> And about updated both mvebu_defconfig and multi_v7_defconfig, I'm
-> fine with it.
-
-Yes, then please update both.
-
-Rob
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
