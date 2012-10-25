@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759820Ab2JYOY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:24:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58258 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759783Ab2JYOY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:24:56 -0400
-Date: Thu, 25 Oct 2012 16:24:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-ID: <20121025142457.GB308@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Dave Hansen <dave@linux.vnet.ibm.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20121024125439.c17a510e.akpm@linux-foundation.org>
- <50884F63.8030606@linux.vnet.ibm.com>
- <20121024134836.a28d223a.akpm@linux-foundation.org>
- <20121024210600.GA17037@liondog.tnic>
- <50885B2E.5050500@linux.vnet.ibm.com>
- <20121024224817.GB8828@liondog.tnic>
- <5088725B.2090700@linux.vnet.ibm.com>
- <CAHGf_=pfdgoeG5pPJb+UgjqfieU1yxt=46FGW1=th0RbgVKNRQ@mail.gmail.com>
- <20121025092424.GA16601@liondog.tnic>
- <50892917.30201@linux.vnet.ibm.com>
+	id S1759878Ab2JYOZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:25:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46327 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759830Ab2JYOZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:25:07 -0400
+Date: Thu, 25 Oct 2012 15:25:05 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] tile: support GENERIC_KERNEL_THREAD and
+ GENERIC_KERNEL_EXECVE
+Message-ID: <20121025142505.GK2616@ZenIV.linux.org.uk>
+References: <201210192041.q9JKf7jD003998@farm-0010.internal.tilera.com>
+ <20121019213548.GR2616@ZenIV.linux.org.uk>
+ <5082A1F1.3080303@tilera.com>
+ <20121020153401.GT2616@ZenIV.linux.org.uk>
+ <20121020171643.GU2616@ZenIV.linux.org.uk>
+ <5086D432.4070008@tilera.com>
+ <20121023184122.GZ2616@ZenIV.linux.org.uk>
+ <5086EE7C.2080608@tilera.com>
+ <20121023203620.GA2616@ZenIV.linux.org.uk>
+ <50893F33.10700@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50892917.30201@linux.vnet.ibm.com>
+In-Reply-To: <50893F33.10700@tilera.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 04:57:11AM -0700, Dave Hansen wrote:
-> On 10/25/2012 02:24 AM, Borislav Petkov wrote:
-> > But let's discuss this a bit further. So, for the benchmarking aspect,
-> > you're either going to have to always require dmesg along with
-> > benchmarking results or /proc/vmstat, depending on where the drop_caches
-> > stats end up.
-> > 
-> > Is this how you envision it?
-> > 
-> > And then there are the VM bug cases, where you might not always get
-> > full dmesg from a panicked system. In that case, you'd want the kernel
-> > tainting thing too, so that it at least appears in the oops backtrace.
-> > 
-> > Although the tainting thing might not be enough - a user could
-> > drop_caches at some point in time and the oops happening much later
-> > could be unrelated but that can't be expressed in taint flags.
+On Thu, Oct 25, 2012 at 09:31:31AM -0400, Chris Metcalf wrote:
+> On 10/23/2012 4:36 PM, Al Viro wrote:
+> > Could you test the following on top of your patch?  It gets rid of
+> > regs use in sys_clone() *and* of the regs argument in copy_thread().
+> > If that work (including SMP - note that it changes the path taken
+> > by copy_thread() when called by fork_idle()), that should be all
+> > we'll need in arch/tile for killing idle_regs() and killing the pt_regs
+> > passing to do_fork()/copy_process()/copy_thread().
 > 
-> Here's the problem: Joe Kernel Developer gets a bug report, usually
-> something like "the kernel is slow", or "the kernel is eating up all my
-> memory".  We then start going and digging in to the problem with the
-> usual tools.  We almost *ALWAYS* get dmesg, and it's reasonably common,
-> but less likely, that we get things like vmstat along with such a bug
-> report.
-> 
-> Joe Kernel Developer digs in the statistics or the dmesg and tries to
-> figure out what happened.  I've run in to a couple of cases in practice
-> (and I assume Michal has too) where the bug reporter was using
-> drop_caches _heavily_ and did not realize the implications.  It was
-> quite hard to track down exactly how the page cache and dentries/inodes
-> were getting purged.
-> 
-> There are rarely oopses involved in these scenarios.
-> 
-> The primary goal of this patch is to make debugging those scenarios
-> easier so that we can quickly realize that drop_caches is the reason our
-> caches went away, not some anomalous VM activity.  A secondary goal is
-> to tell the user: "Hey, maybe this isn't something you want to be doing
-> all the time."
+> It seems to work fine.  Thanks!
 
-Ok, understood. So you will be requiring dmesg, ok, then it makes sense.
-
-This way you're also getting timestamps of when exactly and how many
-times drop_caches was used. For that, though, you'll need to add the
-timestamp explicitly to the printk because CONFIG_PRINTK_TIME is not
-always enabled.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+Thanks.  Put into no-rebase mode.
