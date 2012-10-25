@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935724Ab2JYNx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:53:26 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35549 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933157Ab2JYNxZ (ORCPT
+	id S1946021Ab2JYNyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:54:06 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64308 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933157Ab2JYNyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:53:25 -0400
+	Thu, 25 Oct 2012 09:54:03 -0400
+Message-ID: <50894471.9040000@gmail.com>
+Date: Thu, 25 Oct 2012 08:53:53 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351089746-5552-1-git-send-email-peter.senna@gmail.com>
-References: <1351089746-5552-1-git-send-email-peter.senna@gmail.com>
-Date: Thu, 25 Oct 2012 09:53:23 -0400
-Message-ID: <CADnq5_MTs65Pn_oCZCpxx5J_Lkdu9rnSJtaLFiNgbp_HLN+_4g@mail.gmail.com>
-Subject: Re: [PATCH] drivers/gpu/drm/radeon/evergreen_cs.c: Remove unnecessary semicolon
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: airlied@linux.ie, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        jglisse@redhat.com, alexander.deucher@amd.com, airlied@redhat.com
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and config
+ update
+References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com> <20121024160139.6dbf5e16@skate> <5087F5B9.0@free-electrons.com> <20121025131818.GF18811@titan.lakedaemon.net>
+In-Reply-To: <20121025131818.GF18811@titan.lakedaemon.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:42 AM, Peter Senna Tschudin
-<peter.senna@gmail.com> wrote:
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @r1@
-> statement S;
-> position p,p1;
-> @@
-> S@p1;@p
->
-> @script:python r2@
-> p << r1.p;
-> p1 << r1.p1;
-> @@
-> if p[0].line != p1[0].line_end:
->         cocci.include_match(False)
-> @@
-> position r1.p;
-> @@
-> -;@p
-> // </smpl>
->
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
+On 10/25/2012 08:18 AM, Jason Cooper wrote:
+> On Wed, Oct 24, 2012 at 04:05:45PM +0200, Gregory CLEMENT wrote:
+>> On 10/24/2012 04:01 PM, Thomas Petazzoni wrote:
+>>> Hello,
+>>>
+>>> Shouldn't you split into one commit adding the SATA definition in
+>>> the .dtsi + doing the defconfig change (the "SoC" level modifications),
+>>> and then another commit for the .dts change? I don't really care
+>>> personally, it's really up to Jason/Andrew on this.
+>>>
+>>> Another comment below, though.
+>>>
+>>> On Wed, 24 Oct 2012 15:49:21 +0200, Gregory CLEMENT wrote:
+>>>
+>>>> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>> index 94b4b9e..3f08233 100644
+>>>> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>> @@ -69,6 +69,16 @@
+>>>>  			compatible = "marvell,armada-addr-decoding-controller";
+>>>>  			reg = <0xd0020000 0x258>;
+>>>>  		};
+>>>> +
+>>>> +		sata@d00a0000 {
+>>>> +                        compatible = "marvell,orion-sata";
+>>>> +                        reg = <0xd00a0000 0x2400>;
+>>>> +                        interrupts = <55>;
+>>>> +                        nr-ports = <2>;
+>>>> +			clocks = <&coreclk 0>;//,  <&coreclk 0>;
+>>>
+>>> Alignment problem + remainings of tests or something like that.
+>>
+>> True I missed this one.
+>>
+>> Jason, Andrew, do you want I split this patch as suggested by Thomas or
+>> are you fine with having one single patch?
+> 
+> Yes, please make the defconfig changes a separate patch.  Also, please
+> make sure only the minimum is enabled (eq RAID... isn't needed).
 
-Thanks!  I've added this to my patch queue.
+What about updating multi_v7_defconfig instead?
 
-Alex
+Rob
 
->
-> ---
->
-> The full version of the semantic patch can be found at:
-> http://www.mail-archive.com/cocci@systeme.lip6.fr/msg00014.html
->
->  drivers/gpu/drm/radeon/evergreen_cs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/gpu/drm/radeon/evergreen_cs.c b/drivers/gpu/drm/radeon/evergreen_cs.c
-> index 573ed1b..5daf0c5 100644
-> --- a/drivers/gpu/drm/radeon/evergreen_cs.c
-> +++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-> @@ -264,7 +264,7 @@ static int evergreen_surface_check_2d(struct radeon_cs_parser *p,
->         /* macro tile width & height */
->         palign = (8 * surf->bankw * track->npipes) * surf->mtilea;
->         halign = (8 * surf->bankh * surf->nbanks) / surf->mtilea;
-> -       mtileb = (palign / 8) * (halign / 8) * tileb;;
-> +       mtileb = (palign / 8) * (halign / 8) * tileb;
->         mtile_pr = surf->nbx / palign;
->         mtile_ps = (mtile_pr * surf->nby) / halign;
->         surf->layer_size = mtile_ps * mtileb * slice_pt;
-> --
-> 1.7.11.7
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
