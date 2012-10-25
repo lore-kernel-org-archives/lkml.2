@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab2JYVEy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:04:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59321 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758601Ab2JYVEw (ORCPT
+	id S965736Ab2JYVF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:05:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54354 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760257Ab2JYVF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:04:52 -0400
-Date: Thu, 25 Oct 2012 14:04:48 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: pv-drivers@vmware.com, Andy King <acking@vmware.com>,
-        vm-crosstalk@vmware.com, linux-kernel@vger.kernel.org,
-        George Zhang <georgezhang@vmware.com>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 04/10] VMCI: device driver implementaton.
-Message-ID: <20121025210448.GB12352@kroah.com>
-References: <20121025192851.GA26627@kroah.com>
- <574849395.2604157.1351196160882.JavaMail.root@vmware.com>
- <20121025203148.GA28096@kroah.com>
- <1635399.c93qq9Svfo@dtor-d630.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1635399.c93qq9Svfo@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Oct 2012 17:05:26 -0400
+Date: Thu, 25 Oct 2012 14:05:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
+Message-Id: <20121025140524.17083937.akpm@linux-foundation.org>
+In-Reply-To: <20121025204959.GA27251@otc-wbsnb-06>
+References: <20121018164502.b32791e7.akpm@linux-foundation.org>
+	<20121018235941.GA32397@shutemov.name>
+	<20121023063532.GA15870@shutemov.name>
+	<20121022234349.27f33f62.akpm@linux-foundation.org>
+	<20121023070018.GA18381@otc-wbsnb-06>
+	<20121023155915.7d5ef9d1.akpm@linux-foundation.org>
+	<20121023233801.GA21591@shutemov.name>
+	<20121024122253.5ecea992.akpm@linux-foundation.org>
+	<20121024194552.GA24460@otc-wbsnb-06>
+	<20121024132552.5f9a5f5b.akpm@linux-foundation.org>
+	<20121025204959.GA27251@otc-wbsnb-06>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 01:45:39PM -0700, Dmitry Torokhov wrote:
-> On Thursday, October 25, 2012 01:31:48 PM Greg KH wrote:
-> > On Thu, Oct 25, 2012 at 01:16:00PM -0700, Andy King wrote:
-> > > Hi Greg,
-> > > 
-> > > > > +EXPORT_SYMBOL(vmci_device_get);
+On Thu, 25 Oct 2012 23:49:59 +0300
+"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+
+> On Wed, Oct 24, 2012 at 01:25:52PM -0700, Andrew Morton wrote:
+> > On Wed, 24 Oct 2012 22:45:52 +0300
+> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
+> > 
+> > > On Wed, Oct 24, 2012 at 12:22:53PM -0700, Andrew Morton wrote:
 > > > > 
-> > > > EXPORT_SYMBOL_GPL() for this, and all other exports?
+> > > > I'm thinking that such a workload would be the above dd in parallel
+> > > > with a small app which touches the huge page and then exits, then gets
+> > > > executed again.  That "small app" sounds realistic to me.  Obviously
+> > > > one could exercise the zero page's refcount at higher frequency with a
+> > > > tight map/touch/unmap loop, but that sounds less realistic.  It's worth
+> > > > trying that exercise as well though.
+> > > > 
+> > > > Or do something else.  But we should try to probe this code's
+> > > > worst-case behaviour, get an understanding of its effects and then
+> > > > decide whether any such workload is realisic enough to worry about.
 > > > 
-> > > We'd prefer to leave them as vanilla exports.  While we're committed
-> > > to open-sourcing everything, including our non-upstreamed drivers,
-> > > we don't really have a strong opinion regarding consuming our exports
-> > > in closed-source (general GPL issues aside).
-> > 
-> > You can't just say "general GPL issues aside".  Honestly, given your
-> > company's prior actions in regards to Linux kernel drivers and the
-> > licenses of them, I don't trust them at all.  To help gain that trust
-> > back, marking the exports in this manner will be a great improvement.
-> > 
-> > To insist otherwise is to only reinforce my doubts, and reduce my
-> > wanting to even review or accept this code at all.  Sorry about that.
+> > > Okay, I'll try few memory pressure scenarios.
 > 
-> Huh? What are the concerns exactly? I do not really see difference between
-> EXPORT_SYMBOL() and EXPORT_SYMBOL_GPL(). The code either derivative of the
-> kernel or it is not and so it either falls under the kernel license or not.
+> A test program:
+> 
+>         while (1) {
+>                 posix_memalign((void **)&p, 2 * MB, 2 * MB);
+>                 assert(*p == 0);
+>                 free(p);
+>         }
+> 
+> With this code in background we have pretty good chance to have huge zero
+> page freeable (refcount == 1) when shrinker callback called - roughly one
+> of two.
+> 
+> Pagecache hog (dd if=hugefile of=/dev/null bs=1M) creates enough pressure
+> to get shrinker callback called, but it was only asked about cache size
+> (nr_to_scan == 0).
+> I was not able to get it called with nr_to_scan > 0 on this scenario, so
+> hzp never freed.
 
-I totally agree.  In this case, do you think it falls under the kernel
-license or not?
+hm.  It's odd that the kernel didn't try to shrink slabs in this case. 
+Why didn't it??
 
-> From out perspective we do not really care what other code might use VMCI,
-> all our Linux drivers, even if not all are upstream [yet], are GPL.
+> I also tried another scenario: usemem -n16 100M -r 1000. It creates real
+> memory pressure - no easy reclaimable memory. This time callback called
+> with nr_to_scan > 0 and we freed hzp. Under pressure we fails to allocate
+> hzp and code goes to fallback path as it supposed to.
+> 
+> Do I need to check any other scenario?
 
-That's nice to hear, although without proof of that, we have to take
-your word :)
+I'm thinking that if we do hit problems in this area, we could avoid
+freeing the hugepage unless the scan_control.priority is high enough. 
+That would involve adding a magic number or a tunable to set the
+threshold.
 
-thanks,
+Also, it would be beneficial if we can monitor this easily.  Perhaps
+add a counter to /proc/vmstat which tells us how many times that page
+has been reallocated?  And perhaps how many times we tried to allocate
+it but failed?
 
-greg k-h
+
