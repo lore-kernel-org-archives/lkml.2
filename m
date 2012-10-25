@@ -1,144 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab2JYONm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:13:42 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:60191 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab2JYOLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:11:08 -0400
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] HID: hid-multitouch: support T and C for win8 devices
-Date: Thu, 25 Oct 2012 16:09:44 +0200
-Message-Id: <1351174189-24719-6-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
+	id S1759613Ab2JYOOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:14:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759010Ab2JYOLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:11:04 -0400
+Date: Thu, 25 Oct 2012 16:12:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] uprobe: fix misleading log entry
+Message-ID: <20121025141210.GA26929@redhat.com>
+References: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACV3sbL2gRjoFi8yyUW6Bu2ZZ4PW+ytZsfx_65KA8s_5DEB+ZQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Win8 input specification clarifies the X and Y sent by devices.
-It distincts the position where the user wants to Touch (T) from
-the center of the ellipsoide (C). This patch enable supports for this
-distinction in hid-multitouch.
+On 07/18, Jovi Zhang wrote:
+>
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -191,7 +191,7 @@ static int create_trace_uprobe(int argc, char **argv)
+>  	if (argv[0][0] == '-')
+>  		is_delete = true;
+>  	else if (argv[0][0] != 'p') {
+> -		pr_info("Probe definition must be started with 'p', 'r' or" " '-'.\n");
+> +		pr_info("Probe definition must be started with 'p' or '-'.\n");
+>  		return -EINVAL;
+>  	}
 
-We recognize Win8 certified devices from their vendor feature 0xff0000c5
-where Microsoft put a signed blob in the report to check if the device
-passed the certification.
+Thanks, applied as 0d13ac96 (with Srikar's ack) in misc#uprobes/core
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/hid-multitouch.c | 53 ++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 44 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 38a4feb..ff2354c 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -52,9 +52,10 @@ MODULE_LICENSE("GPL");
- #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
- #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
- #define MT_QUIRK_NO_AREA		(1 << 9)
-+#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 10)
- 
- struct mt_slot {
--	__s32 x, y, p, w, h;
-+	__s32 x, y, cx, cy, p, w, h;
- 	__s32 contactid;	/* the device ContactID assigned to this slot */
- 	bool touch_state;	/* is the touch valid? */
- };
-@@ -292,6 +293,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
- 			td->maxcontacts = td->mtclass.maxcontacts;
- 
- 		break;
-+	case 0xff0000c5:
-+		if (field->report_count == 256 && field->report_size == 8)
-+			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
-+		break;
- 	}
- }
- 
-@@ -350,18 +355,36 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	case HID_UP_GENDESK:
- 		switch (usage->hid) {
- 		case HID_GD_X:
--			hid_map_usage(hi, usage, bit, max,
-+			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
-+				usage_index) {
-+				hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_TOOL_X);
-+				set_abs(hi->input, ABS_MT_TOOL_X, field,
-+					cls->sn_move);
-+			} else {
-+				hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_X);
--			set_abs(hi->input, ABS_MT_POSITION_X, field,
--				cls->sn_move);
-+				set_abs(hi->input, ABS_MT_POSITION_X, field,
-+					cls->sn_move);
-+			}
-+
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_GD_Y:
--			hid_map_usage(hi, usage, bit, max,
-+			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
-+				usage_index) {
-+				hid_map_usage(hi, usage, bit, max,
-+					EV_ABS, ABS_MT_TOOL_Y);
-+				set_abs(hi->input, ABS_MT_TOOL_Y, field,
-+					cls->sn_move);
-+			} else {
-+				hid_map_usage(hi, usage, bit, max,
- 					EV_ABS, ABS_MT_POSITION_Y);
--			set_abs(hi->input, ABS_MT_POSITION_Y, field,
--				cls->sn_move);
-+				set_abs(hi->input, ABS_MT_POSITION_Y, field,
-+					cls->sn_move);
-+			}
-+
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
-@@ -502,6 +525,12 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
- 
- 			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
- 			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-+			if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED) {
-+				input_event(input, EV_ABS, ABS_MT_TOOL_X,
-+					s->cx);
-+				input_event(input, EV_ABS, ABS_MT_TOOL_Y,
-+					s->cy);
-+			}
- 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
- 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
- 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
-@@ -553,10 +582,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
- 			td->curdata.p = value;
- 			break;
- 		case HID_GD_X:
--			td->curdata.x = value;
-+			if (usage->code == ABS_MT_POSITION_X)
-+				td->curdata.x = value;
-+			else
-+				td->curdata.cx = value;
- 			break;
- 		case HID_GD_Y:
--			td->curdata.y = value;
-+			if (usage->code == ABS_MT_POSITION_Y)
-+				td->curdata.y = value;
-+			else
-+				td->curdata.cy = value;
- 			break;
- 		case HID_DG_WIDTH:
- 			td->curdata.w = value;
--- 
-1.7.11.7
+Oleg.
 
