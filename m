@@ -1,138 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946218Ab2JYQpS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:45:18 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44943 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755502Ab2JYQpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:45:16 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mhocko@suse.cz,
-        peterz@infradead.org, akpm@linux-foundation.org,
-        Will Deacon <will.deacon@arm.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH v3] mm: thp: Set the accessed flag for old pages on access fault.
-Date: Thu, 25 Oct 2012 17:44:31 +0100
-Message-Id: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S935921Ab2JYQtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:49:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757202Ab2JYQtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:49:22 -0400
+Date: Thu, 25 Oct 2012 14:48:52 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Denis Kirjanov <kirjanov@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] handle error path in edac_mc_sysfs_init()
+Message-ID: <20121025144852.609aff33@redhat.com>
+In-Reply-To: <20121025163653.GD2623@aftab.osrc.amd.com>
+References: <1351179778-6591-1-git-send-email-kirjanov@gmail.com>
+	<20121025155606.GF308@x1.osrc.amd.com>
+	<20121025155729.GG308@x1.osrc.amd.com>
+	<20121025163653.GD2623@aftab.osrc.amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 memory accesses to pages without the ACCESSED flag set result in the
-ACCESSED flag being set automatically. With the ARM architecture a page access
-fault is raised instead (and it will continue to be raised until the ACCESSED
-flag is set for the appropriate PTE/PMD).
+Em Thu, 25 Oct 2012 18:36:53 +0200
+Borislav Petkov <bp@amd64.org> escreveu:
 
-For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-be called for a write fault.
+> (remove Doug's email from CC since it bounces)
+> 
+> On Thu, Oct 25, 2012 at 05:57:29PM +0200, Borislav Petkov wrote:
+> > On Thu, Oct 25, 2012 at 05:56:06PM +0200, Borislav Petkov wrote:
+> > > Would you be willing to fix that too, while you're at it? Btw, I can
+> > > totally understand if you say no - I'll take care of it myself instead
+> > > then :-).
+> > 
+> > Ah, maybe I should look at the second patch before replying to this one.
+> > Nevermind, I'll merge the two into one and test.
+> 
+> Ok, here's the final version I'm sending upstream soon:
+> 
+> --
+> From a8373ecc0c26d8afafd0d2e88f96756e26b7f3ee Mon Sep 17 00:00:00 2001
+> From: Denis Kirjanov <kirjanov@gmail.com>
+> Date: Thu, 25 Oct 2012 19:42:58 +0400
+> Subject: [PATCH] EDAC: Handle error path in edac_mc_sysfs_init() properly
+> 
+> Make sure proper deregistration happens on all error paths in
+> edac_mc_sysfs_init.
+> 
+> Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
+> [ Boris: cleanup and concretize commit message ]
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
 
-This patch ensures that faults on transparent hugepages which do not result
-in a CoW update the access flags for the faulting pmd.
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
+> ---
+>  drivers/edac/edac_mc_sysfs.c | 17 +++++++++++++++--
+>  1 file changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+> index 52813b8b0f5f..de2df92f9c77 100644
+> --- a/drivers/edac/edac_mc_sysfs.c
+> +++ b/drivers/edac/edac_mc_sysfs.c
+> @@ -1126,10 +1126,15 @@ int __init edac_mc_sysfs_init(void)
+>  	edac_subsys = edac_get_sysfs_subsys();
+>  	if (edac_subsys == NULL) {
+>  		edac_dbg(1, "no edac_subsys\n");
+> -		return -EINVAL;
+> +		err = -EINVAL;
+> +		goto out;
+>  	}
+>  
+>  	mci_pdev = kzalloc(sizeof(*mci_pdev), GFP_KERNEL);
+> +	if (!mci_pdev) {
+> +		err = -ENOMEM;
+> +		goto out_put_sysfs;
+> +	}
+>  
+>  	mci_pdev->bus = edac_subsys;
+>  	mci_pdev->type = &mc_attr_type;
+> @@ -1138,11 +1143,18 @@ int __init edac_mc_sysfs_init(void)
+>  
+>  	err = device_add(mci_pdev);
+>  	if (err < 0)
+> -		return err;
+> +		goto out_dev_free;
+>  
+>  	edac_dbg(0, "device %s created\n", dev_name(mci_pdev));
+>  
+>  	return 0;
+> +
+> + out_dev_free:
+> +	kfree(mci_pdev);
+> + out_put_sysfs:
+> +	edac_put_sysfs_subsys();
+> + out:
+> +	return err;
+>  }
+>  
+>  void __exit edac_mc_sysfs_exit(void)
+> @@ -1150,4 +1162,5 @@ void __exit edac_mc_sysfs_exit(void)
+>  	put_device(mci_pdev);
+>  	device_del(mci_pdev);
+>  	edac_put_sysfs_subsys();
+> +	kfree(mci_pdev);
+>  }
 
-Ok chaps, I rebased this thing onto today's next (which basically
-necessitated a rewrite) so I've reluctantly dropped my acks and kindly
-ask if you could eyeball the new code, especially where the locking is
-concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
-that the page is not splitting, but I can't see why that is required.
 
-Cheers,
-
-Will
-
- include/linux/huge_mm.h |    4 ++++
- mm/huge_memory.c        |   22 ++++++++++++++++++++++
- mm/memory.c             |    7 ++++++-
- 3 files changed, 32 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 4f0f948..766fb27 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -8,6 +8,10 @@ extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
- extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 			 pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
- 			 struct vm_area_struct *vma);
-+extern void huge_pmd_set_accessed(struct mm_struct *mm,
-+				  struct vm_area_struct *vma,
-+				  unsigned long address, pmd_t *pmd,
-+				  pmd_t orig_pmd, int dirty);
- extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			       unsigned long address, pmd_t *pmd,
- 			       pmd_t orig_pmd);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 3c14a96..f024d98 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -932,6 +932,28 @@ out:
- 	return ret;
- }
- 
-+void huge_pmd_set_accessed(struct mm_struct *mm,
-+			   struct vm_area_struct *vma,
-+			   unsigned long address,
-+			   pmd_t *pmd, pmd_t orig_pmd,
-+			   int dirty)
-+{
-+	pmd_t entry;
-+	unsigned long haddr;
-+
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, orig_pmd)))
-+		goto unlock;
-+
-+	entry = pmd_mkyoung(orig_pmd);
-+	haddr = address & HPAGE_PMD_MASK;
-+	if (pmdp_set_access_flags(vma, haddr, pmd, entry, dirty))
-+		update_mmu_cache_pmd(vma, address, pmd);
-+
-+unlock:
-+	spin_unlock(&mm->page_table_lock);
-+}
-+
- static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
- 					struct vm_area_struct *vma,
- 					unsigned long address,
-diff --git a/mm/memory.c b/mm/memory.c
-index f21ac1c..bcbc084 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3650,12 +3650,14 @@ retry:
- 
- 		barrier();
- 		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
-+			unsigned int dirty = flags & FAULT_FLAG_WRITE;
-+
- 			if (pmd_numa(vma, orig_pmd)) {
- 				do_huge_pmd_numa_page(mm, vma, address, pmd,
- 						      flags, orig_pmd);
- 			}
- 
--			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
-+			if (dirty && !pmd_write(orig_pmd)) {
- 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
- 							  orig_pmd);
- 				/*
-@@ -3665,6 +3667,9 @@ retry:
- 				 */
- 				if (unlikely(ret & VM_FAULT_OOM))
- 					goto retry;
-+			} else {
-+				huge_pmd_set_accessed(mm, vma, address, pmd,
-+						      orig_pmd, dirty);
- 			}
- 
- 			return ret;
 -- 
-1.7.4.1
-
+Regards,
+Mauro
