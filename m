@@ -1,98 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935595Ab2JYL1C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:27:02 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:31248 "EHLO
+	id S1422868Ab2JYL1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:27:19 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:41491 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934929Ab2JYL1A (ORCPT
+	with ESMTP id S964939Ab2JYL1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:27:00 -0400
+	Thu, 25 Oct 2012 07:27:18 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: kernel@pengutronix.de, linux@arm.linux.org.uk,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 1/2] ARM: mach-imx: imx53.dtsi: pinctl update
-Date: Thu, 25 Oct 2012 13:26:39 +0200
-Message-Id: <1351164400-27940-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
+Date: Thu, 25 Oct 2012 13:26:40 +0200
+Message-Id: <1351164400-27940-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351164400-27940-1-git-send-email-stigge@antcom.de>
+References: <1351164400-27940-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supplements pinctl support on i.MX53.
+This patch fixes CAN clocking on i.MX53.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- arch/arm/boot/dts/imx53.dtsi |   46 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
 
---- linux-2.6.orig/arch/arm/boot/dts/imx53.dtsi
-+++ linux-2.6/arch/arm/boot/dts/imx53.dtsi
-@@ -316,6 +316,24 @@
- 					};
- 				};
+---
+ arch/arm/mach-imx/clk-imx51-imx53.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- linux-2.6.orig/arch/arm/mach-imx/clk-imx51-imx53.c
++++ linux-2.6/arch/arm/mach-imx/clk-imx51-imx53.c
+@@ -426,10 +426,10 @@ int __init mx53_clocks_init(unsigned lon
+ 	clk[usb_phy2_gate] = imx_clk_gate2("usb_phy2_gate", "usb_phy_sel", MXC_CCM_CCGR4, 12);
+ 	clk[can_sel] = imx_clk_mux("can_sel", MXC_CCM_CSCMR2, 6, 2,
+ 				mx53_can_sel, ARRAY_SIZE(mx53_can_sel));
+-	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR6, 22);
+-	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR6, 20);
+-	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 8);
+-	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 6);
++	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
++	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
++	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
++	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
+ 	clk[i2c3_gate] = imx_clk_gate2("i2c3_gate", "per_root", MXC_CCM_CCGR1, 22);
  
-+				can1 {
-+					pinctrl_can1_1: can1grp-1 {
-+						fsl,pins = <
-+							847 0x80000000  /* MX53_PAD_PATA_INTRQ__CAN1_TXCAN */
-+							853 0x80000000  /* MX53_PAD_PATA_DIOR__CAN1_RXCAN */
-+						>;
-+					};
-+				};
-+
-+				can2 {
-+					pinctrl_can2_1: can2grp-1 {
-+						fsl,pins = <
-+							67  0x80000000  /* MX53_PAD_KEY_COL4__CAN2_TXCAN */
-+							74  0x80000000  /* MX53_PAD_KEY_ROW4__CAN2_RXCAN */
-+						>;
-+					};
-+				};
-+
- 				i2c1 {
- 					pinctrl_i2c1_1: i2c1grp-1 {
- 						fsl,pins = <
-@@ -334,6 +352,15 @@
- 					};
- 				};
- 
-+				i2c3 {
-+					pinctrl_i2c3_1: i2c3grp-1 {
-+						fsl,pins = <
-+							1102 0xc0000000	/* MX53_PAD_GPIO_6__I2C3_SDA */
-+							1130 0xc0000000	/* MX53_PAD_GPIO_5__I2C3_SCL */
-+						>;
-+					};
-+				};
-+
- 				uart1 {
- 					pinctrl_uart1_1: uart1grp-1 {
- 						fsl,pins = <
-@@ -369,6 +396,25 @@
- 						>;
- 					};
- 				};
-+
-+				uart4 {
-+					pinctrl_uart4_1: uart4grp-1 {
-+						fsl,pins = <
-+							11 0x1c5	/* MX53_PAD_KEY_COL0__UART4_TXD_MUX */
-+							18 0x1c5	/* MX53_PAD_KEY_ROW0__UART4_RXD_MUX */
-+						>;
-+					};
-+				};
-+
-+				uart5 {
-+					pinctrl_uart5_1: uart5grp-1 {
-+						fsl,pins = <
-+							24 0x1c5	/* MX53_PAD_KEY_COL1__UART5_TXD_MUX */
-+							31 0x1c5	/* MX53_PAD_KEY_ROW1__UART5_RXD_MUX */
-+						>;
-+					};
-+				};
-+
- 			};
- 
- 			uart1: serial@53fbc000 {
+ 	for (i = 0; i < ARRAY_SIZE(clk); i++)
