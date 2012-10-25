@@ -1,75 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934603Ab2JYGd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:33:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47953 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934097Ab2JYGdk (ORCPT
+	id S934409Ab2JYGep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:34:45 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46670 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab2JYGen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:33:40 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC] cpufreq: Make sure target freq is within limits
-Date: Thu, 25 Oct 2012 12:03:34 +0530
-Message-Id: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-X-OriginalArrivalTime: 25 Oct 2012 06:33:36.0660 (UTC) FILETIME=[A9B55540:01CDB27A]
-X-MC-Unique: 112102507333902401
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 25 Oct 2012 02:34:43 -0400
+X-AuditID: 9c930179-b7c8bae000003559-a9-5088dd8183d5
+Date: Thu, 25 Oct 2012 15:40:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC v2 0/2] vmevent: A bit reworked pressure attribute + docs +
+ man page
+Message-ID: <20121025064009.GA15767@bbox>
+References: <20121022111928.GA12396@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121022111928.GA12396@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9P6XxqR015626
 
-Hi Rafael,
+Hi Anton,
 
-__cpufreq_driver_target() must not pass target frequency beyond the limits of
-current policy.
+On Mon, Oct 22, 2012 at 04:19:28AM -0700, Anton Vorontsov wrote:
+> Hi all,
+> 
+> So this is the second RFC. The main change is that I decided to go with
+> discrete levels of the pressure.
 
-Today most of cpufreq platform drivers are doing this check in their target
-routines. Why not move it to __cpufreq_driver_target().
+I am very happy with that because I already have yelled it several time.
 
-I wanted to get your opinion on this before making changes in all driver files.
-That's why this is an RFC.
+> 
+> When I started writing the man page, I had to describe the 'reclaimer
+> inefficiency index', and while doing this I realized that I'm describing
+> how the kernel is doing the memory management, which we try to avoid in
+> the vmevent. And applications don't really care about these details:
+> reclaimers, its inefficiency indexes, scanning window sizes, priority
+> levels, etc. -- it's all "not interesting", and purely kernel's stuff. So
+> I guess Mel Gorman was right, we need some sort of levels.
+> 
+> What applications (well, activity managers) are really interested in is
+> this:
+> 
+> 1. Do we we sacrifice resources for new memory allocations (e.g. files
+>    cache)?
+> 2. Does the new memory allocations' cost becomes too high, and the system
+>    hurts because of this?
+> 3. Are we about to OOM soon?
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+Good but I think 3 is never easy.
+But early notification would be better than late notification which can kill
+someone.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index f552d5f..59264f1 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1470,12 +1470,19 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
- 			    unsigned int relation)
- {
- 	int retval = -EINVAL;
-+	unsigned int old_target_freq = target_freq;
- 
- 	if (cpufreq_disabled())
- 		return -ENODEV;
- 
--	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
--		target_freq, relation);
-+	/* Make sure that target_freq is within supported range */
-+	if (target_freq > policy->max)
-+		target_freq = policy->max;
-+	if (target_freq < policy->min)
-+		target_freq = policy->min;
-+
-+	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
-+			policy->cpu, target_freq, relation, old_target_freq);
- 	if (cpu_online(policy->cpu) && cpufreq_driver->target)
- 		retval = cpufreq_driver->target(policy, target_freq, relation);
- 
+> 
+> And here are the answers:
+> 
+> 1. VMEVENT_PRESSURE_LOW
+> 2. VMEVENT_PRESSURE_MED
+> 3. VMEVENT_PRESSURE_OOM
+> 
+> There is no "high" pressure, since I really don't see any definition of
+> it, but it's possible to introduce new levels without breaking ABI. The
+> levels described in more details in the patches, and the stuff is still
+> tunable, but now via sysctls, not the vmevent_fd() call itself (i.e. we
+> don't need to rebuild applications to adjust window size or other mm
+> "details").
+> 
+> What I couldn't fix in this RFC is making vmevent_{scanned,reclaimed}
+> stuff per-CPU (there's a comment describing the problem with this). But I
+> made it lockless and tried to make it very lightweight (plus I moved the
+> vmevent_pressure() call to a more "cold" path).
+
+Your description doesn't include why we need new vmevent_fd(2).
+Of course, it's very flexible and potential to add new VM knob easily but
+the thing we is about to use now is only VMEVENT_ATTR_PRESSURE.
+Is there any other use cases for swap or free? or potential user?
+Adding vmevent_fd without them is rather overkill.
+
+And I want to avoid timer-base polling of vmevent if possbile.
+mem_notify of KOSAKI doesn't use such timer.
+
+I don't object but we need rationale for adding new system call which should
+be maintained forever once we add it.
+
+> 
+> Thanks,
+> Anton.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.12.rc2.18.g61b472e
-
-
+Kind regards,
+Minchan Kim
