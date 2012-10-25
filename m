@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934246Ab2JYAIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:08:16 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53698 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2JYAIO (ORCPT
+	id S934277Ab2JYAI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:08:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27414 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab2JYAIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:08:14 -0400
-Date: Wed, 24 Oct 2012 17:08:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>
-cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
- numa_maps
-In-Reply-To: <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com>
-References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
- <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
- <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com> <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
- <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 24 Oct 2012 20:08:24 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rDHpwsyNOsUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=HXw8KzeH-oIA:10 a=CozT_dG12Q1qh1VjV5wA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351123698.8467.28.camel@gandalf.local.home>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 24 Oct 2012 20:08:18 -0400
+In-Reply-To: <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012, Sasha Levin wrote:
+On Wed, 2012-10-24 at 16:18 -0700, Linus Torvalds wrote:
 
-> > This should be fixed by 9e7814404b77 ("hold task->mempolicy while
-> > numa_maps scans.") in 3.7-rc2, can you reproduce any issues reading
-> > /proc/pid/numa_maps on that kernel?
-> 
-> I was actually referring to the warnings Dave Jones saw when fuzzing
-> with trinity after the
-> original patch was applied.
-> 
-> I still see the following when fuzzing:
-> 
-> [  338.467156] BUG: sleeping function called from invalid context at
-> kernel/mutex.c:269
-> [  338.473719] in_atomic(): 1, irqs_disabled(): 0, pid: 6361, name: trinity-main
-> [  338.481199] 2 locks held by trinity-main/6361:
-> [  338.486629]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810aa314>]
-> __do_page_fault+0x1e4/0x4f0
-> [  338.498783]  #1:  (&(&mm->page_table_lock)->rlock){+.+...}, at:
-> [<ffffffff8122f017>] handle_pte_fault+0x3f7/0x6a0
-> [  338.511409] Pid: 6361, comm: trinity-main Tainted: G        W
-> 3.7.0-rc2-next-20121024-sasha-00001-gd95ef01-dirty #74
-> [  338.530318] Call Trace:
-> [  338.534088]  [<ffffffff8114e393>] __might_sleep+0x1c3/0x1e0
-> [  338.539358]  [<ffffffff83ae5209>] mutex_lock_nested+0x29/0x50
-> [  338.545253]  [<ffffffff8124fc3e>] mpol_shared_policy_lookup+0x2e/0x90
-> [  338.545258]  [<ffffffff81219ebe>] shmem_get_policy+0x2e/0x30
-> [  338.545264]  [<ffffffff8124e99a>] get_vma_policy+0x5a/0xa0
-> [  338.545267]  [<ffffffff8124fce1>] mpol_misplaced+0x41/0x1d0
-> [  338.545272]  [<ffffffff8122f085>] handle_pte_fault+0x465/0x6a0
-> [  338.545278]  [<ffffffff81131e04>] ? __rcu_read_unlock+0x44/0xb0
-> [  338.545282]  [<ffffffff81230baa>] handle_mm_fault+0x32a/0x360
-> [  338.545286]  [<ffffffff810aa5b0>] __do_page_fault+0x480/0x4f0
-> [  338.545293]  [<ffffffff8111a706>] ? del_timer+0x26/0x80
-> [  338.545298]  [<ffffffff811c7313>] ? rcu_cleanup_after_idle+0x23/0x170
-> [  338.545302]  [<ffffffff811ca9a4>] ? rcu_eqs_exit_common+0x64/0x3a0
-> [  338.545305]  [<ffffffff811c8c66>] ? rcu_eqs_enter_common+0x7c6/0x970
-> [  338.545309]  [<ffffffff811cafdc>] ? rcu_eqs_exit+0x9c/0xb0
-> [  338.545312]  [<ffffffff810aa666>] do_page_fault+0x26/0x40
-> [  338.545317]  [<ffffffff810a3a40>] do_async_page_fault+0x30/0xa0
-> [  338.545321]  [<ffffffff83ae9268>] async_page_fault+0x28/0x30
+>   #ifdef __SIZEOF_INT128__
+>     #include <linux/native-128bit.h>
+>   #elif CONFIG_64BIT
+>     #include <linux/generic64bit-128bit.h>
+>   #else
+>     #include <linux/generic64bit-128bit.h>
+>   #endif
 > 
 
-Ok, this looks the same but it's actually a different issue: 
-mpol_misplaced(), which now only exists in linux-next and not in 3.7-rc2, 
-calls get_vma_policy() which may take the shared policy mutex.  This 
-happens while holding page_table_lock from do_huge_pmd_numa_page() but 
-also from do_numa_page() while holding a spinlock on the ptl, which is 
-coming from the sched/numa branch.
+I'm assuming you meant the last include to be:
 
-Is there anyway that we can avoid changing the shared policy mutex back 
-into a spinlock (it was converted in b22d127a39dd ["mempolicy: fix a race 
-in shared_policy_replace()"])?
+  #include <linux/generic32bit-128bit.h>
 
-Adding Peter, Rik, and Mel to the cc.
+Cut and paste should be a federal crime.
+
+-- Steve
+
+
