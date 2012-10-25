@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161Ab2JYBSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:18:04 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55264 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758939Ab2JYBSC (ORCPT
+	id S933268Ab2JYBSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:18:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43325 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab2JYBSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:18:02 -0400
-Message-ID: <50889347.4070801@xenotime.net>
-Date: Wed, 24 Oct 2012 18:17:59 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-10-24-17-15 uploaded (uml)
-References: <20121025001628.1DEDE100047@wpzn3.hot.corp.google.com>
-In-Reply-To: <20121025001628.1DEDE100047@wpzn3.hot.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Oct 2012 21:18:04 -0400
+Date: Wed, 24 Oct 2012 18:17:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-Id: <20121024181752.de011615.akpm@linux-foundation.org>
+In-Reply-To: <1787395.7AzIesGUbB@vostro.rjw.lan>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+	<20121024210600.GA17037@liondog.tnic>
+	<20121024141303.0797d6a1.akpm@linux-foundation.org>
+	<1787395.7AzIesGUbB@vostro.rjw.lan>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 05:16 PM, akpm@linux-foundation.org wrote:
+On Thu, 25 Oct 2012 00:04:46 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> The mm-of-the-moment snapshot 2012-10-24-17-15 has been uploaded to
+> On Wednesday 24 of October 2012 14:13:03 Andrew Morton wrote:
+> > On Wed, 24 Oct 2012 23:06:00 +0200
+> > Borislav Petkov <bp@alien8.de> wrote:
+> > 
+> > > On Wed, Oct 24, 2012 at 01:48:36PM -0700, Andrew Morton wrote:
+> > > > Well who knows. Could be that people's vm *does* suck. Or they have
+> > > > some particularly peculiar worklosd or requirement[*]. Or their VM
+> > > > *used* to suck, and the drop_caches is not really needed any more but
+> > > > it's there in vendor-provided code and they can't practically prevent
+> > > > it.
+> > > 
+> > > I have drop_caches in my suspend-to-disk script so that the hibernation
+> > > image is kept at minimum and suspend times are as small as possible.
+> > 
+> > hm, that sounds smart.
+> > 
+> > > Would that be a valid use-case?
+> > 
+> > I'd say so, unless we change the kernel to do that internally.  We do
+> > have the hibernation-specific shrink_all_memory() in the vmscan code. 
+> > We didn't see fit to document _why_ that exists, but IIRC it's there to
+> > create enough free memory for hibernation to be able to successfully
+> > complete, but no more.
 > 
->    http://www.ozlabs.org/~akpm/mmotm/
-> 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
+> That's correct.
+
+Well, my point was: how about the idea of reclaiming clean pagecache
+(and inodes, dentries, etc) before hibernation so we read/write less
+disk data?
+
+Given that it's so easy to do from the hibernation script, I guess
+there's not much point...
 
 
-uml on x86_64 defconfig:
-
-arch/um/drivers/chan_kern.c: In function 'tty_receive_char':
-arch/um/drivers/chan_kern.c:89:42: error: 'struct tty_struct' has no member named 'raw'
-
--- 
-~Randy
