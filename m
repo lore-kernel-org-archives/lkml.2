@@ -1,88 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760094Ab2JYSf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:35:29 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:33894 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756494Ab2JYSf2 (ORCPT
+	id S1760109Ab2JYSgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:36:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60670 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab2JYSgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:35:28 -0400
-Date: Thu, 25 Oct 2012 14:35:20 -0400 (EDT)
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Message-ID: <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
-In-Reply-To: <20121025180045.GL11442@htj.dyndns.org>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
+	Thu, 25 Oct 2012 14:36:22 -0400
+Date: Thu, 25 Oct 2012 11:36:19 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vineet.Gupta1@synopsys.com
+Cc: alan@linux.intel.com, arc-linux-dev@synopsys.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial/arc-uart: Add new driver
+Message-ID: <20121025183619.GA22545@kroah.com>
+References: <1351146608-21044-1-git-send-email-vgupta@synopsys.com>
+ <1351146608-21044-2-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [93.34.169.1]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351146608-21044-2-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> On Thu, Oct 25, 2012 at 09:37:39AM +0200, Paolo Bonzini wrote:
-> > Il 24/10/2012 18:47, Tejun Heo ha scritto:
-> > > So, I'm still not convinced we need to go forward with full
-> > > configurability. All use cases you described can be covered with
-> > > per-class static filters + simple override switch to disable all,
-> > > which would result in a lot simpler implementation w/ much
-> > > smaller userland interface.
-> > 
-> > I'm not sure the userland interface would be smaller, and it would
-> > be more complex to get right:
-> > 
-> > 1) how do you override the default?  ioctl+SCM_RIGHTS or sysfs?
+On Thu, Oct 25, 2012 at 12:00:08PM +0530, Vineet.Gupta1@synopsys.com wrote:
+> From: Vineet Gupta <vgupta@synopsys.com>
 > 
-> Disabling filters if opened by root and tranfering via SCM_RIGHTS
-> would be the simplest interface-wise (there's no new interface at
-> all).  Would that be too dangerous security-wise?
-
-That would be a change with respect to what we have now.  After
-transferring a root-opened (better: CAP_SYS_RAWIO-opened) file
-descriptor to an unprivileged process your SG_IO commands get
-filtered.  So a ioctl is needed if you want to rely on SCM_RIGHTS.
-
-> > 2) do you need to override the default to "no access", "full
-> > access" and "default access", or is a binary knob (default
-> > access/full access) sufficient?
+> Driver for non-standard on-chip UART, instantiated in the ARC (Synopsys)
+> FPGA Boards such as ARCAngel4/ML50x
 > 
-> Default / full should be enough, no?
-
-If a ioctl has to be added, I'd rather have at least none/full/default.
-
-> > 3) what capabilities control the setting?
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> ---
+>  drivers/tty/serial/Kconfig       |   25 ++
+>  drivers/tty/serial/Makefile      |    1 +
+>  drivers/tty/serial/arc_uart.c    |  747 ++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/serial_core.h |    2 +
+>  4 files changed, 775 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/tty/serial/arc_uart.c
 > 
-> CAP_SYS_RAWIO seems to be a pretty good fit.
+> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> index 2a53be5..efee7fe 100644
+> --- a/drivers/tty/serial/Kconfig
+> +++ b/drivers/tty/serial/Kconfig
+> @@ -1423,4 +1423,29 @@ config SERIAL_EFM32_UART_CONSOLE
+>  	depends on SERIAL_EFM32_UART=y
+>  	select SERIAL_CORE_CONSOLE
+>  
+> +config SERIAL_ARC
+> +	bool "ARC UART driver support"
+> +	select SERIAL_CORE
+> +	default y
+> +	help
+> +	  Driver for on-chip UART for ARC(Synopsys) for the legacy
+> +	  FPGA Boards (ML50x/ARCAngel4)
 
-Yes, for a ioctl it is (for sysfs CAP_SYS_ADMIN is better IMHO).
+Unless you will break a user's box, NEVER define a default value for a
+new configuration option as y.
 
-> I guess I just feel quite reluctant to expose another rather obscure
-> userland configurable in-kernel filter and at the same time I'm not
-> sure whether this is flexible enough.  What if a device is shared by
-> multiple virtual machines which are trusted at different levels?
+And why can't I select this driver as a module?
 
-No, you just don't do that.  If a device is passed through to virtual
-machines, it is between similar virtual machines (for some definition
-of similar).  The only case where you have this sharing is in practice
-if either the device is read-only (my patch does give you a basic
-two-level filtering, with two separate bitmaps for RO and RW) or if you
-allow persistent reservations (which is as close to full trust as you
-can get).
+> +
+> +config SERIAL_ARC_CONSOLE
+> +	bool
+> +	select SERIAL_CORE_CONSOLE
+> +	depends on SERIAL_ARC=y
+> +	default y
+> +	help
+> +	  Enable system Console on ARC UART
+> +
+> +config SERIAL_ARC_NR_PORTS
+> +	int 'Number of ports'
+> +	range 1 3
+> +	default 1
+> +	depends on SERIAL_ARC
+> +	help
+> +	  Set this to the number of serial ports you want the driver
+> +	  to support.
+> +
+>  endmenu
+> diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+> index 4f694da..df1b998 100644
+> --- a/drivers/tty/serial/Makefile
+> +++ b/drivers/tty/serial/Makefile
+> @@ -82,3 +82,4 @@ obj-$(CONFIG_SERIAL_XILINX_PS_UART) += xilinx_uartps.o
+>  obj-$(CONFIG_SERIAL_SIRFSOC) += sirfsoc_uart.o
+>  obj-$(CONFIG_SERIAL_AR933X)   += ar933x_uart.o
+>  obj-$(CONFIG_SERIAL_EFM32_UART) += efm32-uart.o
+> +obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
+> diff --git a/drivers/tty/serial/arc_uart.c b/drivers/tty/serial/arc_uart.c
+> new file mode 100644
+> index 0000000..9215bf4
+> --- /dev/null
+> +++ b/drivers/tty/serial/arc_uart.c
+> @@ -0,0 +1,747 @@
+> +/*
+> + * ARC On-Chip(fpga) UART Driver
+> + *
+> + * Copyright (C) 2010-2012 Synopsys, Inc. (www.synopsys.com)
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * vineetg: July 10th 2012
+> + *  -Decoupled the driver from arch/arc
+> + *    +Using platform_get_resource() for irq/membase (thx to bfin_uart.c)
+> + *    +Using early_platform_xxx() for early console (thx to mach-shmobile/xxx)
+> + *
+> + * Vineetg: Aug 21st 2010
+> + *  -Is uart_tx_stopped() not done in tty write path as it has already been
+> + *   taken care of, in serial core
+> + *
+> + * Vineetg: Aug 18th 2010
+> + *  -New Serial Core based ARC UART driver
+> + *  -Derived largely from blackfin driver albiet with some major tweaks
+> + *
+> + * TODO:
+> + *  -check if sysreq works
+> + */
+> +
+> +#if defined(CONFIG_SERIAL_ARC_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
+> +#define SUPPORT_SYSRQ
+> +#endif
 
-> I'm not trying to block it at all cost but let's make sure we looked
-> into most possibilities before (re)adding this userland visible
-> interface.
+Are you sure this works?  Don't you usually need to include some .h
+files before you check these config values?
 
-Sure, understood. :)
+> +
+> +#include <linux/module.h>
+> +#include <linux/serial.h>
+> +#include <linux/console.h>
+> +#include <linux/sysrq.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/tty.h>
+> +#include <linux/tty_flip.h>
+> +#include <linux/serial_core.h>
+> +#include <linux/io.h>
+> +
+> +/*************************************
+> + * ARC UART Hardware Specs
+> + ************************************/
+> +#define ARC_UART_TX_FIFO_SIZE  1
+> +
+> +/*
+> + * UART Register set (this is not a Standards Compliant IP)
+> + * Also each reg is Word aligned, but only 8 bits wide
+> + */
+> +#define R_ID0	0
+> +#define R_ID1	1
+> +#define R_ID2	2
+> +#define R_ID3	3
+> +#define R_DATA	4
+> +#define R_STS	5
+> +#define R_BAUDL	6
+> +#define R_BAUDH	7
+> +
+> +/* Bits for UART Status Reg (R/W) */
+> +#define RXIENB  0x04	/* Receive Interrupt Enable */
+> +#define TXIENB  0x40	/* Transmit Interrupt Enable */
+> +
+> +#define RXEMPTY 0x20	/* Receive FIFO Empty: No char receivede */
+> +#define TXEMPTY 0x80	/* Transmit FIFO Empty, thus char can be written into */
+> +
+> +#define RXFULL  0x08	/* Receive FIFO full */
+> +#define RXFULL1 0x10	/* Receive FIFO has space for 1 char (tot space=4) */
+> +
+> +#define RXFERR  0x01	/* Frame Error: Stop Bit not detected */
+> +#define RXOERR  0x02	/* OverFlow Err: Char recv but RXFULL still set */
+> +
+> +/* Uart bit fiddling helpers: lowest level */
+> +#define RBASE(uart, reg)      ((unsigned int *)uart->port.membase + reg)
+> +#define UART_REG_SET(u, r, v) writeb((v), RBASE(u, r))
+> +#define UART_REG_GET(u, r)    readb(RBASE(u, r))
 
-> Jens, James, what do you guys think?
+What happens when you run sparse on this driver?
 
-Paolo
+thanks,
+
+greg k-h
