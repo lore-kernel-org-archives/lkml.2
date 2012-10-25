@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935619Ab2JYNPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:15:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51633 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422875Ab2JYNKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422884Ab2JYNKK (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Oct 2012 09:10:10 -0400
-Message-Id: <20121025124833.940887583@chello.nl>
+Received: from casper.infradead.org ([85.118.1.10]:51619 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759527Ab2JYNKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 09:10:05 -0400
+Message-Id: <20121025124834.383666518@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:36 +0200
+Date: Thu, 25 Oct 2012 14:16:42 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,190 +17,99 @@ To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 19/31] sched, numa, mm: Introduce tsk_home_node()
+Subject: [PATCH 25/31] sched, numa, mm/mpol: Add_MPOL_F_HOME
 References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0019-sched-numa-mm-Introduce-tsk_home_node.patch
+Content-Disposition: inline; filename=0025-sched-numa-mm-Add_MPOL_F_HOME.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce the home-node concept for tasks. In order to keep memory
-locality we need to have a something to stay local to, we define the
-home-node of a task as the node we prefer to allocate memory from and
-prefer to execute on.
+Add MPOL_F_HOME, to implement multi-stage home node binding.
 
-These are no hard guarantees, merely soft preferences. This allows for
-optimal resource usage, we can run a task away from the home-node, the
-remote memory hit -- while expensive -- is less expensive than not
-running at all, or very little, due to severe cpu overload.
-
-Similarly, we can allocate memory from another node if our home-node
-is depleted, again, some memory is better than no memory.
-
-This patch merely introduces the basic infrastructure, all policy
-comes later.
-
-NOTE: we introduce the concept of EMBEDDED_NUMA, these are
-architectures where the memory access cost doesn't depend on the cpu
-but purely on the physical address -- embedded boards with cheap
-(slow) and expensive (fast) memory banks.
-
+Suggested-by: Andrea Arcangeli <aarcange@redhat.com>
+Suggested-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Turner <pjt@google.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/sh/mm/Kconfig        |    1 +
- include/linux/init_task.h |    8 ++++++++
- include/linux/sched.h     |   12 ++++++++++++
- init/Kconfig              |   14 ++++++++++++++
- kernel/sched/core.c       |   36 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 71 insertions(+)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   34 +++++++++++++++++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 1 deletion(-)
 
-Index: tip/arch/sh/mm/Kconfig
+Index: tip/include/uapi/linux/mempolicy.h
 ===================================================================
---- tip.orig/arch/sh/mm/Kconfig
-+++ tip/arch/sh/mm/Kconfig
-@@ -111,6 +111,7 @@ config VSYSCALL
- config NUMA
- 	bool "Non Uniform Memory Access (NUMA) Support"
- 	depends on MMU && SYS_SUPPORTS_NUMA && EXPERIMENTAL
-+	select EMBEDDED_NUMA
- 	default n
- 	help
- 	  Some SH systems have many various memories scattered around
-Index: tip/include/linux/init_task.h
+--- tip.orig/include/uapi/linux/mempolicy.h
++++ tip/include/uapi/linux/mempolicy.h
+@@ -69,6 +69,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
+ #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
++#define MPOL_F_HOME	(1 << 4) /* this is the home-node policy */
+ 
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
+Index: tip/mm/mempolicy.c
 ===================================================================
---- tip.orig/include/linux/init_task.h
-+++ tip/include/linux/init_task.h
-@@ -143,6 +143,13 @@ extern struct task_group root_task_group
- 
- #define INIT_TASK_COMM "swapper"
- 
-+#ifdef CONFIG_SCHED_NUMA
-+# define INIT_TASK_NUMA(tsk)						\
-+	.node = -1,
-+#else
-+# define INIT_TASK_NUMA(tsk)
-+#endif
+--- tip.orig/mm/mempolicy.c
++++ tip/mm/mempolicy.c
+@@ -2190,6 +2190,7 @@ static void sp_free(struct sp_node *n)
+  * @page   - page to be checked
+  * @vma    - vm area where page mapped
+  * @addr   - virtual address where page mapped
++ * @multi  - use multi-stage node binding
+  *
+  * Lookup current policy node id for vma,addr and "compare to" page's
+  * node id.
+@@ -2252,6 +2253,37 @@ int mpol_misplaced(struct page *page, st
+ 	default:
+ 		BUG();
+ 	}
 +
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -210,6 +217,7 @@ extern struct task_group root_task_group
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
- 	INIT_CPUSET_SEQ							\
-+	INIT_TASK_NUMA(tsk)						\
- }
- 
- 
-Index: tip/include/linux/sched.h
-===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -1479,6 +1479,9 @@ struct task_struct {
- 	short il_next;
- 	short pref_node_fork;
- #endif
-+#ifdef CONFIG_SCHED_NUMA
-+	int node;
-+#endif
- 	struct rcu_head rcu;
- 
- 	/*
-@@ -1553,6 +1556,15 @@ struct task_struct {
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
- #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
- 
-+static inline int tsk_home_node(struct task_struct *p)
-+{
-+#ifdef CONFIG_SCHED_NUMA
-+	return p->node;
-+#else
-+	return -1;
-+#endif
-+}
++	/*
++	 * Multi-stage node selection is used in conjunction with a periodic
++	 * migration fault to build a temporal task<->page relation. By
++	 * using a two-stage filter we remove short/unlikely relations.
++	 *
++	 * Using P(p) ~ n_p / n_t as per frequentist probability, we can
++	 * equate a task's usage of a particular page (n_p) per total usage
++	 * of this page (n_t) (in a given time-span) to a probability.
++	 *
++	 * Our periodic faults will then sample this probability and getting
++	 * the same result twice in a row, given these samples are fully
++	 * independent, is then given by P(n)^2, provided our sample period
++	 * is sufficiently short compared to the usage pattern.
++	 *
++	 * This quadric squishes small probabilities, making it less likely
++	 * we act on an unlikely task<->page relation.
++	 */
++	if (pol->flags & MPOL_F_HOME) {
++		int last_nid;
 +
- /*
-  * Priority of a process goes from 0..MAX_PRIO-1, valid RT
-  * priority is 0..MAX_RT_PRIO-1, and SCHED_NORMAL/SCHED_BATCH
-Index: tip/init/Kconfig
-===================================================================
---- tip.orig/init/Kconfig
-+++ tip/init/Kconfig
-@@ -696,6 +696,20 @@ config LOG_BUF_SHIFT
- config HAVE_UNSTABLE_SCHED_CLOCK
- 	bool
- 
-+#
-+# For architectures that (ab)use NUMA to represent different memory regions
-+# all cpu-local but of different latencies, such as SuperH.
-+#
-+config EMBEDDED_NUMA
-+	bool
++		/*
++		 * Migrate towards the current node, depends on
++		 * task_numa_placement() details.
++		 */
++		polnid = numa_node_id();
++		last_nid = page_xchg_last_nid(page, polnid);
++		if (last_nid != polnid)
++			goto out;
++	}
 +
-+config SCHED_NUMA
-+	bool "Memory placement aware NUMA scheduler"
-+	default n
-+	depends on SMP && NUMA && MIGRATION && !EMBEDDED_NUMA
-+	help
-+	  This option adds support for automatic NUMA aware memory/task placement.
-+
- menuconfig CGROUPS
- 	boolean "Control Group support"
- 	depends on EVENTFD
-Index: tip/kernel/sched/core.c
-===================================================================
---- tip.orig/kernel/sched/core.c
-+++ tip/kernel/sched/core.c
-@@ -5959,6 +5959,42 @@ static struct sched_domain_topology_leve
- 
- static struct sched_domain_topology_level *sched_domain_topology = default_topology;
- 
-+#ifdef CONFIG_SCHED_NUMA
-+
-+/*
-+ * Requeues a task ensuring its on the right load-balance list so
-+ * that it might get migrated to its new home.
-+ *
-+ * Note that we cannot actively migrate ourselves since our callers
-+ * can be from atomic context. We rely on the regular load-balance
-+ * mechanisms to move us around -- its all preference anyway.
-+ */
-+void sched_setnode(struct task_struct *p, int node)
-+{
-+	unsigned long flags;
-+	int on_rq, running;
-+	struct rq *rq;
-+
-+	rq = task_rq_lock(p, &flags);
-+	on_rq = p->on_rq;
-+	running = task_current(rq, p);
-+
-+	if (on_rq)
-+		dequeue_task(rq, p, 0);
-+	if (running)
-+		p->sched_class->put_prev_task(rq, p);
-+
-+	p->node = node;
-+
-+	if (running)
-+		p->sched_class->set_curr_task(rq);
-+	if (on_rq)
-+		enqueue_task(rq, p, 0);
-+	task_rq_unlock(rq, p, &flags);
-+}
-+
-+#endif /* CONFIG_SCHED_NUMA */
-+
- #ifdef CONFIG_NUMA
- 
- static int sched_domains_numa_levels;
+ 	if (curnid != polnid)
+ 		ret = polnid;
+ out:
+@@ -2444,7 +2476,7 @@ void __init numa_policy_init(void)
+ 		preferred_node_policy[nid] = (struct mempolicy) {
+ 			.refcnt = ATOMIC_INIT(1),
+ 			.mode = MPOL_PREFERRED,
+-			.flags = MPOL_F_MOF,
++			.flags = MPOL_F_MOF | MPOL_F_HOME,
+ 			.v = { .preferred_node = nid, },
+ 		};
+ 	}
 
 
