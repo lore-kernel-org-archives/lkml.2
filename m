@@ -1,133 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750767Ab2JYOLz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:11:55 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:61800 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756812Ab2JYOLO (ORCPT
+	id S1758572Ab2JYOMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:12:13 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:35013 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2JYOMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:11:14 -0400
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/10] HID: introduce Scan Time
-Date: Thu, 25 Oct 2012 16:09:48 +0200
-Message-Id: <1351174189-24719-10-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
+	Thu, 25 Oct 2012 10:12:08 -0400
+Message-ID: <508948A5.3020005@free-electrons.com>
+Date: Thu, 25 Oct 2012 16:11:49 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Jason Cooper <jason@lakedaemon.net>, Lior Amsalem <alior@marvell.com>,
+        Andrew Lunn <andrew@lunn.ch>, Ike Pan <ike.pan@canonical.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and config
+ update
+References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com> <20121024160139.6dbf5e16@skate> <5087F5B9.0@free-electrons.com> <20121025131818.GF18811@titan.lakedaemon.net> <50894471.9040000@gmail.com>
+In-Reply-To: <50894471.9040000@gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Win 8 digitizer devices provides the actual scan time computed by the
-hardware itself. The value is global to the frame and is not specific
-to the multitouch protocol (though only touch, not pen, should use it
-according to the specification).
+On 10/25/2012 03:53 PM, Rob Herring wrote:
+> On 10/25/2012 08:18 AM, Jason Cooper wrote:
+>> On Wed, Oct 24, 2012 at 04:05:45PM +0200, Gregory CLEMENT wrote:
+>>> On 10/24/2012 04:01 PM, Thomas Petazzoni wrote:
+>>>> Hello,
+>>>>
+>>>> Shouldn't you split into one commit adding the SATA definition in
+>>>> the .dtsi + doing the defconfig change (the "SoC" level modifications),
+>>>> and then another commit for the .dts change? I don't really care
+>>>> personally, it's really up to Jason/Andrew on this.
+>>>>
+>>>> Another comment below, though.
+>>>>
+>>>> On Wed, 24 Oct 2012 15:49:21 +0200, Gregory CLEMENT wrote:
+>>>>
+>>>>> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>>> index 94b4b9e..3f08233 100644
+>>>>> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>>> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+>>>>> @@ -69,6 +69,16 @@
+>>>>>  			compatible = "marvell,armada-addr-decoding-controller";
+>>>>>  			reg = <0xd0020000 0x258>;
+>>>>>  		};
+>>>>> +
+>>>>> +		sata@d00a0000 {
+>>>>> +                        compatible = "marvell,orion-sata";
+>>>>> +                        reg = <0xd00a0000 0x2400>;
+>>>>> +                        interrupts = <55>;
+>>>>> +                        nr-ports = <2>;
+>>>>> +			clocks = <&coreclk 0>;//,  <&coreclk 0>;
+>>>>
+>>>> Alignment problem + remainings of tests or something like that.
+>>>
+>>> True I missed this one.
+>>>
+>>> Jason, Andrew, do you want I split this patch as suggested by Thomas or
+>>> are you fine with having one single patch?
+>>
+>> Yes, please make the defconfig changes a separate patch.  Also, please
+>> make sure only the minimum is enabled (eq RAID... isn't needed).
+> 
+> What about updating multi_v7_defconfig instead?
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- Documentation/input/event-codes.txt |  7 +++++++
- drivers/hid/hid-input.c             |  4 ++++
- drivers/hid/hid-multitouch.c        | 13 ++++++++++---
- include/linux/hid.h                 |  1 +
- include/linux/input.h               |  1 +
- 5 files changed, 23 insertions(+), 3 deletions(-)
+About the _instead_, when I proposed to removed mvebu_defconfig Thomas
+argued that it was more convenient to build a mvebu-only kernel when
+doing kernel development, and Andrew also pointed that this defconfig
+should be useful for kisskb.
 
-diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
-index 53305bd..8f8c908 100644
---- a/Documentation/input/event-codes.txt
-+++ b/Documentation/input/event-codes.txt
-@@ -174,6 +174,13 @@ A few EV_ABS codes have special meanings:
-     the input device may be used freely in three dimensions, consider ABS_Z
-     instead.
- 
-+* ABS_SCAN_TIME:
-+  - Used when the device provides a timestamp for each frame. The unit must be
-+    100us, and may be reset when the device don't send any events for a
-+    period of time. The values increment at each frame and thus, it can roll
-+    back to 0 when reach logical_max. If the device does not provide this
-+    information, the driver must not provide it to the user space.
-+
- * ABS_MT_<name>:
-   - Used to describe multitouch input events. Please see
-     multi-touch-protocol.txt for details.
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index 16cc89a..5fe7bd3 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -675,6 +675,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
- 			map_key_clear(BTN_STYLUS2);
- 			break;
- 
-+		case 0x56: /* Scan Time */
-+			map_abs(ABS_SCAN_TIME);
-+			break;
-+
- 		default:  goto unknown;
- 		}
- 		break;
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 5aebbff..5d7fd39 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -447,19 +447,26 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
- 			mt_store_field(usage, td, hi);
- 			td->last_field_index = field->index;
- 			return 1;
-+		case HID_DG_SCANTIME:
-+			hid_map_usage(hi, usage, bit, max,
-+				EV_ABS, ABS_SCAN_TIME);
-+			set_abs(hi->input, ABS_SCAN_TIME, field, 0);
-+			td->last_field_index = field->index;
-+			return 1;
- 		case HID_DG_CONTACTCOUNT:
- 			td->last_field_index = field->index;
- 			return 1;
- 		case HID_DG_CONTACTMAX:
--			/* we don't set td->last_slot_field as contactcount and
--			 * contact max are global to the report */
-+			/* we don't set td->last_slot_field as scan time,
-+			 * contactcount and contact max are global to the
-+			 * report */
- 			td->last_field_index = field->index;
- 			return -1;
--		}
- 		case HID_DG_TOUCH:
- 			/* Legacy devices use TIPSWITCH and not TOUCH.
- 			 * Let's just ignore this field. */
- 			return -1;
-+		}
- 		/* let hid-input decide for the others */
- 		return 0;
- 
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 6216529..99a6418 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -279,6 +279,7 @@ struct hid_item {
- #define HID_DG_DEVICEINDEX	0x000d0053
- #define HID_DG_CONTACTCOUNT	0x000d0054
- #define HID_DG_CONTACTMAX	0x000d0055
-+#define HID_DG_SCANTIME		0x000d0056
- 
- /*
-  * HID report types --- Ouch! HID spec says 1 2 3!
-diff --git a/include/linux/input.h b/include/linux/input.h
-index ba48743..73c3a96 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -796,6 +796,7 @@ struct input_keymap_entry {
- #define ABS_TILT_X		0x1a
- #define ABS_TILT_Y		0x1b
- #define ABS_TOOL_WIDTH		0x1c
-+#define ABS_SCAN_TIME		0x1d
- 
- #define ABS_VOLUME		0x20
- 
--- 
-1.7.11.7
+And about updated both mvebu_defconfig and multi_v7_defconfig, I'm
+fine with it.
 
+Gregory
