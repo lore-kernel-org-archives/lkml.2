@@ -1,189 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab2JYP0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:26:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754116Ab2JYP0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:26:18 -0400
-Date: Thu, 25 Oct 2012 11:26:14 -0400
-From: Aristeu Rozanski <aris@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] fs: xattr: rewrite simple_xattr_set()
-Message-ID: <20121025152613.GF14085@redhat.com>
+	id S1759121Ab2JYPcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:32:11 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53859 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323Ab2JYPcJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 11:32:09 -0400
+Message-ID: <50895B75.2010102@wwwdotorg.org>
+Date: Thu, 25 Oct 2012 09:32:05 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: Ming Lei <tom.leiming@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Samuel Thibault <samuel.thibault@ens-lyon.org>
+Subject: Re: [PATCH 03/23] printk: Move braille console support into separate
+ braille.[ch] files
+References: <cover.1350449851.git.joe@perches.com>  <592f6af296db3e82a392252b3a7c8a7b1020194d.1350449851.git.joe@perches.com>  <508883D6.70706@wwwdotorg.org> <1351125084.7130.16.camel@joe-AO722>
+In-Reply-To: <1351125084.7130.16.camel@joe-AO722>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way this function was written is confusing and already caused problems.
-Rewriting it to be easier to understand and maintain.
+On 10/24/2012 06:31 PM, Joe Perches wrote:
+> On Wed, 2012-10-24 at 18:12 -0600, Stephen Warren wrote:
+>> On 10/17/2012 12:06 AM, Joe Perches wrote:
+>>> Create files with prototypes and static inlines for braille
+>>> support.  Make braille_console functions return 1 on success.
+>>
+>> Joe,
+>>
+>> Between next-20121022 and next-20121023, the serial console (on the ARM
+>> SoC Tegra at least) stopped working. The issue bisects down to this
+>> commit. I haven't had a chance to investigate why yet, I just finished
+>> bisected.
+>>
+>> earlyprintk over the same UART works. Once the system has booted, a few
+>> late kernel messages do appear, and then getty/login over the UART
+>> works. So, it's just the printk messages that disappeared.
+>>
+>> In case it's relevant, my command-line is:
+>>
+>> console=ttyS0,115200n8 loglevel=8 rootwait rw earlyprintk
+>> root=PARTUUID=b2f82cda-2535-4779-b467-094a210fbae7
+>>
+>> I'll continue to investigate further tomorrow, but just wanted to give
+>> you a heads-up in case you could immediately see anything obvious in the
+>> code.
+> 
+> Hi Stephen.
+> 
+> Thanks, I appreciate the heads-up.  This should be solved
+> by Ming Lei's patch (which I've incorporated into a V2
+> series I will post shortly).
+> 
+> https://lkml.org/lkml/2012/10/23/307
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Aristeu Rozanski <aris@redhat.com>
-
----
- fs/xattr.c |  124 +++++++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 76 insertions(+), 48 deletions(-)
-
-Index: github/fs/xattr.c
-===================================================================
---- github.orig/fs/xattr.c	2012-10-23 16:02:41.155857391 -0400
-+++ github/fs/xattr.c	2012-10-25 11:17:15.118197552 -0400
-@@ -842,55 +842,46 @@
- 	return ret;
- }
- 
--static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
--			      const void *value, size_t size, int flags)
-+static struct simple_xattr *__find_xattr(struct simple_xattrs *xattrs,
-+					 const char *name)
- {
- 	struct simple_xattr *xattr;
--	struct simple_xattr *new_xattr = NULL;
--	int err = 0;
--
--	/* value == NULL means remove */
--	if (value) {
--		new_xattr = simple_xattr_alloc(value, size);
--		if (!new_xattr)
--			return -ENOMEM;
--
--		new_xattr->name = kstrdup(name, GFP_KERNEL);
--		if (!new_xattr->name) {
--			kfree(new_xattr);
--			return -ENOMEM;
--		}
--	}
- 
--	spin_lock(&xattrs->lock);
- 	list_for_each_entry(xattr, &xattrs->head, list) {
--		if (!strcmp(name, xattr->name)) {
--			if (flags & XATTR_CREATE) {
--				xattr = new_xattr;
--				err = -EEXIST;
--			} else if (new_xattr) {
--				list_replace(&xattr->list, &new_xattr->list);
--			} else {
--				list_del(&xattr->list);
--			}
--			goto out;
--		}
-+		if (!strcmp(name, xattr->name))
-+			return xattr;
- 	}
--	if (flags & XATTR_REPLACE) {
--		xattr = new_xattr;
--		err = -ENODATA;
--	} else {
--		list_add(&new_xattr->list, &xattrs->head);
--		xattr = NULL;
--	}
--out:
--	spin_unlock(&xattrs->lock);
-+	return NULL;
-+}
-+
-+static int __simple_xattr_remove(struct simple_xattrs *xattrs,
-+				 const char *name)
-+{
-+	struct simple_xattr *xattr;
-+
-+	xattr = __find_xattr(xattrs, name);
- 	if (xattr) {
-+		list_del(&xattr->list);
- 		kfree(xattr->name);
- 		kfree(xattr);
-+		return 0;
- 	}
--	return err;
- 
-+	return 1;
-+}
-+
-+/*
-+ * xattr REMOVE operation for in-memory/pseudo filesystems
-+ */
-+int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
-+{
-+	int rc;
-+
-+	spin_lock(&xattrs->lock);
-+	rc = __simple_xattr_remove(xattrs, name);
-+	spin_unlock(&xattrs->lock);
-+
-+	return rc;
- }
- 
- /**
-@@ -910,17 +901,54 @@
- int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
- 		     const void *value, size_t size, int flags)
- {
-+	struct simple_xattr *found, *new_xattr;
-+	int err = 0;
-+
- 	if (size == 0)
--		value = ""; /* empty EA, do not remove */
--	return __simple_xattr_set(xattrs, name, value, size, flags);
--}
-+		value = ""; /* empty EA */
- 
--/*
-- * xattr REMOVE operation for in-memory/pseudo filesystems
-- */
--int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
--{
--	return __simple_xattr_set(xattrs, name, NULL, 0, XATTR_REPLACE);
-+	/* if value == NULL is specified, remove the item */
-+	if (value == NULL)
-+		return simple_xattr_remove(xattrs, name);
-+
-+	new_xattr = simple_xattr_alloc(value, size);
-+	if (!new_xattr)
-+		return -ENOMEM;
-+
-+	new_xattr->name = kstrdup(name, GFP_KERNEL);
-+	if (!new_xattr->name) {
-+		kfree(new_xattr);
-+		return -ENOMEM;
-+	}
-+
-+	spin_lock(&xattrs->lock);
-+
-+	found = __find_xattr(xattrs, name);
-+	if (found) {
-+		if (flags & XATTR_CREATE) {
-+			err = -EEXIST;
-+			goto free_new;
-+		}
-+
-+		list_replace(&found->list, &new_xattr->list);
-+		kfree(found->name);
-+		kfree(found);
-+	} else {
-+		if (flags & XATTR_REPLACE) {
-+			err = -ENODATA;
-+			goto free_new;
-+		}
-+
-+		list_add_tail(&new_xattr->list, &xattrs->head);
-+	}
-+
-+out:
-+	spin_unlock(&xattrs->lock);
-+	return err;
-+free_new:
-+	kfree(new_xattr->name);
-+	kfree(new_xattr);
-+	goto out;
- }
- 
- static bool xattr_is_trusted(const char *name)
+Thanks. I can confirmed that patch does fix my issue.
