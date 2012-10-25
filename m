@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab2JYKst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:48:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62406 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757231Ab2JYKsr convert rfc822-to-8bit (ORCPT
+	id S1759357Ab2JYKtF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:49:05 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:12204 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759312Ab2JYKtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:48:47 -0400
-X-IronPort-AV: E=Sophos;i="4.80,646,1344182400"; 
-   d="scan'208";a="6069641"
-Message-ID: <508918BF.8040500@cn.fujitsu.com>
-Date: Thu, 25 Oct 2012 18:47:27 +0800
-From: zhangyanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+	Thu, 25 Oct 2012 06:49:02 -0400
+X-IronPort-AV: E=Sophos;i="4.80,646,1344211200"; 
+   d="scan'208";a="15384943"
+Date: Thu, 25 Oct 2012 11:48:30 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Jan Beulich <JBeulich@suse.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        xen-devel <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [Xen-devel] linux-next: Tree for Oct 24 (xen)
+In-Reply-To: <508906CE02000078000A4553@nat28.tlf.novell.com>
+Message-ID: <alpine.DEB.2.02.1210251118010.2689@kaball.uk.xensource.com>
+References: <20121024151957.28a1626cd9a59c014e78c401@canb.auug.org.au> <50885EA8.3050007@xenotime.net> <508906CE02000078000A4553@nat28.tlf.novell.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: x86@kernel.org, kexec@lists.infradead.org, Avi Kivity <avi@redhat.com>,
-        mtosatti@redhat.com
-CC: linux-kernel@vger.kernel.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] x86: clear vmcss on all cpus when doing kdump
- if necessary
-References: <5080E813.7030302@cn.fujitsu.com>
-In-Reply-To: <5080E813.7030302@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 18:48:08,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 18:48:10
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would anyone help review the patch, and give some comments, please ? 
+On Thu, 25 Oct 2012, Jan Beulich wrote:
+> >>> On 24.10.12 at 23:33, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > On 10/23/2012 09:19 PM, Stephen Rothwell wrote:
+> > 
+> >> Hi all,
+> >> 
+> >> Changes since 201201023:
+> >> 
+> > 
+> > on x86_64:
+> > 
+> > drivers/built-in.o: In function `dbgp_reset_prep':
+> > (.text+0xb96b5): undefined reference to `xen_dbgp_reset_prep'
+> > drivers/built-in.o: In function `dbgp_external_startup':
+> > (.text+0xb9d95): undefined reference to `xen_dbgp_external_startup'
+> > 
+> > 
+> > Full randconfig file is attached.
+> 
+> So this is because with !USB_SUPPORT but EARLY_PRINTK_DBGP
+> dbgp_reset_prep() and dbgp_external_startup() get pointlessly
+> defined and exported. This got broken by the merge
+> recommendation for the ARM side changes (originally compilation
+> of drivers/xen/dbgp.c depended on just CONFIG_XEN_DOM0).
+> 
+> >From my pov, fixing the USB side would be the clean solution (i.e.
+> putting those function definitions inside a CONFIG_USB_SUPPORT
+> conditional).
+>
+> The alternative of a smaller change would be to extend the
+> conditional around the respective xen_dbgp_...() declarations
+> in include/linux/usb/ehci_def.h to become
+> 
+> #if defined(CONFIG_XEN_DOM0) && defined(CONFIG_USB_SUPPORT)
+> 
+> Please advise towards your preference.
 
-Avi?
+I think that your first suggestion is the right one.
 
-于 2012年10月19日 13:41, Zhang Yanfei 写道:
-> Currently, kdump just makes all the logical processors leave VMX operation by
-> executing VMXOFF instruction, so any VMCSs active on the logical processors may
-> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
-> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
-> executing the VMXOFF instruction.
-> 
-> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
-> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
-> vmcore updated and non-corrupted.
-> 
-> Changelog from v1 to v2:
-> 1. remove the sysctl and clear VMCSs unconditionally.
-> 
-> zhangyanfei (2):
->   x86/kexec: VMCLEAR vmcss on all cpus if necessary
->   KVM: make crash_clear_loaded_vmcss valid when loading kvm_intel
->     module
-> 
->  arch/x86/include/asm/kexec.h |    2 ++
->  arch/x86/kernel/crash.c      |   27 +++++++++++++++++++++++++++
->  arch/x86/kvm/vmx.c           |    9 +++++++++
->  3 files changed, 38 insertions(+), 0 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
+Otherwise we could also make drivers/xen/dbgp.c compile if
+CONFIG_EARLY_PRINTK_DBGP rather than CONFIG_USB_SUPPORT.
+I think that it would create fewer maintenance pains if dbgp_reset_prep
+and dbgp_external_startup had the same compile requirements as their xen
+counterparts (aside from Xen support of course).
