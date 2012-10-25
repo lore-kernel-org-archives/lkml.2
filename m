@@ -1,326 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759186Ab2JYDn6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:43:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:48493 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933860Ab2JYDmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:42:43 -0400
-X-IronPort-AV: E=Sophos;i="4.80,645,1344182400"; 
-   d="scan'208";a="6064361"
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Hu Tao <hutao@cn.fujitsu.com>
-Subject: [PATCH v11 5/6] introduce a new qom device to deal with panicked event
-Date: Thu, 25 Oct 2012 11:42:37 +0800
-Message-Id: <1351136563-15073-5-git-send-email-hutao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
-References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 11:41:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 11:42:02,
-	Serialize complete at 2012/10/25 11:42:02
+	id S1759223Ab2JYDoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:44:10 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57769 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758560Ab2JYDoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:44:04 -0400
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 00/23] printk: refactoring
+Date: Wed, 24 Oct 2012 20:43:35 -0700
+Message-Id: <cover.1351135988.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.112.g3fd21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the target is x86/x86_64, the guest's kernel will write 0x01 to the
-port KVM_PV_EVENT_PORT when it is panciked. This patch introduces a new
-qom device kvm_pv_ioport to listen this I/O port, and deal with panicked
-event according to panicked_action's value. The possible actions are:
-1. emit QEVENT_GUEST_PANICKED only
-2. emit QEVENT_GUEST_PANICKED and pause the guest
-3. emit QEVENT_GUEST_PANICKED and poweroff the guest
-4. emit QEVENT_GUEST_PANICKED and reset the guest
+Make printk a bit more readable.
 
-I/O ports does not work for some targets(for example: s390). And you
-can implement another qom device, and include it's code into pv_event.c
-for such target.
+Created directory:
+	kernel/printk
+Created source files:
+	printk.c		Generic printk and console routines
+	printk_log.[ch]		Log buffer routines
+	printk_syslog.[ch]	syslog(2) routines
+	braille.c		Braille console support
+	devkmsg.c		/dev/kmsg support
+	kmsg_dump.c		kmsg_dump support
 
-Note: if we emit QEVENT_GUEST_PANICKED only, and the management
-application does not receive this event(the management may not
-run when the event is emitted), the management won't know the
-guest is panicked.
+Changes from v1:
+Fix braille.h: _braille_console_setup return value
+Remove duplicated #define
+Add missing #include <linux/uaccess.h>
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
----
- hw/kvm/Makefile.objs |    2 +-
- hw/kvm/pv_event.c    |  197 ++++++++++++++++++++++++++++++++++++++++++++++++++
- hw/pc_piix.c         |    5 ++
- kvm-stub.c           |    4 +
- kvm.h                |    2 +
- 5 files changed, 209 insertions(+), 1 deletion(-)
- create mode 100644 hw/kvm/pv_event.c
+Joe Perches (23):
+  printk: Move to separate directory for easier modification
+  printk: Add console_cmdline.h
+  printk: Move braille console support into separate braille.[ch] files
+  printk: Use pointer for console_cmdline indexing
+  printk: rename struct log to struct printk_log
+  printk: Rename log_buf and __LOG_BUF_LEN
+  printk: Rename log_first and log_next variables
+  printk: Rename log_<foo> variables and functions
+  printk: Rename enum log_flags to printk_log_flags
+  printk: Rename log_wait to printk_log_wait
+  printk: Rename logbuf_lock to printk_logbuf_lock
+  printk: Rename clear_seq and clear_idx variables
+  printk: Remove static from printk_ variables
+  printk: Rename LOG_ALIGN to PRINTK_LOG_ALIGN
+  printk: Add and use printk_log.h
+  printk: Add printk_log.c
+  printk: Make wait_queue_head_t printk_log_wait extern
+  printk: Rename and move 2 #defines to printk_log.h
+  printk: Move devkmsg bits to separate file
+  printk: Prefix print_time and msg_print_text with printk_
+  printk: Move functions printk_print_time and printk_msg_print_text
+  printk: Add printk_syslog.c and .h
+  printk: Move kmsg_dump functions to separate file
 
-diff --git a/hw/kvm/Makefile.objs b/hw/kvm/Makefile.objs
-index f620d7f..cf93199 100644
---- a/hw/kvm/Makefile.objs
-+++ b/hw/kvm/Makefile.objs
-@@ -1 +1 @@
--obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pci-assign.o
-+obj-$(CONFIG_KVM) += clock.o apic.o i8259.o ioapic.o i8254.o pci-assign.o pv_event.o
-diff --git a/hw/kvm/pv_event.c b/hw/kvm/pv_event.c
-new file mode 100644
-index 0000000..112491e
---- /dev/null
-+++ b/hw/kvm/pv_event.c
-@@ -0,0 +1,197 @@
-+/*
-+ * QEMU KVM support, paravirtual event device
-+ *
-+ * Copyright Fujitsu, Corp. 2012
-+ *
-+ * Authors:
-+ *     Wen Congyang <wency@cn.fujitsu.com>
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2 or later.
-+ * See the COPYING file in the top-level directory.
-+ *
-+ */
-+
-+#include <linux/kvm_para.h>
-+#include <asm/kvm_para.h>
-+#include <qobject.h>
-+#include <qjson.h>
-+#include <monitor.h>
-+#include <sysemu.h>
-+#include <kvm.h>
-+
-+/* Possible values for action parameter. */
-+#define PANICKED_REPORT     1   /* emit QEVENT_GUEST_PANICKED only */
-+#define PANICKED_PAUSE      2   /* emit QEVENT_GUEST_PANICKED and pause VM */
-+#define PANICKED_POWEROFF   3   /* emit QEVENT_GUEST_PANICKED and quit VM */
-+#define PANICKED_RESET      4   /* emit QEVENT_GUEST_PANICKED and reset VM */
-+
-+#define PV_EVENT_DRIVER     "kvm_pv_event"
-+
-+struct PVEventAction {
-+    char *panicked_action;
-+    int panicked_action_value;
-+};
-+
-+#define DEFINE_PV_EVENT_PROPERTIES(_state, _conf)   \
-+    DEFINE_PROP_STRING("panicked_action", _state, _conf.panicked_action)
-+
-+static void panicked_mon_event(const char *action)
-+{
-+    QObject *data;
-+
-+    data = qobject_from_jsonf("{ 'action': %s }", action);
-+    monitor_protocol_event(QEVENT_GUEST_PANICKED, data);
-+    qobject_decref(data);
-+}
-+
-+static void panicked_perform_action(uint32_t panicked_action)
-+{
-+    switch (panicked_action) {
-+    case PANICKED_REPORT:
-+        panicked_mon_event("report");
-+        break;
-+
-+    case PANICKED_PAUSE:
-+        panicked_mon_event("pause");
-+        vm_stop(RUN_STATE_GUEST_PANICKED);
-+        break;
-+
-+    case PANICKED_POWEROFF:
-+        panicked_mon_event("poweroff");
-+        qemu_system_shutdown_request();
-+        break;
-+
-+    case PANICKED_RESET:
-+        panicked_mon_event("reset");
-+        qemu_system_reset_request();
-+        break;
-+    }
-+}
-+
-+static uint64_t supported_event(void)
-+{
-+    return 1 << KVM_PV_FEATURE_PANICKED;
-+}
-+
-+static void handle_event(int event, struct PVEventAction *conf)
-+{
-+    if (event == KVM_PV_EVENT_PANICKED) {
-+        panicked_perform_action(conf->panicked_action_value);
-+    }
-+}
-+
-+static int pv_event_init(struct PVEventAction *conf)
-+{
-+    if (!conf->panicked_action) {
-+        conf->panicked_action_value = PANICKED_REPORT;
-+    } else if (strcasecmp(conf->panicked_action, "none") == 0) {
-+        conf->panicked_action_value = PANICKED_REPORT;
-+    } else if (strcasecmp(conf->panicked_action, "pause") == 0) {
-+        conf->panicked_action_value = PANICKED_PAUSE;
-+    } else if (strcasecmp(conf->panicked_action, "poweroff") == 0) {
-+        conf->panicked_action_value = PANICKED_POWEROFF;
-+    } else if (strcasecmp(conf->panicked_action, "reset") == 0) {
-+        conf->panicked_action_value = PANICKED_RESET;
-+    } else {
-+        return -1;
-+    }
-+
-+    return 0;
-+}
-+
-+#if defined(KVM_PV_EVENT_PORT)
-+
-+#include "hw/isa.h"
-+
-+typedef struct {
-+    ISADevice dev;
-+    struct PVEventAction conf;
-+    MemoryRegion ioport;
-+} PVIOPortState;
-+
-+static uint64_t pv_io_read(void *opaque, hwaddr addr, unsigned size)
-+{
-+    return supported_event();
-+}
-+
-+static void pv_io_write(void *opaque, hwaddr addr, uint64_t val,
-+                        unsigned size)
-+{
-+    PVIOPortState *s = opaque;
-+
-+    handle_event(val, &s->conf);
-+}
-+
-+static const MemoryRegionOps pv_io_ops = {
-+    .read = pv_io_read,
-+    .write = pv_io_write,
-+    .impl = {
-+        .min_access_size = 4,
-+        .max_access_size = 4,
-+    },
-+};
-+
-+static int pv_ioport_initfn(ISADevice *dev)
-+{
-+    PVIOPortState *s = DO_UPCAST(PVIOPortState, dev, dev);
-+
-+    if (pv_event_init(&s->conf) < 0) {
-+        return -1;
-+    }
-+
-+    memory_region_init_io(&s->ioport, &pv_io_ops, s, "pv_event", 1);
-+    isa_register_ioport(dev, &s->ioport, KVM_PV_EVENT_PORT);
-+
-+    return 0;
-+}
-+
-+static Property pv_ioport_properties[] = {
-+    DEFINE_PV_EVENT_PROPERTIES(PVIOPortState, conf),
-+    DEFINE_PROP_END_OF_LIST(),
-+};
-+
-+static void pv_ioport_class_init(ObjectClass *klass, void *data)
-+{
-+    DeviceClass *dc = DEVICE_CLASS(klass);
-+    ISADeviceClass *ic = ISA_DEVICE_CLASS(klass);
-+
-+    ic->init = pv_ioport_initfn;
-+    dc->no_user = 1;
-+    dc->props = pv_ioport_properties;
-+}
-+
-+static TypeInfo pv_ioport_info = {
-+    .name          = PV_EVENT_DRIVER,
-+    .parent        = TYPE_ISA_DEVICE,
-+    .instance_size = sizeof(PVIOPortState),
-+    .class_init    = pv_ioport_class_init,
-+};
-+
-+static void pv_ioport_register_types(void)
-+{
-+    type_register_static(&pv_ioport_info);
-+}
-+
-+type_init(pv_ioport_register_types)
-+
-+void kvm_pv_event_init(void *opaque)
-+{
-+    ISABus *bus = opaque;
-+    ISADevice *dev;
-+
-+    dev = isa_create(bus, PV_EVENT_DRIVER);
-+    qdev_init_nofail(&dev->qdev);
-+}
-+
-+#else
-+
-+/*
-+ * If you need a qom device to handle pv event, this device should
-+ * be created and initialized in kvm_pv_event_init().
-+ *
-+ * The parameter opaque is the device's parent bus.
-+ */
-+void kvm_pv_event_init(void *opaque)
-+{
-+}
-+#endif
-diff --git a/hw/pc_piix.c b/hw/pc_piix.c
-index 47ebc1a..fb67dc1 100644
---- a/hw/pc_piix.c
-+++ b/hw/pc_piix.c
-@@ -46,6 +46,7 @@
- #ifdef CONFIG_XEN
- #  include <xen/hvm/hvm_info_table.h>
- #endif
-+#include <linux/kvm_para.h>
- 
- #define MAX_IDE_BUS 2
- 
-@@ -285,6 +286,10 @@ static void pc_init1(MemoryRegion *system_memory,
-     if (pci_enabled) {
-         pc_pci_device_init(pci_bus);
-     }
-+
-+    if (kvm_enabled()) {
-+        kvm_pv_event_init(isa_bus);
-+    }
- }
- 
- static void pc_init_pci(QEMUMachineInitArgs *args)
-diff --git a/kvm-stub.c b/kvm-stub.c
-index a3455e2..c9cfe4a 100644
---- a/kvm-stub.c
-+++ b/kvm-stub.c
-@@ -140,3 +140,7 @@ int kvm_irqchip_remove_irqfd_notifier(KVMState *s, EventNotifier *n, int virq)
- {
-     return -ENOSYS;
- }
-+
-+void kvm_pv_event_init(void *opaque)
-+{
-+}
-diff --git a/kvm.h b/kvm.h
-index 2b26dcb..3771b12 100644
---- a/kvm.h
-+++ b/kvm.h
-@@ -274,4 +274,6 @@ void kvm_irqchip_release_virq(KVMState *s, int virq);
- 
- int kvm_irqchip_add_irqfd_notifier(KVMState *s, EventNotifier *n, int virq);
- int kvm_irqchip_remove_irqfd_notifier(KVMState *s, EventNotifier *n, int virq);
-+
-+void kvm_pv_event_init(void *opaque);
- #endif
+ drivers/accessibility/braille/braille_console.c |    9 +-
+ fs/proc/kmsg.c                                  |    4 +-
+ kernel/Makefile                                 |    3 +-
+ kernel/printk.c                                 | 2820 -----------------------
+ kernel/printk/Makefile                          |    6 +
+ kernel/printk/braille.c                         |   48 +
+ kernel/printk/braille.h                         |   48 +
+ kernel/printk/console_cmdline.h                 |   14 +
+ kernel/printk/devkmsg.c                         |  309 +++
+ kernel/printk/kmsg_dump.c                       |  328 +++
+ kernel/printk/printk.c                          | 1513 ++++++++++++
+ kernel/printk/printk_log.c                      |  263 +++
+ kernel/printk/printk_log.h                      |  128 +
+ kernel/printk/printk_syslog.c                   |  355 +++
+ kernel/printk/printk_syslog.h                   |   13 +
+ 15 files changed, 3036 insertions(+), 2825 deletions(-)
+ delete mode 100644 kernel/printk.c
+ create mode 100644 kernel/printk/Makefile
+ create mode 100644 kernel/printk/braille.c
+ create mode 100644 kernel/printk/braille.h
+ create mode 100644 kernel/printk/console_cmdline.h
+ create mode 100644 kernel/printk/devkmsg.c
+ create mode 100644 kernel/printk/kmsg_dump.c
+ create mode 100644 kernel/printk/printk.c
+ create mode 100644 kernel/printk/printk_log.c
+ create mode 100644 kernel/printk/printk_log.h
+ create mode 100644 kernel/printk/printk_syslog.c
+ create mode 100644 kernel/printk/printk_syslog.h
+
 -- 
-1.7.10.2
+1.7.8.112.g3fd21
 
