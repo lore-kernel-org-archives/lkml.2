@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934185Ab2JYAH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:07:56 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21724 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2JYAHz convert rfc822-to-8bit (ORCPT
+	id S934246Ab2JYAIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:08:16 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53698 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab2JYAIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:07:55 -0400
-Date: Wed, 24 Oct 2012 17:07:46 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-        xen-devel <xen-devel@lists.xen.org>,
-        Stefano Stabellini <stefano.stabellini@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
- needed for privcmd mappings.
-Message-ID: <20121024170746.7c89a790@mantra.us.oracle.com>
-In-Reply-To: <20121024164411.5b000087@mantra.us.oracle.com>
-References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
-	<1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
-	<20121024164411.5b000087@mantra.us.oracle.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 24 Oct 2012 20:08:14 -0400
+Date: Wed, 24 Oct 2012 17:08:11 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>
+cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
+ numa_maps
+In-Reply-To: <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com> <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
+ <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 16:44:11 -0700
-Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+On Wed, 24 Oct 2012, Sasha Levin wrote:
 
-> >  
-> >  #ifndef HYPERVISOR_VIRT_START
-> > diff --git a/include/xen/interface/memory.h
-> > b/include/xen/interface/memory.h index ad0dff5..5de2b36 100644
-> > --- a/include/xen/interface/memory.h
-> > +++ b/include/xen/interface/memory.h
-> > @@ -188,6 +188,24 @@ DEFINE_GUEST_HANDLE_STRUCT(xen_add_to_physmap);
-> >  /*** REMOVED ***/
-> >  /*#define XENMEM_translate_gpfn_list  8*/
-> >  
-> > +#define XENMEM_add_to_physmap_range 23
-> > +struct xen_add_to_physmap_range {
-> > +    /* Which domain to change the mapping for. */
-> > +    domid_t domid;
-> > +    uint16_t space; /* => enum phys_map_space */
-> > +
-> > +    /* Number of pages to go through */
-> > +    uint16_t size;
-> > +    domid_t foreign_domid; /* IFF gmfn_foreign */
-> > +
-> > +    /* Indexes into space being mapped. */
-> > +    GUEST_HANDLE(xen_ulong_t) idxs;
-> > +
-> > +    /* GPFN in domid where the source mapping page should appear.
-> > */
-> > +    GUEST_HANDLE(xen_pfn_t) gpfns;
+> > This should be fixed by 9e7814404b77 ("hold task->mempolicy while
+> > numa_maps scans.") in 3.7-rc2, can you reproduce any issues reading
+> > /proc/pid/numa_maps on that kernel?
 > 
+> I was actually referring to the warnings Dave Jones saw when fuzzing
+> with trinity after the
+> original patch was applied.
 > 
-> Looking at your arm implementation in xen, doesn't look like you are
-> expecting idxs and gpfns to be contigous. In that case, shouldn't idxs
-> and gpfns be pointers, ie, they are sent down as arrays? Or does
-> GUEST_HANDLE do that, I can't seem to find where it's defined quickly.
+> I still see the following when fuzzing:
+> 
+> [  338.467156] BUG: sleeping function called from invalid context at
+> kernel/mutex.c:269
+> [  338.473719] in_atomic(): 1, irqs_disabled(): 0, pid: 6361, name: trinity-main
+> [  338.481199] 2 locks held by trinity-main/6361:
+> [  338.486629]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810aa314>]
+> __do_page_fault+0x1e4/0x4f0
+> [  338.498783]  #1:  (&(&mm->page_table_lock)->rlock){+.+...}, at:
+> [<ffffffff8122f017>] handle_pte_fault+0x3f7/0x6a0
+> [  338.511409] Pid: 6361, comm: trinity-main Tainted: G        W
+> 3.7.0-rc2-next-20121024-sasha-00001-gd95ef01-dirty #74
+> [  338.530318] Call Trace:
+> [  338.534088]  [<ffffffff8114e393>] __might_sleep+0x1c3/0x1e0
+> [  338.539358]  [<ffffffff83ae5209>] mutex_lock_nested+0x29/0x50
+> [  338.545253]  [<ffffffff8124fc3e>] mpol_shared_policy_lookup+0x2e/0x90
+> [  338.545258]  [<ffffffff81219ebe>] shmem_get_policy+0x2e/0x30
+> [  338.545264]  [<ffffffff8124e99a>] get_vma_policy+0x5a/0xa0
+> [  338.545267]  [<ffffffff8124fce1>] mpol_misplaced+0x41/0x1d0
+> [  338.545272]  [<ffffffff8122f085>] handle_pte_fault+0x465/0x6a0
+> [  338.545278]  [<ffffffff81131e04>] ? __rcu_read_unlock+0x44/0xb0
+> [  338.545282]  [<ffffffff81230baa>] handle_mm_fault+0x32a/0x360
+> [  338.545286]  [<ffffffff810aa5b0>] __do_page_fault+0x480/0x4f0
+> [  338.545293]  [<ffffffff8111a706>] ? del_timer+0x26/0x80
+> [  338.545298]  [<ffffffff811c7313>] ? rcu_cleanup_after_idle+0x23/0x170
+> [  338.545302]  [<ffffffff811ca9a4>] ? rcu_eqs_exit_common+0x64/0x3a0
+> [  338.545305]  [<ffffffff811c8c66>] ? rcu_eqs_enter_common+0x7c6/0x970
+> [  338.545309]  [<ffffffff811cafdc>] ? rcu_eqs_exit+0x9c/0xb0
+> [  338.545312]  [<ffffffff810aa666>] do_page_fault+0x26/0x40
+> [  338.545317]  [<ffffffff810a3a40>] do_async_page_fault+0x30/0xa0
+> [  338.545321]  [<ffffffff83ae9268>] async_page_fault+0x28/0x30
+> 
 
-Never mind, I see it got corrected to XEN_GUEST_HANDLE in staging tree.
-Still doesn't compile tho:
+Ok, this looks the same but it's actually a different issue: 
+mpol_misplaced(), which now only exists in linux-next and not in 3.7-rc2, 
+calls get_vma_policy() which may take the shared policy mutex.  This 
+happens while holding page_table_lock from do_huge_pmd_numa_page() but 
+also from do_numa_page() while holding a spinlock on the ptl, which is 
+coming from the sched/numa branch.
 
-public/memory.h:246: error: expected specifier-qualifier-list before
-‘__guest_handle_xen_ulong_t’
+Is there anyway that we can avoid changing the shared policy mutex back 
+into a spinlock (it was converted in b22d127a39dd ["mempolicy: fix a race 
+in shared_policy_replace()"])?
 
-I'll figure it out.
-
-thanks,
-Mukesh
+Adding Peter, Rik, and Mel to the cc.
