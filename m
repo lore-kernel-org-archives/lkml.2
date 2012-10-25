@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2JYXgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 19:36:38 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:20151 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2JYXgh (ORCPT
+	id S1752616Ab2JYXhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 19:37:39 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37879 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab2JYXhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 19:36:37 -0400
-Message-ID: <1351208193.6851.17.camel@lorien2>
-Subject: [PATCH RFT] mips: dma-mapping: support debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: ralf@linux-mips.org, kyungmin.park@samsung.com, m.szyprowski@samsung.com,
-        arnd@arndb.de, andrzej.p@samsung.com
-Cc: linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Thu, 25 Oct 2012 17:36:33 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Oct 2012 19:37:38 -0400
+MIME-Version: 1.0
+Date: Fri, 26 Oct 2012 00:37:36 +0100
+Message-ID: <CAKw44fY_f69qGXHbcyXvr4i=or4FpB7TDQVijLkN7tv5iU-zrQ@mail.gmail.com>
+Subject: Power regression found on 3.6-rc1+
+From: Micael <kam1kaz3@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for debug_dma_mapping_error() call to avoid warning from
-debug_dma_unmap() interface when it checks for mapping error checked
-status. Without this patch, device driver failed to check map error
-warning is generated.
+I have a laptop running Arch Linux and found that upgrading from 3.5.6
+to 3.6.2 had a huge impact on my battery life. Power consumption went
+from ~10W to ~20W.
+I initially thought it was a i915 driver problem since the CPU temps
+went up and so I opened this bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=49031
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- arch/mips/include/asm/dma-mapping.h |    1 +
- 1 file changed, 1 insertion(+)
+However, as you can see if you read the bug's comments, after
+bisecting this I found the culprit to be commit
+71a83bd727cc31c5fe960c3758cb396267ff710e:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=71a83bd727cc31c5fe960c3758cb396267ff710e
 
-diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
-index be39a12..0929b08 100644
---- a/arch/mips/include/asm/dma-mapping.h
-+++ b/arch/mips/include/asm/dma-mapping.h
-@@ -40,6 +40,7 @@ static inline int dma_supported(struct device *dev, u64 mask)
- static inline int dma_mapping_error(struct device *dev, u64 mask)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
-+	debug_dma_mapping_error(dev, mask);
- 	return ops->mapping_error(dev, mask);
- }
- 
--- 
-1.7.9.5
-
-
-
+--
+Micael Dias
