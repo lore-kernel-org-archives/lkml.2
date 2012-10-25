@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936035Ab2JYRo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:44:56 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:11531 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757050Ab2JYRoy (ORCPT
+	id S934832Ab2JYRsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:48:14 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:37029 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758485Ab2JYRsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:44:54 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HdB2r3/3BL8HL+VIqq/9e
-Date: Thu, 25 Oct 2012 10:44:47 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, linux@arm.linux.org.uk,
-        b-cousson@ti.com, arnd@arndb.de, olof@lixom.net, rdunlap@xenotime.net,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
-Message-ID: <20121025174446.GT11928@atomide.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
- <1349675983-23803-2-git-send-email-kishon@ti.com>
- <20121016165043.GS15569@atomide.com>
- <20121025004806.GK11928@atomide.com>
- <20121025061722.GB4449@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025061722.GB4449@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Oct 2012 13:48:11 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 0/5] cputime: Moar cleanups / enhancements v3
+Date: Thu, 25 Oct 2012 19:47:58 +0200
+Message-Id: <1351187283-20715-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [121024 23:24]:
-> Hi,
-> 
-> On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
-> > * Tony Lindgren <tony@atomide.com> [121016 09:53]:
-> > > * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
-> > > > ocp2scp was not having pdata support which makes *musb* fail for non-dt
-> > > > boot in OMAP platform. The pdata will have information about the devices
-> > > > that is connected to ocp2scp. ocp2scp driver will now make use of this
-> > > > information to create the devices that is attached to ocp2scp.
-> > > > 
-> > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > > 
-> > > This fixes the regression on my panda es for musb port:
-> > > 
-> > > Acked-by: Tony Lindgren <tony@atomide.com>
-> > 
-> > Looks like nobody has picked this one up and we need it to
-> > fix the musb regression on omap, so I'll queue these up.
-> 
-> I don't seem to have the patches around in any mailbox :-(
+Hi,
 
-Bounced them to you. Do you have any better ideas for the
--rc cycle to fix the MUSB regression on omap4?
+Changes since v2:
 
-Regards,
+- Fix missing EXPORT_SYMBOL_GPL (thanks Wu Fenguang for the report)
+- Drop that *_irqsafe naming, use vtime_account_system() as irq safe
+and __vtime_account_system() for the raw arch implementation
+- Drop local_irq_disable() on s390 kvm guest switch
 
-Tony
+If you want to test, it is pullable from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	cputime/cleanups-v3
+
+Frederic Weisbecker (5):
+  vtime: Gather vtime declarations to their own header file
+  vtime: Make vtime_account_system() irqsafe
+  kvm: Directly account vtime to system on guest switch
+  cputime: Specialize irq vtime hooks
+  cputime: Separate irqtime accounting from generic vtime
+
+ arch/ia64/kernel/time.c     |    8 +++---
+ arch/powerpc/kernel/time.c  |    4 +-
+ arch/s390/kernel/vtime.c    |    4 +++
+ arch/s390/kvm/kvm-s390.c    |    4 ---
+ include/linux/hardirq.h     |   15 ++-----------
+ include/linux/kernel_stat.h |    9 +-------
+ include/linux/kvm_host.h    |   12 +++++++++-
+ include/linux/vtime.h       |   47 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/cputime.c      |   20 +++++++++++++----
+ kernel/softirq.c            |    6 ++--
+ 10 files changed, 89 insertions(+), 40 deletions(-)
+ create mode 100644 include/linux/vtime.h
+
+-- 
+1.7.5.4
+
