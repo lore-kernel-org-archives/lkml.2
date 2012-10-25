@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422913Ab2JYJ6n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:58:43 -0400
+	id S1422921Ab2JYJ67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:58:59 -0400
 Received: from mail-wg0-f44.google.com ([74.125.82.44]:64446 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422813Ab2JYJ52 (ORCPT
+	with ESMTP id S1161055Ab2JYJ50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:57:28 -0400
+	Thu, 25 Oct 2012 05:57:26 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 4/8] ARM: ux500: List DT compatibility using platform names rather than by board
-Date: Thu, 25 Oct 2012 10:57:07 +0100
-Message-Id: <1351159031-25391-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 2/8] ARM: ux500: Rename references to the ccu9540 dev board accordingly
+Date: Thu, 25 Oct 2012 10:57:05 +0100
+Message-Id: <1351159031-25391-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351159031-25391-1-git-send-email-lee.jones@linaro.org>
 References: <1351159031-25391-1-git-send-email-lee.jones@linaro.org>
@@ -21,112 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far, each ST-Ericsson board supported by Device Tree has been similar
-enough to run though a single DT_MACHINE_INIT call. On the back of that
-it has been suggested that we should reduce the number of compatible
-strings in our dt_compat structure. After subsequent discussion with Arnd
-Bergmann the conclusion was to list entries by platform as opposed to by
-board.
+When enabling ST-Ericsson's ccu9540 development board the board's
+full name has not been used. This patch adapts all references of
+the board's short name to how it should be referenced.
 
-The other suggestion was to use a single string which would cover all
-supported platforms, but any wildcard entries would include unsupported
-chipsets, such as the u5500 and potential new chips which no not yet have
-DT functionality. Hence, the best solution which encompasses all supported
-platforms, but no unsupported ones was to list the currently enabled four
-chipsets; u8500, u8540, u9500 and u9540 instead.
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/ccu9540.dts     |    2 +-
- arch/arm/boot/dts/hrefprev60.dts  |    2 +-
- arch/arm/boot/dts/hrefv60plus.dts |    2 +-
- arch/arm/boot/dts/snowball.dts    |    2 +-
- arch/arm/mach-ux500/cpu-db8500.c  |   12 ++++++------
- 5 files changed, 10 insertions(+), 10 deletions(-)
+ arch/arm/boot/dts/{u9540.dts => ccu9540.dts} |    4 ++--
+ arch/arm/mach-ux500/cpu-db8500.c             |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+ rename arch/arm/boot/dts/{u9540.dts => ccu9540.dts} (93%)
 
-diff --git a/arch/arm/boot/dts/ccu9540.dts b/arch/arm/boot/dts/ccu9540.dts
-index 26dfe83..0430546 100644
---- a/arch/arm/boot/dts/ccu9540.dts
+diff --git a/arch/arm/boot/dts/u9540.dts b/arch/arm/boot/dts/ccu9540.dts
+similarity index 93%
+rename from arch/arm/boot/dts/u9540.dts
+rename to arch/arm/boot/dts/ccu9540.dts
+index 95892ec..26dfe83 100644
+--- a/arch/arm/boot/dts/u9540.dts
 +++ b/arch/arm/boot/dts/ccu9540.dts
-@@ -14,7 +14,7 @@
+@@ -13,8 +13,8 @@
+ /include/ "dbx5x0.dtsi"
  
  / {
- 	model = "ST-Ericsson CCU9540 platform with Device Tree";
--	compatible = "st-ericsson,ccu9540";
-+	compatible = "st-ericsson,ccu9540", "st-ericsson,u9540";
- 
- 	memory {
- 		reg = <0x00000000 0x20000000>;
-diff --git a/arch/arm/boot/dts/hrefprev60.dts b/arch/arm/boot/dts/hrefprev60.dts
-index cd9e535..b398946 100644
---- a/arch/arm/boot/dts/hrefprev60.dts
-+++ b/arch/arm/boot/dts/hrefprev60.dts
-@@ -16,7 +16,7 @@
- 
- / {
- 	model = "ST-Ericsson HREF (pre-v60) platform with Device Tree";
--	compatible = "st-ericsson,mop500";
-+	compatible = "st-ericsson,mop500", "st-ericsson,u8500";
- 
- 	gpio_keys {
- 		button@1 {
-diff --git a/arch/arm/boot/dts/hrefv60plus.dts b/arch/arm/boot/dts/hrefv60plus.dts
-index 82103a2..a01ac8f 100644
---- a/arch/arm/boot/dts/hrefv60plus.dts
-+++ b/arch/arm/boot/dts/hrefv60plus.dts
-@@ -16,7 +16,7 @@
- 
- / {
- 	model = "ST-Ericsson HREF (v60+) platform with Device Tree";
--	compatible = "st-ericsson,hrefv60+";
-+	compatible = "st-ericsson,hrefv60+", "st-ericsson,u8500";
- 
- 	gpio_keys {
- 		button@1 {
-diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
-index 6a2b58b..9e02a91 100644
---- a/arch/arm/boot/dts/snowball.dts
-+++ b/arch/arm/boot/dts/snowball.dts
-@@ -14,7 +14,7 @@
- 
- / {
- 	model = "Calao Systems Snowball platform with device tree";
--	compatible = "calaosystems,snowball-a9500";
-+	compatible = "calaosystems,snowball-a9500", "st-ericsson,u9500";
+-	model = "ST-Ericsson U9540 platform with Device Tree";
+-	compatible = "st-ericsson,u9540";
++	model = "ST-Ericsson CCU9540 platform with Device Tree";
++	compatible = "st-ericsson,ccu9540";
  
  	memory {
  		reg = <0x00000000 0x20000000>;
 diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 472b49f..c65e7e3 100644
+index 0b15591..6e9a06d 100644
 --- a/arch/arm/mach-ux500/cpu-db8500.c
 +++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -330,11 +330,11 @@ static void __init u8500_init_machine(void)
- 	of_platform_populate(NULL, u8500_local_bus_nodes, u8500_auxdata_lookup, parent);
- }
+@@ -320,8 +320,8 @@ static void __init u8500_init_machine(void)
+ 		snowball_pinmaps_init();
+ 	else if (of_machine_is_compatible("st-ericsson,hrefv60+"))
+ 		hrefv60_pinmaps_init();
+-	else if (of_machine_is_compatible("st-ericsson,u9540")) {}
+-		/* TODO: Add u9540 pinmaps. */
++	else if (of_machine_is_compatible("st-ericsson,ccu9540")) {}
++		/* TODO: Add pinmaps for ccu9540 board. */
  
--static const char * u8500_dt_board_compat[] = {
--	"calaosystems,snowball-a9500",
--	"st-ericsson,hrefv60+",
--	"st-ericsson,mop500",
--	"st-ericsson,ccu9540",
-+static const char * stericsson_dt_platform_compat[] = {
-+	"st-ericsson,u8500",
-+	"st-ericsson,u8540",
-+	"st-ericsson,u9500",
-+	"st-ericsson,u9540",
+ 	/* TODO: Export SoC, USB, cpu-freq and DMA40 */
+ 	parent = u8500_of_init_devices();
+@@ -334,7 +334,7 @@ static const char * u8500_dt_board_compat[] = {
+ 	"calaosystems,snowball-a9500",
+ 	"st-ericsson,hrefv60+",
+ 	"st-ericsson,mop500",
+-	"st-ericsson,u9540",
++	"st-ericsson,ccu9540",
  	NULL,
  };
  
-@@ -346,7 +346,7 @@ DT_MACHINE_START(U8500_DT, "ST-Ericsson Ux5x0 platform (Device Tree Support)")
- 	.handle_irq	= gic_handle_irq,
- 	.init_machine	= u8500_init_machine,
- 	.init_late	= NULL,
--	.dt_compat      = u8500_dt_board_compat,
-+	.dt_compat      = stericsson_dt_platform_compat,
- MACHINE_END
- 
- #endif
 -- 
 1.7.9.5
 
