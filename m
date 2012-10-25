@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab2JYHGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:06:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46485 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab2JYHGg (ORCPT
+	id S1758462Ab2JYHKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:10:32 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57366 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab2JYHKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:06:36 -0400
+	Thu, 25 Oct 2012 03:10:31 -0400
+Date: Thu, 25 Oct 2012 00:10:26 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: =?utf-8?B?5YqJ5ZiJ6ae/?= <scott.liu@emc.com.tw>
+Cc: linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
+        "'Jesse'" <jesse@emc.com.tw>,
+        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
+        "'Paul'" <paul.liang@emc.com.tw>
+Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
+Message-ID: <20121025071026.GA23478@core.coreip.homeip.net>
+References: <20121024181323.GA18122@core.coreip.homeip.net>
+ <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
 MIME-Version: 1.0
-In-Reply-To: <20121025055056.GA2661@swordfish>
-References: <20121017034918.GA13295@redhat.com>
-	<20121024164235.GA2467@swordfish>
-	<20121024180608.GA22840@redhat.com>
-	<20121024182111.GA2340@swordfish>
-	<CAFTL4hxmh7yV8ePUhY_7hOuG=JrbZZcNvV88bWcUmwG9X0W04A@mail.gmail.com>
-	<20121025055056.GA2661@swordfish>
-Date: Thu, 25 Oct 2012 09:06:36 +0200
-Message-ID: <CAFTL4hxM8KqL3=GLkJDU-9pKVHrb1nSoDgFx8UVB7F7tryw6HA@mail.gmail.com>
-Subject: Re: lots of suspicious RCU traces
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/25 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
-> On (10/25/12 00:32), Frederic Weisbecker wrote:
->> First of all, thanks a lot for your report.
->>
->> 2012/10/24 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>:
->> > On (10/24/12 20:06), Oleg Nesterov wrote:
->> >> On 10/24, Sergey Senozhatsky wrote:
->> >> >
->> >> > small question,
->> >> >
->> >> > ptrace_notify() and forward calls are able to both indirectly and directly call schedule(),
->> >> > /* direct call from ptrace_stop()*/,
->> >> > should, in this case, rcu_user_enter() be called before tracehook_report_syscall_exit(regs, step)
->> >> > and ptrace chain?
->> >>
->> >> Well, I don't really understand this magic... but why?
->> >>
->> >
->> > My understanding is (I may be wrong) that we can schedule() from ptrace chain to
->> > some arbitrary task, which will continue its execution from the point where RCU assumes
->> > CPU as not idle, while CPU in fact still in idle state -- no one said rcu_idle_exit()
->> > (or similar) prior to schedule() call.
->>
->> Yeah but when we are in syscall_trace_leave(), the CPU shouldn't be in
->> RCU idle mode. That's where the bug is. How do you manage to trigger
->> this bug?
->>
->
-> strace -f <anything>
+On Thu, Oct 25, 2012 at 12:32:39PM +0800, 劉嘉駿 wrote:
+> Hi Dmitry,
+> 	Thanks for review.
+> 
+> > -----Original Message-----
+> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > Sent: Thursday, October 25, 2012 2:13 AM
+> > To: Scott Liu
+> > Cc: linux-input@vger.kernel.org; linux-i2c@vger.kernel.org;
+> linux-kernel@vger.kernel.org;
+> > Benjamin Tissoires; Jesse; Vincent Wang; Paul
+> > Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
+> > 
+> > Hi Scott,
+> > 
+> > On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
+> > > This patch is for Elan eKTF Touchscreen product, I2C adpater module.
+> > >
+> > > Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
+> > > ---
+> > >
+> > > Hi,
+> > >         v2 revision I have fixed some bug as your advise.
+> > >         1. To target the mainline
+> > >         2. No Android dependency
+> > >         3. reuse those duplication code from Henrik's patchset.
+> > >                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
+> > 
+> > Just a quick run through the code, so:
+> > 
+> > - please remove polling support, it is not useful in production;
+> 
+> OK.
+> 
+> > - why do you need a separate probe work instead of doing what you
+> >   need in elants_probe()
+> 
+> will fix.
+> 
+> > - it is not a good idea to register input device first and then
+> >   allocating memory for MT handling.
+> 
+> Ooop...will fix.
+> 
+> > - I do not understand why kfifo is needed
+> 
+> The firmware and the host would conflict by read command and finger report
+> simultaneously. So I'm simply using kfifo in IRQ thread function.
+> 
+> * read command: writing 4 bytes commands and the device asserts GPIO
+> interrupt and then response 4 bytes data.
+> 
+> There was an error if we do not use kfifo:
+> 	With heavy loading by finger report / read command, the driver may
+> get finger report as response data.
+> 
+> So, do you understand my meaning? 
 
-I can't reproduce. Can you send me your config?
+No I don't. Most of my confusion stems from the fact that you only put
+data into kfifo but not actually use it anywhere. You do fetch the data
+in your "drop old" function, but that data is just dropped. So I really
+do not see the point.
 
 Thanks.
+
+-- 
+Dmitry
