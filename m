@@ -1,22 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758962Ab2JYAwP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:52:15 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:46536 "EHLO
+	id S1758975Ab2JYAwR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:52:17 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:61109 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758950Ab2JYAwL (ORCPT
+	with ESMTP id S1758948Ab2JYAwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:52:11 -0400
+	Wed, 24 Oct 2012 20:52:09 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 4/5] cputime: Specialize irq vtime hooks
-Date: Thu, 25 Oct 2012 02:51:52 +0200
-Message-Id: <1351126313-17804-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/5] kvm: Directly account vtime to system on guest switch
+Date: Thu, 25 Oct 2012 02:51:51 +0200
+Message-Id: <1351126313-17804-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
 References: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
@@ -24,140 +34,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_VIRT_CPU_ACCOUNTING, when vtime_account()
-is called in irq entry/exit, we perform a check on the
-context: if we are interrupting the idle task we
-account the pending cputime to idle, otherwise account
-to system time or its sub-areas: tsk->stime, hardirq time,
-softirq time, ...
+Switching to or from guest context is done on ioctl context.
+So by the time we call kvm_guest_enter() or kvm_guest_exit()
+we know we are not running the idle task.
 
-However this check for idle only concerns the hardirq entry
-and softirq entry:
+As a result, we can directly account the cputime using
+vtime_account_system_irqsafe().
 
-* Hardirq may directly interrupt the idle task, in which case
-we need to flush the pending CPU time to idle.
+There are two good reasons to do this:
 
-* The idle task may be directly interrupted by a softirq if
-it calls local_bh_enable(). There is probably no such call
-in any idle task but we need to cover every case. Ksoftirqd
-is not concerned because the idle time is flushed on context
-switch and softirq in the end of hardirq have the idle time
-already flushed from the hardirq entry.
+* We avoid some useless checks on guest switch. It optimizes
+a bit this fast path.
 
-In the other cases we always account to system/irq time:
+* In the case of CONFIG_IRQ_TIME_ACCOUNTING, calling vtime_account()
+checks for irq time to account. This is pointless since we know
+we are not in an irq on guest switch. This is wasting cpu cycles
+for no good reason. vtime_account_system() OTOH is a no-op in
+this config option.
 
-* On hardirq exit we account the time to hardirq time.
-* On softirq exit we account the time to softirq time.
+* s390 doesn't disable irqs in its implementation of vtime_account().
+If vtime_account() in kvm races with an irq, the pending time might
+be accounted twice. With vtime_account_system_irqsafe() we are protected.
 
-To optimize this and avoid the indirect call to vtime_account()
-and the checks it performs, specialize the vtime irq APIs and
-only perform the check on irq entry. Irq exit can directly call
-vtime_account_system().
-
-CONFIG_IRQ_TIME_ACCOUNTING behaviour doesn't change and directly
-maps to its own vtime_account() implementation. One may want
-to take benefits from the new APIs to optimize irq time accounting
-as well in the future.
+A further optimization may consist in introducing a vtime_account_guest()
+that directly calls account_guest_time().
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Xiantao Zhang <xiantao.zhang@intel.com>
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/hardirq.h |    4 ++--
- include/linux/vtime.h   |   25 +++++++++++++++++++++++++
- kernel/softirq.c        |    6 +++---
- 3 files changed, 30 insertions(+), 5 deletions(-)
+ include/linux/kvm_host.h |   12 ++++++++++--
+ 1 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index b083a47..624ef3f 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -153,7 +153,7 @@ extern void rcu_nmi_exit(void);
-  */
- #define __irq_enter()					\
- 	do {						\
--		vtime_account(current);		\
-+		vtime_account_irq_enter(current);	\
- 		add_preempt_count(HARDIRQ_OFFSET);	\
- 		trace_hardirq_enter();			\
- 	} while (0)
-@@ -169,7 +169,7 @@ extern void irq_enter(void);
- #define __irq_exit()					\
- 	do {						\
- 		trace_hardirq_exit();			\
--		vtime_account(current);		\
-+		vtime_account_irq_exit(current);	\
- 		sub_preempt_count(HARDIRQ_OFFSET);	\
- 	} while (0)
- 
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index 57f290e..40634fb 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -21,4 +21,29 @@ static inline void vtime_account(struct task_struct *tsk)
- extern void vtime_account(struct task_struct *tsk);
- #endif
- 
-+static inline void vtime_account_irq_enter(struct task_struct *tsk)
-+{
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 93bfc9f..f17158b 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -737,7 +737,11 @@ static inline int kvm_deassign_device(struct kvm *kvm,
+ static inline void kvm_guest_enter(void)
+ {
+ 	BUG_ON(preemptible());
+-	vtime_account(current);
 +	/*
-+	 * Hardirq can interrupt idle task anytime. So we need vtime_account()
-+	 * that performs the idle check in CONFIG_VIRT_CPU_ACCOUNTING.
-+	 * Softirq can also interrupt idle task directly if it calls
-+	 * local_bh_enable(). Such case probably don't exist but we never know.
-+	 * Ksoftirqd is not concerned because idle time is flushed on context
-+	 * switch. Softirqs in the end of hardirqs are also not a problem because
-+	 * the idle time is flushed on hardirq time already.
++	 * This is running in ioctl context so we can avoid
++	 * the call to vtime_account() with its unnecessary idle check.
 +	 */
-+	vtime_account(tsk);
-+}
-+
-+static inline void vtime_account_irq_exit(struct task_struct *tsk)
-+{
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING
-+	/* On hard|softirq exit we always account to hard|softirq cputime */
-+	vtime_account_system(tsk);
-+#endif
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+	vtime_account(tsk);
-+#endif
-+}
-+
- #endif /* _LINUX_KERNEL_VTIME_H */
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index cc96bdc..ed567ba 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -221,7 +221,7 @@ asmlinkage void __do_softirq(void)
- 	current->flags &= ~PF_MEMALLOC;
++	vtime_account_system_irqsafe(current);
+ 	current->flags |= PF_VCPU;
+ 	/* KVM does not hold any references to rcu protected data when it
+ 	 * switches CPU into a guest mode. In fact switching to a guest mode
+@@ -751,7 +755,11 @@ static inline void kvm_guest_enter(void)
  
- 	pending = local_softirq_pending();
--	vtime_account(current);
-+	vtime_account_irq_enter(current);
- 
- 	__local_bh_disable((unsigned long)__builtin_return_address(0),
- 				SOFTIRQ_OFFSET);
-@@ -272,7 +272,7 @@ restart:
- 
- 	lockdep_softirq_exit();
- 
--	vtime_account(current);
-+	vtime_account_irq_exit(current);
- 	__local_bh_enable(SOFTIRQ_OFFSET);
- 	tsk_restore_flags(current, old_flags, PF_MEMALLOC);
- }
-@@ -341,7 +341,7 @@ static inline void invoke_softirq(void)
-  */
- void irq_exit(void)
+ static inline void kvm_guest_exit(void)
  {
 -	vtime_account(current);
-+	vtime_account_irq_exit(current);
- 	trace_hardirq_exit();
- 	sub_preempt_count(IRQ_EXIT_OFFSET);
- 	if (!in_interrupt() && local_softirq_pending())
++	/*
++	 * This is running in ioctl context so we can avoid
++	 * the call to vtime_account() with its unnecessary idle check.
++	 */
++	vtime_account_system_irqsafe(current);
+ 	current->flags &= ~PF_VCPU;
+ }
+ 
 -- 
 1.7.5.4
 
