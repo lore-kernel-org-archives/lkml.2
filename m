@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab2JYMHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:07:37 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:48898 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab2JYMHg (ORCPT
+	id S1758522Ab2JYMJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:09:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45425 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab2JYMJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:07:36 -0400
+	Thu, 25 Oct 2012 08:09:56 -0400
+Date: Thu, 25 Oct 2012 13:09:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: P J P <ppandit@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+Message-ID: <20121025120952.GI2616@ZenIV.linux.org.uk>
+References: <20121024232032.GA31129@www.outflux.net>
+ <20121025041620.GH2616@ZenIV.linux.org.uk>
+ <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+ <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
 MIME-Version: 1.0
-In-Reply-To: <20121025082341.GC3348@gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
-	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
-	<20121025073127.GB971@gmail.com>
-	<5088F0EE.8030900@stericsson.com>
-	<20121025082341.GC3348@gmail.com>
-Date: Thu, 25 Oct 2012 14:07:34 +0200
-Message-ID: <CACRpkdb9wHStmVHWJy7YhMeNX5T31mXOJSF0J_e=uBneSCrgmA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 10:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 25 Oct 2012, Linus Walleij wrote:
->>
->> Yeah drop it for now.
->
-> Actually, a quick question before I do:
->
-> If it's better/faster to prepare the clock and keep it prepared
-> while you do clk_enable/clk_disable,
+On Thu, Oct 25, 2012 at 05:16:22PM +0530, P J P wrote:
+> 
+>   Hello Kees,
+> 
+> +-- On Wed, 24 Oct 2012, Kees Cook wrote --+
+> | What should the code here _actually_ be doing? The _script and _misc 
+> | handlers expect to rewrite the bprm contents and recurse, but the module 
+> | loader want to try again. It's not clear to me what the binfmt module 
+> | handler is even there for; I don't see any binfmt-XXXX aliases in the tree. 
+> | If nothing uses it, should we just rip it out? That would solve it too.
 
-It is generally faster that is why we call it fastpath.
+; grep binfmt- /etc/*/* 2>/dev/null 
+/etc/modprobe.d/aliases.conf:install binfmt-0000 /bin/true
+/etc/modprobe.d/aliases.conf:alias binfmt-204 binfmt_aout
+/etc/modprobe.d/aliases.conf:alias binfmt-263 binfmt_aout
+/etc/modprobe.d/aliases.conf:alias binfmt-264 binfmt_aout
+/etc/modprobe.d/aliases.conf:alias binfmt-267 binfmt_aout
+/etc/modprobe.d/aliases.conf:alias binfmt-387 binfmt_aout
+; dpkg -S /etc/modprobe.d/aliases.conf 
+module-init-tools: /etc/modprobe.d/aliases.conf
 
-E.g. if the clock hardware can do this in IRQ context by just
-chaninging one bit in a quickly written register from 1->0 and
-then the clock goes off from some silicon.
+> I've been following this issue and updated versions of HDs patch. Below is a 
+> small patch to search_binary_handler() routine, which attempts to make the 
+> request_module call before calling load_script routine.
+> 
+> Besides fixing the stack disclosure issue it also helps to *simplify* the 
+> search_binary_handler routine by removing the -for (try=0;try<2;try++)- loop.
+> 
+> I'd really appreciate any comments/suggestions you may have.
 
-Whether it's "better" or not is a transcendental question,
-as it requires a ruler to measure betterness.
-
-> why don't we do that in all
-> drivers? Why do we bother to prepare/unprepare each time if all
-> it does is take up cycles?
-
-Usually to save power.
-
-Albeit saving power may be at odds with gaining the maximum
-performance and/or latency.
-
-So depending on the demands and use case the answer to
-whether or not you want to do this will be different.
-
-That's for the clock API.
-
-In the ux500 case specifically, you can drill down to the
-clock implementation and ask the question whether or not
-we want to do this for this instance of the pin controller
-in this case, I'll leave that for Ulf to answer... but remember
-that this driver is also used for the Nomadik NHK8815.
-
-Yours,
-Linus Walleij
+Suggestion: try testing your patches once in a while.  Stopping to think
+for a minute would also help - you've turned every execve() into "do
+request_module() first".  How do you suppose request_module() works?  And
+how would modprobe be able to run?  IOW, this request_module() will be
+stopped by protection against infinite loops, at which point execve will
+proceed with already present binfmt, without having loaded anything.
+But that's even worse than slowdown on each execve (with a lot of whining
+in process), because *every* request_module() will fail now due to the same
+loop prevention.
