@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935588Ab2JYLP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:15:57 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:34775 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849Ab2JYLPw (ORCPT
+	id S1759427Ab2JYLQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:16:04 -0400
+Received: from mailbigip.dreamhost.com ([208.97.132.5]:59392 "EHLO
+	homiemail-a5.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S935566Ab2JYLP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:15:52 -0400
-Date: Thu, 25 Oct 2012 13:15:43 +0200
-From: Claudio Fontana <Claudio.Fontana@huawei.com>
-Subject: [PATCH resend 2] net/ipv4/ipconfig: add device address to a KERN_INFO
- message
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <50891F5F.7060003@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010
- Thunderbird/16.0.1
+	Thu, 25 Oct 2012 07:15:56 -0400
+Message-ID: <1351163753.2513.17.camel@offbook>
+Subject: [PATCH RESEND 3/3] partitions: efi: check minimum header size
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Jens Axboe <axboe@kernel.dk>, Matt Domsch <Matt_Domsch@dell.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Oct 2012 13:15:53 +0200
+Organization: GNU
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As per UEFI specs 2.3.1 (June 2012),
+"The Header Size must be greater than 92 and must be less than
+or equal to the logical block size"
 
-adds a "hwaddr" to the "IP-Config: Complete" KERN_INFO message
-with the dev_addr of the device selected for auto configuration.
-
-Signed-off-by: Claudio Fontana <claudio.fontana@huawei.com>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- net/ipv4/ipconfig.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ block/partitions/efi.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/ipconfig.c b/net/ipv4/ipconfig.c
-index 798358b..d763701 100644
---- a/net/ipv4/ipconfig.c
-+++ b/net/ipv4/ipconfig.c
-@@ -1500,8 +1500,10 @@ static int __init ip_auto_config(void)
- 	 * Clue in the operator.
- 	 */
- 	pr_info("IP-Config: Complete:\n");
--	pr_info("     device=%s, addr=%pI4, mask=%pI4, gw=%pI4\n",
--		ic_dev->name, &ic_myaddr, &ic_netmask, &ic_gateway);
-+
-+	pr_info("     device=%s, hwaddr=%*phC, ipaddr=%pI4, mask=%pI4, gw=%pI4\n",
-+		ic_dev->name, ic_dev->addr_len, ic_dev->dev_addr,
-+		&ic_myaddr, &ic_netmask, &ic_gateway);
- 	pr_info("     host=%s, domain=%s, nis-domain=%s\n",
- 		utsname()->nodename, ic_domain, utsname()->domainname);
- 	pr_info("     bootserver=%pI4, rootserver=%pI4, rootpath=%s",
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index abf33a2..688b59c 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -25,6 +25,9 @@
+  * TODO:
+  *
+  * Changelog:
++ * Oct 2012 Davidlohr Bueso <dave@gnu.org>
++ * - tighten GPT header integrity verification.
++ *
+  * Mon Nov 09 2004 Matt Domsch <Matt_Domsch@dell.com>
+  * - test for valid PMBR and valid PGPT before ever reading
+  *   AGPT, allow override with 'gpt' kernel command line option.
+@@ -311,8 +314,8 @@ static int is_gpt_valid(struct parsed_partitions *state, u64 lba,
+ 	}
+ 
+ 	/* Check the GUID Partition Table header size */
+-	if (le32_to_cpu((*gpt)->header_size) >
+-			bdev_logical_block_size(state->bdev)) {
++	if (le32_to_cpu((*gpt)->header_size) < 92 ||
++	    le32_to_cpu((*gpt)->header_size) > bdev_logical_block_size(state->bdev)) {
+ 		pr_debug("GUID Partition Table Header size is wrong: %u > %u\n",
+ 			le32_to_cpu((*gpt)->header_size),
+ 			bdev_logical_block_size(state->bdev));
 -- 
-1.7.4.4
+1.7.9.5
 
-I tried to disable the mail client unwanted features.
-I hope it works this time.. sorry for that.
 
-Claudio Fontana
+
 
 
