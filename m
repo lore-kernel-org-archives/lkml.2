@@ -1,61 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422848Ab2JYDqX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:46:23 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:63469 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422763Ab2JYDqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:46:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351089124.18179.12.camel@joe-AO722>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-7-git-send-email-hongbo.zhang@linaro.com>
-	<1351089124.18179.12.camel@joe-AO722>
-Date: Thu, 25 Oct 2012 11:45:52 +0800
-Message-ID: <CAJLyvQyRBT+p6mkXkhBUx0vOoW+Xo7TqpJ=gHGc-3p_qqjq4UA@mail.gmail.com>
-Subject: Re: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal properties
- and platform data.
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
-        kernel@igloocommunity.org, "hongbo.zhang" <hongbo.zhang@linaro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934705Ab2JYDqc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:46:32 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59514 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934515Ab2JYDq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:46:26 -0400
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH V2 16/23] printk: Add printk_log.c
+Date: Wed, 24 Oct 2012 20:43:51 -0700
+Message-Id: <ab9f33cb702a5b68c5c0c309a79cbf84d9264248.1351135989.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.112.g3fd21
+In-Reply-To: <cover.1351135988.git.joe@perches.com>
+References: <cover.1351135988.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 22:32, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2012-10-24 at 19:58 +0800, hongbo.zhang wrote:
->> This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
->> also adds the platform data to support the old fashion.
->
-> Just a trivial note:
->
->> diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
->
->> @@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
->>  };
->>
->>  /*
->> + * Thermal Sensor
->> + */
->> +
->> +static struct resource db8500_thsens_resources[] = {
->
-> should there be a const in any of these?
-There will be warnings from gcc:
-warning: initialization discards 'const' qualifier from pointer target
-type [enabled by default]
+Move print_log variables and functions into a separate file.
 
->
->> +static struct db8500_thsens_platform_data db8500_thsens_data = {
-> []
->> +static struct platform_device u8500_thsens_device = {
-> []
->> +static struct platform_device u8500_cpufreq_cooling_device = {
->
->
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/printk/Makefile     |    1 +
+ kernel/printk/printk.c     |  128 -------------------------------------
+ kernel/printk/printk_log.c |  149 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 150 insertions(+), 128 deletions(-)
+ create mode 100644 kernel/printk/printk_log.c
+
+diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
+index 85405bd..a692b68 100644
+--- a/kernel/printk/Makefile
++++ b/kernel/printk/Makefile
+@@ -1,2 +1,3 @@
+ obj-y	= printk.o
++obj-y	+= printk_log.o
+ obj-$(CONFIG_A11Y_BRAILLE_CONSOLE)	+= braille.o
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 3b18ade..3b5c10e 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -121,12 +121,6 @@ EXPORT_SYMBOL(console_set_on_cmdline);
+ /* Flag: console code may call schedule() */
+ static int console_may_schedule;
+ 
+-/*
+- * The printk_logbuf_lock protects kmsg buffer, indices, counters. It is also
+- * used in interesting ways to provide interlocking in console_unlock();
+- */
+-DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
+-
+ #ifdef CONFIG_PRINTK
+ /* the next printk record to read by syslog(READ) or /proc/kmsg */
+ static u64 syslog_seq;
+@@ -134,139 +128,17 @@ static u32 syslog_idx;
+ static enum printk_log_flags syslog_prev;
+ static size_t syslog_partial;
+ 
+-/* index and sequence number of the first record stored in the buffer */
+-u64 printk_log_first_seq;
+-u32 printk_log_first_idx;
+-
+-/* index and sequence number of the next record to store in the buffer */
+-u64 printk_log_next_seq;
+-u32 printk_log_next_idx;
+-
+ /* the next printk record to write to the console */
+ static u64 console_seq;
+ static u32 console_idx;
+ static enum printk_log_flags console_prev;
+ 
+-/* the next printk record to read after the last 'clear' command */
+-u64 printk_log_clear_seq;
+-u32 printk_log_clear_idx;
+-
+ #define PREFIX_MAX		32
+ #define LOG_LINE_MAX		1024 - PREFIX_MAX
+ 
+-/* record buffer */
+-char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(PRINTK_LOG_ALIGN);
+-char *printk_log_buf = __printk_log_buf;
+-u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
+-
+ /* cpu currently holding printk_logbuf_lock */
+ static volatile unsigned int logbuf_cpu = UINT_MAX;
+ 
+-/* human readable text of the record */
+-char *printk_log_text(const struct printk_log *msg)
+-{
+-	return (char *)msg + sizeof(struct printk_log);
+-}
+-
+-/* optional key/value pair dictionary attached to the record */
+-char *printk_log_dict(const struct printk_log *msg)
+-{
+-	return (char *)msg + sizeof(struct printk_log) + msg->text_len;
+-}
+-
+-/* get record by index; idx must point to valid msg */
+-struct printk_log *printk_log_from_idx(u32 idx)
+-{
+-	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+-
+-	/*
+-	 * A length == 0 record is the end of buffer marker. Wrap around and
+-	 * read the message at the start of the buffer.
+-	 */
+-	if (!msg->len)
+-		return (struct printk_log *)printk_log_buf;
+-	return msg;
+-}
+-
+-/* get next record; idx must point to valid msg */
+-u32 printk_log_next(u32 idx)
+-{
+-	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+-
+-	/* length == 0 indicates the end of the buffer; wrap */
+-	/*
+-	 * A length == 0 record is the end of buffer marker. Wrap around and
+-	 * read the message at the start of the buffer as *this* one, and
+-	 * return the one after that.
+-	 */
+-	if (!msg->len) {
+-		msg = (struct printk_log *)printk_log_buf;
+-		return msg->len;
+-	}
+-	return idx + msg->len;
+-}
+-
+-/* insert record into the buffer, discard old ones, update heads */
+-void printk_log_store(int facility, int level,
+-		      enum printk_log_flags flags, u64 ts_nsec,
+-		      const char *dict, u16 dict_len,
+-		      const char *text, u16 text_len)
+-{
+-	struct printk_log *msg;
+-	u32 size, pad_len;
+-
+-	/* number of '\0' padding bytes to next message */
+-	size = sizeof(struct printk_log) + text_len + dict_len;
+-	pad_len = (-size) & (PRINTK_LOG_ALIGN - 1);
+-	size += pad_len;
+-
+-	while (printk_log_first_seq < printk_log_next_seq) {
+-		u32 free;
+-
+-		if (printk_log_next_idx > printk_log_first_idx)
+-			free = max(printk_log_buf_len - printk_log_next_idx, printk_log_first_idx);
+-		else
+-			free = printk_log_first_idx - printk_log_next_idx;
+-
+-		if (free > size + sizeof(struct printk_log))
+-			break;
+-
+-		/* drop old messages until we have enough contiuous space */
+-		printk_log_first_idx = printk_log_next(printk_log_first_idx);
+-		printk_log_first_seq++;
+-	}
+-
+-	if (printk_log_next_idx + size + sizeof(struct printk_log) >= printk_log_buf_len) {
+-		/*
+-		 * This message + an additional empty header does not fit
+-		 * at the end of the buffer. Add an empty header with len == 0
+-		 * to signify a wrap around.
+-		 */
+-		memset(printk_log_buf + printk_log_next_idx, 0, sizeof(struct printk_log));
+-		printk_log_next_idx = 0;
+-	}
+-
+-	/* fill message */
+-	msg = (struct printk_log *)(printk_log_buf + printk_log_next_idx);
+-	memcpy(printk_log_text(msg), text, text_len);
+-	msg->text_len = text_len;
+-	memcpy(printk_log_dict(msg), dict, dict_len);
+-	msg->dict_len = dict_len;
+-	msg->facility = facility;
+-	msg->level = level & 7;
+-	msg->flags = flags & 0x1f;
+-	if (ts_nsec > 0)
+-		msg->ts_nsec = ts_nsec;
+-	else
+-		msg->ts_nsec = local_clock();
+-	memset(printk_log_dict(msg) + dict_len, 0, pad_len);
+-	msg->len = sizeof(struct printk_log) + text_len + dict_len + pad_len;
+-
+-	/* insert message */
+-	printk_log_next_idx += msg->len;
+-	printk_log_next_seq++;
+-}
+-
+ /* /dev/kmsg - userspace message inject/listen interface */
+ struct devkmsg_user {
+ 	u64 seq;
+diff --git a/kernel/printk/printk_log.c b/kernel/printk/printk_log.c
+new file mode 100644
+index 0000000..b5c2b8f
+--- /dev/null
++++ b/kernel/printk/printk_log.c
+@@ -0,0 +1,149 @@
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/sched.h>
++#include <linux/kexec.h>
++
++#include "printk_log.h"
++
++/*
++ * The printk_logbuf_lock protects kmsg buffer, indices, counters. It is also
++ * used in interesting ways to provide interlocking in console_unlock();
++ */
++DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
++
++#ifdef CONFIG_PRINTK
++
++/* index and sequence number of the first record stored in the buffer */
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
++
++/* index and sequence number of the next record to store in the buffer */
++u64 printk_log_next_seq;
++u32 printk_log_next_idx;
++
++/* the next printk record to read after the last 'clear' command */
++u64 printk_log_clear_seq;
++u32 printk_log_clear_idx;
++
++/* record buffer */
++char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(PRINTK_LOG_ALIGN);
++char *printk_log_buf = __printk_log_buf;
++u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
++
++/* human readable text of the record */
++char *printk_log_text(const struct printk_log *msg)
++{
++	return (char *)msg + sizeof(struct printk_log);
++}
++
++/* optional key/value pair dictionary attached to the record */
++char *printk_log_dict(const struct printk_log *msg)
++{
++	return (char *)msg + sizeof(struct printk_log) + msg->text_len;
++}
++
++/* get record by index; idx must point to valid msg */
++struct printk_log *printk_log_from_idx(u32 idx)
++{
++	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
++
++	/*
++	 * A length == 0 record is the end of buffer marker. Wrap around and
++	 * read the message at the start of the buffer.
++	 */
++	if (!msg->len)
++		return (struct printk_log *)printk_log_buf;
++	return msg;
++}
++
++/* get next record; idx must point to valid msg */
++u32 printk_log_next(u32 idx)
++{
++	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
++
++	/* length == 0 indicates the end of the buffer; wrap */
++	/*
++	 * A length == 0 record is the end of buffer marker. Wrap around and
++	 * read the message at the start of the buffer as *this* one, and
++	 * return the one after that.
++	 */
++	if (!msg->len) {
++		msg = (struct printk_log *)printk_log_buf;
++		return msg->len;
++	}
++	return idx + msg->len;
++}
++
++/* insert record into the buffer, discard old ones, update heads */
++void printk_log_store(int facility, int level,
++		      enum printk_log_flags flags, u64 ts_nsec,
++		      const char *dict, u16 dict_len,
++		      const char *text, u16 text_len)
++{
++	struct printk_log *msg;
++	u32 size, pad_len;
++
++	/* number of '\0' padding bytes to next message */
++	size = sizeof(struct printk_log) + text_len + dict_len;
++	pad_len = (-size) & (PRINTK_LOG_ALIGN - 1);
++	size += pad_len;
++
++	while (printk_log_first_seq < printk_log_next_seq) {
++		u32 free;
++
++		if (printk_log_next_idx > printk_log_first_idx)
++			free = max(printk_log_buf_len - printk_log_next_idx, printk_log_first_idx);
++		else
++			free = printk_log_first_idx - printk_log_next_idx;
++
++		if (free > size + sizeof(struct printk_log))
++			break;
++
++		/* drop old messages until we have enough contiuous space */
++		printk_log_first_idx = printk_log_next(printk_log_first_idx);
++		printk_log_first_seq++;
++	}
++
++	if (printk_log_next_idx + size + sizeof(struct printk_log) >= printk_log_buf_len) {
++		/*
++		 * This message + an additional empty header does not fit
++		 * at the end of the buffer. Add an empty header with len == 0
++		 * to signify a wrap around.
++		 */
++		memset(printk_log_buf + printk_log_next_idx, 0, sizeof(struct printk_log));
++		printk_log_next_idx = 0;
++	}
++
++	/* fill message */
++	msg = (struct printk_log *)(printk_log_buf + printk_log_next_idx);
++	memcpy(printk_log_text(msg), text, text_len);
++	msg->text_len = text_len;
++	memcpy(printk_log_dict(msg), dict, dict_len);
++	msg->dict_len = dict_len;
++	msg->facility = facility;
++	msg->level = level & 7;
++	msg->flags = flags & 0x1f;
++	if (ts_nsec > 0)
++		msg->ts_nsec = ts_nsec;
++	else
++		msg->ts_nsec = local_clock();
++	memset(printk_log_dict(msg) + dict_len, 0, pad_len);
++	msg->len = sizeof(struct printk_log) + text_len + dict_len + pad_len;
++
++	/* insert message */
++	printk_log_next_idx += msg->len;
++	printk_log_next_seq++;
++}
++
++#else /* CONFIG_PRINTK */
++
++#define LOG_LINE_MAX		0
++#define PREFIX_MAX		0
++#define LOG_LINE_MAX 0
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
++u64 printk_log_next_seq;
++struct printk_log *printk_log_from_idx(u32 idx) { return NULL; }
++u32 printk_log_next(u32 idx) { return 0; }
++
++#endif /* CONFIG_PRINTK */
+-- 
+1.7.8.112.g3fd21
+
