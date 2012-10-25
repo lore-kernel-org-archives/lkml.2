@@ -1,53 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab2JYM6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:58:46 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53586 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab2JYM6p (ORCPT
+	id S933198Ab2JYNAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:00:14 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:32940 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932770Ab2JYNAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:58:45 -0400
-Date: Thu, 25 Oct 2012 14:03:25 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
-        =?UTF-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121025140325.49cd7c79@pyramind.ukuu.org.uk>
-In-Reply-To: <20121025051445.GA9860@thunk.org>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
-	<m2fw5mtffg.fsf_-_@firstfloor.org>
-	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
-	<5086F5A7.9090406@vlnb.net>
-	<20121025051445.GA9860@thunk.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Oct 2012 09:00:11 -0400
+Date: Thu, 25 Oct 2012 05:39:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] percpu-rw-semaphores: use light/heavy barriers
+Message-ID: <20121025123920.GB25613@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121023180558.GF2585@linux.vnet.ibm.com>
+ <20121023184123.GB24055@redhat.com>
+ <20121023202902.GJ2585@linux.vnet.ibm.com>
+ <20121023203254.GA3410@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210231730270.2689@file.rdu.redhat.com>
+ <20121024162304.GB2465@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210241616540.11796@file.rdu.redhat.com>
+ <20121024203636.GK2465@linux.vnet.ibm.com>
+ <Pine.LNX.4.64.1210241640310.18254@file.rdu.redhat.com>
+ <20121024235735.GL2465@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024235735.GL2465@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102512-7606-0000-0000-000004C9CD45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Hopefully, eventually the storage developers will realize the value
-> > behind ordered commands and learn corresponding SCSI facilities to
-> > deal with them.
+On Wed, Oct 24, 2012 at 04:57:35PM -0700, Paul E. McKenney wrote:
+> On Wed, Oct 24, 2012 at 04:44:14PM -0400, Mikulas Patocka wrote:
+> > 
+> > 
+> > On Wed, 24 Oct 2012, Paul E. McKenney wrote:
+> > 
+> > > On Wed, Oct 24, 2012 at 04:22:17PM -0400, Mikulas Patocka wrote:
+> > > > 
+> > > > 
+> > > > On Wed, 24 Oct 2012, Paul E. McKenney wrote:
+> > > > 
+> > > > > On Tue, Oct 23, 2012 at 05:39:43PM -0400, Mikulas Patocka wrote:
+> > > > > > 
+> > > > > > 
+> > > > > > On Tue, 23 Oct 2012, Paul E. McKenney wrote:
+> > > > > > 
+> > > > > > > On Tue, Oct 23, 2012 at 01:29:02PM -0700, Paul E. McKenney wrote:
+> > > > > > > > On Tue, Oct 23, 2012 at 08:41:23PM +0200, Oleg Nesterov wrote:
+> > > > > > > > > On 10/23, Paul E. McKenney wrote:
+> > > > > > > > > >
+> > > > > > > > > >  * Note that this guarantee implies a further memory-ordering guarantee.
+> > > > > > > > > >  * On systems with more than one CPU, when synchronize_sched() returns,
+> > > > > > > > > >  * each CPU is guaranteed to have executed a full memory barrier since
+> > > > > > > > > >  * the end of its last RCU read-side critical section
+> > > > > > > > >          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> > > > > > > > > 
+> > > > > > > > > Ah wait... I misread this comment.
+> > > > > > > > 
+> > > > > > > > And I miswrote it.  It should say "since the end of its last RCU-sched
+> > > > > > > > read-side critical section."  So, for example, RCU-sched need not force
+> > > > > > > > a CPU that is idle, offline, or (eventually) executing in user mode to
+> > > > > > > > execute a memory barrier.  Fixed this.
+> > > > > > 
+> > > > > > Or you can write "each CPU that is executing a kernel code is guaranteed 
+> > > > > > to have executed a full memory barrier".
+> > > > > 
+> > > > > Perhaps I could, but it isn't needed, nor is it particularly helpful.
+> > > > > Please see suggestions in preceding email.
+> > > > 
+> > > > It is helpful, because if you add this requirement (that already holds for 
+> > > > the current implementation), you can drop rcu_read_lock_sched() and 
+> > > > rcu_read_unlock_sched() from the following code that you submitted.
+> > > > 
+> > > > static inline void percpu_up_read(struct percpu_rw_semaphore *p)
+> > > > {
+> > > >         /*
+> > > >          * Decrement our count, but protected by RCU-sched so that
+> > > >          * the writer can force proper serialization.
+> > > >          */
+> > > >         rcu_read_lock_sched();
+> > > >         this_cpu_dec(*p->counters);
+> > > >         rcu_read_unlock_sched();
+> > > > }
+> > > > 
+> > > > > > The current implementation fulfills this requirement, you can just add it 
+> > > > > > to the specification so that whoever changes the implementation keeps it.
+> > > > > 
+> > > > > I will consider doing that if and when someone shows me a situation where
+> > > > > adding that requirement makes things simpler and/or faster.  From what I
+> > > > > can see, your example does not do so.
+> > > > > 
+> > > > > 							Thanx, Paul
+> > > > 
+> > > > If you do, the above code can be simplified to:
+> > > > {
+> > > > 	barrier();
+> > > > 	this_cpu_dec(*p->counters);
+> > > > }
+> > > 
+> > > The readers are lightweight enough that you are worried about the overhead
+> > > of rcu_read_lock_sched() and rcu_read_unlock_sched()?  Really???
+> > > 
+> > > 							Thanx, Paul
+> > 
+> > There was no lock in previous kernels, so we should make it as simple as 
+> > possible. Disabling and reenabling preemption is probably not a big deal, 
+> > but if don't have to do it, why do it?
 > 
-> Eventually, drive manufacturers will realize that trying to price
-> guage people who want advanced features such as TCQ, DIF/DIX, is the
-> best way to gaurantee that most people won't bother to purchase them,
-> and hence the features will remain largely unused....
+> Because I don't consider the barrier()-paired-with-synchronize_sched()
+> to be a simplification.
 
-I doubt they care. The profit on high end features from the people who
-really need them I would bet far exceeds any other benefit of giving it to
-others. Welcome to capitalism 8)
+In addition, please note that synchronize_srcu() used to guarantee a
+memory barrier on all online non-idle CPUs, but that it no longer does
+after Lai Jiangshan's recent rewrite.  Given this change, I would have
+to be quite foolish not to be very reluctant to make this guarantee for
+other flavors of RCU, unless there was an extremely good reason for it.
+Dropping a preempt_disable()/preempt_enable() pair doesn't even come
+close to being a good enough reason.
 
-Plus - spinning rust for those end users is on the way out, SATA to flash
-is a bit of hack and people are already putting a lot of focus onto
-things like NVM Express.
+> While we are discussing this, I have been assuming that readers must block
+> from time to time.  Is this the case?
 
-Alan
+And this really is a serious question.  If the answer is "no", that
+readers never block, a much simpler and faster approach is possible.
+
+							Thanx, Paul
+
