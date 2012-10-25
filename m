@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945977Ab2JYOdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:33:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41822 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759796Ab2JYOdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:33:05 -0400
-Message-ID: <50894D84.9030203@zytor.com>
-Date: Thu, 25 Oct 2012 07:32:36 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S933383Ab2JYOdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:33:36 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51013 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932450Ab2JYOde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:33:34 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Multiple patch authors
-References: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com> <20121025110353.GA2623@aftab.osrc.amd.com> <20121025115654.GA27611@gmail.com> <20121025135948.GA308@x1.osrc.amd.com>
-In-Reply-To: <20121025135948.GA308@x1.osrc.amd.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121025075508.GD3712@gmail.com>
+References: <20121024195311.GB11779@jshin-Toonie>
+	<tip-844ab6f993b1d32eb40512503d35ff6ad0c57030@git.kernel.org>
+	<CAE9FiQX0MvxAsZKFwH50joR5qz1oGhbXz+BD9W-QC_BrD9zKFQ@mail.gmail.com>
+	<20121025075508.GD3712@gmail.com>
+Date: Thu, 25 Oct 2012 07:33:32 -0700
+X-Google-Sender-Auth: VFahMsXX47m5FNpcdPGH0bN7eTE
+Message-ID: <CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, mm: Find_early_table_space based on ranges
+ that are actually being mapped
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, jacob.shin@amd.com,
+        tglx@linutronix.de, trini@ti.com, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Content-Type: multipart/mixed; boundary=000e0cd1d1246e24aa04cce316d6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 06:59 AM, Borislav Petkov wrote:
-> On Thu, Oct 25, 2012 at 01:56:54PM +0200, Ingo Molnar wrote:
->> No, SOBs are to document patch forwarding. Co-authorship can be
->> expressed a number of ways, such as:
+--000e0cd1d1246e24aa04cce316d6
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Thu, Oct 25, 2012 at 12:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>> > -               ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+>> > +                       /* The first 2/4M doesn't use large pages. */
+>> > +                       if (mr[i].start < PMD_SIZE)
+>> > +                               extra += range;
 >>
->> Based-on-patch-from: Borislav Petkov <bp@alien8.de>
+>> those three lines should be added back.
+
+missed "not" ...
+
 >>
->> and/or by adding you as a copyright holder to one of the files.
+>> it just get reverted in 7b16bbf9
 >
-> Ok, let's hold this down in writing for future reference and in case I
-> forget (which will happen, most probably :-)).
->
+> Could you please send a delta patch against tip:x86/urgent?
 
-I have also used:
+please check attached one.
 
-Originally-by:
+Thanks
 
-... for a patch originally written by one person but then extensively 
-reworked to the point of not really being the same work.
+Yinghai
 
-	-hpa
+--000e0cd1d1246e24aa04cce316d6
+Content-Type: application/octet-stream; name="remove_wrong_addback.patch"
+Content-Disposition: attachment; filename="remove_wrong_addback.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h8pz1w3t0
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+U3ViamVjdDogW1BBVENIXSB4ODYsIG1tOiBSZW1vdmUgd3JvbmcgYWRkIGJhY2sKCmNvbW1pdCA4
+NDRhYjZmOQogICAgeDg2LCBtbTogRmluZF9lYXJseV90YWJsZV9zcGFjZSBiYXNlZCBvbiByYW5n
+ZXMgdGhhdCBhcmUgYWN0dWFsbHkgYmVpbmcgbWFwcGVkCmFkZCBiYWNrIHNvbWUgbGluZXMgYmFj
+ayB3cm9uZ2x5IHRoYXQgaGFzIGJlZW4gcmV2ZXJ0ZWQgaW4gY29tbWl0IDdiMTZiYmY5NwogICAg
+UmV2ZXJ0ICJ4ODYvbW06IEZpeCB0aGUgc2l6ZSBjYWxjdWxhdGlvbiBvZiBtYXBwaW5nIHRhYmxl
+cyIKCnJlbW92ZSB0aGVtIGFnYWluLgoKU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hh
+aUBrZXJuZWwub3JnPgoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L21tL2luaXQuYyBiL2FyY2gveDg2
+L21tL2luaXQuYwppbmRleCBiYzI4N2Q2Li5kN2FlYTQxIDEwMDY0NAotLS0gYS9hcmNoL3g4Ni9t
+bS9pbml0LmMKKysrIGIvYXJjaC94ODYvbW0vaW5pdC5jCkBAIC02NSwxMCArNjUsNiBAQCBzdGF0
+aWMgdm9pZCBfX2luaXQgZmluZF9lYXJseV90YWJsZV9zcGFjZShzdHJ1Y3QgbWFwX3JhbmdlICpt
+ciwgaW50IG5yX3JhbmdlKQogI2lmZGVmIENPTkZJR19YODZfMzIKIAkJCWV4dHJhICs9IFBNRF9T
+SVpFOwogI2VuZGlmCi0JCQkvKiBUaGUgZmlyc3QgMi80TSBkb2Vzbid0IHVzZSBsYXJnZSBwYWdl
+cy4gKi8KLQkJCWlmIChtcltpXS5zdGFydCA8IFBNRF9TSVpFKQotCQkJCWV4dHJhICs9IHJhbmdl
+OwotCiAJCQlwdGVzICs9IChleHRyYSArIFBBR0VfU0laRSAtIDEpID4+IFBBR0VfU0hJRlQ7CiAJ
+CX0gZWxzZSB7CiAJCQlwdGVzICs9IChyYW5nZSArIFBBR0VfU0laRSAtIDEpID4+IFBBR0VfU0hJ
+RlQ7Cg==
+--000e0cd1d1246e24aa04cce316d6--
