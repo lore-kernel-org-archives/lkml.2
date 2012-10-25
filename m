@@ -1,144 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab2JYKuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:50:24 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:43676 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab2JYKuW (ORCPT
+	id S1758664Ab2JYK4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:56:25 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:51649 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756422Ab2JYK4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:50:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121022195250.GD8567@kroah.com>
-References: <1349871659-4511-1-git-send-email-yamanetoshi@gmail.com>
-	<20121022195250.GD8567@kroah.com>
-Date: Thu, 25 Oct 2012 19:50:21 +0900
-Message-ID: <CAOTypNQfB-n986-L2brkWZ=3Sp--1JsLMtTzTbcNv+P8Xf3CXg@mail.gmail.com>
-Subject: Re: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hdpi.c
-From: Toshiaki Yamane <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 06:56:23 -0400
+Message-ID: <1351162563.5303.3.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: [PATCH v3] x86: efi: Turn off efi_enabled after setup on mixed
+ fw/kernel
+From: Matt Fleming <matt@console-pimps.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, marko.kohtala@gmail.com,
+        Matthew Garrett <mjg@redhat.com>
+Date: Thu, 25 Oct 2012 11:56:03 +0100
+In-Reply-To: <1351098044-4586-1-git-send-email-olof@lixom.net>
+References: <1351059878-28795-1-git-send-email-olof@lixom.net>
+	 <1351098044-4586-1-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 4:52 AM, Greg Kroah-Hartman <greg@kroah.com> wrote:
-> On Wed, Oct 10, 2012 at 09:20:59PM +0900, YAMANE Toshiaki wrote:
->> fixed below checkpatch warning.
->> - WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
->>
->> and added pr_fmt.
->>
->> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
->> ---
->>  drivers/staging/comedi/drivers/gsc_hpdi.c |   31 +++++++++++++++--------------
->>  1 file changed, 16 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
->> index abff660..30a27fd 100644
->> --- a/drivers/staging/comedi/drivers/gsc_hpdi.c
->> +++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
->> @@ -45,6 +45,8 @@ support could be added to this driver.
->>
->>  */
->>
->> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> +
->>  #include <linux/interrupt.h>
->>  #include "../comedidev.h"
->>  #include <linux/delay.h>
->> @@ -107,8 +109,7 @@ enum hpdi_registers {
->>  int command_channel_valid(unsigned int channel)
->>  {
->>       if (channel == 0 || channel > 6) {
->> -             printk(KERN_WARNING
->> -                    "gsc_hpdi: bug! invalid cable command channel\n");
->> +             pr_warn("bug! invalid cable command channel\n");
->>               return 0;
->>       }
->>       return 1;
->> @@ -553,7 +554,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>       int i;
->>       int retval;
->>
->> -     printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
->> +     dev_warn(dev->class_dev, "gsc_hpdi\n");
->
-> What is this warning about?
->
->>
->>       if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
->>               return -ENOMEM;
->> @@ -582,17 +583,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>               } while (pcidev != NULL);
->>       }
->>       if (dev->board_ptr == NULL) {
->> -             printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
->> +             dev_warn(dev->class_dev, "no hpdi card found\n");
->>               return -EIO;
->>       }
->>
->> -     printk(KERN_WARNING
->> -            "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
->> -            pcidev->bus->number, PCI_SLOT(pcidev->devfn));
->> +     dev_warn(dev->class_dev,
->> +              "found %s on bus %i, slot %i\n", board(dev)->name,
->> +              pcidev->bus->number, PCI_SLOT(pcidev->devfn));
->>
->>       if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
->> -             printk(KERN_WARNING
->> -                    " failed enable PCI device and request regions\n");
->> +             dev_warn(dev->class_dev,
->> +                      " failed enable PCI device and request regions\n");
->>               return -EIO;
->>       }
->>       pci_set_master(pcidev);
->> @@ -613,7 +614,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>           ioremap(priv(dev)->hpdi_phys_iobase,
->>                   pci_resource_len(pcidev, HPDI_BADDRINDEX));
->>       if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
->> -             printk(KERN_WARNING " failed to remap io memory\n");
->> +             dev_warn(dev->class_dev, "failed to remap io memory\n");
->>               return -ENOMEM;
->>       }
->>
->> @@ -625,13 +626,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->>       /*  get irq */
->>       if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
->>                       dev->driver->driver_name, dev)) {
->> -             printk(KERN_WARNING
->> -                    " unable to allocate irq %u\n", pcidev->irq);
->> +             dev_warn(dev->class_dev,
->> +                      "unable to allocate irq %u\n", pcidev->irq);
->>               return -EINVAL;
->>       }
->>       dev->irq = pcidev->irq;
->>
->> -     printk(KERN_WARNING " irq %u\n", dev->irq);
->> +     dev_warn(dev->class_dev, "irq %u\n", dev->irq);
->
-> Again a warning?  Shouldn't most of these be debugging lines instead?
->
-> greg k-h
+On Wed, 2012-10-24 at 10:00 -0700, Olof Johansson wrote:
+> When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
+> efi_enabled once setup is done. Beyond setup, it is normally used to
+> determine if runtime services are available and we will have none.
+> 
+> This will resolve issues stemming from efivars modprobe panicking on a
+> 32/64-bit setup, as well as some reboot issues on similar setups.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45991
+> 
+> Reported-by: Marko Kohtala <marko.kohtala@gmail.com>
+> Reported-by: Maxim Kammerer <mk@dee.su>
+> Signed-off-by: Olof Johansson <olof@lixom.net>
+> Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> Cc: stable@kernel.org # 3.4 - 3.6
+> Cc: Matthew Garrett <mjg@redhat.com>
 
-Only two points above should be in debugging line?
-Should it modify dev_dbg on 589 also?
-
->> -     printk(KERN_WARNING
->> -            "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
->> -            pcidev->bus->number, PCI_SLOT(pcidev->devfn));
->> +     dev_warn(dev->class_dev,
->> +              "found %s on bus %i, slot %i\n", board(dev)->name,
->> +              pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-
-I am grad to tell me why.
-
-And I will resend the patch only two points are in debugging line.
+Applied, thanks!
 
 -- 
+Matt Fleming, Intel Open Source Technology Center
 
-Regards,
-
-YAMANE Toshiaki
