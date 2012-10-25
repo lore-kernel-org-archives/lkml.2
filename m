@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054Ab2JYPq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:46:58 -0400
-Received: from mail.southpole.se ([193.12.106.18]:51627 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759908Ab2JYPq4 (ORCPT
+	id S1759946Ab2JYPr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:47:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49200 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757329Ab2JYPry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:46:56 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: viro@zeniv.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH 2/2] openrisc: determine regs directly in copy_thread
-Date: Thu, 25 Oct 2012 17:46:39 +0200
-Message-Id: <1351179999-8376-3-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351179999-8376-1-git-send-email-jonas@southpole.se>
-References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
-X-Assp-Version: 2.2.1(12265) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
-X-Assp-ID: assp.southpole.se 80015-10638
+	Thu, 25 Oct 2012 11:47:54 -0400
+Date: Thu, 25 Oct 2012 17:47:45 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        yongjun_wei@trendmicro.com.cn, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM i.MX: fix error-valued pointer dereference in
+ clk_register_gate2()
+Message-ID: <20121025154745.GG27665@pengutronix.de>
+References: <CAPgLHd9Q3bZVth2NSxwH6kBpPsBmRGD+4pfZRpWL69KCw4HY4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd9Q3bZVth2NSxwH6kBpPsBmRGD+4pfZRpWL69KCw4HY4g@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:47:36 up 124 days,  6:59, 104 users,  load average: 3.28, 2.03,
+ 2.18
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_thread can use current_pt_regs() to get the pt_regs data that
-it needs so there's no need to pass this in as an argument.
+On Thu, Oct 25, 2012 at 11:02:18PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> The error-valued pointer clk is used for the arg of kfree, it should be
+> kfree(gate) if clk_register() return ERR_PTR().
+> 
+> dpatch engine is used to auto generate this patch.
+> (https://github.com/weiyj/dpatch)
+> 
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-As do_fork() doesn't use the regs argument for anything other than
-to pass it straight through to copy_thread, we just pass in a NULL
-argument in its place.  The plan seems to be to eventually drop the
-regs argument to do_fork altogether.
+Applied, thanks
 
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
----
- arch/openrisc/kernel/entry.S    |    6 ++----
- arch/openrisc/kernel/process.c  |    3 ++-
- arch/openrisc/kernel/sys_or32.c |    9 ++++-----
- 3 files changed, 8 insertions(+), 10 deletions(-)
+Sascha
 
-diff --git a/arch/openrisc/kernel/entry.S b/arch/openrisc/kernel/entry.S
-index cbd8f13..ea5439e 100644
---- a/arch/openrisc/kernel/entry.S
-+++ b/arch/openrisc/kernel/entry.S
-@@ -1073,15 +1073,13 @@ _fork_save_extra_regs_and_call:
- 
- ENTRY(sys_clone)
- 	l.movhi	r29,hi(_sys_clone)
--	l.ori	r29,r29,lo(_sys_clone)
- 	l.j	_fork_save_extra_regs_and_call
--	 l.addi	r7,r1,0
-+	 l.ori	r29,r29,lo(_sys_clone)
- 
- ENTRY(sys_fork)
- 	l.movhi	r29,hi(_sys_fork)
--	l.ori	r29,r29,lo(_sys_fork)
- 	l.j	_fork_save_extra_regs_and_call
--	 l.addi	r3,r1,0
-+	 l.ori	r29,r29,lo(_sys_fork)
- 
- ENTRY(sys_vfork)
- 	l.movhi	r29,hi(_sys_vfork)
-diff --git a/arch/openrisc/kernel/process.c b/arch/openrisc/kernel/process.c
-index efbe4f8..87ca585 100644
---- a/arch/openrisc/kernel/process.c
-+++ b/arch/openrisc/kernel/process.c
-@@ -142,8 +142,9 @@ extern asmlinkage void ret_from_fork(void);
- 
- int
- copy_thread(unsigned long clone_flags, unsigned long usp,
--	    unsigned long arg, struct task_struct *p, struct pt_regs *regs)
-+	    unsigned long arg, struct task_struct *p, struct pt_regs * unused)
- {
-+	struct pt_regs *regs = current_pt_regs();
- 	struct pt_regs *userregs;
- 	struct pt_regs *kregs;
- 	unsigned long sp = (unsigned long)task_stack_page(p) + THREAD_SIZE;
-diff --git a/arch/openrisc/kernel/sys_or32.c b/arch/openrisc/kernel/sys_or32.c
-index db46b82..a50826d 100644
---- a/arch/openrisc/kernel/sys_or32.c
-+++ b/arch/openrisc/kernel/sys_or32.c
-@@ -41,20 +41,19 @@ asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
-  */
- 
- asmlinkage long _sys_clone(unsigned long clone_flags, unsigned long newsp,
--			   int __user *parent_tid, int __user *child_tid,
--			   struct pt_regs *regs)
-+			   int __user *parent_tid, int __user *child_tid)
- {
- 	long ret;
- 
--	ret = do_fork(clone_flags, newsp, regs, 0, parent_tid, child_tid);
-+	ret = do_fork(clone_flags, newsp, 0, 0, parent_tid, child_tid);
- 
- 	return ret;
- }
- 
--asmlinkage int _sys_fork(struct pt_regs *regs)
-+asmlinkage int _sys_fork()
- {
- #ifdef CONFIG_MMU
--	return do_fork(SIGCHLD, 0, regs, 0, NULL, NULL);
-+	return do_fork(SIGCHLD, 0, 0, 0, NULL, NULL);
- #else
- 	return -EINVAL;
- #endif
+> ---
+>  arch/arm/mach-imx/clk-gate2.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/clk-gate2.c b/arch/arm/mach-imx/clk-gate2.c
+> index 3c1b8ff..cc49c7a 100644
+> --- a/arch/arm/mach-imx/clk-gate2.c
+> +++ b/arch/arm/mach-imx/clk-gate2.c
+> @@ -112,7 +112,7 @@ struct clk *clk_register_gate2(struct device *dev, const char *name,
+>  
+>  	clk = clk_register(dev, &gate->hw);
+>  	if (IS_ERR(clk))
+> -		kfree(clk);
+> +		kfree(gate);
+>  
+>  	return clk;
+>  }
+> 
+> 
+> 
+
 -- 
-1.7.9.5
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
