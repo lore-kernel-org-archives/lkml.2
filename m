@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936022Ab2JYT4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:56:25 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:36122 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935352Ab2JYT4X (ORCPT
+	id S2992604Ab2JYUEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:04:09 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:51749 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992551Ab2JYUEG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:56:23 -0400
-Message-ID: <1351194980.2432.88.camel@lorien2>
-Subject: dma_mapping_error() interfaces
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, akpm@linux-foundation.org,
-        Joerg Roedel <joerg.roedel@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Date: Thu, 25 Oct 2012 13:56:20 -0600
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Oct 2012 16:04:06 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from
+ a write callback to hold multiple logs
+Thread-Topic: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from
+ a write callback to hold multiple logs
+Thread-Index: Ac2yU45Umwbisi8ERWqdMazeX7tkNwAs24eAAAdb8lA=
+Date: Thu, 25 Oct 2012 20:03:49 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D413889851@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
+ <CAGTjWtDVZGq7VKou10xC-zJXGmane_kKjGo1xMjgPUkKAedFqQ@mail.gmail.com>
+In-Reply-To: <CAGTjWtDVZGq7VKou10xC-zJXGmane_kKjGo1xMjgPUkKAedFqQ@mail.gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-25_02:2012-10-25,2012-10-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210250253
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am working on changing dma_mapping_error() interfaces to add call to
-debug_dma_mapping_error() interface. I found several dma_mapping_error()
-defines in various arch specific dma-mapping.h files.
+> > -               list_del(&found->list);
+> > +       sprintf(name, "dump-type%u-%u-%lu", type, part,
+> > +               get_seconds());
+> 
+> Actually, nothing seems to be ensuring that the value used here ends up being the same as the ctime :\  Consider what happens if the
+> get_seconds() call here happens at second N, and the i_ctime is collected at time N+1. The object wouldn't be able to be deleted after
+> patch 4/5 is applied.  How can we better ensure that the i_ctime is the same value as serialized into the efi var name here?
 
-Majority of these arch specific defines look identical - simply
+ i_ctime of pstore file system is different from normal file systems.
+As I said in patch v1, i_ctime of pstore means the date that the record was "originally" stored.
+ 
+I_ctime is always set to N.
+Here is the scenario.
 
-static inline int dma_mapping_error(struct device *dev, dma_ addr_t
-dma_addr)
-{
-       struct dma_map_ops *dma_ops = get_dma_ops(dev);
+1.  writing time
+    - get_seconds() call here happens at second N
+    - "N" is stored to a variable name
 
-       if (dma_ops->mapping_error)
-                return dma_ops->mapping_error(dev, dma_addr);
-}
+2. System reboots...
+3. System boots up...
 
-Maybe a generic dma_mapping_error() could be added to augment the
-existing dma_map_page() and dma_map_single() generic interfaces in
-include/asm-generic/dma-mapping-common.h (Future work)
+4. reading time
+   - pstore calls a read callback, efi_pstore_read()
+   -  efi_pstore_read extracts ctime, "N", from the virable name
+   -  efi_pstore passes "N" to pstore file system
+    - pstore create a file, /dev/pstore/dmesg* and set "N" to i_ctime
 
-For the most part, architecture specific
-dma_map_page()/dma_map_single(), dma_unmap_page() interfaces are
-implemented as a pair, however arch/m68k/include/asm/dma-mapping.h is an
-exception. In this case generic dma_map_page()/dma_map_single() are
-used, and arch specific dma_unmap_page() is defined. Couple of issues,
-unmap routines do nothing. Maybe just fine for this architecture.
-However, when dma_debug is enabled, debug is lopsided and debug entries
-don't get releases.
+Pstore file system doesn't set i_ctime by itself but set ctime passed by platform drivers.
 
-For the present here is what I am planning to do:
-
-Change dma_mapping_error() defines to add debug_dma_mapping_error() on
-architectures that use the generic dma_map_page() and dma_map_single()
-interfaces from include/asm-generic/dma-mapping-common.h to debug
-inconsistency between invoking dma-debug at mapping time and missing
-debug at error check time. Inconsistency will result in false warnings.
-The following fall into this category.
-
-arch/alpha/include/asm/dma-mapping.h
-arch/arm/include/asm/dma-mapping.h
-arch/arm64/include/asm/dma-mapping.h
-arch/c6x/include/asm/dma-mapping.h
-arch/frv/include/asm/dma-mapping.h
-arch/hexagon/include/asm/dma-mapping.h
-arch/ia64/include/asm/dma-mapping.h
-arch/m68k/include/asm/dma-mapping.h
-arch/microblaze/include/asm/dma-mapping.h
-arch/mips/include/asm/dma-mapping.h
-arch/powerpc/include/asm/dma-mapping.h
-arch/sh/include/asm/dma-mapping.h
-arch/sparc/include/asm/dma-mapping.h
-
-Leave dma_mapping_error() defines as is in arch header files that also
-define dma_map_page() and dma_map_single() and not call
-debug_dma_map_page() interface. The following fall into this category.
-
-arch/avr32/include/asm/dma-mapping.h
-arch/blackfin/include/asm/dma-mapping.h
-arch/cris/include/asm/dma-mapping.h
-arch/mn10300/include/asm/dma-mapping.h
-arch/parisc/include/asm/dma-mapping.h
-arch/xtensa/include/asm/dma-mapping.h
-
-- There is this inconsistency now with the debug_dma_mapping_error()
-interface in linux-next. If this is unacceptable, I will send a patch
-that marks dma debug entries checked for mapping errors in the interim
-(an easy change to initialize the flag to have been checked) while I get
-the existing dma_mapping_error() interface patches done.
-
-Comments, concerns.
-
-Thanks,
--- Shuah
-
-
-
-- 
-
-
+Seiji
