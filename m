@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992608Ab2JYSsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:48:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37749 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992563Ab2JYSsh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:48:37 -0400
-Date: Thu, 25 Oct 2012 11:48:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] firmware: Add /proc/firmware_path entry to list
- the firmware paths
-Message-ID: <20121025184833.GA22114@kroah.com>
-References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
- <1350996776-17864-3-git-send-email-dp@opensource.wolfsonmicro.com>
+	id S2992623Ab2JYSs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:48:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58900 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S2992597Ab2JYSsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 14:48:41 -0400
+Date: Thu, 25 Oct 2012 20:48:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH 4/6] cgroups: forbid pre_destroy callback to fail
+Message-ID: <20121025184834.GB20618@dhcp22.suse.cz>
+References: <1350480648-10905-1-git-send-email-mhocko@suse.cz>
+ <1350480648-10905-5-git-send-email-mhocko@suse.cz>
+ <20121018224148.GR13370@google.com>
+ <20121019133244.GE799@dhcp22.suse.cz>
+ <20121019202405.GR13370@google.com>
+ <20121022103021.GA6367@dhcp22.suse.cz>
+ <20121024192535.GG12182@atj.dyndns.org>
+ <20121025143756.GI11105@dhcp22.suse.cz>
+ <20121025174220.GJ11442@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350996776-17864-3-git-send-email-dp@opensource.wolfsonmicro.com>
+In-Reply-To: <20121025174220.GJ11442@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 01:52:55PM +0100, Dimitris Papastamos wrote:
-> This patch provides the aforementioned procfs file that lists
-> the default firmware paths that are used during firmware lookup.
+On Thu 25-10-12 10:42:20, Tejun Heo wrote:
+> Hey, Michal.
 > 
-> The file contains a white space separated list of paths.
+> On Thu, Oct 25, 2012 at 04:37:56PM +0200, Michal Hocko wrote:
+> > I am not sure I understand you here. So are you suggesting
+> > s/BUG_ON/WARN_ON_ONCE/ in this patch?
+> 
+> Oh, no, I meant that we can do upto patch 3 of this series and then
+> follow up with proper cgroup core update and then stack further
+> memcg cleanups on top.
 
-Paths can have whitespaces :(
+I thought the later cleanups would be on top of the series.
 
-How about using the "universal" path seperator of ':' that shells are
-used to using?  Yeah, it gets messy if you have a ':' in a path, but
-from what I can tell, only the openSUSE build system does looney things
-like that.
+> > > Let's create a cgroup branch and build things there.  I don't think
+> > > cgroup changes are gonna be a single patch and expect to see at least
+> > > some bug fixes afterwards and don't wanna keep them floating separate
+> > > from other cgroup changes.  
+> > 
+> > > mm being based on top of -next, that should work, right?
+> > 
+> > Well, a tree based on -next is, ehm, impractical. I can create a bug on
+> > top of my -mm git branch (where I merge your cgroup common changes) for
+> > development and then when we are ready we can send it as a series and
+> > push it via Andrew. Would that work for you?
+> > Or we can push the core part via Andrew, wait for the merge and work on
+> > the follow up cleanups later?
+> > It is not like the follow up part is really urgent, isn't it? I would
+> > just like the memcg part settled first because this can potentially
+> > conflict with other memcg work.
+> 
+> Argh... can we pretty *please* just do a plain git branch?  I don't
+> care where it is but I want to be able to pull it into cgroup core and
 
-> There will be another patch on top of this that adds the functionality
-> to modify the paths at runtime.
+Hohumm, I have tried to apply the series on top of Linus' 3.6 and there
+were no conflicts so I can create a branch which you can pull into your
+cgroup branch (which I can then merge into -mm git tree).
+This would however mean that those patches wouldn't fly through Andrew's
+tree. Is this really what we want and what does it give to us?
 
-Did I miss that patch somewhere?
+> yes I do wanna make this happen in this devel cycle.  We've been
+> sitting on it far too long waiting for memcg.
 
-thanks,
-
-greg k-h
+I can surely imagine that (for the memcg part) but it needs throughout
+review.
+-- 
+Michal Hocko
+SUSE Labs
