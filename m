@@ -1,81 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935638Ab2JYNQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:16:38 -0400
-Received: from forward5.mail.yandex.net ([77.88.46.21]:33353 "EHLO
-	forward5.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759520Ab2JYNQf (ORCPT
+	id S1759576Ab2JYNQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:16:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51614 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759520Ab2JYNKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:16:35 -0400
-X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Oct 2012 09:16:35 EDT
-From: Igor Murzov <e-mail@date.by>
-To: Alex Deucher <alexander.deucher@amd.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Igor Murzov <e-mail@date.by>
-Subject: [PATCH 2/2] vga_switcheroo: Drop unused include and unused variables.
-Date: Thu, 25 Oct 2012 17:09:01 +0400
-Message-Id: <1351170541-22570-2-git-send-email-e-mail@date.by>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1351170541-22570-1-git-send-email-e-mail@date.by>
-References: <1351170541-22570-1-git-send-email-e-mail@date.by>
+	Thu, 25 Oct 2012 09:10:04 -0400
+Message-Id: <20121025124834.312153519@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 25 Oct 2012 14:16:41 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 24/31] sched, numa, mm: Introduce last_nid in the pageframe
+References: <20121025121617.617683848@chello.nl>
+Content-Disposition: inline; filename=0024-sched-numa-mm-Fold-page-nid_last-into-page-flags-whe.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Igor Murzov <e-mail@date.by>
----
- drivers/gpu/vga/vga_switcheroo.c | 6 ------
- 1 file changed, 6 deletions(-)
+Introduce a per-page last_nid field, fold this into the struct
+page::flags field whenever possible.
 
-diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
-index e25cf31..fa60add 100644
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -18,7 +18,6 @@
+The unlikely/rare 32bit NUMA configs will likely grow the page-frame.
+
+Completely dropping 32bit support for CONFIG_SCHED_NUMA would simplify
+things, but it would also remove the warning if we grow enough 64bit
+only page-flags to push the last-nid out.
+
+Suggested-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/mm.h                |   90 ++++++++++++++++++++------------------
+ include/linux/mm_types.h          |    5 ++
+ include/linux/mmzone.h            |   14 -----
+ include/linux/page-flags-layout.h |   83 +++++++++++++++++++++++++++++++++++
+ mm/huge_memory.c                  |    1 
+ mm/memory.c                       |    4 +
+ 6 files changed, 143 insertions(+), 54 deletions(-)
+ create mode 100644 include/linux/page-flags-layout.h
+
+Index: tip/include/linux/mm.h
+===================================================================
+--- tip.orig/include/linux/mm.h
++++ tip/include/linux/mm.h
+@@ -594,50 +594,11 @@ static inline pte_t maybe_mkwrite(pte_t
+  * sets it, so none of the operations on it need to be atomic.
   */
  
- #include <linux/module.h>
--#include <linux/dmi.h>
- #include <linux/seq_file.h>
- #include <linux/uaccess.h>
- #include <linux/fs.h>
-@@ -376,7 +375,6 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos)
- {
- 	char usercmd[64];
--	const char *pdev_name;
- 	int ret;
- 	bool delay = false, can_switch;
- 	bool just_mux = false;
-@@ -468,7 +466,6 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
- 		goto out;
- 
- 	if (can_switch) {
--		pdev_name = pci_name(client->pdev);
- 		ret = vga_switchto_stage1(client);
- 		if (ret)
- 			printk(KERN_ERR "vga_switcheroo: switching failed stage 1 %d\n", ret);
-@@ -540,7 +537,6 @@ fail:
- int vga_switcheroo_process_delayed_switch(void)
- {
- 	struct vga_switcheroo_client *client;
--	const char *pdev_name;
- 	int ret;
- 	int err = -EINVAL;
- 
-@@ -555,7 +551,6 @@ int vga_switcheroo_process_delayed_switch(void)
- 	if (!client || !check_can_switch())
- 		goto err;
- 
--	pdev_name = pci_name(client->pdev);
- 	ret = vga_switchto_stage2(client);
- 	if (ret)
- 		printk(KERN_ERR "vga_switcheroo: delayed switching failed stage 2 %d\n", ret);
-@@ -567,4 +562,3 @@ err:
- 	return err;
- }
- EXPORT_SYMBOL(vga_switcheroo_process_delayed_switch);
 -
--- 
-1.7.12.1
+-/*
+- * page->flags layout:
+- *
+- * There are three possibilities for how page->flags get
+- * laid out.  The first is for the normal case, without
+- * sparsemem.  The second is for sparsemem when there is
+- * plenty of space for node and section.  The last is when
+- * we have run out of space and have to fall back to an
+- * alternate (slower) way of determining the node.
+- *
+- * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
+- * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
+- * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
+- */
+-#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
+-#define SECTIONS_WIDTH		SECTIONS_SHIFT
+-#else
+-#define SECTIONS_WIDTH		0
+-#endif
+-
+-#define ZONES_WIDTH		ZONES_SHIFT
+-
+-#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
+-#define NODES_WIDTH		NODES_SHIFT
+-#else
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-#error "Vmemmap: No space for nodes field in page flags"
+-#endif
+-#define NODES_WIDTH		0
+-#endif
+-
+-/* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
++/* Page flags: | [SECTION] | [NODE] | ZONE | [LAST_NID] | ... | FLAGS | */
+ #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
+ #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
+ #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
+-
+-/*
+- * We are going to use the flags for the page to node mapping if its in
+- * there.  This includes the case where there is no node, so it is implicit.
+- */
+-#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
+-#define NODE_NOT_IN_PAGE_FLAGS
+-#endif
++#define LAST_NID_PGOFF		(ZONES_PGOFF - LAST_NID_WIDTH)
+ 
+ /*
+  * Define the bit shifts to access each section.  For non-existent
+@@ -647,6 +608,7 @@ static inline pte_t maybe_mkwrite(pte_t
+ #define SECTIONS_PGSHIFT	(SECTIONS_PGOFF * (SECTIONS_WIDTH != 0))
+ #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
+ #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
++#define LAST_NID_PGSHIFT	(LAST_NID_PGOFF * (LAST_NID_WIDTH != 0))
+ 
+ /* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
+ #ifdef NODE_NOT_IN_PAGE_FLAGS
+@@ -668,6 +630,7 @@ static inline pte_t maybe_mkwrite(pte_t
+ #define ZONES_MASK		((1UL << ZONES_WIDTH) - 1)
+ #define NODES_MASK		((1UL << NODES_WIDTH) - 1)
+ #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
++#define LAST_NID_MASK		((1UL << LAST_NID_WIDTH) - 1)
+ #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
+ 
+ static inline enum zone_type page_zonenum(const struct page *page)
+@@ -706,6 +669,51 @@ static inline int page_to_nid(const stru
+ }
+ #endif
+ 
++#ifdef CONFIG_SCHED_NUMA
++#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return xchg(&page->_last_nid, nid);
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page->_last_nid;
++}
++#else
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	unsigned long old_flags, flags;
++	int last_nid;
++
++	do {
++		old_flags = flags = page->flags;
++		last_nid = (flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
++
++		flags &= ~(LAST_NID_MASK << LAST_NID_PGSHIFT);
++		flags |= (nid & LAST_NID_MASK) << LAST_NID_PGSHIFT;
++	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
++
++	return last_nid;
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return (page->flags >> LAST_NID_PGSHIFT) & LAST_NID_MASK;
++}
++#endif /* LAST_NID_NOT_IN_PAGE_FLAGS */
++#else /* CONFIG_SCHED_NUMA */
++static inline int page_xchg_last_nid(struct page *page, int nid)
++{
++	return page_to_nid(page);
++}
++
++static inline int page_last_nid(struct page *page)
++{
++	return page_to_nid(page);
++}
++#endif /* CONFIG_SCHED_NUMA */
++
+ static inline struct zone *page_zone(const struct page *page)
+ {
+ 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+Index: tip/include/linux/mm_types.h
+===================================================================
+--- tip.orig/include/linux/mm_types.h
++++ tip/include/linux/mm_types.h
+@@ -12,6 +12,7 @@
+ #include <linux/cpumask.h>
+ #include <linux/page-debug-flags.h>
+ #include <linux/uprobes.h>
++#include <linux/page-flags-layout.h>
+ #include <asm/page.h>
+ #include <asm/mmu.h>
+ 
+@@ -175,6 +176,10 @@ struct page {
+ 	 */
+ 	void *shadow;
+ #endif
++
++#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
++	int _last_nid;
++#endif
+ }
+ /*
+  * The struct page can be forced to be double word aligned so that atomic ops
+Index: tip/include/linux/mmzone.h
+===================================================================
+--- tip.orig/include/linux/mmzone.h
++++ tip/include/linux/mmzone.h
+@@ -15,7 +15,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/nodemask.h>
+ #include <linux/pageblock-flags.h>
+-#include <generated/bounds.h>
++#include <linux/page-flags-layout.h>
+ #include <linux/atomic.h>
+ #include <asm/page.h>
+ 
+@@ -317,16 +317,6 @@ enum zone_type {
+  * match the requested limits. See gfp_zone() in include/linux/gfp.h
+  */
+ 
+-#if MAX_NR_ZONES < 2
+-#define ZONES_SHIFT 0
+-#elif MAX_NR_ZONES <= 2
+-#define ZONES_SHIFT 1
+-#elif MAX_NR_ZONES <= 4
+-#define ZONES_SHIFT 2
+-#else
+-#error ZONES_SHIFT -- too many zones configured adjust calculation
+-#endif
+-
+ struct zone {
+ 	/* Fields commonly accessed by the page allocator */
+ 
+@@ -1029,8 +1019,6 @@ static inline unsigned long early_pfn_to
+  * PA_SECTION_SHIFT		physical address to/from section number
+  * PFN_SECTION_SHIFT		pfn to/from section number
+  */
+-#define SECTIONS_SHIFT		(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
+-
+ #define PA_SECTION_SHIFT	(SECTION_SIZE_BITS)
+ #define PFN_SECTION_SHIFT	(SECTION_SIZE_BITS - PAGE_SHIFT)
+ 
+Index: tip/include/linux/page-flags-layout.h
+===================================================================
+--- /dev/null
++++ tip/include/linux/page-flags-layout.h
+@@ -0,0 +1,83 @@
++#ifndef _LINUX_PAGE_FLAGS_LAYOUT
++#define _LINUX_PAGE_FLAGS_LAYOUT
++
++#include <linux/numa.h>
++#include <generated/bounds.h>
++
++#if MAX_NR_ZONES < 2
++#define ZONES_SHIFT 0
++#elif MAX_NR_ZONES <= 2
++#define ZONES_SHIFT 1
++#elif MAX_NR_ZONES <= 4
++#define ZONES_SHIFT 2
++#else
++#error ZONES_SHIFT -- too many zones configured adjust calculation
++#endif
++
++#ifdef CONFIG_SPARSEMEM
++#include <asm/sparsemem.h>
++
++/* 
++ * SECTION_SHIFT    		#bits space required to store a section #
++ */
++#define SECTIONS_SHIFT         (MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
++#endif
++
++/*
++ * page->flags layout:
++ *
++ * There are five possibilities for how page->flags get laid out.  The first
++ * (and second) is for the normal case, without sparsemem. The third is for
++ * sparsemem when there is plenty of space for node and section. The last is
++ * when we have run out of space and have to fall back to an alternate (slower)
++ * way of determining the node.
++ *
++ * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE |            ... | FLAGS |
++ *     "      plus space for last_nid:|       NODE     | ZONE | LAST_NID | ... | FLAGS |
++ * classic sparse with space for node:| SECTION | NODE | ZONE |            ... | FLAGS |
++ *     "      plus space for last_nid:| SECTION | NODE | ZONE | LAST_NID | ... | FLAGS |
++ * classic sparse no space for node:  | SECTION |     ZONE    |            ... | FLAGS |
++ */
++#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
++
++#define SECTIONS_WIDTH		SECTIONS_SHIFT
++#else
++#define SECTIONS_WIDTH		0
++#endif
++
++#define ZONES_WIDTH		ZONES_SHIFT
++
++#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
++#define NODES_WIDTH		NODES_SHIFT
++#else
++#ifdef CONFIG_SPARSEMEM_VMEMMAP
++#error "Vmemmap: No space for nodes field in page flags"
++#endif
++#define NODES_WIDTH		0
++#endif
++
++#ifdef CONFIG_SCHED_NUMA
++#define LAST_NID_SHIFT	NODES_SHIFT
++#else
++#define LAST_NID_SHIFT	0
++#endif
++
++#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT+LAST_NID_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
++#define LAST_NID_WIDTH	LAST_NID_SHIFT
++#else
++#define LAST_NID_WIDTH	0
++#endif
++
++/*
++ * We are going to use the flags for the page to node mapping if its in
++ * there.  This includes the case where there is no node, so it is implicit.
++ */
++#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
++#define NODE_NOT_IN_PAGE_FLAGS
++#endif
++
++#if defined(CONFIG_SCHED_NUMA) && LAST_NID_WIDTH == 0
++#define LAST_NID_NOT_IN_PAGE_FLAGS
++#endif
++
++#endif /* _LINUX_PAGE_FLAGS_LAYOUT */
+Index: tip/mm/huge_memory.c
+===================================================================
+--- tip.orig/mm/huge_memory.c
++++ tip/mm/huge_memory.c
+@@ -1440,6 +1440,7 @@ static void __split_huge_page_refcount(s
+ 		page_tail->mapping = page->mapping;
+ 
+ 		page_tail->index = page->index + i;
++		page_xchg_last_nid(page, page_last_nid(page_tail));
+ 
+ 		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
+Index: tip/mm/memory.c
+===================================================================
+--- tip.orig/mm/memory.c
++++ tip/mm/memory.c
+@@ -68,6 +68,10 @@
+ 
+ #include "internal.h"
+ 
++#ifdef LAST_NID_NOT_IN_PAGE_FLAGS
++#warning Unfortunate NUMA config, growing page-frame for last_nid.
++#endif
++
+ #ifndef CONFIG_NEED_MULTIPLE_NODES
+ /* use the per-pgdat data instead for discontigmem - mbligh */
+ unsigned long max_mapnr;
+
 
