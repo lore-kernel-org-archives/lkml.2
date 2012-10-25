@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab2JYIPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 04:15:30 -0400
-Received: from nm27-vm4.bullet.mail.sg3.yahoo.com ([106.10.151.131]:48246 "EHLO
-	nm27-vm4.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759230Ab2JYIPZ (ORCPT
+	id S1759275Ab2JYIQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 04:16:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42369 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759230Ab2JYIQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 04:15:25 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Oct 2012 04:15:25 EDT
-X-Yahoo-Newman-Id: 476826.33827.bm@smtp115.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 33qep1YVM1kO.QYl9zaM6mjg9bRgjxWZLGNJ1meiY9xfpiT
- fRgO5Kk4x1mSMVtLuiJRJf7byJzPFUaoel4v37cooa2Z7YwSrwiNPJKDyc.p
- Sq6PsUYSTd3aHHdMUPp3IwJCQ37OfZrckmbj5jrsjwIl4DQZInv1y86c46_5
- EgxJE7N_xN0et4HESZ69wLl_yPqK42Mp5RyBYeNtQ_bdqjJcPLrE930QZ4cn
- hEMC1uhhw48xNNjmLNv_.KSVeX5SP179VqKFX.OdIB6ySi55CIjeUrgBwZG3
- sXNEMIzZ0B7jr9IzIDX1Zyao_B0IEtwCne.L0eU4Cx6PY.zuziHbbY9tB0tA
- pXyhQQ9PGdaYobPBdikzK0hHSeuRhrYQTuqvnKVZmZJIU755a0qsj1pbqELs
- WoqPADg0CuX97Bp8VsCOEO2XfR3A9VjlE5i7kl.NYxdfb0W3ClEjB10bfVtq
- FujumLxh33a.rV2t5CF4rYDMGjK34okYImtXENs9iT0w5Ah6GjkSoWBx9
-X-Yahoo-SMTP: w3FpnIaswBDFGPbZe8KaKV8u7W0-
-Message-ID: <5088AE0E.918B8354@smtp.mail.yahoo.com>
-Date: Thu, 25 Oct 2012 03:12:23 -0500
-From: "shazehm@yahoo.com" <shazehm@yahoo.com>
-Subject: Green coffee bean study results: they lost 17lbs in 22 weeks
-To: chrizanne1997@yahoo.com
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Opera/6.05 (Windows 2000; U) [ja]
+	Thu, 25 Oct 2012 04:16:09 -0400
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <5088CC9B.6010009@gmail.com>
+References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com>
+	<5088CC9B.6010009@gmail.com>
+Date: Thu, 25 Oct 2012 10:16:08 +0200
+X-Google-Sender-Auth: A9vt6mNUeO1daf4AJhQginpsMvQ
+Message-ID: <CAKMK7uFMaf=ohEKyWKNsd-mSQkW__0BUww_iYLNFo347mEYAMg@mail.gmail.com>
+Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Want to lose weight? http://bitly.com/XjueMX
+On Thu, Oct 25, 2012 at 7:22 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+>
+> here is a link to the file..: intel_error_decode
+> http://www.filefactory.com/file/22bypyjhs4mx
 
+I haven't figured out how to access this thing. Can you please file a
+bug report on bugs.freedesktop.org and attach it there?
 
-
-
-
-
-
-
-
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
