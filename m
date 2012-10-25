@@ -1,149 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759065Ab2JYBqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:46:13 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:33008 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab2JYBqL (ORCPT
+	id S1759092Ab2JYBrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:47:45 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:7207 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759008Ab2JYBro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:46:11 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
-References: <20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
-	<20121025011056.GC4559@thunk.org>
-Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
-Date: Thu, 25 Oct 2012 02:45:57 +0100
-In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
-	"Wed, 24 Oct 2012 21:10:56 -0400")
-Message-ID: <87y5iv5noq.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Wed, 24 Oct 2012 21:47:44 -0400
+Message-ID: <50889A14.9030607@huawei.com>
+Date: Thu, 25 Oct 2012 09:47:00 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Toshi Kani <toshi.kani@hp.com>, <yinghai@kernel.org>,
+        <bhelgaas@google.com>, <lenb@kernel.org>, <izumi.taku@jp.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <mihailm@parallels.com>,
+        <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container
+ hot-remove.
+References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>  <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com> <5088967E.3060204@cn.fujitsu.com>
+In-Reply-To: <5088967E.3060204@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 Oct 2012, Theodore Ts'o stated:
-
-> On Thu, Oct 25, 2012 at 12:27:02AM +0100, Nix wrote:
+On 2012-10-25 9:31, Tang Chen wrote:
+> Hi Toshi,
+> 
+> On 10/25/2012 01:14 AM, Toshi Kani wrote:
+>> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
+>>> +static int container_device_remove(struct acpi_device *device)
+>>> +{
+>>> +    int ret;
+>>> +    struct acpi_eject_event *ej_event;
+>>> +
+>>> +    /* stop container device at first */
+>>> +    ret = acpi_bus_trim(device, 0);
 >>
->>  - /sbin/reboot -f of running system
->>    -> Journal replay, no problems other than the expected free block
->>       count problems. This is not such a severe problem after all!
->> 
->>  - Normal shutdown, but a 60 second pause after lazy umount, more than
->>    long enough for all umounts to proceed to termination
->>    -> no corruption, but curiously /home experienced a journal replay
->>       before being fscked, even though a cat of /proc/mounts after
->>       umounting revealed that the only mounted filesystem was /,
->>       read-only, so /home should have been clean
->
-> Question: how are you doing the journal replay?  Is it happening as
-> part of running e2fsck, or are you mounting the file system and
-> letting kernel do the journal replay?
+>> Hi Tang,
+>>
+>> Why do you need to call acpi_bus_trim(device,0) to stop the container
+>> device first?
+> 
+> This issue was introduced by Lu Yinghai, I think he could give a better
+> answer than me. :)
+> Please refer to the following url:
+> 
+> http://www.spinics.net/lists/linux-pci/msg17667.html
+> 
+> However, this is not applied into the pci tree yet.
+We have worked out a patch set to clean up the logic for PCI/ACPI binding
+relationship. It updates PCI/ACPI binding relationship by registering bus
+notification onto pci_bus_type instead of hooking into the ACPI/glue.c.
 
-This most recent instance was e2fsck. Normally, it's mount. Both
-seem able to yield the same corruption.
+To accommodate that patch set, the ACPI device destroy process has been
+split into two steps:
+1) acpi_bus_trim(device,0) to unbind ACPI drivers
+2) acpi_bus_trim(device,1) to destroy ACPI devices
 
-> Also, can you reproduce the problem with the nobarrier and
-> journal_async_commit options *removed*?  Yes, I know you have battery
-> backup, but it would be interesting to see if the problem shows up in
-> the default configuration with none of the more specialist options.
-> (So it would probably be good to test with journal_checksum removed as
-> well.)
+> 
+>>
+>>> +    printk(KERN_WARNING "acpi_bus_trim stop return %x\n", ret);
+>>
+>> Do you need this message in the normal case?  If so, I'd suggest to use
+>> pr_debug().
+>>
+>>> +    if (ret)
+>>> +        return ret;
+>>> +
+>>> +    /* event originated from ACPI eject notification */
+>>> +    device->flags.eject_pending = 1;
+>>
+>> You do not need to set the eject_pending flag when the handler calls
+>> acpi_bus_hot_remove_device().  It was set before because the handler did
+>> not initiate the hot-remove operation.
+> 
+> I just set it to keep the logic the same as before.
+> And thanks for telling me this. :)
+> 
+>>
+> ...
+>>> +        printk(KERN_WARNING "Container driver received %s event\n",
+>>> +            "ACPI_NOTIFY_EJECT_REQUEST");
+>>
+>> Same as other comment.  Suggest to use pr_debug().
+> 
+> OK. :)
+> 
+>>
+>>> +
+>>> +        if (!present || ACPI_FAILURE(status) || !device)
+>>> +            break;
+>>> +
+>>> +        result = container_device_remove(device);
+>>> +        if (result) {
+>>> +            printk(KERN_WARNING "Failed to remove container\n");
+>>
+>> Please use pr_warn().
+>>
+>> Thanks,
+>> -Toshi
+>>
+>>> +            break;
+>>>           }
+>>> -        break;
+>>> +
+>>> +        return;
+>>>
+>>>       default:
+>>>           /* non-hotplug event; possibly handled by other handler */
+>>
+>>
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
+> .
+> 
 
-I'll try that, hopefully tomorrow sometime. It's 2:30am now and probably
-time to sleep.
 
->> Unfortunately, the massive corruption in the last testcase was seen in
->> 3.6.1 as well as 3.6.3: it appears that the only effect that superblock
->> change had in 3.6.3 was to make this problem easier to hit, and that the
->> bug itself was introduced probably somewhere between 3.5 and 3.6 (though
->> I only rebooted 3.5.x twice, and it's rare enough before 3.6.[23], at
->> ~1/20 boots, that it may have been present for longer and I never
->> noticed).
->
-> Hmm.... ok.  Can you tell whether or not the 2nd patch I posted on
-> this thread made any difference to how frequently it happened?  The
-
-Well, I had a couple of reboots without corruption with that patch
-applied, and /home was only ever corrupted with it not applied -- but
-that could perfectly well be chance, since I only had two or three
-instances of /home corruption so far, thank goodness.
-
-> When you say it's rare before 3.6.[23], how rare is it?  How reliably
-> can you trigger it under 3.6.1?  One in 3?  One in 5?  One in 20?
-
-I've rebooted out of 3.6.1 about fifteen times so far. I've seen once
-instance of corruption. I've never seen it before 3.6, but I only
-rebooted 3.5.x or 3.4.x once or twice in total, so that too could be
-chance.
-
-> As far as bisecting, one experiment that I'd really appreciate your
-> doing is to check and see whether you can reproduce the problem using
-> the 3.4 kernel, and if you can, to see if it reproduces under the 3.3
-> kernel.
-
-Will try. It might be the weekend before I can find the time though :(
-
-> The reason why I ask this is there were not any major changes between
-> 3.5 and 3.6, or between 3.4 and 3.5.  There *were* however, some
-> fairly major changes made by Jan Kara that were introduced between 3.3
-> and 3.4.  Among other things, this is where we started using FUA
-> (Force Unit Attention) writes to update the journal superblock instead
-> of just using REQ_FLUSH.  This is in fact the most likely place where
-> we might have introduced the regression, since it wouldn't surprise me
-> if Jan didn't test the case of using nobarrier with a storage array
-> with battery backup (I certainly didn't, since I don't have easy
-> access to such fancy toys :-).
-
-Hm. At boot, I see this for both volumes on the Areca controller:
-
-[    0.855376] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[    0.855465] sd 0:0:0:1: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-
-So it looks to me like FUA changes themselves could have little effect.
-
-(btw, the controller cost only about £150... if it was particularly
-fancy I certainly couldn't have afforded it.)
-
->> It also appears impossible for me to reliably shut my system down,
->> though a 60s timeout after lazy umount and before reboot is likely to
->> work in all but the most pathological of cases (where a downed NFS
->> server comes up at just the wrong instant): it is clear that the
->> previous 5s timeout eventually became insufficient simply because of the
->> amount of time it can take to do a umount on today's larger filesystems.
->
-> Something that you might want to consider trying is after you kill all
-> of the processes, remount all of the local disk file systems
-> read-only, then kick off the unmount of the NFS file systems (just to
-> be nice to the NFS servers, so they are notified of the unmount), and
-
-Actually I umount NFS first of all, because if I kill the processes
-first, this causes trouble with the NFS unmounts, particularly if I'm
-doing self-mounting (which I do sometimes, though not at the moment).
-
-I will certainly try a readonly remount instead.
-
-> force a flush on an unmount or remount r/o, regardless of whether
-> nobarrier is specified, just to make sure everything is written out
-> before the poweroff, battery backup or no.)
-
-I'm rather surprised that doesn't happen anyway. I always thought it
-did.
-
--- 
-NULL && (void)
