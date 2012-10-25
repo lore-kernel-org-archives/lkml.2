@@ -1,130 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab2JYBrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:47:45 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:7207 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759008Ab2JYBro (ORCPT
+	id S1759089Ab2JYBtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:49:00 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61084 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab2JYBs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:47:44 -0400
-Message-ID: <50889A14.9030607@huawei.com>
-Date: Thu, 25 Oct 2012 09:47:00 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 24 Oct 2012 21:48:58 -0400
+Message-ID: <50889A7E.8010104@gmail.com>
+Date: Thu, 25 Oct 2012 09:48:46 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Toshi Kani <toshi.kani@hp.com>, <yinghai@kernel.org>,
-        <bhelgaas@google.com>, <lenb@kernel.org>, <izumi.taku@jp.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <mihailm@parallels.com>,
-        <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container
- hot-remove.
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>  <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com> <5088967E.3060204@cn.fujitsu.com>
-In-Reply-To: <5088967E.3060204@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+To: YingHang Zhu <casualfisher@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+CC: Dave Chinner <david@fromorbit.com>, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com> <20121023224706.GR4291@dastard> <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com> <20121024201921.GX4291@dastard> <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
+In-Reply-To: <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-25 9:31, Tang Chen wrote:
-> Hi Toshi,
-> 
-> On 10/25/2012 01:14 AM, Toshi Kani wrote:
->> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
->>> +static int container_device_remove(struct acpi_device *device)
->>> +{
->>> +    int ret;
->>> +    struct acpi_eject_event *ej_event;
->>> +
->>> +    /* stop container device at first */
->>> +    ret = acpi_bus_trim(device, 0);
->>
->> Hi Tang,
->>
->> Why do you need to call acpi_bus_trim(device,0) to stop the container
->> device first?
-> 
-> This issue was introduced by Lu Yinghai, I think he could give a better
-> answer than me. :)
-> Please refer to the following url:
-> 
-> http://www.spinics.net/lists/linux-pci/msg17667.html
-> 
-> However, this is not applied into the pci tree yet.
-We have worked out a patch set to clean up the logic for PCI/ACPI binding
-relationship. It updates PCI/ACPI binding relationship by registering bus
-notification onto pci_bus_type instead of hooking into the ACPI/glue.c.
+On 10/25/2012 08:17 AM, YingHang Zhu wrote:
+> On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
+>>> Hi Dave,
+>>> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
+>>>> On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
+>>>>> Hi,
+>>>>>    Recently we ran into the bug that an opened file's ra_pages does not
+>>>>> synchronize with it's backing device's when the latter is changed
+>>>>> with blockdev --setra, the application needs to reopen the file
+>>>>> to know the change,
+>>>> or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
+>>>> window to the (new) bdi default.
+>>>>
+>>>>> which is inappropriate under our circumstances.
+>>>> Which are? We don't know your circumstances, so you need to tell us
+>>>> why you need this and why existing methods of handling such changes
+>>>> are insufficient...
+>>>>
+>>>> Optimal readahead windows tend to be a physical property of the
+>>>> storage and that does not tend to change dynamically. Hence block
+>>>> device readahead should only need to be set up once, and generally
+>>>> that can be done before the filesystem is mounted and files are
+>>>> opened (e.g. via udev rules). Hence you need to explain why you need
+>>>> to change the default block device readahead on the fly, and why
+>>>> fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
+>>>> windows to the new defaults.
+>>> Our system is a fuse-based file system, fuse creates a
+>>> pseudo backing device for the user space file systems, the default readahead
+>>> size is 128KB and it can't fully utilize the backing storage's read ability,
+>>> so we should tune it.
+>> Sure, but that doesn't tell me anything about why you can't do this
+>> at mount time before the application opens any files. i.e.  you've
+>> simply stated the reason why readahead is tunable, not why you need
+>> to be fully dynamic.....
+> We store our file system's data on different disks so we need to change ra_pages
+> dynamically according to where the data resides, it can't be fixed at mount time
+> or when we open files.
+> The abstract bdi of fuse and btrfs provides some dynamically changing
+> bdi.ra_pages
+> based on the real backing device. IMHO this should not be ignored.
 
-To accommodate that patch set, the ACPI device destroy process has been
-split into two steps:
-1) acpi_bus_trim(device,0) to unbind ACPI drivers
-2) acpi_bus_trim(device,1) to destroy ACPI devices
+And how to tune ra_pages if one big file distribution in different 
+disks, I think Fengguang Wu can answer these questions,
 
-> 
->>
->>> +    printk(KERN_WARNING "acpi_bus_trim stop return %x\n", ret);
->>
->> Do you need this message in the normal case?  If so, I'd suggest to use
->> pr_debug().
->>
->>> +    if (ret)
->>> +        return ret;
->>> +
->>> +    /* event originated from ACPI eject notification */
->>> +    device->flags.eject_pending = 1;
->>
->> You do not need to set the eject_pending flag when the handler calls
->> acpi_bus_hot_remove_device().  It was set before because the handler did
->> not initiate the hot-remove operation.
-> 
-> I just set it to keep the logic the same as before.
-> And thanks for telling me this. :)
-> 
->>
-> ...
->>> +        printk(KERN_WARNING "Container driver received %s event\n",
->>> +            "ACPI_NOTIFY_EJECT_REQUEST");
->>
->> Same as other comment.  Suggest to use pr_debug().
-> 
-> OK. :)
-> 
->>
->>> +
->>> +        if (!present || ACPI_FAILURE(status) || !device)
->>> +            break;
->>> +
->>> +        result = container_device_remove(device);
->>> +        if (result) {
->>> +            printk(KERN_WARNING "Failed to remove container\n");
->>
->> Please use pr_warn().
->>
->> Thanks,
->> -Toshi
->>
->>> +            break;
->>>           }
->>> -        break;
->>> +
->>> +        return;
->>>
->>>       default:
->>>           /* non-hotplug event; possibly handled by other handler */
->>
->>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> 
-> .
-> 
+Hi Fengguang,
 
+>>> The above third-party application using our file system maintains
+>>> some long-opened files, we does not have any chances
+>>> to force them to call fadvise(POSIX_FADV_NORMAL). :(
+>> So raise a bug/feature request with the third party.  Modifying
+>> kernel code because you can't directly modify the application isn't
+>> the best solution for anyone. This really is an application problem
+>> - the kernel already provides the mechanisms to solve this
+>> problem...  :/
+> Thanks for advice, I will consult the above application's developers
+> for more information.
+> Now from the code itself should we merge the gap between the real
+> device's ra_pages and the file's?
+> Obviously the ra_pages is duplicated, otherwise each time we run into this
+> problem, someone will do the same work as I have done here.
+>
+> Thanks,
+>           Ying Zhu
+>> Cheers,
+>>
+>> Dave.
+>> --
+>> Dave Chinner
+>> david@fromorbit.com
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
