@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935154Ab2JYJ3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:29:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:60689 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935051Ab2JYJ3j (ORCPT
+	id S965507Ab2JYJbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:31:15 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:13057 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935050Ab2JYJbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:29:39 -0400
+	Thu, 25 Oct 2012 05:31:14 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/ll387qFkE=
+X-RZG-CLASS-ID: mo00
+Date: Thu, 25 Oct 2012 11:31:10 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen PVonHVM: move shared_info to reserved
+ memory area
+Message-ID: <20121025093110.GA29278@aepfle.de>
+References: <1351155873-26500-1-git-send-email-olaf@aepfle.de>
+ <5089202E02000078000A45E7@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <20121025082341.GC3348@gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
-	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
-	<20121025073127.GB971@gmail.com>
-	<5088F0EE.8030900@stericsson.com>
-	<20121025082341.GC3348@gmail.com>
-Date: Thu, 25 Oct 2012 11:29:38 +0200
-Message-ID: <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5089202E02000078000A45E7@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5555 (2012-07-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 October 2012 10:23, Lee Jones <lee.jones@linaro.org> wrote:
-> On Thu, 25 Oct 2012, Linus Walleij wrote:
->
->> On 10/25/2012 09:31 AM, Lee Jones wrote:
->> >
->> >This certainly doesn't fix the bug we spoke about. I believe Ulf
->> >is still working on that one.
->> >
->> >So do you want me to remove this patch?
->> >
->>
->> Yeah drop it for now.
->
-> Actually, a quick question before I do:
->
-> If it's better/faster to prepare the clock and keep it prepared
-> while you do clk_enable/clk_disable, why don't we do that in all
-> drivers? Why do we bother to prepare/unprepare each time if all
-> it does is take up cycles?
->
+On Thu, Oct 25, Jan Beulich wrote:
 
-Depending on clock type, a clk_disable is actually not going to "gate"
-the clock, that might happen only in unprepare. This depends on if the
-clock is a fast or slow clock.
-To save as much power as possible, in general, we should do both
-disable and unprepare. Although it will be device driver dependent
-were it is most convenient to do this things.
-Sometimes it is possible to group them sometimes not.
+> >>> On 25.10.12 at 11:04, Olaf Hering <olaf@aepfle.de> wrote:
+> > @@ -1495,38 +1494,53 @@ asmlinkage void __init xen_start_kernel(void)
+> >  #endif
+> >  }
+> >  
+> > -void __ref xen_hvm_init_shared_info(void)
+> 
+> Was the __ref here in fact unnecessary (i.e. did you check that
+> its removal doesn't cause any section mismatch warnings)?
 
-Kind regards
-Ulf Hansson
+It does not cause any warnings for me.
+
+> > +static void xen_hvm_set_shared_info(struct shared_info *sip)
+> 
+> With its sole caller being __init, this should also be __init.
+
+Thanks, I will respin the patch with this change.
+
+Olaf
