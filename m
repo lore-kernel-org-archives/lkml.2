@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab2JYSdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:33:33 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38305 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758172Ab2JYSda (ORCPT
+	id S1760094Ab2JYSf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:35:29 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:33894 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756494Ab2JYSf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:33:30 -0400
+	Thu, 25 Oct 2012 14:35:28 -0400
+Date: Thu, 25 Oct 2012 14:35:20 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Message-ID: <1657557410.1945557.1351190120407.JavaMail.root@redhat.com>
+In-Reply-To: <20121025180045.GL11442@htj.dyndns.org>
+Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
+ add queue-private command filter, editable via sysfs)
 MIME-Version: 1.0
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 25 Oct 2012 12:33:09 -0600
-Message-ID: <CAErSpo5AeAstcSoJccw75pPUvC8t=36OggcmAOE-56nhW96b8A@mail.gmail.com>
-Subject: DRM agp_init error path oops
-To: David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: dri-devel@lists.freedesktop.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.34.169.1]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think there's a latent bug in a DRM error path, at least when used
-by i915.  In the scenario below, if dev->driver->bus->agp_init()
-fails, we call drm_lastclose().  At least in i915_driver_lastclose(),
-this dereferences dev->dev_private (at "1" below).
 
-But dev->dev_private isn't initialized until "2", in i915_driver_load().
+> On Thu, Oct 25, 2012 at 09:37:39AM +0200, Paolo Bonzini wrote:
+> > Il 24/10/2012 18:47, Tejun Heo ha scritto:
+> > > So, I'm still not convinced we need to go forward with full
+> > > configurability. All use cases you described can be covered with
+> > > per-class static filters + simple override switch to disable all,
+> > > which would result in a lot simpler implementation w/ much
+> > > smaller userland interface.
+> > 
+> > I'm not sure the userland interface would be smaller, and it would
+> > be more complex to get right:
+> > 
+> > 1) how do you override the default?  ioctl+SCM_RIGHTS or sysfs?
+> 
+> Disabling filters if opened by root and tranfering via SCM_RIGHTS
+> would be the simplest interface-wise (there's no new interface at
+> all).  Would that be too dangerous security-wise?
 
-    i915_pci_probe
-        drm_get_pci_dev
-            drm_fill_in_dev
-                drm_pci_agp_init                (dev->driver->bus->agp_init)
-                drm_lastclose                   # error path when agp_init fails
-                    i915_driver_lastclose       (dev->driver->lastclose)
-                        intel_fb_restore_mode
-1)
-drm_fb_helper_restore_fbdev_mode(&dev->dev_private->fbdev->helper)
-            i915_driver_load                    (dev->driver->load)
-2)              dev->dev_private = (void *)dev_priv
+That would be a change with respect to what we have now.  After
+transferring a root-opened (better: CAP_SYS_RAWIO-opened) file
+descriptor to an unprivileged process your SG_IO commands get
+filtered.  So a ioctl is needed if you want to rely on SCM_RIGHTS.
 
-We tripped over this because a different bug caused drm_pci_agp_init()
-to fail when it shouldn't have.  Details about that bug are here:
-https://bugzilla.kernel.org/show_bug.cgi?id=46481#c16
+> > 2) do you need to override the default to "no access", "full
+> > access" and "default access", or is a binary knob (default
+> > access/full access) sufficient?
+> 
+> Default / full should be enough, no?
 
-That bug has been fixed, but this dev_private initialization ordering
-problem is still there, waiting to bite us again on the next machine
-where drm_pci_agp_init() fails for some reason.
+If a ioctl has to be added, I'd rather have at least none/full/default.
 
-Bjorn
+> > 3) what capabilities control the setting?
+> 
+> CAP_SYS_RAWIO seems to be a pretty good fit.
+
+Yes, for a ioctl it is (for sysfs CAP_SYS_ADMIN is better IMHO).
+
+> I guess I just feel quite reluctant to expose another rather obscure
+> userland configurable in-kernel filter and at the same time I'm not
+> sure whether this is flexible enough.  What if a device is shared by
+> multiple virtual machines which are trusted at different levels?
+
+No, you just don't do that.  If a device is passed through to virtual
+machines, it is between similar virtual machines (for some definition
+of similar).  The only case where you have this sharing is in practice
+if either the device is read-only (my patch does give you a basic
+two-level filtering, with two separate bitmaps for RO and RW) or if you
+allow persistent reservations (which is as close to full trust as you
+can get).
+
+> I'm not trying to block it at all cost but let's make sure we looked
+> into most possibilities before (re)adding this userland visible
+> interface.
+
+Sure, understood. :)
+
+> Jens, James, what do you guys think?
+
+Paolo
