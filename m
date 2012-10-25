@@ -1,42 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992614Ab2JYTCI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:02:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50008 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992550Ab2JYTCF (ORCPT
+	id S1760149Ab2JYTEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:04:24 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60271 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760100Ab2JYTEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:02:05 -0400
-Date: Thu, 25 Oct 2012 12:02:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: devel@driverdev.osuosl.org, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dgrp: remove unused including <linux/version.h>
-Message-ID: <20121025190201.GA25086@kroah.com>
-References: <CAPgLHd95Tv12n=yaSoM-nKtOd0NGiRq-LYe1H_NcFwQUS8U0YQ@mail.gmail.com>
+	Thu, 25 Oct 2012 15:04:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd95Tv12n=yaSoM-nKtOd0NGiRq-LYe1H_NcFwQUS8U0YQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 25 Oct 2012 12:04:00 -0700
+Message-ID: <CAGTjWtC=KBrgwH+UOxj0o8XhOfoH6QBGfxeJ-=-Muo+d2jb-gQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from a
+ write callback to hold multiple logs
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 07, 2012 at 09:23:47PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove including <linux/version.h> that don't need it.
-> 
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Acked-by: Mike Waychison <mikew@google.com>
+
+On Wed, Oct 24, 2012 at 6:54 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+> [Issue]
+>
+> Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+> So, in the following scenario, we will lose 1st panic messages.
+>
+> 1. kernel panics.
+> 2. efi_pstore is kicked and writes panic messages to NVRAM.
+> 3. system reboots.
+> 4. kernel panics again before a user checks the 1st panic messages in NVRAM.
+>
+> [Solution]
+>
+> A reasonable solution to fix the issue is just holding multiple logs without erasing
+> existing entries.
+> This patch removes a logic erasing existing entries in a write callback
+> because the logic is not needed in the write callback to support holding multiple logs.
+>
+> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 > ---
->  drivers/staging/dgrp/dgrp_sysfs.c | 1 -
->  1 file changed, 1 deletion(-)
+>  drivers/firmware/efivars.c |   39 ++-------------------------------------
+>  1 files changed, 2 insertions(+), 37 deletions(-)
+>
+> diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+> index bee14cc..fbe9202 100644
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+> @@ -701,18 +701,13 @@ static int efi_pstore_write(enum pstore_type_id type,
+>                 unsigned int part, size_t size, struct pstore_info *psi)
+>  {
+>         char name[DUMP_NAME_LEN];
+> -       char stub_name[DUMP_NAME_LEN];
+>         efi_char16_t efi_name[DUMP_NAME_LEN];
+>         efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
+>         struct efivars *efivars = psi->data;
+> -       struct efivar_entry *entry, *found = NULL;
+>         int i, ret = 0;
+>         u64 storage_space, remaining_space, max_variable_size;
+>         efi_status_t status = EFI_NOT_FOUND;
+>
+> -       sprintf(stub_name, "dump-type%u-%u-", type, part);
+> -       sprintf(name, "%s%lu", stub_name, get_seconds());
+> -
+>         spin_lock(&efivars->lock);
+>
+>         /*
+> @@ -730,35 +725,8 @@ static int efi_pstore_write(enum pstore_type_id type,
+>                 return -ENOSPC;
+>         }
+>
+> -       for (i = 0; i < DUMP_NAME_LEN; i++)
+> -               efi_name[i] = stub_name[i];
+> -
+> -       /*
+> -        * Clean up any entries with the same name
+> -        */
+> -
+> -       list_for_each_entry(entry, &efivars->list, list) {
+> -               get_var_data_locked(efivars, &entry->var);
+> -
+> -               if (efi_guidcmp(entry->var.VendorGuid, vendor))
+> -                       continue;
+> -               if (utf16_strncmp(entry->var.VariableName, efi_name,
+> -                                 utf16_strlen(efi_name)))
+> -                       continue;
+> -               /* Needs to be a prefix */
+> -               if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
+> -                       continue;
+> -
+> -               /* found */
+> -               found = entry;
+> -               efivars->ops->set_variable(entry->var.VariableName,
+> -                                          &entry->var.VendorGuid,
+> -                                          PSTORE_EFI_ATTRIBUTES,
+> -                                          0, NULL);
+> -       }
+> -
+> -       if (found)
+> -               list_del(&found->list);
+> +       sprintf(name, "dump-type%u-%u-%lu", type, part,
+> +               get_seconds());
 
-Someone else already beat you to this change, sorry.
+Could you please also update Documentation/ABI/testing/pstore ?  It
+seems it was never updated with the "dump*" file prefix.
 
-greg k-h
+>
+>         for (i = 0; i < DUMP_NAME_LEN; i++)
+>                 efi_name[i] = name[i];
+> @@ -768,9 +736,6 @@ static int efi_pstore_write(enum pstore_type_id type,
+>
+>         spin_unlock(&efivars->lock);
+>
+> -       if (found)
+> -               efivar_unregister(found);
+> -
+>         if (size)
+>                 ret = efivar_create_sysfs_entry(efivars,
+>                                           utf16_strsize(efi_name,
+> -- 1.7.1
