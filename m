@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992719Ab2JYUnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:43:52 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52213 "EHLO
+	id S936085Ab2JYUpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:45:41 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:52313 "EHLO
 	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S2992667Ab2JYUnv (ORCPT
+	by vger.kernel.org with ESMTP id S935649Ab2JYUpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:43:51 -0400
-Date: Thu, 25 Oct 2012 13:43:50 -0700 (PDT)
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com,
-        linux-kernel@vger.kernel.org, George Zhang <georgezhang@vmware.com>,
-        virtualization@lists.linux-foundation.org,
-        Andy King <acking@vmware.com>
-Message-ID: <280263520.16961242.1351197830586.JavaMail.root@vmware.com>
-In-Reply-To: <20121025203148.GA28096@kroah.com>
+	Thu, 25 Oct 2012 16:45:40 -0400
+From: Dmitry Torokhov <dtor@vmware.com>
+To: pv-drivers@vmware.com
+Cc: Greg KH <gregkh@linuxfoundation.org>, Andy King <acking@vmware.com>,
+        vm-crosstalk@vmware.com, linux-kernel@vger.kernel.org,
+        George Zhang <georgezhang@vmware.com>,
+        virtualization@lists.linux-foundation.org
 Subject: Re: [Pv-drivers] [PATCH 04/10] VMCI: device driver implementaton.
+Date: Thu, 25 Oct 2012 13:45:39 -0700
+Message-ID: <1635399.c93qq9Svfo@dtor-d630.eng.vmware.com>
+Organization: VMware, Inc.
+User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121025203148.GA28096@kroah.com>
+References: <20121025192851.GA26627@kroah.com> <574849395.2604157.1351196160882.JavaMail.root@vmware.com> <20121025203148.GA28096@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.160.14]
-X-Mailer: Zimbra 7.2.0_GA_2674 (ZimbraWebClient - GC22 (Mac)/7.2.0_GA_2669)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
+On Thursday, October 25, 2012 01:31:48 PM Greg KH wrote:
+> On Thu, Oct 25, 2012 at 01:16:00PM -0700, Andy King wrote:
+> > Hi Greg,
+> > 
+> > > > +EXPORT_SYMBOL(vmci_device_get);
+> > > 
+> > > EXPORT_SYMBOL_GPL() for this, and all other exports?
+> > 
+> > We'd prefer to leave them as vanilla exports.  While we're committed
+> > to open-sourcing everything, including our non-upstreamed drivers,
+> > we don't really have a strong opinion regarding consuming our exports
+> > in closed-source (general GPL issues aside).
+> 
 > You can't just say "general GPL issues aside".  Honestly, given your
 > company's prior actions in regards to Linux kernel drivers and the
 > licenses of them, I don't trust them at all.  To help gain that trust
 > back, marking the exports in this manner will be a great improvement.
->
+> 
+> To insist otherwise is to only reinforce my doubts, and reduce my
+> wanting to even review or accept this code at all.  Sorry about that.
 
-You don't expect us to just let that comment slide :) Can you be more specific about which "prior actions" in regards to which kernel drivers, and when?
+Huh? What are the concerns exactly? I do not really see difference between
+EXPORT_SYMBOL() and EXPORT_SYMBOL_GPL(). The code either derivative of the
+kernel or it is not and so it either falls under the kernel license or not.
 
-We certainly don't want the Linux kernel community, especially somebody as influential as you, to lack trust in VMware or our intentions.
+>From out perspective we do not really care what other code might use VMCI,
+all our Linux drivers, even if not all are upstream [yet], are GPL.
+
+Thanks,
+Dmitry
+
