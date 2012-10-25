@@ -1,72 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996Ab2JYAya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:54:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40906 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758853Ab2JYAy2 (ORCPT
+	id S1759027Ab2JYAy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:54:56 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:36705 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758959Ab2JYAyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:54:28 -0400
-Message-ID: <50888D77.2090006@huawei.com>
-Date: Thu, 25 Oct 2012 08:53:11 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 24 Oct 2012 20:54:54 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Toshi Kani <toshi.kani@hp.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        <yinghai@kernel.org>, <lenb@kernel.org>, <izumi.taku@jp.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <mihailm@parallels.com>,
-        <linux-acpi@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container
- hot-remove.
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com> <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com> <CAErSpo7KRTY+M1gSO7s_PGRPkXABK6x9CQsaMXbZ__C11mmTWQ@mail.gmail.com>
-In-Reply-To: <CAErSpo7KRTY+M1gSO7s_PGRPkXABK6x9CQsaMXbZ__C11mmTWQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+In-Reply-To: <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com>
+ <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com>
+ <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com>
+ <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com>
+ <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com>
+ <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com>
+ <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
+ <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com> <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 24 Oct 2012 20:54:33 -0400
+Message-ID: <CAHGf_=p7kFau=pMYLkGffA=ak1Jhhm7NzaPg6mSWQYQK3erQuA@mail.gmail.com>
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in numa_maps
+To: David Rientjes <rientjes@google.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-10-25 2:02, Bjorn Helgaas wrote:
-> On Wed, Oct 24, 2012 at 11:14 AM, Toshi Kani <toshi.kani@hp.com> wrote:
->> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
-> 
->>> +             result = container_device_remove(device);
->>> +             if (result) {
->>> +                     printk(KERN_WARNING "Failed to remove container\n");
+On Wed, Oct 24, 2012 at 8:08 PM, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 24 Oct 2012, Sasha Levin wrote:
+>
+>> > This should be fixed by 9e7814404b77 ("hold task->mempolicy while
+>> > numa_maps scans.") in 3.7-rc2, can you reproduce any issues reading
+>> > /proc/pid/numa_maps on that kernel?
 >>
->> Please use pr_warn().
-> 
-> I think you should use dev_warn() and similar when possible.  In a
-> year or two, the text "Failed to remove container" all by itself in a
-> dmesg log is not going to mean anything to anybody except you, and it
-> doesn't give any clue where to start looking for issues.
-> 
-> I also have a larger question.  I'm not sure if
-> drivers/acpi/container.c does anything important in the first place.
-> The code in it looks an awful lot like the code in
-> drivers/acpi/processor_driver.c, drivers/acpi/acpi_memhotplug.c, and
-> drivers/pci/hotplug/acpiphp_glue.c.
-> 
-> To me, it looks like container.c (as well as the other places I
-> mentioned) is an attempt to compensate for the lack of hotplug support
-> in the ACPI core.  If the ACPI core had generic hotplug support, e.g.,
-> if it handled BUS_CHECK, DEVICE_CHECK, and EJECT_REQUEST notifications
-> and turned those into the appropriate calls to driver .add()/.start()
-> and .remove() methods, would we need container.c at all?
-Hi Bjorn,
-	It's true that container driver is just for hotplug. We are working
-on a hotplug framework which will consolidate all hotplug logic into one
-driver.
-	--Gerry
+>> I was actually referring to the warnings Dave Jones saw when fuzzing
+>> with trinity after the
+>> original patch was applied.
+>>
+>> I still see the following when fuzzing:
+>>
+>> [  338.467156] BUG: sleeping function called from invalid context at
+>> kernel/mutex.c:269
+>> [  338.473719] in_atomic(): 1, irqs_disabled(): 0, pid: 6361, name: trinity-main
+>> [  338.481199] 2 locks held by trinity-main/6361:
+>> [  338.486629]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810aa314>]
+>> __do_page_fault+0x1e4/0x4f0
+>> [  338.498783]  #1:  (&(&mm->page_table_lock)->rlock){+.+...}, at:
+>> [<ffffffff8122f017>] handle_pte_fault+0x3f7/0x6a0
+>> [  338.511409] Pid: 6361, comm: trinity-main Tainted: G        W
+>> 3.7.0-rc2-next-20121024-sasha-00001-gd95ef01-dirty #74
+>> [  338.530318] Call Trace:
+>> [  338.534088]  [<ffffffff8114e393>] __might_sleep+0x1c3/0x1e0
+>> [  338.539358]  [<ffffffff83ae5209>] mutex_lock_nested+0x29/0x50
+>> [  338.545253]  [<ffffffff8124fc3e>] mpol_shared_policy_lookup+0x2e/0x90
+>> [  338.545258]  [<ffffffff81219ebe>] shmem_get_policy+0x2e/0x30
+>> [  338.545264]  [<ffffffff8124e99a>] get_vma_policy+0x5a/0xa0
+>> [  338.545267]  [<ffffffff8124fce1>] mpol_misplaced+0x41/0x1d0
+>> [  338.545272]  [<ffffffff8122f085>] handle_pte_fault+0x465/0x6a0
+>> [  338.545278]  [<ffffffff81131e04>] ? __rcu_read_unlock+0x44/0xb0
+>> [  338.545282]  [<ffffffff81230baa>] handle_mm_fault+0x32a/0x360
+>> [  338.545286]  [<ffffffff810aa5b0>] __do_page_fault+0x480/0x4f0
+>> [  338.545293]  [<ffffffff8111a706>] ? del_timer+0x26/0x80
+>> [  338.545298]  [<ffffffff811c7313>] ? rcu_cleanup_after_idle+0x23/0x170
+>> [  338.545302]  [<ffffffff811ca9a4>] ? rcu_eqs_exit_common+0x64/0x3a0
+>> [  338.545305]  [<ffffffff811c8c66>] ? rcu_eqs_enter_common+0x7c6/0x970
+>> [  338.545309]  [<ffffffff811cafdc>] ? rcu_eqs_exit+0x9c/0xb0
+>> [  338.545312]  [<ffffffff810aa666>] do_page_fault+0x26/0x40
+>> [  338.545317]  [<ffffffff810a3a40>] do_async_page_fault+0x30/0xa0
+>> [  338.545321]  [<ffffffff83ae9268>] async_page_fault+0x28/0x30
+>>
+>
+> Ok, this looks the same but it's actually a different issue:
+> mpol_misplaced(), which now only exists in linux-next and not in 3.7-rc2,
+> calls get_vma_policy() which may take the shared policy mutex.  This
+> happens while holding page_table_lock from do_huge_pmd_numa_page() but
+> also from do_numa_page() while holding a spinlock on the ptl, which is
+> coming from the sched/numa branch.
+>
+> Is there anyway that we can avoid changing the shared policy mutex back
+> into a spinlock (it was converted in b22d127a39dd ["mempolicy: fix a race
+> in shared_policy_replace()"])?
+>
+> Adding Peter, Rik, and Mel to the cc.
 
-> 
-> Bjorn
-> 
-> .
-> 
-
-
+Hrm. I haven't noticed there is mpol_misplaced() in linux-next. Peter,
+I guess you commited it, right? If so, may I review your mempolicy
+changes? Now mempolicy has a lot of horrible buggy code and I hope to
+maintain carefully. Which tree should i see?
