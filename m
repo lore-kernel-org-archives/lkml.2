@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946209Ab2JYPTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:19:31 -0400
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:48653 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933949Ab2JYPT2 (ORCPT
+	id S1946235Ab2JYPTk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:19:40 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:56986 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946212Ab2JYPTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:19:28 -0400
-Date: Thu, 25 Oct 2012 15:19:27 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Minchan Kim <minchan@kernel.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] Support volatile range for anon vma
-In-Reply-To: <1351133820-14096-1-git-send-email-minchan@kernel.org>
-Message-ID: <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
-References: <1351133820-14096-1-git-send-email-minchan@kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+	Thu, 25 Oct 2012 11:19:35 -0400
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [RESEND PATCH v3 3/6] watchdog: omap_wdt: convert request_mem_region() to devm_request_mem_region()
+Date: Thu, 25 Oct 2012 18:19:09 +0300
+Message-Id: <1351178352-3989-4-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1351178352-3989-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1351178352-3989-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Minchan Kim wrote:
+Use devm_request_mem_region() to simplify the code.
 
->  #endif
-> +	/*
-> +	 * True if page in this vma is reclaimed.
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+---
+ drivers/watchdog/omap_wdt.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
 
-What does that mean? All pages in the vma have been cleared out?
-
-> +	TTU_IGNORE_VOLATILE = (1 << 11),/* ignore volatile */
->  };
->  #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
->
->  int try_to_unmap(struct page *, enum ttu_flags flags);
->  int try_to_unmap_one(struct page *, struct vm_area_struct *,
-> -			unsigned long address, enum ttu_flags flags);
-> +			unsigned long address, enum ttu_flags flags,
-> +			bool *is_volatile);
-
-You already pass a vma pointer in. Why do you need to pass a
-volatile flag in? Looks like unecessary churn.
+diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+index d6722db..45019b0 100644
+--- a/drivers/watchdog/omap_wdt.c
++++ b/drivers/watchdog/omap_wdt.c
+@@ -217,15 +217,14 @@ static int __devinit omap_wdt_probe(struct platform_device *pdev)
+ 	if (!res)
+ 		return -ENOENT;
+ 
+-	mem = request_mem_region(res->start, resource_size(res), pdev->name);
++	mem = devm_request_mem_region(&pdev->dev, res->start,
++				      resource_size(res), pdev->name);
+ 	if (!mem)
+ 		return -EBUSY;
+ 
+ 	wdev = devm_kzalloc(&pdev->dev, sizeof(*wdev), GFP_KERNEL);
+-	if (!wdev) {
+-		ret = -ENOMEM;
+-		goto err_kzalloc;
+-	}
++	if (!wdev)
++		return -ENOMEM;
+ 
+ 	omap_wdt->info	      = &omap_wdt_info;
+ 	omap_wdt->ops	      = &omap_wdt_ops;
+@@ -289,9 +288,6 @@ err_misc:
+ err_ioremap:
+ 	wdev->base = NULL;
+ 
+-err_kzalloc:
+-	release_mem_region(res->start, resource_size(res));
+-
+ 	return ret;
+ }
+ 
+@@ -316,7 +312,6 @@ static int __devexit omap_wdt_remove(struct platform_device *pdev)
+ 
+ 	pm_runtime_disable(wdev->dev);
+ 	watchdog_unregister_device(wdog);
+-	release_mem_region(res->start, resource_size(res));
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	iounmap(wdev->base);
+-- 
+1.7.2.5
 
