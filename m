@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933455Ab2JYHsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:48:24 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:39317 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756431Ab2JYHsW (ORCPT
+	id S933591Ab2JYHvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:51:43 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:54220 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756431Ab2JYHvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:48:22 -0400
-Date: Thu, 25 Oct 2012 09:48:15 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>,
+	Thu, 25 Oct 2012 03:51:40 -0400
+Message-ID: <5088EF85.4080002@de.ibm.com>
+Date: Thu, 25 Oct 2012 09:51:33 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 2/5] vtime: Provide an irq safe version of
- vtime_account_system()
-Message-ID: <20121025074815.GC3712@gmail.com>
-References: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
- <1351126313-17804-3-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351126313-17804-3-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH 3/5] kvm: Directly account vtime to system on guest switch
+References: <1351126313-17804-1-git-send-email-fweisbec@gmail.com> <1351126313-17804-4-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <1351126313-17804-4-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12102507-0342-0000-0000-00000332EEBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-I've Cc:-ed the S390 folks - patch is quoted below.
-
-Thanks,
-
-	Ingo
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> vtime_account_system() currently has only one caller with
-> vtime_account() that is irq safe.
+On 25/10/12 02:51, Frederic Weisbecker wrote:
+> Switching to or from guest context is done on ioctl context.
+> So by the time we call kvm_guest_enter() or kvm_guest_exit()
+> we know we are not running the idle task.
 > 
-> Now we are going to call it from other places like kvm, so
-> let's provide an irqsafe version.
+> As a result, we can directly account the cputime using
+> vtime_account_system_irqsafe().
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  arch/s390/kernel/vtime.c |    4 ++++
->  include/linux/vtime.h    |    2 ++
->  kernel/sched/cputime.c   |    9 +++++++++
->  3 files changed, 15 insertions(+), 0 deletions(-)
+> There are two good reasons to do this:
 > 
-> diff --git a/arch/s390/kernel/vtime.c b/arch/s390/kernel/vtime.c
-> index 7903344..80d1dbc 100644
-> --- a/arch/s390/kernel/vtime.c
-> +++ b/arch/s390/kernel/vtime.c
-> @@ -140,6 +140,10 @@ void vtime_account(struct task_struct *tsk)
->  }
->  EXPORT_SYMBOL_GPL(vtime_account);
->  
-> +void vtime_account_system(struct task_struct *tsk)
-> +__attribute__((alias("vtime_account")));
-> +EXPORT_SYMBOL_GPL(vtime_account_system);
-> +
->  void __kprobes vtime_stop_cpu(void)
->  {
->  	struct s390_idle_data *idle = &__get_cpu_var(s390_idle);
-> diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-> index 7199c24..57f290e 100644
-> --- a/include/linux/vtime.h
-> +++ b/include/linux/vtime.h
-> @@ -6,9 +6,11 @@ struct task_struct;
->  #ifdef CONFIG_VIRT_CPU_ACCOUNTING
->  extern void vtime_task_switch(struct task_struct *prev);
->  extern void vtime_account_system(struct task_struct *tsk);
-> +extern void vtime_account_system_irqsafe(struct task_struct *tsk);
->  extern void vtime_account_idle(struct task_struct *tsk);
->  #else
->  static inline void vtime_task_switch(struct task_struct *prev) { }
-> +static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
->  #endif
->  
->  #if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index 81b763b..3ccbea0 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -433,6 +433,15 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
->  	*st = cputime.stime;
->  }
->  
-> +void vtime_account_system_irqsafe(struct task_struct *tsk)
-> +{
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +	vtime_account_system(tsk);
-> +	local_irq_restore(flags);
-> +}
-> +
->  /*
->   * Archs that account the whole time spent in the idle task
->   * (outside irq) as idle time can rely on this and just implement
-> -- 
-> 1.7.5.4
+> * We avoid some useless checks on guest switch. It optimizes
+> a bit this fast path.
 > 
+> * In the case of CONFIG_IRQ_TIME_ACCOUNTING, calling vtime_account()
+> checks for irq time to account. This is pointless since we know
+> we are not in an irq on guest switch. This is wasting cpu cycles
+> for no good reason. vtime_account_system() OTOH is a no-op in
+> this config option.
+> 
+> * s390 doesn't disable irqs in its implementation of vtime_account().
+> If vtime_account() in kvm races with an irq, the pending time might
+> be accounted twice. With vtime_account_system_irqsafe() we are protected.
+
+We disable irqs before we call kvm_guest_enter/exit, see kvm-s390.c:
+
+
+[...]
+	if (!kvm_is_ucontrol(vcpu->kvm))
+	        kvm_s390_deliver_pending_interrupts(vcpu);
+	vcpu->arch.sie_block->icptcode = 0;
+	local_irq_disable();
+	kvm_guest_enter();
+	local_irq_enable();
+[...]
+
