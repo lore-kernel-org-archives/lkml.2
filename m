@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604Ab2JYONF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:13:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58791 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758584Ab2JYOMp (ORCPT
+	id S1946098Ab2JYOLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:11:10 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46798 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759417Ab2JYOLG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:12:45 -0400
-Date: Thu, 25 Oct 2012 15:12:44 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mfd: arizona: Use correct array for ARRAY_SIZE in
-	mfd_add_devices call
-Message-ID: <20121025141244.GA31078@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Thu, 25 Oct 2012 10:11:06 -0400
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 04/10] HID: hid-multitouch: get maxcontacts also from logical_max value
+Date: Thu, 25 Oct 2012 16:09:43 +0200
+Message-Id: <1351174189-24719-5-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1351174189-24719-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wm5102_devs array was used for ARRAY_SIZE whilst adding the wm5110
-devices. This change corrects this to get the size from the wm5110_devs
-array. As both arrays are the same size no issues should have been
-caused by this bug.
+Win8 devices are required to present the feature "Maximum Contact Number".
+Fortunately all win7 devices I've seen presents this feature.
+If the current value is 0, then, the driver can get the actual supported
+contact count by refering to the logical_max.
+This win8 specification ensures that logical_max may not be above 250.
+This also allows us to detect when devices like irtouch or stantum reports
+an obviously wrong value of 255.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/mfd/arizona-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/hid/hid-multitouch.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 1b48f20..166254b 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -520,7 +520,7 @@ int __devinit arizona_dev_init(struct arizona *arizona)
- 		break;
- 	case WM5110:
- 		ret = mfd_add_devices(arizona->dev, -1, wm5110_devs,
--				      ARRAY_SIZE(wm5102_devs), NULL, 0, NULL);
-+				      ARRAY_SIZE(wm5110_devs), NULL, 0, NULL);
- 		break;
- 	}
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index e96ecc3..38a4feb 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -121,6 +121,7 @@ struct mt_device {
+ #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0109
  
+ #define MT_DEFAULT_MAXCONTACT	10
++#define MT_MAX_MAXCONTACT	250
+ 
+ #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
+ #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
+@@ -283,6 +284,9 @@ static void mt_feature_mapping(struct hid_device *hdev,
+ 	case HID_DG_CONTACTMAX:
+ 		td->maxcontact_report_id = field->report->id;
+ 		td->maxcontacts = field->value[0];
++		if (!td->maxcontacts &&
++		    field->logical_maximum <= MT_MAX_MAXCONTACT)
++			td->maxcontacts = field->logical_maximum;
+ 		if (td->mtclass.maxcontacts)
+ 			/* check if the maxcontacts is given by the class */
+ 			td->maxcontacts = td->mtclass.maxcontacts;
 -- 
-1.7.2.5
+1.7.11.7
 
