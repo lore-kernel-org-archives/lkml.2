@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759327Ab2JYJ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:28:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56113 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759270Ab2JYJ2N (ORCPT
+	id S935154Ab2JYJ3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:29:43 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:60689 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935051Ab2JYJ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:28:13 -0400
-From: Ivan Hu <ivan.hu@canonical.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        alex.shi@intel.com, borislav.petkov@amd.com, ivan.hu@canonical.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, intel, power: Modify the MSR_IA32_ENERGY_PERF_BIAS message from warning to info
-Date: Thu, 25 Oct 2012 17:28:00 +0800
-Message-Id: <1351157280-9935-1-git-send-email-ivan.hu@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 25 Oct 2012 05:29:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121025082341.GC3348@gmail.com>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+	<20121025073127.GB971@gmail.com>
+	<5088F0EE.8030900@stericsson.com>
+	<20121025082341.GC3348@gmail.com>
+Date: Thu, 25 Oct 2012 11:29:38 +0200
+Message-ID: <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
+Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
+ pinctrl-nomadik GPIO driver
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel IA32 program guild doesn't mention that this MSR should be set by
-BIOS, instead, it mentions "Software can use whatever criteria it sees
-fit to program the MSR with the appropriate value.". Discuss with IBV,
-they'd like to keep this MSR as default, and let OS to change value if desired.
-This message should be more proper set as an info than a warning.
+On 25 October 2012 10:23, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 25 Oct 2012, Linus Walleij wrote:
+>
+>> On 10/25/2012 09:31 AM, Lee Jones wrote:
+>> >
+>> >This certainly doesn't fix the bug we spoke about. I believe Ulf
+>> >is still working on that one.
+>> >
+>> >So do you want me to remove this patch?
+>> >
+>>
+>> Yeah drop it for now.
+>
+> Actually, a quick question before I do:
+>
+> If it's better/faster to prepare the clock and keep it prepared
+> while you do clk_enable/clk_disable, why don't we do that in all
+> drivers? Why do we bother to prepare/unprepare each time if all
+> it does is take up cycles?
+>
 
-Signed-off-by: Ivan Hu <ivan.hu@canonical.com>
----
- arch/x86/kernel/cpu/intel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Depending on clock type, a clk_disable is actually not going to "gate"
+the clock, that might happen only in unprepare. This depends on if the
+clock is a fast or slow clock.
+To save as much power as possible, in general, we should do both
+disable and unprepare. Although it will be device driver dependent
+were it is most convenient to do this things.
+Sometimes it is possible to group them sometimes not.
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 198e019..2bdc6bf 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -466,7 +466,7 @@ static void __cpuinit init_intel(struct cpuinfo_x86 *c)
- 
- 		rdmsrl(MSR_IA32_ENERGY_PERF_BIAS, epb);
- 		if ((epb & 0xF) == ENERGY_PERF_BIAS_PERFORMANCE) {
--			printk_once(KERN_WARNING "ENERGY_PERF_BIAS:"
-+			printk_once(KERN_INFO "ENERGY_PERF_BIAS:"
- 				" Set to 'normal', was 'performance'\n"
- 				"ENERGY_PERF_BIAS: View and update with"
- 				" x86_energy_perf_policy(8)\n");
--- 
-1.7.10.4
-
+Kind regards
+Ulf Hansson
