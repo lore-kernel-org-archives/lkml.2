@@ -1,116 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab2JYEcr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 00:32:47 -0400
-Received: from emcscan.emc.com.tw ([192.72.220.5]:44466 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2JYEcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 00:32:45 -0400
-From: =?big5?B?vEK5xcJA?= <scott.liu@emc.com.tw>
-To: "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
-Cc: <linux-input@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
-        "'Jesse'" <jesse@emc.com.tw>,
-        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
-        "'Paul'" <paul.liang@emc.com.tw>
-Subject: RE: [PATCH v2] Support Elan Touchscreen eKTF product.
-Date: Thu, 25 Oct 2012 12:32:39 +0800
-Message-ID: <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
+	id S932814Ab2JYEep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 00:34:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48747 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab2JYEeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 00:34:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,645,1344236400"; 
+   d="scan'208";a="210523014"
+Message-ID: <5088C10C.80503@linux.intel.com>
+Date: Wed, 24 Oct 2012 21:33:16 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="big5"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] [RESEND 2] Take over futex of dead task only if FUTEX_WAITERS
+ is not set
+References: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com> <1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com> <5086A3D1.7080709@linux.intel.com> <alpine.LFD.2.02.1210232138540.2756@ionos>
+In-Reply-To: <alpine.LFD.2.02.1210232138540.2756@ionos>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac2yE0VGGG6xXG/PR7WcIJ+qyjetVAARimWg
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
-In-Reply-To: <20121024181323.GA18122@core.coreip.homeip.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
-	Thanks for review.
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Thursday, October 25, 2012 2:13 AM
-> To: Scott Liu
-> Cc: linux-input@vger.kernel.org; linux-i2c@vger.kernel.org;
-linux-kernel@vger.kernel.org;
-> Benjamin Tissoires; Jesse; Vincent Wang; Paul
-> Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
+
+On 10/23/2012 01:29 PM, Thomas Gleixner wrote:
+> Darren, Siddhesh,
 > 
-> Hi Scott,
+> On Tue, 23 Oct 2012, Darren Hart wrote:
 > 
-> On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
-> > This patch is for Elan eKTF Touchscreen product, I2C adpater module.
-> >
-> > Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
-> > ---
-> >
-> > Hi,
-> >         v2 revision I have fixed some bug as your advise.
-> >         1. To target the mainline
-> >         2. No Android dependency
-> >         3. reuse those duplication code from Henrik's patchset.
-> >                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
+>> Hi Siddesh,
+>>
+>> Thanks for the patch and your work to isolate it in the glibc bug 14076.
+>>
+>> On 10/21/2012 08:20 PM, Siddhesh Poyarekar wrote:
+>>> In futex_lock_pi_atomic, we consider that if the value in the futex
+>>> variable is 0 with additional flags, then it is safe for takeover
+>>> since the owner of the futex is dead.  However, when FUTEX_WAITERS is
+>>> set in the futex value, handle_futex_death calls futex_wake to wake up
+>>> one task. 
+>>
+>> It shouldn't for PI mutexes. It should just set the FUTEX_OWNER_DIED flag,
+>> maintaining the FUTEX_WAITERS flag, and exit.
+>>
+>> int handle_futex_death(...
+>> ...
+>> 		/*
+>> 		 * Wake robust non-PI futexes here. The wakeup of
+>> 		 * PI futexes happens in exit_pi_state():
+>> 		 */
+>> 		if (!pi && (uval & FUTEX_WAITERS))
+>> 			futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
 > 
-> Just a quick run through the code, so:
+> Yes, the description of the problem is slightly wrong, but it still
+> pinpoints the real wreckage.
 > 
-> - please remove polling support, it is not useful in production;
+>>> Hence the assumption in futex_lock_pi_atomic is not correct.
+>>> The correct assumption is that a futex may be considered safe for a
+>>> takeover if The FUTEX_OWNER_DIED bit is set, the TID bits are 0 and
+>>> the FUTEX_WAITERS bit is not set.
+> ...
+>>> -	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+>>> +	if (unlikely(ownerdied ||
+>>> +			!(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
+> 
+> This solves the problem at hand, but I'm not too happy with the
+> solution. One of the real possible scenarios which expose the problem
+> is:
+> 
+> Futex F is initialized with PTHREAD_PRIO_INHERIT and
+> PTHREAD_MUTEX_ROBUST_NP attributes.
+> 
+> T1 lock_futex_pi(F);
+> 
+> T2 lock_futex_pi(F);
+> 
+>    --> T2 blocks on the futex and creates pi_state which is associated
+>        to T1.
+> 
+> T1 exits
+> 
+>    --> exit_robust_list() runs
+> 
+>        --> Futex F userspace value TID field is set to 0 and
+>            FUTEX_OWNER_DIED bit is set.
+>        	   
+> T3 lock_futex_pi(F);
+> 
+>    --> Succeeds due to the check for F's userspace TID field == 0
+> 
+>    --> Claims ownership of the futex and sets its own TID into the
+>        userspace TID field of futex F
+> 
+>    --> returns to user space  
+> 
+> T1 --> exit_pi_state_list()
+> 
+>        --> Transfers pi_state to waiter T2 and wakes T2 via
+>        	   rt_mutex_unlock(&pi_state->mutex)
+> 
+> T2 --> acquires pi_state->mutex and gains real ownership of the
+>        pi_state
+> 
+>    --> Claims ownership of the futex and sets its own TID into the
+>        userspace TID field of futex F
+> 
+>    --> returns to user space  
+> 
+> T3 --> observes inconsistent state
+> 
+> This problem is independent of UP/SMP, preemptible/non preemptible
+> kernels, or process shared vs. private. The only difference is that
+> certain configurations are more likely to expose it.
+> 
+> So as Siddhesh correctly analyzed the following check in
+> futex_lock_pi_atomic() is the culprit:
+> 
+> 	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+> 
+> We check the userspace value for a TID value of 0 and take over the
+> futex unconditionally if that's true.
+> 
+> AFAICT this check is there as it is correct for a different corner
+> case of futexes: the WAITERS bit became stale.
+> 
+> Now the proposed change
+> 
+> -	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+> +       if (unlikely(ownerdied ||
+> +                       !(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
+> 
+> solves the problem, but it's not obvious why and it wreckages the
+> "stale WAITERS bit" case.
 
-OK.
 
-> - why do you need a separate probe work instead of doing what you
->   need in elants_probe()
+In what scenario does the WAITERS bit become stale for pi futexes? This
+corner case seems rather core to your solution, so I would like to
+understand it a bit better.
 
-will fix.
-
-> - it is not a good idea to register input device first and then
->   allocating memory for MT handling.
-
-Ooop...will fix.
-
-> - I do not understand why kfifo is needed
-
-The firmware and the host would conflict by read command and finger report
-simultaneously. So I'm simply using kfifo in IRQ thread function.
-
-* read command: writing 4 bytes commands and the device asserts GPIO
-interrupt and then response 4 bytes data.
-
-There was an error if we do not use kfifo:
-	With heavy loading by finger report / read command, the driver may
-get finger report as response data.
-
-So, do you understand my meaning? 
-
-> - please remove the rest of the custom threads
-OK
-
-> - you do not need to call input_mt_destroy_slots() explicitly
-OK
-> - use request_firmware() instead of special character device to upload
->   firmware.
-OK, but I'll remove firmware update function at this patch first.
-
-> - please use standard kernel-doc markup.
-> - consider what attributes are there only for debugging and move them to
->   debugfs.
-OK.
-
-> - I find the use of enums in this driver quite unconventional, just
->   standard #defines would probably be more straightforward.
-OK.
-
-Thanks,
-Scott
 
 > 
-> Thanks.
+> What happens is, that due to the WAITERS bit being set (T2 is blocked
+> on that futex) it enforces T3 to go through lookup_pi_state(), which
+> in the above case returns an existing pi_state and therefor forces T3
+> to legitimately fight with T2 over the ownership of the pi_state (via
+> pi_state->mutex). Probelm solved!
 > 
-> --
-> Dmitry
+> Though that does not work for the "WAITERS bit is stale" problem
+> because if lookup_pi_state() does not find existing pi_state it
+> returns -ERSCH (due to TID == 0) which causes futex_lock_pi() to
+> return -ESRCH to user space because the OWNER_DIED bit is not set.
+> 
+> Now there is a different solution to that problem. Do not look at the
+> user space value at all and enforce a lookup of possibly available
+> pi_state. If pi_state can be found, then the new incoming locker T3
+> blocks on that pi_state and legitimately races with T2 to acquire the
+> rt_mutex and the pi_state and therefor the proper ownership of the
+> user space futex.
 
+
+My first concern here is performance impact by forcing the pi_state
+lookup, however, if we got this far, we already took the syscall, and
+our performance sucks anyway. Correctness obviously trumps performance here.
+
+
+> 
+> lookup_pi_state() has the correct order of checks. It first tries to
+> find a pi_state associated with the user space futex and only if that
+> fails it checks for futex TID value = 0. If no pi_state is available
+> nothing can create new state at that point because this happens with
+> the hash bucket lock held.
+> 
+> So the above scenario changes to:
+> 
+> T1 lock_futex_pi(F);
+> 
+> T2 lock_futex_pi(F);
+> 
+>    --> T2 blocks on the futex and creates pi_state which is associated
+>        to T1.
+> 
+> T1 exits
+> 
+>    --> exit_robust_list() runs
+> 
+>        --> Futex F userspace value TID field is set to 0 and
+>            FUTEX_OWNER_DIED bit is set.
+>        	   
+> T3 lock_futex_pi(F);
+> 
+>    --> Finds pi_state and blocks on pi_state->rt_mutex
+> 
+> T1 --> exit_pi_state_list()
+> 
+>        --> Transfers pi_state to waiter T2 and wakes it via
+>        	   rt_mutex_unlock(&pi_state->mutex)
+> 
+> T2 --> acquires pi_state->mutex and gains ownership of the pi_state
+> 
+>    --> Claims ownership of the futex and sets its own TID into the
+>        userspace TID field of futex F
+> 
+>    --> returns to user space 
+> 
+> This covers all gazillion points on which T3 might come in between
+> T1's exit_robust_list() clearing the TID field and T2 fixing it up. It
+> also solves the "WAITERS bit stale" problem by forcing the take over.
+> 
+> Another benefit of changing the code this way is that it makes it less
+> dependent on untrusted user space values and therefor minimizes the
+> possible wreckage which might be inflicted.
+
+
+That's a definite plus!
+
+
+> As usual after staring for too long at the futex code my brain hurts
+> so much that I really want to ditch that whole optimization of
+> avoiding the syscall for the non contended case for PI futexes and rip
+> out the maze of corner case handling code. Unfortunately we can't as
+> user space relies on that existing behaviour, but at least thinking
+> about it helps me to preserve my mental sanity. Maybe we should
+> nevertheless :)
+
+
+I was surprised at how fast you were able to page all this in after all
+that travel - or is this what you did for 12 hours on the plane?
+
+:-)
+
+--
+Darren
+
+
+> Thanks,
+> 
+> 	tglx
+> 
+> -------------->
+> 
+> Index: linux/kernel/futex.c
+> ===================================================================
+> --- linux.orig/kernel/futex.c
+> +++ linux/kernel/futex.c
+> @@ -716,7 +716,7 @@ static int futex_lock_pi_atomic(u32 __us
+>  				struct futex_pi_state **ps,
+>  				struct task_struct *task, int set_waiters)
+>  {
+> -	int lock_taken, ret, ownerdied = 0;
+> +	int lock_taken, ret, force_take = 0;
+>  	u32 uval, newval, curval, vpid = task_pid_vnr(task);
+>  
+>  retry:
+> @@ -755,17 +755,15 @@ retry:
+>  	newval = curval | FUTEX_WAITERS;
+>  
+>  	/*
+> -	 * There are two cases, where a futex might have no owner (the
+> -	 * owner TID is 0): OWNER_DIED. We take over the futex in this
+> -	 * case. We also do an unconditional take over, when the owner
+> -	 * of the futex died.
+> -	 *
+> -	 * This is safe as we are protected by the hash bucket lock !
+> +	 * Should we force take the futex? See below.
+>  	 */
+> -	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+> -		/* Keep the OWNER_DIED bit */
+> +	if (unlikely(force_take)) {
+> +		/*
+> +		 * Keep the OWNER_DIED and the WAITERS bit and set the
+> +		 * new TID value.
+> +		 */
+>  		newval = (curval & ~FUTEX_TID_MASK) | vpid;
+> -		ownerdied = 0;
+> +		force_take = 0;
+>  		lock_taken = 1;
+>  	}
+>  
+> @@ -775,7 +773,7 @@ retry:
+>  		goto retry;
+>  
+>  	/*
+> -	 * We took the lock due to owner died take over.
+> +	 * We took the lock due to forced take over.
+>  	 */
+>  	if (unlikely(lock_taken))
+>  		return 1;
+> @@ -790,20 +788,25 @@ retry:
+>  		switch (ret) {
+>  		case -ESRCH:
+>  			/*
+> -			 * No owner found for this futex. Check if the
+> -			 * OWNER_DIED bit is set to figure out whether
+> -			 * this is a robust futex or not.
+> +			 * We failed to find an owner for this
+> +			 * futex. So we have no pi_state to block
+> +			 * on. This can happen in two cases:
+> +			 *
+> +			 * 1) The owner died
+> +			 * 2) A stale FUTEX_WAITERS bit
+> +			 *
+> +			 * Re-read the futex value.
+>  			 */
+>  			if (get_futex_value_locked(&curval, uaddr))
+>  				return -EFAULT;
+>  
+>  			/*
+> -			 * We simply start over in case of a robust
+> -			 * futex. The code above will take the futex
+> -			 * and return happy.
+> +			 * If the owner died or we have a stale
+> +			 * WAITERS bit the owner TID in the user space
+> +			 * futex is 0.
+>  			 */
+> -			if (curval & FUTEX_OWNER_DIED) {
+> -				ownerdied = 1;
+> +			if (!(curval & FUTEX_TID_MASK)) {
+> +				force_take = 1;
+>  				goto retry;
+>  			}
+>  		default:
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
