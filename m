@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759589Ab2JYOVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:21:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56045 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab2JYOVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:21:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Subject: Re: [PATCH v4] pwm: vt8500: Update vt8500 PWM driver support
-Date: Thu, 25 Oct 2012 14:21:44 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: thierry.reding@avionic-design.de, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1351100330-26072-1-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1351100330-26072-1-git-send-email-linux@prisktech.co.nz>
+	id S1759704Ab2JYOV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:21:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758306Ab2JYOV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:21:57 -0400
+Date: Thu, 25 Oct 2012 16:21:53 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, bp@alien8.de, dave@linux.vnet.ibm.com,
+        linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121025142153.GG11105@dhcp22.suse.cz>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+ <20121023164546.747e90f6.akpm@linux-foundation.org>
+ <20121024062938.GA6119@dhcp22.suse.cz>
+ <20121024125439.c17a510e.akpm@linux-foundation.org>
+ <50884F63.8030606@linux.vnet.ibm.com>
+ <20121024134836.a28d223a.akpm@linux-foundation.org>
+ <20121024210600.GA17037@liondog.tnic>
+ <20121024141303.0797d6a1.akpm@linux-foundation.org>
+ <50886D3F.9050403@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210251421.44474.arnd@arndb.de>
-X-Provags-ID: V02:K0:DH8J868KRV7PBRUB072fytTWXUBAog3njSd2bilnNRi
- qYnTV11vJ6oWnHBzV1Z+vXEDePO8NoJadJzuup6qUB3ZbLIPTe
- ALechv3B9Vq/Zvwr7gv68hrGP4fZHwDfaPBmtUogyN+pcBKS1e
- +s6INsIZpEJRnAvHKeTZ8e5jIh1K6QUw6v2MuB8zPZ9EA6oWPG
- QqTg2VZcBocrm3EwXB5pKcULrY5lU0wdt8IV5DdtClSDLdAk9S
- q3OXalIY2hblFv5o01nJh0rYJzfK7hgvxdfF8WKq9g8YQqIVi6
- Dl9zW77Luv84CReim5P49dK4M8jgmk0G7+vPoYtjiGCeJg2cyu
- QNuBOkQC6QAUBSukqXLA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50886D3F.9050403@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 October 2012, Tony Prisk wrote:
-> This patch updates pwm-vt8500.c to support devicetree probing and
-> make use of the common clock subsystem.
+On Wed 24-10-12 18:35:43, KOSAKI Motohiro wrote:
+> >> I have drop_caches in my suspend-to-disk script so that the hibernation
+> >> image is kept at minimum and suspend times are as small as possible.
+> > 
+> > hm, that sounds smart.
+> > 
+> >> Would that be a valid use-case?
+> > 
+> > I'd say so, unless we change the kernel to do that internally.  We do
+> > have the hibernation-specific shrink_all_memory() in the vmscan code. 
+> > We didn't see fit to document _why_ that exists, but IIRC it's there to
+> > create enough free memory for hibernation to be able to successfully
+> > complete, but no more.
 > 
-> A binding document describing the PWM controller found on
-> arch-vt8500 is also included.
+> shrink_all_memory() drop minimum memory to be needed from hibernation.
+> that's trade off matter.
 > 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> - drop all page cache
+>   pros.
+>    speed up hibernation time
+>   cons.
+>    after go back from hibernation, system works very slow a while until
+>    system will get enough file cache.
+> 
+> - drop minimum page cache
+>   pros.
+>    system works quickly when go back from hibernation.
+>   cons.
+>    relative large hibernation time
+> 
+> 
+> So, I'm not fun change hibernation default. hmmm... Does adding
+> tracepint instead of printk makes sense?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+I guess you mean trace_printk. I have seen that one for debugging
+purposes only but it seems like it could be used here. CONFIG_TRACING
+seems to be enabled on the most distribution kernels.
+
+I am just worried it needs debugfs mounted and my recollection is that
+this has some security implications so there might be some pushback on
+mounting it on production systems which would defeat the primary
+motivation.
+Maybe this concern is not that important wrt. excessive logging, though.
+I can live with this solution as well if people really hate logging
+approach.
+-- 
+Michal Hocko
+SUSE Labs
