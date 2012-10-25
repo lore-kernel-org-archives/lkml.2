@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab2JYFPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 01:15:07 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57389 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab2JYFPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 01:15:05 -0400
-Date: Thu, 25 Oct 2012 01:14:45 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Vladislav Bolkhovitin <vvvvvst@gmail.com>
-Cc: =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121025051445.GA9860@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Vladislav Bolkhovitin <vvvvvst@gmail.com>,
-	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	drh@hwaci.com
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
- <m2fw5mtffg.fsf_-_@firstfloor.org>
- <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
- <5086F5A7.9090406@vlnb.net>
+	id S1754294Ab2JYFSz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:18:55 -0400
+Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:36143 "EHLO
+	homiemail-a84.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752947Ab2JYFSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 01:18:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5086F5A7.9090406@vlnb.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+	<m2fw5mtffg.fsf_-_@firstfloor.org>
+	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+	<5086F5A7.9090406@vlnb.net>
+	<CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+	<alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+	<CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
+	<alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
+Date: Thu, 25 Oct 2012 00:18:47 -0500
+Message-ID: <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
+Subject: Re: [sqlite] light weight write barriers
+From: Nico Williams <nico@cryptonector.com>
+To: david@lang.hm
+Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 03:53:11PM -0400, Vladislav Bolkhovitin wrote:
-> Yes, SCSI has full support for ordered/simple commands designed
-> exactly for that task: to have steady flow of commands even in case
-> when some of them are ordered.....
+On Wed, Oct 24, 2012 at 8:04 PM,  <david@lang.hm> wrote:
+> On Wed, 24 Oct 2012, Nico Williams wrote:
+>> COW is "copy on write", which is actually a bit of a misnomer -- all
+>> COW means is that blocks aren't over-written, instead new blocks are
+>> written.  In particular this means that inodes, indirect blocks, data
+>> blocks, and so on, that are changed are actually written to new
+>> locations, and the on-disk format needs to handle this indirection.
+>
+> so how can you do this, and keep the writes in order (especially between two
+> files) without being the filesystem?
 
-SCSI does, yes --- *if* the device actually implements Tagged Command
-Queuing (TCQ).  Not all devices do.
+By trusting fsync().  And if you don't care about immediate Durability
+you can run the fsync() in a background thread and mark the associated
+transaction as completed in the next transaction to be written after
+the fsync() completes.
 
-More importantly, SATA drives do *not* have this capability, and when
-you compare the price of SATA drives to uber-expensive "enterprise
-drives", it's not surprising that most people don't actually use
-SCSI/SAS drives that have implemented TCQ.  SATA's Native Command
-Queuing (NCQ) is not equivalent; this allows the drive to reorder
-requests (in particular read requests) so they can be serviced more
-efficiently, but it does *not* allow the OS to specify a partial,
-relative ordering of requests.
+>> As for fsyn() and background threads... fsync() is synchronous, but in
+>> this scheme we want it to happen asynchronously and then we want to
+>> update each transaction with a pointer to the last transaction that is
+>> known stable given an fsync()'s return.
+>
+> If you could specify ordering between two writes, I could see a process
+> along the lines of
+>
+> [...]
 
-Yes, you can turn off writeback caching, but that has pretty huge
-performance costs; and there is the FUA bit, but that's just an
-unconditional high priority bypass of the writeback cache, which is
-useful in some cases, but which again, does not give the ability for
-the OS to specify a partial order, while letting the drive reorder
-other requests for efficiency/performance's sake, since the drive has
-a lot more information about the optimal way to reorder requests based
-on the current location of the drive head and where certain blocks may
-have been remapped due to bad block sparing, etc.
+fsync() deals with just one file.  fsync()s of different files are
+another story.  That said, as long as the format of the two files is
+COW then you can still compose transactions involving two files.  The
+key is the file contents itself must be COW-structured.
 
-> Hopefully, eventually the storage developers will realize the value
-> behind ordered commands and learn corresponding SCSI facilities to
-> deal with them.
+Incidentally, here's a single-file, bag of b-trees that uses a COW
+format: MDB, which can be found in
+git://git.openldap.org/openldap.git, in the mdb.master branch.
 
-Eventually, drive manufacturers will realize that trying to price
-guage people who want advanced features such as TCQ, DIF/DIX, is the
-best way to gaurantee that most people won't bother to purchase them,
-and hence the features will remain largely unused....
+> Or, as I type this, it occurs to me that you may be saying that every time
+> you want to do an ordering guarantee, spawn a new thread to do the fsync and
+> then just keep processing. The fsync will happen at some point, and the
+> writes will not be re-ordered across the fsync, but you can keep going,
+> writing more data while the fsync's are pending.
 
-    	      	       	    	   	   - Ted
+Yes, but only if the file's format is COWish.
+
+The point is that COW saves the day.  A file-based DB needs to be COW.
+ And the filesystem needs to be as well.
+
+Note that write ahead logging approximates COW well enough most of the time.
+
+> Then if you have a filesystem and I/O subsystem that can consolodate the
+> fwyncs from all the different threads together into one I/O operation
+> without having to flush the entire I/O queue for each one, you can get
+> acceptable performance, with ordering. If the system crashes, data that
+> hasn't had it's fsync() complete will be the only thing that is lost.
+
+With the above caveat, yes.
+
+Nico
+--
