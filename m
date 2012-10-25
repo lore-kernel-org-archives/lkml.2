@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758406Ab2JYIMu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 04:12:50 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51149 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2JYIMo (ORCPT
+	id S1759219Ab2JYIOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 04:14:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55549 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab2JYIO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 04:12:44 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-71-5088f47aedcd
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: "'Greg KH'" <gregkh@linuxfoundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
-        chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
- <20121023182055.GA6096@kroah.com> <20121023191135.GA1623@kroah.com>
-In-reply-to: <20121023191135.GA1623@kroah.com>
-Subject: RE: [PATCH 0/3] f2fs: move proc files to debugfs
-Date: Thu, 25 Oct 2012 17:12:41 +0900
-Message-id: <005f01cdb288$8189a3b0$849ceb10$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2xUjlGF5puENIXQ/y2iIjoG/kVDwBHw1Ag
-Content-language: en-us
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsVy+t8zI92qLx0BBgtfylvs2XuSxeLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGWs2jaFrWCpQMWEJbvZGxhP8XQxcnJICJhIbOubygZh
-	i0lcuLceyObiEBJYxihx6Pkddpii7s8foRKLGCVu/r7PDuH8Y5S4u2sTkMPBwSagLbF5vwFI
-	g4iAlsSzYzuYQWqYBQ4zSnx6tJgFJCEk0MwoMeGyOYjNKaAncX3WAUYQW1jAUmLbjC6wM1gE
-	VCVenJwGtplXwFbi6tuJULagxI/J91hAdjED9d6/qAUSZhaQl9i85i0zSFhCQF3i0V9diBOM
-	JDY13meGKBGXmPTgITvEdAGJb5MPsUCUy0psOsAM8eI6dok1xwogbEmJgytusExglJiFZO8s
-	hL2zkOydhWTBAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxgh8SW9g3FVg8UhRgEORiUe
-	3oMeHQFCrIllxZW5hxglOJiVRHi3vwcK8aYkVlalFuXHF5XmpBYfYvQBunsis5Rocj4w9vNK
-	4g2NjU3MTExNzC1NzU1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYEzdJHMz/rSq4RZ+
-	3gcq6Ynsv0y+T3s0Z9U3o2/80m/2SnL3GTxYHcvO3/XAj1/uQrPNI8vo4gW7jnXV2JZUf3We
-	dDbSefdDXqfAmX9nsxn+YJATPN3T+Cfffd/1SXN9/7wSOKxpXvxRiin112OtqLIpE7adDteK
-	uyXZ0h34fFvc+1slXNts7iixFGckGmoxFxUnAgA95V2T3AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jAd2qLx0BBlfvSFvs2XuSxeLyrjls
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmrNo2ha1gqUDF
-	hCW72RsYT/F0MXJySAiYSHR//sgGYYtJXLi3Hsjm4hASWMQocfP3fXYI5x+jxN1dm4AcDg42
-	AW2JzfsNQBpEBLQknh3bwQxSwyxwmFHi06PFLCAJIYFmRokJl81BbE4BPYnrsw4wgtjCApYS
-	22Z0gW1jEVCVeHFyGjuIzStgK3H17UQoW1Dix+R7LCC7mIF671/UAgkzC8hLbF7zlhkkLCGg
-	LvHory7ECUYSmxrvM0OUiEtMevCQfQKj0Cwkg2YhDJqFZNAsJB0LGFlWMYqmFiQXFCel5xrp
-	FSfmFpfmpesl5+duYgTH7zPpHYyrGiwOMQpwMCrx8B706AgQYk0sK67MPcQowcGsJMK7/T1Q
-	iDclsbIqtSg/vqg0J7X4EKMP0JsTmaVEk/OBqSWvJN7Q2MTMyNLIzMLIxNwch7CSOG+zR0qA
-	kEB6YklqdmpqQWoRzDgmDk6pBsbQrv3ad7Xur2XQ+Nz82TFF/bGfvNFZlWRTxaI/5gapiTVP
-	48K10kW6X0Qc9KlZduvhvn9ZDvc/qDyMnXIle9nxI7k7dp61eLIq/9neZXEx0gz/xd8c/7i2
-	mmHV0TOzFm3scYr5/uDsxpZW6Z7CfsnHzX0h1rNWTBbn4Xs9r4Tlxxvnz7b/7USUWIozEg21
-	mIuKEwGiyJltDAMAAA==
-X-CFilter-Loop: Reflected
+	Thu, 25 Oct 2012 04:14:29 -0400
+Date: Thu, 25 Oct 2012 10:14:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhart@linux.intel.com>
+cc: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] [RESEND 2] Take over futex of dead task only if
+ FUTEX_WAITERS is not set
+In-Reply-To: <5088C10C.80503@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1210250936270.2756@ionos>
+References: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com> <1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com> <5086A3D1.7080709@linux.intel.com> <alpine.LFD.2.02.1210232138540.2756@ionos> <5088C10C.80503@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Oct 23, 2012 at 11:20:55AM -0700, Greg KH wrote:
-> > Here are 3 patches, moving the proc file usage on f2fs to debugfs.
-> >
-> > The first one fixes a bug in the gc.h file preventing it from being able
-> > to be included by any other files.
-> >
-> > The second patch moves all current proc file accesses to a single file,
-> > removing all #ifdefs from the .c files.  This should have been done in
-> > the first place.
-> >
-> > The last file converts the files to use debugfs instead of proc.
-> >
-> > Note, these patches have been compile tested only, I haven't tested them
-> > out, as I haven't had the chance to yet.  I'll go do that this afternoon
-> > after I catch up on some other pending kernel work.
-> >
-> > One question, it seems that the proc files show all information for all
-> > super blocks in the system, no matter which subdirectory you are reading
-> > from in the proc f2fs tree.  Is that really what you want?  Shouldn't we
-> > only be showing the stats of the superblock we are saying we will
-> > report?  I'll test that later today, and if it really is wrong, will fix
-> > the debugfs code up to handle this properly.
+On Wed, 24 Oct 2012, Darren Hart wrote:
+> On 10/23/2012 01:29 PM, Thomas Gleixner wrote:
+> > Now the proposed change
+> > 
+> > -	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
+> > +       if (unlikely(ownerdied ||
+> > +                       !(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
+> > 
+> > solves the problem, but it's not obvious why and it wreckages the
+> > "stale WAITERS bit" case.
 > 
-> I just tested your patch set, and it looks like I see all partition
-> information in each file, no matter what subdir it is in.
 > 
-> So, do you want this to be broken up per partition/superblock, in a
-> subdir, like you intended?  Or just 3 files, for all superblocks in the
-> system?
+> In what scenario does the WAITERS bit become stale for pi futexes? This
+> corner case seems rather core to your solution, so I would like to
+> understand it a bit better.
 
-Thank you for great patches. I really appreciate that.
-When I merged your patches, I found some unnecessary codes and memory
-structures such as gc_info in the original codes.
-So I've done some works additionally based on the patches.
-Furthermore, for readability, I merged 3 stat files into one file, and
-let it show all the superblocks together, no breakdown per partition.
-I'll submit v3-series applying these changes soon.
+Hmm. I can't reconstruct the scenario anymore, though this has been an
+issue some time ago. Either we fixed up that case in course of the big
+restructuring of the code or it's just there and I cant decode
+it. Brain hurts.
+
+> > Now there is a different solution to that problem. Do not look at the
+> > user space value at all and enforce a lookup of possibly available
+> > pi_state. If pi_state can be found, then the new incoming locker T3
+> > blocks on that pi_state and legitimately races with T2 to acquire the
+> > rt_mutex and the pi_state and therefor the proper ownership of the
+> > user space futex.
+> 
+> My first concern here is performance impact by forcing the pi_state
+> lookup, however, if we got this far, we already took the syscall, and
+> our performance sucks anyway. Correctness obviously trumps performance here.
+
+Right, the pi_state lookup is cheap compared to the syscall, locking ....
+
+And even without the stale WAITERS bit issue, the bit below is a good
+reason to do it this way.
+
+> > Another benefit of changing the code this way is that it makes it less
+> > dependent on untrusted user space values and therefor minimizes the
+> > possible wreckage which might be inflicted.
+> 
+> That's a definite plus!
+
+Indeed.
+
+> I was surprised at how fast you were able to page all this in after all
+> that travel - or is this what you did for 12 hours on the plane?
+
+Nah. I'm just too paranoid to apply any futex patch w/o understanding
+the root cause of it.  Darn, if I only could remember how that stale
+waiters bit issue got inflicted ....
+
 Thanks,
 
-> 
-> Oh, the third patch is buggy, don't apply it, I got the subdir logic
-> wrong, I'll go fix that up now.
-> 
-> thanks,
-> 
-> greg k-h
-
-
----
-Jaegeuk Kim
-Samsung
+	tglx
 
 
