@@ -1,79 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934293Ab2JYB0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:26:05 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:33102 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932091Ab2JYB0D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:26:03 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 000/193] remove CONFIG_EXPERIMENTAL
-In-Reply-To: Your message of "Tue, 23 Oct 2012 13:01:13 -0700."
-             <1351022666-6960-1-git-send-email-keescook@chromium.org>
-From: Valdis.Kletnieks@vt.edu
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1351128330_19242P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S934316Ab2JYB0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:26:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53826 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932091Ab2JYB0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 21:26:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,644,1344182400"; 
+   d="scan'208";a="6063076"
+Message-ID: <508894D7.1040008@cn.fujitsu.com>
+Date: Thu, 25 Oct 2012 09:24:39 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
+        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Use kacpi_hotplug_wq to handle container hotplug
+ event.
+References: <1350997839-13260-1-git-send-email-tangchen@cn.fujitsu.com>  <1350997839-13260-2-git-send-email-tangchen@cn.fujitsu.com> <1351100001.19172.26.camel@misato.fc.hp.com>
+In-Reply-To: <1351100001.19172.26.camel@misato.fc.hp.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 09:25:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 09:25:19,
+	Serialize complete at 2012/10/25 09:25:19
 Content-Transfer-Encoding: 7bit
-Date: Wed, 24 Oct 2012 21:25:30 -0400
-Message-ID: <59643.1351128330@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020207.5088950B.0066,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1351128330_19242P
-Content-Type: text/plain; charset=us-ascii
-
-On Tue, 23 Oct 2012 13:01:13 -0700, Kees Cook said:
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default (especially in distro builds). As agreed
-> during the Linux kernel summit, it should be removed.
+On 10/25/2012 01:33 AM, Toshi Kani wrote:
+> On Tue, 2012-10-23 at 21:10 +0800, Tang Chen wrote:
+>> As the comments in __acpi_os_execute() said:
+>>
+>> 	We can't run hotplug code in keventd_wq/kacpid_wq/kacpid_notify_wq
+>> 	because the hotplug code may call driver .remove() functions,
+>> 	which invoke flush_scheduled_work/acpi_os_wait_events_complete
+>> 	to flush these workqueues.
+>>
+>> we should keep the hotplug code in kacpi_hotplug_wq.
+>>
+>> But we have the following call series in kernel now:
+>> 	acpi_ev_queue_notify_request()
+>> 	|-->  acpi_os_execute()
+>> 	     |-->  __acpi_os_execute(type, function, context, 0)
+>>
+>> The last parameter 0 makes the container_notify_cb() executed in
+>> kacpi_notify_wq or kacpid_wq. So, we need to put the real hotplug code
+>> into kacpi_hotplug_wq.
 >
-> As such, this is the patch series for removing CONFIG_EXPERIMENTAL,
-> with the hopes of all the various maintainers pulling these changes into
-> their trees.  I'm carrying the first patch (that makes CONFIG_EXPERIMENTAL
-> "default y") in my linux-next tree, so builds there will see the impact
-> immediately.
+> Hi Tang,
+>
+> I am curious; is there a particular reason why you use
+> alloc_acpi_container_hp_work() instead of acpi_os_hotplug_execute(),
+> which is already there in the tree?
 
-Has anybody tested what happens if you're doing a git bisect that ends up crossing
-back and forth across the commit for this?  I've been burned before when stuff
-evaporates out of my .config during a bisect when an option grows/loses a 'depends
-on' clause.
+Hi Toshi,
 
---==_Exmh_1351128330_19242P
-Content-Type: application/pgp-signature
+Thanks for telling me this. I didn't realize this function. :)
+And yes, it is better.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Thanks. :)
 
-iQIVAwUBUIiVCgdmEQWDXROgAQKhog/8DNo8VYqgsdxt8kiYHa59xEOn/KfmZtE7
-FPZClYZTm42o3c9cJ60381YS3O+6CrmqDQkYs1NkBRQENJYH/RARYY81jz8R9WaQ
-HOBULfPk0o1dkYZ7zt0eIT15sY72XlF+Kg1uEytOolsidv7z1xZfEyBDC5EndTI+
-/liYRpLTcQu6uRIFmsLWlZY+bsrgAITY4PzGHe0xkEuCsWopExmw49JoZSsSDJwt
-eSry3W+pBP/mX9HHQqdOiAXWDkpAOhqEKiKfzApPhaV3WaKnxtKkppgn4q0EmO2V
-iTrB2gzIN7iuwce7vrmq8hhzScn+7MqMnOhAP32ldRf1W75HVCSTAcvLCruHlrSw
-r/+Qt1+ase9/a7Dn92jgTO5kv60zLMGCtmhGeYNDYpu3P6OD2tiYLBcRDAhzt+IH
-qtqyJDgmOQdSvYjzSAXeUFg0x/D8UN176uP872wB2VUKv5EY6SI1llN6AQLIbREl
-l5eBjmVf7wgKVR974WCwl+PhyRPVnhyOOcgnsxDVAgaTeqzqaC4OyCnN/rLjHoK1
-B3R0Hgt8YDYuDjviwgo0nevgO+YWVIn/MTzy+ifzYA6V8jxPFgRbmrl0eH34kY7F
-qOJrYIhSQbURBW+i4ytW1LCZbJFeG9rd+lSud7mOTO4Y6alAFrIi3r18Pn6AUMHx
-uJBI0clRlfo=
-=A95t
------END PGP SIGNATURE-----
-
---==_Exmh_1351128330_19242P--
+>
+> Thanks,
+> -Toshi
+>
+>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   drivers/acpi/container.c |   44 +++++++++++++++++++++++++++++++++++++++++++-
+>>   1 files changed, 43 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+>> index 1f9f7d7..643657a 100644
+>> --- a/drivers/acpi/container.c
+>> +++ b/drivers/acpi/container.c
+>> @@ -72,8 +72,36 @@ static struct acpi_driver acpi_container_driver = {
+>>   		},
+>>   };
+>>
+>> +struct acpi_container_hp_work {
+>> +	struct work_struct work;
+>> +	acpi_handle handle;
+>> +	u32 type;
+>> +	void *context;
+>> +};
+>> +
+>>   /*******************************************************************/
+>>
+>> +static void alloc_acpi_container_hp_work(acpi_handle handle, u32 type,
+>> +					void *context,
+>> +					void (*func)(struct work_struct *work))
+>> +{
+>> +	struct acpi_container_hp_work *hp_work;
+>> +	int ret;
+>> +
+>> +	hp_work = kmalloc(sizeof(*hp_work), GFP_KERNEL);
+>> +	if (!hp_work)
+>> +		return;
+>> +
+>> +	hp_work->handle = handle;
+>> +	hp_work->type = type;
+>> +	hp_work->context = context;
+>> +
+>> +	INIT_WORK(&hp_work->work, func);
+>> +	ret = queue_work(kacpi_hotplug_wq,&hp_work->work);
+>> +	if (!ret)
+>> +		kfree(hp_work);
+>> +}
+>> +
+>>   static int is_device_present(acpi_handle handle)
+>>   {
+>>   	acpi_handle temp;
+>> @@ -152,14 +180,21 @@ static int container_device_add(struct acpi_device **device, acpi_handle handle)
+>>   	return result;
+>>   }
+>>
+>> -static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+>> +static void __container_notify_cb(struct work_struct *work)
+>>   {
+>>   	struct acpi_device *device = NULL;
+>>   	int result;
+>>   	int present;
+>>   	acpi_status status;
+>> +	struct acpi_container_hp_work *hp_work;
+>> +	acpi_handle handle;
+>> +	u32 type;
+>>   	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+>>
+>> +	hp_work = container_of(work, struct acpi_container_hp_work, work);
+>> +	handle = hp_work->handle;
+>> +	type = hp_work->type;
+>> +
+>>   	switch (type) {
+>>   	case ACPI_NOTIFY_BUS_CHECK:
+>>   		/* Fall through */
+>> @@ -211,6 +246,13 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+>>   	return;
+>>   }
+>>
+>> +static void container_notify_cb(acpi_handle handle, u32 type,
+>> +				void *context)
+>> +{
+>> +	alloc_acpi_container_hp_work(handle, type, context,
+>> +				__container_notify_cb);
+>> +}
+>> +
+>>   static acpi_status
+>>   container_walk_namespace_cb(acpi_handle handle,
+>>   			    u32 lvl, void *context, void **rv)
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
