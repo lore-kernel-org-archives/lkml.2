@@ -1,43 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933106Ab2JYM3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:29:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34945 "EHLO mx1.redhat.com"
+	id S1759456Ab2JYMcD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:32:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8591 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932796Ab2JYM3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:29:40 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH EDAC] sb_edac: add a missing /n on a debug message
-Date: Thu, 25 Oct 2012 10:29:37 -0200
-Message-Id: <e93979b2f4e978de487ee208c2854c2071cc165f.1351168175.git.mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1759035Ab2JYMb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 08:31:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,646,1344236400"; 
+   d="scan'208,223";a="240107351"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
+Thread-Topic: [PATCH 2/2] Revert pad config check in xen_check_mwait
+Thread-Index: Ac2yq1FN1e+6ZP87QOCrcigNApJpmA==
+Date: Thu, 25 Oct 2012 12:21:53 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335371593@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   17.024963] EDAC DEBUG: get_memory_layout: TOHM: 132.160 GB (0x0000002043ffffff)<7>[   17.024971] EDAC DEBUG: get_memory_layout: SAD#0 DRAM up to 33.792 GB (0x0000000840000000) Interleave: 8:6 reg=0x000083c3
+--_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>From 9ed5cd6012ac0832973be6e7fa01fc159f373e1c Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Fri, 26 Oct 2012 03:14:46 +0800
+Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
+
+With Xen acpi pad logic added into kernel, we can now revert xen mwait rela=
+ted
+patch df88b2d96e36d9a9e325bfcd12eb45671cbbc937. The reason is, when runs un=
+der
+Xen platform, Xen pad driver would be early loaded, so native pad driver wo=
+uld
+fail to be loaded, and hence no mwait/monitor #UD risk again.
+
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
 ---
- drivers/edac/sb_edac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 5715b7c..9ad2424 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -639,7 +639,7 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
- 	tmp_mb = (1 + pvt->tohm) >> 20;
- 
- 	mb = div_u64_rem(tmp_mb, 1000, &kb);
--	edac_dbg(0, "TOHM: %u.%03u GB (0x%016Lx)", mb, kb, (u64)pvt->tohm);
-+	edac_dbg(0, "TOHM: %u.%03u GB (0x%016Lx)\n", mb, kb, (u64)pvt->tohm);
- 
- 	/*
- 	 * Step 2) Get SAD range and SAD Interleave list
--- 
-1.7.11.7
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 586d838..8bf28b1 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -287,8 +287,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *b=
+x,
+=20
+ static bool __init xen_check_mwait(void)
+ {
+-#if defined(CONFIG_ACPI) && !defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) && =
+\
+-	!defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
++#ifdef CONFIG_ACPI
+ 	struct xen_platform_op op =3D {
+ 		.cmd			=3D XENPF_set_processor_pminfo,
+ 		.u.set_pminfo.id	=3D -1,
+--=20
+1.7.1
 
+--_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0002-Revert-pad-config-check-in-xen_check_mwait.patch"
+Content-Description: 0002-Revert-pad-config-check-in-xen_check_mwait.patch
+Content-Disposition: attachment;
+	filename="0002-Revert-pad-config-check-in-xen_check_mwait.patch"; size=1201;
+	creation-date="Thu, 25 Oct 2012 12:15:46 GMT";
+	modification-date="Thu, 25 Oct 2012 20:07:22 GMT"
+Content-Transfer-Encoding: base64
+
+RnJvbSA5ZWQ1Y2Q2MDEyYWMwODMyOTczYmU2ZTdmYTAxZmMxNTlmMzczZTFjIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogRnJpLCAyNiBPY3QgMjAxMiAwMzoxNDo0NiArMDgwMApTdWJqZWN0OiBbUEFUQ0ggMi8y
+XSBSZXZlcnQgcGFkIGNvbmZpZyBjaGVjayBpbiB4ZW5fY2hlY2tfbXdhaXQKCldpdGggWGVuIGFj
+cGkgcGFkIGxvZ2ljIGFkZGVkIGludG8ga2VybmVsLCB3ZSBjYW4gbm93IHJldmVydCB4ZW4gbXdh
+aXQgcmVsYXRlZApwYXRjaCBkZjg4YjJkOTZlMzZkOWE5ZTMyNWJmY2QxMmViNDU2NzFjYmJjOTM3
+LiBUaGUgcmVhc29uIGlzLCB3aGVuIHJ1bnMgdW5kZXIKWGVuIHBsYXRmb3JtLCBYZW4gcGFkIGRy
+aXZlciB3b3VsZCBiZSBlYXJseSBsb2FkZWQsIHNvIG5hdGl2ZSBwYWQgZHJpdmVyIHdvdWxkCmZh
+aWwgdG8gYmUgbG9hZGVkLCBhbmQgaGVuY2Ugbm8gbXdhaXQvbW9uaXRvciAjVUQgcmlzayBhZ2Fp
+bi4KClNpZ25lZC1vZmYtYnk6IExpdSwgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgot
+LS0KIGFyY2gveDg2L3hlbi9lbmxpZ2h0ZW4uYyB8ICAgIDMgKy0tCiAxIGZpbGVzIGNoYW5nZWQs
+IDEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni94
+ZW4vZW5saWdodGVuLmMgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKaW5kZXggNTg2ZDgzOC4u
+OGJmMjhiMSAxMDA2NDQKLS0tIGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jCisrKyBiL2FyY2gv
+eDg2L3hlbi9lbmxpZ2h0ZW4uYwpAQCAtMjg3LDggKzI4Nyw3IEBAIHN0YXRpYyB2b2lkIHhlbl9j
+cHVpZCh1bnNpZ25lZCBpbnQgKmF4LCB1bnNpZ25lZCBpbnQgKmJ4LAogCiBzdGF0aWMgYm9vbCBf
+X2luaXQgeGVuX2NoZWNrX213YWl0KHZvaWQpCiB7Ci0jaWYgZGVmaW5lZChDT05GSUdfQUNQSSkg
+JiYgIWRlZmluZWQoQ09ORklHX0FDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1IpICYmIFwKLQkhZGVm
+aW5lZChDT05GSUdfQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9NT0RVTEUpCisjaWZkZWYgQ09O
+RklHX0FDUEkKIAlzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIG9wID0gewogCQkuY21kCQkJPSBYRU5Q
+Rl9zZXRfcHJvY2Vzc29yX3BtaW5mbywKIAkJLnUuc2V0X3BtaW5mby5pZAk9IC0xLAotLSAKMS43
+LjEKCg==
+
+--_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_--
