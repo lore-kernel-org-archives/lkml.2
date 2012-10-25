@@ -1,54 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759732Ab2JYOYq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:24:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42312 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758746Ab2JYOYo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:24:44 -0400
-Date: Thu, 25 Oct 2012 15:24:42 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@opensource.wolfsonmicro.com, lrg@ti.com, perex@perex.cz,
-        tiwai@suse.de
-Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: wm5102: Correct micbias DAPM supplies
-Message-ID: <20121025142442.GA32126@opensource.wolfsonmicro.com>
+	id S1759820Ab2JYOY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:24:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58258 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759783Ab2JYOY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:24:56 -0400
+Date: Thu, 25 Oct 2012 16:24:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121025142457.GB308@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dave Hansen <dave@linux.vnet.ibm.com>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20121024125439.c17a510e.akpm@linux-foundation.org>
+ <50884F63.8030606@linux.vnet.ibm.com>
+ <20121024134836.a28d223a.akpm@linux-foundation.org>
+ <20121024210600.GA17037@liondog.tnic>
+ <50885B2E.5050500@linux.vnet.ibm.com>
+ <20121024224817.GB8828@liondog.tnic>
+ <5088725B.2090700@linux.vnet.ibm.com>
+ <CAHGf_=pfdgoeG5pPJb+UgjqfieU1yxt=46FGW1=th0RbgVKNRQ@mail.gmail.com>
+ <20121025092424.GA16601@liondog.tnic>
+ <50892917.30201@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <50892917.30201@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARIZONA_MICB1_ENA_SHIFT was used for micbias 2 and 3. This change
-correctly uses the ARIZONA_MICBX_ENA_SHIFT for each corresponding DAPM
-supply. This should not have caused any problems as the micbias enables
-are in the same place in each register.
+On Thu, Oct 25, 2012 at 04:57:11AM -0700, Dave Hansen wrote:
+> On 10/25/2012 02:24 AM, Borislav Petkov wrote:
+> > But let's discuss this a bit further. So, for the benchmarking aspect,
+> > you're either going to have to always require dmesg along with
+> > benchmarking results or /proc/vmstat, depending on where the drop_caches
+> > stats end up.
+> > 
+> > Is this how you envision it?
+> > 
+> > And then there are the VM bug cases, where you might not always get
+> > full dmesg from a panicked system. In that case, you'd want the kernel
+> > tainting thing too, so that it at least appears in the oops backtrace.
+> > 
+> > Although the tainting thing might not be enough - a user could
+> > drop_caches at some point in time and the oops happening much later
+> > could be unrelated but that can't be expressed in taint flags.
+> 
+> Here's the problem: Joe Kernel Developer gets a bug report, usually
+> something like "the kernel is slow", or "the kernel is eating up all my
+> memory".  We then start going and digging in to the problem with the
+> usual tools.  We almost *ALWAYS* get dmesg, and it's reasonably common,
+> but less likely, that we get things like vmstat along with such a bug
+> report.
+> 
+> Joe Kernel Developer digs in the statistics or the dmesg and tries to
+> figure out what happened.  I've run in to a couple of cases in practice
+> (and I assume Michal has too) where the bug reporter was using
+> drop_caches _heavily_ and did not realize the implications.  It was
+> quite hard to track down exactly how the page cache and dentries/inodes
+> were getting purged.
+> 
+> There are rarely oopses involved in these scenarios.
+> 
+> The primary goal of this patch is to make debugging those scenarios
+> easier so that we can quickly realize that drop_caches is the reason our
+> caches went away, not some anomalous VM activity.  A secondary goal is
+> to tell the user: "Hey, maybe this isn't something you want to be doing
+> all the time."
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- sound/soc/codecs/wm5102.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Ok, understood. So you will be requiring dmesg, ok, then it makes sense.
 
-diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
-index 1722b58..8714d62 100644
---- a/sound/soc/codecs/wm5102.c
-+++ b/sound/soc/codecs/wm5102.c
-@@ -344,9 +344,9 @@ SND_SOC_DAPM_PGA_E("IN3R PGA", ARIZONA_INPUT_ENABLES, ARIZONA_IN3R_ENA_SHIFT,
- SND_SOC_DAPM_SUPPLY("MICBIAS1", ARIZONA_MIC_BIAS_CTRL_1,
- 		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
- SND_SOC_DAPM_SUPPLY("MICBIAS2", ARIZONA_MIC_BIAS_CTRL_2,
--		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
-+		    ARIZONA_MICB2_ENA_SHIFT, 0, NULL, 0),
- SND_SOC_DAPM_SUPPLY("MICBIAS3", ARIZONA_MIC_BIAS_CTRL_3,
--		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
-+		    ARIZONA_MICB3_ENA_SHIFT, 0, NULL, 0),
- 
- SND_SOC_DAPM_PGA("Noise Generator", ARIZONA_COMFORT_NOISE_GENERATOR,
- 		 ARIZONA_NOISE_GEN_ENA_SHIFT, 0, NULL, 0),
+This way you're also getting timestamps of when exactly and how many
+times drop_caches was used. For that, though, you'll need to add the
+timestamp explicitly to the printk because CONFIG_PRINTK_TIME is not
+always enabled.
+
+Thanks.
+
 -- 
-1.7.2.5
-
+Regards/Gruss,
+Boris.
