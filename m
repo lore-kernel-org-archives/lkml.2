@@ -1,115 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2JYBEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:04:46 -0400
-Received: from mail.lang.hm ([64.81.33.126]:35835 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757302Ab2JYBEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:04:44 -0400
-Date: Wed, 24 Oct 2012 18:04:34 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Nico Williams <nico@cryptonector.com>
-cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-        =?GB2312?Q?=D1=EE=CB=D5=C1=A2_Yang_Su_Li?= <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-In-Reply-To: <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
- <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm> <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758995Ab2JYBLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:11:15 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57359 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243Ab2JYBLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 21:11:14 -0400
+Date: Wed, 24 Oct 2012 21:10:56 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6
+ (when rebooting during umount)
+Message-ID: <20121025011056.GC4559@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org,
+	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+References: <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508740B2.2030401@redhat.com>
+ <87txtkld4h.fsf@spindle.srvr.nix>
+ <50876E1D.3040501@redhat.com>
+ <20121024052351.GB21714@thunk.org>
+ <878vavveee.fsf@spindle.srvr.nix>
+ <20121024210819.GA5484@thunk.org>
+ <87y5iv78op.fsf_-_@spindle.srvr.nix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y5iv78op.fsf_-_@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012, Nico Williams wrote:
-
-> On Wed, Oct 24, 2012 at 5:03 PM,  <david@lang.hm> wrote:
->> I'm doing some work with rsyslog and it's disk-baded queues and there is a
->> similar issue there. The good news is that we can have a version that is
->> linux specific (rsyslog is used on other OSs, but there is an existing queue
->> implementation that they can use, if the faster one is linux-only, but is
->> significantly faster, that's just a win for Linux)
->>
->> Like what is being described for sqlite, loosing the tail end of the
->> messages is not a big problem under normal conditions. But there is a need
->> to be sure that what is there is complete up to the point where it's lost.
->>
->> this is similar in concept to write-ahead-logs done for databases (without
->> the absolute durability requirement)
->>
->> [...]
->>
->> I am not fully understanding how what you are describing (COW, separate
->> fsync threads, etc) would be implemented on top of existing filesystems.
->> Most of what you are describing seems like it requires access to the
->> underlying storage to implement.
->>
->> could you give a more detailed explination?
+On Thu, Oct 25, 2012 at 12:27:02AM +0100, Nix wrote:
 >
-> COW is "copy on write", which is actually a bit of a misnomer -- all
-> COW means is that blocks aren't over-written, instead new blocks are
-> written.  In particular this means that inodes, indirect blocks, data
-> blocks, and so on, that are changed are actually written to new
-> locations, and the on-disk format needs to handle this indirection.
+>  - /sbin/reboot -f of running system
+>    -> Journal replay, no problems other than the expected free block
+>       count problems. This is not such a severe problem after all!
+> 
+>  - Normal shutdown, but a 60 second pause after lazy umount, more than
+>    long enough for all umounts to proceed to termination
+>    -> no corruption, but curiously /home experienced a journal replay
+>       before being fscked, even though a cat of /proc/mounts after
+>       umounting revealed that the only mounted filesystem was /,
+>       read-only, so /home should have been clean
 
-so how can you do this, and keep the writes in order (especially between 
-two files) without being the filesystem?
+Question: how are you doing the journal replay?  Is it happening as
+part of running e2fsck, or are you mounting the file system and
+letting kernel do the journal replay?
 
-> As for fsyn() and background threads... fsync() is synchronous, but in
-> this scheme we want it to happen asynchronously and then we want to
-> update each transaction with a pointer to the last transaction that is
-> known stable given an fsync()'s return.
+Also, can you reproduce the problem with the nobarrier and
+journal_async_commit options *removed*?  Yes, I know you have battery
+backup, but it would be interesting to see if the problem shows up in
+the default configuration with none of the more specialist options.
+(So it would probably be good to test with journal_checksum removed as
+well.)
 
-If you could specify ordering between two writes, I could see a process 
-along the lines of
+If that does make the problem go away, that will be a very interesting
+data point....
 
-Append new message to file1
+> Unfortunately, the massive corruption in the last testcase was seen in
+> 3.6.1 as well as 3.6.3: it appears that the only effect that superblock
+> change had in 3.6.3 was to make this problem easier to hit, and that the
+> bug itself was introduced probably somewhere between 3.5 and 3.6 (though
+> I only rebooted 3.5.x twice, and it's rare enough before 3.6.[23], at
+> ~1/20 boots, that it may have been present for longer and I never
+> noticed).
 
-append tiny status updates to file2
+Hmm.... ok.  Can you tell whether or not the 2nd patch I posted on
+this thread made any difference to how frequently it happened?  The
+main difference with 3.6.3 with 2nd patch applied compared to 3.6.1 is
+that if it detects that the journal superblock update is a no-op, it
+skips the write request.  With 3.6.1, it submits the journal
+superblock write regardless of whether or not it would be a no-op.  So
+if my patch isn't making a difference to the freqency to when you are
+seeing the corruption, then it must be the write request itself which
+is important.
 
-every million messages, move to new files. once the last message has been 
-processed for the old set of files, delete them.
+When you say it's rare before 3.6.[23], how rare is it?  How reliably
+can you trigger it under 3.6.1?  One in 3?  One in 5?  One in 20?
 
-since file2 is small, you can reconstruct state fairly cheaply
+As far as bisecting, one experiment that I'd really appreciate your
+doing is to check and see whether you can reproduce the problem using
+the 3.4 kernel, and if you can, to see if it reproduces under the 3.3
+kernel.
 
-But unless you are a filesystem, how can you make sure that the message 
-data is written to file1 before you write the metadata about the message 
-to file2?
+The reason why I ask this is there were not any major changes between
+3.5 and 3.6, or between 3.4 and 3.5.  There *were* however, some
+fairly major changes made by Jan Kara that were introduced between 3.3
+and 3.4.  Among other things, this is where we started using FUA
+(Force Unit Attention) writes to update the journal superblock instead
+of just using REQ_FLUSH.  This is in fact the most likely place where
+we might have introduced the regression, since it wouldn't surprise me
+if Jan didn't test the case of using nobarrier with a storage array
+with battery backup (I certainly didn't, since I don't have easy
+access to such fancy toys :-).
 
-right now it seems that there is no way for an application to do this 
-other than doing a fsync(file1) before writing the metadata to file2
+> It also appears impossible for me to reliably shut my system down,
+> though a 60s timeout after lazy umount and before reboot is likely to
+> work in all but the most pathological of cases (where a downed NFS
+> server comes up at just the wrong instant): it is clear that the
+> previous 5s timeout eventually became insufficient simply because of the
+> amount of time it can take to do a umount on today's larger filesystems.
 
-And there is no way for the application to tell the filesystem to write 
-the data in file2 in order (to make sure that block 3 is not written and 
-then have the system crash before block 2 is written), so the application 
-needs to do frequent fsync(file2) calls.
+Something that you might want to consider trying is after you kill all
+of the processes, remount all of the local disk file systems
+read-only, then kick off the unmount of the NFS file systems (just to
+be nice to the NFS servers, so they are notified of the unmount), and
+then just force the reboot.  If the file systems have been remounted
+r/o, that will cause the journal to be shutdown cleanly, and all of
+the write flushed out.  (Modulo issues with nobarrier, but that's a
+separate issue.  I'm now thinking that a smart thing to do might be
+force a flush on an unmount or remount r/o, regardless of whether
+nobarrier is specified, just to make sure everything is written out
+before the poweroff, battery backup or no.)
 
-If you need complete durability of your data, there are well documented 
-ways of enforcing it (including the lwn.net article 
-http://lwn.net/Articles/457667/ )
+Regards,
 
-But if you don't need the gurantee that your data is on disk now, you just 
-need to have it ordered so that if you crash you can be guaranteed only to 
-loose data off of the tail of your file, there doesn't seem to be any way 
-to do this other than using the fsync() hammer and wait for the overhead 
-of forcing the data to disk now.
-
-
-Or, as I type this, it occurs to me that you may be saying that every time 
-you want to do an ordering guarantee, spawn a new thread to do the fsync 
-and then just keep processing. The fsync will happen at some point, and 
-the writes will not be re-ordered across the fsync, but you can keep 
-going, writing more data while the fsync's are pending.
-
-Then if you have a filesystem and I/O subsystem that can consolodate the 
-fwyncs from all the different threads together into one I/O operation 
-without having to flush the entire I/O queue for each one, you can get 
-acceptable performance, with ordering. If the system crashes, data that 
-hasn't had it's fsync() complete will be the only thing that is lost.
-
-David Lang
+						- Ted
