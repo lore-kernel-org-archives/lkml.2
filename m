@@ -1,117 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309Ab2JYCEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 22:04:13 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34594 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab2JYCEL (ORCPT
+	id S934013Ab2JYCF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 22:05:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51152 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932993Ab2JYCFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 22:04:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121025015014.GC29378@dastard>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
-	<20121023224706.GR4291@dastard>
-	<CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
-	<20121024201921.GX4291@dastard>
-	<CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-	<20121025015014.GC29378@dastard>
-Date: Thu, 25 Oct 2012 10:04:10 +0800
-Message-ID: <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-From: YingHang Zhu <casualfisher@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Oct 2012 22:05:55 -0400
+Date: Thu, 25 Oct 2012 13:05:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: linux-next: manual merge of the usb tree with the usb.current tree
+Message-Id: <20121025130545.5755af42c5573e2253866913@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__25_Oct_2012_13_05_45_+1100_/gMmx/M8vqRgys.S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 9:50 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Oct 25, 2012 at 08:17:05AM +0800, YingHang Zhu wrote:
->> On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
->> >> Hi Dave,
->> >> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
->> >> > On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
->> >> >> Hi,
->> >> >>   Recently we ran into the bug that an opened file's ra_pages does not
->> >> >> synchronize with it's backing device's when the latter is changed
->> >> >> with blockdev --setra, the application needs to reopen the file
->> >> >> to know the change,
->> >> >
->> >> > or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
->> >> > window to the (new) bdi default.
->> >> >
->> >> >> which is inappropriate under our circumstances.
->> >> >
->> >> > Which are? We don't know your circumstances, so you need to tell us
->> >> > why you need this and why existing methods of handling such changes
->> >> > are insufficient...
->> >> >
->> >> > Optimal readahead windows tend to be a physical property of the
->> >> > storage and that does not tend to change dynamically. Hence block
->> >> > device readahead should only need to be set up once, and generally
->> >> > that can be done before the filesystem is mounted and files are
->> >> > opened (e.g. via udev rules). Hence you need to explain why you need
->> >> > to change the default block device readahead on the fly, and why
->> >> > fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
->> >> > windows to the new defaults.
->> >> Our system is a fuse-based file system, fuse creates a
->> >> pseudo backing device for the user space file systems, the default readahead
->> >> size is 128KB and it can't fully utilize the backing storage's read ability,
->> >> so we should tune it.
->> >
->> > Sure, but that doesn't tell me anything about why you can't do this
->> > at mount time before the application opens any files. i.e.  you've
->> > simply stated the reason why readahead is tunable, not why you need
->> > to be fully dynamic.....
->> We store our file system's data on different disks so we need to change ra_pages
->> dynamically according to where the data resides, it can't be fixed at mount time
->> or when we open files.
->
-> That doesn't make a whole lot of sense to me. let me try to get this
-> straight.
->
-> There is data that resides on two devices (A + B), and a fuse
-> filesystem to access that data. There is a single file in the fuse
-> fs has data on both devices. An app has the file open, and when the
-> data it is accessing is on device A you need to set the readahead to
-> what is best for device A? And when the app tries to access data for
-> that file that is on device B, you need to set the readahead to what
-> is best for device B? And you are changing the fuse BDI readahead
-> settings according to where the data in the back end lies?
->
-> It seems to me that you should be setting the fuse readahead to the
-> maximum of the readahead windows the data devices have configured at
-> mount time and leaving it at that....
-Then it may not fully utilize some device's read IO bandwidth and put too much
-burden on other devices.
->
->> The abstract bdi of fuse and btrfs provides some dynamically changing
->> bdi.ra_pages
->> based on the real backing device. IMHO this should not be ignored.
->
-> btrfs simply takes into account the number of disks it has for a
-> given storage pool when setting up the default bdi ra_pages during
-> mount.  This is basically doing what I suggested above.  Same with
-> the generic fuse code - it's simply setting a sensible default value
-> for the given fuse configuration.
->
-> Neither are dynamic in the sense you are talking about, though.
-Actually I've talked about it with Fengguang, he advised we should unify the
-ra_pages in struct bdi and file_ra_state and leave the issue that
-spreading data
-across disks as it is.
-Fengguang, what's you opinion about this?
+--Signature=_Thu__25_Oct_2012_13_05_45_+1100_/gMmx/M8vqRgys.S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-         Ying Zhu
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+Hi Greg,
+
+Today's linux-next merge of the usb tree got a conflict in
+drivers/usb/misc/ezusb.c between commit 197ef5ef37d9 ("USB: Add missing
+license tag to ezusb driver") from the usb.current tree and commitc
+30186e51e53 ("USB: ezusb: unexport some functions that aren't being
+used") from the usb tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/misc/ezusb.c
+index 6589268,0a48de9..0000000
+--- a/drivers/usb/misc/ezusb.c
++++ b/drivers/usb/misc/ezusb.c
+@@@ -157,5 -162,4 +162,6 @@@ int ezusb_fx2_ihex_firmware_download(st
+  	return ezusb_ihex_firmware_download(dev, ezusb_fx2, firmware_path);
+  }
+  EXPORT_SYMBOL_GPL(ezusb_fx2_ihex_firmware_download);
++ #endif
+ +
+ +MODULE_LICENSE("GPL");
+
+--Signature=_Thu__25_Oct_2012_13_05_45_+1100_/gMmx/M8vqRgys.S
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQiJ55AAoJEECxmPOUX5FEjt8P/RRZjthtV/MKTiWTgceLOEwX
+8WCO7ioPf0x0GHK7IWa8APszLO3EJofpCFxlmxIbTnDbZBE3z6wx4CFc8mwc7wfR
+meXLGoQhbJ9xdAB6t+ludO64degrt3dpV6Ma/ku2KBi3ELhvsiwPV9cHfVBfAACh
+ncUTJfPD2BnR4sUpPt1F6M+twCofw4JMhxbP33V+Ql+iN0FmUqqvR+KEoEkDPU8M
+uP2aiA6u+Vpudup0WjcqMYX0wgCkDbtEmdeHxd/dQ3A3metuEmLJcmIQpgLbIN2p
+jd5Ir6ORX78+akPj59XbZRw4mx7O21SAOppkU6Fu33Bldm1hm1e25dXtobeqoODC
+Aa8slQViHZVQw+Kt0CDyrnvOKzz/5ytROSBHTejzfGF0EsE+k3Q13Cgnl12ntXqN
+wuZ5KAhETcmdZwsouqV0fhjOpKF/wXDL7pdA16vZZIaF4wZW4dcWtQpuYwBYuGed
+PPa8AcSRo2xiaN6t9WC6EbfGDkTY9nFNh8tVNnHys3SZmw2tRVIApx4qYb8u22GK
+3h6w7FhWI10+c8tmWIZvKBSNpcOoJi8i3aEI08sqaF7BWKu7MQb/6E1wk6ZPSzQJ
+gBhdtbdOU/urno9ET4osQtyH6eYgvHLazX3RguptKGAXASwoBVDMBrkhE+o6EPLe
+81mgXAcImLoUahoQJuxr
+=hiDT
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__25_Oct_2012_13_05_45_+1100_/gMmx/M8vqRgys.S--
