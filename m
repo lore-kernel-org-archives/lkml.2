@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2JYFli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 01:41:38 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:44270 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab2JYFlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 01:41:36 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-d9-5088d10e5f5e
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linaro-mm-sig@lists.linaro.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [GIT PULL] CMA and DMA-mapping fixes for v3.7-rc3
-Date: Thu, 25 Oct 2012 07:40:58 +0200
-Message-id: <1351143658-30902-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jAV2+ix0BBl8/KFlc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mp//mMxX081fcmT6bsYHxDXcXIyeHhICJxNv789khbDGJC/fW
-	s3UxcnEICSxilDgxdSErhLOCSWJL42QmkCo2AUOJrrddbCC2iICRxOcXV8CKmAW6mCS+XZjD
-	CJIQFrCSOPH3MAuIzSKgKtFx+R7YCl4BD4k7c44BDeIAWqcgMWeSzQRG7gWMDKsYRVMLkguK
-	k9JzjfSKE3OLS/PS9ZLzczcxgn34THoH46oGi0OMAhyMSjy8Bz06AoRYE8uKK3MPMUpwMCuJ
-	8E5+0B4gxJuSWFmVWpQfX1Sak1p8iFGag0VJnLfZIyVASCA9sSQ1OzW1ILUIJsvEwSnVwJia
-	sqn7Qedado6rP0TPL7+ZcGn3nTMuxhdmPYzcsnOvv+mO27P/8nI2bGcwCF9+Y5n9Ne3Hs13P
-	pxlqr5yTxu98XOaKUs5hnvTcZU9X1n1K33K49Idg//GiVktDzm2/N0/+E1aZvUxKdd72/h+W
-	/r8lmjWL7q5N2PU3R17BwUlngtGsDsaVsY5KLMUZiYZazEXFiQDjE7393QEAAA==
+	id S1756668Ab2JYFnL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:43:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57399 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755157Ab2JYFnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 01:43:08 -0400
+Date: Thu, 25 Oct 2012 01:42:55 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: david@lang.hm
+Cc: Nico Williams <nico@cryptonector.com>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121025054255.GB9860@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, david@lang.hm,
+	Nico Williams <nico@cryptonector.com>,
+	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	drh@hwaci.com
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+ <m2fw5mtffg.fsf_-_@firstfloor.org>
+ <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+ <5086F5A7.9090406@vlnb.net>
+ <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+ <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Oct 24, 2012 at 03:03:00PM -0700, david@lang.hm wrote:
+> Like what is being described for sqlite, loosing the tail end of the
+> messages is not a big problem under normal conditions. But there is
+> a need to be sure that what is there is complete up to the point
+> where it's lost.
+> 
+> this is similar in concept to write-ahead-logs done for databases
+> (without the absolute durability requirement)
 
-I would like to ask for pulling some minor fixes for both CMA
-(Contiguous Memory Allocator) and DMA-mapping framework for v3.7-rc3.
+If that's what you require, and you are using ext3/4, usng data
+journalling might meet your requirements.  It's something you can
+enable on a per-file basis, via chattr +j; you don't have to force all
+file systems to use data journaling via the data=journalled mount
+option.
 
-----------------------------------------------------------------
+The potential downsides that you may or may not care about for this
+particular application:
 
-The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+(a) This will definitely have a performance impact, especially if you
+are doing lots of small (less than 4k) writes, since the data blocks
+will get run through the journal, and will only get written to their
+final location on disk.
 
-  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+(b) You don't get atomicity if the write spans a 4k block boundary.
+All of the bytes before i_size will be written, so you don't have to
+worry about "holes"; but the last message written to the log file
+might be truncated.
 
-are available in the git repository at:
+(c) There will be a performance impact, since the contents of data
+blocks will be written at least twice (once to the journal, and once
+to the final location on disk).  If you do lots of small, sub-4k
+writes, the performance might be even worse, since data blocks might
+be written multiple times to the journal.
 
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes_for_linus
-
-for you to fetch changes up to 4e85fb831aa210fd1c5e2cb7909ac203c1f5b67f:
-
-  ARM: mm: Remove unused arm_vmregion priv field (2012-10-24 07:38:15 +0200)
-
-----------------------------------------------------------------
-
-This pull request consists mainly of a set of one-liner fixes and
-cleanups for a few minor issues identified in both Contiguous Memory
-Allocator code and ARM DMA-mapping subsystem.
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-----------------------------------------------------------------
-
-Patch summary:
-
-Bob Liu (1):
-      mm: cma: alloc_contig_range: return early for err path
-
-Jingoo Han (1):
-      ARM: dma-mapping: fix build warning in __dma_alloc()
-
-Laurent Pinchart (4):
-      drivers: dma-contiguous: Don't redefine SZ_1M
-      drivers: dma-coherent: Fix typo in dma_mmap_from_coherent documentation
-      drivers: cma: Fix wrong CMA selected region size default value
-      ARM: mm: Remove unused arm_vmregion priv field
-
-Ming Lei (1):
-      ARM: dma-mapping: support debug_dma_mapping_error
-
- arch/arm/include/asm/dma-mapping.h |    1 +
- arch/arm/mm/dma-mapping.c          |    2 +-
- arch/arm/mm/vmregion.h             |    1 -
- drivers/base/Kconfig               |    2 +-
- drivers/base/dma-coherent.c        |    5 ++---
- drivers/base/dma-contiguous.c      |    5 +----
- mm/page_alloc.c                    |    2 +-
- 7 files changed, 7 insertions(+), 11 deletions(-)
+						- Ted
