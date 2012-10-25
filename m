@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934175Ab2JYGcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:32:43 -0400
-Received: from alvesta.synopsys.com ([198.182.60.77]:53554 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab2JYGck (ORCPT
+	id S934057Ab2JYGdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:33:38 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:44294 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab2JYGdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:32:40 -0400
-From: <Vineet.Gupta1@synopsys.com>
-To: <alan@linux.intel.com>, <gregkh@linuxfoundation.org>
-CC: <arc-linux-dev@synopsys.com>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v4] serial/arc-uart: Add New Driver
-Date: Thu, 25 Oct 2012 12:00:07 +0530
-Message-ID: <1351146608-21044-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 25 Oct 2012 02:33:36 -0400
+Date: Thu, 25 Oct 2012 09:33:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ed Cashin <ecashin@coraid.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aoe: avoid using skb member after dev_queue_xmit
+Message-ID: <20121025063322.GH20754@mwanda>
+References: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
+ <20121024150807.82ce2677.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.56]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024150807.82ce2677.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <vgupta@synopsys.com>
+On Wed, Oct 24, 2012 at 03:08:07PM -0700, Andrew Morton wrote:
+> On Wed, 24 Oct 2012 14:26:13 -0400
+> Ed Cashin <ecashin@coraid.com> wrote:
+> 
+> > After calling dev_queue_xmit it is no longer safe to access the
+> > members of the skb.
+> > 
+> > Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> hm, that was clever.  How did Dan detect this bug?
 
-Hi Greg,
+It was a Smatch thing, but it wasn't enabled by default.  I think I
+will enable it.  This is the second bug use after dev_queue_xmit()
+in two years.
 
-Rebased off of tty-next and verfied that it builds fine.
-Please consider applying.
-
-Thanks,
-Vineet
-
-v4:
-* UAPI disintegration fallout for serial_core.h
-* rebased off of tty-next
-
-v3:
-* Removed empty arc_serial_set_ldisc()
-* More set_termios fixes - CSIZE forced to CS8 (for 8N1)
-* global @running_on_iss replaced with platform data, saved in device
-  specific port structure.
-
-v2:
-* ttyARC used as device name
-* Dynamic assignment of major/minor numbers.
-* Ref counting tty in rx routine to prevent it from disappearing in
-  case of a hangup
-* set_termios fixes:
-  - hardware flow control/parity are marked as unsupported
-  - baud written back to termios
-* cosmetics such as commenting the need for @running_on_iss, empty lines
-  etc
-
-Vineet Gupta (1):
-  serial/arc-uart: Add new driver
-
- drivers/tty/serial/Kconfig       |   25 ++
- drivers/tty/serial/Makefile      |    1 +
- drivers/tty/serial/arc_uart.c    |  747 ++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/serial_core.h |    2 +
- 4 files changed, 775 insertions(+), 0 deletions(-)
- create mode 100644 drivers/tty/serial/arc_uart.c
-
--- 
-1.7.4.1
+regards,
+dan carpenter
 
