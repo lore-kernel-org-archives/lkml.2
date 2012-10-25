@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760337Ab2JYU7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:59:12 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59736 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240Ab2JYU7J (ORCPT
+	id S965713Ab2JYVDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:03:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52204 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932919Ab2JYVDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:59:09 -0400
-Date: Thu, 25 Oct 2012 21:59:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Sourav Poddar <sourav.poddar@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
-Subject: Re: [PATCHv2] Input: omap4-keypad: Add pinctrl support
-Message-ID: <20121025205901.GA3827@sirena.org.uk>
-References: <1350911580-20307-1-git-send-email-sourav.poddar@ti.com>
- <20121024161429.GA16350@core.coreip.homeip.net>
- <CACRpkdai3NocZQnW6YRF+k6GXUSx3P_Ge=F-tkuivrFm6tBbLg@mail.gmail.com>
- <4099134.xWUIfbbahk@dtor-d630.eng.vmware.com>
- <20121024185818.GB772@arwen.pp.htv.fi>
+	Thu, 25 Oct 2012 17:03:24 -0400
+Date: Thu, 25 Oct 2012 14:03:20 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Bhavesh Davda <bhavesh@vmware.com>
+Cc: pv-drivers@vmware.com, vm-crosstalk@vmware.com,
+        linux-kernel@vger.kernel.org, George Zhang <georgezhang@vmware.com>,
+        virtualization@lists.linux-foundation.org,
+        Andy King <acking@vmware.com>
+Subject: Re: [Pv-drivers] [PATCH 04/10] VMCI: device driver implementaton.
+Message-ID: <20121025210320.GA12352@kroah.com>
+References: <20121025203148.GA28096@kroah.com>
+ <280263520.16961242.1351197830586.JavaMail.root@vmware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121024185818.GB772@arwen.pp.htv.fi>
-X-Cookie: Oh Dad!  We're ALL Devo!
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <280263520.16961242.1351197830586.JavaMail.root@vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 09:58:19PM +0300, Felipe Balbi wrote:
+On Thu, Oct 25, 2012 at 01:43:50PM -0700, Bhavesh Davda wrote:
+> Hi Greg,
+> 
+> > You can't just say "general GPL issues aside".  Honestly, given your
+> > company's prior actions in regards to Linux kernel drivers and the
+> > licenses of them, I don't trust them at all.  To help gain that trust
+> > back, marking the exports in this manner will be a great improvement.
+> >
+> 
+> You don't expect us to just let that comment slide :) Can you be more
+> specific about which "prior actions" in regards to which kernel
+> drivers, and when?
 
-> need a way to tell drivers/base "hey, don't touch pinctrl at all because
-> I know what I'm doing" and that has to happen before probe() too,
-> otherwise it's already too late and, according to what you suggest,
-> drivers/base will already have touched pinctrl. The only way I see would
-> be to add an extra "dont_touch_my_pins" field to every driver structure
-> in the kernel. Clearly what you say is nonsense.
-
-I suspect that's not actually a big deal and that if we went down this
-route we'd have the driver take over control from the core code during
-probe() with the core still setting up the default state.
-
-Personally I do think we want to be factoring bolierplate out of
-drivers, if they're not doing anything constructive with pinctrl they
-should be able to avoid having code for it.  There definitely are issues
-to work through but it seems like we ought to be able to do something.
+For many many years, you shipped closed source Linux kernel drivers for
+your products.  Only recently has this changed.
