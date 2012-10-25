@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946224Ab2JYQMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:12:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46619 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946198Ab2JYQMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:12:17 -0400
+	id S1946249Ab2JYQMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:12:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57533 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946198Ab2JYQMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:12:21 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
         <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
@@ -16,9 +15,9 @@ To: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>
 CC: <linux-keystone@list.ti.com>, Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v3 06/11] clk: davinci - add build infrastructure for DaVinci clock drivers
-Date: Thu, 25 Oct 2012 12:11:52 -0400
-Message-ID: <1351181518-11882-7-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v3 03/11] clk: davinci - common clk utilities to init clk driver
+Date: Thu, 25 Oct 2012 12:11:49 -0400
+Message-ID: <1351181518-11882-4-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
 References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
@@ -28,105 +27,225 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates clk Makefile and Kconfig to integrate the DaVinci specific
-clock drivers. Also add new Kconfig and Makefile for these drivers.
+This is the common clk driver initialization functions for DaVinci
+SoCs and other SoCs that uses similar hardware architecture.
+clock.h also defines struct types for clock definitions in a SoC
+and clock data type for configuring clk-mux. The initialization
+functions are used by clock initialization code in a specific
+platform/SoC.
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- drivers/clk/Kconfig          |    2 ++
- drivers/clk/Makefile         |    1 +
- drivers/clk/davinci/Kconfig  |   44 ++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/davinci/Makefile |    5 +++++
- 4 files changed, 52 insertions(+)
- create mode 100644 drivers/clk/davinci/Kconfig
- create mode 100644 drivers/clk/davinci/Makefile
+ drivers/clk/davinci/clock.c |  112 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/davinci/clock.h |   80 +++++++++++++++++++++++++++++++
+ 2 files changed, 192 insertions(+)
+ create mode 100644 drivers/clk/davinci/clock.c
+ create mode 100644 drivers/clk/davinci/clock.h
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 7f0b5ca..1ad2ab0 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -33,6 +33,8 @@ config COMMON_CLK_DEBUG
- 	  clk_flags, clk_prepare_count, clk_enable_count &
- 	  clk_notifier_count.
- 
-+source "drivers/clk/davinci/Kconfig"
-+
- config COMMON_CLK_WM831X
- 	tristate "Clock driver for WM831x/2x PMICs"
- 	depends on MFD_WM831X
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 5869ea3..b127b6f 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_SOCFPGA)	+= socfpga/
- obj-$(CONFIG_PLAT_SPEAR)	+= spear/
- obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
- obj-$(CONFIG_ARCH_INTEGRATOR)	+= versatile/
-+obj-$(CONFIG_DAVINCI_CLKS)	+= davinci/
- 
- # Chip specific
- obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
-diff --git a/drivers/clk/davinci/Kconfig b/drivers/clk/davinci/Kconfig
+diff --git a/drivers/clk/davinci/clock.c b/drivers/clk/davinci/clock.c
 new file mode 100644
-index 0000000..e53bbc3
+index 0000000..ad02149
 --- /dev/null
-+++ b/drivers/clk/davinci/Kconfig
-@@ -0,0 +1,44 @@
-+menu "TI DaVinci Clock drivers"
-+	depends on COMMON_CLK
++++ b/drivers/clk/davinci/clock.c
+@@ -0,0 +1,112 @@
++/*
++ * clock.c - davinci clock initialization functions for various clocks
++ *
++ * Copyright (C) 2006-2012 Texas Instruments.
++ * Copyright (C) 2008-2009 Deep Root Systems, LLC
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#include <linux/init.h>
++#include <linux/clk-provider.h>
++#include <linux/clkdev.h>
++#include <linux/io.h>
++#include <linux/slab.h>
 +
-+config  CLK_DAVINCI_PSC
-+	bool "TI DaVici PSC clock driver"
-+	default n
-+	---help---
-+	  Selects clock driver for DaVinci PSC clocks. This clock
-+	  hardware is found on TI DaVinci SoCs and other SoCs that
-+	  uses this hardware IP. This hardware has a local power
-+	  sleep control module that gate the clock to the IP.
++#include "clk-pll.h"
++#include "clk-psc.h"
++#include "clk-div.h"
++#include "clock.h"
 +
-+config  CLK_DAVINCI_PLL
-+	bool "DaVici main PLL clock"
-+	---help---
-+	  Selects clock driver for DaVinci main PLL. This clock
-+	  hardware is found on TI DaVinci SoCs. This typically has
-+	  a multiplier, a pre divider and post driver. Some of the
-+	  SoCs has the the dividers fixed, and others have it
-+	  programmable
++static DEFINE_SPINLOCK(_lock);
 +
-+config  CLK_DAVINCI_PLLDIV
-+	bool "DaVici PLL divider clock"
-+	---help---
-+	  Selects clock driver for DaVinci PLL divider. This clock
-+	  hardware is found on TI DaVinci SoCs. This typically has
-+	  a divider and an enable bit to bypass or enable the
-+	  divider.
++#ifdef	CONFIG_CLK_DAVINCI_PLL
++struct clk *davinci_pll_clk(const char *name, const char *parent,
++		u32 phys_pllm, u32 phys_prediv, u32 phys_postdiv,
++		struct clk_pll_data *pll_data)
++{
++	struct clk *clkp = NULL;
 +
-+config DAVINCI_CLKS
-+	bool "TI DaVinci common clocks"
-+	default n
-+	select CLK_DAVINCI_PSC
-+	select CLK_DAVINCI_PLLDIV
-+	---help---
-+	  Selects common clock drivers for DaVinci. These clocks
-+	  are re-used across many TI SoCs that are based on DaVinci and
-+	  Keystone (c6x) families. This config option is used to select
-+	  the common clock driver for DaVinci based SoCs. SoCs specific
-+	  Kconfig option needs to select the driver for clocks specific
-+	  to the SoC.
++	pll_data->reg_pllm = ioremap(phys_pllm, 4);
++	if (WARN_ON(!pll_data->reg_pllm))
++		return clkp;
 +
-+endmenu
++	pll_data->reg_prediv = ioremap(phys_prediv, 4);
++	if (WARN_ON(!pll_data->reg_prediv))
++		goto error1;
 +
-diff --git a/drivers/clk/davinci/Makefile b/drivers/clk/davinci/Makefile
++	pll_data->reg_postdiv = ioremap(phys_postdiv, 4);
++	if (WARN_ON(!pll_data->reg_postdiv))
++		goto error2;
++
++	return clk_register_davinci_pll(NULL, name, parent, pll_data);
++error1:
++	iounmap(pll_data->reg_pllm);
++error2:
++	iounmap(pll_data->reg_prediv);
++	return clkp;
++}
++#else
++struct clk *davinci_pll_clk(const char *name, const char *parent,
++		u32 phys_pllm, u32 phys_prediv, u32 phys_postdiv,
++		struct clk_pll_data *pll_data)
++{
++	return NULL;
++}
++#endif
++
++struct clk *davinci_mux_clk(const char *name, u8 num_parents,
++		const char **parents, struct clk_mux_data *data)
++
++{
++	void __iomem *reg;
++
++	reg = ioremap(data->phys_reg, 4);
++	if (WARN_ON(!reg))
++		return NULL;
++
++	return clk_register_mux(NULL, name, parents, num_parents, data->flags,
++				reg, data->shift, data->width, data->mux_flags,
++				 &_lock);
++}
++
++struct clk *davinci_plldiv_clk(const char *name, const char *parent,
++				struct clk_plldiv_data *data)
++{
++	/*
++	 * This is a PLL divider clock with divider specified by
++	 * div_reg in pll_div_data.
++	 */
++	data->reg = ioremap(data->phys_div_reg, 4);
++	if (WARN_ON(!data->reg))
++		return NULL;
++
++	return clk_register_davinci_plldiv(NULL, name, parent, data, &_lock);
++}
++
++inline struct clk *davinci_fixed_factor_clk(const char *name,
++			const char *parent, unsigned long flags,
++			unsigned int mult, unsigned int div)
++{
++	if (WARN_ON(!mult))
++		return NULL;
++
++	if (WARN_ON(!div))
++		return NULL;
++
++	return clk_register_fixed_factor(NULL, name, parent, flags, mult, div);
++}
++
++inline struct clk *davinci_fixed_ref_clk(const char *name,
++					unsigned long rate)
++{
++	return clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++}
++
++inline struct clk *davinci_psc_clk(const char *name, const char *parent,
++				 struct clk_psc_data *data)
++{
++	return clk_register_davinci_psc(NULL, name, parent, data);
++}
+diff --git a/drivers/clk/davinci/clock.h b/drivers/clk/davinci/clock.h
 new file mode 100644
-index 0000000..0e13986
+index 0000000..73204b8
 --- /dev/null
-+++ b/drivers/clk/davinci/Makefile
-@@ -0,0 +1,5 @@
-+obj-$(CONFIG_CLK_DAVINCI_PLL)		+= clk-pll.o
-+obj-$(CONFIG_CLK_DAVINCI_PLLDIV)	+= clk-div.o
-+obj-$(CONFIG_CLK_DAVINCI_PSC)		+= clk-psc.o
-+obj-$(CONFIG_DAVINCI_CLKS)		+= clock.o
-+obj-$(CONFIG_ARCH_DAVINCI_DM644x)	+= dm644x-clock.o
++++ b/drivers/clk/davinci/clock.h
+@@ -0,0 +1,80 @@
++/*
++ * TI DaVinci Clock definitions -  Contains Macros and Types used for
++ * defining various clocks on a DaVinci SoC
++ *
++ * Copyright (C) 2012 Texas Instruments
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#ifndef __DAVINCI_CLOCK_H
++#define __DAVINCI_CLOCK_H
++
++#include <linux/types.h>
++
++/* general flags: */
++#define ALWAYS_ENABLED		BIT(0)
++
++/**
++ * struct clk_mux_data - struct for clk mux data to configure clk-mux
++ *
++ * @flags: base flags for clk driver
++ * @mux_flags: mux driver flags
++ * @shift: shift applied to mux selector bits
++ * @width: width of the mux selctor bits
++ * @phys_reg: physical address of the mux register
++ */
++struct clk_mux_data {
++	u32			flags;
++	u8			mux_flags;
++	u8			shift;
++	u8			width;
++	u32			phys_reg;
++};
++
++/**
++ * struct davinci_clk - struct for defining DaVinci clocks for a SoC.
++ *
++ * @name: name of the clock
++ * @parent: name of parent clock
++ * @flags: General flags for all drivers used by platform clock init code
++ * @data: data specific to a clock used by the driver
++ * @dev_id: dev_id used to look up this clock. If this is NULL
++ *	clock name is used for lookup.
++ */
++struct davinci_clk {
++	const char			*name;
++	const char			*parent;
++	u32				flags;
++	void				*data;
++	char				*dev_id;
++};
++
++/* function prototypes for initializing various clocks */
++struct clk *davinci_fixed_ref_clk(const char *name,
++				unsigned long rate);
++
++struct clk *davinci_pll_clk(const char *name, const char *parent,
++		u32 phys_pllm, u32 phys_prediv, u32 phys_postdiv,
++		struct clk_pll_data *pll_data);
++
++
++struct clk *davinci_mux_clk(const char *name, u8 num_parents,
++		const char **parents, struct clk_mux_data *data);
++
++struct clk *davinci_plldiv_clk(const char *name, const char *parent,
++				struct clk_plldiv_data *data);
++
++struct clk *davinci_psc_clk(const char *name, const char *parent,
++				 struct clk_psc_data *data);
++
++struct clk *davinci_fixed_factor_clk(const char *name,
++			const char *parent, unsigned long flags,
++			unsigned int mult, unsigned int div);
++#endif
 -- 
 1.7.9.5
 
