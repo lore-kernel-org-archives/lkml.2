@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841Ab2JYDml (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:42:41 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:14413 "EHLO song.cn.fujitsu.com"
+	id S934303Ab2JYDmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:42:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64734 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab2JYDmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:42:39 -0400
+	id S933520Ab2JYDmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:42:43 -0400
 X-IronPort-AV: E=Sophos;i="4.80,645,1344182400"; 
-   d="scan'208";a="6064356"
+   d="scan'208";a="6064360"
 From: Hu Tao <hutao@cn.fujitsu.com>
 To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -20,59 +20,100 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Sasha Levin <levinsasha928@gmail.com>,
         Luiz Capitulino <lcapitulino@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, Hu Tao <hutao@cn.fujitsu.com>
-Subject: [PATCH v11 2/6] update kernel headers
-Date: Thu, 25 Oct 2012 11:42:34 +0800
-Message-Id: <1351136563-15073-2-git-send-email-hutao@cn.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH v11 3/6] add a new runstate: RUN_STATE_GUEST_PANICKED
+Date: Thu, 25 Oct 2012 11:42:35 +0800
+Message-Id: <1351136563-15073-3-git-send-email-hutao@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
 References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/10/25 11:41:59,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 11:42:01,
-	Serialize complete at 2012/10/25 11:42:01
+ 2012/10/25 11:42:02,
+	Serialize complete at 2012/10/25 11:42:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-update kernel headers to add pv event macros.
+From: Wen Congyang <wency@cn.fujitsu.com>
+
+The guest will be in this state when it is panicked.
 
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
 ---
- linux-headers/asm-x86/kvm_para.h |    1 +
- linux-headers/linux/kvm_para.h   |    6 ++++++
- 2 files changed, 7 insertions(+)
+ qapi-schema.json |    6 +++++-
+ qmp.c            |    3 ++-
+ vl.c             |    7 ++++++-
+ 3 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/linux-headers/asm-x86/kvm_para.h b/linux-headers/asm-x86/kvm_para.h
-index a1c3d72..781959a 100644
---- a/linux-headers/asm-x86/kvm_para.h
-+++ b/linux-headers/asm-x86/kvm_para.h
-@@ -96,5 +96,6 @@ struct kvm_vcpu_pv_apf_data {
- #define KVM_PV_EOI_ENABLED KVM_PV_EOI_MASK
- #define KVM_PV_EOI_DISABLED 0x0
+diff --git a/qapi-schema.json b/qapi-schema.json
+index c615ee2..25a21eb 100644
+--- a/qapi-schema.json
++++ b/qapi-schema.json
+@@ -174,11 +174,15 @@
+ # @suspended: guest is suspended (ACPI S3)
+ #
+ # @watchdog: the watchdog action is configured to pause and has been triggered
++#
++# @guest-panicked: the panicked action is configured to pause and has been
++# triggered.
+ ##
+ { 'enum': 'RunState',
+   'data': [ 'debug', 'inmigrate', 'internal-error', 'io-error', 'paused',
+             'postmigrate', 'prelaunch', 'finish-migrate', 'restore-vm',
+-            'running', 'save-vm', 'shutdown', 'suspended', 'watchdog' ] }
++            'running', 'save-vm', 'shutdown', 'suspended', 'watchdog',
++            'guest-panicked' ] }
  
-+#define KVM_PV_EVENT_PORT	(0x505UL)
+ ##
+ # @SnapshotInfo
+diff --git a/qmp.c b/qmp.c
+index f4a757b..52cc623 100644
+--- a/qmp.c
++++ b/qmp.c
+@@ -148,7 +148,8 @@ void qmp_cont(Error **errp)
+         error_set(errp, QERR_MIGRATION_EXPECTED);
+         return;
+     } else if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+-               runstate_check(RUN_STATE_SHUTDOWN)) {
++               runstate_check(RUN_STATE_SHUTDOWN) ||
++               runstate_check(RUN_STATE_GUEST_PANICKED)) {
+         error_set(errp, QERR_RESET_REQUIRED);
+         return;
+     } else if (runstate_check(RUN_STATE_SUSPENDED)) {
+diff --git a/vl.c b/vl.c
+index ca2e1e2..33b4578 100644
+--- a/vl.c
++++ b/vl.c
+@@ -373,6 +373,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_RUNNING, RUN_STATE_SAVE_VM },
+     { RUN_STATE_RUNNING, RUN_STATE_SHUTDOWN },
+     { RUN_STATE_RUNNING, RUN_STATE_WATCHDOG },
++    { RUN_STATE_RUNNING, RUN_STATE_GUEST_PANICKED },
  
- #endif /* _ASM_X86_KVM_PARA_H */
-diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
-index 7bdcf93..f6be0bb 100644
---- a/linux-headers/linux/kvm_para.h
-+++ b/linux-headers/linux/kvm_para.h
-@@ -20,6 +20,12 @@
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
+     { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
  
-+/* The bit of supported pv event */
-+#define KVM_PV_FEATURE_PANICKED	0
+@@ -387,6 +388,9 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_WATCHDOG, RUN_STATE_RUNNING },
+     { RUN_STATE_WATCHDOG, RUN_STATE_FINISH_MIGRATE },
+ 
++    { RUN_STATE_GUEST_PANICKED, RUN_STATE_RUNNING },
++    { RUN_STATE_GUEST_PANICKED, RUN_STATE_FINISH_MIGRATE },
 +
-+/* The pv event value */
-+#define KVM_PV_EVENT_PANICKED	1
-+
- /*
-  * hypercalls use architecture specific
-  */
+     { RUN_STATE_MAX, RUN_STATE_MAX },
+ };
+ 
+@@ -1617,7 +1621,8 @@ static bool main_loop_should_exit(void)
+         qemu_system_reset(VMRESET_REPORT);
+         resume_all_vcpus();
+         if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+-            runstate_check(RUN_STATE_SHUTDOWN)) {
++            runstate_check(RUN_STATE_SHUTDOWN) ||
++            runstate_check(RUN_STATE_GUEST_PANICKED)) {
+             bdrv_iterate(iostatus_bdrv_it, NULL);
+             vm_start();
+         }
 -- 
 1.7.10.2
 
