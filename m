@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935892Ab2JYQXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:23:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932845Ab2JYQXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:23:18 -0400
-Date: Thu, 25 Oct 2012 11:39:37 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-Subject: Re: [RFC] Kdump with UEFI secure boot (Re: [PATCH v2] kdump: pass
- acpi_rsdp= to 2nd kernel for efi booting)
-Message-ID: <20121025153937.GE9377@redhat.com>
-References: <1350588121.30243.7.camel@rhapsody>
- <20121018193831.GD18147@redhat.com>
- <874nlrv2ni.fsf@xmission.com>
- <20121019020630.GA27052@redhat.com>
- <877gqnnnf0.fsf@xmission.com>
- <20121019143112.GB27052@redhat.com>
- <871ugqb4gj.fsf@xmission.com>
- <20121023131854.GA16496@redhat.com>
- <20121023145920.GD16496@redhat.com>
- <20121023154123.GA30730@srcf.ucam.org>
+	id S935863Ab2JYQ1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:27:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47121 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932998Ab2JYQ1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:27:36 -0400
+Date: Thu, 25 Oct 2012 17:27:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] openrisc: determine regs directly in copy_thread
+Message-ID: <20121025162735.GM2616@ZenIV.linux.org.uk>
+References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
+ <1351179999-8376-3-git-send-email-jonas@southpole.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121023154123.GA30730@srcf.ucam.org>
+In-Reply-To: <1351179999-8376-3-git-send-email-jonas@southpole.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 04:41:24PM +0100, Matthew Garrett wrote:
-> On Tue, Oct 23, 2012 at 10:59:20AM -0400, Vivek Goyal wrote:
+On Thu, Oct 25, 2012 at 05:46:39PM +0200, Jonas Bonn wrote:
+> copy_thread can use current_pt_regs() to get the pt_regs data that
+> it needs so there's no need to pass this in as an argument.
 > 
-> > But what about creation of a new program which can call kexec_load()
-> > and execute an unsigned kernel. Doesn't look like that will be
-> > prevented using IMA.
-> 
-> Right. Trusting userspace would require a new system call that passes in 
-> a signature of the userspace binary, and the kernel would then have to 
-> verify the ELF object in memory in order to ensure that it 
-> matches the signature.
+> As do_fork() doesn't use the regs argument for anything other than
+> to pass it straight through to copy_thread, we just pass in a NULL
+> argument in its place.  The plan seems to be to eventually drop the
+> regs argument to do_fork altogether.
 
-[ CC lkml and IMA/EVM developers ]
+Hmm...  That's the plan, all right, but we need one more thing before
+it's safe to pass NULL here.
+        if (!(clone_flags & CLONE_UNTRACED) && likely(user_mode(regs))) {
+in do_fork() should (and can right now, no prereqs for that one) become
+simply
+        if (!(clone_flags & CLONE_UNTRACED)) {
+kernel_thread() *always* passes CLONE_UNTRACED, so it's not just "likely",
+it's "always true if we get to evaluating that sucker in the first place".
 
-Not sure how much of this is feasible. There is initialized data which
-can change. That means we shall have to exclude initialized data from
-digest. And then initialized data can be changed by attacker.
-
-I think in the context of kexec, purgatory (which is actually a
-relocatable executable), is embedded in kexec binary as "const char
-purgatory[]". I am assuming that it will show up as initialized data
-in /sbin/kexec. And if we do not include initialized data in digest
-calculation, then one can overwrite purgatory with its own executable
-code and kexec will load it into the kernel and let it run at priviliged
-level.
-
-So looks like even above will not be foolproof. (Assuming we can do
-this. I thought we lost all the elf headers after loading elf 
-binary and now we don't know which mmpaed areas need to be included
-in digest and which should not be).
- 
-> Verifying that the copy on the filesystem is 
-> unmodified isn't adequate - an attacker could simply have paused the 
-> process and injected code.
-
-This is an interesting point. So even if we verify the signature of
-/sbin/kexec, parent can change the code (using ptrace() interface?).
-And we are again prone to attack. So this will work if we are doing
-integrity/authenticity checks on all root processes and not just
-one /sbin/kexec.
-
-> Realistically, the only solution here is for 
-> the kernel to verify that the kernel it's about to boot is signed and 
-> for it not to take any untrusted executable code from userspace.
-
-Hmm.., given above, looks like implementing a new system call to pass
-in full kernel and initramfs (along with some command line or other
-parameters), becomes interesting.
-
-Thanks
-Vivek
+FWIW, I think that merging that into mainline would be a good idea -
+it would make life simpler and it's obviously safe.  Another thing I probably
+want to push to Linus, for pretty much the same reasons: generic variants
+of fork/vfork/clone, selected by matching __ARCH_WANT_SYS_...; obviously
+safe and allows to do that unification in per-arch trees.  Less PITA
+regarding the merge ordering that way...
