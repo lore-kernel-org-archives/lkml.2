@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab2JYMdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:33:05 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60224 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758999Ab2JYMdD (ORCPT
+	id S932964Ab2JYMis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:38:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45615 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab2JYMiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:33:03 -0400
+	Thu, 25 Oct 2012 08:38:46 -0400
+Date: Thu, 25 Oct 2012 13:38:44 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: P J P <ppandit@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+Message-ID: <20121025123843.GJ2616@ZenIV.linux.org.uk>
+References: <20121024232032.GA31129@www.outflux.net>
+ <20121025041620.GH2616@ZenIV.linux.org.uk>
+ <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+ <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
+ <20121025120952.GI2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
-	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
-	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
-	<20121025073127.GB971@gmail.com>
-	<5088F0EE.8030900@stericsson.com>
-	<20121025082341.GC3348@gmail.com>
-	<CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
-Date: Thu, 25 Oct 2012 14:33:01 +0200
-Message-ID: <CACRpkdaoGV3+iQHV-gHd3n1mROTZvCuuu59+U_zHpK=yXs6Bsw@mail.gmail.com>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121025120952.GI2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 11:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+On Thu, Oct 25, 2012 at 01:09:53PM +0100, Al Viro wrote:
+> On Thu, Oct 25, 2012 at 05:16:22PM +0530, P J P wrote:
+> > 
+> >   Hello Kees,
+> > 
+> > +-- On Wed, 24 Oct 2012, Kees Cook wrote --+
+> > | What should the code here _actually_ be doing? The _script and _misc 
+> > | handlers expect to rewrite the bprm contents and recurse, but the module 
+> > | loader want to try again. It's not clear to me what the binfmt module 
+> > | handler is even there for; I don't see any binfmt-XXXX aliases in the tree. 
+> > | If nothing uses it, should we just rip it out? That would solve it too.
+> 
+> ; grep binfmt- /etc/*/* 2>/dev/null 
+> /etc/modprobe.d/aliases.conf:install binfmt-0000 /bin/true
+> /etc/modprobe.d/aliases.conf:alias binfmt-204 binfmt_aout
+> /etc/modprobe.d/aliases.conf:alias binfmt-263 binfmt_aout
+> /etc/modprobe.d/aliases.conf:alias binfmt-264 binfmt_aout
+> /etc/modprobe.d/aliases.conf:alias binfmt-267 binfmt_aout
+> /etc/modprobe.d/aliases.conf:alias binfmt-387 binfmt_aout
+> ; dpkg -S /etc/modprobe.d/aliases.conf 
+> module-init-tools: /etc/modprobe.d/aliases.conf
+> 
+> > I've been following this issue and updated versions of HDs patch. Below is a 
+> > small patch to search_binary_handler() routine, which attempts to make the 
+> > request_module call before calling load_script routine.
+> > 
+> > Besides fixing the stack disclosure issue it also helps to *simplify* the 
+> > search_binary_handler routine by removing the -for (try=0;try<2;try++)- loop.
+> > 
+> > I'd really appreciate any comments/suggestions you may have.
+> 
+> Suggestion: try testing your patches once in a while.  Stopping to think
+> for a minute would also help - you've turned every execve() into "do
+> request_module() first".  How do you suppose request_module() works?  And
+> how would modprobe be able to run?  IOW, this request_module() will be
+> stopped by protection against infinite loops, at which point execve will
+> proceed with already present binfmt, without having loaded anything.
+> But that's even worse than slowdown on each execve (with a lot of whining
+> in process), because *every* request_module() will fail now due to the same
+> loop prevention.
 
-> Depending on clock type, a clk_disable is actually not going to "gate"
-> the clock, that might happen only in unprepare. This depends on if the
-> clock is a fast or slow clock.
-
-Hm thats interesting. Now I need to drill down into this.
-So looking at it in this case:
-
-clk_disable() from the GPIO block of the pin controller will
-hit "gpio.0", "gpio.1" etc in drivers/clk/ux500/u8500_clk.c.
-
-These are PRCC (Programmable Clock Controller) clocks
-registered using clk_reg_prcc_pclk() from clk-prcc.c.
-
-pclk:s are using the clk_prcc_pclk_ops and these point to
-clk_prcc_pclk_enable()/clk_prcc_pclk_disable() for
-enable/disable respectively.
-
-These will just write a PRCC register.
-
-And prepare() and unprepare() are not implemented for
-this clock.
-
-So far we can conclude that clk_enable()/disable()
-will indeed achieve the desired effect of gating the
-clock to the GPIO block per se, so we are saving
-some power for sure.
-
-However the prepare()/unprepare() calls will of course
-also accumulate upwards and in e.g. the example of
-"gpio.0" and "gpio.1" the parent is "per1clk" which is the
-clock for the entire peripheral group.
-
-(At this point I can stick in a reminder of the idea to
-restructure the device tree in peripheral groups, because
-that exercise will certainly pay off the day we try to encode
-clocks in the device tree, I think the point can be clearly
-seen as we proceed...)
-
-This "per1clk" is registered using clk_req_prcmu_gate()
-from clk-prcmu.c.
-
-Looking at that clock type we find it's a plain software
-dummy for the clk_enable()/clk_disable() path.
-The real action is happening in the prepare()/unprepare()
-path.
-
-So to be able to shut down the entire peripheral cluster,
-indeed both functions need to be called.
-
-So in accordance with this we can see that the patch
-should be applied, in some form.
-
-However it is not removing the initial clk_prepare()
-so the entire patch will be pointless, the prepare count
-will currently always be > 0.
-
-I'll mangle Lee's patch a bit, hold on..
-
-Yours,
-Linus Walleij
+... and after the second look at your patch, looks like another breakage
+in there will have a different effect - it doesn't just eliminate the
+first pass through the loop, it inverts the test for "should I try
+request_module()".  Overall result is a bit less painful - request_module()
+isn't broken on loop prevention, but
+	* every bleeding script will have bogus execution of modprobe done
+at execve time (and you'd better pray that /sbin/modprobe isn't a shell
+script wrapper around the actual binary, or you *will* get loop prevention
+kick in)
+	* none of the existing binfmt-<...> aliases is going to be hit
+now; IOW, all usecases got broken.  Granted, realistically it just means
+broken modular aout support, but then it's the only reason to have that
+request_module() there in the first place.
