@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935718Ab2JYNv2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:51:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62704 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935668Ab2JYNv1 (ORCPT
+	id S935729Ab2JYNv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:51:58 -0400
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.29]:43783
+	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933157Ab2JYNv4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:51:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.7-rc3
-Date: Thu, 25 Oct 2012 13:48:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        voice <voice.shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>,
-        marek.belisko@open-nandra.com, ivan.shugov@gmail.com
-References: <5088F131.5040600@atmel.com>
-In-Reply-To: <5088F131.5040600@atmel.com>
+	Thu, 25 Oct 2012 09:51:56 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -8
+X-BigFish: PS-8(zz98dI9371I542M1432Izz1202h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: 3.7 RC1
+Thread-Topic: 3.7 RC1
+Thread-Index: AQHNsK3G8HrZAJXgi0ePbtXMXJgKWZfKDVkg
+Date: Thu, 25 Oct 2012 13:50:53 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930A4686E@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1350949065-24655-1-git-send-email-kys@microsoft.com>
+ <20121022233351.GA6589@kroah.com>
+In-Reply-To: <20121022233351.GA6589@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.55.165]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210251348.42060.arnd@arndb.de>
-X-Provags-ID: V02:K0:ZMWqUJfgkVaiNAGUbxWqgf+ss1v/uvzeqh7bApL9V/T
- WXHfHiAljKTTj88RqSEJkKTVXDZNEKKAY0qW0pb1uGJnZrJ/mr
- 2biuYUXC5YJC23Yhtq1Lj52iVMzQI2IkqcfEBFwguqecxsd2j4
- mCwTJs3cbI5ifzG/RmLStqtQF1QBhk1pIdiJtifqVfkY8Tr/XL
- enJNOhS21l1K80cSswROA3Bx5Fca6/CT/CXf8smDsHFIn/oSuM
- aVLd39oWMaz3w8XZ/3UVabqBz1BTY5I+XjEooCsbWCwU6dzGp+
- wj1Yyk76Gc0XN2MTOkjGogHXsbmaOWAsNMzTjK5KXhEE8UKi7E
- 0+8x+QMewkvZxM5fbXts=
+X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464001)(377454001)(24454001)(51704002)(46102001)(4396001)(6806001)(16676001)(3846001)(74662001)(4196001)(5343635001)(54356001)(54316001)(47446002)(33656001)(51856001)(74502001)(53806001)(20776001)(8716001)(5836001)(44976002)(50466001)(47736001)(16616001)(50986001)(47976001)(16696001)(31966008)(47776002)(876001)(49866001)(2666001)(1076001)(48376001)(4606001)(316001)(3746001)(37146003)(3556001);DIR:OUT;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0645BEB7AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 October 2012, Nicolas Ferre wrote:
-> Arnd, Olof,
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, October 22, 2012 7:34 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com
+> Subject: Re: 3.7 RC1
 > 
-> This is the first Atmel AT91 "fixes" update for the 3.7 kernel.
+> On Mon, Oct 22, 2012 at 04:37:45PM -0700, K. Y. Srinivasan wrote:
+> >
+> > While testing 3.7 RC1 I discovered that invoking the function
+> orderly_poweroff()
+> > from an interrupt context will trigger an ASSERT(). This was not the case till
+> > recently. The comment preceding the orderly_poweroff() function claims that
+> this
+> > function can be invoked from any context and in the current Hyper-V util driver,
+> > we support host-driven orderly shut down of the guest by invoking this
+> > orderly_poweroff() function in the context of the message callback. This code
+> has
+> > been working for a very long time and it is broken now. Is my assumption that
+> > orderly_poweroff() could be invoked from the interrupt context a wrong
+> assumption?
 > 
-> The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+> Can you check 3.7-rc2?  If that also fails, care to do a 'git bisect'
+> from 3.6 to 3.7-rc1 to find the problem patch?
+
+The problem still persists in 3.7-rc2. Sorry for the false positive; we had a script problem
+that indicated that the problem had gone away. Manual testing has shown that the problem
+persists. We will investigate it further.
+
+Regards,
+
+K. Y
 > 
->   Linux 3.7-rc2 (2012-10-20 12:11:32 -0700) 
+> thanks,
 > 
-> are available in the git repository at:
+> greg k-h
 > 
->   git://github.com/at91linux/linux-at91.git tags/at91-fixes
 > 
 
-Pulled into fixes branch now, thanks!
 
-	Arnd
