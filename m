@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935863Ab2JYQ1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:27:37 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47121 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932998Ab2JYQ1g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:27:36 -0400
-Date: Thu, 25 Oct 2012 17:27:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jonas Bonn <jonas@southpole.se>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] openrisc: determine regs directly in copy_thread
-Message-ID: <20121025162735.GM2616@ZenIV.linux.org.uk>
-References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
- <1351179999-8376-3-git-send-email-jonas@southpole.se>
+	id S935895Ab2JYQdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:33:55 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:41948 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932945Ab2JYQdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:33:54 -0400
+Date: Thu, 25 Oct 2012 18:33:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Tony Luck <tony.luck@intel.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
+Message-ID: <20121025163348.GC2623@aftab.osrc.amd.com>
+References: <1351174667-5098-1-git-send-email-bp@amd64.org>
+ <1351174667-5098-2-git-send-email-bp@amd64.org>
+ <20121025160741.GB4341@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351179999-8376-3-git-send-email-jonas@southpole.se>
+In-Reply-To: <20121025160741.GB4341@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 05:46:39PM +0200, Jonas Bonn wrote:
-> copy_thread can use current_pt_regs() to get the pt_regs data that
-> it needs so there's no need to pass this in as an argument.
+On Thu, Oct 25, 2012 at 09:07:41AM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Oct 25, 2012 at 04:17:43PM +0200, Borislav Petkov wrote:
+> > From: Borislav Petkov <bp@alien8.de>
+> > 
+> > ... which, analogous to DEVICE_INT_ATTR provides functionality to
+> > set/clear bools. Its purpose is to be used where values need to be used
+> > as booleans in configuration context.
+> > 
+> > Next patch uses this.
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Signed-off-by: Borislav Petkov <bp@alien8.de>
 > 
-> As do_fork() doesn't use the regs argument for anything other than
-> to pass it straight through to copy_thread, we just pass in a NULL
-> argument in its place.  The plan seems to be to eventually drop the
-> regs argument to do_fork altogether.
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Do you want me to take this through my tree now?  If not, I have no
+> objection to it being part of this larger series and go to Linus through
+> whatever tree takes it.
 
-Hmm...  That's the plan, all right, but we need one more thing before
-it's safe to pass NULL here.
-        if (!(clone_flags & CLONE_UNTRACED) && likely(user_mode(regs))) {
-in do_fork() should (and can right now, no prereqs for that one) become
-simply
-        if (!(clone_flags & CLONE_UNTRACED)) {
-kernel_thread() *always* passes CLONE_UNTRACED, so it's not just "likely",
-it's "always true if we get to evaluating that sucker in the first place".
+Well, in my case it would go through the RAS tree.
 
-FWIW, I think that merging that into mainline would be a good idea -
-it would make life simpler and it's obviously safe.  Another thing I probably
-want to push to Linus, for pretty much the same reasons: generic variants
-of fork/vfork/clone, selected by matching __ARCH_WANT_SYS_...; obviously
-safe and allows to do that unification in per-arch trees.  Less PITA
-regarding the merge ordering that way...
+And I, like you, don't care which way it goes except maybe that if those
+5 patches stay together, there won't be any build issues due to merging
+order in linux-next and later Linus' tree if that first patch goes
+separately.
+
+But I'm absolutely open to whatever you suggest is best.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
