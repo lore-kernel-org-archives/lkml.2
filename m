@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934409Ab2JYGep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:34:45 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46670 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab2JYGen (ORCPT
+	id S965432Ab2JYGht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:37:49 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53014 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932887Ab2JYGhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:34:43 -0400
-X-AuditID: 9c930179-b7c8bae000003559-a9-5088dd8183d5
-Date: Thu, 25 Oct 2012 15:40:09 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC v2 0/2] vmevent: A bit reworked pressure attribute + docs +
- man page
-Message-ID: <20121025064009.GA15767@bbox>
-References: <20121022111928.GA12396@lizard>
+	Thu, 25 Oct 2012 02:37:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121022111928.GA12396@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <20121025001822.GC3140@localhost>
+References: <508296B4.60508@gmail.com>
+	<20121023085448.GM5635@localhost>
+	<CANGUGtB0VR4hnRf5hk3_7Rc23fo5ejtj3J2yZZ50tD_Tk+sigw@mail.gmail.com>
+	<20121023090232.GA13027@localhost>
+	<CANGUGtAiktPm5J+yViNhEN+udU60Z+JH+4bEozwHxeXe2Oec6w@mail.gmail.com>
+	<20121025001822.GC3140@localhost>
+Date: Thu, 25 Oct 2012 08:37:44 +0200
+Message-ID: <CANGUGtB_c5YzmCwTyVnmy2uNK-G9CArG=fcj47T1zZc75pe0-A@mail.gmail.com>
+Subject: Re: [PATCH 06/21] ocfs2: drop vmtruncate
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Marco Stornelli <marco.stornelli@gmail.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+2012/10/25 Joel Becker <jlbec@evilplan.org>:
+> On Tue, Oct 23, 2012 at 02:48:38PM +0200, Marco Stornelli wrote:
+>> 2012/10/23 Joel Becker <jlbec@evilplan.org>:
+>> > On Tue, Oct 23, 2012 at 10:58:42AM +0200, Marco Stornelli wrote:
+>> >> 2012/10/23 Joel Becker <jlbec@evilplan.org>:
+>> >> > On Sat, Oct 20, 2012 at 02:19:00PM +0200, Marco Stornelli wrote:
+>> >> >> Removed vmtruncate
+>> >> >>
+>> >> >> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+>> >> >
+>> >> > Acked-by: Joel Becker <jlbec@evilplan.org>
+>> >> >
+>> >> > Do you want me to pull this, or are you going to send it with your set?
+>> >> >
+>> >> > Joel
+>> >> >
+>> >>
+>> >> I'd prefer to push all via Al's tree since there is a VFS change.
+>> >
+>> > SGTM.  Thanks!
+>> >
+>> > Joel
+>> >
+>>
+>> I've got a doubt and I ask to ocfs2 expert :) It seems i_size_write()
+>> and truncate_inode_pages() and so on, they are already called in each
+>> path of setattr for a size change, so maybe we can remove
+>> truncate_setsize() and simply to remove the vmtuncate code, can you
+>> give me your opinion?
+>
+>         Actually, I have to revisit this, because Chrisoph points out
+> your adjusting i_size outside of a transaction.
+>
+> Joel
+>
 
-On Mon, Oct 22, 2012 at 04:19:28AM -0700, Anton Vorontsov wrote:
-> Hi all,
-> 
-> So this is the second RFC. The main change is that I decided to go with
-> discrete levels of the pressure.
+Actually i_size should be changed in a transaction previous, the code
+is not changed from this point of view. Indeed the call of
+truncate_setsize() should be a nop.
 
-I am very happy with that because I already have yelled it several time.
-
-> 
-> When I started writing the man page, I had to describe the 'reclaimer
-> inefficiency index', and while doing this I realized that I'm describing
-> how the kernel is doing the memory management, which we try to avoid in
-> the vmevent. And applications don't really care about these details:
-> reclaimers, its inefficiency indexes, scanning window sizes, priority
-> levels, etc. -- it's all "not interesting", and purely kernel's stuff. So
-> I guess Mel Gorman was right, we need some sort of levels.
-> 
-> What applications (well, activity managers) are really interested in is
-> this:
-> 
-> 1. Do we we sacrifice resources for new memory allocations (e.g. files
->    cache)?
-> 2. Does the new memory allocations' cost becomes too high, and the system
->    hurts because of this?
-> 3. Are we about to OOM soon?
-
-Good but I think 3 is never easy.
-But early notification would be better than late notification which can kill
-someone.
-
-> 
-> And here are the answers:
-> 
-> 1. VMEVENT_PRESSURE_LOW
-> 2. VMEVENT_PRESSURE_MED
-> 3. VMEVENT_PRESSURE_OOM
-> 
-> There is no "high" pressure, since I really don't see any definition of
-> it, but it's possible to introduce new levels without breaking ABI. The
-> levels described in more details in the patches, and the stuff is still
-> tunable, but now via sysctls, not the vmevent_fd() call itself (i.e. we
-> don't need to rebuild applications to adjust window size or other mm
-> "details").
-> 
-> What I couldn't fix in this RFC is making vmevent_{scanned,reclaimed}
-> stuff per-CPU (there's a comment describing the problem with this). But I
-> made it lockless and tried to make it very lightweight (plus I moved the
-> vmevent_pressure() call to a more "cold" path).
-
-Your description doesn't include why we need new vmevent_fd(2).
-Of course, it's very flexible and potential to add new VM knob easily but
-the thing we is about to use now is only VMEVENT_ATTR_PRESSURE.
-Is there any other use cases for swap or free? or potential user?
-Adding vmevent_fd without them is rather overkill.
-
-And I want to avoid timer-base polling of vmevent if possbile.
-mem_notify of KOSAKI doesn't use such timer.
-
-I don't object but we need rationale for adding new system call which should
-be maintained forever once we add it.
-
-> 
-> Thanks,
-> Anton.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Marco
