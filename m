@@ -1,150 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935839Ab2JYPNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:13:46 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50195 "EHLO e2.ny.us.ibm.com"
+	id S1946206Ab2JYPOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:14:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40558 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab2JYPNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:13:43 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v4 12/15] vfs,hot_track: turn some Micro into be tunable
-Date: Thu, 25 Oct 2012 23:09:04 +0800
-Message-Id: <1351177747-19389-13-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
-References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102515-5112-0000-0000-00000DD642BF
+	id S1946127Ab2JYPOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 11:14:00 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org
+Subject: [PATCH 3/3] ext3: introduce ext3_error_remove_page
+Date: Thu, 25 Oct 2012 11:12:49 -0400
+Message-Id: <1351177969-893-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+What I suggested in the previous patch for ext4 is ditto with ext3,
+so do the same thing for ext3.
 
-  Turn TIME_TO_KICK and HEAT_UPDATE_DELAY
-into be tunable via /proc/sys/fs/hot-kick-time and
-/proc/sys/fs/hot-update-delay.
-
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/hot_tracking.c            |   12 +++++++++---
- fs/hot_tracking.h            |    9 ---------
- include/linux/hot_tracking.h |    7 +++++++
- kernel/sysctl.c              |   14 ++++++++++++++
- 4 files changed, 30 insertions(+), 12 deletions(-)
+ fs/ext3/inode.c | 33 ++++++++++++++++++++++++++++++---
+ 1 file changed, 30 insertions(+), 3 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 18a64ee..15ed407 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -25,6 +25,12 @@
- #include <linux/limits.h>
- #include "hot_tracking.h"
- 
-+int sysctl_hot_kick_time __read_mostly = 300;
-+EXPORT_SYMBOL_GPL(sysctl_hot_kick_time);
-+
-+int sysctl_hot_update_delay __read_mostly = 300;
-+EXPORT_SYMBOL_GPL(sysctl_hot_update_delay);
-+
- static struct hot_info *hot_root;
- 
- /* kmem_cache pointers for slab caches */
-@@ -345,7 +351,7 @@ static bool hot_freq_data_is_obsolete(struct hot_freq_data *freq_data)
- 		(cur_time - timespec_to_ns(&freq_data->last_read_time));
- 	u64 last_write_ns =
- 		(cur_time - timespec_to_ns(&freq_data->last_write_time));
--	u64 kick_ns =  TIME_TO_KICK * NSEC_PER_SEC;
-+	u64 kick_ns =  sysctl_hot_kick_time * NSEC_PER_SEC;
- 
- 	if ((last_read_ns > kick_ns) && (last_write_ns > kick_ns))
- 		ret = 1;
-@@ -651,7 +657,7 @@ static void hot_update_worker(struct work_struct *work)
- 
- 	/* Instert next delayed work */
- 	queue_delayed_work(root->update_wq, &root->update_work,
--		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+		msecs_to_jiffies(sysctl_hot_update_delay * MSEC_PER_SEC));
+diff --git v3.7-rc2.orig/fs/ext3/inode.c v3.7-rc2/fs/ext3/inode.c
+index 7e87e37..7f708bf 100644
+--- v3.7-rc2.orig/fs/ext3/inode.c
++++ v3.7-rc2/fs/ext3/inode.c
+@@ -1967,6 +1967,33 @@ static int ext3_journalled_set_page_dirty(struct page *page)
+ 	return __set_page_dirty_nobuffers(page);
  }
  
- /*
-@@ -1257,7 +1263,7 @@ int hot_track_init(struct super_block *sb)
- 	/* Initialize hot tracking wq and arm one delayed work */
- 	INIT_DELAYED_WORK(&root->update_work, hot_update_worker);
- 	queue_delayed_work(root->update_wq, &root->update_work,
--		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+		msecs_to_jiffies(sysctl_hot_update_delay * MSEC_PER_SEC));
- 
- 	/* Register a shrinker callback */
- 	root->hot_shrink.shrink = hot_track_prune;
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index 6eb024f..d6d9161 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -26,15 +26,6 @@
- #define FREQ_POWER 4
- 
- /*
-- * time to quit keeping track of
-- * tracking data (seconds)
-- */
--#define TIME_TO_KICK 300
--
--/* set how often to update temperatures (seconds) */
--#define HEAT_UPDATE_DELAY 300
--
--/*
-  * The following comments explain what exactly comprises a unit of heat.
-  *
-  * Each of six values of heat are calculated and combined in order to form an
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 7107cfa..ea59f33 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -101,6 +101,13 @@ struct hot_info {
- };
- 
- /*
-+ * Two variables have meanings as below:
-+ * 1. time to quit keeping track of tracking data (seconds)
-+ * 2. set how often to update temperatures (seconds)
-+ */
-+extern int sysctl_hot_kick_time, sysctl_hot_update_delay;
++static int ext3_error_remove_page(struct address_space *mapping,
++				struct page *page)
++{
++	struct inode *inode = mapping->host;
++	struct buffer_head *bh, *head;
++	ext3_fsblk_t block = 0;
 +
-+/*
-  * Hot data tracking ioctls:
-  *
-  * HOT_INFO - retrieve info on frequency of access
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 26f65ea..37624fb 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1545,6 +1545,20 @@ static struct ctl_table fs_table[] = {
- 		.proc_handler	= &pipe_proc_fn,
- 		.extra1		= &pipe_min_size,
- 	},
-+	{
-+		.procname	= "hot-kick-time",
-+		.data		= &sysctl_hot_kick_time,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "hot-update-delay",
-+		.data		= &sysctl_hot_update_delay,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- 	{ }
++	if (!PageDirty(page) || !page_has_buffers(page))
++		goto remove_page;
++
++	/* Lost data. Handle as critical fs error. */
++	bh = head = page_buffers(page);
++	do {
++		if (buffer_dirty(bh)) {
++			block = bh->b_blocknr;
++			ext3_error(inode->i_sb, "ext3_error_remove_page",
++				"inode #%lu: block %lu: "
++				"Removing dirty pagecache page",
++				inode->i_ino, block);
++		}
++		bh = bh->b_this_page;
++	} while (bh != head);
++
++remove_page:
++	return generic_error_remove_page(mapping, page);
++}
++
+ static const struct address_space_operations ext3_ordered_aops = {
+ 	.readpage		= ext3_readpage,
+ 	.readpages		= ext3_readpages,
+@@ -1979,7 +2006,7 @@ static const struct address_space_operations ext3_ordered_aops = {
+ 	.direct_IO		= ext3_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+-	.error_remove_page	= generic_error_remove_page,
++	.error_remove_page	= ext3_error_remove_page,
  };
  
+ static const struct address_space_operations ext3_writeback_aops = {
+@@ -1994,7 +2021,7 @@ static const struct address_space_operations ext3_writeback_aops = {
+ 	.direct_IO		= ext3_direct_IO,
+ 	.migratepage		= buffer_migrate_page,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+-	.error_remove_page	= generic_error_remove_page,
++	.error_remove_page	= ext3_error_remove_page,
+ };
+ 
+ static const struct address_space_operations ext3_journalled_aops = {
+@@ -2008,7 +2035,7 @@ static const struct address_space_operations ext3_journalled_aops = {
+ 	.invalidatepage		= ext3_invalidatepage,
+ 	.releasepage		= ext3_releasepage,
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+-	.error_remove_page	= generic_error_remove_page,
++	.error_remove_page	= ext3_error_remove_page,
+ };
+ 
+ void ext3_set_aops(struct inode *inode)
 -- 
-1.7.6.5
+1.7.11.7
 
