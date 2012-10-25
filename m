@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982Ab2JYQQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:16:24 -0400
-Received: from mail.southpole.se ([193.12.106.18]:51709 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab2JYQQV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:16:21 -0400
-Message-ID: <1351181778.6232.71.camel@jerome.southpole.se>
-Subject: Re: [PATCH 1/2] openrisc: move sys_clone's stack determination to
- copy_thread
-From: Jonas Bonn <jonas@southpole.se>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Date: Thu, 25 Oct 2012 18:16:18 +0200
-In-Reply-To: <20121025155516.GL2616@ZenIV.linux.org.uk>
-References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
-	 <1351179999-8376-2-git-send-email-jonas@southpole.se>
-	 <20121025155516.GL2616@ZenIV.linux.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-3MQ9IX334AcX5kyd5rbZ"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
-X-Assp-Version: 2.2.1(12265) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-Server-TLS: yes
-X-Assp-ID: assp.southpole.se 81779-03494
+	id S1946145Ab2JYQMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:12:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57499 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759720Ab2JYQML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:12:11 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
+        <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
+        <linus.walleij@linaro.org>, <viresh.linux@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>, <khilman@ti.com>,
+        <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <linux-keystone@list.ti.com>, Murali Karicheri <m-karicheri2@ti.com>
+Subject: [PATCH v3 08/11] ARM: davinci - migrating to use common clock init code
+Date: Thu, 25 Oct 2012 12:11:54 -0400
+Message-ID: <1351181518-11882-9-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A clk_init function pointer is added to davinci_soc_info to allow
+SoC code to specify a clock init function for the SoC. Also
+cpu_clks, psc_bases and psc_bases_num are being obsoleted as part
+of the migration. clk_init() is now called from davinci_timer_init()
+as the davinci_common_init() is too early to call this function.
 
---=-3MQ9IX334AcX5kyd5rbZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ arch/arm/mach-davinci/common.c              |    6 ++++++
+ arch/arm/mach-davinci/include/mach/common.h |    4 ++++
+ arch/arm/mach-davinci/time.c                |    7 +++++++
+ 3 files changed, 17 insertions(+)
 
-On Thu, 2012-10-25 at 16:55 +0100, Al Viro wrote:
-> On Thu, Oct 25, 2012 at 05:46:38PM +0200, Jonas Bonn wrote:
-> > +		else
-> > +			userregs->sp =3D regs->sp;	/* fork/clone */
->=20
-> What for?  userregs->sp will be equal to regs->sp at that point, unless
-> your compiler is very badly broken.  You've copied *regs to *userregs
-> wholesale, just above that if...
-
-So true... that makes it even simpler.  Will resend.
-/Jonas
-
---=-3MQ9IX334AcX5kyd5rbZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlCJZdIACgkQ70gcjN2673OC6gCg0THkX8ziDmRhFdVFr4uoe8k0
-azoAn2bDbS/agCMw+R0ImgjrTtqLmqsl
-=VfOF
------END PGP SIGNATURE-----
-
---=-3MQ9IX334AcX5kyd5rbZ--
+diff --git a/arch/arm/mach-davinci/common.c b/arch/arm/mach-davinci/common.c
+index 64b0f65..039494e 100644
+--- a/arch/arm/mach-davinci/common.c
++++ b/arch/arm/mach-davinci/common.c
+@@ -20,7 +20,9 @@
+ #include <mach/common.h>
+ #include <mach/cputype.h>
+ 
++#ifndef CONFIG_COMMON_CLK
+ #include "clock.h"
++#endif
+ 
+ struct davinci_soc_info davinci_soc_info;
+ EXPORT_SYMBOL(davinci_soc_info);
+@@ -105,12 +107,14 @@ void __init davinci_common_init(struct davinci_soc_info *soc_info)
+ 	if (ret < 0)
+ 		goto err;
+ 
++#ifndef CONFIG_COMMON_CLK
+ 	if (davinci_soc_info.cpu_clks) {
+ 		ret = davinci_clk_init(davinci_soc_info.cpu_clks);
+ 
+ 		if (ret != 0)
+ 			goto err;
+ 	}
++#endif
+ 
+ 	return;
+ 
+@@ -122,5 +126,7 @@ void __init davinci_init_late(void)
+ {
+ 	davinci_cpufreq_init();
+ 	davinci_pm_init();
++#ifndef CONFIG_COMMON_CLK
+ 	davinci_clk_disable_unused();
++#endif
+ }
+diff --git a/arch/arm/mach-davinci/include/mach/common.h b/arch/arm/mach-davinci/include/mach/common.h
+index bdc4aa8..040db17 100644
+--- a/arch/arm/mach-davinci/include/mach/common.h
++++ b/arch/arm/mach-davinci/include/mach/common.h
+@@ -54,9 +54,13 @@ struct davinci_soc_info {
+ 	u32				jtag_id_reg;
+ 	struct davinci_id		*ids;
+ 	unsigned long			ids_num;
++#ifdef CONFIG_COMMON_CLK
++	void				(*clk_init)(void);
++#else
+ 	struct clk_lookup		*cpu_clks;
+ 	u32				*psc_bases;
+ 	unsigned long			psc_bases_num;
++#endif
+ 	u32				pinmux_base;
+ 	const struct mux_config		*pinmux_pins;
+ 	unsigned long			pinmux_pins_num;
+diff --git a/arch/arm/mach-davinci/time.c b/arch/arm/mach-davinci/time.c
+index 9847938..01467d8 100644
+--- a/arch/arm/mach-davinci/time.c
++++ b/arch/arm/mach-davinci/time.c
+@@ -27,7 +27,9 @@
+ #include <mach/hardware.h>
+ #include <mach/time.h>
+ 
++#ifndef CONFIG_COMMON_CLK
+ #include "clock.h"
++#endif
+ 
+ static struct clock_event_device clockevent_davinci;
+ static unsigned int davinci_clock_tick_rate;
+@@ -347,6 +349,11 @@ static void __init davinci_timer_init(void)
+ 		"%s: can't register clocksource!\n";
+ 	int i;
+ 
++#ifdef CONFIG_COMMON_CLK
++	/* invoke clk init function specific to a SoC */
++	if (davinci_soc_info.clk_init)
++		davinci_soc_info.clk_init();
++#endif
+ 	clockevent_id = soc_info->timer_info->clockevent_id;
+ 	clocksource_id = soc_info->timer_info->clocksource_id;
+ 
+-- 
+1.7.9.5
 
