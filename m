@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935628Ab2JYNNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:13:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51640 "EHLO
+	id S935601Ab2JYNNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:13:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51644 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422901Ab2JYNKN (ORCPT
+	with ESMTP id S932796Ab2JYNKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Oct 2012 09:10:13 -0400
-Message-Id: <20121025124834.592333415@chello.nl>
+Message-Id: <20121025124833.400431442@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:45 +0200
+Date: Thu, 25 Oct 2012 14:16:29 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,197 +17,102 @@ To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 28/31] sched, numa, mm: Implement constant, per task Working Set Sampling (WSS) rate
+Subject: [PATCH 12/31] mm/mpol: Add MPOL_MF_NOOP
 References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0028-sched-numa-mm-Implement-constant-per-task-Working-Se.patch
+Content-Disposition: inline; filename=0012-mm-mpol-Add-MPOL_MF_NOOP.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, to probe the working set of a task, we'd use
-a very simple and crude method: mark all of its address
-space PROT_NONE.
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-That method has various (obvious) disadvantages:
+This patch augments the MPOL_MF_LAZY feature by adding a "NOOP" policy
+to mbind().  When the NOOP policy is used with the 'MOVE and 'LAZY
+flags, mbind() will map the pages PROT_NONE so that they will be
+migrated on the next touch.
 
- - it samples the working set at dissimilar rates,
-   giving some tasks a sampling quality advantage
-   over others.
+This allows an application to prepare for a new phase of operation
+where different regions of shared storage will be assigned to
+worker threads, w/o changing policy.  Note that we could just use
+"default" policy in this case.  However, this also allows an
+application to request that pages be migrated, only if necessary,
+to follow any arbitrary policy that might currently apply to a
+range of pages, without knowing the policy, or without specifying
+multiple mbind()s for ranges with different policies.
 
- - creates performance problems for tasks with very
-   large working sets
+[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
 
- - over-samples processes with large address spaces but
-   which only very rarely execute
-
-Improve that method by keeping a rotating offset into the
-address space that marks the current position of the scan,
-and advance it by a constant rate (in a CPU cycles execution
-proportional manner). If the offset reaches the last mapped
-address of the mm then it then it starts over at the first
-address.
-
-The per-task nature of the working set sampling functionality
-in this tree allows such constant rate, per task,
-execution-weight proportional sampling of the working set,
-with an adaptive sampling interval/frequency that goes from
-once per 100 msecs up to just once per 1.6 seconds.
-The current sampling volume is 256 MB per interval.
-
-As tasks mature and converge their working set, so does the
-sampling rate slow down to just a trickle, 256 MB per 1.6
-seconds of CPU time executed.
-
-This, beyond being adaptive, also rate-limits rarely
-executing systems and does not over-sample on overloaded
-systems.
-
-[ In AutoNUMA speak, this patch deals with the effective sampling
-  rate of the 'hinting page fault'. AutoNUMA's scanning is
-  currently rate-limited, but it is also fundamentally
-  single-threaded, executing in the knuma_scand kernel thread,
-  so the limit in AutoNUMA is global and does not scale up with
-  the number of CPUs, nor does it scan tasks in an execution
-  proportional manner.
-
-  So the idea of rate-limiting the scanning was first implemented
-  in the AutoNUMA tree via a global rate limit. This patch goes
-  beyond that by implementing an execution rate proportional
-  working set sampling rate that is not implemented via a single
-  global scanning daemon. ]
-
-[ Dan Carpenter pointed out a possible NULL pointer dereference in the
-  first version of this patch. ]
-
-Based-on-idea-by: Andrea Arcangeli <aarcange@redhat.com>
-Bug-Found-By: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Bug-Reported-by: Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ Wrote changelog and fixed bug. ]
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm_types.h |    1 +
- include/linux/sched.h    |    1 +
- kernel/sched/fair.c      |   43 ++++++++++++++++++++++++++++++-------------
- kernel/sysctl.c          |    7 +++++++
- 4 files changed, 39 insertions(+), 13 deletions(-)
+ include/uapi/linux/mempolicy.h |    1 +
+ mm/mempolicy.c                 |   11 ++++++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-Index: tip/include/linux/mm_types.h
+Index: tip/include/uapi/linux/mempolicy.h
 ===================================================================
---- tip.orig/include/linux/mm_types.h
-+++ tip/include/linux/mm_types.h
-@@ -405,6 +405,7 @@ struct mm_struct {
- #endif
- #ifdef CONFIG_SCHED_NUMA
- 	unsigned long numa_next_scan;
-+	unsigned long numa_scan_offset;
- 	int numa_scan_seq;
- #endif
- 	struct uprobes_state uprobes_state;
-Index: tip/include/linux/sched.h
+--- tip.orig/include/uapi/linux/mempolicy.h
++++ tip/include/uapi/linux/mempolicy.h
+@@ -21,6 +21,7 @@ enum {
+ 	MPOL_BIND,
+ 	MPOL_INTERLEAVE,
+ 	MPOL_LOCAL,
++	MPOL_NOOP,		/* retain existing policy for range */
+ 	MPOL_MAX,	/* always last member of enum */
+ };
+ 
+Index: tip/mm/mempolicy.c
 ===================================================================
---- tip.orig/include/linux/sched.h
-+++ tip/include/linux/sched.h
-@@ -2022,6 +2022,7 @@ extern enum sched_tunable_scaling sysctl
+--- tip.orig/mm/mempolicy.c
++++ tip/mm/mempolicy.c
+@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsign
+ 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
+ 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
- extern unsigned int sysctl_sched_numa_scan_period_min;
- extern unsigned int sysctl_sched_numa_scan_period_max;
-+extern unsigned int sysctl_sched_numa_scan_size;
- extern unsigned int sysctl_sched_numa_settle_count;
- 
- #ifdef CONFIG_SCHED_DEBUG
-Index: tip/kernel/sched/fair.c
-===================================================================
---- tip.orig/kernel/sched/fair.c
-+++ tip/kernel/sched/fair.c
-@@ -829,8 +829,9 @@ static void account_numa_dequeue(struct
- /*
-  * numa task sample period in ms: 5s
-  */
--unsigned int sysctl_sched_numa_scan_period_min = 5000;
--unsigned int sysctl_sched_numa_scan_period_max = 5000*16;
-+unsigned int sysctl_sched_numa_scan_period_min = 100;
-+unsigned int sysctl_sched_numa_scan_period_max = 100*16;
-+unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
- 
- /*
-  * Wait for the 2-sample stuff to settle before migrating again
-@@ -904,6 +905,9 @@ void task_numa_work(struct callback_head
- 	unsigned long migrate, next_scan, now = jiffies;
- 	struct task_struct *p = current;
- 	struct mm_struct *mm = p->mm;
-+	struct vm_area_struct *vma;
-+	unsigned long offset, end;
-+	long length;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
- 
-@@ -930,18 +934,31 @@ void task_numa_work(struct callback_head
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
--	ACCESS_ONCE(mm->numa_scan_seq)++;
--	{
--		struct vm_area_struct *vma;
--
--		down_write(&mm->mmap_sem);
--		for (vma = mm->mmap; vma; vma = vma->vm_next) {
--			if (!vma_migratable(vma))
--				continue;
--			change_protection(vma, vma->vm_start, vma->vm_end, vma_prot_none(vma), 0);
--		}
--		up_write(&mm->mmap_sem);
-+	offset = mm->numa_scan_offset;
-+	length = sysctl_sched_numa_scan_size;
-+	length <<= 20;
-+
-+	down_write(&mm->mmap_sem);
-+	vma = find_vma(mm, offset);
-+	if (!vma) {
-+		ACCESS_ONCE(mm->numa_scan_seq)++;
-+		offset = 0;
-+		vma = mm->mmap;
-+	}
-+	for (; vma && length > 0; vma = vma->vm_next) {
-+		if (!vma_migratable(vma))
-+			continue;
-+
-+		offset = max(offset, vma->vm_start);
-+		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
-+		length -= end - offset;
-+
-+		change_prot_none(vma, offset, end);
-+
-+		offset = end;
+-	if (mode == MPOL_DEFAULT) {
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+ 		if (nodes && !nodes_empty(*nodes))
+ 			return ERR_PTR(-EINVAL);
+-		return NULL;	/* simply delete any existing policy */
++		return NULL;
  	}
-+	mm->numa_scan_offset = offset;
-+	up_write(&mm->mmap_sem);
- }
+ 	VM_BUG_ON(!nodes);
  
- /*
-Index: tip/kernel/sysctl.c
-===================================================================
---- tip.orig/kernel/sysctl.c
-+++ tip/kernel/sysctl.c
-@@ -367,6 +367,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
-+		.procname	= "sched_numa_scan_size_mb",
-+		.data		= &sysctl_sched_numa_scan_size,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_numa_settle_count",
- 		.data		= &sysctl_sched_numa_settle_count,
- 		.maxlen		= sizeof(unsigned int),
+@@ -1146,7 +1146,7 @@ static long do_mbind(unsigned long start
+ 	if (start & ~PAGE_MASK)
+ 		return -EINVAL;
+ 
+-	if (mode == MPOL_DEFAULT)
++	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+ 		flags &= ~MPOL_MF_STRICT;
+ 
+ 	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
+@@ -2381,7 +2381,8 @@ static const char * const policy_modes[]
+ 	[MPOL_PREFERRED]  = "prefer",
+ 	[MPOL_BIND]       = "bind",
+ 	[MPOL_INTERLEAVE] = "interleave",
+-	[MPOL_LOCAL]      = "local"
++	[MPOL_LOCAL]      = "local",
++	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ };
+ 
+ 
+@@ -2432,7 +2433,7 @@ int mpol_parse_str(char *str, struct mem
+ 			break;
+ 		}
+ 	}
+-	if (mode >= MPOL_MAX)
++	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+ 		goto out;
+ 
+ 	switch (mode) {
 
 
