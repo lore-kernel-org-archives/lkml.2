@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760047Ab2JYSHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:07:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:60320 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759076Ab2JYSHE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760034Ab2JYSHE (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Oct 2012 14:07:04 -0400
-Date: Thu, 25 Oct 2012 20:06:54 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
-Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        marcheu@chromium.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Lekensteyn <lekensteyn@gmail.com>
-Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
-Message-ID: <20121025180654.GA28920@fritha.org>
-References: <1724445.dN2yMEzN6d@localhost>
- <20121020092647.GA3186@fancy-poultry.org>
- <50827174.7070109@labri.fr>
- <2097113.JL2tUTAZjM@localhost>
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35322 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759076Ab2JYSHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 14:07:00 -0400
+Date: Thu, 25 Oct 2012 11:06:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: JoonSoo Kim <js1304@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH v5 08/18] memcg: infrastructure to match an allocation to
+ the right cache
+Message-ID: <20121025180652.GM11442@htj.dyndns.org>
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
+ <1350656442-1523-9-git-send-email-glommer@parallels.com>
+ <CAAmzW4N40MedsCfcj+eiM-i6cU65n3z7uy08YFyknXbBKj7Z-g@mail.gmail.com>
+ <50891CF2.3030400@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2097113.JL2tUTAZjM@localhost>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:UKhESbsAWgd/7Q4tJClbNw45G3E+dkb0ehzU5bY3hsS
- 0C7ZrRqUAy1x+d5bynSNwWs9P3icQlqu7wdzE3UpTCLNy/gnSi
- RE8zLIW6+ImJoSKghmfZSfXaGyLTxPsuEAdTZZPySSmIdsCMah
- NfZpsSnlC3H8XdnOPn36c0nJUGCrtyt7vfrykb/7SCcvA0IV8P
- qTAz8p+5rrTsday99aXB1Vmmp8sETEzspHlC5c0UvjQSaUm55t
- rBGTmH8fVbCzX9ALCUfDrmAQvghxK7CMk7edsl4jjXTwmO46bZ
- AifmNnp9ejDwCPugoYuXPhBqVoYApL+ve55n4zuREJqw3asV6F
- 7KrJ3XArtlswwCbvRyFQ=
+In-Reply-To: <50891CF2.3030400@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.10.2012, Paweł Sikora wrote: 
+Hello, Glauber.
 
-> what is the reason of loading nouveau driver for laptops 
-> with nvidia optimus and enabling vga switcheroo
-> which doesn't work in such (optimus) cases.
+On Thu, Oct 25, 2012 at 03:05:22PM +0400, Glauber Costa wrote:
+> > Is there any rmb() pair?
+> > As far as I know, without rmb(), wmb() doesn't guarantee anything.
+> > 
+> 
+> There should be. But it seems I missed it. Speaking of which, I should
 
-You can safely compile a kernel without nouveau, your Nvidia 
-card will not be used at all since neither Linux nor the 
-proprietary nvidia driver does support optimus at this time
-(and frankly, I won't buy any further machines with opticrap).
-So having nouveau compiled and loaded seems like a waste of ressources
-in this case.
+You probably can use read_barrier_depends().
 
-For me it's important to have nouveau working, because I try/use
-Bumblebee and optirun: 
+> wmb() after the NULL assignment in release cache as well.
 
-http://bumblebee-project.org/
-https://fedoraproject.org/wiki/Bumblebee
+And you probably don't need that.  dangling pointer is protected by
+RCU and there isn't any memory accesses which can paired with that
+anyway.
 
+Thanks.
+
+-- 
+tejun
