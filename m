@@ -1,83 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab2JYLoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:44:06 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:33120 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2JYLoE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:44:04 -0400
-Date: Thu, 25 Oct 2012 13:43:52 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, "Eran Ben-Avi" <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 1/2] arm: mvebu: increase atomic coherent pool size for
- armada 370/XP
-Message-ID: <20121025134352.16a8ef81@skate>
-In-Reply-To: <201210251127.36960.arnd@arndb.de>
-References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com>
-	<1351086561-13569-2-git-send-email-gregory.clement@free-electrons.com>
-	<201210251127.36960.arnd@arndb.de>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756001Ab2JYLqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:46:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29122 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab2JYLqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 07:46:40 -0400
+Date: Thu, 25 Oct 2012 17:16:22 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Kees Cook <keescook@chromium.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+In-Reply-To: <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd,
 
-On Thu, 25 Oct 2012 11:27:36 +0000, Arnd Bergmann wrote:
-> On Wednesday 24 October 2012, Gregory CLEMENT wrote:
-> > For Armada 370/XP we have the same problem that for the commit
-> > cb01b63, so we applied the same solution: "The default 256 KiB
-> > coherent pool may be too small for some of the Kirkwood devices, so
-> > increase it to make sure that devices will be able to allocate their
-> > buffers with GFP_ATOMIC flag"
-> > 
-> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> 
-> Do you know why the ATA driver needs this? I find it surprising that
-> it's necessary, so I'd like to make sure we're not just working around
-> a device driver bug here.
+  Hello Kees,
 
-The sata_mv driver create dma_pool and allocate objects from them, and
-all the memory allocated for dma_pools is allocated using
-dma_alloc_coherent(), and I guess the driver is using too much of them.
++-- On Wed, 24 Oct 2012, Kees Cook wrote --+
+| What should the code here _actually_ be doing? The _script and _misc 
+| handlers expect to rewrite the bprm contents and recurse, but the module 
+| loader want to try again. It's not clear to me what the binfmt module 
+| handler is even there for; I don't see any binfmt-XXXX aliases in the tree. 
+| If nothing uses it, should we just rip it out? That would solve it too.
 
-Seems like the driver is too lazy and allocates everything coherent to
-avoid the hassle of doing dma_map/dma_unmap operations when needed, but
-I haven't looked in details at the driver yet to see if it would be
-possible to switch those DMA coherent allocations into non-coherent
-allocations + appropriate calls to the DMA operations.
+I've been following this issue and updated versions of HDs patch. Below is a 
+small patch to search_binary_handler() routine, which attempts to make the 
+request_module call before calling load_script routine.
 
-That said, that's for sure a larger task than just enabling SATA on
-Armada 370/XP, so I would advocate to handle this problem separately.
+Besides fixing the stack disclosure issue it also helps to *simplify* the 
+search_binary_handler routine by removing the -for (try=0;try<2;try++)- loop.
 
-Best regards,
+I'd really appreciate any comments/suggestions you may have.
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+===
+diff --git a/fs/exec.c b/fs/exec.c
+index 8b9011b..e368f41 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1369,65 +1369,55 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 	old_vpid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+ 	rcu_read_unlock();
+ 
+-	retval = -ENOENT;
+-	for (try=0; try<2; try++) {
+-		read_lock(&binfmt_lock);
+-		list_for_each_entry(fmt, &formats, lh) {
+-			int (*fn)(struct linux_binprm *, struct pt_regs *) = fmt->load_binary;
+-			if (!fn)
+-				continue;
+-			if (!try_module_get(fmt->module))
+-				continue;
+-			read_unlock(&binfmt_lock);
+-			retval = fn(bprm, regs);
+-			/*
+-			 * Restore the depth counter to its starting value
+-			 * in this call, so we don't have to rely on every
+-			 * load_binary function to restore it on return.
+-			 */
+-			bprm->recursion_depth = depth;
+-			if (retval >= 0) {
+-				if (depth == 0) {
+-					trace_sched_process_exec(current, old_pid, bprm);
+-					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
+-				}
+-				put_binfmt(fmt);
+-				allow_write_access(bprm->file);
+-				if (bprm->file)
+-					fput(bprm->file);
+-				bprm->file = NULL;
+-				current->did_exec = 1;
+-				proc_exec_connector(current);
+-				return retval;
+-			}
+-			read_lock(&binfmt_lock);
+-			put_binfmt(fmt);
+-			if (retval != -ENOEXEC || bprm->mm == NULL)
+-				break;
+-			if (!bprm->file) {
+-				read_unlock(&binfmt_lock);
+-				return retval;
+-			}
+-		}
+-		read_unlock(&binfmt_lock);
+ #ifdef CONFIG_MODULES
+-		if (retval != -ENOEXEC || bprm->mm == NULL) {
+-			break;
+-		} else {
+-#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
+-			if (printable(bprm->buf[0]) &&
+-			    printable(bprm->buf[1]) &&
+-			    printable(bprm->buf[2]) &&
+-			    printable(bprm->buf[3]))
+-				break; /* -ENOEXEC */
+-			if (try)
+-				break; /* -ENOEXEC */
+-			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+-		}
+-#else
+-		break;
++#define printable(c) (0x20<=(c) && (c)<=0x7e)
++
++    if (printable(bprm->buf[0]) && printable(bprm->buf[1])
++        && printable(bprm->buf[2]) && printable(bprm->buf[3]))
++        request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+ #endif
+-	}
++
++    retval = -ENOENT;
++    read_lock(&binfmt_lock);
++    list_for_each_entry(fmt, &formats, lh) {
++        int (*fn)(struct linux_binprm *, struct pt_regs *) = fmt->load_binary;
++        if (!fn)
++            continue;
++        if (!try_module_get(fmt->module))
++            continue;
++        read_unlock(&binfmt_lock);
++        retval = fn(bprm, regs);
++        /*
++         * Restore the depth counter to its starting value
++         * in this call, so we don't have to rely on every
++         * load_binary function to restore it on return.
++         */
++        bprm->recursion_depth = depth;
++        if (retval >= 0) {
++            if (depth == 0) {
++                trace_sched_process_exec(current, old_pid, bprm);
++                ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
++            }
++            put_binfmt(fmt);
++            allow_write_access(bprm->file);
++            if (bprm->file)
++                fput(bprm->file);
++            bprm->file = NULL;
++            current->did_exec = 1;
++            proc_exec_connector(current);
++            return retval;
++        }
++        read_lock(&binfmt_lock);
++        put_binfmt(fmt);
++        if (retval != -ENOEXEC || bprm->mm == NULL)
++            break;
++        if (!bprm->file) {
++            read_unlock(&binfmt_lock);
++            return retval;
++        }
++    }
++    read_unlock(&binfmt_lock);
++
+ 	return retval;
+ }
+ 
+===
+
+Thank you.
+--
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
