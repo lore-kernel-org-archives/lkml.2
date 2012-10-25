@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759013Ab2JYAwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:52:44 -0400
+	id S1758913Ab2JYAwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:52:04 -0400
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:44516 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758949Ab2JYAwN (ORCPT
+	with ESMTP id S1757206Ab2JYAwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:52:13 -0400
+	Wed, 24 Oct 2012 20:52:01 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 5/5] cputime: Separate irqtime accounting from generic vtime
-Date: Thu, 25 Oct 2012 02:51:53 +0200
-Message-Id: <1351126313-17804-6-git-send-email-fweisbec@gmail.com>
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>
+Subject: [PATCH 0/5] cputime: Moar cleanups / enhancements v2
+Date: Thu, 25 Oct 2012 02:51:48 +0200
+Message-Id: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
-References: <1351126313-17804-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vtime_account() doesn't have the same role in
-CONFIG_VIRT_CPU_ACCOUNTING and CONFIG_IRQ_TIME_ACCOUNTING.
+I made some changes to the series:
 
-In the first case it handles time accounting in any context. In
-the second case it only handles irq time accounting.
+- Handle possible softirq interrupting idle on local_bh_enable()
+- Have a dedicated vtime.h header file
+- Do some clearer ifdeffery
+- Use an irqsafe vtime_account_system() on kvm.
 
-So when vtime_account() is called from outside vtime_account_irq_*()
-this call is pointless to CONFIG_IRQ_TIME_ACCOUNTING.
+Patches 1/5 and 5/5 are something I really think we want. Patch 3/5
+implicitly fixes a bug in s390. If you prefer I can just fix s390
+and drop the rest of the patch that is just a micro-optimization
+in the kvm guest switch path.
 
-To fix the confusion, change vtime_account() to irqtime_account_irq()
-in CONFIG_IRQ_TIME_ACCOUNTING. This way we ensure future account_vtime()
-calls won't waste useless cycles in the irqtime APIs.
+The rest of the patches is micro optimizations on the irq path.
+If you think these are pointless over-optimizations, I can just drop
+these and only keep 1/5, rebase 5/5 and extract the bug fix in s390 that
+resides in 3/5.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- include/linux/vtime.h  |   19 +++++++++----------
- kernel/sched/cputime.c |    4 ++--
- 2 files changed, 11 insertions(+), 12 deletions(-)
+Otherwise I'll send a pull request to Ingo in a week or so.
 
-diff --git a/include/linux/vtime.h b/include/linux/vtime.h
-index 40634fb..f1f91ac 100644
---- a/include/linux/vtime.h
-+++ b/include/linux/vtime.h
-@@ -8,17 +8,18 @@ extern void vtime_task_switch(struct task_struct *prev);
- extern void vtime_account_system(struct task_struct *tsk);
- extern void vtime_account_system_irqsafe(struct task_struct *tsk);
- extern void vtime_account_idle(struct task_struct *tsk);
-+extern void vtime_account(struct task_struct *tsk);
- #else
- static inline void vtime_task_switch(struct task_struct *prev) { }
-+static inline void vtime_account_system(struct task_struct *tsk) { }
- static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
-+static inline void vtime_account(struct task_struct *tsk) { }
- #endif
- 
--#if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
--static inline void vtime_account(struct task_struct *tsk)
--{
--}
-+#ifdef CONFIG_IRQ_TIME_ACCOUNTING
-+extern void irqtime_account_irq(struct task_struct *tsk);
- #else
--extern void vtime_account(struct task_struct *tsk);
-+static inline void irqtime_account_irq(struct task_struct *tsk) { }
- #endif
- 
- static inline void vtime_account_irq_enter(struct task_struct *tsk)
-@@ -33,17 +34,15 @@ static inline void vtime_account_irq_enter(struct task_struct *tsk)
- 	 * the idle time is flushed on hardirq time already.
- 	 */
- 	vtime_account(tsk);
-+	irqtime_account_irq(tsk);
- }
- 
- static inline void vtime_account_irq_exit(struct task_struct *tsk)
- {
--#ifdef CONFIG_VIRT_CPU_ACCOUNTING
- 	/* On hard|softirq exit we always account to hard|softirq cputime */
- 	vtime_account_system(tsk);
--#endif
--#ifdef CONFIG_IRQ_TIME_ACCOUNTING
--	vtime_account(tsk);
--#endif
-+	irqtime_account_irq(tsk);
-+
- }
- 
- #endif /* _LINUX_KERNEL_VTIME_H */
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 3ccbea0..1a7e1369 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -43,7 +43,7 @@ DEFINE_PER_CPU(seqcount_t, irq_time_seq);
-  * Called before incrementing preempt_count on {soft,}irq_enter
-  * and before decrementing preempt_count on {soft,}irq_exit.
-  */
--void vtime_account(struct task_struct *curr)
-+void irqtime_account_irq(struct task_struct *curr)
- {
- 	unsigned long flags;
- 	s64 delta;
-@@ -73,7 +73,7 @@ void vtime_account(struct task_struct *curr)
- 	irq_time_write_end();
- 	local_irq_restore(flags);
- }
--EXPORT_SYMBOL_GPL(vtime_account);
-+EXPORT_SYMBOL_GPL(irqtime_account_irq);
- 
- static int irqtime_account_hi_update(void)
- {
+If you want to test, it is pullable from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	cputime/cleanups-v3
+
+Tested on powerpc and x86. Built tested on ia64. s390 doesn't build defconfig
+on v3.7-rc2.
+
+Frederic Weisbecker (5):
+  vtime: Gather vtime declarations to their own header file
+  vtime: Provide an irq safe version of vtime_account_system()
+  kvm: Directly account vtime to system on guest switch
+  cputime: Specialize irq vtime hooks
+  cputime: Separate irqtime accounting from generic vtime
+
+ arch/s390/kernel/vtime.c    |    4 +++
+ include/linux/hardirq.h     |   15 ++----------
+ include/linux/kernel_stat.h |    9 +-------
+ include/linux/kvm_host.h    |   12 +++++++++-
+ include/linux/vtime.h       |   48 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/cputime.c      |   13 +++++++++-
+ kernel/softirq.c            |    6 ++--
+ 7 files changed, 80 insertions(+), 27 deletions(-)
+ create mode 100644 include/linux/vtime.h
+
 -- 
 1.7.5.4
 
