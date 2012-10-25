@@ -1,135 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935039Ab2JYIdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 04:33:24 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55123 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759265Ab2JYIdR (ORCPT
+	id S934757Ab2JYIhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 04:37:12 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56442 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933834Ab2JYIhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 04:33:17 -0400
-X-AuditID: 9c93016f-b7c7bae000000eb7-2f-5088f94b5fa4
-Date: Thu, 25 Oct 2012 17:38:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC 1/2] vmevent: Implement pressure attribute
-Message-ID: <20121025083843.GB15767@bbox>
-References: <20121022111928.GA12396@lizard>
- <20121022112149.GA29325@lizard>
- <alpine.LFD.2.02.1210241159590.13035@tux.localdomain>
- <20121025022321.GA8892@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025022321.GA8892@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 25 Oct 2012 04:37:09 -0400
+X-AuditID: cbfee60e-b7f6c6d000007f11-71-5088fa325e8a
+Date: Thu, 25 Oct 2012 08:37:06 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: RE: [PATCH] extcon : callback function to read cable property
+To: "Tc, Jenny" <jenny.tc@intel.com>,
+        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        anish kumar <anish198519851985@gmail.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20121025083656667@myungjoo.ham
+Msgkey: 20121025083656667@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20121025083656667@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <16192195.128621351154225389.JavaMail.weblogic@epml11>
+DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t8zPV2jXx0BBvtu8lhc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MDTcbmQumaVfcWHOCrYGxRauLkZNDSEBdYtGSk2wgtoSAicSW
+	iUcYIWwxiQv31gPFuYBqljFKXN86gQWmaOOBJnaIxHxGiVMXG5lBEiwCqhI9d9qAujk42AT0
+	JGZ+TgYJCwt4SRzt+sYKYosIJEqc/7QVrJxZoEDi6KffLBBHKEms2fcKzOYVEJQ4OfMJ1C5V
+	iU/P1kLF1SSWv21ihYhLSMyafgHK5pWY0f4Uql5OYtrXNcwQtrTE+Vkb4J5Z/P0xVJxf4tjt
+	HUwgZ4L0PrkfDDNm9+Yv0HAQkJh65iBUq5bEtf7VUDafxJqFb1lgxuw6tZwZpvf+lrlMEG8p
+	SkzpfsgOYWtJfPmxjw3dW7wCThIHZpxlnMCoPAtJahaS9llI2pHVLGBkWcUomlqQXFCclJ5q
+	olecmFtcmpeul5yfu4kRkhb4djDOa7A4xCjAwajEw3vQoyNAiDWxrLgy9xCjBAezkgjv9vdA
+	Id6UxMqq1KL8+KLSnNTiQ4w+wPibyCwlmpwPTFl5JfGGxgbGhoaWhmamlqYGOISVxHnrPVIC
+	hATSE0tSs1NTC1KLYMYxcXBKNTDKNk0PSEpX4yo5ePxKfsKcTW7Nn5lT2CUM2zw5zP5w5fYz
+	/tDwWsicG6O/cN3Es1ZWz1cofFn1z8974cGNS9863wo+UHlhp0vvvugHBzgKrpdZZbRwNLJp
+	WO6veLT2aqZo737bCxpn7yyYedzzSntOhwT7I67uXadTL0m92pB/fNb2A4qTgw8qsRRnJBpq
+	MRcVJwIAKH68tDgDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t/t6bpGvzoCDFYf4rC4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GRtuNjIXTNOuuLHmBFsDY4tWFyMnh5CAusSiJSfZQGwJAROJjQea2CFsMYkL99YDxbmAauYz
+	Spy62MgMkmARUJXoudPG2MXIwcEmoCcx83MySFhYwEviaNc3VhBbRCBR4vynrWDlzAIFEkc/
+	/WaB2KUksWbfKzCbV0BQ4uTMJywQu1QlPj1bCxVXk1j+tokVIi4hMWv6BSibV2JG+1OoejmJ
+	aV/XMEPY0hLnZ21ghLl58ffHUHF+iWO3dzCBnAnS++R+MMyY3Zu/QL0rIDH1zEGoVi2Ja/2r
+	oWw+iTUL37LAjNl1ajkzTO/9LXOZIN5SlJjS/ZAdwtaS+PJjHxu6t3gFnCQOzDjLOIFRbhaS
+	1Cwk7bOQtCOrWcDIsopRNLUguaA4KT3VRK84Mbe4NC9dLzk/dxMjOEE949vBOK/B4hCjAAej
+	Eg/vQY+OACHWxLLiytxDjBIczEoivNvfA4V4UxIrq1KL8uOLSnNSiw8x+gDjbyKzlGhyPjB5
+	5pXEGxobGBsaWpobmBoaWeAQVhLnrfdICRASSE8sSc1OTS1ILYIZx8TBKdXAmOC3MS/S5PqF
+	rcYvumwcShyrXqlO4WsqTzV+sfvmH7sQsYiVUzV95+Vd/yu39bDRQzl126yjJckHSo7t2pbA
+	02XONf3G7MJXdgWboi7X+iTIiqzdtWTHwqub3y/ecctRhMXunfPHRv5VXec+fjG2urNvZc3V
+	+AUel/NvbzFNuWEa/rY0PKjPX4mlOCPRUIu5qDgRAOKdGjx9AwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9P8bKt5016196
 
-On Wed, Oct 24, 2012 at 07:23:21PM -0700, Anton Vorontsov wrote:
-> Hello Pekka,
 > 
-> Thanks for taking a look into this!
-> 
-> On Wed, Oct 24, 2012 at 12:03:10PM +0300, Pekka Enberg wrote:
-> > On Mon, 22 Oct 2012, Anton Vorontsov wrote:
-> > > This patch introduces VMEVENT_ATTR_PRESSURE, the attribute reports Linux
-> > > virtual memory management pressure. There are three discrete levels:
-> > > 
-> > > VMEVENT_PRESSURE_LOW: Notifies that the system is reclaiming memory for
-> > > new allocations. Monitoring reclaiming activity might be useful for
-> > > maintaining overall system's cache level.
-> > > 
-> > > VMEVENT_PRESSURE_MED: The system is experiencing medium memory pressure,
-> > > there is some mild swapping activity. Upon this event applications may
-> > > decide to free any resources that can be easily reconstructed or re-read
-> > > from a disk.
+> > Subject: Re: [PATCH] extcon : callback function to read cable property
 > > 
-> > Nit:
+> > On 10/19/2012 12:13 PM, Tc, Jenny wrote:
+> > The rold of extcon inform only attached/detached state of extcon consumer
+> > driver from extcon provider driver. After extcon consumer driver detect the
+> > state of cable through extcon, extcon consumer driver or framework should
+> > get the additional information of cable from other device driver except of
+> > extcon.
 > > 
-> > s/VMEVENT_PRESSURE_MED/VMEVENT_PRESSUDE_MEDIUM/
-> 
-> Sure thing, will change.
-> 
-> > Other than that, I'm OK with this. Mel and others, what are your thoughts 
-> > on this?
+> > Also, extcon manage various cables (e.g., USB, TA, MHL, JIG-USB-ON, JIG-
+> > USB-OFF, Dock) What are common properties among many cables expect
+> > attached or detached state?
 > > 
-> > Anton, have you tested this with real world scenarios?
 > 
-> Yup, I was mostly testing it on a desktop. I.e. in a KVM instance I was
-> running a full fedora17 desktop w/ a lot of apps opened. The pressure
-> index was pretty good in the sense that it was indeed reflecting the
-> sluggishness in the system during swap activity. It's not ideal, i.e. the
-> index might drop slightly for some time, but we usually interested in
-> "above some value" threshold, so it should be fine.
+> For charger cable the current each cable can provide will be common.
+> But may not be relevant for other cables. 
 > 
-> The _LOW level is defined very strictly, and cannot be tuned anyhow. So
-> it's very solid, and that's what we mostly use for Android.
+> I understand your point on extcon role. But my concern is, when the consumer
+> driver gets a notification on cable state change, how does the consumer query the
+> cable properties in a generic way. Do you have any suggestions for this?
 > 
-> The _OOM level is also defined quite strict, so from the API point of
-> view, it's also solid, and should not be a problem.
+> A use case can be as below
+> 
+> When a USB host cable (SDP) connected to the platform, without USB enumeration
+> it can support only up to 100mA(USB2.)/150mA(USB 3.0) (As per USB charging spec).
+> Once the enumeration is done this can be 500mA/950mA. If the consumer charger driver
+> need to configure the charger chip, it need to know the charger cable capabilities.
+> For example a platform PLAT1 may have charger driver CHRGR1 and OTG driver OTG1.
+> But platform PLAT2 may have CHGR1 but different OTG driver OTG2. How 
+> CHGR1 driver can detect  the cable properties without having any platform layer
+> hooks? The platform layer hooks (using platform data)will work only if the consumer is
+> a platform driver. What if it's a framework which will have the same flow in all platforms?
 
-The one of the concern when I see the code is that whether we should consider
-high order page allocation. Now OOM killer doesn't kill anyone when VM
-suffer from higher order allocation because it doesn't help getting physical
-contiguos memory in normal case. Same rule could be applied.
+In general,
+an extcon user (extcon notifee) knows who's the extcon notifier; the user
+is supposed to know the name of the notifier.
 
-> 
-> Although the problem with _OOM is delivering the event in time (i.e. we
-> must be quick in predicting it, before OOMK triggers). Today the patch has
+Thus, the extcon user should be able to get the appropriate object; i.e.,
+a regulator struct in this case. Then, according to the USB state,
+the current limit of the USB can be changed by the notifier; which
+may notify (regulator subsystem has one) the extcon user to react
+(change current limit of charger?)
 
-Absolutely. It was a biggest challenge.
+Anyway, in your case of PLAT2, doesn't CHGR1 has (or is) a regulator
+controlling the charger current and if the OTG2 regulator affects
+the behavior of CHGR1, (the current of OTG2-reg goes to CHGR1-reg)
+the consumer-supplier chain should be setup (if the BSP is ideal).
 
-> a shortcut for _OOM level: we send _OOM notification when reclaimer's
-> priority is below empirically found value '3' (we might make it tunable
-> via sysctl too, but that would expose another mm detail -- although sysctl
-> sounds not that bad as exposing something in the C API; we have plenty of
-> mm knobs in /proc/sys/vm/ already).
+OR
 
-Hmm, I'm not sure depending on such magic value is good idea but I have no idea
-so I will shut up :(
+If it is impossible to have any objects of OTG2 (looks strange, but..),
+you may have two cables, USB (data) and Fast-charger.04 (add +400mA to USB),
+where Fast-charger.04 is enabled when USB2 enumeration is done with 5.
 
-> 
-> The real tunable is _MED level, and this should be tuned based on the
-> desired system's behaviour that I described in more detail in this long
-> post: http://lkml.org/lkml/2012/10/7/29.
-> 
-> Based on my observations, I wouldn't say that we have plenty of room to
-> tune the value, though. Usual swapping activity causes index to rise to
-> say to 30%, and when the system can't keep up, it raises to 50..90 (but we
-> still have plenty of swap space, so the system is far away from OOM,
-> although it is thrashing. Ideally I'd prefer to not have any sysctl, but I
-> believe _MED level is really based on user's definition of "medium".
-> 
-> > How does it stack up against Android's low memory killer, for example?
-> 
-> The LMK driver is effectively using what we call _LOW pressure
-> notifications here, so by definition it is enough to build a full
-> replacement for the in-kernel LMK using just the _LOW level. But in the
-> future, we might want to use _MED as well, e.g. kill unneeded services
-> based not on the cache level, but based on the pressure.
 
-Good idea.
-Thanks for keeping trying this, Anton!
 
-> 
-> Thanks,
-> Anton.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+However, the following callback might be considered if there are cases where
+an extcon user has information of extcon_name and cable_name while the user
+CANNOT get any information on which device or object is related with the
+specific cable; in struct extcon, with optional user initializing data section:
 
--- 
-Kind regards,
-Minchan Kim
++	struct device **cable_device;
+OR
++	char **cable_device_name;
+
+With any relevant changes in the status with cable_device,
+we may notify any notifier-block that are interested in the specific
+cable. Then, the notifier-block (for register_interest) is going to
+handle extcon-state changes and cable_device notifications.
+Currently, the user's nb is for cable attach/detach events with
+true/false value in the place of 32bit value (val). However,
+if we add the third possible value for that parameter
+(0: cable detached, 1: cable attached, 2: cable status changed;
+go find out what's going on), it is still compatible.
+
+I considered using a void pointer instead of cable_device, too.
+However, that would spoil the subsystem too much; we'll be creating
+a total chaos: "USB-A driver uses struct regulator", "USB-B driver
+uses struct device", "USB-C driver uses true/false", and so on.
+
+
+Cheers,
+MyungJoo
+
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
