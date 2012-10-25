@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2JYEu7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 00:50:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41278 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838Ab2JYEu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 00:50:58 -0400
-Message-ID: <5088C51D.3060009@gmail.com>
-Date: Thu, 25 Oct 2012 12:50:37 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753892Ab2JYFPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:15:07 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57389 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751486Ab2JYFPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 01:15:05 -0400
+Date: Thu, 25 Oct 2012 01:14:45 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+Cc: =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121025051445.GA9860@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Vladislav Bolkhovitin <vvvvvst@gmail.com>,
+	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	drh@hwaci.com
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+ <m2fw5mtffg.fsf_-_@firstfloor.org>
+ <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+ <5086F5A7.9090406@vlnb.net>
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5086F5A7.9090406@vlnb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 12:36 PM, Hugh Dickins wrote:
-> On Wed, 24 Oct 2012, Dave Jones wrote:
->
->> Machine under significant load (4gb memory used, swap usage fluctuating)
->> triggered this...
->>
->> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
->> Pid: 29795, comm: trinity-child4 Not tainted 3.7.0-rc2+ #49
->> Call Trace:
->>   [<ffffffff8107100f>] warn_slowpath_common+0x7f/0xc0
->>   [<ffffffff8107106a>] warn_slowpath_null+0x1a/0x20
->>   [<ffffffff811903fc>] shmem_getpage_gfp+0xa5c/0xa70
->>   [<ffffffff8118fc3e>] ? shmem_getpage_gfp+0x29e/0xa70
->>   [<ffffffff81190e4f>] shmem_fault+0x4f/0xa0
->>   [<ffffffff8119f391>] __do_fault+0x71/0x5c0
->>   [<ffffffff810e1ac6>] ? __lock_acquire+0x306/0x1ba0
->>   [<ffffffff810b6ff9>] ? local_clock+0x89/0xa0
->>   [<ffffffff811a2767>] handle_pte_fault+0x97/0xae0
->>   [<ffffffff816d1069>] ? sub_preempt_count+0x79/0xd0
->>   [<ffffffff8136d68e>] ? delay_tsc+0xae/0x120
->>   [<ffffffff8136d578>] ? __const_udelay+0x28/0x30
->>   [<ffffffff811a4a39>] handle_mm_fault+0x289/0x350
->>   [<ffffffff816d091e>] __do_page_fault+0x18e/0x530
->>   [<ffffffff810b6ff9>] ? local_clock+0x89/0xa0
->>   [<ffffffff810b0e51>] ? get_parent_ip+0x11/0x50
->>   [<ffffffff810b0e51>] ? get_parent_ip+0x11/0x50
->>   [<ffffffff816d1069>] ? sub_preempt_count+0x79/0xd0
->>   [<ffffffff8112d389>] ? rcu_user_exit+0xc9/0xf0
->>   [<ffffffff816d0ceb>] do_page_fault+0x2b/0x50
->>   [<ffffffff816cd3b8>] page_fault+0x28/0x30
->>   [<ffffffff8136d259>] ? copy_user_enhanced_fast_string+0x9/0x20
->>   [<ffffffff8121c181>] ? sys_futimesat+0x41/0xe0
->>   [<ffffffff8102bf35>] ? syscall_trace_enter+0x25/0x2c0
->>   [<ffffffff816d5625>] ? tracesys+0x7e/0xe6
->>   [<ffffffff816d5688>] tracesys+0xe1/0xe6
->>
->>
->>
->> 1148                         error = shmem_add_to_page_cache(page, mapping, index,
->> 1149                                                 gfp, swp_to_radix_entry(swap));
->> 1150                         /* We already confirmed swap, and make no allocation */
->> 1151                         VM_BUG_ON(error);
->> 1152                 }
-> That's very surprising.  Easy enough to handle an error there, but
-> of course I made it a VM_BUG_ON because it violates my assumptions:
-> I rather need to understand how this can be, and I've no idea.
->
-> Clutching at straws, I expect this is entirely irrelevant, but:
-> there isn't a warning on line 1151 of mm/shmem.c in 3.7.0-rc2 nor
-> in current linux.git; rather, there's a VM_BUG_ON on line 1149.
->
-> So you've inserted a couple of lines for some reason (more useful
-> trinity behaviour, perhaps)?  And have some config option I'm
-> unfamiliar with, that mutates a BUG_ON or VM_BUG_ON into a warning?
+On Tue, Oct 23, 2012 at 03:53:11PM -0400, Vladislav Bolkhovitin wrote:
+> Yes, SCSI has full support for ordered/simple commands designed
+> exactly for that task: to have steady flow of commands even in case
+> when some of them are ordered.....
 
-Hi Hugh,
+SCSI does, yes --- *if* the device actually implements Tagged Command
+Queuing (TCQ).  Not all devices do.
 
-I think it maybe caused by your commit [d189922862e03ce: shmem: fix 
-negative rss in memcg memory.stat], one question:
+More importantly, SATA drives do *not* have this capability, and when
+you compare the price of SATA drives to uber-expensive "enterprise
+drives", it's not surprising that most people don't actually use
+SCSI/SAS drives that have implemented TCQ.  SATA's Native Command
+Queuing (NCQ) is not equivalent; this allows the drive to reorder
+requests (in particular read requests) so they can be serviced more
+efficiently, but it does *not* allow the OS to specify a partial,
+relative ordering of requests.
 
-if function shmem_confirm_swap confirm the entry has already brought 
-back from swap by a racing thread, then why call shmem_add_to_page_cache 
-to add page from swapcache to pagecache again? otherwise, will goto 
-unlock and then go to repeat? where I miss?
+Yes, you can turn off writeback caching, but that has pretty huge
+performance costs; and there is the FUA bit, but that's just an
+unconditional high priority bypass of the writeback cache, which is
+useful in some cases, but which again, does not give the ability for
+the OS to specify a partial order, while letting the drive reorder
+other requests for efficiency/performance's sake, since the drive has
+a lot more information about the optimal way to reorder requests based
+on the current location of the drive head and where certain blocks may
+have been remapped due to bad block sparing, etc.
 
-Regards,
-Chen
+> Hopefully, eventually the storage developers will realize the value
+> behind ordered commands and learn corresponding SCSI facilities to
+> deal with them.
 
->
-> Hugh
->
->>
->>               total       used       free     shared    buffers     cached
->> Mem:       3885528    2854064    1031464          0       9624      19208
->> -/+ buffers/cache:    2825232    1060296
->> Swap:      6029308      30656    5998652
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+Eventually, drive manufacturers will realize that trying to price
+guage people who want advanced features such as TCQ, DIF/DIX, is the
+best way to gaurantee that most people won't bother to purchase them,
+and hence the features will remain largely unused....
 
+    	      	       	    	   	   - Ted
