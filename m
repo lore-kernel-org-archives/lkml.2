@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759677Ab2JYOOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:14:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53248 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759643Ab2JYOOZ convert rfc822-to-8bit (ORCPT
+	id S1759656Ab2JYOOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:14:21 -0400
+Received: from c62.cesmail.net ([216.154.195.54]:25509 "EHLO c62.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759640Ab2JYOOS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:14:25 -0400
-Message-ID: <1351174434.12171.11.camel@twins>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 25 Oct 2012 16:13:54 +0200
-In-Reply-To: <1351172849.12171.10.camel@twins>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
-	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-	 <1351172849.12171.10.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 25 Oct 2012 10:14:18 -0400
+Message-ID: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
+Date: Thu, 25 Oct 2012 10:14:16 -0400
+From: Pavel Roskin <proski@gnu.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Bisected regression: iterate_fd() selinux change affects flash
+	plugin
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=UTF-8;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-25 at 15:47 +0200, Peter Zijlstra wrote:
->  1) the proposed SCHED_DEADLINE needs to do some u64xu64 math, it
->     ends up having to multiply a deadline (in usec) with runtime (also
->     in usec). 
+Hello, Al!
 
-s/usec/nsec/g
+I have noticed that Mozilla Firefox gets stuck for seconds or minutes  
+on some sites, in particular on Facebook with Linux 3.7-rc1 and newer  
+mainline kernels.  Disabling flash plugin fixes the delays.
+
+This is a Fedora 17 system with SELinux enabled, on x86_64  
+architecture, with all updates, with LXDE desktop.  It's not the  
+Fedora 16 system I mentioned before, it has never had LXDE login  
+problems due to replace_fd().
+
+Bisecting lead me to the patch that introduced iterate_fd():
+
+commit c3c073f808b22dfae15ef8412b6f7b998644139a
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Tue Aug 21 22:32:06 2012 -0400
+
+     new helper: iterate_fd()
+
+     iterates through the opened files in given descriptor table,
+     calling a supplied function; we stop once non-zero is returned.
+     Callback gets struct file *, descriptor number and const void *
+     argument passed to iterator.  It is called with files->file_lock
+     held, so it is not allowed to block.
+
+     tty_io, netprio_cgroup and selinux flush_unauthorized_files()
+     converted to its use.
+
+     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+I have found that reverting the changes to security/selinux/hooks.c is  
+sufficient to restore the correct behavior.
+
+-- 
+Regards,
+Pavel Roskin
