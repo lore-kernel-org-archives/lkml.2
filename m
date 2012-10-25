@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946275Ab2JYQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:12:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57550 "EHLO arroyo.ext.ti.com"
+	id S1946289Ab2JYQPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:15:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48048 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946198Ab2JYQMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:12:25 -0400
+	id S1946257Ab2JYQM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:12:26 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
         <shawn.guo@linaro.org>, <rob.herring@calxeda.com>,
@@ -15,9 +15,9 @@ To: <mturquette@linaro.org>, <arnd@arndb.de>, <akpm@linux-foundation.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <linux-arm-kernel@lists.infradead.org>
 CC: <linux-keystone@list.ti.com>, Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v3 04/11] clk: davinci - add pll divider clock driver
-Date: Thu, 25 Oct 2012 12:11:50 -0400
-Message-ID: <1351181518-11882-5-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH v3 09/11] ARM: davinci - dm644x: update SoC code to remove the clock data
+Date: Thu, 25 Oct 2012 12:11:55 -0400
+Message-ID: <1351181518-11882-10-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
 References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
@@ -27,198 +27,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pll dividers are present in the pll controller of DaVinci and Other
-SoCs that re-uses the same hardware IP. This has a enable bit for
-bypass the divider or enable the driver. This is a sub class of the
-clk-divider clock checks the enable bit to calculare the rate and
-invoke the recalculate() function of the clk-divider if enabled.
+As part of the migration, the clock data is now moved to the driver/clk/
+davinci/dm644x-clock.c. Currently the clock data is placed under ifndef
+CONFIG_COMMON_CLK directive and will be removed in a subsequent patch.
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 ---
- drivers/clk/davinci/clk-div.c |  124 +++++++++++++++++++++++++++++++++++++++++
- drivers/clk/davinci/clk-div.h |   42 ++++++++++++++
- 2 files changed, 166 insertions(+)
- create mode 100644 drivers/clk/davinci/clk-div.c
- create mode 100644 drivers/clk/davinci/clk-div.h
+ arch/arm/mach-davinci/davinci.h |    3 +++
+ arch/arm/mach-davinci/dm644x.c  |   28 ++++++++++++++++++++++------
+ 2 files changed, 25 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/clk/davinci/clk-div.c b/drivers/clk/davinci/clk-div.c
-new file mode 100644
-index 0000000..8147d99
---- /dev/null
-+++ b/drivers/clk/davinci/clk-div.c
-@@ -0,0 +1,124 @@
+diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
+index 8661b20..ae9b1af 100644
+--- a/arch/arm/mach-davinci/davinci.h
++++ b/arch/arm/mach-davinci/davinci.h
+@@ -100,4 +100,7 @@ int __init dm646x_init_edma(struct edma_rsv_info *rsv);
+ void dm646x_video_init(void);
+ void dm646x_setup_vpif(struct vpif_display_config *,
+ 		       struct vpif_capture_config *);
++
++extern void __init dm644x_clk_init(void);
++
+ #endif /*__DAVINCI_H */
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index 0755d46..bf64b75 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -9,7 +9,9 @@
+  * or implied.
+  */
+ #include <linux/init.h>
++#ifndef CONFIG_COMMON_CLK
+ #include <linux/clk.h>
++#endif
+ #include <linux/serial_8250.h>
+ #include <linux/platform_device.h>
+ 
+@@ -18,7 +20,9 @@
+ #include <mach/cputype.h>
+ #include <mach/edma.h>
+ #include <mach/irqs.h>
++#ifndef CONFIG_COMMON_CLK
+ #include <mach/psc.h>
++#endif
+ #include <mach/mux.h>
+ #include <mach/time.h>
+ #include <mach/serial.h>
+@@ -26,14 +30,11 @@
+ #include <mach/gpio-davinci.h>
+ 
+ #include "davinci.h"
+-#include "clock.h"
+ #include "mux.h"
+ #include "asp.h"
+-
+-/*
+- * Device specific clocks
+- */
+-#define DM644X_REF_FREQ		27000000
++#ifndef CONFIG_COMMON_CLK
++#include "clock.h"
++#endif
+ 
+ #define DM644X_EMAC_BASE		0x01c80000
+ #define DM644X_EMAC_MDIO_BASE		(DM644X_EMAC_BASE + 0x4000)
+@@ -42,6 +43,12 @@
+ #define DM644X_EMAC_CNTRL_RAM_OFFSET	0x2000
+ #define DM644X_EMAC_CNTRL_RAM_SIZE	0x2000
+ 
++#ifndef CONFIG_COMMON_CLK
 +/*
-+ * Copyright 2012 Freescale Semiconductor, Inc.
-+ * Copyright 2012 Texas instuments
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
++ * Device specific clocks
 + */
++#define DM644X_REF_FREQ		27000000
 +
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+
-+#include "clk-div.h"
-+
-+/**
-+ * struct clk_div - DaVinci integer pll divider clock
-+ *
-+ * @divider: the parent class
-+ * @ops: pointer to clk_ops of parent class
-+ * @reg: register address
-+ * @en_id: enable bit id
-+ *
-+ * The DaVinci pll divider clock is a subclass of basic clk_divider with
-+ * an additional enable bit
-+ */
-+struct clk_div {
-+	struct clk_divider divider;
-+	const struct clk_ops *ops;
-+	void __iomem *reg;
-+	u8 en_id;
-+};
-+
-+static inline struct clk_div *to_clk_div(struct clk_hw *hw)
-+{
-+	struct clk_divider *divider = container_of(hw, struct clk_divider, hw);
-+
-+	return container_of(divider, struct clk_div, divider);
-+}
-+
-+static unsigned long clk_div_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	struct clk_div *div = to_clk_div(hw);
-+	u32 val;
-+
-+	val = readl(div->reg);
-+	if (val & BIT(div->en_id))
-+		return div->ops->recalc_rate(&div->divider.hw, parent_rate);
-+
-+	/* pll divider bypassed, return parent rate */
-+	return parent_rate;
-+}
-+
-+static long clk_div_round_rate(struct clk_hw *hw, unsigned long rate,
-+			       unsigned long *prate)
-+{
-+	struct clk_div *div = to_clk_div(hw);
-+
-+	return div->ops->round_rate(&div->divider.hw, rate, prate);
-+}
-+
-+static int clk_div_set_rate(struct clk_hw *hw, unsigned long rate,
-+			    unsigned long parent_rate)
-+{
-+	struct clk_div *div = to_clk_div(hw);
-+
-+	return div->ops->set_rate(&div->divider.hw, rate, parent_rate);
-+}
-+
-+static struct clk_ops clk_div_ops = {
-+	.recalc_rate = clk_div_recalc_rate,
-+	.round_rate = clk_div_round_rate,
-+	.set_rate = clk_div_set_rate,
-+};
-+
-+/**
-+ * clk_register_davinci_plldiv - register function for DaVinci PLL divider clk
-+ *
-+ * @dev: device ptr
-+ * @name: name of the clock
-+ * @parent_name: name of parent clock
-+ * @plldiv_data: ptr to pll divider data
-+ * @lock: ptr to spinlock passed to divider clock
-+ */
-+struct clk *clk_register_davinci_plldiv(struct device *dev,
-+			const char *name, const char *parent_name,
-+			struct clk_plldiv_data *plldiv_data,
-+			spinlock_t *lock)
-+{
-+	struct clk_div *div;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+
-+	div = kzalloc(sizeof(*div), GFP_KERNEL);
-+	if (!div)
-+		return ERR_PTR(-ENOMEM);
-+
-+	init.name = name;
-+	init.ops = &clk_div_ops;
-+	init.flags = plldiv_data->flags;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
-+
-+	div->reg = plldiv_data->reg;
-+	div->en_id = plldiv_data->en_id;
-+
-+	div->divider.reg = plldiv_data->reg;
-+	div->divider.shift = plldiv_data->shift;
-+	div->divider.width = plldiv_data->width;
-+	div->divider.flags = plldiv_data->divider_flags;
-+	div->divider.lock = lock;
-+	div->divider.hw.init = &init;
-+	div->ops = &clk_divider_ops;
-+
-+	clk = clk_register(NULL, &div->divider.hw);
-+	if (IS_ERR(clk))
-+		kfree(div);
-+
-+	return clk;
-+}
-diff --git a/drivers/clk/davinci/clk-div.h b/drivers/clk/davinci/clk-div.h
-new file mode 100644
-index 0000000..0e3708c
---- /dev/null
-+++ b/drivers/clk/davinci/clk-div.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Header file for DaVinci pll divider clk driver
-+ *
-+ * Copyright (C) 2006-2012 Texas Instruments.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#ifndef __CLK_DAVINCI_PLLDIV_H
-+#define __CLK_DAVINCI_PLLDIV_H
-+
-+
-+/**
-+ * struct clk_plldiv_data - configuration for DaVinci PLL divider driver
-+ *
-+ * @flags - base clk driver flags
-+ * @divider_flags - clk-divider flags
-+ * @phys_div_reg - clk-divider register physical address
-+ * @reg - clk-divider register io mapped address
-+ * @shift - shift applied to the divider bits in the register
-+ * @width - width of the divider bits in the register
-+ * @en_id - bypass or enable bit mask id. mask = BIT(en_id)
-+ */
-+/* configuration data for PLL divider clock */
-+struct clk_plldiv_data {
-+	u32			flags;
-+	u8			divider_flags;
-+	u32                     phys_div_reg;
-+	void __iomem		*reg;
-+	u8			shift;
-+	u8			width;
-+	u8			en_id;
-+};
-+
-+struct clk *clk_register_davinci_plldiv(struct device *dev,
-+			const char *name, const char *parent_name,
-+			struct clk_plldiv_data *plldiv_data,
-+			spinlock_t *lock);
-+#endif /* CLK_DAVINCI_PLLDIV_H */
+ static struct pll_data pll1_data = {
+ 	.num       = 1,
+ 	.phys_base = DAVINCI_PLL1_BASE,
+@@ -324,6 +331,7 @@ static struct clk_lookup dm644x_clks[] = {
+ 	CLK("watchdog", NULL, &timer2_clk),
+ 	CLK(NULL, NULL, NULL),
+ };
++#endif
+ 
+ static struct emac_platform_data dm644x_emac_pdata = {
+ 	.ctrl_reg_offset	= DM644X_EMAC_CNTRL_OFFSET,
+@@ -821,7 +829,9 @@ static struct davinci_id dm644x_ids[] = {
+ 	},
+ };
+ 
++#ifndef CONFIG_COMMON_CLK
+ static u32 dm644x_psc_bases[] = { DAVINCI_PWR_SLEEP_CNTRL_BASE };
++#endif
+ 
+ /*
+  * T0_BOT: Timer 0, bottom:  clockevent source for hrtimers
+@@ -879,9 +889,13 @@ static struct davinci_soc_info davinci_soc_info_dm644x = {
+ 	.jtag_id_reg		= 0x01c40028,
+ 	.ids			= dm644x_ids,
+ 	.ids_num		= ARRAY_SIZE(dm644x_ids),
++#ifdef CONFIG_COMMON_CLK
++	.clk_init		= dm644x_clk_init,
++#else
+ 	.cpu_clks		= dm644x_clks,
+ 	.psc_bases		= dm644x_psc_bases,
+ 	.psc_bases_num		= ARRAY_SIZE(dm644x_psc_bases),
++#endif
+ 	.pinmux_base		= DAVINCI_SYSTEM_MODULE_BASE,
+ 	.pinmux_pins		= dm644x_pins,
+ 	.pinmux_pins_num	= ARRAY_SIZE(dm644x_pins),
+@@ -923,11 +937,13 @@ int __init dm644x_init_video(struct vpfe_config *vpfe_cfg,
+ 		dm644x_vpfe_dev.dev.platform_data = vpfe_cfg;
+ 		platform_device_register(&dm644x_ccdc_dev);
+ 		platform_device_register(&dm644x_vpfe_dev);
++#ifndef CONFIG_COMMON_CLK
+ 		/* Add ccdc clock aliases */
+ 		clk_add_alias("master", dm644x_ccdc_dev.name,
+ 			      "vpss_master", NULL);
+ 		clk_add_alias("slave", dm644x_ccdc_dev.name,
+ 			      "vpss_slave", NULL);
++#endif
+ 	}
+ 
+ 	if (vpbe_cfg) {
 -- 
 1.7.9.5
 
