@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935101Ab2JYRz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:55:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49968 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934768Ab2JYRz5 (ORCPT
+	id S1758487Ab2JYR6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:58:04 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56293 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab2JYR6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:55:57 -0400
-Date: Thu, 25 Oct 2012 18:55:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        festevam@gmail.com
-Subject: Re: [PATCH] regmap: Fix printing of size_t variable
-Message-ID: <20121025175547.GT18814@opensource.wolfsonmicro.com>
-References: <1351181238-25568-1-git-send-email-fabio.estevam@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/7+LvQqw8N5lf/3J"
-Content-Disposition: inline
-In-Reply-To: <1351181238-25568-1-git-send-email-fabio.estevam@freescale.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Oct 2012 13:58:02 -0400
+From: Yuly Novikov <ynovikov@chromium.org>
+To: daniel.vetter@ffwll.ch, airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Yuly Novikov <ynovikov@chromium.org>
+Subject: [PATCH] drm/i915/dp: allow configuring eDP panel fitting scaling mode
+Date: Thu, 25 Oct 2012 13:57:47 -0400
+Message-Id: <1351187867-21401-1-git-send-email-ynovikov@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+LVDS allowed changing panel fitting scaling mode, while eDP didn't.
+Copied relevant code from LVDS to eDP.
+This also changes default mode on eDP to ascpect ratio preserving scaling.
 
---/7+LvQqw8N5lf/3J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Yuly Novikov <ynovikov@chromium.org>
+---
+ drivers/gpu/drm/i915/intel_dp.c  |   33 ++++++++++++++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_drv.h |    1 +
+ 2 files changed, 31 insertions(+), 3 deletions(-)
 
-On Thu, Oct 25, 2012 at 02:07:18PM -0200, Fabio Estevam wrote:
-> val_bytes is of 'size_t', so it should be printed as '%zu'.
->=20
-> Fixes the following build warning on x86:
->=20
-> drivers/base/regmap/regmap.c:872:4: warning: format '%d' expects argument=
- of type 'int', but argument 5 has type 'size_t' [-Wformat]
->=20
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 368ed8e..a65546e 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -685,7 +685,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder,
+ 
+ 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
+ 		intel_fixed_panel_mode(intel_dp->panel_fixed_mode, adjusted_mode);
+-		intel_pch_panel_fitting(dev, DRM_MODE_SCALE_FULLSCREEN,
++		intel_pch_panel_fitting(dev, intel_dp->fitting_mode,
+ 					mode, adjusted_mode);
+ 	}
+ 
+@@ -2358,6 +2358,22 @@ intel_dp_set_property(struct drm_connector *connector,
+ 		goto done;
+ 	}
+ 
++	if (is_edp(intel_dp) &&
++		property == connector->dev->mode_config.scaling_mode_property) {
++		if (val == DRM_MODE_SCALE_NONE) {
++			DRM_DEBUG_KMS("no scaling not supported\n");
++			return -EINVAL;
++		}
++
++		if (intel_dp->fitting_mode == val) {
++			/* the eDP scaling property is not changed */
++			return 0;
++		}
++		intel_dp->fitting_mode = val;
++
++		goto done;
++	}
++
+ 	return -EINVAL;
+ 
+ done:
+@@ -2469,10 +2485,21 @@ bool intel_dpd_is_edp(struct drm_device *dev)
+ }
+ 
+ static void
+-intel_dp_add_properties(struct intel_dp *intel_dp, struct drm_connector *connector)
++intel_dp_add_properties(struct drm_device *dev,
++			struct intel_dp *intel_dp,
++			struct drm_connector *connector)
+ {
+ 	intel_attach_force_audio_property(connector);
+ 	intel_attach_broadcast_rgb_property(connector);
++
++	if (is_edp(intel_dp)) {
++		drm_mode_create_scaling_mode_property(dev);
++		drm_connector_attach_property(
++			connector,
++			dev->mode_config.scaling_mode_property,
++			DRM_MODE_SCALE_ASPECT);
++		intel_dp->fitting_mode = DRM_MODE_SCALE_ASPECT;
++	}
+ }
+ 
+ void
+@@ -2665,7 +2692,7 @@ intel_dp_init(struct drm_device *dev, int output_reg, enum port port)
+ 		intel_panel_setup_backlight(dev);
+ 	}
+ 
+-	intel_dp_add_properties(intel_dp, connector);
++	intel_dp_add_properties(dev, intel_dp, connector);
+ 
+ 	/* For G4X desktop chip, PEG_BAND_GAP_DATA 3:0 must first be written
+ 	 * 0xd.  Failure to do so will result in spurious interrupts being
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index fe71425..da50cd4 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -358,6 +358,7 @@ struct intel_dp {
+ 	int backlight_on_delay;
+ 	int backlight_off_delay;
+ 	struct drm_display_mode *panel_fixed_mode;  /* for eDP */
++	int fitting_mode;  /* for eDP */
+ 	struct delayed_work panel_vdd_work;
+ 	bool want_panel_vdd;
+ 	struct edid *edid; /* cached EDID for eDP */
+-- 
+1.7.7.3
 
-Applied, thanks.
-
---/7+LvQqw8N5lf/3J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiX0HAAoJELSic+t+oim9/VoP/RLRSo9MXZlD2v1yAcAM3CfN
-z4TaBv5ZsyxsrkSO8ndvjdLpnTOf+Vlbt9azu4k8I+hxIvZzUn/TnDRxMrA7ZoJS
-APMk7jjOh8nAaAYJFMr0gqVCW63atVGFsc7YGN3PoDVJXprYL1hWMgmZgfUqJcfR
-T4oNKpt1FqZe3LwcjNnXo0ddwkbSack+9DqZrR1eT50I9sNCqp+SMfTCCNWITbsO
-tFKgyAiEY/nLTyWyCOz4ysBF0Onla3SszauIJmlf1hfgRo99fYLMKHoMsBjOk0eg
-9sPKWI94sp1xRKLUaJyzVCvvdQcnaGSiJ9ng7W0om5ltbB8vPZQPm5UzFzcODMkg
-ei5JHs5NqR+0QciYta7cajMyF18RbkamSh+ht6Vy8bdDOZeCKIrRtDC6OfzczhUH
-xLkoTrYNylk+zGlGQuTlv0SfHQbZwxhX5ag9m6qUWlbT3mxdQ37bM+6juEWmamPk
-LSK341wR6gI7X57jg0VQ9nXzCMa7s1aC14OPmUPA03q1yTTqPCIys7/Olmmzl9jB
-eR7GG4ZOET/xjAAa35Md07x5L0Jd3Wz86vGgrZFpIqtmhKrrgBXukknTYMEgWP1i
-7OBxxYmx9aPuLaw+G9AnGYaYe61bS9P6nppagIZrvPRzw4gkCBUhf3FpoDHTNtfn
-096vHdlrUWZ2TZD8NvBl
-=KYan
------END PGP SIGNATURE-----
-
---/7+LvQqw8N5lf/3J--
