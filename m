@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab2JYMDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:03:54 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:50061 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab2JYMDw (ORCPT
+	id S1755025Ab2JYMHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:07:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:48898 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab2JYMHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:03:52 -0400
-X-Nat-Received: from [202.181.97.72]:51868 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1351166599.2662
-To: ppandit@redhat.com, keescook@chromium.org
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, josh@joshtriplett.org,
-        serge.hallyn@canonical.com, linux-fsdevel@vger.kernel.org,
-        me@halfdog.net
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20121024232032.GA31129@www.outflux.net>
-	<20121025041620.GH2616@ZenIV.linux.org.uk>
-	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
-	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-In-Reply-To: <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-Message-Id: <201210252103.BJG56875.OtHFLOOVSFFQMJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 25 Oct 2012 21:03:14 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 25102012 #8190028, status: clean
+	Thu, 25 Oct 2012 08:07:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121025082341.GC3348@gmail.com>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+	<20121025073127.GB971@gmail.com>
+	<5088F0EE.8030900@stericsson.com>
+	<20121025082341.GC3348@gmail.com>
+Date: Thu, 25 Oct 2012 14:07:34 +0200
+Message-ID: <CACRpkdb9wHStmVHWJy7YhMeNX5T31mXOJSF0J_e=uBneSCrgmA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
+ pinctrl-nomadik GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P J P wrote:
-> 
->   Hello Kees,
-> 
-> +-- On Wed, 24 Oct 2012, Kees Cook wrote --+
-> | What should the code here _actually_ be doing? The _script and _misc 
-> | handlers expect to rewrite the bprm contents and recurse, but the module 
-> | loader want to try again. It's not clear to me what the binfmt module 
-> | handler is even there for; I don't see any binfmt-XXXX aliases in the tree. 
-> | If nothing uses it, should we just rip it out? That would solve it too.
-> 
-> I've been following this issue and updated versions of HDs patch. Below is a 
-> small patch to search_binary_handler() routine, which attempts to make the 
-> request_module call before calling load_script routine.
-> 
-> Besides fixing the stack disclosure issue it also helps to *simplify* the 
-> search_binary_handler routine by removing the -for (try=0;try<2;try++)- loop.
-> 
-> I'd really appreciate any comments/suggestions you may have.
+On Thu, Oct 25, 2012 at 10:23 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 25 Oct 2012, Linus Walleij wrote:
+>>
+>> Yeah drop it for now.
+>
+> Actually, a quick question before I do:
+>
+> If it's better/faster to prepare the clock and keep it prepared
+> while you do clk_enable/clk_disable,
 
-Excuse me, but why do you change definition of printable(c) ?
-Looks like a regression.
+It is generally faster that is why we call it fastpath.
 
-Wouldn't your patch trigger call request_module() whenever a script
-starting with "#!/bin/sh" is executed? 
+E.g. if the clock hardware can do this in IRQ context by just
+chaninging one bit in a quickly written register from 1->0 and
+then the clock goes off from some silicon.
 
-And if you meant
+Whether it's "better" or not is a transcendental question,
+as it requires a ruler to measure betterness.
 
-if (!(printable(bprm->buf[0]) && printable(bprm->buf[1])
-	&& printable(bprm->buf[2]) && printable(bprm->buf[3])))
+> why don't we do that in all
+> drivers? Why do we bother to prepare/unprepare each time if all
+> it does is take up cycles?
 
-then, wouldn't that trigger request_module() recursion?
+Usually to save power.
+
+Albeit saving power may be at odds with gaining the maximum
+performance and/or latency.
+
+So depending on the demands and use case the answer to
+whether or not you want to do this will be different.
+
+That's for the clock API.
+
+In the ux500 case specifically, you can drill down to the
+clock implementation and ask the question whether or not
+we want to do this for this instance of the pin controller
+in this case, I'll leave that for Ulf to answer... but remember
+that this driver is also used for the Nomadik NHK8815.
+
+Yours,
+Linus Walleij
