@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161012Ab2JYDpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:45:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34111 "EHLO
+	id S1422746Ab2JYDqE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:46:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55000 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934594Ab2JYDpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:45:50 -0400
+	id S1422685Ab2JYDp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:45:59 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 12/23] printk: Rename clear_seq and clear_idx variables
-Date: Wed, 24 Oct 2012 20:43:47 -0700
-Message-Id: <01595915db3e8d6a5d1b2609a5a0a54f683c0249.1351135989.git.joe@perches.com>
+Subject: [PATCH V2 13/23] printk: Remove static from printk_ variables
+Date: Wed, 24 Oct 2012 20:43:48 -0700
+Message-Id: <f87d35abc59ad06e0082366dce2383c0b7e65799.1351135989.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1351135988.git.joe@perches.com>
 References: <cover.1351135988.git.joe@perches.com>
@@ -19,108 +19,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make these variables more specific to the printk log subsystem
-adding prefix printk_log_.  This allows them to become non-static.
+Allow a separation of functions and variables into
+multiple files.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- kernel/printk/printk.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ kernel/printk/printk.c |   46 +++++++++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 709472f..3785ac4 100644
+index 3785ac4..0134b2e 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
+@@ -208,7 +208,7 @@ struct printk_log {
+  * The printk_logbuf_lock protects kmsg buffer, indices, counters. It is also
+  * used in interesting ways to provide interlocking in console_unlock();
+  */
+-static DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
++DEFINE_RAW_SPINLOCK(printk_logbuf_lock);
+ 
+ #ifdef CONFIG_PRINTK
+ /* the next printk record to read by syslog(READ) or /proc/kmsg */
+@@ -218,12 +218,12 @@ static enum printk_log_flags syslog_prev;
+ static size_t syslog_partial;
+ 
+ /* index and sequence number of the first record stored in the buffer */
+-static u64 printk_log_first_seq;
+-static u32 printk_log_first_idx;
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
+ 
+ /* index and sequence number of the next record to store in the buffer */
+-static u64 printk_log_next_seq;
+-static u32 printk_log_next_idx;
++u64 printk_log_next_seq;
++u32 printk_log_next_idx;
+ 
+ /* the next printk record to write to the console */
+ static u64 console_seq;
 @@ -231,8 +231,8 @@ static u32 console_idx;
  static enum printk_log_flags console_prev;
  
  /* the next printk record to read after the last 'clear' command */
--static u64 clear_seq;
--static u32 clear_idx;
-+static u64 printk_log_clear_seq;
-+static u32 printk_log_clear_idx;
+-static u64 printk_log_clear_seq;
+-static u32 printk_log_clear_idx;
++u64 printk_log_clear_seq;
++u32 printk_log_clear_idx;
  
  #define PREFIX_MAX		32
  #define LOG_LINE_MAX		1024 - PREFIX_MAX
-@@ -566,8 +566,8 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
- 		 * like issued by 'dmesg -c'. Reading /dev/kmsg itself
- 		 * changes no global state, and does not clear anything.
- 		 */
--		user->idx = clear_idx;
--		user->seq = clear_seq;
-+		user->idx = printk_log_clear_idx;
-+		user->seq = printk_log_clear_seq;
- 		break;
- 	case SEEK_END:
- 		/* after the last record */
-@@ -1012,18 +1012,18 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
- 		u32 idx;
- 		enum printk_log_flags prev;
+@@ -244,27 +244,27 @@ static u32 printk_log_clear_idx;
+ #define LOG_ALIGN __alignof__(struct printk_log)
+ #endif
+ #define __PRINTK_LOG_BUF_LEN (1 << CONFIG_LOG_BUF_SHIFT)
+-static char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(LOG_ALIGN);
+-static char *printk_log_buf = __printk_log_buf;
+-static u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
++char __printk_log_buf[__PRINTK_LOG_BUF_LEN] __aligned(LOG_ALIGN);
++char *printk_log_buf = __printk_log_buf;
++u32 printk_log_buf_len = __PRINTK_LOG_BUF_LEN;
  
--		if (clear_seq < printk_log_first_seq) {
-+		if (printk_log_clear_seq < printk_log_first_seq) {
- 			/* messages are gone, move to first available one */
--			clear_seq = printk_log_first_seq;
--			clear_idx = printk_log_first_idx;
-+			printk_log_clear_seq = printk_log_first_seq;
-+			printk_log_clear_idx = printk_log_first_idx;
- 		}
+ /* cpu currently holding printk_logbuf_lock */
+ static volatile unsigned int logbuf_cpu = UINT_MAX;
  
- 		/*
- 		 * Find first record that fits, including all following records,
- 		 * into the user-provided buffer for this dump.
- 		 */
--		seq = clear_seq;
--		idx = clear_idx;
-+		seq = printk_log_clear_seq;
-+		idx = printk_log_clear_idx;
- 		prev = 0;
- 		while (seq < printk_log_next_seq) {
- 			struct printk_log *msg = printk_log_from_idx(idx);
-@@ -1035,8 +1035,8 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
- 		}
- 
- 		/* move first record forward until length fits into the buffer */
--		seq = clear_seq;
--		idx = clear_idx;
-+		seq = printk_log_clear_seq;
-+		idx = printk_log_clear_idx;
- 		prev = 0;
- 		while (len > size && seq < printk_log_next_seq) {
- 			struct printk_log *msg = printk_log_from_idx(idx);
-@@ -1083,8 +1083,8 @@ static int syslog_print_all(char __user *buf, int size, bool clear)
- 	}
- 
- 	if (clear) {
--		clear_seq = printk_log_next_seq;
--		clear_idx = printk_log_next_idx;
-+		printk_log_clear_seq = printk_log_next_seq;
-+		printk_log_clear_idx = printk_log_next_idx;
- 	}
- 	raw_spin_unlock_irq(&printk_logbuf_lock);
- 
-@@ -2566,8 +2566,8 @@ void kmsg_dump(enum kmsg_dump_reason reason)
- 		dumper->active = true;
- 
- 		raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--		dumper->cur_seq = clear_seq;
--		dumper->cur_idx = clear_idx;
-+		dumper->cur_seq = printk_log_clear_seq;
-+		dumper->cur_idx = printk_log_clear_idx;
- 		dumper->next_seq = printk_log_next_seq;
- 		dumper->next_idx = printk_log_next_idx;
- 		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-@@ -2774,8 +2774,8 @@ EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
-  */
- void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
+ /* human readable text of the record */
+-static char *printk_log_text(const struct printk_log *msg)
++char *printk_log_text(const struct printk_log *msg)
  {
--	dumper->cur_seq = clear_seq;
--	dumper->cur_idx = clear_idx;
-+	dumper->cur_seq = printk_log_clear_seq;
-+	dumper->cur_idx = printk_log_clear_idx;
- 	dumper->next_seq = printk_log_next_seq;
- 	dumper->next_idx = printk_log_next_idx;
+ 	return (char *)msg + sizeof(struct printk_log);
  }
+ 
+ /* optional key/value pair dictionary attached to the record */
+-static char *printk_log_dict(const struct printk_log *msg)
++char *printk_log_dict(const struct printk_log *msg)
+ {
+ 	return (char *)msg + sizeof(struct printk_log) + msg->text_len;
+ }
+ 
+ /* get record by index; idx must point to valid msg */
+-static struct printk_log *printk_log_from_idx(u32 idx)
++struct printk_log *printk_log_from_idx(u32 idx)
+ {
+ 	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+ 
+@@ -278,7 +278,7 @@ static struct printk_log *printk_log_from_idx(u32 idx)
+ }
+ 
+ /* get next record; idx must point to valid msg */
+-static u32 printk_log_next(u32 idx)
++u32 printk_log_next(u32 idx)
+ {
+ 	struct printk_log *msg = (struct printk_log *)(printk_log_buf + idx);
+ 
+@@ -296,10 +296,10 @@ static u32 printk_log_next(u32 idx)
+ }
+ 
+ /* insert record into the buffer, discard old ones, update heads */
+-static void printk_log_store(int facility, int level,
+-			     enum printk_log_flags flags, u64 ts_nsec,
+-			     const char *dict, u16 dict_len,
+-			     const char *text, u16 text_len)
++void printk_log_store(int facility, int level,
++		      enum printk_log_flags flags, u64 ts_nsec,
++		      const char *dict, u16 dict_len,
++		      const char *text, u16 text_len)
+ {
+ 	struct printk_log *msg;
+ 	u32 size, pad_len;
+@@ -1690,9 +1690,9 @@ static u32 syslog_idx;
+ static u64 console_seq;
+ static u32 console_idx;
+ static enum printk_log_flags syslog_prev;
+-static u64 printk_log_first_seq;
+-static u32 printk_log_first_idx;
+-static u64 printk_log_next_seq;
++u64 printk_log_first_seq;
++u32 printk_log_first_idx;
++u64 printk_log_next_seq;
+ static enum printk_log_flags console_prev;
+ static struct cont {
+ 	size_t len;
+@@ -1700,8 +1700,8 @@ static struct cont {
+ 	u8 level;
+ 	bool flushed:1;
+ } cont;
+-static struct printk_log *printk_log_from_idx(u32 idx) { return NULL; }
+-static u32 printk_log_next(u32 idx) { return 0; }
++struct printk_log *printk_log_from_idx(u32 idx) { return NULL; }
++u32 printk_log_next(u32 idx) { return 0; }
+ static void call_console_drivers(int level, const char *text, size_t len) {}
+ static size_t msg_print_text(const struct printk_log *msg,
+ 			     enum printk_log_flags prev,
 -- 
 1.7.8.112.g3fd21
 
