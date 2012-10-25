@@ -1,79 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab2JYXbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 19:31:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46173 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2JYXbk (ORCPT
+	id S1752535Ab2JYXc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 19:32:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41902 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387Ab2JYXc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 19:31:40 -0400
-Date: Thu, 25 Oct 2012 16:31:18 -0700
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Message-ID: <tip-f82f64dd9f485e13f29f369772d4a0e868e5633a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, jacob.shin@amd.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com>
-References: <CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mm: Undo incorrect revert in arch/x86/mm/
- init.c
-Git-Commit-ID: f82f64dd9f485e13f29f369772d4a0e868e5633a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 25 Oct 2012 19:32:57 -0400
+From: Nishanth Menon <nm@ti.com>
+To: linux-pm <linux-pm@vger.kernel.org>
+CC: Nishanth Menon <nm@ti.com>, Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [for-next PATCH] PM / devfreq: Add sysfs node to expose available frequencies
+Date: Thu, 25 Oct 2012 18:32:43 -0500
+Message-ID: <1351207963-30075-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 25 Oct 2012 16:31:24 -0700 (PDT)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f82f64dd9f485e13f29f369772d4a0e868e5633a
-Gitweb:     http://git.kernel.org/tip/f82f64dd9f485e13f29f369772d4a0e868e5633a
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Thu, 25 Oct 2012 15:45:26 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 25 Oct 2012 15:45:45 -0700
+devfreq governors such as ondemand are controlled by a min and
+max frequency, while governors like userspace governor allow us
+to set a specific frequency.
+However, for the same specific device, depending on the SoC, the
+available frequencies can vary.
 
-x86, mm: Undo incorrect revert in arch/x86/mm/init.c
+So expose the available frequencies as a snapshot over sysfs to
+allow informed decisions.
 
-Commit
+This was inspired by cpufreq framework's equivalent for similar
+usage sysfs node: scaling_available_frequencies.
 
-    844ab6f9 x86, mm: Find_early_table_space based on ranges that are actually being mapped
+Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 
-added back some lines back wrongly that has been removed in commit
-
-    7b16bbf97 Revert "x86/mm: Fix the size calculation of mapping tables"
-
-remove them again.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/x86/mm/init.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+Applies on top of Rafael's linux-next branch:
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+ linux-next                                   b960e9a Merge branch 'pm-sleep-next' into linux-next
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc287d6..d7aea41 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -65,10 +65,6 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- #ifdef CONFIG_X86_32
- 			extra += PMD_SIZE;
- #endif
--			/* The first 2/4M doesn't use large pages. */
--			if (mr[i].start < PMD_SIZE)
--				extra += range;
--
- 			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		} else {
- 			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+Example output from Beagleboard XM (3730) using a dummy test driver
+http://pastebin.pandaboard.org/index.php/view/85100576 :
+
+/sys/devices/platform/iva.0/devfreq/iva.0 # cat available_frequencies 
+260000000 520000000 660000000 
+
+ Documentation/ABI/testing/sysfs-class-devfreq |    9 +++++++++
+ drivers/devfreq/devfreq.c                     |   26 +++++++++++++++++++++++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/Documentation/ABI/testing/sysfs-class-devfreq b/Documentation/ABI/testing/sysfs-class-devfreq
+index e6cf08e..e672ccb 100644
+--- a/Documentation/ABI/testing/sysfs-class-devfreq
++++ b/Documentation/ABI/testing/sysfs-class-devfreq
+@@ -51,3 +51,12 @@ Description:
+ 		The /sys/class/devfreq/.../userspace/set_freq shows and
+ 		sets the requested frequency for the devfreq object if
+ 		userspace governor is in effect.
++
++What:		/sys/class/devfreq/.../available_frequencies
++Date:		October 2012
++Contact:	Nishanth Menon <nm@ti.com>
++Description:
++		The /sys/class/devfreq/.../available_frequencies shows
++		the available frequencies of the corresponding devfreq object.
++		This is a snapshot of available frequencies and not limited
++		by the min/max frequency restrictions.
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index d02ee7e..2f6ad6b 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -571,9 +571,35 @@ static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
+ 	return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
+ }
+ 
++static ssize_t show_available_freqs(struct device *d,
++				    struct device_attribute *attr,
++				    char *buf)
++{
++	struct devfreq *df = to_devfreq(d);
++	struct device *dev = df->dev.parent;
++	struct opp *opp;
++	ssize_t count = 0;
++	unsigned long freq = 0;
++
++	rcu_read_lock();
++	do {
++		opp = opp_find_freq_ceil(dev, &freq);
++		if (IS_ERR(opp))
++			break;
++
++		count += sprintf(&buf[count], "%lu ", freq);
++		freq++;
++	} while (1);
++	rcu_read_unlock();
++	count += sprintf(&buf[count], "\n");
++
++	return count;
++}
++
+ static struct device_attribute devfreq_attrs[] = {
+ 	__ATTR(governor, S_IRUGO, show_governor, NULL),
+ 	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
++	__ATTR(available_frequencies, S_IRUGO, show_available_freqs, NULL),
+ 	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
+ 	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
+ 	       store_polling_interval),
+-- 
+1.7.9.5
+
