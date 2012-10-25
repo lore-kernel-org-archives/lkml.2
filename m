@@ -1,57 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935905Ab2JYQnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:43:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:54118 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759914Ab2JYQnW (ORCPT
+	id S1946218Ab2JYQpS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:45:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44943 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755502Ab2JYQpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:43:22 -0400
-Date: Thu, 25 Oct 2012 09:43:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
-Message-ID: <20121025164319.GA10334@kroah.com>
-References: <1351174667-5098-1-git-send-email-bp@amd64.org>
- <1351174667-5098-2-git-send-email-bp@amd64.org>
- <20121025160741.GB4341@kroah.com>
- <20121025163348.GC2623@aftab.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025163348.GC2623@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Oct 2012 12:45:16 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, mhocko@suse.cz,
+        peterz@infradead.org, akpm@linux-foundation.org,
+        Will Deacon <will.deacon@arm.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH v3] mm: thp: Set the accessed flag for old pages on access fault.
+Date: Thu, 25 Oct 2012 17:44:31 +0100
+Message-Id: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 06:33:48PM +0200, Borislav Petkov wrote:
-> On Thu, Oct 25, 2012 at 09:07:41AM -0700, Greg Kroah-Hartman wrote:
-> > On Thu, Oct 25, 2012 at 04:17:43PM +0200, Borislav Petkov wrote:
-> > > From: Borislav Petkov <bp@alien8.de>
-> > > 
-> > > ... which, analogous to DEVICE_INT_ATTR provides functionality to
-> > > set/clear bools. Its purpose is to be used where values need to be used
-> > > as booleans in configuration context.
-> > > 
-> > > Next patch uses this.
-> > > 
-> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > Signed-off-by: Borislav Petkov <bp@alien8.de>
-> > 
-> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > Do you want me to take this through my tree now?  If not, I have no
-> > objection to it being part of this larger series and go to Linus through
-> > whatever tree takes it.
-> 
-> Well, in my case it would go through the RAS tree.
+On x86 memory accesses to pages without the ACCESSED flag set result in the
+ACCESSED flag being set automatically. With the ARM architecture a page access
+fault is raised instead (and it will continue to be raised until the ACCESSED
+flag is set for the appropriate PTE/PMD).
 
-Then I'd recommend it going in that way.
+For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+be called for a write fault.
 
-thanks,
+This patch ensures that faults on transparent hugepages which do not result
+in a CoW update the access flags for the faulting pmd.
 
-greg k-h
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+
+Ok chaps, I rebased this thing onto today's next (which basically
+necessitated a rewrite) so I've reluctantly dropped my acks and kindly
+ask if you could eyeball the new code, especially where the locking is
+concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
+that the page is not splitting, but I can't see why that is required.
+
+Cheers,
+
+Will
+
+ include/linux/huge_mm.h |    4 ++++
+ mm/huge_memory.c        |   22 ++++++++++++++++++++++
+ mm/memory.c             |    7 ++++++-
+ 3 files changed, 32 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 4f0f948..766fb27 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -8,6 +8,10 @@ extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
+ extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 			 pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
+ 			 struct vm_area_struct *vma);
++extern void huge_pmd_set_accessed(struct mm_struct *mm,
++				  struct vm_area_struct *vma,
++				  unsigned long address, pmd_t *pmd,
++				  pmd_t orig_pmd, int dirty);
+ extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       pmd_t orig_pmd);
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 3c14a96..f024d98 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -932,6 +932,28 @@ out:
+ 	return ret;
+ }
+ 
++void huge_pmd_set_accessed(struct mm_struct *mm,
++			   struct vm_area_struct *vma,
++			   unsigned long address,
++			   pmd_t *pmd, pmd_t orig_pmd,
++			   int dirty)
++{
++	pmd_t entry;
++	unsigned long haddr;
++
++	spin_lock(&mm->page_table_lock);
++	if (unlikely(!pmd_same(*pmd, orig_pmd)))
++		goto unlock;
++
++	entry = pmd_mkyoung(orig_pmd);
++	haddr = address & HPAGE_PMD_MASK;
++	if (pmdp_set_access_flags(vma, haddr, pmd, entry, dirty))
++		update_mmu_cache_pmd(vma, address, pmd);
++
++unlock:
++	spin_unlock(&mm->page_table_lock);
++}
++
+ static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+ 					unsigned long address,
+diff --git a/mm/memory.c b/mm/memory.c
+index f21ac1c..bcbc084 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3650,12 +3650,14 @@ retry:
+ 
+ 		barrier();
+ 		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
++			unsigned int dirty = flags & FAULT_FLAG_WRITE;
++
+ 			if (pmd_numa(vma, orig_pmd)) {
+ 				do_huge_pmd_numa_page(mm, vma, address, pmd,
+ 						      flags, orig_pmd);
+ 			}
+ 
+-			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
++			if (dirty && !pmd_write(orig_pmd)) {
+ 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
+ 							  orig_pmd);
+ 				/*
+@@ -3665,6 +3667,9 @@ retry:
+ 				 */
+ 				if (unlikely(ret & VM_FAULT_OOM))
+ 					goto retry;
++			} else {
++				huge_pmd_set_accessed(mm, vma, address, pmd,
++						      orig_pmd, dirty);
+ 			}
+ 
+ 			return ret;
+-- 
+1.7.4.1
+
