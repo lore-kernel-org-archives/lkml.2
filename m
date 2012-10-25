@@ -1,39 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760321Ab2JYUyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:54:16 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:59027
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S965734Ab2JYUyw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:54:52 -0400
+Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:55197
+	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755788Ab2JYUyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:54:15 -0400
+	id S1760295Ab2JYUyu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 16:54:50 -0400
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH RESEND 0/2] Tools: hv: kvp_daemon
-Date: Thu, 25 Oct 2012 14:15:14 -0700
-Message-Id: <1351199714-25770-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH RESEND 1/2] tools: hv: Return the full kernel version
+Date: Thu, 25 Oct 2012 14:15:49 -0700
+Message-Id: <1351199750-25811-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1351199714-25770-1-git-send-email-kys@microsoft.com>
+References: <1351199714-25770-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set makes KVP implementation track the implementation
-on Windows guests with regards to how IP addresses are returned.
-Additionally, we  also returns more information for the
-OSBuild key. 
+Currently, we are returning the same string for both OSBuildNumber
+and OSVersion keys. Return the full uts string for the OSBuild
+key since Windows does not impose any restrictions on this.
 
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Claudio Latini <claudio.latini@live.com>
+---
+ tools/hv/hv_kvp_daemon.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-K. Y. Srinivasan (2):
-  tools: hv: Return the full kernel version
-  Tools: hv: Don't return loopback addresses
-
- tools/hv/hv_kvp_daemon.c |   22 +++++++++++++++-------
- 1 files changed, 15 insertions(+), 7 deletions(-)
-
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 5959aff..6c7bcb9 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -88,6 +88,7 @@ static char *os_major = "";
+ static char *os_minor = "";
+ static char *processor_arch;
+ static char *os_build;
++static char *os_version;
+ static char *lic_version = "Unknown version";
+ static struct utsname uts_buf;
+ 
+@@ -453,7 +454,9 @@ void kvp_get_os_info(void)
+ 	char	*p, buf[512];
+ 
+ 	uname(&uts_buf);
+-	os_build = uts_buf.release;
++	os_version = uts_buf.release;
++	os_build = strdup(uts_buf.release);
++
+ 	os_name = uts_buf.sysname;
+ 	processor_arch = uts_buf.machine;
+ 
+@@ -462,7 +465,7 @@ void kvp_get_os_info(void)
+ 	 * string to be of the form: x.y.z
+ 	 * Strip additional information we may have.
+ 	 */
+-	p = strchr(os_build, '-');
++	p = strchr(os_version, '-');
+ 	if (p)
+ 		*p = '\0';
+ 
+@@ -1649,7 +1652,7 @@ int main(void)
+ 			strcpy(key_name, "OSMinorVersion");
+ 			break;
+ 		case OSVersion:
+-			strcpy(key_value, os_build);
++			strcpy(key_value, os_version);
+ 			strcpy(key_name, "OSVersion");
+ 			break;
+ 		case ProcessorArchitecture:
 -- 
 1.7.4.1
 
