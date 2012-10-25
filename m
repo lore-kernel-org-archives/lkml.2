@@ -1,90 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab2JYHLx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:11:53 -0400
-Received: from mail.lang.hm ([64.81.33.126]:50312 "EHLO bifrost.lang.hm"
+	id S1758710Ab2JYHMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:12:42 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49693 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757021Ab2JYHLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:11:52 -0400
-Date: Thu, 25 Oct 2012 00:11:43 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: Nico Williams <nico@cryptonector.com>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        =?GB2312?Q?=D1=EE=CB=D5=C1=A2_Yang_Su_Li?= <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-In-Reply-To: <20121025054255.GB9860@thunk.org>
-Message-ID: <alpine.DEB.2.02.1210242358570.31862@asgard.lang.hm>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
- <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm> <20121025054255.GB9860@thunk.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756666Ab2JYHMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 03:12:40 -0400
+Date: Thu, 25 Oct 2012 10:06:53 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Constantine Shulyupin <const@MakeLinux.com>
+CC: <nsekhar@ti.com>, <gregkh@linuxfoundation.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6] Enable USB peripheral mode on dm365 EVM
+Message-ID: <20121025070653.GB5259@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7iMSBzlTiPOCCT2k"
+Content-Disposition: inline
+In-Reply-To: <1349872412-22040-1-git-send-email-const@MakeLinux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Theodore Ts'o wrote:
+--7iMSBzlTiPOCCT2k
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Oct 24, 2012 at 03:03:00PM -0700, david@lang.hm wrote:
->> Like what is being described for sqlite, loosing the tail end of the
->> messages is not a big problem under normal conditions. But there is
->> a need to be sure that what is there is complete up to the point
->> where it's lost.
->>
->> this is similar in concept to write-ahead-logs done for databases
->> (without the absolute durability requirement)
->
-> If that's what you require, and you are using ext3/4, usng data
-> journalling might meet your requirements.  It's something you can
-> enable on a per-file basis, via chattr +j; you don't have to force all
-> file systems to use data journaling via the data=journalled mount
-> option.
->
-> The potential downsides that you may or may not care about for this
-> particular application:
->
-> (a) This will definitely have a performance impact, especially if you
-> are doing lots of small (less than 4k) writes, since the data blocks
-> will get run through the journal, and will only get written to their
-> final location on disk.
->
-> (b) You don't get atomicity if the write spans a 4k block boundary.
-> All of the bytes before i_size will be written, so you don't have to
-> worry about "holes"; but the last message written to the log file
-> might be truncated.
->
-> (c) There will be a performance impact, since the contents of data
-> blocks will be written at least twice (once to the journal, and once
-> to the final location on disk).  If you do lots of small, sub-4k
-> writes, the performance might be even worse, since data blocks might
-> be written multiple times to the journal.
+Hi,
 
-I'll have to dig into this option. In the case of rsyslog it sounds 
-like it could work (not as good as a filesystem independant way of doing 
-things, but better than full fsyncs)
+On Wed, Oct 10, 2012 at 02:33:32PM +0200, Constantine Shulyupin wrote:
+> From: Constantine Shulyupin <const@MakeLinux.com>
+>=20
+> Sets USB PHY clock source to 24 MHz clock and call USB configuration from=
+ board initialization.
+>=20
+> Tested with OTG configuration, usb gadget g_zero on DM365 EVM connected t=
+o PC.
+>=20
+> References:
+>=20
+> Definition of USB_PHY_CTRL and PHYCLKFREQ:
+> - http://www.makelinux.com/lib/ti/DM36x_ARM/doc-141
+>=20
+> Original patch by miguel.aguilar@ridgerun.com three years ago:
+> - http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.=
+com/msg14741.html
+>=20
+> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+> ---
+>=20
+> Note:
+>=20
+> Changelog
+>=20
+> Changes since v5 http://www.spinics.net/lists/kernel/msg1413120.html
+> accordingy feedback of nsekhar@ti.com http://www.spinics.net/lists/kernel=
+/msg1414914.html
+> - phy configuration moved to drivers/usb/musb/davinci.c
+> - USB_OTG configuration is submitted in separated patch: http://www.spini=
+cs.net/lists/kernel/msg1414964.html
+> - Setting current limit to 1000 mA. Any way the current is limited to 510=
+ mA in davinci_setup_usb.
+>=20
+> Changes since v4 http://www.spinics.net/lists/kernel/msg1412995.html
+> - removed fix of dev_info in musb_init_controller
+>=20
+> Changes since v3 http://www.spinics.net/lists/kernel/msg1412544.html:
+> - removed optional altering of pr_info
+>=20
+> Changes since v1  http://marc.info/?l=3Dlinux-kernel&m=3D130894150803661&=
+w=3D2:
+> - removed optional code and reordered
+> - removed alternation of GPIO33, which is multiplexed with DRVVBUS, becau=
+se is not need for peripheral USB
+>=20
+> This patch is based on code from projects Arago, Angstom and RidgeRun.
+>=20
+> ---
+>  arch/arm/mach-davinci/board-dm365-evm.c |    2 ++
+>  drivers/usb/musb/davinci.c              |    3 +++
+>  drivers/usb/musb/davinci.h              |    1 +
+>  3 files changed, 6 insertions(+)
+>=20
+> diff --git a/arch/arm/mach-davinci/board-dm365-evm.c b/arch/arm/mach-davi=
+nci/board-dm365-evm.c
+> index 688a9c5..ba5ffc1 100644
+> --- a/arch/arm/mach-davinci/board-dm365-evm.c
+> +++ b/arch/arm/mach-davinci/board-dm365-evm.c
+> @@ -38,6 +38,7 @@
+>  #include <mach/mmc.h>
+>  #include <mach/nand.h>
+>  #include <mach/keyscan.h>
+> +#include <mach/usb.h>
+> =20
+>  #include <media/tvp514x.h>
+> =20
+> @@ -610,6 +611,7 @@ static __init void dm365_evm_init(void)
+> =20
+>  	dm365_init_spi0(BIT(0), dm365_evm_spi_info,
+>  			ARRAY_SIZE(dm365_evm_spi_info));
+> +	davinci_setup_usb(1000, 8);
+>  }
+> =20
+>  MACHINE_START(DAVINCI_DM365_EVM, "DaVinci DM365 EVM")
+> diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+> index 472c8b4..af09ebf 100644
+> --- a/drivers/usb/musb/davinci.c
+> +++ b/drivers/usb/musb/davinci.c
+> @@ -428,6 +428,9 @@ static int davinci_musb_init(struct musb *musb)
+>  		__raw_writel(deepsleep, DM355_DEEPSLEEP);
+>  	}
+> =20
+> +	if (machine_is_davinci_dm365_evm())
+> +		writel(readl(USB_PHY_CTRL) | USBPHY_CLKFREQ_24MHZ, USB_PHY_CTRL);
 
-Truncated messages are not great, but they are a detectable, and 
-acceptable risk.
+no such checks in drivers. Please find another way to do this.
 
-while the average message size is much smaller than 4K (on my network it's 
-~250 bytes), the metadata that's broken out expands this somewhat, and we 
-can afford to waste disk space if it makes things safer or more efficient.
+--=20
+balbi
 
-If we do update in place with flags with each message, each message will 
-need to be written up to three times (on recipt, being processed, finished 
-processed). With high message burst rates, I'm worried that we would fill 
-up the journal, is there a good way to deal with this?
+--7iMSBzlTiPOCCT2k
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I believe that ext4 can put the journal on a different device from the 
-filesystem, would this help a lot?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-If you were to put the journal for an ext4 filesystem on a ram disk, you 
-would loose the data recovery protection of the journal, but could you use 
-this trick to get ordered data writes onto the filesystem?
+iQIcBAEBAgAGBQJQiOUNAAoJEIaOsuA1yqREhikP/Rh4NPoCV/XIHLJ2nQxfGq6h
+Oy3MvfKpDNVunVRDZyjmtPEmgwRKYpN1YqtB6wn0Sz0ka7NM5SgniA+J35fKBYMi
+f40Apo7RC0l7rF7b2lhyS1wKmMCqvlj46IhCn5SOJKJpxBbdbagCSkf3jOWp4BOo
+sv0t4UsAmRv+C73NjoSL/hjx6sr+kJrifkFgZ/BdhQSFZmO/E6baFwfnZ9NaDKbI
+rh6GVyr3i5uJ9trDrEBIqL/KfFGvDAIwtpETsUxp3jdJmkiw0mp5dWTHEq9jIpQT
+XWs2k7cPZS4M9F+os485qi9CRQzpUBiEMM+mUNqXw7uL1LQqCAysjgogx1yja4mf
+9zg8DbXga/2NTvTBYhapaHVGNfymSNFbeOLso+EV1ffowiD9PGxmupYYSTFyxSvE
+wG74Z37HJzSwZx4ublwpeN7/wFviEGj4w/g975XFRJ4/jyoELk16ybQC9tUsJ47Z
+zbZuiLHD6INDsN6n70MXwVTgJr6vo2rcAHKLQ6jEaJJNikPf0OTYky3w92xMHugN
+oQdjR/dOMTKQP4IbB8Qu4lrYNXW6bstmdAw3DmX8g7FrkyH7Rr4ArpPezk94NbXL
+mx4tO/IRoQg6oQw31gbXpxzy3RdzPF/+1+OtBenCjqaFTST71gQpTQmAUALsODAy
+yQUWHfbTGYWJ8iq4PZwS
+=+RyF
+-----END PGP SIGNATURE-----
 
-David Lang
+--7iMSBzlTiPOCCT2k--
