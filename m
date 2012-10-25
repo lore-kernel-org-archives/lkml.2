@@ -1,108 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751153Ab2JYVVg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:21:36 -0400
-Received: from shutemov.name ([176.9.204.213]:59991 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab2JYVVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:21:34 -0400
-Date: Fri, 26 Oct 2012 00:22:51 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-ID: <20121025212251.GA31749@shutemov.name>
-References: <20121023063532.GA15870@shutemov.name>
- <20121022234349.27f33f62.akpm@linux-foundation.org>
- <20121023070018.GA18381@otc-wbsnb-06>
- <20121023155915.7d5ef9d1.akpm@linux-foundation.org>
- <20121023233801.GA21591@shutemov.name>
- <20121024122253.5ecea992.akpm@linux-foundation.org>
- <20121024194552.GA24460@otc-wbsnb-06>
- <20121024132552.5f9a5f5b.akpm@linux-foundation.org>
- <20121025204959.GA27251@otc-wbsnb-06>
- <20121025140524.17083937.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025140524.17083937.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751462Ab2JYVVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:21:42 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34312 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab2JYVVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 17:21:39 -0400
+From: Benson Leung <bleung@chromium.org>
+To: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, corentin.chary@gmail.com
+Cc: bleung@chromium.org, olofj@chromium.org, olof@lixom.net
+Subject: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
+Date: Thu, 25 Oct 2012 14:21:21 -0700
+Message-Id: <1351200081-19349-2-git-send-email-bleung@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1351200081-19349-1-git-send-email-bleung@chromium.org>
+References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+ <1351200081-19349-1-git-send-email-bleung@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 02:05:24PM -0700, Andrew Morton wrote:
-> On Thu, 25 Oct 2012 23:49:59 +0300
-> "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> 
-> > On Wed, Oct 24, 2012 at 01:25:52PM -0700, Andrew Morton wrote:
-> > > On Wed, 24 Oct 2012 22:45:52 +0300
-> > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > > 
-> > > > On Wed, Oct 24, 2012 at 12:22:53PM -0700, Andrew Morton wrote:
-> > > > > 
-> > > > > I'm thinking that such a workload would be the above dd in parallel
-> > > > > with a small app which touches the huge page and then exits, then gets
-> > > > > executed again.  That "small app" sounds realistic to me.  Obviously
-> > > > > one could exercise the zero page's refcount at higher frequency with a
-> > > > > tight map/touch/unmap loop, but that sounds less realistic.  It's worth
-> > > > > trying that exercise as well though.
-> > > > > 
-> > > > > Or do something else.  But we should try to probe this code's
-> > > > > worst-case behaviour, get an understanding of its effects and then
-> > > > > decide whether any such workload is realisic enough to worry about.
-> > > > 
-> > > > Okay, I'll try few memory pressure scenarios.
-> > 
-> > A test program:
-> > 
-> >         while (1) {
-> >                 posix_memalign((void **)&p, 2 * MB, 2 * MB);
-> >                 assert(*p == 0);
-> >                 free(p);
-> >         }
-> > 
-> > With this code in background we have pretty good chance to have huge zero
-> > page freeable (refcount == 1) when shrinker callback called - roughly one
-> > of two.
-> > 
-> > Pagecache hog (dd if=hugefile of=/dev/null bs=1M) creates enough pressure
-> > to get shrinker callback called, but it was only asked about cache size
-> > (nr_to_scan == 0).
-> > I was not able to get it called with nr_to_scan > 0 on this scenario, so
-> > hzp never freed.
-> 
-> hm.  It's odd that the kernel didn't try to shrink slabs in this case. 
-> Why didn't it??
+This adds the chromeos_laptop driver. It supports
+the Cypress APA SMBUS touchpad as well as the isl29018 i2c ambient
+light sensor on the Samsung Series 5 550 Chromebook.
 
-nr_to_scan == 0 asks for the fast path. shrinker callback can shink, if
-it thinks it's good idea.
+Signed-off-by: Benson Leung <bleung@chromium.org>
+Reviewed-by: Olof Johansson <olof@lixom.net>
+---
+Version history :
+v2 : * Added MODULE_DEVICE_TABLE for the dmi table.
+     * Made __init and __initdata position consistent across this file.
+     * Made prefix static const char *
+     * Made strncmp expressions more explicit
+     * Added an additional match for DMI_SYS_VENDOR for Samsung Lumpy.
+v1 : Initial
+---
+ drivers/platform/x86/Kconfig           |   11 ++
+ drivers/platform/x86/Makefile          |    1 +
+ drivers/platform/x86/chromeos_laptop.c |  205 ++++++++++++++++++++++++++++++++
+ 3 files changed, 217 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/platform/x86/chromeos_laptop.c
 
-> 
-> > I also tried another scenario: usemem -n16 100M -r 1000. It creates real
-> > memory pressure - no easy reclaimable memory. This time callback called
-> > with nr_to_scan > 0 and we freed hzp. Under pressure we fails to allocate
-> > hzp and code goes to fallback path as it supposed to.
-> > 
-> > Do I need to check any other scenario?
-> 
-> I'm thinking that if we do hit problems in this area, we could avoid
-> freeing the hugepage unless the scan_control.priority is high enough. 
-> That would involve adding a magic number or a tunable to set the
-> threshold.
-
-What about ratelimit on alloc path to force fallback if we allocate
-to often? Is it good idea?
-
-> Also, it would be beneficial if we can monitor this easily.  Perhaps
-> add a counter to /proc/vmstat which tells us how many times that page
-> has been reallocated?  And perhaps how many times we tried to allocate
-> it but failed?
-
-Okay, I'll prepare patch.
-
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index c86bae8..12b8594 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -79,6 +79,17 @@ config ASUS_LAPTOP
+ 
+ 	  If you have an ACPI-compatible ASUS laptop, say Y or M here.
+ 
++config CHROMEOS_LAPTOP
++	tristate "Chrome OS Laptop"
++	depends on I2C
++	depends on DMI
++	---help---
++	  This driver instantiates i2c and smbus devices such as
++	  light sensors and touchpads.
++
++	  If you have a supported Chromebook, choose Y or M here.
++	  The module will be called chromeos_laptop.
++
+ config DELL_LAPTOP
+ 	tristate "Dell Laptop Extras (EXPERIMENTAL)"
+ 	depends on X86
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index bf7e4f9..ace2b38 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -50,3 +50,4 @@ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)	+= intel_mid_powerbtn.o
+ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
+ obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
++obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+new file mode 100644
+index 0000000..a8329c3
+--- /dev/null
++++ b/drivers/platform/x86/chromeos_laptop.c
+@@ -0,0 +1,205 @@
++/*
++ *  chromeos_laptop.c - Driver to instantiate Chromebook i2c/smbus devices.
++ *
++ *  Author : Benson Leung <bleung@chromium.org>
++ *
++ *  Copyright (C) 2012 Google, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include <linux/dmi.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++
++#define CYAPA_TP_I2C_ADDR	0x67
++#define ISL_ALS_I2C_ADDR	0x44
++
++static struct i2c_client *als;
++static struct i2c_client *tp;
++
++const char *i2c_adapter_names[] = {
++	"SMBus I801 adapter",
++};
++
++/* Keep this enum consistent with i2c_adapter_names */
++enum i2c_adapter_type {
++	I2C_ADAPTER_SMBUS = 0,
++};
++
++static struct i2c_board_info __initdata cyapa_device = {
++	I2C_BOARD_INFO("cyapa", CYAPA_TP_I2C_ADDR),
++	.flags		= I2C_CLIENT_WAKE,
++};
++
++static struct i2c_board_info __initdata isl_als_device = {
++	I2C_BOARD_INFO("isl29018", ISL_ALS_I2C_ADDR),
++};
++
++static struct i2c_client __init *__add_probed_i2c_device(
++		const char *name,
++		int bus,
++		struct i2c_board_info *info,
++		const unsigned short *addrs)
++{
++	const struct dmi_device *dmi_dev;
++	const struct dmi_dev_onboard *dev_data;
++	struct i2c_adapter *adapter;
++	struct i2c_client *client;
++
++	if (bus < 0)
++		return NULL;
++	/*
++	 * If a name is specified, look for irq platform information stashed
++	 * in DMI_DEV_TYPE_DEV_ONBOARD by the Chrome OS custom system firmware.
++	 */
++	if (name) {
++		dmi_dev = dmi_find_device(DMI_DEV_TYPE_DEV_ONBOARD, name, NULL);
++		if (!dmi_dev) {
++			pr_err("%s failed to dmi find device %s.\n",
++			       __func__,
++			       name);
++			return NULL;
++		}
++		dev_data = (struct dmi_dev_onboard *)dmi_dev->device_data;
++		if (!dev_data) {
++			pr_err("%s failed to get data from dmi for %s.\n",
++			       __func__, name);
++			return NULL;
++		}
++		info->irq = dev_data->instance;
++	}
++
++	adapter = i2c_get_adapter(bus);
++	if (!adapter) {
++		pr_err("%s failed to get i2c adapter %d.\n", __func__, bus);
++		return NULL;
++	}
++
++	/* add the i2c device */
++	client = i2c_new_probed_device(adapter, info, addrs, NULL);
++	if (!client)
++		pr_err("%s failed to register device %d-%02x\n",
++		       __func__, bus, info->addr);
++	else
++		pr_debug("%s added i2c device %d-%02x\n",
++			 __func__, bus, info->addr);
++
++	i2c_put_adapter(adapter);
++	return client;
++}
++
++static int __init __find_i2c_adap(struct device *dev, void *data)
++{
++	const char *name = data;
++	static const char *prefix = "i2c-";
++	struct i2c_adapter *adapter;
++	if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
++		return 0;
++	adapter = to_i2c_adapter(dev);
++	return (strncmp(adapter->name, name, strlen(name)) == 0);
++}
++
++static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
++{
++	struct device *dev = NULL;
++	struct i2c_adapter *adapter;
++	const char *name = i2c_adapter_names[type];
++	/* find the adapter by name */
++	dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
++			      __find_i2c_adap);
++	if (!dev) {
++		pr_err("%s: i2c adapter %s not found on system.\n", __func__,
++		       name);
++		return -ENODEV;
++	}
++	adapter = to_i2c_adapter(dev);
++	return adapter->nr;
++}
++
++/*
++ * Probes for a device at a single address, the one provided by
++ * info->addr.
++ * Returns NULL if no device found.
++ */
++static struct i2c_client __init *add_smbus_device(const char *name,
++						  struct i2c_board_info *info)
++{
++	const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
++	return __add_probed_i2c_device(name,
++				       find_i2c_adapter_num(I2C_ADAPTER_SMBUS),
++				       info,
++				       addr_list);
++}
++
++static int __init setup_lumpy_tp(const struct dmi_system_id *id)
++{
++	/* add cyapa touchpad on smbus */
++	tp = add_smbus_device("trackpad", &cyapa_device);
++	return 0;
++}
++
++static int __init setup_isl29018_als(const struct dmi_system_id *id)
++{
++	/* add isl29018 light sensor */
++	als = add_smbus_device("lightsensor", &isl_als_device);
++	return 0;
++}
++
++static struct dmi_system_id __initdata chromeos_laptop_dmi_table[] = {
++	{
++		.ident = "Samsung Series 5 550 - Touchpad",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
++		},
++		.callback = setup_lumpy_tp,
++	},
++	{
++		.ident = "Samsung Series 5 550 - Light Sensor",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
++		},
++		.callback = setup_isl29018_als,
++	},
++	{ }
++};
++MODULE_DEVICE_TABLE(dmi, chromeos_laptop_dmi_table);
++
++static int __init chromeos_laptop_init(void)
++{
++	if (!dmi_check_system(chromeos_laptop_dmi_table)) {
++		pr_debug("%s unsupported system.\n", __func__);
++		return -ENODEV;
++	}
++	return 0;
++}
++
++static void __exit chromeos_laptop_exit(void)
++{
++	if (als)
++		i2c_unregister_device(als);
++	if (tp)
++		i2c_unregister_device(tp);
++}
++
++module_init(chromeos_laptop_init);
++module_exit(chromeos_laptop_exit);
++
++MODULE_DESCRIPTION("Chrome OS Laptop driver");
++MODULE_AUTHOR("Benson Leung <bleung@chromium.org>");
++MODULE_LICENSE("GPL");
 -- 
- Kirill A. Shutemov
+1.7.7.3
+
