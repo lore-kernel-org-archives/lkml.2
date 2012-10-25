@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab2JYBtA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:49:00 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:61084 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab2JYBs6 (ORCPT
+	id S1759131Ab2JYBtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:49:52 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:52346 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759080Ab2JYBtu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:48:58 -0400
-Message-ID: <50889A7E.8010104@gmail.com>
-Date: Thu, 25 Oct 2012 09:48:46 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 24 Oct 2012 21:49:50 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "mikew@google.com" <mikew@google.com>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: [PATCH v2 0/5] efi_pstore: multiple event logging support
+Thread-Topic: [PATCH v2 0/5] efi_pstore: multiple event logging support
+Thread-Index: Ac2yUeBWHNsQTs+gQdSSj3EsTjaJug==
+Date: Thu, 25 Oct 2012 01:49:33 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388895F@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: YingHang Zhu <casualfisher@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-CC: Dave Chinner <david@fromorbit.com>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com> <20121023224706.GR4291@dastard> <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com> <20121024201921.GX4291@dastard> <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-In-Reply-To: <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-24_09:2012-10-24,2012-10-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210240325
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 08:17 AM, YingHang Zhu wrote:
-> On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
->> On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
->>> Hi Dave,
->>> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
->>>> On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
->>>>> Hi,
->>>>>    Recently we ran into the bug that an opened file's ra_pages does not
->>>>> synchronize with it's backing device's when the latter is changed
->>>>> with blockdev --setra, the application needs to reopen the file
->>>>> to know the change,
->>>> or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
->>>> window to the (new) bdi default.
->>>>
->>>>> which is inappropriate under our circumstances.
->>>> Which are? We don't know your circumstances, so you need to tell us
->>>> why you need this and why existing methods of handling such changes
->>>> are insufficient...
->>>>
->>>> Optimal readahead windows tend to be a physical property of the
->>>> storage and that does not tend to change dynamically. Hence block
->>>> device readahead should only need to be set up once, and generally
->>>> that can be done before the filesystem is mounted and files are
->>>> opened (e.g. via udev rules). Hence you need to explain why you need
->>>> to change the default block device readahead on the fly, and why
->>>> fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
->>>> windows to the new defaults.
->>> Our system is a fuse-based file system, fuse creates a
->>> pseudo backing device for the user space file systems, the default readahead
->>> size is 128KB and it can't fully utilize the backing storage's read ability,
->>> so we should tune it.
->> Sure, but that doesn't tell me anything about why you can't do this
->> at mount time before the application opens any files. i.e.  you've
->> simply stated the reason why readahead is tunable, not why you need
->> to be fully dynamic.....
-> We store our file system's data on different disks so we need to change ra_pages
-> dynamically according to where the data resides, it can't be fixed at mount time
-> or when we open files.
-> The abstract bdi of fuse and btrfs provides some dynamically changing
-> bdi.ra_pages
-> based on the real backing device. IMHO this should not be ignored.
+Changelog
+v1 -> v2
+   - Separate into 5 patches in accordance with Mike's comment
+   - Erase an extra line of comment in patch 1/5
 
-And how to tune ra_pages if one big file distribution in different 
-disks, I think Fengguang Wu can answer these questions,
+[Issue]
 
-Hi Fengguang,
+    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
+    So, in the following scenario, we will lose 1st panic messages.
 
->>> The above third-party application using our file system maintains
->>> some long-opened files, we does not have any chances
->>> to force them to call fadvise(POSIX_FADV_NORMAL). :(
->> So raise a bug/feature request with the third party.  Modifying
->> kernel code because you can't directly modify the application isn't
->> the best solution for anyone. This really is an application problem
->> - the kernel already provides the mechanisms to solve this
->> problem...  :/
-> Thanks for advice, I will consult the above application's developers
-> for more information.
-> Now from the code itself should we merge the gap between the real
-> device's ra_pages and the file's?
-> Obviously the ra_pages is duplicated, otherwise each time we run into this
-> problem, someone will do the same work as I have done here.
->
-> Thanks,
->           Ying Zhu
->> Cheers,
->>
->> Dave.
->> --
->> Dave Chinner
->> david@fromorbit.com
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+    1. kernel panics.
+    2. efi_pstore is kicked and writes panic messages to NVRAM.
+    3. system reboots.
+    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
+
+[Solution]
+
+   Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
+
+   http://marc.info/?l=linux-kernel&m=134273270704586&w=2
+
+   And there are two possible solutions right now.
+     - First one is introducing some policy overwriting existing logs.
+     - Second one is simply holding multiple log without overwriting any entries.
+
+   We haven't decided the overwriting policy which is reasonable to all users yet.
+   But I believe we agree that just holding multiple logs is a reasonable way.
+
+   We may need further discussions to find the possibility of introducing overwriting
+   policy, especially getting critical messages in multiple oops case.
+   But I would like to begin with a simple and reasonable way to everyone.
+   So, this patch takes an approach just holding multiple logs.
+
+[Patch Description]
+
+(1/5) efi_pstore: Check remaining space with QueryVariableInfo() before writing data
+
+(2/5) efi_pstore: Add a logic erasing entries to an erase callback
+
+(3/5) efi_pstore: Remove a logic erasing entries from a write callback to hold multiple logs
+
+(4/5) efi_pstore: Add ctime to argument of erase callback
+
+(5/5) efi_pstore: Add a sequence counter to a variable name
+
+Detailed explanations are written in each patch.
+
+ drivers/acpi/apei/erst.c   |   16 ++++----
+ drivers/firmware/efivars.c |  100 ++++++++++++++++++++++++++++---------------
+ fs/pstore/inode.c          |    7 ++-
+ fs/pstore/internal.h       |    2 +-
+ fs/pstore/platform.c       |   11 +++--
+ fs/pstore/ram.c            |    9 ++--
+ include/linux/efi.h        |    1 +
+ include/linux/pstore.h     |    6 ++-
+ 8 files changed, 94 insertions(+), 58 deletions(-)
 
