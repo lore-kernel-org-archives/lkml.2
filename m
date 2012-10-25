@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935947Ab2JYQzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:55:03 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47766 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933975Ab2JYQzA (ORCPT
+	id S935963Ab2JYQ52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:57:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54461 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933975Ab2JYQ50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:55:00 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6876"; a="1836819"
-Date: Thu, 25 Oct 2012 11:54:40 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linus-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: new execve/kernel_thread design
-Message-ID: <20121025165440.GB6209@codeaurora.org>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121016223508.GR2616@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Oct 2012 12:57:26 -0400
+From: Brian Norris <computersforpeace@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: <linux-ide@vger.kernel.org>, <linux-pm@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Kevin Cernekee <cernekee@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [RFC 0/3] libata/ahci unbinding, power down sequence
+Date: Thu, 25 Oct 2012 09:55:58 -0700
+Message-Id: <1351184161-31433-1-git-send-email-computersforpeace@gmail.com>
+X-Mailer: git-send-email 1.7.11.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 16, 2012 at 11:35:08PM +0100, Al Viro wrote:
-> Maintainers are Cc'd.  My (very, _very_ tentative) patchsets are in
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal arch-$ARCH
-> 
-> Nearly in the same state: ia64.  The only difference is that I've tested
-> it under ski(1) and it seems to work.  Accuracy of ski(1) for the purposes
-> of finding bugs in asm glue is not inspiring, though.
-> 
-> Not even a tentative patchset: hexagon, openrisc, tile, xtensa.
-> 
-> I would very much appreciate ACKs/testing/fixes/outright replacements/etc.
-> for this stuff.  Right now all infrastructure is in the mainline and
-> per-architecture bits are entirely independent from each other.  As soon
-> as maintainer in question is OK with what's in such per-architecture branch,
-> I'll be quite happy to put it into never-rebased mode, so that it would be
-> safe to pull.  There are some fun things that'll become possible once
-> all architectures are converted, but let's handle that stuff first, OK?
+Hello,
 
-Latest version of the Hexagon patches look good.  Thanks!
+I sent out a few questions/suggestions earlier, regarding some trouble I was
+having in supporting my SoC SATA controller under the libata / ahci_platform
+driver:
 
-Acked-by:  Richard Kuo <rkuo@codeaurora.org>
+    http://article.gmane.org/gmane.linux.ide/52951/match=unbind+rmmod
 
+I think I have identified a problem in libata's handling of hardware activity
+at device removal/exit (relevant to my use-case of unbind or rmmod). This patch series:
+
+(1) Allows ahci_platform to unbind a device from the driver. This is useful for
+    allowing total power-off of the device, for instance.
+(2) Modifies libata-core so that ata_host_stop() is not called as a devres
+    cleanup function (after all driver-specific functions, including power-off)
+
+The first two patches are relatively harmless and correct, I believe, where the
+third patch is more significant and could use good review. I am sending code
+because I hear no response to my standalone suggestions :) Please see my
+previous email (URL above) and/or patch 3/3 for a more detailed description.
+
+Thanks,
+Brian
+
+Brian Norris (3):
+  ahci_platform: enable hotplug unbinding
+  ahci_platform: convert to module_platform_driver
+  libata: don't perform HW activity in devres
+
+ drivers/ata/ahci_platform.c | 16 +++-------------
+ drivers/ata/libata-core.c   | 18 +++---------------
+ 2 files changed, 6 insertions(+), 28 deletions(-)
 
 -- 
+1.7.11.3
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
