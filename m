@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab2JYFW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 01:22:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35339 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab2JYFW4 (ORCPT
+	id S1756181Ab2JYF3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:29:50 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:60187 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab2JYF3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 01:22:56 -0400
-Message-ID: <5088CC9B.6010009@gmail.com>
-Date: Wed, 24 Oct 2012 22:22:35 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>
-CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed...
- GPU hung
-References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com>
-In-Reply-To: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Oct 2012 01:29:49 -0400
+Message-id: <5088CE41.7030704@samsung.com>
+Date: Thu, 25 Oct 2012 07:29:37 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010
+ Thunderbird/16.0.1
+MIME-version: 1.0
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] arm: mvebu: increase atomic coherent pool size for
+ armada 370/XP
+References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com>
+ <1351086561-13569-2-git-send-email-gregory.clement@free-electrons.com>
+In-reply-to: <1351086561-13569-2-git-send-email-gregory.clement@free-electrons.com>
+Content-type: text/plain; charset=ISO-8859-2; format=flowed
+Content-transfer-encoding: 7bit
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->
-> On Tue, Oct 23, 2012 at 10:06:52AM -0700, Justin P. Mattock wrote:
->  > This is happening both with MAINLINE and NEXT.
->  >
->  > basically system is running fine, then under load system becomes
->  > really sluggish and unresponsive. I was able to get dmesg of the
->  > error..:
->  >
->  > [ 7745.007008] ath9k 0000:05:00.0 wlan0: disabling VHT as WMM/QoS is
->  > not supported by the AP
->  > [ 7745.007736] wlan0: associate with 68:7f:74:b8:05:82 (try 1/3)
->  > [ 7745.011456] wlan0: RX AssocResp from 68:7f:74:b8:05:82
->  > (capab=0x411 status=0 aid=5)
->  > [ 7745.011529] wlan0: associated
->  > [ 8120.812482] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
->  > elapsed... GPU hung
->  > [ 8120.812642] [drm] capturing error event; look for more
->  > information in /debug/dri/0/i915_error_state
->  > [ 8122.328682] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
->  > elapsed... GPU hung
->  > [ 8122.328845] [drm:i915_reset] *ERROR* GPU hanging too fast,
->  > declaring wedged!
->  > [ 8122.328850] [drm:i915_reset] *ERROR* Failed to reset chip.
->  >
->  > full log is here: http://fpaste.org/7xH8/
->  >
->  > as for good kernels from what I remember 3.6.0-rc1. I can try a
->  > bisect on this once I get the time. or if anybody has a patch I can
->  > test.
->
-> Can you please rehand your machine, and then grab the i915_error_state
-> from debugfs? That contains the gpu hang dump we need to diagnose things.
->
-> And the bisect would obviously be awesome.
->
-> Thanks, Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Hello,
 
-took a bit to trigger, but finally fired off.
+On 10/24/2012 3:49 PM, Gregory CLEMENT wrote:
+> For Armada 370/XP we have the same problem that for the commit
+> cb01b63, so we applied the same solution: "The default 256 KiB
+> coherent pool may be too small for some of the Kirkwood devices, so
+> increase it to make sure that devices will be able to allocate their
+> buffers with GFP_ATOMIC flag"
+>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 
-here is a link to the file..: intel_error_decode
-http://www.filefactory.com/file/22bypyjhs4mx
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-the file was to large to send to the list.. let me know if you need more 
-info with this.
-also if anybody has any ideas to trigger this would be appreciated so 
-the bisect can be more precise. right now dont even think its worth it, 
-due to not being able to trigger the crash causing the bisect to go 
-astray and pointing to a wrong commit(which has happened in the past) 
-but then again you never know.
+> ---
+>   arch/arm/mach-mvebu/armada-370-xp.c |   12 ++++++++++++
+>   1 file changed, 12 insertions(+)
+>
+> diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
+> index 2af6ce5..cbad821 100644
+> --- a/arch/arm/mach-mvebu/armada-370-xp.c
+> +++ b/arch/arm/mach-mvebu/armada-370-xp.c
+> @@ -17,6 +17,7 @@
+>   #include <linux/of_platform.h>
+>   #include <linux/io.h>
+>   #include <linux/time-armada-370-xp.h>
+> +#include <linux/dma-mapping.h>
+>   #include <asm/mach/arch.h>
+>   #include <asm/mach/map.h>
+>   #include <asm/mach/time.h>
+> @@ -43,6 +44,16 @@ void __init armada_370_xp_timer_and_clk_init(void)
+>   	armada_370_xp_timer_init();
+>   }
+>
+> +void __init armada_370_xp_init_early(void)
+> +{
+> +	/*
+> +	 * Some Armada 370/XP devices allocate their coherent buffers
+> +	 * from atomic context. Increase size of atomic coherent pool
+> +	 * to make sure such the allocations won't fail.
+> +	 */
+> +	init_dma_coherent_pool_size(SZ_1M);
+> +}
+> +
+>   struct sys_timer armada_370_xp_timer = {
+>   	.init		= armada_370_xp_timer_and_clk_init,
+>   };
+> @@ -61,6 +72,7 @@ static const char * const armada_370_xp_dt_board_dt_compat[] = {
+>   DT_MACHINE_START(ARMADA_XP_DT, "Marvell Aramada 370/XP (Device Tree)")
+>   	.init_machine	= armada_370_xp_dt_init,
+>   	.map_io		= armada_370_xp_map_io,
+> +	.init_early	= armada_370_xp_init_early,
+>   	.init_irq	= armada_370_xp_init_irq,
+>   	.handle_irq     = armada_370_xp_handle_irq,
+>   	.timer		= &armada_370_xp_timer,
+>
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Justin P. Mattock
