@@ -1,48 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab2JYCJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 22:09:29 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47919 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729Ab2JYCJ2 (ORCPT
+	id S1759160Ab2JYCMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 22:12:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59113 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759087Ab2JYCMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 22:09:28 -0400
+	Wed, 24 Oct 2012 22:12:22 -0400
+Message-ID: <50889FF1.9030107@gmail.com>
+Date: Thu, 25 Oct 2012 10:12:01 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351115423-9025-13-git-send-email-acme@infradead.org>
-References: <1351115423-9025-1-git-send-email-acme@infradead.org> <1351115423-9025-13-git-send-email-acme@infradead.org>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Thu, 25 Oct 2012 11:09:06 +0900
-X-Google-Sender-Auth: 1uO-de2DAwOEX7HYflRw3qMVxZI
-Message-ID: <CAM9d7cjwX=2FnaM4CK_c9_UKOJvg-5JUOGqx-EcdhRbRA2yPDg@mail.gmail.com>
-Subject: Re: [PATCH 12/12] perf tools: Try to build Documentation when installing
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: YingHang Zhu <casualfisher@gmail.com>
+CC: Dave Chinner <david@fromorbit.com>, akpm@linux-foundation.org,
+        Fengguang Wu <fengguang.wu@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com> <20121023224706.GR4291@dastard> <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com> <20121024201921.GX4291@dastard> <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com> <20121025015014.GC29378@dastard> <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
+In-Reply-To: <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 6:50 AM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
->
-> There's a portion in the "perf list" output refering to the exact
-> specification of raw hardware events.
->
-> Since this description is in the perf-list manpage, try to build and
-> install the man pages, warning the user when that is not possible
-> due to missing packages (xmlto and asciidoc).
->
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> Tested-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Link: http://lkml.kernel.org/n/tip-ij71ysszkdvz3fy3wr331bke@git.kernel.org
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+On 10/25/2012 10:04 AM, YingHang Zhu wrote:
+> On Thu, Oct 25, 2012 at 9:50 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> On Thu, Oct 25, 2012 at 08:17:05AM +0800, YingHang Zhu wrote:
+>>> On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
+>>>> On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
+>>>>> Hi Dave,
+>>>>> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
+>>>>>> On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
+>>>>>>> Hi,
+>>>>>>>    Recently we ran into the bug that an opened file's ra_pages does not
+>>>>>>> synchronize with it's backing device's when the latter is changed
+>>>>>>> with blockdev --setra, the application needs to reopen the file
+>>>>>>> to know the change,
+>>>>>> or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
+>>>>>> window to the (new) bdi default.
+>>>>>>
+>>>>>>> which is inappropriate under our circumstances.
+>>>>>> Which are? We don't know your circumstances, so you need to tell us
+>>>>>> why you need this and why existing methods of handling such changes
+>>>>>> are insufficient...
+>>>>>>
+>>>>>> Optimal readahead windows tend to be a physical property of the
+>>>>>> storage and that does not tend to change dynamically. Hence block
+>>>>>> device readahead should only need to be set up once, and generally
+>>>>>> that can be done before the filesystem is mounted and files are
+>>>>>> opened (e.g. via udev rules). Hence you need to explain why you need
+>>>>>> to change the default block device readahead on the fly, and why
+>>>>>> fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
+>>>>>> windows to the new defaults.
+>>>>> Our system is a fuse-based file system, fuse creates a
+>>>>> pseudo backing device for the user space file systems, the default readahead
+>>>>> size is 128KB and it can't fully utilize the backing storage's read ability,
+>>>>> so we should tune it.
+>>>> Sure, but that doesn't tell me anything about why you can't do this
+>>>> at mount time before the application opens any files. i.e.  you've
+>>>> simply stated the reason why readahead is tunable, not why you need
+>>>> to be fully dynamic.....
+>>> We store our file system's data on different disks so we need to change ra_pages
+>>> dynamically according to where the data resides, it can't be fixed at mount time
+>>> or when we open files.
+>> That doesn't make a whole lot of sense to me. let me try to get this
+>> straight.
+>>
+>> There is data that resides on two devices (A + B), and a fuse
+>> filesystem to access that data. There is a single file in the fuse
+>> fs has data on both devices. An app has the file open, and when the
+>> data it is accessing is on device A you need to set the readahead to
+>> what is best for device A? And when the app tries to access data for
+>> that file that is on device B, you need to set the readahead to what
+>> is best for device B? And you are changing the fuse BDI readahead
+>> settings according to where the data in the back end lies?
+>>
+>> It seems to me that you should be setting the fuse readahead to the
+>> maximum of the readahead windows the data devices have configured at
+>> mount time and leaving it at that....
+> Then it may not fully utilize some device's read IO bandwidth and put too much
+> burden on other devices.
+>>> The abstract bdi of fuse and btrfs provides some dynamically changing
+>>> bdi.ra_pages
+>>> based on the real backing device. IMHO this should not be ignored.
+>> btrfs simply takes into account the number of disks it has for a
+>> given storage pool when setting up the default bdi ra_pages during
+>> mount.  This is basically doing what I suggested above.  Same with
+>> the generic fuse code - it's simply setting a sensible default value
+>> for the given fuse configuration.
+>>
+>> Neither are dynamic in the sense you are talking about, though.
+> Actually I've talked about it with Fengguang, he advised we should unify the
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+But how can bdi related ra_pages reflect different files' readahead 
+window? Maybe these different files are sequential read, random read and 
+so on.
 
+> ra_pages in struct bdi and file_ra_state and leave the issue that
+> spreading data
+> across disks as it is.
+> Fengguang, what's you opinion about this?
+>
+> Thanks,
+>           Ying Zhu
+>> Cheers,
+>>
+>> Dave.
+>> --
+>> Dave Chinner
+>> david@fromorbit.com
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
-Thanks,
-Namhyung
