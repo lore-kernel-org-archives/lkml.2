@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992513Ab2JYRni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:43:38 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51270 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab2JYRnf (ORCPT
+	id S936035Ab2JYRo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:44:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:11531 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757050Ab2JYRoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:43:35 -0400
-Date: Thu, 25 Oct 2012 10:43:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>
-Subject: Re: [RFC 3/3] libata: don't perform HW activity in devres
-Message-ID: <20121025174331.GK11442@htj.dyndns.org>
-References: <1351184161-31433-1-git-send-email-computersforpeace@gmail.com>
- <1351184161-31433-4-git-send-email-computersforpeace@gmail.com>
- <20121025172542.GG11442@htj.dyndns.org>
- <CAN8TOE_DThBeGvHN9HQtX3CDLuiWDJEVZNKFqRnnOmP=xHN8XQ@mail.gmail.com>
+	Thu, 25 Oct 2012 13:44:54 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18HdB2r3/3BL8HL+VIqq/9e
+Date: Thu, 25 Oct 2012 10:44:47 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, linux@arm.linux.org.uk,
+        b-cousson@ti.com, arnd@arndb.de, olof@lixom.net, rdunlap@xenotime.net,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
+Message-ID: <20121025174446.GT11928@atomide.com>
+References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+ <1349675983-23803-2-git-send-email-kishon@ti.com>
+ <20121016165043.GS15569@atomide.com>
+ <20121025004806.GK11928@atomide.com>
+ <20121025061722.GB4449@arwen.pp.htv.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAN8TOE_DThBeGvHN9HQtX3CDLuiWDJEVZNKFqRnnOmP=xHN8XQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121025061722.GB4449@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+* Felipe Balbi <balbi@ti.com> [121024 23:24]:
+> Hi,
+> 
+> On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
+> > * Tony Lindgren <tony@atomide.com> [121016 09:53]:
+> > > * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+> > > > ocp2scp was not having pdata support which makes *musb* fail for non-dt
+> > > > boot in OMAP platform. The pdata will have information about the devices
+> > > > that is connected to ocp2scp. ocp2scp driver will now make use of this
+> > > > information to create the devices that is attached to ocp2scp.
+> > > > 
+> > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > > 
+> > > This fixes the regression on my panda es for musb port:
+> > > 
+> > > Acked-by: Tony Lindgren <tony@atomide.com>
+> > 
+> > Looks like nobody has picked this one up and we need it to
+> > fix the musb regression on omap, so I'll queue these up.
+> 
+> I don't seem to have the patches around in any mailbox :-(
 
-On Thu, Oct 25, 2012 at 10:41:57AM -0700, Brian Norris wrote:
-> Hmm, I guess that makes more sense. I was using the ahci_platform
-> ahci_platform_data->exit() function. Would it be safe to call the
-> platform init()/exit() functions as part of a
-> ata_port_operations.host_{start,stop}() hook? These functions aren't
-> currently implemented at all in ahci_platform, but I don't see why
-> they couldn't be.
+Bounced them to you. Do you have any better ideas for the
+-rc cycle to fix the MUSB regression on omap4?
 
-I don't have much idea about the specifics but host_start/stop() are
-supposed to perform the functions you're describing.
+Regards,
 
-Thanks.
-
--- 
-tejun
+Tony
