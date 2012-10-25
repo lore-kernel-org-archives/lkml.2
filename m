@@ -1,281 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946109Ab2JYPKE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:10:04 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39206 "EHLO e9.ny.us.ibm.com"
+	id S935755Ab2JYPLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:11:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:41849 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935694Ab2JYPKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:10:00 -0400
+	id S933520Ab2JYPLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 11:11:47 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
         cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [RFC v4 03/15] vfs,hot_track: add the function for collecting I/O frequency
-Date: Thu, 25 Oct 2012 23:08:55 +0800
-Message-Id: <1351177747-19389-4-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v4 09/15] vfs,hot_track: register one memory shrinker
+Date: Thu, 25 Oct 2012 23:09:01 +0800
+Message-Id: <1351177747-19389-10-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
 References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102515-7182-0000-0000-000002F1ED66
+x-cbid: 12102515-7182-0000-0000-000002F1F449
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Add some utils helpers to update access frequencies
-for one file or its range.
+  Register a shrinker to control the amount of
+memory that is used in tracking hot regions - if we are throwing
+inodes out of memory due to memory pressure, we most definitely are
+going to need to reduce the amount of memory the tracking code is
+using, even if it means losing useful information (i.e. the shrinker
+accelerates the aging process).
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c            |  191 ++++++++++++++++++++++++++++++++++++++++++
- fs/hot_tracking.h            |    9 ++
- include/linux/hot_tracking.h |    2 +
- 3 files changed, 202 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |   61 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/hot_tracking.h |    1 +
+ 2 files changed, 62 insertions(+), 0 deletions(-)
 
 diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 5fef7e5..201598b 100644
+index d931083..7d2c53d 100644
 --- a/fs/hot_tracking.c
 +++ b/fs/hot_tracking.c
-@@ -173,6 +173,149 @@ static void hot_inode_tree_exit(struct hot_info *root)
- 	}
+@@ -678,6 +678,61 @@ err:
+ 	kmem_cache_destroy(hot_inode_item_cachep);
  }
  
-+struct hot_inode_item
-+*hot_inode_item_find(struct hot_info *root, u64 ino)
++static int hot_track_prune_map(struct hot_map_head *map_head,
++				bool type, int nr)
 +{
-+	struct hot_inode_item *he;
-+	int ret;
++	struct hot_comm_item *node;
++	int i;
 +
-+again:
-+	spin_lock(&root->lock);
-+	he = radix_tree_lookup(&root->hot_inode_tree, ino);
-+	if (he) {
-+		kref_get(&he->hot_inode.refs);
-+		spin_unlock(&root->lock);
-+		return he;
-+	}
-+	spin_unlock(&root->lock);
++	for (i = 0; i < HEAT_MAP_SIZE; i++) {
++		while (!list_empty(&(map_head + i)->node_list)) {
++			if (nr-- <= 0)
++				break;
 +
-+	he = kmem_cache_zalloc(hot_inode_item_cachep,
-+				GFP_KERNEL | GFP_NOFS);
-+	if (!he)
-+		return ERR_PTR(-ENOMEM);
-+
-+	hot_inode_item_init(he, ino, &root->hot_inode_tree);
-+
-+	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-+	if (ret) {
-+		kmem_cache_free(hot_inode_item_cachep, he);
-+		return ERR_PTR(ret);
-+	}
-+
-+	spin_lock(&root->lock);
-+	ret = radix_tree_insert(&root->hot_inode_tree, ino, he);
-+	if (ret == -EEXIST) {
-+		kmem_cache_free(hot_inode_item_cachep, he);
-+		spin_unlock(&root->lock);
-+		radix_tree_preload_end();
-+		goto again;
-+	}
-+	spin_unlock(&root->lock);
-+	radix_tree_preload_end();
-+
-+	kref_get(&he->hot_inode.refs);
-+	return he;
-+}
-+
-+static struct hot_range_item
-+*hot_range_item_find(struct hot_inode_item *he,
-+			u32 start)
-+{
-+	struct hot_range_item *hr;
-+	int ret;
-+
-+again:
-+	spin_lock(&he->lock);
-+	hr = radix_tree_lookup(&he->hot_range_tree, start);
-+	if (hr) {
-+		kref_get(&hr->hot_range.refs);
-+		spin_unlock(&he->lock);
-+		return hr;
-+	}
-+	spin_unlock(&he->lock);
-+
-+	hr = kmem_cache_zalloc(hot_range_item_cachep,
-+				GFP_KERNEL | GFP_NOFS);
-+	if (!hr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	hot_range_item_init(hr, start, he);
-+
-+	ret = radix_tree_preload(GFP_NOFS & ~__GFP_HIGHMEM);
-+	if (ret) {
-+		kmem_cache_free(hot_range_item_cachep, hr);
-+		return ERR_PTR(ret);
-+	}
-+
-+	spin_lock(&he->lock);
-+	ret = radix_tree_insert(&he->hot_range_tree, start, hr);
-+	if (ret == -EEXIST) {
-+		kmem_cache_free(hot_range_item_cachep, hr);
-+		spin_unlock(&he->lock);
-+		radix_tree_preload_end();
-+		goto again;
-+	}
-+	spin_unlock(&he->lock);
-+	radix_tree_preload_end();
-+
-+	kref_get(&hr->hot_range.refs);
-+	return hr;
-+}
-+
-+/*
-+ * This function does the actual work of updating the frequency numbers,
-+ * whatever they turn out to be. FREQ_POWER determines how many atime
-+ * deltas we keep track of (as a power of 2). So, setting it to anything above
-+ * 16ish is probably overkill. Also, the higher the power, the more bits get
-+ * right shifted out of the timestamp, reducing precision, so take note of that
-+ * as well.
-+ *
-+ * The caller should have already locked freq_data's parent's spinlock.
-+ *
-+ * FREQ_POWER, defined immediately below, determines how heavily to weight
-+ * the current frequency numbers against the newest access. For example, a value
-+ * of 4 means that the new access information will be weighted 1/16th (ie 2^-4)
-+ * as heavily as the existing frequency info. In essence, this is a kludged-
-+ * together version of a weighted average, since we can't afford to keep all of
-+ * the information that it would take to get a _real_ weighted average.
-+ */
-+static u64 hot_average_update(struct timespec old_atime,
-+		struct timespec cur_time, u64 old_avg)
-+{
-+	struct timespec delta_ts;
-+	u64 new_avg;
-+	u64 new_delta;
-+
-+	delta_ts = timespec_sub(cur_time, old_atime);
-+	new_delta = timespec_to_ns(&delta_ts) >> FREQ_POWER;
-+
-+	new_avg = (old_avg << FREQ_POWER) - old_avg + new_delta;
-+	new_avg = new_avg >> FREQ_POWER;
-+
-+	return new_avg;
-+}
-+
-+static void hot_freq_data_update(struct hot_freq_data *freq_data, bool write)
-+{
-+	struct timespec cur_time = current_kernel_time();
-+
-+	if (write) {
-+		freq_data->nr_writes += 1;
-+		freq_data->avg_delta_writes = hot_average_update(
-+				freq_data->last_write_time,
-+				cur_time,
-+				freq_data->avg_delta_writes);
-+		freq_data->last_write_time = cur_time;
-+	} else {
-+		freq_data->nr_reads += 1;
-+		freq_data->avg_delta_reads = hot_average_update(
-+				freq_data->last_read_time,
-+				cur_time,
-+				freq_data->avg_delta_reads);
-+		freq_data->last_read_time = cur_time;
-+	}
-+}
-+
- /*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
-@@ -199,6 +342,54 @@ err:
- }
- 
- /*
-+ * Main function to update access frequency from read/writepage(s) hooks
-+ */
-+inline void hot_update_freqs(struct inode *inode, u64 start,
-+			u64 len, int rw)
-+{
-+	struct hot_info *root = inode->i_sb->s_hot_root;
-+	struct hot_inode_item *he;
-+	struct hot_range_item *hr;
-+	u32 cur, end;
-+
-+	if (!root || (len == 0))
-+		return;
-+
-+	he = hot_inode_item_find(root, inode->i_ino);
-+	if (IS_ERR(he)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	spin_lock(&he->hot_inode.lock);
-+	hot_freq_data_update(&he->hot_inode.hot_freq_data, rw);
-+	spin_unlock(&he->hot_inode.lock);
-+
-+	/*
-+	 * Align ranges on RANGE_SIZE boundary
-+	 * to prevent proliferation of range structs
-+	 */
-+	end = (start + len + RANGE_SIZE - 1) >> RANGE_BITS;
-+	for (cur = (start >> RANGE_BITS); cur < end; cur++) {
-+		hr = hot_range_item_find(he, cur);
-+		if (IS_ERR(hr)) {
-+			WARN_ON(1);
-+			hot_inode_item_put(he);
-+			return;
++			node = list_first_entry(&(map_head + i)->node_list,
++					struct hot_comm_item, n_list);
++			if (type) {
++				struct hot_inode_item *hot_inode =
++					container_of(node,
++					struct hot_inode_item, hot_inode);
++				hot_inode_item_put(hot_inode);
++			} else {
++				struct hot_range_item *hot_range =
++					container_of(node,
++					struct hot_range_item, hot_range);
++				hot_range_item_put(hot_range);
++			}
 +		}
-+
-+		spin_lock(&hr->hot_range.lock);
-+		hot_freq_data_update(&hr->hot_range.hot_freq_data, rw);
-+		spin_unlock(&hr->hot_range.lock);
-+
-+		hot_range_item_put(hr);
 +	}
 +
-+	hot_inode_item_put(he);
++	return nr;
 +}
-+EXPORT_SYMBOL_GPL(hot_update_freqs);
 +
-+/*
-  * Initialize the data structures for hot data tracking.
++/* The shrinker callback function */
++static int hot_track_prune(struct shrinker *shrink,
++			struct shrink_control *sc)
++{
++	struct hot_info *root =
++		container_of(shrink, struct hot_info, hot_shrink);
++	int ret;
++
++	if (sc->nr_to_scan == 0)
++		return root->hot_map_nr;
++
++	if (!(sc->gfp_mask & __GFP_FS))
++		return -1;
++
++	ret = hot_track_prune_map(root->heat_range_map,
++				false, sc->nr_to_scan);
++	if (ret > 0)
++		ret = hot_track_prune_map(root->heat_inode_map,
++					true, ret);
++	if (ret > 0)
++		root->hot_map_nr -= (sc->nr_to_scan - ret);
++
++	return root->hot_map_nr;
++}
++
+ /*
+  * Main function to update access frequency from read/writepage(s) hooks
   */
- int hot_track_init(struct super_block *sb)
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index febf699..3e5f5d0 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -19,5 +19,14 @@
- /* values for hot_freq_data flags */
- #define FREQ_DATA_TYPE_INODE (1 << 0)
- #define FREQ_DATA_TYPE_RANGE (1 << 1)
-+/* size of sub-file ranges */
-+#define RANGE_BITS 20
-+#define RANGE_SIZE (1 << RANGE_BITS)
-+
-+#define FREQ_POWER 4
-+
-+struct hot_inode_item
-+*hot_inode_item_find(struct hot_info *root, u64 ino);
-+void hot_inode_item_put(struct hot_inode_item *he);
+@@ -758,6 +813,11 @@ int hot_track_init(struct super_block *sb)
+ 	queue_delayed_work(root->update_wq, &root->update_work,
+ 		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
  
- #endif /* __HOT_TRACKING__ */
++	/* Register a shrinker callback */
++	root->hot_shrink.shrink = hot_track_prune;
++	root->hot_shrink.seeks = DEFAULT_SEEKS;
++	register_shrinker(&root->hot_shrink);
++
+ 	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+ 
+ 	return 0;
+@@ -774,6 +834,7 @@ void hot_track_exit(struct super_block *sb)
+ {
+ 	struct hot_info *root = sb->s_hot_root;
+ 
++	unregister_shrinker(&root->hot_shrink);
+ 	cancel_delayed_work_sync(&root->update_work);
+ 	destroy_workqueue(root->update_wq);
+ 	hot_map_array_exit(root);
 diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 592a6eb..de68f66 100644
+index 4c5f5f3..446c99e 100644
 --- a/include/linux/hot_tracking.h
 +++ b/include/linux/hot_tracking.h
-@@ -72,5 +72,7 @@ void __init hot_cache_init(void);
- int hot_track_init(struct super_block *sb);
- void hot_track_exit(struct super_block *sb);
+@@ -85,6 +85,7 @@ struct hot_info {
  
-+inline void hot_update_freqs(struct inode *inode, u64 start,
-+				u64 len, int rw);
+ 	struct workqueue_struct *update_wq;
+ 	struct delayed_work update_work;
++	struct shrinker hot_shrink;
+ };
  
- #endif  /* _LINUX_HOTTRACK_H */
+ void __init hot_cache_init(void);
 -- 
 1.7.6.5
 
