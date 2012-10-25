@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343Ab2JYOyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:54:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42348 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759812Ab2JYOyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:54:31 -0400
-Message-ID: <50895291.70106@ti.com>
-Date: Thu, 25 Oct 2012 20:24:09 +0530
-From: kishon <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S934769Ab2JYO5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:57:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933068Ab2JYO5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:57:43 -0400
+Date: Thu, 25 Oct 2012 16:58:39 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Rabin Vincent <rabin@rab.in>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 6/9] uprobes: flush cache after xol write
+Message-ID: <20121025145839.GB26929@redhat.com>
+References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-6-git-send-email-rabin@rab.in> <20121015165756.GA11737@redhat.com> <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com>
 MIME-Version: 1.0
-To: Benoit Cousson <b-cousson@ti.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <sshtylyov@mvista.com>
-Subject: Re: [PATCH v4 6/7] usb: dwc3-omap: Minor fixes to get dt working
-References: <1350307680-24938-1-git-send-email-kishon@ti.com> <1350307680-24938-7-git-send-email-kishon@ti.com> <50894198.40003@ti.com>
-In-Reply-To: <50894198.40003@ti.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
-
-On Thursday 25 October 2012 07:11 PM, Benoit Cousson wrote:
-> Hi Kishon,
+On 10/16, Rabin Vincent wrote:
 >
-> On 10/15/2012 03:27 PM, Kishon Vijay Abraham I wrote:
->> Includes few minor fixes in dwc3-omap like populating the compatible
->> string in a correct way, extracting the utmi-mode property properly and
->> changing the index of get_irq since irq of core is removed from hwmod
->> entry.
->> Also updated the documentation with dwc3-omap device tree binding
->> information.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>   drivers/usb/dwc3/dwc3-omap.c |   14 ++++++--------
->>   1 file changed, 6 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
->> index b84ddf3..10aad46 100644
->> --- a/drivers/usb/dwc3/dwc3-omap.c
->> +++ b/drivers/usb/dwc3/dwc3-omap.c
->> @@ -318,11 +318,10 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
->>   	struct resource		*res;
->>   	struct device		*dev = &pdev->dev;
->>
->> -	int			size;
->>   	int			ret = -ENOMEM;
->>   	int			irq;
->>
->> -	const u32		*utmi_mode;
->> +	u32			utmi_mode;
->>   	u32			reg;
->>
->>   	void __iomem		*base;
->> @@ -336,13 +335,13 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
->>
->>   	platform_set_drvdata(pdev, omap);
->>
->> -	irq = platform_get_irq(pdev, 1);
->> +	irq = platform_get_irq(pdev, 0);
+> 2012/10/15 Oleg Nesterov <oleg@redhat.com>:
+> > On 10/14, Rabin Vincent wrote:
+> >> Flush the cache so that the instructions written to the XOL area are
+> >> visible.
+> >>
+> >> Signed-off-by: Rabin Vincent <rabin@rab.in>
+> >> ---
+> >>  kernel/events/uprobes.c |    1 +
+> >>  1 file changed, 1 insertion(+)
+> >>
+> >> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> >> index ca000a9..8c52f93 100644
+> >> --- a/kernel/events/uprobes.c
+> >> +++ b/kernel/events/uprobes.c
+> >> @@ -1246,6 +1246,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
+> >>       offset = current->utask->xol_vaddr & ~PAGE_MASK;
+> >>       vaddr = kmap_atomic(area->page);
+> >>       arch_uprobe_xol_copy(&uprobe->arch, vaddr + offset);
+> >> +     flush_dcache_page(area->page);
+> >>       kunmap_atomic(vaddr);
+> >
+> > I agree... but why under kmap_atomic?
 >
-> Cannot you use the name of the resource to avoid that kind of trick?
+> No real reason; I'll move it to after the unmap.
 
-*name* is mostly used when we have multiple resource of the same type 
-for a single device. Previously we were clubbing wrapper resources and 
-core resources in a single hwmod device, so we had to use different 
-indexing.
-But with dt we have separated those under two different devices and 
-hence we can always use index as '0'. But if you think we should have 
-*name*, let me know, I can resend this patch :-)
+OK. I assume you will send v2.
 
-Thanks
-Kishon
+But this patch looks like a bugfix, flush_dcache_page() is not a nop
+on powerpc. So perhaps we should apply this fix right now?
+
+OTOH, I do not understand this stuff, everything is nop on x86. And
+when I look into Documentation/cachetlb.txt I am starting to think
+that may be this needs flush_icache_user_range instead?
+
+Rabin, Ananth could you clarify this?
+
+Oleg.
+
