@@ -1,180 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759049Ab2JYBgQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:36:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3744 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab2JYBgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:36:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,643,1344236400"; 
-   d="scan'208";a="238066027"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>, stable@vger.kernel.org
-Subject: [BUGFIX] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
-Date: Thu, 25 Oct 2012 09:36:03 +0800
-Message-Id: <1351128963-10347-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1759065Ab2JYBqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:46:13 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:33008 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755636Ab2JYBqL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 21:46:11 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
+References: <20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
+	<20121025011056.GC4559@thunk.org>
+Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
+Date: Thu, 25 Oct 2012 02:45:57 +0100
+In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
+	"Wed, 24 Oct 2012 21:10:56 -0400")
+Message-ID: <87y5iv5noq.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-DCC-sonic.net-Metrics: spindle 1117; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In
+On 25 Oct 2012, Theodore Ts'o stated:
 
-  https://bugzilla.kernel.org/show_bug.cgi?id=48981
+> On Thu, Oct 25, 2012 at 12:27:02AM +0100, Nix wrote:
+>>
+>>  - /sbin/reboot -f of running system
+>>    -> Journal replay, no problems other than the expected free block
+>>       count problems. This is not such a severe problem after all!
+>> 
+>>  - Normal shutdown, but a 60 second pause after lazy umount, more than
+>>    long enough for all umounts to proceed to termination
+>>    -> no corruption, but curiously /home experienced a journal replay
+>>       before being fscked, even though a cat of /proc/mounts after
+>>       umounting revealed that the only mounted filesystem was /,
+>>       read-only, so /home should have been clean
+>
+> Question: how are you doing the journal replay?  Is it happening as
+> part of running e2fsck, or are you mounting the file system and
+> letting kernel do the journal replay?
 
-Peter reported that /proc/bus/pci/??/??.? does not works for 3.6.
-This is This is because the device configuration space registers will
-be not accessible if the corresponding parent bridge is suspended or
-the device is put into D3cold state.
+This most recent instance was e2fsck. Normally, it's mount. Both
+seem able to yield the same corruption.
 
-This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
-issue.  So the function used to solve sysfs issue is used to solve
-this issue.
+> Also, can you reproduce the problem with the nobarrier and
+> journal_async_commit options *removed*?  Yes, I know you have battery
+> backup, but it would be interesting to see if the problem shows up in
+> the default configuration with none of the more specialist options.
+> (So it would probably be good to test with journal_checksum removed as
+> well.)
 
-Cc: stable@vger.kernel.org
-Reported-by: Peter <lekensteyn@gmail.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/pci/pci-sysfs.c |   34 ----------------------------------
- drivers/pci/pci.c       |   32 ++++++++++++++++++++++++++++++++
- drivers/pci/pci.h       |    2 ++
- drivers/pci/proc.c      |    8 ++++++++
- 4 files changed, 42 insertions(+), 34 deletions(-)
+I'll try that, hopefully tomorrow sometime. It's 2:30am now and probably
+time to sleep.
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -458,40 +458,6 @@ boot_vga_show(struct device *dev, struct
- }
- struct device_attribute vga_attr = __ATTR_RO(boot_vga);
- 
--static void
--pci_config_pm_runtime_get(struct pci_dev *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct device *parent = dev->parent;
--
--	if (parent)
--		pm_runtime_get_sync(parent);
--	pm_runtime_get_noresume(dev);
--	/*
--	 * pdev->current_state is set to PCI_D3cold during suspending,
--	 * so wait until suspending completes
--	 */
--	pm_runtime_barrier(dev);
--	/*
--	 * Only need to resume devices in D3cold, because config
--	 * registers are still accessible for devices suspended but
--	 * not in D3cold.
--	 */
--	if (pdev->current_state == PCI_D3cold)
--		pm_runtime_resume(dev);
--}
--
--static void
--pci_config_pm_runtime_put(struct pci_dev *pdev)
--{
--	struct device *dev = &pdev->dev;
--	struct device *parent = dev->parent;
--
--	pm_runtime_put(dev);
--	if (parent)
--		pm_runtime_put_sync(parent);
--}
--
- static ssize_t
- pci_read_config(struct file *filp, struct kobject *kobj,
- 		struct bin_attribute *bin_attr,
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1858,6 +1858,38 @@ bool pci_dev_run_wake(struct pci_dev *de
- }
- EXPORT_SYMBOL_GPL(pci_dev_run_wake);
- 
-+void pci_config_pm_runtime_get(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	if (parent)
-+		pm_runtime_get_sync(parent);
-+	pm_runtime_get_noresume(dev);
-+	/*
-+	 * pdev->current_state is set to PCI_D3cold during suspending,
-+	 * so wait until suspending completes
-+	 */
-+	pm_runtime_barrier(dev);
-+	/*
-+	 * Only need to resume devices in D3cold, because config
-+	 * registers are still accessible for devices suspended but
-+	 * not in D3cold.
-+	 */
-+	if (pdev->current_state == PCI_D3cold)
-+		pm_runtime_resume(dev);
-+}
-+
-+void pci_config_pm_runtime_put(struct pci_dev *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device *parent = dev->parent;
-+
-+	pm_runtime_put(dev);
-+	if (parent)
-+		pm_runtime_put_sync(parent);
-+}
-+
- /**
-  * pci_pm_init - Initialize PM functions of given PCI device
-  * @dev: PCI device to handle.
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -72,6 +72,8 @@ extern void pci_disable_enabled_device(s
- extern int pci_finish_runtime_suspend(struct pci_dev *dev);
- extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
- extern void pci_wakeup_bus(struct pci_bus *bus);
-+extern void pci_config_pm_runtime_get(struct pci_dev *dev);
-+extern void pci_config_pm_runtime_put(struct pci_dev *dev);
- extern void pci_pm_init(struct pci_dev *dev);
- extern void platform_pci_wakeup_init(struct pci_dev *dev);
- extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
---- a/drivers/pci/proc.c
-+++ b/drivers/pci/proc.c
-@@ -76,6 +76,8 @@ proc_bus_pci_read(struct file *file, cha
- 	if (!access_ok(VERIFY_WRITE, buf, cnt))
- 		return -EINVAL;
- 
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((pos & 1) && cnt) {
- 		unsigned char val;
- 		pci_user_read_config_byte(dev, pos, &val);
-@@ -121,6 +123,8 @@ proc_bus_pci_read(struct file *file, cha
- 		cnt--;
- 	}
- 
-+	pci_config_pm_runtime_put(dev);
-+
- 	*ppos = pos;
- 	return nbytes;
- }
-@@ -146,6 +150,8 @@ proc_bus_pci_write(struct file *file, co
- 	if (!access_ok(VERIFY_READ, buf, cnt))
- 		return -EINVAL;
- 
-+	pci_config_pm_runtime_get(dev);
-+
- 	if ((pos & 1) && cnt) {
- 		unsigned char val;
- 		__get_user(val, buf);
-@@ -191,6 +197,8 @@ proc_bus_pci_write(struct file *file, co
- 		cnt--;
- 	}
- 
-+	pci_config_pm_runtime_put(dev);
-+
- 	*ppos = pos;
- 	i_size_write(ino, dp->size);
- 	return nbytes;
+>> Unfortunately, the massive corruption in the last testcase was seen in
+>> 3.6.1 as well as 3.6.3: it appears that the only effect that superblock
+>> change had in 3.6.3 was to make this problem easier to hit, and that the
+>> bug itself was introduced probably somewhere between 3.5 and 3.6 (though
+>> I only rebooted 3.5.x twice, and it's rare enough before 3.6.[23], at
+>> ~1/20 boots, that it may have been present for longer and I never
+>> noticed).
+>
+> Hmm.... ok.  Can you tell whether or not the 2nd patch I posted on
+> this thread made any difference to how frequently it happened?  The
+
+Well, I had a couple of reboots without corruption with that patch
+applied, and /home was only ever corrupted with it not applied -- but
+that could perfectly well be chance, since I only had two or three
+instances of /home corruption so far, thank goodness.
+
+> When you say it's rare before 3.6.[23], how rare is it?  How reliably
+> can you trigger it under 3.6.1?  One in 3?  One in 5?  One in 20?
+
+I've rebooted out of 3.6.1 about fifteen times so far. I've seen once
+instance of corruption. I've never seen it before 3.6, but I only
+rebooted 3.5.x or 3.4.x once or twice in total, so that too could be
+chance.
+
+> As far as bisecting, one experiment that I'd really appreciate your
+> doing is to check and see whether you can reproduce the problem using
+> the 3.4 kernel, and if you can, to see if it reproduces under the 3.3
+> kernel.
+
+Will try. It might be the weekend before I can find the time though :(
+
+> The reason why I ask this is there were not any major changes between
+> 3.5 and 3.6, or between 3.4 and 3.5.  There *were* however, some
+> fairly major changes made by Jan Kara that were introduced between 3.3
+> and 3.4.  Among other things, this is where we started using FUA
+> (Force Unit Attention) writes to update the journal superblock instead
+> of just using REQ_FLUSH.  This is in fact the most likely place where
+> we might have introduced the regression, since it wouldn't surprise me
+> if Jan didn't test the case of using nobarrier with a storage array
+> with battery backup (I certainly didn't, since I don't have easy
+> access to such fancy toys :-).
+
+Hm. At boot, I see this for both volumes on the Areca controller:
+
+[    0.855376] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+[    0.855465] sd 0:0:0:1: [sdb] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+
+So it looks to me like FUA changes themselves could have little effect.
+
+(btw, the controller cost only about £150... if it was particularly
+fancy I certainly couldn't have afforded it.)
+
+>> It also appears impossible for me to reliably shut my system down,
+>> though a 60s timeout after lazy umount and before reboot is likely to
+>> work in all but the most pathological of cases (where a downed NFS
+>> server comes up at just the wrong instant): it is clear that the
+>> previous 5s timeout eventually became insufficient simply because of the
+>> amount of time it can take to do a umount on today's larger filesystems.
+>
+> Something that you might want to consider trying is after you kill all
+> of the processes, remount all of the local disk file systems
+> read-only, then kick off the unmount of the NFS file systems (just to
+> be nice to the NFS servers, so they are notified of the unmount), and
+
+Actually I umount NFS first of all, because if I kill the processes
+first, this causes trouble with the NFS unmounts, particularly if I'm
+doing self-mounting (which I do sometimes, though not at the moment).
+
+I will certainly try a readonly remount instead.
+
+> force a flush on an unmount or remount r/o, regardless of whether
+> nobarrier is specified, just to make sure everything is written out
+> before the poweroff, battery backup or no.)
+
+I'm rather surprised that doesn't happen anyway. I always thought it
+did.
+
+-- 
+NULL && (void)
