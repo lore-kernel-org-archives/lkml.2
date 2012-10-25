@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab2JYFSz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 01:18:55 -0400
-Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:36143 "EHLO
-	homiemail-a84.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752947Ab2JYFSx (ORCPT
+	id S1755356Ab2JYFVk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 01:21:40 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:36811 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab2JYFVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 01:18:53 -0400
+	Thu, 25 Oct 2012 01:21:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
-	<m2fw5mtffg.fsf_-_@firstfloor.org>
-	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
-	<5086F5A7.9090406@vlnb.net>
-	<CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
-	<alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
-	<CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
-	<alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
-Date: Thu, 25 Oct 2012 00:18:47 -0500
-Message-ID: <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
-Subject: Re: [sqlite] light weight write barriers
-From: Nico Williams <nico@cryptonector.com>
-To: david@lang.hm
-Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+In-Reply-To: <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	<1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+Date: Thu, 25 Oct 2012 07:21:38 +0200
+X-Google-Sender-Auth: Oonvi9lq0f8pW5UPtBJd7tExlDs
+Message-ID: <CAMuHMdXUg-gzTD1NyBH=cfreg8vqN-dDpVGiEkj_pkS-4a1odg@mail.gmail.com>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Juri Lelli <juri.lelli@gmail.com>
+Cc: peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 8:04 PM,  <david@lang.hm> wrote:
-> On Wed, 24 Oct 2012, Nico Williams wrote:
->> COW is "copy on write", which is actually a bit of a misnomer -- all
->> COW means is that blocks aren't over-written, instead new blocks are
->> written.  In particular this means that inodes, indirect blocks, data
->> blocks, and so on, that are changed are actually written to new
->> locations, and the on-disk format needs to handle this indirection.
->
-> so how can you do this, and keep the writes in order (especially between two
-> files) without being the filesystem?
+On Wed, Oct 24, 2012 at 11:53 PM, Juri Lelli <juri.lelli@gmail.com> wrote:
+> +#ifdef __SIZEOF_INT128__ /* gcc-4.6+ */
+> +       unsigned __int128 val;
+> +#endif
 
-By trusting fsync().  And if you don't care about immediate Durability
-you can run the fsync() in a background thread and mark the associated
-transaction as completed in the next transaction to be written after
-the fsync() completes.
+So the definition of val depends on (gcc) __SIZEOF_INT128__...
 
->> As for fsyn() and background threads... fsync() is synchronous, but in
->> this scheme we want it to happen asynchronously and then we want to
->> update each transaction with a pointer to the last transaction that is
->> known stable given an fsync()'s return.
->
-> If you could specify ordering between two writes, I could see a process
-> along the lines of
->
-> [...]
+> +/*
+> + * Make usage of __int128 dependent on arch code so they can
+> + * judge if gcc is doing the right thing for them and can over-ride
+> + * any funnies.
+> + */
+> +
+> +#ifndef ARCH_HAS_INT128
 
-fsync() deals with just one file.  fsync()s of different files are
-another story.  That said, as long as the format of the two files is
-COW then you can still compose transactions involving two files.  The
-key is the file contents itself must be COW-structured.
+... but all generic users depend on (Kconfig) ARCH_HAS_INT128?
 
-Incidentally, here's a single-file, bag of b-trees that uses a COW
-format: MDB, which can be found in
-git://git.openldap.org/openldap.git, in the mdb.master branch.
+How can Kconfig know if gcc supports this?
 
-> Or, as I type this, it occurs to me that you may be saying that every time
-> you want to do an ordering guarantee, spawn a new thread to do the fsync and
-> then just keep processing. The fsync will happen at some point, and the
-> writes will not be re-ordered across the fsync, but you can keep going,
-> writing more data while the fsync's are pending.
+Gr{oetje,eeting}s,
 
-Yes, but only if the file's format is COWish.
+                        Geert
 
-The point is that COW saves the day.  A file-based DB needs to be COW.
- And the filesystem needs to be as well.
-
-Note that write ahead logging approximates COW well enough most of the time.
-
-> Then if you have a filesystem and I/O subsystem that can consolodate the
-> fwyncs from all the different threads together into one I/O operation
-> without having to flush the entire I/O queue for each one, you can get
-> acceptable performance, with ordering. If the system crashes, data that
-> hasn't had it's fsync() complete will be the only thing that is lost.
-
-With the above caveat, yes.
-
-Nico
 --
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
