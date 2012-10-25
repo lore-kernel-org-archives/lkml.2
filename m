@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760268Ab2JYUKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:10:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53974 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab2JYUKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:10:49 -0400
+	id S936050Ab2JYUNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:13:04 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37704 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934218Ab2JYUNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 16:13:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Date: Thu, 25 Oct 2012 22:16:58 +0200
+Message-ID: <1484035.7aMAWXqOf7@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121024181752.de011615.akpm@linux-foundation.org>
+References: <20121012125708.GJ10110@dhcp22.suse.cz> <1787395.7AzIesGUbB@vostro.rjw.lan> <20121024181752.de011615.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20121025124832.770994193@chello.nl>
-References: <20121025121617.617683848@chello.nl> <20121025124832.770994193@chello.nl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 25 Oct 2012 13:10:27 -0700
-X-Google-Sender-Auth: iJRw739jD7iWqGVlc9lhOg2ZDGA
-Message-ID: <CA+55aFxSihF0RHc8npWcMdHOo8LOx+d=aV4G6_577REn=OXsQw@mail.gmail.com>
-Subject: Re: [PATCH 04/31] x86/mm: Introduce pte_accessible()
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK NAK NAK.
+On Wednesday, October 24, 2012 06:17:52 PM Andrew Morton wrote:
+> On Thu, 25 Oct 2012 00:04:46 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Wednesday 24 of October 2012 14:13:03 Andrew Morton wrote:
+> > > On Wed, 24 Oct 2012 23:06:00 +0200
+> > > Borislav Petkov <bp@alien8.de> wrote:
+> > > 
+> > > > On Wed, Oct 24, 2012 at 01:48:36PM -0700, Andrew Morton wrote:
+> > > > > Well who knows. Could be that people's vm *does* suck. Or they have
+> > > > > some particularly peculiar worklosd or requirement[*]. Or their VM
+> > > > > *used* to suck, and the drop_caches is not really needed any more but
+> > > > > it's there in vendor-provided code and they can't practically prevent
+> > > > > it.
+> > > > 
+> > > > I have drop_caches in my suspend-to-disk script so that the hibernation
+> > > > image is kept at minimum and suspend times are as small as possible.
+> > > 
+> > > hm, that sounds smart.
+> > > 
+> > > > Would that be a valid use-case?
+> > > 
+> > > I'd say so, unless we change the kernel to do that internally.  We do
+> > > have the hibernation-specific shrink_all_memory() in the vmscan code. 
+> > > We didn't see fit to document _why_ that exists, but IIRC it's there to
+> > > create enough free memory for hibernation to be able to successfully
+> > > complete, but no more.
+> > 
+> > That's correct.
+> 
+> Well, my point was: how about the idea of reclaiming clean pagecache
+> (and inodes, dentries, etc) before hibernation so we read/write less
+> disk data?
 
-On Thu, Oct 25, 2012 at 5:16 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> +#define __HAVE_ARCH_PTE_ACCESSIBLE
-> +static inline int pte_accessible(pte_t a)
+We may actually want to write more into the image to improve post-resume
+responsiveness.
 
-Stop doing this f*cking crazy ad-hoc "I have some other name
-available" #defines.
+> Given that it's so easy to do from the hibernation script, I guess
+> there's not much point...
 
-Use the same name, for chissake! Don't make up new random names.
+Well, I'd say so. :-)
 
-Just do
-
-   #define pte_accessible pte_accessible
-
-and then you can use
-
-   #ifndef pte_accessible
-
-to define the generic thing. Instead of having this INSANE "two
-different names for the same f*cking thing" crap.
-
-Stop it. Really.
-
-Also, this:
-
-> +#ifndef __HAVE_ARCH_PTE_ACCESSIBLE
-> +#define pte_accessible(pte)            pte_present(pte)
-> +#endif
-
-looks unsafe and like a really bad idea.
-
-You should probably do
-
-  #ifndef pte_accessible
-    #define pte_accessible(pte) ((void)(pte),1)
-  #endif
-
-because you have no idea if other architectures do
-
- (a) the same trick as x86 does for PROT_NONE (I can already tell you
-from a quick grep that ia64, m32r, m68k and sh do it)
- (b) might not perhaps be caching non-present pte's anyway
-
-So NAK on this whole patch. It's bad. It's ugly, it's wrong, and it's
-actively buggy.
-
-                Linus
+ 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
