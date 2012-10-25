@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935581Ab2JYKVp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:21:45 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49000 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935163Ab2JYKVo (ORCPT
+	id S935606Ab2JYKXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:23:50 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:46293 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935556Ab2JYKXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:21:44 -0400
-Message-ID: <508912B0.7080805@gmail.com>
-Date: Thu, 25 Oct 2012 18:21:36 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 25 Oct 2012 06:23:46 -0400
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
-References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <5088C51D.3060009@gmail.com> <alpine.LNX.2.00.1210242338030.2688@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1210242338030.2688@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <50873DFA.5010205@adobe.com>
+References: <1345756535-8372-1-git-send-email-palewis@adobe.com>
+ <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com>
+ <5086D27F.1000007@adobe.com> <50873DFA.5010205@adobe.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 25 Oct 2012 12:23:24 +0200
+Message-ID: <CAKgNAkj=52rPitKT2b4_=dwczpfub6RQojjX4rNhFZQZHecSTA@mail.gmail.com>
+Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test app.
+To: "Paton J. Lewis" <palewis@adobe.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 02:59 PM, Hugh Dickins wrote:
-> On Thu, 25 Oct 2012, Ni zhan Chen wrote:
->> On 10/25/2012 12:36 PM, Hugh Dickins wrote:
->>> On Wed, 24 Oct 2012, Dave Jones wrote:
->>>
->>>> Machine under significant load (4gb memory used, swap usage fluctuating)
->>>> triggered this...
->>>>
->>>> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
->>>> Pid: 29795, comm: trinity-child4 Not tainted 3.7.0-rc2+ #49
->>>>
->>>> 1148                         error = shmem_add_to_page_cache(page,
->>>> mapping, index,
->>>> 1149                                                 gfp,
->>>> swp_to_radix_entry(swap));
->>>> 1150                         /* We already confirmed swap, and make no
->>>> allocation */
->>>> 1151                         VM_BUG_ON(error);
->>>> 1152                 }
->>> That's very surprising.  Easy enough to handle an error there, but
->>> of course I made it a VM_BUG_ON because it violates my assumptions:
->>> I rather need to understand how this can be, and I've no idea.
->>>
->>> Clutching at straws, I expect this is entirely irrelevant, but:
->>> there isn't a warning on line 1151 of mm/shmem.c in 3.7.0-rc2 nor
->>> in current linux.git; rather, there's a VM_BUG_ON on line 1149.
->>>
->>> So you've inserted a couple of lines for some reason (more useful
->>> trinity behaviour, perhaps)?  And have some config option I'm
->>> unfamiliar with, that mutates a BUG_ON or VM_BUG_ON into a warning?
->> Hi Hugh,
+Hi Pat,
+
+
+>> I suppose that I have a concern that goes in the other direction. Is
+>> there not some other solution possible that doesn't require the use of
+>> EPOLLONESHOT? It seems overly restrictive to require that the caller
+>> must employ this flag, and imposes the burden that the caller must
+>> re-enable monitoring after each event.
 >>
->> I think it maybe caused by your commit [d189922862e03ce: shmem: fix negative
->> rss in memcg memory.stat], one question:
-> Well, yes, I added the VM_BUG_ON in that commit.
->
->> if function shmem_confirm_swap confirm the entry has already brought back
->> from swap by a racing thread,
-> The reverse: true confirms that the swap entry has not been brought back
-> from swap by a racing thread; false indicates that there has been a race.
->
->> then why call shmem_add_to_page_cache to add
->> page from swapcache to pagecache again?
-> Adding it to pagecache again, after such a race, would set error to
-> -EEXIST (originating from radix_tree_insert); but we don't do that,
-> we add it to pagecache when it has not already been added.
->
-> Or that's the intention: but Dave seems to have found an unexpected
-> exception, despite us holding the page lock across all this.
->
-> (But if it weren't for the memcg and replace_page issues, I'd much
-> prefer to let shmem_add_to_page_cache discover the race as before.)
->
-> Hugh
-
-Hi Hugh
-
-Thanks for your response. You mean the -EEXIST originating from 
-radix_tree_insert, in radix_tree_insert:
-if (slot != NULL)
-     return -EEXIST;
-But why slot should be NULL? if no race, the pagecache related radix 
-tree entry should be RADIX_TREE_EXCEPTIONAL_ENTRY+swap_entry_t.val, 
-where I miss?
-
-Regards,
-Chen
-
->
->> otherwise, will goto unlock and then go to repeat? where I miss?
+>> Does a solution like the following (with no requirement for EPOLLONESHOT)
+>> work?
 >>
->> Regards,
->> Chen
+>> 0. Implement an epoll_ctl() operation EPOLL_CTL_XXX
+>>    where the name XXX might be chosen based on the decision
+>>    in 4(a).
+>> 1. EPOLL_CTL_XXX employs a private flag, EPOLLUSED, in the
+>>    per-fd events mask in the ready list. By default,
+>>    that flag is off.
+>> 2. epoll_wait() always clears the EPOLLUSED flag if a
+>>    file descriptor is found to be ready.
+>> 3. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
+>>    flag is NOT set, then
+>>         a) it sets the EPOLLUSED flag
+>>         b) It disables I/O events (as per EPOLL_CTL_DISABLE)
+>>            (I'm not 100% sure if this is necesary).
+>>         c) it returns EBUSY to the caller
+>> 4. If an epoll_ctl(EPOLL_CTL_XXX) discovers that the EPOLLUSED
+>>    flag IS set, then it
+>>         a) either deletes the fd or disables events for the fd
+>>            (the choice here is a matter of design taste, I think;
+>>            deletion has the virtue of simplicity; disabling provides
+>>            the option to re-enable the fd later, if desired)
+>>         b) returns 0 to the caller.
+>>
+>> All of the above with suitable locking around the user-space cache.
+>>
+>> Cheers,
+>>
+>> Michael
+>
+>
+> I don't believe that proposal will solve the problem. Consider the case
+> where a worker thread has just executed epoll_wait and is about to execute
+> the next line of code (which will access the data associated with the fd
+> receiving the event). If the deletion thread manages to call
+> epoll_ctl(EPOLL_CTL_XXX) for that fd twice in a row before the worker thread
+> is able to execute the next statement, then the deletion thread will
+> mistakenly conclude that it is safe to destroy the data that the worker
+> thread is about to access.
 
+Okay -- I had the idea there might be a hole in my proposal ;-).
+
+By the way, have you been reading the comments in the two LWN articles
+on EPOLL_CTL_DISABLE?
+https://lwn.net/Articles/520012/
+http://lwn.net/SubscriberLink/520198/fd81ba0ecb1858a2/
+
+There's some interesting proposals there--some suggesting that an
+entirely user-space solution might be possible. I haven't looked
+deeply into the ideas though.
+
+Cheers,
+
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
