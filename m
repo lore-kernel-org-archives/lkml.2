@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759673Ab2JYSAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:00:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65109 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759509Ab2JYSAt (ORCPT
+	id S1759825Ab2JYSCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:02:17 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:49087 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757565Ab2JYSCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:00:49 -0400
-Date: Thu, 25 Oct 2012 11:00:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
-        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
-Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
- add queue-private command filter, editable via sysfs)
-Message-ID: <20121025180045.GL11442@htj.dyndns.org>
-References: <1954562860.13360801.1350637629926.JavaMail.root@redhat.com>
- <2007908429.13363375.1350637872646.JavaMail.root@redhat.com>
- <20121019201058.GP13370@google.com>
- <5087E093.50700@redhat.com>
- <CAOS58YM5ZO9h0XUCNxV+6U3UzpeUen5ZuyqsNEUaJ81ux=QKvw@mail.gmail.com>
- <5088EC43.2010600@redhat.com>
+	Thu, 25 Oct 2012 14:02:15 -0400
+Message-ID: <50897E98.5080502@gmail.com>
+Date: Thu, 25 Oct 2012 14:02:00 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121024 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5088EC43.2010600@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiri Slaby <jslaby@suse.cz>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Dave Jones <davej@redhat.com>
+Subject: Re: [PATCH 21/21] TTY: move tty buffers to tty_port
+References: <1350592007-9216-1-git-send-email-jslaby@suse.cz> <1350592007-9216-22-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1350592007-9216-22-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(restoring cc lists)
+Hi guys,
 
-Hey, Paolo.
-
-On Thu, Oct 25, 2012 at 09:37:39AM +0200, Paolo Bonzini wrote:
-> Il 24/10/2012 18:47, Tejun Heo ha scritto:
-> > So, I'm still not convinced we need to go forward with full
-> > configurability. All use cases you described can be covered with
-> > per-class static filters + simple override switch to disable all,
-> > which would result in a lot simpler implementation w/ much smaller
-> > userland interface.
+On 10/18/2012 04:26 PM, Jiri Slaby wrote:
+> So this is it. The big step why we did all the work over the past
+> kernel releases. Now everything is prepared, so nothing protects us
+> from doing that big step.
 > 
-> I'm not sure the userland interface would be smaller, and it would be
-> more complex to get right:
+>            |  |            \  \ nnnn/^l      |  |
+>            |  |             \  /     /       |  |
+>            |  '-,.__   =>    \/   ,-`    =>  |  '-,.__
+>            | O __.´´)        (  .`           | O __.´´)
+>             ~~~   ~~          ``              ~~~   ~~
+> The buffers are now in the tty_port structure and we can start
+> teaching the buffer helpers (insert char/string, flip etc.) to use
+> tty_port instead of tty_struct all around.
 > 
-> 1) how do you override the default?  ioctl+SCM_RIGHTS or sysfs?
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
 
-Disabling filters if opened by root and tranfering via SCM_RIGHTS
-would be the simplest interface-wise (there's no new interface at
-all).  Would that be too dangerous security-wise?
+Fuzzing with trinity inside a KVM tools (lkvm) guest with -next kernel
+uncovered the following warning:
 
-> 2) do you need to override the default to "no access", "full access" and
-> "default access", or is a binary knob (default access/full access)
-> sufficient?
+[ 1339.448706] ------------[ cut here ]------------
+[ 1339.451224] WARNING: at drivers/tty/tty_buffer.c:476 flush_to_ldisc+0x60/0x200()
+[ 1339.454272] tty is NULLPid: 7147, comm: kworker/4:0 Tainted: G        W    3.7.0-rc2-next-20121025-sasha-00001-g673f98e-dirty #75
+[ 1339.458693] Call Trace:
+[ 1339.459410]  [<ffffffff81bb1ea0>] ? flush_to_ldisc+0x60/0x200
+[ 1339.461289]  [<ffffffff81109b86>] warn_slowpath_common+0x86/0xb0
+[ 1339.462992]  [<ffffffff81109c11>] warn_slowpath_fmt+0x41/0x50
+[ 1339.464772]  [<ffffffff81bb1ea0>] flush_to_ldisc+0x60/0x200
+[ 1339.467076]  [<ffffffff8112d5a9>] process_one_work+0x3b9/0x770
+[ 1339.469501]  [<ffffffff8112d458>] ? process_one_work+0x268/0x770
+[ 1339.472053]  [<ffffffff8112dcc1>] ? worker_thread+0x51/0x3f0
+[ 1339.473831]  [<ffffffff81bb1e40>] ? __tty_buffer_request_room+0x180/0x180
+[ 1339.475834]  [<ffffffff8112df2a>] worker_thread+0x2ba/0x3f0
+[ 1339.478027]  [<ffffffff8112dc70>] ? rescuer_thread+0x2d0/0x2d0
+[ 1339.480431]  [<ffffffff81138c33>] kthread+0xe3/0xf0
+[ 1339.482383]  [<ffffffff8117d7be>] ? put_lock_stats.isra.16+0xe/0x40
+[ 1339.484171]  [<ffffffff81138b50>] ? insert_kthread_work+0x90/0x90
+[ 1339.485886]  [<ffffffff83aedebc>] ret_from_fork+0x7c/0xb0
+[ 1339.487943]  [<ffffffff81138b50>] ? insert_kthread_work+0x90/0x90
+[ 1339.490435] ---[ end trace e01a8b0af77894c4 ]---
 
-Default / full should be enough, no?
+I'm guessing it happens because we never cancel the scheduled work when we
+free the buffer, so the scheduled work may run even after we freed the buffer.
 
-> 3) what capabilities control the setting?
+Besides the warning itself, I think that 'tty is NULL' would need a newline
+after it. Greg, should I send a patch for that?
 
-CAP_SYS_RAWIO seems to be a pretty good fit.
 
-> > What's the rationale for full configurability?
-> 
-> Depending on the level of trust you have in your users, there are
-> different policies that are applicable.  Even virtualization could have
-> a range of choices like "permit only standard operations", "also permit
-> UNMAP", "also permit persistent reservations", "permit everything
-> including vendor specific commands"
-
-I guess I just feel quite reluctant to expose another rather obscure
-userland configurable in-kernel filter and at the same time I'm not
-sure whether this is flexible enough.  What if a device is shared by
-multiple virtual machines which are trusted at different levels?  What
-if we end up actually having to filter cdb contents?
-
-I'm not trying to block it at all cost but let's make sure we looked
-into most possibilities before (re)adding this userland visible
-interface.
-
-Jens, James, what do you guys think?
-
-Thanks.
-
--- 
-tejun
+Thanks,
+Sasha
