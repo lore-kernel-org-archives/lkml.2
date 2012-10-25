@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758883Ab2JYK0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:26:08 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47294 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab2JYK0E (ORCPT
+	id S1759292Ab2JYK0P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:26:15 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40440 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757218Ab2JYK0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:26:04 -0400
-Subject: [RFC PATCH 06/13] sched: Changing find_busiest_queue to use PJT's
- metric
+	Thu, 25 Oct 2012 06:26:12 -0400
+Subject: [RFC PATCH 02/13] sched:Pick the apt busy sched group during load
+ balancing
 To: svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Cc: mingo@kernel.org, venki@google.com, robin.randhawa@arm.com,
@@ -21,76 +21,114 @@ Cc: mingo@kernel.org, venki@google.com, robin.randhawa@arm.com,
         tglx@linutronix.de, Arvind.Chauhan@arm.com, pjt@google.com,
         Morten.Rasmussen@arm.com, linux-arm-kernel@lists.infradead.org,
         suresh.b.siddha@intel.com
-Date: Thu, 25 Oct 2012 15:55:38 +0530
-Message-ID: <20121025102537.21022.522.stgit@preeti.in.ibm.com>
+Date: Thu, 25 Oct 2012 15:55:03 +0530
+Message-ID: <20121025102503.21022.35291.stgit@preeti.in.ibm.com>
 In-Reply-To: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
 References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
 User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12102510-4790-0000-0000-0000053C9457
+x-cbid: 12102510-7014-0000-0000-000002141386
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Additional parameters which decide the busiest cpu in the chosen sched group
-calculated using PJT's metric are used
+If a sched group has passed the test for sufficient load in
+update_sg_lb_stats,to qualify for load balancing,then PJT's
+metrics has to be used to qualify the right sched group as the busiest group.
+
+The scenario which led to this patch is shown below:
+Consider Task1 and Task2 to be a long running task
+and Tasks 3,4,5,6 to be short running tasks
+
+			Task3
+			Task4
+Task1			Task5
+Task2			Task6
+------			------
+SCHED_GRP1		SCHED_GRP2
+
+Normal load calculator would qualify SCHED_GRP2 as
+the candidate for sd->busiest due to the following loads
+that it calculates.
+
+SCHED_GRP1:2048
+SCHED_GRP2:4096
+
+Load calculator would probably qualify SCHED_GRP1 as the candidate
+for sd->busiest due to the following loads that it calculates
+
+SCHED_GRP1:3200
+SCHED_GRP2:1156
+
+This patch aims to strike a balance between the loads of the
+group and the number of tasks running on the group to decide the
+busiest group in the sched_domain.
+
+This means we will need to use the PJT's metrics but with an
+additional constraint.
 
 Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
- kernel/sched/fair.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ kernel/sched/fair.c |   25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index fca6606..bb1c71b 100644
+index e02dad4..aafa3c1 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5085,7 +5085,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 				     struct sched_group *group)
+@@ -165,7 +165,8 @@ void sched_init_granularity(void)
+ #else
+ # define WMULT_CONST	(1UL << 32)
+ #endif
+-
++#define NR_THRESHOLD 2
++#define LOAD_THRESHOLD 1
+ #define WMULT_SHIFT	32
+ 
+ /*
+@@ -4169,6 +4170,7 @@ struct sd_lb_stats {
+ 	/* Statistics of the busiest group */
+ 	unsigned int  busiest_idle_cpus;
+ 	unsigned long max_load;
++	u64 max_sg_load; /* Equivalent of max_load but calculated using pjt's metric*/
+ 	unsigned long busiest_load_per_task;
+ 	unsigned long busiest_nr_running;
+ 	unsigned long busiest_group_capacity;
+@@ -4628,8 +4630,24 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 				   struct sched_group *sg,
+ 				   struct sg_lb_stats *sgs)
  {
- 	struct rq *busiest = NULL, *rq;
--	unsigned long max_load = 0;
-+	u64 max_cpu_load = 0;
- 	int i;
+-	if (sgs->avg_load <= sds->max_load)
+-		return false;
++	/* Use PJT's metrics to qualify a sched_group as busy
++ 	 *
++ 	 * But a low load sched group may be queueing up many tasks
++ 	 * So before dismissing a sched group with lesser load,ensure
++ 	 * that the number of processes on it is checked if it is
++ 	 * not too less loaded than the max load so far
++ 	 *
++ 	 * But as of now as LOAD_THRESHOLD is 1,this check is a nop.
++ 	 * But we could vary LOAD_THRESHOLD suitably to bring in this check
++ 	 */
++	if (sgs->avg_cfs_runnable_load <= sds->max_sg_load) {
++		if (sgs->avg_cfs_runnable_load > LOAD_THRESHOLD * sds->max_sg_load) {
++			if (sgs->sum_nr_running <= (NR_THRESHOLD + sds->busiest_nr_running))
++				return false;
++		} else {
++			return false;
++		}
++	}
  
- 	for_each_cpu(i, sched_group_cpus(group)) {
-@@ -5093,6 +5093,7 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		unsigned long capacity = DIV_ROUND_CLOSEST(power,
- 							   SCHED_POWER_SCALE);
- 		unsigned long wl;
-+		u64 runnable_load;/* Equivalent of wl,calculated using PJT's metric */
- 
- 		if (!capacity)
- 			capacity = fix_small_capacity(env->sd, group);
-@@ -5102,12 +5103,14 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 
- 		rq = cpu_rq(i);
- 		wl = weighted_cpuload(i);
-+		runnable_load = cpu_rq(i)->cfs.runnable_load_avg;
- 
- 		/*
- 		 * When comparing with imbalance, use weighted_cpuload()
- 		 * which is not scaled with the cpu power.
-+		 * The below decision is based on PJT's metric
- 		 */
--		if (capacity && rq->nr_running == 1 && wl > env->imbalance)
-+		if (capacity && rq->nr_running == 1 && runnable_load > env->load_imbalance)
- 			continue;
- 
- 		/*
-@@ -5117,9 +5120,11 @@ static struct rq *find_busiest_queue(struct lb_env *env,
- 		 * running at a lower capacity.
- 		 */
- 		wl = (wl * SCHED_POWER_SCALE) / power;
-+		runnable_load = (runnable_load * SCHED_POWER_SCALE) / power;
- 
--		if (wl > max_load) {
--			max_load = wl;
-+		/* Below decision has been changed to use PJT's metric */
-+		if (runnable_load > max_cpu_load) {
-+			max_cpu_load = runnable_load;
- 			busiest = rq;
- 		}
- 	}
+ 	if (sgs->sum_nr_running > sgs->group_capacity)
+ 		return true;
+@@ -4708,6 +4726,7 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 			sds->this_idle_cpus = sgs.idle_cpus;
+ 		} else if (update_sd_pick_busiest(env, sds, sg, &sgs)) {
+ 			sds->max_load = sgs.avg_load;
++			sds->max_sg_load = sgs.avg_cfs_runnable_load;
+ 			sds->busiest = sg;
+ 			sds->busiest_nr_running = sgs.sum_nr_running;
+ 			sds->busiest_idle_cpus = sgs.idle_cpus;
 
