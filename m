@@ -1,156 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935570Ab2JYLFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:05:50 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:44143 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933524Ab2JYLFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:05:48 -0400
-Message-ID: <50891CF2.3030400@parallels.com>
-Date: Thu, 25 Oct 2012 15:05:22 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1759381Ab2JYLG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:06:58 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:34299 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896Ab2JYLG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 07:06:57 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
+References: <20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
+	<20121025011056.GC4559@thunk.org>
+Emacs: if it payed rent for disk space, you'd be rich.
+Date: Thu, 25 Oct 2012 12:06:42 +0100
+In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
+	"Wed, 24 Oct 2012 21:10:56 -0400")
+Message-ID: <871ugm6cal.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: JoonSoo Kim <js1304@gmail.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <cgroups@vger.kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Christoph Lameter <cl@linux.com>,
-        "David Rientjes" <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, <devel@openvz.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH v5 08/18] memcg: infrastructure to match an allocation
- to the right cache
-References: <1350656442-1523-1-git-send-email-glommer@parallels.com> <1350656442-1523-9-git-send-email-glommer@parallels.com> <CAAmzW4N40MedsCfcj+eiM-i6cU65n3z7uy08YFyknXbBKj7Z-g@mail.gmail.com>
-In-Reply-To: <CAAmzW4N40MedsCfcj+eiM-i6cU65n3z7uy08YFyknXbBKj7Z-g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 10:10 PM, JoonSoo Kim wrote:
-> 2012/10/19 Glauber Costa <glommer@parallels.com>:
->> @@ -2930,9 +2937,188 @@ int memcg_register_cache(struct mem_cgroup *memcg, struct kmem_cache *s)
->>
->>  void memcg_release_cache(struct kmem_cache *s)
->>  {
->> +       struct kmem_cache *root;
->> +       int id = memcg_css_id(s->memcg_params->memcg);
->> +
->> +       if (s->memcg_params->is_root_cache)
->> +               goto out;
->> +
->> +       root = s->memcg_params->root_cache;
->> +       root->memcg_params->memcg_caches[id] = NULL;
->> +       mem_cgroup_put(s->memcg_params->memcg);
->> +out:
->>         kfree(s->memcg_params);
->>  }
-> 
-> memcg_css_id should be called after checking "s->memcg_params->is_root_cache".
-> Because when is_root_cache == true, memcg_params has no memcg object.
-> 
+On 25 Oct 2012, Theodore Ts'o stated:
+> Also, can you reproduce the problem with the nobarrier and
+> journal_async_commit options *removed*?  Yes, I know you have battery
+> backup, but it would be interesting to see if the problem shows up in
+> the default configuration with none of the more specialist options.
+> (So it would probably be good to test with journal_checksum removed as
+> well.)
 
-Good catch.
+I'm going to spend some time after work today trying to reproduce this
+in a virtual machine. If rebooting while umounting is truly all it
+takes, as it seems, this should eliminate a bunch of variables and make
+it a lot easier to reproduce. (Assuming Eric hasn't already done just
+that, that is.)
 
->> +/*
->> + * This lock protects updaters, not readers. We want readers to be as fast as
->> + * they can, and they will either see NULL or a valid cache value. Our model
->> + * allow them to see NULL, in which case the root memcg will be selected.
->> + *
->> + * We need this lock because multiple allocations to the same cache from a non
->> + * GFP_WAIT area will span more than one worker. Only one of them can create
->> + * the cache.
->> + */
->> +static DEFINE_MUTEX(memcg_cache_mutex);
->> +static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->> +                                                 struct kmem_cache *cachep)
->> +{
->> +       struct kmem_cache *new_cachep;
->> +       int idx;
->> +
->> +       BUG_ON(!memcg_can_account_kmem(memcg));
->> +
->> +       idx = memcg_css_id(memcg);
->> +
->> +       mutex_lock(&memcg_cache_mutex);
->> +       new_cachep = cachep->memcg_params->memcg_caches[idx];
->> +       if (new_cachep)
->> +               goto out;
->> +
->> +       new_cachep = kmem_cache_dup(memcg, cachep);
->> +
->> +       if (new_cachep == NULL) {
->> +               new_cachep = cachep;
->> +               goto out;
->> +       }
->> +
->> +       mem_cgroup_get(memcg);
->> +       cachep->memcg_params->memcg_caches[idx] = new_cachep;
->> +       wmb(); /* the readers won't lock, make sure everybody sees it */
-> 
-> Is there any rmb() pair?
-> As far as I know, without rmb(), wmb() doesn't guarantee anything.
-> 
-
-There should be. But it seems I missed it. Speaking of which, I should
-wmb() after the NULL assignment in release cache as well.
-
-Thanks
->> +       new_cachep->memcg_params->memcg = memcg;
->> +       new_cachep->memcg_params->root_cache = cachep;
-> 
-> It may be better these assignment before the statement
-> "cachep->memcg_params->memcg_caches[idx] = new_cachep".
-> Otherwise, it may produce race situation.
-> 
-> And assigning value to memcg_params->memcg and root_cache is redundant,
-> because it is already done in memcg_register_cache().
-> 
-
-Thanks.
-
-As for the redundancy, for memcg you are right. For root cache,
-unfortunately not. Up to this patch, this is the only reference to it.
-This reference will be moved to a different location in a further patch.
-But then, IIRC, I delete it from here.
-
->> +/*
->> + * Return the kmem_cache we're supposed to use for a slab allocation.
->> + * We try to use the current memcg's version of the cache.
->> + *
->> + * If the cache does not exist yet, if we are the first user of it,
->> + * we either create it immediately, if possible, or create it asynchronously
->> + * in a workqueue.
->> + * In the latter case, we will let the current allocation go through with
->> + * the original cache.
->> + *
->> + * Can't be called in interrupt context or from kernel threads.
->> + * This function needs to be called with rcu_read_lock() held.
->> + */
->> +struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
->> +                                         gfp_t gfp)
->> +{
->> +       struct mem_cgroup *memcg;
->> +       int idx;
->> +
->> +       if (cachep->memcg_params && cachep->memcg_params->memcg)
->> +               return cachep;
-> 
-> In __memcg_kmem_get_cache, cachep may be always root cache.
-> So checking "cachep->memcg_params->memcg" is somewhat strange.
-> Is it right?
-> 
-> 
-Yes, this is somewhat paranoid, and a bit historical. We were
-anticipating that we could call the allocation already with the right
-cache set, and in this case we would just return it.
-
-I think I'll just VM_BUG_ON this.
-
-Thanks for you review here.
-
-
+-- 
+NULL && (void)
