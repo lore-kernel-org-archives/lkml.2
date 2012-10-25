@@ -1,82 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357Ab2JYKtF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:49:05 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:12204 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759312Ab2JYKtC (ORCPT
+	id S1757917Ab2JYKuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:50:24 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:43676 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab2JYKuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:49:02 -0400
-X-IronPort-AV: E=Sophos;i="4.80,646,1344211200"; 
-   d="scan'208";a="15384943"
-Date: Thu, 25 Oct 2012 11:48:30 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Jan Beulich <JBeulich@suse.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [Xen-devel] linux-next: Tree for Oct 24 (xen)
-In-Reply-To: <508906CE02000078000A4553@nat28.tlf.novell.com>
-Message-ID: <alpine.DEB.2.02.1210251118010.2689@kaball.uk.xensource.com>
-References: <20121024151957.28a1626cd9a59c014e78c401@canb.auug.org.au> <50885EA8.3050007@xenotime.net> <508906CE02000078000A4553@nat28.tlf.novell.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 25 Oct 2012 06:50:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20121022195250.GD8567@kroah.com>
+References: <1349871659-4511-1-git-send-email-yamanetoshi@gmail.com>
+	<20121022195250.GD8567@kroah.com>
+Date: Thu, 25 Oct 2012 19:50:21 +0900
+Message-ID: <CAOTypNQfB-n986-L2brkWZ=3Sp--1JsLMtTzTbcNv+P8Xf3CXg@mail.gmail.com>
+Subject: Re: [PATCH] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hdpi.c
+From: Toshiaki Yamane <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Jan Beulich wrote:
-> >>> On 24.10.12 at 23:33, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > On 10/23/2012 09:19 PM, Stephen Rothwell wrote:
-> > 
-> >> Hi all,
-> >> 
-> >> Changes since 201201023:
-> >> 
-> > 
-> > on x86_64:
-> > 
-> > drivers/built-in.o: In function `dbgp_reset_prep':
-> > (.text+0xb96b5): undefined reference to `xen_dbgp_reset_prep'
-> > drivers/built-in.o: In function `dbgp_external_startup':
-> > (.text+0xb9d95): undefined reference to `xen_dbgp_external_startup'
-> > 
-> > 
-> > Full randconfig file is attached.
-> 
-> So this is because with !USB_SUPPORT but EARLY_PRINTK_DBGP
-> dbgp_reset_prep() and dbgp_external_startup() get pointlessly
-> defined and exported. This got broken by the merge
-> recommendation for the ARM side changes (originally compilation
-> of drivers/xen/dbgp.c depended on just CONFIG_XEN_DOM0).
-> 
-> >From my pov, fixing the USB side would be the clean solution (i.e.
-> putting those function definitions inside a CONFIG_USB_SUPPORT
-> conditional).
+On Tue, Oct 23, 2012 at 4:52 AM, Greg Kroah-Hartman <greg@kroah.com> wrote:
+> On Wed, Oct 10, 2012 at 09:20:59PM +0900, YAMANE Toshiaki wrote:
+>> fixed below checkpatch warning.
+>> - WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+>>
+>> and added pr_fmt.
+>>
+>> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+>> ---
+>>  drivers/staging/comedi/drivers/gsc_hpdi.c |   31 +++++++++++++++--------------
+>>  1 file changed, 16 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
+>> index abff660..30a27fd 100644
+>> --- a/drivers/staging/comedi/drivers/gsc_hpdi.c
+>> +++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
+>> @@ -45,6 +45,8 @@ support could be added to this driver.
+>>
+>>  */
+>>
+>> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+>> +
+>>  #include <linux/interrupt.h>
+>>  #include "../comedidev.h"
+>>  #include <linux/delay.h>
+>> @@ -107,8 +109,7 @@ enum hpdi_registers {
+>>  int command_channel_valid(unsigned int channel)
+>>  {
+>>       if (channel == 0 || channel > 6) {
+>> -             printk(KERN_WARNING
+>> -                    "gsc_hpdi: bug! invalid cable command channel\n");
+>> +             pr_warn("bug! invalid cable command channel\n");
+>>               return 0;
+>>       }
+>>       return 1;
+>> @@ -553,7 +554,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>>       int i;
+>>       int retval;
+>>
+>> -     printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
+>> +     dev_warn(dev->class_dev, "gsc_hpdi\n");
 >
-> The alternative of a smaller change would be to extend the
-> conditional around the respective xen_dbgp_...() declarations
-> in include/linux/usb/ehci_def.h to become
-> 
-> #if defined(CONFIG_XEN_DOM0) && defined(CONFIG_USB_SUPPORT)
-> 
-> Please advise towards your preference.
+> What is this warning about?
+>
+>>
+>>       if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
+>>               return -ENOMEM;
+>> @@ -582,17 +583,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>>               } while (pcidev != NULL);
+>>       }
+>>       if (dev->board_ptr == NULL) {
+>> -             printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
+>> +             dev_warn(dev->class_dev, "no hpdi card found\n");
+>>               return -EIO;
+>>       }
+>>
+>> -     printk(KERN_WARNING
+>> -            "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
+>> -            pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+>> +     dev_warn(dev->class_dev,
+>> +              "found %s on bus %i, slot %i\n", board(dev)->name,
+>> +              pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+>>
+>>       if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
+>> -             printk(KERN_WARNING
+>> -                    " failed enable PCI device and request regions\n");
+>> +             dev_warn(dev->class_dev,
+>> +                      " failed enable PCI device and request regions\n");
+>>               return -EIO;
+>>       }
+>>       pci_set_master(pcidev);
+>> @@ -613,7 +614,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>>           ioremap(priv(dev)->hpdi_phys_iobase,
+>>                   pci_resource_len(pcidev, HPDI_BADDRINDEX));
+>>       if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
+>> -             printk(KERN_WARNING " failed to remap io memory\n");
+>> +             dev_warn(dev->class_dev, "failed to remap io memory\n");
+>>               return -ENOMEM;
+>>       }
+>>
+>> @@ -625,13 +626,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>>       /*  get irq */
+>>       if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
+>>                       dev->driver->driver_name, dev)) {
+>> -             printk(KERN_WARNING
+>> -                    " unable to allocate irq %u\n", pcidev->irq);
+>> +             dev_warn(dev->class_dev,
+>> +                      "unable to allocate irq %u\n", pcidev->irq);
+>>               return -EINVAL;
+>>       }
+>>       dev->irq = pcidev->irq;
+>>
+>> -     printk(KERN_WARNING " irq %u\n", dev->irq);
+>> +     dev_warn(dev->class_dev, "irq %u\n", dev->irq);
+>
+> Again a warning?  Shouldn't most of these be debugging lines instead?
+>
+> greg k-h
 
-I think that your first suggestion is the right one.
+Only two points above should be in debugging line?
+Should it modify dev_dbg on 589 also?
 
+>> -     printk(KERN_WARNING
+>> -            "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
+>> -            pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+>> +     dev_warn(dev->class_dev,
+>> +              "found %s on bus %i, slot %i\n", board(dev)->name,
+>> +              pcidev->bus->number, PCI_SLOT(pcidev->devfn));
 
-Otherwise we could also make drivers/xen/dbgp.c compile if
-CONFIG_EARLY_PRINTK_DBGP rather than CONFIG_USB_SUPPORT.
-I think that it would create fewer maintenance pains if dbgp_reset_prep
-and dbgp_external_startup had the same compile requirements as their xen
-counterparts (aside from Xen support of course).
+I am grad to tell me why.
+
+And I will resend the patch only two points are in debugging line.
+
+-- 
+
+Regards,
+
+YAMANE Toshiaki
