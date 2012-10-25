@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759973Ab2JYPne (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:43:34 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14192 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759958Ab2JYPnb (ORCPT
+	id S933424Ab2JYPrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:47:00 -0400
+Received: from mail.southpole.se ([193.12.106.18]:51625 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759914Ab2JYPq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:43:31 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 25 Oct 2012 08:43:31 -0700
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: dougthompson@xmission.com
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kirjanov@gmail.com
-Subject: [PATCH 2/2] don't leak memory for mci_pdev
-Date: Thu, 25 Oct 2012 19:43:23 +0400
-Message-ID: <1351179803-6625-1-git-send-email-kirjanov@gmail.com>
+	Thu, 25 Oct 2012 11:46:56 -0400
+From: Jonas Bonn <jonas@southpole.se>
+To: viro@zeniv.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, Jonas Bonn <jonas@southpole.se>
+Subject: [PATCH 0/2] openrisc: more kernel_thread cleanup
+Date: Thu, 25 Oct 2012 17:46:37 +0200
+Message-Id: <1351179999-8376-1-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+X-Assp-Version: 2.2.1(12265) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 80014-11288
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't leak allocated memory for mci_pdev
+Hi Al,
 
-Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
----
- drivers/edac/edac_mc_sysfs.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+A couple of patches here that continue the cleanup outlined in the
+kernel_thread discussion.  Feel free to take these via your tree if
+you feel that's appropriate; otherwise let me know and I'll throw
+these into the openrisc tree.
 
-diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
-index ea34ece..689d7ba 100644
---- a/drivers/edac/edac_mc_sysfs.c
-+++ b/drivers/edac/edac_mc_sysfs.c
-@@ -1141,12 +1141,14 @@ int __init edac_mc_sysfs_init(void)
- 
- 	err = device_add(mci_pdev);
- 	if (err < 0)
--		return err;
-+		goto out_dev_free;
- 
- 	edac_dbg(0, "device %s created\n", dev_name(mci_pdev));
- 
- 	return 0;
- 
-+out_dev_free:
-+	kfree(mci_pdev);
- out_put_sysfs:
- 	edac_put_sysfs_subsys();
- out:
-@@ -1158,4 +1160,5 @@ void __exit edac_mc_sysfs_exit(void)
- 	put_device(mci_pdev);
- 	device_del(mci_pdev);
- 	edac_put_sysfs_subsys();
-+	kfree(mci_pdev);
- }
+/Jonas
+
+Jonas Bonn (2):
+  openrisc: move sys_clone's stack determination to copy_thread
+  openrisc: determine regs directly in copy_thread
+
+ arch/openrisc/kernel/entry.S    |    6 ++----
+ arch/openrisc/kernel/process.c  |    9 +++++++--
+ arch/openrisc/kernel/sys_or32.c |   15 ++++-----------
+ 3 files changed, 13 insertions(+), 17 deletions(-)
+
 -- 
 1.7.9.5
 
