@@ -1,114 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758487Ab2JYR6E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:58:04 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56293 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab2JYR6C (ORCPT
+	id S1758698Ab2JYR7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:59:39 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:55694 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab2JYR7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:58:02 -0400
-From: Yuly Novikov <ynovikov@chromium.org>
-To: daniel.vetter@ffwll.ch, airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Yuly Novikov <ynovikov@chromium.org>
-Subject: [PATCH] drm/i915/dp: allow configuring eDP panel fitting scaling mode
-Date: Thu, 25 Oct 2012 13:57:47 -0400
-Message-Id: <1351187867-21401-1-git-send-email-ynovikov@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 25 Oct 2012 13:59:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121025175412.GG14085@redhat.com>
+References: <20121025152613.GF14085@redhat.com>
+	<20121025173326.GH11442@htj.dyndns.org>
+	<20121025175412.GG14085@redhat.com>
+Date: Thu, 25 Oct 2012 10:59:35 -0700
+X-Google-Sender-Auth: e2hTuwwynMDZuO95fVzL-5Z1mOw
+Message-ID: <CAOS58YMJBNquaeP7rBzWu8vTWukAT3itH+qSt0cJxMmpTm0YEQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: xattr: rewrite simple_xattr_set()
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LVDS allowed changing panel fitting scaling mode, while eDP didn't.
-Copied relevant code from LVDS to eDP.
-This also changes default mode on eDP to ascpect ratio preserving scaling.
+Hello,
 
-Signed-off-by: Yuly Novikov <ynovikov@chromium.org>
----
- drivers/gpu/drm/i915/intel_dp.c  |   33 ++++++++++++++++++++++++++++++---
- drivers/gpu/drm/i915/intel_drv.h |    1 +
- 2 files changed, 31 insertions(+), 3 deletions(-)
+On Thu, Oct 25, 2012 at 10:54 AM, Aristeu Rozanski <aris@redhat.com> wrote:
+>> So, it returns 0 on success and 1 on failure, which in itself isn't a
+>> particularly good idea.
+>
+> you mean it should return -ENODATA instead?
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 368ed8e..a65546e 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -685,7 +685,7 @@ intel_dp_mode_fixup(struct drm_encoder *encoder,
- 
- 	if (is_edp(intel_dp) && intel_dp->panel_fixed_mode) {
- 		intel_fixed_panel_mode(intel_dp->panel_fixed_mode, adjusted_mode);
--		intel_pch_panel_fitting(dev, DRM_MODE_SCALE_FULLSCREEN,
-+		intel_pch_panel_fitting(dev, intel_dp->fitting_mode,
- 					mode, adjusted_mode);
- 	}
- 
-@@ -2358,6 +2358,22 @@ intel_dp_set_property(struct drm_connector *connector,
- 		goto done;
- 	}
- 
-+	if (is_edp(intel_dp) &&
-+		property == connector->dev->mode_config.scaling_mode_property) {
-+		if (val == DRM_MODE_SCALE_NONE) {
-+			DRM_DEBUG_KMS("no scaling not supported\n");
-+			return -EINVAL;
-+		}
-+
-+		if (intel_dp->fitting_mode == val) {
-+			/* the eDP scaling property is not changed */
-+			return 0;
-+		}
-+		intel_dp->fitting_mode = val;
-+
-+		goto done;
-+	}
-+
- 	return -EINVAL;
- 
- done:
-@@ -2469,10 +2485,21 @@ bool intel_dpd_is_edp(struct drm_device *dev)
- }
- 
- static void
--intel_dp_add_properties(struct intel_dp *intel_dp, struct drm_connector *connector)
-+intel_dp_add_properties(struct drm_device *dev,
-+			struct intel_dp *intel_dp,
-+			struct drm_connector *connector)
- {
- 	intel_attach_force_audio_property(connector);
- 	intel_attach_broadcast_rgb_property(connector);
-+
-+	if (is_edp(intel_dp)) {
-+		drm_mode_create_scaling_mode_property(dev);
-+		drm_connector_attach_property(
-+			connector,
-+			dev->mode_config.scaling_mode_property,
-+			DRM_MODE_SCALE_ASPECT);
-+		intel_dp->fitting_mode = DRM_MODE_SCALE_ASPECT;
-+	}
- }
- 
- void
-@@ -2665,7 +2692,7 @@ intel_dp_init(struct drm_device *dev, int output_reg, enum port port)
- 		intel_panel_setup_backlight(dev);
- 	}
- 
--	intel_dp_add_properties(intel_dp, connector);
-+	intel_dp_add_properties(dev, intel_dp, connector);
- 
- 	/* For G4X desktop chip, PEG_BAND_GAP_DATA 3:0 must first be written
- 	 * 0xd.  Failure to do so will result in spurious interrupts being
-diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
-index fe71425..da50cd4 100644
---- a/drivers/gpu/drm/i915/intel_drv.h
-+++ b/drivers/gpu/drm/i915/intel_drv.h
-@@ -358,6 +358,7 @@ struct intel_dp {
- 	int backlight_on_delay;
- 	int backlight_off_delay;
- 	struct drm_display_mode *panel_fixed_mode;  /* for eDP */
-+	int fitting_mode;  /* for eDP */
- 	struct delayed_work panel_vdd_work;
- 	bool want_panel_vdd;
- 	struct edid *edid; /* cached EDID for eDP */
+Yeap, this is a bug, right?  We end up passing that 1 to the set_xattr caller.
+
 -- 
-1.7.7.3
-
+tejun
