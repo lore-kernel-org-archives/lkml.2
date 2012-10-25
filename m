@@ -1,119 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab2JYBc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 21:32:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62683 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932091Ab2JYBc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 21:32:56 -0400
-X-IronPort-AV: E=Sophos;i="4.80,644,1344182400"; 
-   d="scan'208";a="6063114"
-Message-ID: <5088967E.3060204@cn.fujitsu.com>
-Date: Thu, 25 Oct 2012 09:31:42 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: yinghai@kernel.org, bhelgaas@google.com, lenb@kernel.org,
-        jiang.liu@huawei.com, izumi.taku@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container
- hot-remove.
-References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>  <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com> <1351098875.19172.21.camel@misato.fc.hp.com>
-In-Reply-To: <1351098875.19172.21.camel@misato.fc.hp.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 09:32:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/25 09:32:21,
-	Serialize complete at 2012/10/25 09:32:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1759049Ab2JYBgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 21:36:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3744 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751243Ab2JYBgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 21:36:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,643,1344236400"; 
+   d="scan'208";a="238066027"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>, stable@vger.kernel.org
+Subject: [BUGFIX] PCI/PM: Fix proc config reg access for D3cold and bridge suspending
+Date: Thu, 25 Oct 2012 09:36:03 +0800
+Message-Id: <1351128963-10347-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+In
 
-On 10/25/2012 01:14 AM, Toshi Kani wrote:
-> On Wed, 2012-10-24 at 14:05 +0800, Tang Chen wrote:
->> +static int container_device_remove(struct acpi_device *device)
->> +{
->> +	int ret;
->> +	struct acpi_eject_event *ej_event;
->> +
->> +	/* stop container device at first */
->> +	ret = acpi_bus_trim(device, 0);
->
-> Hi Tang,
->
-> Why do you need to call acpi_bus_trim(device,0) to stop the container
-> device first?
+  https://bugzilla.kernel.org/show_bug.cgi?id=48981
 
-This issue was introduced by Lu Yinghai, I think he could give a better
-answer than me. :)
-Please refer to the following url:
+Peter reported that /proc/bus/pci/??/??.? does not works for 3.6.
+This is This is because the device configuration space registers will
+be not accessible if the corresponding parent bridge is suspended or
+the device is put into D3cold state.
 
-http://www.spinics.net/lists/linux-pci/msg17667.html
+This is the same as /sys/bus/pci/devices/0000:??:??.?/config access
+issue.  So the function used to solve sysfs issue is used to solve
+this issue.
 
-However, this is not applied into the pci tree yet.
+Cc: stable@vger.kernel.org
+Reported-by: Peter <lekensteyn@gmail.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/pci/pci-sysfs.c |   34 ----------------------------------
+ drivers/pci/pci.c       |   32 ++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h       |    2 ++
+ drivers/pci/proc.c      |    8 ++++++++
+ 4 files changed, 42 insertions(+), 34 deletions(-)
 
->
->> +	printk(KERN_WARNING "acpi_bus_trim stop return %x\n", ret);
->
-> Do you need this message in the normal case?  If so, I'd suggest to use
-> pr_debug().
->
->> +	if (ret)
->> +		return ret;
->> +
->> +	/* event originated from ACPI eject notification */
->> +	device->flags.eject_pending = 1;
->
-> You do not need to set the eject_pending flag when the handler calls
-> acpi_bus_hot_remove_device().  It was set before because the handler did
-> not initiate the hot-remove operation.
-
-I just set it to keep the logic the same as before.
-And thanks for telling me this. :)
-
->
-...
->> +		printk(KERN_WARNING "Container driver received %s event\n",
->> +			"ACPI_NOTIFY_EJECT_REQUEST");
->
-> Same as other comment.  Suggest to use pr_debug().
-
-OK. :)
-
->
->> +
->> +		if (!present || ACPI_FAILURE(status) || !device)
->> +			break;
->> +
->> +		result = container_device_remove(device);
->> +		if (result) {
->> +			printk(KERN_WARNING "Failed to remove container\n");
->
-> Please use pr_warn().
->
-> Thanks,
-> -Toshi
->
->> +			break;
->>   		}
->> -		break;
->> +
->> +		return;
->>
->>   	default:
->>   		/* non-hotplug event; possibly handled by other handler */
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -458,40 +458,6 @@ boot_vga_show(struct device *dev, struct
+ }
+ struct device_attribute vga_attr = __ATTR_RO(boot_vga);
+ 
+-static void
+-pci_config_pm_runtime_get(struct pci_dev *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct device *parent = dev->parent;
+-
+-	if (parent)
+-		pm_runtime_get_sync(parent);
+-	pm_runtime_get_noresume(dev);
+-	/*
+-	 * pdev->current_state is set to PCI_D3cold during suspending,
+-	 * so wait until suspending completes
+-	 */
+-	pm_runtime_barrier(dev);
+-	/*
+-	 * Only need to resume devices in D3cold, because config
+-	 * registers are still accessible for devices suspended but
+-	 * not in D3cold.
+-	 */
+-	if (pdev->current_state == PCI_D3cold)
+-		pm_runtime_resume(dev);
+-}
+-
+-static void
+-pci_config_pm_runtime_put(struct pci_dev *pdev)
+-{
+-	struct device *dev = &pdev->dev;
+-	struct device *parent = dev->parent;
+-
+-	pm_runtime_put(dev);
+-	if (parent)
+-		pm_runtime_put_sync(parent);
+-}
+-
+ static ssize_t
+ pci_read_config(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *bin_attr,
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1858,6 +1858,38 @@ bool pci_dev_run_wake(struct pci_dev *de
+ }
+ EXPORT_SYMBOL_GPL(pci_dev_run_wake);
+ 
++void pci_config_pm_runtime_get(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	if (parent)
++		pm_runtime_get_sync(parent);
++	pm_runtime_get_noresume(dev);
++	/*
++	 * pdev->current_state is set to PCI_D3cold during suspending,
++	 * so wait until suspending completes
++	 */
++	pm_runtime_barrier(dev);
++	/*
++	 * Only need to resume devices in D3cold, because config
++	 * registers are still accessible for devices suspended but
++	 * not in D3cold.
++	 */
++	if (pdev->current_state == PCI_D3cold)
++		pm_runtime_resume(dev);
++}
++
++void pci_config_pm_runtime_put(struct pci_dev *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device *parent = dev->parent;
++
++	pm_runtime_put(dev);
++	if (parent)
++		pm_runtime_put_sync(parent);
++}
++
+ /**
+  * pci_pm_init - Initialize PM functions of given PCI device
+  * @dev: PCI device to handle.
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -72,6 +72,8 @@ extern void pci_disable_enabled_device(s
+ extern int pci_finish_runtime_suspend(struct pci_dev *dev);
+ extern int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
+ extern void pci_wakeup_bus(struct pci_bus *bus);
++extern void pci_config_pm_runtime_get(struct pci_dev *dev);
++extern void pci_config_pm_runtime_put(struct pci_dev *dev);
+ extern void pci_pm_init(struct pci_dev *dev);
+ extern void platform_pci_wakeup_init(struct pci_dev *dev);
+ extern void pci_allocate_cap_save_buffers(struct pci_dev *dev);
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -76,6 +76,8 @@ proc_bus_pci_read(struct file *file, cha
+ 	if (!access_ok(VERIFY_WRITE, buf, cnt))
+ 		return -EINVAL;
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((pos & 1) && cnt) {
+ 		unsigned char val;
+ 		pci_user_read_config_byte(dev, pos, &val);
+@@ -121,6 +123,8 @@ proc_bus_pci_read(struct file *file, cha
+ 		cnt--;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	*ppos = pos;
+ 	return nbytes;
+ }
+@@ -146,6 +150,8 @@ proc_bus_pci_write(struct file *file, co
+ 	if (!access_ok(VERIFY_READ, buf, cnt))
+ 		return -EINVAL;
+ 
++	pci_config_pm_runtime_get(dev);
++
+ 	if ((pos & 1) && cnt) {
+ 		unsigned char val;
+ 		__get_user(val, buf);
+@@ -191,6 +197,8 @@ proc_bus_pci_write(struct file *file, co
+ 		cnt--;
+ 	}
+ 
++	pci_config_pm_runtime_put(dev);
++
+ 	*ppos = pos;
+ 	i_size_write(ino, dp->size);
+ 	return nbytes;
