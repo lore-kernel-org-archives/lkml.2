@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab2JYMmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:42:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:45506 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756900Ab2JYMmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:42:04 -0400
-Date: Thu, 25 Oct 2012 08:40:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: roger.pau@citrix.com, Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH RFC] Persistent grant maps for xen blk drivers
-Message-ID: <20121025124013.GB25640@localhost.localdomain>
-References: <1350559321-19066-1-git-send-email-roger.pau@citrix.com>
- <20121022134708.GA13832@konrad-lan.dumpdata.com>
- <5086C0C8.5000306@citrix.com>
- <20121023172008.GB11787@phenom.dumpdata.com>
- <5086DD57.4000206@citrix.com>
- <20121023185049.GB20350@phenom.dumpdata.com>
- <5087B77A02000078000A3D00@nat28.tlf.novell.com>
+	id S933063Ab2JYMmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:42:14 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:44027 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759347Ab2JYMmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 08:42:10 -0400
+Message-ID: <5089339B.4040502@mev.co.uk>
+Date: Thu, 25 Oct 2012 13:42:03 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5087B77A02000078000A3D00@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Greg KH <greg@kroah.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Abbott <ian.abbott@mev.co.uk>
+Subject: Re: linux-next: manual merge of the staging tree with the staging.current
+ tree
+References: <20121025131907.cab4682e1792998d9cca2c19@canb.auug.org.au>
+In-Reply-To: <20121025131907.cab4682e1792998d9cca2c19@canb.auug.org.au>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 08:40:10AM +0100, Jan Beulich wrote:
-> >>> On 23.10.12 at 20:50, Konrad Rzeszutek Wilk <konrad@kernel.org> wrote:
-> > On Tue, Oct 23, 2012 at 08:09:27PM +0200, Roger Pau Monné wrote:
-> >> On 23/10/12 19:20, Konrad Rzeszutek Wilk wrote:
-> >> >>>> diff --git a/drivers/block/xen-blkback/blkback.c 
-> > b/drivers/block/xen-blkback/blkback.c
-> >> >>>> index c6decb9..2b982b2 100644
-> >> >>>> --- a/drivers/block/xen-blkback/blkback.c
-> >> >>>> +++ b/drivers/block/xen-blkback/blkback.c
-> >> >>>> @@ -78,6 +78,7 @@ struct pending_req {
-> >> >>>>       unsigned short          operation;
-> >> >>>>       int                     status;
-> >> >>>>       struct list_head        free_list;
-> >> >>>> +     unsigned int            unmap_seg[BLKIF_MAX_SEGMENTS_PER_REQUEST];
-> >> 
-> >> Should I change this to a bool? Since we are only setting it to 0 or 1.
-> > 
-> > I would just keep it as 'int'. Eventually we can replace this with a
-> > bit-map, but that can be done later.
-> 
-> I think this should be a bitmap from the beginning - why would
-> you want to waste 44 bytes per request for something that fits
-> in a single unsigned long (and the picture would get worse with
-> the number-of-segments extension)?
-> 
-> Also - am I taking this work being done here as a silent agreement
-> to not invest into blkif2 to streamline the various extensions
-> floating around?
+On 2012-10-25 03:19, Stephen Rothwell wrote:
+> Hi Greg,
+>
+> Today's linux-next merge of the staging tree got a conflict in
+> drivers/staging/comedi/drivers/amplc_dio200.c between commit dfb2540e91e1
+> ("staging: comedi: amplc_dio200: fix possible NULL deref during detach")
+> from the staging.current tree and commit 71b3e9e8dc21 ("staging: comedi:
+> amplc_dio200: support memory-mapped I/O") from the staging tree.
+>
+> I fixed it up (the latter is a superset of the former) and can carry the
+> fix as necessary (no action is required).
 
-I haven't been able (time-wise) to look at making blkif2 a possibility
-and I don't want to hinder this work - which provides great
-performance benefits.
+Sorry, I remember editing that while rebasing my patches.  I think I 
+must have assumed the NULL deref patch had already been applied to 
+Greg's "staging-next" branch, but it had in fact it had only been 
+applied to his "staging-linus" branch.  I was editing various other bits 
+while rebasing that patch series, so I never noticed that particular 
+edit as being a conflict.
+
+Apologies for the inconvenience it caused you.
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
