@@ -1,116 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759171Ab2JYSAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 14:00:45 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41071 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756355Ab2JYSAn (ORCPT
+	id S1759673Ab2JYSAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 14:00:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65109 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759509Ab2JYSAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 14:00:43 -0400
-Message-ID: <50897E29.5080509@linux.vnet.ibm.com>
-Date: Thu, 25 Oct 2012 23:30:09 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 25 Oct 2012 14:00:49 -0400
+Date: Thu, 25 Oct 2012 11:00:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>, Petr Matousek <pmatouse@redhat.com>,
+        Kay Sievers <kay@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+Subject: Re: setting up CDB filters in udev (was Re: [PATCH v2 0/3] block:
+ add queue-private command filter, editable via sysfs)
+Message-ID: <20121025180045.GL11442@htj.dyndns.org>
+References: <1954562860.13360801.1350637629926.JavaMail.root@redhat.com>
+ <2007908429.13363375.1350637872646.JavaMail.root@redhat.com>
+ <20121019201058.GP13370@google.com>
+ <5087E093.50700@redhat.com>
+ <CAOS58YM5ZO9h0XUCNxV+6U3UzpeUen5ZuyqsNEUaJ81ux=QKvw@mail.gmail.com>
+ <5088EC43.2010600@redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        venki@google.com, robin.randhawa@arm.com, linaro-dev@lists.linaro.org,
-        mjg59@srcf.ucam.org, viresh.kumar@linaro.org,
-        akpm@linux-foundation.org, amit.kucheria@linaro.org,
-        deepthi@linux.vnet.ibm.com, paul.mckenney@linaro.org,
-        arjan@linux.intel.com, paulmck@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        tglx@linutronix.de, Arvind.Chauhan@arm.com, pjt@google.com,
-        Morten.Rasmussen@arm.com, linux-arm-kernel@lists.infradead.org,
-        suresh.b.siddha@intel.com
-Subject: Re: [RFC PATCH 00/13] sched: Integrating Per-entity-load-tracking
- with the core scheduler
-References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com> <1351180603.12171.31.camel@twins>
-In-Reply-To: <1351180603.12171.31.camel@twins>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-x-cbid: 12102518-2000-0000-0000-0000099BEB94
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5088EC43.2010600@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-Thank you very much for your feedback.
+(restoring cc lists)
 
-On 10/25/2012 09:26 PM, Peter Zijlstra wrote:
-> OK, so I tried reading a few patches and I'm completely failing.. maybe
-> its late and my brain stopped working, but it simply doesn't make any
-> sense.
+Hey, Paolo.
+
+On Thu, Oct 25, 2012 at 09:37:39AM +0200, Paolo Bonzini wrote:
+> Il 24/10/2012 18:47, Tejun Heo ha scritto:
+> > So, I'm still not convinced we need to go forward with full
+> > configurability. All use cases you described can be covered with
+> > per-class static filters + simple override switch to disable all,
+> > which would result in a lot simpler implementation w/ much smaller
+> > userland interface.
 > 
-> Most changelogs and comments aren't really helping either. At best they
-> mention what you're doing, not why and how. This means I get to
-> basically duplicate your entire thought pattern and I might as well do
-> the patches myself.
+> I'm not sure the userland interface would be smaller, and it would be
+> more complex to get right:
 > 
-> I also don't see the 'big' picture of what you're doing, you start out
-> by some weird avoid short running task movement.. why is that a good
-> start?
+> 1) how do you override the default?  ioctl+SCM_RIGHTS or sysfs?
+
+Disabling filters if opened by root and tranfering via SCM_RIGHTS
+would be the simplest interface-wise (there's no new interface at
+all).  Would that be too dangerous security-wise?
+
+> 2) do you need to override the default to "no access", "full access" and
+> "default access", or is a binary knob (default access/full access)
+> sufficient?
+
+Default / full should be enough, no?
+
+> 3) what capabilities control the setting?
+
+CAP_SYS_RAWIO seems to be a pretty good fit.
+
+> > What's the rationale for full configurability?
 > 
+> Depending on the level of trust you have in your users, there are
+> different policies that are applicable.  Even virtualization could have
+> a range of choices like "permit only standard operations", "also permit
+> UNMAP", "also permit persistent reservations", "permit everything
+> including vendor specific commands"
 
+I guess I just feel quite reluctant to expose another rather obscure
+userland configurable in-kernel filter and at the same time I'm not
+sure whether this is flexible enough.  What if a device is shared by
+multiple virtual machines which are trusted at different levels?  What
+if we end up actually having to filter cdb contents?
 
-> I would have expected a series like this to replace rq->cpu_load /
-> rq->load with a saner metric and go from there.. instead it looks like
-> its going about at things completely backwards. Fixing small details
-> instead of the big things.
+I'm not trying to block it at all cost but let's make sure we looked
+into most possibilities before (re)adding this userland visible
+interface.
 
-Let me see if I get what you are saying here right.You want to replace for example cfs_rq->load.weight with a saner metric because it does not consider the run time of the sched entities queued on it,merely their priorities.If this is right,in this patchset I believe cfs_rq->runnable_load_avg would be that right metric because it considers the run time of the sched entities queued on it.
+Jens, James, what do you guys think?
 
-So why didnt I replace? I added cfs_rq->runnable_load_avg as an additional metric instead of replacing the older metric.I let the old metric be as a dead metric and used the newer metric as an alternative.so if this alternate metric does not do us good we have the old metric to fall back on.
+Thanks.
 
-> At best they mention what you're doing, not why and how.
-So the above explains *what* I am doing.
-
-*How* am i doing it: Everywhere the scheduler needs to make a decision on:
-
- a.find_busiest_group/find_idlest_group/update_sg_lb_stats:use sum of cfs_rq->runnable_load_avg to decide this instead of sum of cfs_rq->load.weight.
-
- b.find_busiest_queue/find_idlest_queue: use cfs_rq->runnable_load_avg to decide this instead of cfs_rq->load.weight
- 
- c.move_tasks: use se->avg.load_avg_contrib to decide the weight of of each task instead of se->load.weight as the former reflects the runtime of the sched entity and hence its actual load.
-
-This is what my patches3-13 do.Merely *Replace*.
-
-*Why am I doing it*: Feed the load balancer with a more realistic metric to do load balancing and observe the consequences.
-
-> you start out by some weird avoid short running task movement.
-> why is that a good start?
-
-The short running tasks are not really burdening you,they have very little run time,so why move them?
-Throughout the concept of load balancing the focus is on *balancing the *existing* load* between the sched groups.But not really evaluating the *absolute load* of any given sched group.
-
-Why is this *the start*? This is like a round of elimination before the actual interview round ;) Try to have only those sched groups as candidates for load balancing that are sufficiently loaded.[Patch1]
-This *sufficiently loaded* is decided by the new metric explained in the *How* above.
-
-> I also don't see the 'big' picture of what you're doing
-
-Patch1: is explained above.*End result:Good candidates for lb.*
-Patch2: 
-         10%
-         10%
-         10%                100%
-        ------             ------
-        SCHED_GP1          SCHED_GP2
-   
-Before Patch               After Patch
------------------------------------
-SCHED_GP1 load:3072        SCHED_GP1:512
-SCHED_GP2 load:1024        SCHED_GP2:1024
-
-SCHED_GP1 is busiest       SCHED_GP2 is busiest:
-                       
-But Patch2 re-decides between GP1 and GP2 to check if the latency of tasks is getting affected although there is less load on GP1.If yes it is a better *busy * gp.
-
-*End Result: Better candidates for lb*
-
-Rest of the patches: now that we have our busy sched group,let us load balance with the aid of the new metric.
-*End Result: Hopefully a more sensible movement of loads*
-This is how I build the picture.
-
-Regards
-Preeti
-
+-- 
+tejun
