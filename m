@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965143Ab2JYNMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:12:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51762 "EHLO
+	id S1945955Ab2JYNNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:13:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51665 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758543Ab2JYNKz (ORCPT
+	with ESMTP id S1945930Ab2JYNKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:10:55 -0400
-Message-Id: <20121025124833.861587584@chello.nl>
+	Thu, 25 Oct 2012 09:10:20 -0400
+Message-Id: <20121025124834.533556112@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:35 +0200
+Date: Thu, 25 Oct 2012 14:16:44 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,207 +17,77 @@ To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 18/31] mm/mpol: Use special PROT_NONE to migrate pages
+Subject: [PATCH 27/31] sched, numa, mm: Add credits for NUMA placement
 References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0018-mm-mpol-Use-special-PROT_NONE-to-migrate-pages.patch
+Content-Disposition: inline; filename=0027-sched-numa-mm-Add-credits-for-NUMA-placement.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Combine our previous PROT_NONE, mpol_misplaced and
-migrate_misplaced_page() pieces into an effective migrate on fault
-scheme.
+From: Rik van Riel <riel@redhat.com>
 
-Note that (on x86) we rely on PROT_NONE pages being !present and avoid
-the TLB flush from try_to_unmap(TTU_MIGRATION). This greatly improves
-the page-migration performance.
+The NUMA placement code has been rewritten several times, but
+the basic ideas took a lot of work to develop. The people who
+put in the work deserve credit for it. Thanks Andrea & Peter :)
 
-Suggested-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Paul Turner <pjt@google.com>
+[ The Documentation/scheduler/numa-problem.txt file should
+  probably be rewritten once we figure out the final details of
+  what the NUMA code needs to do, and why. ]
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: aarcange@redhat.com
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+----
+This is against tip.git numa/core
 ---
- mm/huge_memory.c |   41 ++++++++++++++++++++++++++++++++++-
- mm/memory.c      |   63 +++++++++++++++++++++++++++++++++++++++----------------
- 2 files changed, 85 insertions(+), 19 deletions(-)
+ CREDITS             |    1 +
+ kernel/sched/fair.c |    3 +++
+ mm/memory.c         |    2 ++
+ 3 files changed, 6 insertions(+)
 
-Index: tip/mm/huge_memory.c
+Index: tip/CREDITS
 ===================================================================
---- tip.orig/mm/huge_memory.c
-+++ tip/mm/huge_memory.c
-@@ -18,6 +18,7 @@
- #include <linux/freezer.h>
- #include <linux/mman.h>
- #include <linux/pagemap.h>
-+#include <linux/migrate.h>
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
- #include "internal.h"
-@@ -741,12 +742,48 @@ void do_huge_pmd_numa_page(struct mm_str
- 			   unsigned int flags, pmd_t entry)
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	struct page *page = NULL;
-+	int node;
+--- tip.orig/CREDITS
++++ tip/CREDITS
+@@ -125,6 +125,7 @@ D: Author of pscan that helps to fix lp/
+ D: Author of lil (Linux Interrupt Latency benchmark)
+ D: Fixed the shm swap deallocation at swapoff time (try_to_unuse message)
+ D: VM hacker
++D: NUMA task placement
+ D: Various other kernel hacks
+ S: Imola 40026
+ S: Italy
+Index: tip/kernel/sched/fair.c
+===================================================================
+--- tip.orig/kernel/sched/fair.c
++++ tip/kernel/sched/fair.c
+@@ -18,6 +18,9 @@
+  *
+  *  Adaptive scheduling granularity, math enhancements by Peter Zijlstra
+  *  Copyright (C) 2007 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
++ *
++ *  NUMA placement, statistics and algorithm by Andrea Arcangeli,
++ *  CFS balancing changes by Peter Zijlstra. Copyright (C) 2012 Red Hat, Inc.
+  */
  
- 	spin_lock(&mm->page_table_lock);
- 	if (unlikely(!pmd_same(*pmd, entry)))
- 		goto out_unlock;
- 
--	/* do fancy stuff */
-+	if (unlikely(pmd_trans_splitting(entry))) {
-+		spin_unlock(&mm->page_table_lock);
-+		wait_split_huge_page(vma->anon_vma, pmd);
-+		return;
-+	}
-+
-+#ifdef CONFIG_NUMA
-+	page = pmd_page(entry);
-+	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
-+
-+	get_page(page);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	/*
-+	 * XXX should we serialize against split_huge_page ?
-+	 */
-+
-+	node = mpol_misplaced(page, vma, haddr);
-+	if (node == -1)
-+		goto do_fixup;
-+
-+	/*
-+	 * Due to lacking code to migrate thp pages, we'll split
-+	 * (which preserves the special PROT_NONE) and re-take the
-+	 * fault on the normal pages.
-+	 */
-+	split_huge_page(page);
-+	put_page(page);
-+	return;
-+
-+do_fixup:
-+	spin_lock(&mm->page_table_lock);
-+	if (unlikely(!pmd_same(*pmd, entry)))
-+		goto out_unlock;
-+#endif
- 
- 	/* change back to regular protection */
- 	entry = pmd_modify(entry, vma->vm_page_prot);
-@@ -755,6 +792,8 @@ void do_huge_pmd_numa_page(struct mm_str
- 
- out_unlock:
- 	spin_unlock(&mm->page_table_lock);
-+	if (page)
-+		put_page(page);
- }
- 
- int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ #include <linux/latencytop.h>
 Index: tip/mm/memory.c
 ===================================================================
 --- tip.orig/mm/memory.c
 +++ tip/mm/memory.c
-@@ -57,6 +57,7 @@
- #include <linux/swapops.h>
- #include <linux/elf.h>
- #include <linux/gfp.h>
-+#include <linux/migrate.h>
+@@ -36,6 +36,8 @@
+  *		(Gerhard.Wichert@pdb.siemens.de)
+  *
+  * Aug/Sep 2004 Changed to four level page tables (Andi Kleen)
++ *
++ * 2012 - NUMA placement page faults (Andrea Arcangeli, Peter Zijlstra)
+  */
  
- #include <asm/io.h>
- #include <asm/pgalloc.h>
-@@ -1467,8 +1468,10 @@ EXPORT_SYMBOL_GPL(zap_vma_ptes);
- static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
- {
- 	/*
--	 * If we have the normal vma->vm_page_prot protections we're not a
--	 * 'special' PROT_NONE page.
-+	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
-+	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
-+	 * VMAs should never get here, because the fault handling code
-+	 * will notice that the VMA has no read or write permissions.
- 	 *
- 	 * This means we cannot get 'special' PROT_NONE faults from genuine
- 	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
-@@ -3473,35 +3476,59 @@ static int do_numa_page(struct mm_struct
- 			unsigned long address, pte_t *ptep, pmd_t *pmd,
- 			unsigned int flags, pte_t entry)
- {
-+	struct page *page = NULL;
-+	int node, page_nid = -1;
- 	spinlock_t *ptl;
--	int ret = 0;
--
--	if (!pte_unmap_same(mm, pmd, ptep, entry))
--		goto out;
- 
--	/*
--	 * Do fancy stuff...
--	 */
--
--	/*
--	 * OK, nothing to do,.. change the protection back to what it
--	 * ought to be.
--	 */
--	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	ptl = pte_lockptr(mm, pmd);
-+	spin_lock(ptl);
- 	if (unlikely(!pte_same(*ptep, entry)))
--		goto unlock;
-+		goto out_unlock;
-+
-+	page = vm_normal_page(vma, address, entry);
-+	if (page) {
-+		get_page(page);
-+		page_nid = page_to_nid(page);
-+		node = mpol_misplaced(page, vma, address);
-+		if (node != -1)
-+			goto migrate;
-+	}
- 
-+out_pte_upgrade_unlock:
- 	flush_cache_page(vma, address, pte_pfn(entry));
- 
- 	ptep_modify_prot_start(mm, address, ptep);
- 	entry = pte_modify(entry, vma->vm_page_prot);
- 	ptep_modify_prot_commit(mm, address, ptep, entry);
- 
-+	/* No TLB flush needed because we upgraded the PTE */
-+
- 	update_mmu_cache(vma, address, ptep);
--unlock:
-+
-+out_unlock:
- 	pte_unmap_unlock(ptep, ptl);
- out:
--	return ret;
-+	if (page)
-+		put_page(page);
-+
-+	return 0;
-+
-+migrate:
-+	pte_unmap_unlock(ptep, ptl);
-+
-+	if (!migrate_misplaced_page(page, node)) {
-+		page_nid = node;
-+		goto out;
-+	}
-+
-+	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	if (!pte_same(*ptep, entry)) {
-+		put_page(page);
-+		page = NULL;
-+		goto out_unlock;
-+	}
-+
-+	goto out_pte_upgrade_unlock;
- }
- 
- /*
+ #include <linux/kernel_stat.h>
 
 
