@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502Ab2JYGdm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:33:42 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33236 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab2JYGdi (ORCPT
+	id S934603Ab2JYGd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:33:57 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:47953 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934097Ab2JYGdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:33:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkda_2HCyY2hAcQ_xehqKqjF2-JCjsr67BHYyaqggd0xgUw@mail.gmail.com>
-References: <CACRpkdbwUMbTeKnGX3u4KNQbGdY0wY518=tAm5MocwyVPZbBfQ@mail.gmail.com>
-	<CA+55aFxVe77iv=SrG7tBa1OkRtdmeqmtr+vMYe3rxphvvMtV-g@mail.gmail.com>
-	<CACRpkda_2HCyY2hAcQ_xehqKqjF2-JCjsr67BHYyaqggd0xgUw@mail.gmail.com>
-Date: Thu, 25 Oct 2012 08:33:37 +0200
-Message-ID: <CACRpkdYC4A_zO3E0WNm2M-69CCwmKtXhbET7NH4-FfO2tKHVFQ@mail.gmail.com>
-Subject: Re: [GIT PULL] pinctrl patches for v3.7-rc3+
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 02:33:40 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC] cpufreq: Make sure target freq is within limits
+Date: Thu, 25 Oct 2012 12:03:34 +0530
+Message-Id: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 25 Oct 2012 06:33:36.0660 (UTC) FILETIME=[A9B55540:01CDB27A]
+X-MC-Unique: 112102507333902401
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9P6XxqR015626
 
-On Thu, Oct 25, 2012 at 8:31 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Oct 25, 2012 at 2:04 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->
->> On Wed, Oct 24, 2012 at 4:57 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->>>
->>> here are some accumulated pinctrl patches since -rc1, with a
->>> verboser description in the (signed) tag.
->>
->> Hmm. Your description contains several commits that were already
->> merged long ago (well, a week ago from your previous pull request). So
->> your shortlog etc are all bogus, and contains stuff that isn't
->> actually new to this pull. What happened?
->
-> Hmmmm forgot to merge -rc1 and -rc2 into the fixes branch I
-> guess, I'll fix it up and respin, sorry.
+Hi Rafael,
 
-Bah I see you merged it all and let git sort it out :-)
+__cpufreq_driver_target() must not pass target frequency beyond the limits of
+current policy.
 
-I'll be more careful next time, thanks!
+Today most of cpufreq platform drivers are doing this check in their target
+routines. Why not move it to __cpufreq_driver_target().
 
-Yours,
-Linus Walleij
+I wanted to get your opinion on this before making changes in all driver files.
+That's why this is an RFC.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ drivers/cpufreq/cpufreq.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index f552d5f..59264f1 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1470,12 +1470,19 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			    unsigned int relation)
+ {
+ 	int retval = -EINVAL;
++	unsigned int old_target_freq = target_freq;
+ 
+ 	if (cpufreq_disabled())
+ 		return -ENODEV;
+ 
+-	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
+-		target_freq, relation);
++	/* Make sure that target_freq is within supported range */
++	if (target_freq > policy->max)
++		target_freq = policy->max;
++	if (target_freq < policy->min)
++		target_freq = policy->min;
++
++	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
++			policy->cpu, target_freq, relation, old_target_freq);
+ 	if (cpu_online(policy->cpu) && cpufreq_driver->target)
+ 		retval = cpufreq_driver->target(policy, target_freq, relation);
+ 
+-- 
+1.7.12.rc2.18.g61b472e
+
+
