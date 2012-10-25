@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422884Ab2JYNKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:10:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51619 "EHLO
+	id S1945947Ab2JYNQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:16:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51628 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527Ab2JYNKF (ORCPT
+	with ESMTP id S1759529Ab2JYNKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:10:05 -0400
-Message-Id: <20121025124834.383666518@chello.nl>
+	Thu, 25 Oct 2012 09:10:09 -0400
+Message-Id: <20121025124833.478567618@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:42 +0200
+Date: Thu, 25 Oct 2012 14:16:30 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,38 +17,86 @@ To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 25/31] sched, numa, mm/mpol: Add_MPOL_F_HOME
+Subject: [PATCH 13/31] mm/mpol: Check for misplaced page
 References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0025-sched-numa-mm-Add_MPOL_F_HOME.patch
+Content-Disposition: inline; filename=0013-mm-mpol-Check-for-misplaced-page.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add MPOL_F_HOME, to implement multi-stage home node binding.
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Suggested-by: Andrea Arcangeli <aarcange@redhat.com>
-Suggested-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+This patch provides a new function to test whether a page resides
+on a node that is appropriate for the mempolicy for the vma and
+address where the page is supposed to be mapped.  This involves
+looking up the node where the page belongs.  So, the function
+returns that node so that it may be used to allocated the page
+without consulting the policy again.  
+
+A subsequent patch will call this function from the fault path.
+Because of this, I don't want to go ahead and allocate the page, e.g.,
+via alloc_page_vma() only to have to free it if it has the correct
+policy.  So, I just mimic the alloc_page_vma() node computation
+logic--sort of.
+
+Note:  we could use this function to implement a MPOL_MF_STRICT
+behavior when migrating pages to match mbind() mempolicy--e.g.,
+to ensure that pages in an interleaved range are reinterleaved
+rather than left where they are when they reside on any page in
+the interleave nodemask.
+
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+[ Added MPOL_F_LAZY to trigger migrate-on-fault;
+  simplified code now that we don't have to bother
+  with special crap for interleaved ]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   34 +++++++++++++++++++++++++++++++++-
- 2 files changed, 34 insertions(+), 1 deletion(-)
+ include/linux/mempolicy.h      |    8 ++++
+ include/uapi/linux/mempolicy.h |    1 
+ mm/mempolicy.c                 |   76 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+)
 
+Index: tip/include/linux/mempolicy.h
+===================================================================
+--- tip.orig/include/linux/mempolicy.h
++++ tip/include/linux/mempolicy.h
+@@ -198,6 +198,8 @@ static inline int vma_migratable(struct
+ 	return 1;
+ }
+ 
++extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
++
+ #else
+ 
+ struct mempolicy {};
+@@ -323,5 +325,11 @@ static inline int mpol_to_str(char *buff
+ 	return 0;
+ }
+ 
++static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
++				 unsigned long address)
++{
++	return -1; /* no node preference */
++}
++
+ #endif /* CONFIG_NUMA */
+ #endif
 Index: tip/include/uapi/linux/mempolicy.h
 ===================================================================
 --- tip.orig/include/uapi/linux/mempolicy.h
 +++ tip/include/uapi/linux/mempolicy.h
-@@ -69,6 +69,7 @@ enum mpol_rebind_step {
+@@ -61,6 +61,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
  #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
  #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
- #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
-+#define MPOL_F_HOME	(1 << 4) /* this is the home-node policy */
++#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
  
  
  #endif /* _UAPI_LINUX_MEMPOLICY_H */
@@ -56,60 +104,88 @@ Index: tip/mm/mempolicy.c
 ===================================================================
 --- tip.orig/mm/mempolicy.c
 +++ tip/mm/mempolicy.c
-@@ -2190,6 +2190,7 @@ static void sp_free(struct sp_node *n)
-  * @page   - page to be checked
-  * @vma    - vm area where page mapped
-  * @addr   - virtual address where page mapped
-+ * @multi  - use multi-stage node binding
-  *
-  * Lookup current policy node id for vma,addr and "compare to" page's
-  * node id.
-@@ -2252,6 +2253,37 @@ int mpol_misplaced(struct page *page, st
- 	default:
- 		BUG();
- 	}
+@@ -2153,6 +2153,82 @@ static void sp_free(struct sp_node *n)
+ 	kmem_cache_free(sn_cache, n);
+ }
+ 
++/**
++ * mpol_misplaced - check whether current page node is valid in policy
++ *
++ * @page   - page to be checked
++ * @vma    - vm area where page mapped
++ * @addr   - virtual address where page mapped
++ *
++ * Lookup current policy node id for vma,addr and "compare to" page's
++ * node id.
++ *
++ * Returns:
++ *	-1	- not misplaced, page is in the right node
++ *	node	- node id where the page should be
++ *
++ * Policy determination "mimics" alloc_page_vma().
++ * Called from fault path where we know the vma and faulting address.
++ */
++int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
++{
++	struct mempolicy *pol;
++	struct zone *zone;
++	int curnid = page_to_nid(page);
++	unsigned long pgoff;
++	int polnid = -1;
++	int ret = -1;
 +
-+	/*
-+	 * Multi-stage node selection is used in conjunction with a periodic
-+	 * migration fault to build a temporal task<->page relation. By
-+	 * using a two-stage filter we remove short/unlikely relations.
-+	 *
-+	 * Using P(p) ~ n_p / n_t as per frequentist probability, we can
-+	 * equate a task's usage of a particular page (n_p) per total usage
-+	 * of this page (n_t) (in a given time-span) to a probability.
-+	 *
-+	 * Our periodic faults will then sample this probability and getting
-+	 * the same result twice in a row, given these samples are fully
-+	 * independent, is then given by P(n)^2, provided our sample period
-+	 * is sufficiently short compared to the usage pattern.
-+	 *
-+	 * This quadric squishes small probabilities, making it less likely
-+	 * we act on an unlikely task<->page relation.
-+	 */
-+	if (pol->flags & MPOL_F_HOME) {
-+		int last_nid;
++	BUG_ON(!vma);
 +
++	pol = get_vma_policy(current, vma, addr);
++	if (!(pol->flags & MPOL_F_MOF))
++		goto out;
++
++	switch (pol->mode) {
++	case MPOL_INTERLEAVE:
++		BUG_ON(addr >= vma->vm_end);
++		BUG_ON(addr < vma->vm_start);
++
++		pgoff = vma->vm_pgoff;
++		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
++		polnid = offset_il_node(pol, vma, pgoff);
++		break;
++
++	case MPOL_PREFERRED:
++		if (pol->flags & MPOL_F_LOCAL)
++			polnid = numa_node_id();
++		else
++			polnid = pol->v.preferred_node;
++		break;
++
++	case MPOL_BIND:
 +		/*
-+		 * Migrate towards the current node, depends on
-+		 * task_numa_placement() details.
++		 * allows binding to multiple nodes.
++		 * use current page if in policy nodemask,
++		 * else select nearest allowed node, if any.
++		 * If no allowed nodes, use current [!misplaced].
 +		 */
-+		polnid = numa_node_id();
-+		last_nid = page_xchg_last_nid(page, polnid);
-+		if (last_nid != polnid)
++		if (node_isset(curnid, pol->v.nodes))
 +			goto out;
-+	}
++		(void)first_zones_zonelist(
++				node_zonelist(numa_node_id(), GFP_HIGHUSER),
++				gfp_zone(GFP_HIGHUSER),
++				&pol->v.nodes, &zone);
++		polnid = zone->node;
++		break;
 +
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
-@@ -2444,7 +2476,7 @@ void __init numa_policy_init(void)
- 		preferred_node_policy[nid] = (struct mempolicy) {
- 			.refcnt = ATOMIC_INIT(1),
- 			.mode = MPOL_PREFERRED,
--			.flags = MPOL_F_MOF,
-+			.flags = MPOL_F_MOF | MPOL_F_HOME,
- 			.v = { .preferred_node = nid, },
- 		};
- 	}
++	default:
++		BUG();
++	}
++	if (curnid != polnid)
++		ret = polnid;
++out:
++	mpol_cond_put(pol);
++
++	return ret;
++}
++
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ {
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
 
 
