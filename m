@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964935Ab2JYH5T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:57:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46142 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933743Ab2JYH5P (ORCPT
+	id S934427Ab2JYH5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:57:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38271 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964967Ab2JYH50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:57:15 -0400
-Date: Thu, 25 Oct 2012 08:57:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org,
-        Philippe Langlais <philippe.langlais@linaro.org>
-Subject: Re: [PATCH 2/2] input: gpio-keys: Add runtime support
-Message-ID: <20121025075709.GE971@gmail.com>
-References: <1349964927-18619-1-git-send-email-lee.jones@linaro.org>
- <1349964927-18619-2-git-send-email-lee.jones@linaro.org>
- <CAM=Q2ctwTBAvKs401GgrGfz9NvaLspquje-6YfnuS5TZYeqY4Q@mail.gmail.com>
- <CACRpkdb+kWW903VD45i5s_LrZ2BKX=k6enGP2R9v2ptSRkvJ9w@mail.gmail.com>
+	Thu, 25 Oct 2012 03:57:26 -0400
+Date: Thu, 25 Oct 2012 00:56:58 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-999no5yxlc2oqo9xjeez5zmv@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Remove noise in python version feature test
+Git-Commit-ID: feb8ada4ea5540ee986b23abd95597118729704c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdb+kWW903VD45i5s_LrZ2BKX=k6enGP2R9v2ptSRkvJ9w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 25 Oct 2012 00:57:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Oct 2012, Linus Walleij wrote:
+Commit-ID:  feb8ada4ea5540ee986b23abd95597118729704c
+Gitweb:     http://git.kernel.org/tip/feb8ada4ea5540ee986b23abd95597118729704c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 9 Oct 2012 15:15:25 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 24 Oct 2012 14:20:10 -0200
 
-> On Thu, Oct 11, 2012 at 4:22 PM, Shubhrajyoti Datta
-> <omaplinuxkernel@gmail.com> wrote:
-> 
-> >> @@ -526,6 +527,7 @@ static int gpio_keys_open(struct input_dev *input)
-> >>  {
-> >>         struct gpio_keys_drvdata *ddata = input_get_drvdata(input);
-> >>
-> >> +       pm_runtime_get_sync(input->dev.parent);
-> >
-> > I am not an expert of the runtime.
-> >
-> > However would be grateful if you explain me what it actually do.
-> 
-> This increase the reference count of the runtime status container
-> for the device. _sync makes sure it happens now.
-> 
-> Consult:
-> Documentation/power/runtime_pm.txt
-> 
-> > Also I did not see any runtime suspend/ resume handlers populated.
-> 
-> It is not necessary to handle the power state at the driver level,
-> it can just as well be handled by the voltage/power domain,
-> or at the class, type or bus level.
-> 
-> But the individual driver has to notify the system upward if it
-> needs to be powered on or when it may or must be relaxed.
->
-> Yours,
-> Linus Walleij
+perf tools: Remove noise in python version feature test
 
-Friendly poke.
+Now that the feature tests honours the V=1 make verbosity switch, add a
+return to the main() routine in the python version test, to avoid this
+distraction:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+CHK python version
+<stdin>: In function 'main':
+<stdin>:5: warning: control reaches end of non-void function
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-999no5yxlc2oqo9xjeez5zmv@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/config/feature-tests.mak |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
+index 3ef5ec9..f5ac774 100644
+--- a/tools/perf/config/feature-tests.mak
++++ b/tools/perf/config/feature-tests.mak
+@@ -121,7 +121,10 @@ define SOURCE_PYTHON_VERSION
+ #if PY_VERSION_HEX >= 0x03000000
+ 	#error
+ #endif
+-int main(void){}
++int main(void)
++{
++	return 0;
++}
+ endef
+ define SOURCE_PYTHON_EMBED
+ #include <Python.h>
