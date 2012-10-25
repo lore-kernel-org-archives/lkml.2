@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934277Ab2JYAI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:08:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27414 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab2JYAIY (ORCPT
+	id S934280Ab2JYAJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:09:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35481 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab2JYAJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:08:24 -0400
-X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rDHpwsyNOsUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=HXw8KzeH-oIA:10 a=CozT_dG12Q1qh1VjV5wA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.115.198
-Message-ID: <1351123698.8467.28.camel@gandalf.local.home>
+	Wed, 24 Oct 2012 20:09:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351123698.8467.28.camel@gandalf.local.home>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+ <1351115634-8420-2-git-send-email-juri.lelli@gmail.com> <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+ <1351123698.8467.28.camel@gandalf.local.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 24 Oct 2012 17:09:16 -0700
+X-Google-Sender-Auth: GRD0z-wH_LjUyh7t4KI3ViUirII
+Message-ID: <CA+55aFwERdk6PaKPe0PMSa_muuRVQqv6u-dc3zZitHn+wgbXMA@mail.gmail.com>
 Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
         tglx@linutronix.de, mingo@redhat.com, oleg@redhat.com,
         fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
@@ -27,36 +31,21 @@ Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
         vincent.guittot@linaro.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 24 Oct 2012 20:08:18 -0400
-In-Reply-To: <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
-	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-10-24 at 16:18 -0700, Linus Torvalds wrote:
+On Wed, Oct 24, 2012 at 5:08 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>
+> I'm assuming you meant the last include to be:
+>
+>   #include <linux/generic32bit-128bit.h>
 
->   #ifdef __SIZEOF_INT128__
->     #include <linux/native-128bit.h>
->   #elif CONFIG_64BIT
->     #include <linux/generic64bit-128bit.h>
->   #else
->     #include <linux/generic64bit-128bit.h>
->   #endif
-> 
+That's a safe assumption.
 
-I'm assuming you meant the last include to be:
+> Cut and paste should be a federal crime.
 
-  #include <linux/generic32bit-128bit.h>
+We'd all be serving some hard time, I'm afraid.
 
-Cut and paste should be a federal crime.
-
--- Steve
-
-
+         Linus
