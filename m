@@ -1,111 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965612Ab2JYNML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:12:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47525 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965589Ab2JYNMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:12:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,646,1344236400"; 
-   d="scan'208,223";a="209179775"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
-Thread-Topic: [PATCH 2/2] Revert pad config check in xen_check_mwait
-Thread-Index: Ac2yslLcYde/7kJ6SnCXVbHberM6CA==
-Date: Thu, 25 Oct 2012 13:12:02 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335371767@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335371767SHSMSX101ccrcorpi_"
-MIME-Version: 1.0
+	id S965143Ab2JYNMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:12:00 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51762 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758543Ab2JYNKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 09:10:55 -0400
+Message-Id: <20121025124833.861587584@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 25 Oct 2012 14:16:35 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 18/31] mm/mpol: Use special PROT_NONE to migrate pages
+References: <20121025121617.617683848@chello.nl>
+Content-Disposition: inline; filename=0018-mm-mpol-Use-special-PROT_NONE-to-migrate-pages.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC8292335371767SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Combine our previous PROT_NONE, mpol_misplaced and
+migrate_misplaced_page() pieces into an effective migrate on fault
+scheme.
 
-Seems my mail server has a little problem, so re-send it. If you receive it=
- twice, please ignore one. Sorry :)
+Note that (on x86) we rely on PROT_NONE pages being !present and avoid
+the TLB flush from try_to_unmap(TTU_MIGRATION). This greatly improves
+the page-migration performance.
 
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
->From 9ed5cd6012ac0832973be6e7fa01fc159f373e1c Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Fri, 26 Oct 2012 03:14:46 +0800
-Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
-
-With Xen acpi pad logic added into kernel, we can now revert xen mwait rela=
-ted
-patch df88b2d96e36d9a9e325bfcd12eb45671cbbc937. The reason is, when runs un=
-der
-Xen platform, Xen pad driver would be early loaded, so native pad driver wo=
-uld
-fail to be loaded, and hence no mwait/monitor #UD risk again.
-
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+Suggested-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Paul Turner <pjt@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/xen/enlighten.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |   41 ++++++++++++++++++++++++++++++++++-
+ mm/memory.c      |   63 +++++++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 85 insertions(+), 19 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 586d838..8bf28b1 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -287,8 +287,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *b=
-x,
-=20
- static bool __init xen_check_mwait(void)
+Index: tip/mm/huge_memory.c
+===================================================================
+--- tip.orig/mm/huge_memory.c
++++ tip/mm/huge_memory.c
+@@ -18,6 +18,7 @@
+ #include <linux/freezer.h>
+ #include <linux/mman.h>
+ #include <linux/pagemap.h>
++#include <linux/migrate.h>
+ #include <asm/tlb.h>
+ #include <asm/pgalloc.h>
+ #include "internal.h"
+@@ -741,12 +742,48 @@ void do_huge_pmd_numa_page(struct mm_str
+ 			   unsigned int flags, pmd_t entry)
  {
--#if defined(CONFIG_ACPI) && !defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) && =
-\
--	!defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
-+#ifdef CONFIG_ACPI
- 	struct xen_platform_op op =3D {
- 		.cmd			=3D XENPF_set_processor_pminfo,
- 		.u.set_pminfo.id	=3D -1,
---=20
-1.7.1
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct page *page = NULL;
++	int node;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(*pmd, entry)))
+ 		goto out_unlock;
+ 
+-	/* do fancy stuff */
++	if (unlikely(pmd_trans_splitting(entry))) {
++		spin_unlock(&mm->page_table_lock);
++		wait_split_huge_page(vma->anon_vma, pmd);
++		return;
++	}
++
++#ifdef CONFIG_NUMA
++	page = pmd_page(entry);
++	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
++
++	get_page(page);
++	spin_unlock(&mm->page_table_lock);
++
++	/*
++	 * XXX should we serialize against split_huge_page ?
++	 */
++
++	node = mpol_misplaced(page, vma, haddr);
++	if (node == -1)
++		goto do_fixup;
++
++	/*
++	 * Due to lacking code to migrate thp pages, we'll split
++	 * (which preserves the special PROT_NONE) and re-take the
++	 * fault on the normal pages.
++	 */
++	split_huge_page(page);
++	put_page(page);
++	return;
++
++do_fixup:
++	spin_lock(&mm->page_table_lock);
++	if (unlikely(!pmd_same(*pmd, entry)))
++		goto out_unlock;
++#endif
+ 
+ 	/* change back to regular protection */
+ 	entry = pmd_modify(entry, vma->vm_page_prot);
+@@ -755,6 +792,8 @@ void do_huge_pmd_numa_page(struct mm_str
+ 
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
++	if (page)
++		put_page(page);
+ }
+ 
+ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+Index: tip/mm/memory.c
+===================================================================
+--- tip.orig/mm/memory.c
++++ tip/mm/memory.c
+@@ -57,6 +57,7 @@
+ #include <linux/swapops.h>
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
++#include <linux/migrate.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -1467,8 +1468,10 @@ EXPORT_SYMBOL_GPL(zap_vma_ptes);
+ static bool pte_numa(struct vm_area_struct *vma, pte_t pte)
+ {
+ 	/*
+-	 * If we have the normal vma->vm_page_prot protections we're not a
+-	 * 'special' PROT_NONE page.
++	 * For NUMA page faults, we use PROT_NONE ptes in VMAs with
++	 * "normal" vma->vm_page_prot protections.  Genuine PROT_NONE
++	 * VMAs should never get here, because the fault handling code
++	 * will notice that the VMA has no read or write permissions.
+ 	 *
+ 	 * This means we cannot get 'special' PROT_NONE faults from genuine
+ 	 * PROT_NONE maps, nor from PROT_WRITE file maps that do dirty
+@@ -3473,35 +3476,59 @@ static int do_numa_page(struct mm_struct
+ 			unsigned long address, pte_t *ptep, pmd_t *pmd,
+ 			unsigned int flags, pte_t entry)
+ {
++	struct page *page = NULL;
++	int node, page_nid = -1;
+ 	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	if (!pte_unmap_same(mm, pmd, ptep, entry))
+-		goto out;
+ 
+-	/*
+-	 * Do fancy stuff...
+-	 */
+-
+-	/*
+-	 * OK, nothing to do,.. change the protection back to what it
+-	 * ought to be.
+-	 */
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	ptl = pte_lockptr(mm, pmd);
++	spin_lock(ptl);
+ 	if (unlikely(!pte_same(*ptep, entry)))
+-		goto unlock;
++		goto out_unlock;
++
++	page = vm_normal_page(vma, address, entry);
++	if (page) {
++		get_page(page);
++		page_nid = page_to_nid(page);
++		node = mpol_misplaced(page, vma, address);
++		if (node != -1)
++			goto migrate;
++	}
+ 
++out_pte_upgrade_unlock:
+ 	flush_cache_page(vma, address, pte_pfn(entry));
+ 
+ 	ptep_modify_prot_start(mm, address, ptep);
+ 	entry = pte_modify(entry, vma->vm_page_prot);
+ 	ptep_modify_prot_commit(mm, address, ptep, entry);
+ 
++	/* No TLB flush needed because we upgraded the PTE */
++
+ 	update_mmu_cache(vma, address, ptep);
+-unlock:
++
++out_unlock:
+ 	pte_unmap_unlock(ptep, ptl);
+ out:
+-	return ret;
++	if (page)
++		put_page(page);
++
++	return 0;
++
++migrate:
++	pte_unmap_unlock(ptep, ptl);
++
++	if (!migrate_misplaced_page(page, node)) {
++		page_nid = node;
++		goto out;
++	}
++
++	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	if (!pte_same(*ptep, entry)) {
++		put_page(page);
++		page = NULL;
++		goto out_unlock;
++	}
++
++	goto out_pte_upgrade_unlock;
+ }
+ 
+ /*
 
---_002_DE8DF0795D48FD4CA783C40EC8292335371767SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0002-Revert-pad-config-check-in-xen_check_mwait.patch"
-Content-Description: 0002-Revert-pad-config-check-in-xen_check_mwait.patch
-Content-Disposition: attachment;
-	filename="0002-Revert-pad-config-check-in-xen_check_mwait.patch"; size=1201;
-	creation-date="Thu, 25 Oct 2012 12:15:46 GMT";
-	modification-date="Thu, 25 Oct 2012 20:07:22 GMT"
-Content-Transfer-Encoding: base64
 
-RnJvbSA5ZWQ1Y2Q2MDEyYWMwODMyOTczYmU2ZTdmYTAxZmMxNTlmMzczZTFjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogRnJpLCAyNiBPY3QgMjAxMiAwMzoxNDo0NiArMDgwMApTdWJqZWN0OiBbUEFUQ0ggMi8y
-XSBSZXZlcnQgcGFkIGNvbmZpZyBjaGVjayBpbiB4ZW5fY2hlY2tfbXdhaXQKCldpdGggWGVuIGFj
-cGkgcGFkIGxvZ2ljIGFkZGVkIGludG8ga2VybmVsLCB3ZSBjYW4gbm93IHJldmVydCB4ZW4gbXdh
-aXQgcmVsYXRlZApwYXRjaCBkZjg4YjJkOTZlMzZkOWE5ZTMyNWJmY2QxMmViNDU2NzFjYmJjOTM3
-LiBUaGUgcmVhc29uIGlzLCB3aGVuIHJ1bnMgdW5kZXIKWGVuIHBsYXRmb3JtLCBYZW4gcGFkIGRy
-aXZlciB3b3VsZCBiZSBlYXJseSBsb2FkZWQsIHNvIG5hdGl2ZSBwYWQgZHJpdmVyIHdvdWxkCmZh
-aWwgdG8gYmUgbG9hZGVkLCBhbmQgaGVuY2Ugbm8gbXdhaXQvbW9uaXRvciAjVUQgcmlzayBhZ2Fp
-bi4KClNpZ25lZC1vZmYtYnk6IExpdSwgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgot
-LS0KIGFyY2gveDg2L3hlbi9lbmxpZ2h0ZW4uYyB8ICAgIDMgKy0tCiAxIGZpbGVzIGNoYW5nZWQs
-IDEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni94
-ZW4vZW5saWdodGVuLmMgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKaW5kZXggNTg2ZDgzOC4u
-OGJmMjhiMSAxMDA2NDQKLS0tIGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jCisrKyBiL2FyY2gv
-eDg2L3hlbi9lbmxpZ2h0ZW4uYwpAQCAtMjg3LDggKzI4Nyw3IEBAIHN0YXRpYyB2b2lkIHhlbl9j
-cHVpZCh1bnNpZ25lZCBpbnQgKmF4LCB1bnNpZ25lZCBpbnQgKmJ4LAogCiBzdGF0aWMgYm9vbCBf
-X2luaXQgeGVuX2NoZWNrX213YWl0KHZvaWQpCiB7Ci0jaWYgZGVmaW5lZChDT05GSUdfQUNQSSkg
-JiYgIWRlZmluZWQoQ09ORklHX0FDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1IpICYmIFwKLQkhZGVm
-aW5lZChDT05GSUdfQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9NT0RVTEUpCisjaWZkZWYgQ09O
-RklHX0FDUEkKIAlzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIG9wID0gewogCQkuY21kCQkJPSBYRU5Q
-Rl9zZXRfcHJvY2Vzc29yX3BtaW5mbywKIAkJLnUuc2V0X3BtaW5mby5pZAk9IC0xLAotLSAKMS43
-LjEKCg==
-
---_002_DE8DF0795D48FD4CA783C40EC8292335371767SHSMSX101ccrcorpi_--
