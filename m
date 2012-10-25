@@ -1,93 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946042Ab2JYODk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:03:40 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57489 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933124Ab2JYODi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:03:38 -0400
-Date: Thu, 25 Oct 2012 10:03:27 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: david@lang.hm
-Cc: Nico Williams <nico@cryptonector.com>,
-        General Discussion of SQLite Database 
-	<sqlite-users@sqlite.org>,
-        =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-Subject: Re: [sqlite] light weight write barriers
-Message-ID: <20121025140327.GB13562@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, david@lang.hm,
-	Nico Williams <nico@cryptonector.com>,
-	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
-	linux-fsdevel@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
-References: <m2fw5mtffg.fsf_-_@firstfloor.org>
- <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
- <5086F5A7.9090406@vlnb.net>
- <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
- <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
- <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
- <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
- <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
- <20121025060231.GC9860@thunk.org>
- <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
+	id S935736Ab2JYOFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:05:00 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40297 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933124Ab2JYOE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:04:58 -0400
+Message-ID: <508946FC.7090704@ti.com>
+Date: Thu, 25 Oct 2012 16:04:44 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <sshtylyov@mvista.com>
+Subject: Re: [PATCH v4 2/7] usb: dwc3-omap: use of_platform API to create
+ dwc3 core pdev
+References: <1350307680-24938-1-git-send-email-kishon@ti.com> <1350307680-24938-3-git-send-email-kishon@ti.com>
+In-Reply-To: <1350307680-24938-3-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 11:58:49PM -0700, david@lang.hm wrote:
-> The frustrating thing is that when people point out how things like
-> sqlite are so horribly slow, the reply seems to be "well, that's
-> what you get for doing so many fsyncs, don't do that", when there is
-> a 'problem' like the KDE "config loss" problem a few years ago, the
-> response is "well, that's what you get for not doing fsync"
+On 10/15/2012 03:27 PM, Kishon Vijay Abraham I wrote:
+> Used of_platform_populate() to populate dwc3 core platform_device
+> from device tree data. Since now the allocation of unique device id is
+> handled by of_*, removed the call to dwc3_get_device_id.
 
-Sure... but the answer is to only do the fsync's when you need to.
-For example, if GNOME and KDE is rewriting the entire registry file
-each time the application is changing a single registry key, sure, if
-you rewrite the entire registry file, and then fsync after each
-rewrite before you replace the file, you will be safe.  And if the
-application needs to update dozens or hundreds of registry keys (or
-every time the window gets moved or resized), then yes, it will be
-slow.  But the application didn't have to do that!  It could have
-updated all the registry keys in memory, and then update the registry
-file periodically instead.
+Just for my understanding: How are these devices organized exactly?
 
-Similarly, Firefox didn't need to do a sqllite commit after every
-single time its history file was written, causing a third of a
-megabyte of write traffic each time you clicked on a web page.  It
-could have batched its updates to the history file, since most of the
-time, you don't care about making sure the web history is written to
-stable store before you're allowed to click on a web page and visit
-the next web page.
+Do we have : omap_wrapper -> dwc3-omap -> dwc3-core ?
 
-Or does rsyslog *really* need to issue an fsync after each log
-message?  Or could it batch updates so that every N seconds, it
-flushes writes to the disk?
+The DT binding is mentioning some wrapper, but I'm not sure where it
+should be located.
 
-(And this is a problem with most Android applications as well.
-Apparently the framework API's are such that it's easier for an
-application to treat each sqlite statement as an atomic update, so
-many/most application writers don't use explicit transaction
-boundaries, so updates don't get batched even though it would be more
-efficient if they did so.)
+Maybe you should add more documentation on that. Or maybe you do have a
+other series to add that part?
 
-Sometimes, the answer is not to try to create exotic database like
-functionality in the file system --- the answer is to be more
-intelligent at the application leyer.  Not only will the application
-be more portable, it will also in the end be more efficient, since
-even with the most exotic database technologies, the most efficient
-transactional commit is the unneeded commit that you optimize away at
-the application layer.
+Regards,
+Benoit
 
-						- Ted
+> 
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/usb/dwc3/dwc3-omap.c |   50 +++++++++---------------------------------
+>  1 file changed, 10 insertions(+), 40 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc3/dwc3-omap.c b/drivers/usb/dwc3/dwc3-omap.c
+> index d51c69c..4aaeec4 100644
+> --- a/drivers/usb/dwc3/dwc3-omap.c
+> +++ b/drivers/usb/dwc3/dwc3-omap.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/ioport.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+> +#include <linux/of_platform.h>
+>  
+>  #include <linux/usb/otg.h>
+>  #include <linux/usb/nop-usb-xceiv.h>
+> @@ -133,7 +134,6 @@ struct dwc3_omap {
+>  	/* device lock */
+>  	spinlock_t		lock;
+>  
+> -	struct platform_device	*dwc3;
+>  	struct platform_device	*usb2_phy;
+>  	struct platform_device	*usb3_phy;
+>  	struct device		*dev;
+> @@ -276,12 +276,10 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>  	struct dwc3_omap_data	*pdata = pdev->dev.platform_data;
+>  	struct device_node	*node = pdev->dev.of_node;
+>  
+> -	struct platform_device	*dwc3;
+>  	struct dwc3_omap	*omap;
+>  	struct resource		*res;
+>  	struct device		*dev = &pdev->dev;
+>  
+> -	int			devid;
+>  	int			size;
+>  	int			ret = -ENOMEM;
+>  	int			irq;
+> @@ -324,34 +322,19 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>  		return ret;
+>  	}
+>  
+> -	devid = dwc3_get_device_id();
+> -	if (devid < 0)
+> -		return -ENODEV;
+> -
+> -	dwc3 = platform_device_alloc("dwc3", devid);
+> -	if (!dwc3) {
+> -		dev_err(dev, "couldn't allocate dwc3 device\n");
+> -		goto err1;
+> -	}
+> -
+>  	context = devm_kzalloc(dev, resource_size(res), GFP_KERNEL);
+>  	if (!context) {
+>  		dev_err(dev, "couldn't allocate dwc3 context memory\n");
+> -		goto err2;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	spin_lock_init(&omap->lock);
+> -	dma_set_coherent_mask(&dwc3->dev, dev->coherent_dma_mask);
+>  
+> -	dwc3->dev.parent = dev;
+> -	dwc3->dev.dma_mask = dev->dma_mask;
+> -	dwc3->dev.dma_parms = dev->dma_parms;
+>  	omap->resource_size = resource_size(res);
+>  	omap->context	= context;
+>  	omap->dev	= dev;
+>  	omap->irq	= irq;
+>  	omap->base	= base;
+> -	omap->dwc3	= dwc3;
+>  
+>  	reg = dwc3_omap_readl(omap->base, USBOTGSS_UTMI_OTG_STATUS);
+>  
+> @@ -396,7 +379,7 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>  	if (ret) {
+>  		dev_err(dev, "failed to request IRQ #%d --> %d\n",
+>  				omap->irq, ret);
+> -		goto err2;
+> +		return ret;
+>  	}
+>  
+>  	/* enable all IRQs */
+> @@ -415,28 +398,16 @@ static int __devinit dwc3_omap_probe(struct platform_device *pdev)
+>  
+>  	dwc3_omap_writel(omap->base, USBOTGSS_IRQENABLE_SET_1, reg);
+>  
+> -	ret = platform_device_add_resources(dwc3, pdev->resource,
+> -			pdev->num_resources);
+> -	if (ret) {
+> -		dev_err(dev, "couldn't add resources to dwc3 device\n");
+> -		goto err2;
+> -	}
+> -
+> -	ret = platform_device_add(dwc3);
+> -	if (ret) {
+> -		dev_err(dev, "failed to register dwc3 device\n");
+> -		goto err2;
+> +	if (node) {
+> +		ret = of_platform_populate(node, NULL, NULL, dev);
+> +		if (ret) {
+> +			dev_err(&pdev->dev,
+> +				"failed to add create dwc3 core\n");
+> +			return ret;
+> +		}
+>  	}
+>  
+>  	return 0;
+> -
+> -err2:
+> -	platform_device_put(dwc3);
+> -
+> -err1:
+> -	dwc3_put_device_id(devid);
+> -
+> -	return ret;
+>  }
+>  
+>  static int __devexit dwc3_omap_remove(struct platform_device *pdev)
+> @@ -446,7 +417,6 @@ static int __devexit dwc3_omap_remove(struct platform_device *pdev)
+>  	platform_device_unregister(omap->usb2_phy);
+>  	platform_device_unregister(omap->usb3_phy);
+>  
+> -	dwc3_put_device_id(omap->dwc3->id);
+>  	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
+>  
+>  	return 0;
+> 
+
