@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab2JYHKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:10:32 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57366 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756208Ab2JYHKb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 03:10:31 -0400
-Date: Thu, 25 Oct 2012 00:10:26 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: =?utf-8?B?5YqJ5ZiJ6ae/?= <scott.liu@emc.com.tw>
-Cc: linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Benjamin Tissoires'" <benjamin.tissoires@gmail.com>,
-        "'Jesse'" <jesse@emc.com.tw>,
-        "'Vincent Wang'" <vincent.wang@emc.com.tw>,
-        "'Paul'" <paul.liang@emc.com.tw>
-Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
-Message-ID: <20121025071026.GA23478@core.coreip.homeip.net>
-References: <20121024181323.GA18122@core.coreip.homeip.net>
- <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
+	id S1758661Ab2JYHLx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:11:53 -0400
+Received: from mail.lang.hm ([64.81.33.126]:50312 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757021Ab2JYHLw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 03:11:52 -0400
+Date: Thu, 25 Oct 2012 00:11:43 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: Nico Williams <nico@cryptonector.com>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        =?GB2312?Q?=D1=EE=CB=D5=C1=A2_Yang_Su_Li?= <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+In-Reply-To: <20121025054255.GB9860@thunk.org>
+Message-ID: <alpine.DEB.2.02.1210242358570.31862@asgard.lang.hm>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com> <m2fw5mtffg.fsf_-_@firstfloor.org> <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com> <5086F5A7.9090406@vlnb.net> <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+ <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm> <20121025054255.GB9860@thunk.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <EA73774BB37B4F518A6EA9926BB96304@elan.corp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 12:32:39PM +0800, 劉嘉駿 wrote:
-> Hi Dmitry,
-> 	Thanks for review.
-> 
-> > -----Original Message-----
-> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> > Sent: Thursday, October 25, 2012 2:13 AM
-> > To: Scott Liu
-> > Cc: linux-input@vger.kernel.org; linux-i2c@vger.kernel.org;
-> linux-kernel@vger.kernel.org;
-> > Benjamin Tissoires; Jesse; Vincent Wang; Paul
-> > Subject: Re: [PATCH v2] Support Elan Touchscreen eKTF product.
-> > 
-> > Hi Scott,
-> > 
-> > On Wed, Oct 24, 2012 at 09:41:43AM +0800, Scott Liu wrote:
-> > > This patch is for Elan eKTF Touchscreen product, I2C adpater module.
-> > >
-> > > Signed-off-by: Scott Liu <scott.liu@emc.com.tw>
-> > > ---
-> > >
-> > > Hi,
-> > >         v2 revision I have fixed some bug as your advise.
-> > >         1. To target the mainline
-> > >         2. No Android dependency
-> > >         3. reuse those duplication code from Henrik's patchset.
-> > >                 (input_mt_sync_frame()  / input_mt_get_slot_by_key())
-> > 
-> > Just a quick run through the code, so:
-> > 
-> > - please remove polling support, it is not useful in production;
-> 
-> OK.
-> 
-> > - why do you need a separate probe work instead of doing what you
-> >   need in elants_probe()
-> 
-> will fix.
-> 
-> > - it is not a good idea to register input device first and then
-> >   allocating memory for MT handling.
-> 
-> Ooop...will fix.
-> 
-> > - I do not understand why kfifo is needed
-> 
-> The firmware and the host would conflict by read command and finger report
-> simultaneously. So I'm simply using kfifo in IRQ thread function.
-> 
-> * read command: writing 4 bytes commands and the device asserts GPIO
-> interrupt and then response 4 bytes data.
-> 
-> There was an error if we do not use kfifo:
-> 	With heavy loading by finger report / read command, the driver may
-> get finger report as response data.
-> 
-> So, do you understand my meaning? 
+On Thu, 25 Oct 2012, Theodore Ts'o wrote:
 
-No I don't. Most of my confusion stems from the fact that you only put
-data into kfifo but not actually use it anywhere. You do fetch the data
-in your "drop old" function, but that data is just dropped. So I really
-do not see the point.
+> On Wed, Oct 24, 2012 at 03:03:00PM -0700, david@lang.hm wrote:
+>> Like what is being described for sqlite, loosing the tail end of the
+>> messages is not a big problem under normal conditions. But there is
+>> a need to be sure that what is there is complete up to the point
+>> where it's lost.
+>>
+>> this is similar in concept to write-ahead-logs done for databases
+>> (without the absolute durability requirement)
+>
+> If that's what you require, and you are using ext3/4, usng data
+> journalling might meet your requirements.  It's something you can
+> enable on a per-file basis, via chattr +j; you don't have to force all
+> file systems to use data journaling via the data=journalled mount
+> option.
+>
+> The potential downsides that you may or may not care about for this
+> particular application:
+>
+> (a) This will definitely have a performance impact, especially if you
+> are doing lots of small (less than 4k) writes, since the data blocks
+> will get run through the journal, and will only get written to their
+> final location on disk.
+>
+> (b) You don't get atomicity if the write spans a 4k block boundary.
+> All of the bytes before i_size will be written, so you don't have to
+> worry about "holes"; but the last message written to the log file
+> might be truncated.
+>
+> (c) There will be a performance impact, since the contents of data
+> blocks will be written at least twice (once to the journal, and once
+> to the final location on disk).  If you do lots of small, sub-4k
+> writes, the performance might be even worse, since data blocks might
+> be written multiple times to the journal.
 
-Thanks.
+I'll have to dig into this option. In the case of rsyslog it sounds 
+like it could work (not as good as a filesystem independant way of doing 
+things, but better than full fsyncs)
 
--- 
-Dmitry
+Truncated messages are not great, but they are a detectable, and 
+acceptable risk.
+
+while the average message size is much smaller than 4K (on my network it's 
+~250 bytes), the metadata that's broken out expands this somewhat, and we 
+can afford to waste disk space if it makes things safer or more efficient.
+
+If we do update in place with flags with each message, each message will 
+need to be written up to three times (on recipt, being processed, finished 
+processed). With high message burst rates, I'm worried that we would fill 
+up the journal, is there a good way to deal with this?
+
+I believe that ext4 can put the journal on a different device from the 
+filesystem, would this help a lot?
+
+If you were to put the journal for an ext4 filesystem on a ram disk, you 
+would loose the data recovery protection of the journal, but could you use 
+this trick to get ordered data writes onto the filesystem?
+
+David Lang
