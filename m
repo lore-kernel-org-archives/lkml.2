@@ -1,714 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965542Ab2JYDrd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:47:33 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43096 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964892Ab2JYDr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:47:29 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH V2 23/23] printk: Move kmsg_dump functions to separate file
-Date: Wed, 24 Oct 2012 20:43:58 -0700
-Message-Id: <fb4c19c7bfd268db9a641b38df263de4a8624b67.1351135989.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.112.g3fd21
-In-Reply-To: <cover.1351135988.git.joe@perches.com>
-References: <cover.1351135988.git.joe@perches.com>
+	id S965553Ab2JYDsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:48:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50263 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S964892Ab2JYDsB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:48:01 -0400
+X-IronPort-AV: E=Sophos;i="4.80,645,1344182400"; 
+   d="scan'208";a="6064414"
+Subject: Re: [tip:sched/core] sched: Track the runnable average on a
+ per-task entity basis
+From: li guang <lig.fnst@cn.fujitsu.com>
+To: mingo@kernel.org, hpa@zytor.com, bsegall@google.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, pjt@google.com,
+        tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-9d85f21c94f7f7a84d0ba686c58aa6d9da58fdbb@git.kernel.org>
+References: <20120823141506.372695337@google.com>
+	 <tip-9d85f21c94f7f7a84d0ba686c58aa6d9da58fdbb@git.kernel.org>
+Date: Thu, 25 Oct 2012 11:28:22 +0800
+Message-ID: <1351135702.22927.8.camel@liguang.fnst.cn.fujitsu.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 11:30:01,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 11:30:10,
+	Serialize complete at 2012/10/25 11:30:10
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic restructuring.
+在 2012-10-24三的 02:43 -0700，tip-bot for Paul Turner写道：
+> Commit-ID:  9d85f21c94f7f7a84d0ba686c58aa6d9da58fdbb
+> Gitweb:     http://git.kernel.org/tip/9d85f21c94f7f7a84d0ba686c58aa6d9da58fdbb
+> Author:     Paul Turner <pjt@google.com>
+> AuthorDate: Thu, 4 Oct 2012 13:18:29 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 24 Oct 2012 10:27:18 +0200
+> 
+> sched: Track the runnable average on a per-task entity basis
+> 
+> Instead of tracking averaging the load parented by a cfs_rq, we can track
+> entity load directly. With the load for a given cfs_rq then being the sum
+> of its children.
+> 
+> To do this we represent the historical contribution to runnable average
+> within each trailing 1024us of execution as the coefficients of a
+> geometric series.
+> 
+> We can express this for a given task t as:
+> 
+>   runnable_sum(t) = \Sum u_i * y^i, runnable_avg_period(t) = \Sum 1024 * y^i
+>   load(t) = weight_t * runnable_sum(t) / runnable_avg_period(t)
+> 
+> Where: u_i is the usage in the last i`th 1024us period (approximately 1ms)
+> ~ms and y is chosen such that y^k = 1/2.  We currently choose k to be 32 which
+> roughly translates to about a sched period.
+> 
+> Signed-off-by: Paul Turner <pjt@google.com>
+> Reviewed-by: Ben Segall <bsegall@google.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/r/20120823141506.372695337@google.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  include/linux/sched.h |   13 +++++
+>  kernel/sched/core.c   |    5 ++
+>  kernel/sched/debug.c  |    4 ++
+>  kernel/sched/fair.c   |  129 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 151 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 0dd42a0..418fc6d 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1095,6 +1095,16 @@ struct load_weight {
+>  	unsigned long weight, inv_weight;
+>  };
+>  
+> +struct sched_avg {
+> +	/*
+> +	 * These sums represent an infinite geometric series and so are bound
+> +	 * above by 1024/(1-y).  Thus we only need a u32 to store them for for all
+> +	 * choices of y < 1-2^(-32)*1024.
+> +	 */
+> +	u32 runnable_avg_sum, runnable_avg_period;
+> +	u64 last_runnable_update;
+> +};
+> +
+>  #ifdef CONFIG_SCHEDSTATS
+>  struct sched_statistics {
+>  	u64			wait_start;
+> @@ -1155,6 +1165,9 @@ struct sched_entity {
+>  	/* rq "owned" by this entity/group: */
+>  	struct cfs_rq		*my_q;
+>  #endif
+> +#ifdef CONFIG_SMP
+> +	struct sched_avg	avg;
+> +#endif
+>  };
+>  
+>  struct sched_rt_entity {
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 2d8927f..fd9d085 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1524,6 +1524,11 @@ static void __sched_fork(struct task_struct *p)
+>  	p->se.vruntime			= 0;
+>  	INIT_LIST_HEAD(&p->se.group_node);
+>  
+> +#ifdef CONFIG_SMP
+> +	p->se.avg.runnable_avg_period = 0;
+> +	p->se.avg.runnable_avg_sum = 0;
+> +#endif
+> +
+>  #ifdef CONFIG_SCHEDSTATS
+>  	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+>  #endif
+> diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+> index 6f79596..61f7097 100644
+> --- a/kernel/sched/debug.c
+> +++ b/kernel/sched/debug.c
+> @@ -85,6 +85,10 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+>  	P(se->statistics.wait_count);
+>  #endif
+>  	P(se->load.weight);
+> +#ifdef CONFIG_SMP
+> +	P(se->avg.runnable_avg_sum);
+> +	P(se->avg.runnable_avg_period);
+> +#endif
+>  #undef PN
+>  #undef P
+>  }
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 6b800a1..16d67f9 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -971,6 +971,126 @@ static inline void update_entity_shares_tick(struct cfs_rq *cfs_rq)
+>  }
+>  #endif /* CONFIG_FAIR_GROUP_SCHED */
+>  
+> +#ifdef CONFIG_SMP
+> +/*
+> + * Approximate:
+> + *   val * y^n,    where y^32 ~= 0.5 (~1 scheduling period)
+> + */
+> +static __always_inline u64 decay_load(u64 val, u64 n)
+> +{
+> +	for (; n && val; n--) {
+> +		val *= 4008;
+> +		val >>= 12;
+> +	}
+> +
+> +	return val;
+> +}
+> +
+> +/*
+> + * We can represent the historical contribution to runnable average as the
+> + * coefficients of a geometric series.  To do this we sub-divide our runnable
+> + * history into segments of approximately 1ms (1024us); label the segment that
+> + * occurred N-ms ago p_N, with p_0 corresponding to the current period, e.g.
+> + *
+> + * [<- 1024us ->|<- 1024us ->|<- 1024us ->| ...
+> + *      p0            p1           p2
+> + *     (now)       (~1ms ago)  (~2ms ago)
+> + *
+> + * Let u_i denote the fraction of p_i that the entity was runnable.
+> + *
+> + * We then designate the fractions u_i as our co-efficients, yielding the
+> + * following representation of historical load:
+> + *   u_0 + u_1*y + u_2*y^2 + u_3*y^3 + ...
+> + *
+> + * We choose y based on the with of a reasonably scheduling period, fixing:
+> + *   y^32 = 0.5
+> + *
+> + * This means that the contribution to load ~32ms ago (u_32) will be weighted
+> + * approximately half as much as the contribution to load within the last ms
+> + * (u_0).
+> + *
+> + * When a period "rolls over" and we have new u_0`, multiplying the previous
+> + * sum again by y is sufficient to update:
+> + *   load_avg = u_0` + y*(u_0 + u_1*y + u_2*y^2 + ... )
+> + *            = u_0 + u_1*y + u_2*y^2 + ... [re-labeling u_i --> u_{i+1}]
+> + */
+> +static __always_inline int __update_entity_runnable_avg(u64 now,
+> +							struct sched_avg *sa,
+> +							int runnable)
+> +{
+> +	u64 delta;
+> +	int delta_w, decayed = 0;
+> +
+> +	delta = now - sa->last_runnable_update;
+> +	/*
+> +	 * This should only happen when time goes backwards, which it
+> +	 * unfortunately does during sched clock init when we swap over to TSC.
+> +	 */
+> +	if ((s64)delta < 0) {
+> +		sa->last_runnable_update = now;
+> +		return 0;
+> +	}
+> +
+> +	/*
+> +	 * Use 1024ns as the unit of measurement since it's a reasonable
+> +	 * approximation of 1us and fast to compute.
+> +	 */
+> +	delta >>= 10;
+> +	if (!delta)
+> +		return 0;
+> +	sa->last_runnable_update = now;
+> +
+> +	/* delta_w is the amount already accumulated against our next period */
+> +	delta_w = sa->runnable_avg_period % 1024;
+> +	if (delta + delta_w >= 1024) {
+> +		/* period roll-over */
+> +		decayed = 1;
+> +
+> +		/*
+> +		 * Now that we know we're crossing a period boundary, figure
+> +		 * out how much from delta we need to complete the current
+> +		 * period and accrue it.
+> +		 */
+> +		delta_w = 1024 - delta_w;
+> +		BUG_ON(delta_w > delta);
+> +		do {
+> +			if (runnable)
+> +				sa->runnable_avg_sum += delta_w;
+> +			sa->runnable_avg_period += delta_w;
+> +
+> +			/*
+> +			 * Remainder of delta initiates a new period, roll over
+> +			 * the previous.
+> +			 */
+> +			sa->runnable_avg_sum =
+> +				decay_load(sa->runnable_avg_sum, 1);
 
-Create kmsg_dump.c, add to Makefile and remove from printk.c
+Is this u0+u1*y+u2*y^2+u3*y^3 ...,
+seems no, this is u0+u1*y+u2*y+u3*y+u4*y ...
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/printk/Makefile    |    1 +
- kernel/printk/kmsg_dump.c |  328 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/printk/printk.c    |  318 -------------------------------------------
- 3 files changed, 329 insertions(+), 318 deletions(-)
- create mode 100644 kernel/printk/kmsg_dump.c
+> +			sa->runnable_avg_period =
+> +				decay_load(sa->runnable_avg_period, 1);
+> +
+> +			delta -= delta_w;
+> +			/* New period is empty */
+> +			delta_w = 1024;
+> +		} while (delta >= 1024);
+> +	}
+> +
+> +	/* Remainder of delta accrued against u_0` */
+> +	if (runnable)
+> +		sa->runnable_avg_sum += delta;
+> +	sa->runnable_avg_period += delta;
+> +
+> +	return decayed;
+> +}
+> +
+> +/* Update a sched_entity's runnable average */
+> +static inline void update_entity_load_avg(struct sched_entity *se)
+> +{
+> +	__update_entity_runnable_avg(rq_of(cfs_rq_of(se))->clock_task, &se->avg,
+> +				     se->on_rq);
+> +}
+> +#else
+> +static inline void update_entity_load_avg(struct sched_entity *se) {}
+> +#endif
+> +
+>  static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+>  {
+>  #ifdef CONFIG_SCHEDSTATS
+> @@ -1097,6 +1217,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>  	 */
+>  	update_curr(cfs_rq);
+>  	update_cfs_load(cfs_rq, 0);
+> +	update_entity_load_avg(se);
+>  	account_entity_enqueue(cfs_rq, se);
+>  	update_cfs_shares(cfs_rq);
+>  
+> @@ -1171,6 +1292,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>  	 * Update run-time statistics of the 'current'.
+>  	 */
+>  	update_curr(cfs_rq);
+> +	update_entity_load_avg(se);
+>  
+>  	update_stats_dequeue(cfs_rq, se);
+>  	if (flags & DEQUEUE_SLEEP) {
+> @@ -1340,6 +1462,8 @@ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+>  		update_stats_wait_start(cfs_rq, prev);
+>  		/* Put 'current' back into the tree. */
+>  		__enqueue_entity(cfs_rq, prev);
+> +		/* in !on_rq case, update occurred at dequeue */
+> +		update_entity_load_avg(prev);
+>  	}
+>  	cfs_rq->curr = NULL;
+>  }
+> @@ -1353,6 +1477,11 @@ entity_tick(struct cfs_rq *cfs_rq, struct sched_entity *curr, int queued)
+>  	update_curr(cfs_rq);
+>  
+>  	/*
+> +	 * Ensure that runnable average is periodically updated.
+> +	 */
+> +	update_entity_load_avg(curr);
+> +
+> +	/*
+>  	 * Update share accounting for long-running entities.
+>  	 */
+>  	update_entity_shares_tick(cfs_rq);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/kernel/printk/Makefile b/kernel/printk/Makefile
-index 7947661..b0072b0 100644
---- a/kernel/printk/Makefile
-+++ b/kernel/printk/Makefile
-@@ -2,4 +2,5 @@ obj-y	= printk.o
- obj-y	+= printk_log.o
- obj-y	+= devkmsg.o
- obj-y	+= printk_syslog.o
-+obj-y	+= kmsg_dump.o
- obj-$(CONFIG_A11Y_BRAILLE_CONSOLE)	+= braille.o
-diff --git a/kernel/printk/kmsg_dump.c b/kernel/printk/kmsg_dump.c
-new file mode 100644
-index 0000000..7962172
---- /dev/null
-+++ b/kernel/printk/kmsg_dump.c
-@@ -0,0 +1,328 @@
-+#include <linux/kernel.h>
-+#include <linux/mm.h>
-+#include <linux/kexec.h>
-+#include <linux/moduleparam.h>
-+#include <linux/export.h>
-+#include <linux/kmsg_dump.h>
-+#include <linux/rculist.h>
-+#include <linux/stat.h>
-+
-+#include "printk_log.h"
-+
-+static DEFINE_SPINLOCK(dump_list_lock);
-+static LIST_HEAD(dump_list);
-+
-+/**
-+ * kmsg_dump_register - register a kernel log dumper.
-+ * @dumper: pointer to the kmsg_dumper structure
-+ *
-+ * Adds a kernel log dumper to the system. The dump callback in the
-+ * structure will be called when the kernel oopses or panics and must be
-+ * set. Returns zero on success and %-EINVAL or %-EBUSY otherwise.
-+ */
-+int kmsg_dump_register(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+	int err = -EBUSY;
-+
-+	/* The dump callback needs to be set */
-+	if (!dumper->dump)
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&dump_list_lock, flags);
-+	/* Don't allow registering multiple times */
-+	if (!dumper->registered) {
-+		dumper->registered = 1;
-+		list_add_tail_rcu(&dumper->list, &dump_list);
-+		err = 0;
-+	}
-+	spin_unlock_irqrestore(&dump_list_lock, flags);
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_register);
-+
-+/**
-+ * kmsg_dump_unregister - unregister a kmsg dumper.
-+ * @dumper: pointer to the kmsg_dumper structure
-+ *
-+ * Removes a dump device from the system. Returns zero on success and
-+ * %-EINVAL otherwise.
-+ */
-+int kmsg_dump_unregister(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+	int err = -EINVAL;
-+
-+	spin_lock_irqsave(&dump_list_lock, flags);
-+	if (dumper->registered) {
-+		dumper->registered = 0;
-+		list_del_rcu(&dumper->list);
-+		err = 0;
-+	}
-+	spin_unlock_irqrestore(&dump_list_lock, flags);
-+	synchronize_rcu();
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
-+
-+static bool always_kmsg_dump;
-+module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
-+
-+/**
-+ * kmsg_dump - dump kernel log to kernel message dumpers.
-+ * @reason: the reason (oops, panic etc) for dumping
-+ *
-+ * Call each of the registered dumper's dump() callback, which can
-+ * retrieve the kmsg records with kmsg_dump_get_line() or
-+ * kmsg_dump_get_buffer().
-+ */
-+void kmsg_dump(enum kmsg_dump_reason reason)
-+{
-+	struct kmsg_dumper *dumper;
-+	unsigned long flags;
-+
-+	if ((reason > KMSG_DUMP_OOPS) && !always_kmsg_dump)
-+		return;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(dumper, &dump_list, list) {
-+		if (dumper->max_reason && reason > dumper->max_reason)
-+			continue;
-+
-+		/* initialize iterator with data about the stored records */
-+		dumper->active = true;
-+
-+		raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+		dumper->cur_seq = printk_log_clear_seq;
-+		dumper->cur_idx = printk_log_clear_idx;
-+		dumper->next_seq = printk_log_next_seq;
-+		dumper->next_idx = printk_log_next_idx;
-+		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+
-+		/* invoke dumper which will iterate over records */
-+		dumper->dump(dumper, reason);
-+
-+		/* reset iterator */
-+		dumper->active = false;
-+	}
-+	rcu_read_unlock();
-+}
-+
-+/**
-+ * kmsg_dump_get_line_nolock - retrieve one kmsg log line (unlocked version)
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @line: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the beginning of the kmsg buffer, with the oldest kmsg
-+ * record, and copy one record into the provided buffer.
-+ *
-+ * Consecutive calls will return the next available record moving
-+ * towards the end of the buffer with the youngest messages.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ *
-+ * The function is similar to kmsg_dump_get_line(), but grabs no locks.
-+ */
-+bool kmsg_dump_get_line_nolock(struct kmsg_dumper *dumper, bool syslog,
-+			       char *line, size_t size, size_t *len)
-+{
-+	struct printk_log *msg;
-+	size_t l = 0;
-+	bool ret = false;
-+
-+	if (!dumper->active)
-+		goto out;
-+
-+	if (dumper->cur_seq < printk_log_first_seq) {
-+		/* messages are gone, move to first available one */
-+		dumper->cur_seq = printk_log_first_seq;
-+		dumper->cur_idx = printk_log_first_idx;
-+	}
-+
-+	/* last entry */
-+	if (dumper->cur_seq >= printk_log_next_seq)
-+		goto out;
-+
-+	msg = printk_log_from_idx(dumper->cur_idx);
-+	l = printk_msg_print_text(msg, 0, syslog, line, size);
-+
-+	dumper->cur_idx = printk_log_next(dumper->cur_idx);
-+	dumper->cur_seq++;
-+	ret = true;
-+out:
-+	if (len)
-+		*len = l;
-+	return ret;
-+}
-+
-+/**
-+ * kmsg_dump_get_line - retrieve one kmsg log line
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @line: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the beginning of the kmsg buffer, with the oldest kmsg
-+ * record, and copy one record into the provided buffer.
-+ *
-+ * Consecutive calls will return the next available record moving
-+ * towards the end of the buffer with the youngest messages.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ */
-+bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
-+			char *line, size_t size, size_t *len)
-+{
-+	unsigned long flags;
-+	bool ret;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	ret = kmsg_dump_get_line_nolock(dumper, syslog, line, size, len);
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_get_line);
-+
-+/**
-+ * kmsg_dump_get_buffer - copy kmsg log lines
-+ * @dumper: registered kmsg dumper
-+ * @syslog: include the "<4>" prefixes
-+ * @buf: buffer to copy the line to
-+ * @size: maximum size of the buffer
-+ * @len: length of line placed into buffer
-+ *
-+ * Start at the end of the kmsg buffer and fill the provided buffer
-+ * with as many of the the *youngest* kmsg records that fit into it.
-+ * If the buffer is large enough, all available kmsg records will be
-+ * copied with a single call.
-+ *
-+ * Consecutive calls will fill the buffer with the next block of
-+ * available older records, not including the earlier retrieved ones.
-+ *
-+ * A return value of FALSE indicates that there are no more records to
-+ * read.
-+ */
-+bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
-+			  char *buf, size_t size, size_t *len)
-+{
-+	unsigned long flags;
-+	u64 seq;
-+	u32 idx;
-+	u64 next_seq;
-+	u32 next_idx;
-+	enum printk_log_flags prev;
-+	size_t l = 0;
-+	bool ret = false;
-+
-+	if (!dumper->active)
-+		goto out;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	if (dumper->cur_seq < printk_log_first_seq) {
-+		/* messages are gone, move to first available one */
-+		dumper->cur_seq = printk_log_first_seq;
-+		dumper->cur_idx = printk_log_first_idx;
-+	}
-+
-+	/* last entry */
-+	if (dumper->cur_seq >= dumper->next_seq) {
-+		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+		goto out;
-+	}
-+
-+	/* calculate length of entire buffer */
-+	seq = dumper->cur_seq;
-+	idx = dumper->cur_idx;
-+	prev = 0;
-+	while (seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l += printk_msg_print_text(msg, prev, true, NULL, 0);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	/* move first record forward until length fits into the buffer */
-+	seq = dumper->cur_seq;
-+	idx = dumper->cur_idx;
-+	prev = 0;
-+	while (l > size && seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l -= printk_msg_print_text(msg, prev, true, NULL, 0);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	/* last message in next interation */
-+	next_seq = seq;
-+	next_idx = idx;
-+
-+	l = 0;
-+	prev = 0;
-+	while (seq < dumper->next_seq) {
-+		struct printk_log *msg = printk_log_from_idx(idx);
-+
-+		l += printk_msg_print_text(msg, prev, syslog, buf + l, size - l);
-+		idx = printk_log_next(idx);
-+		seq++;
-+		prev = msg->flags;
-+	}
-+
-+	dumper->next_seq = next_seq;
-+	dumper->next_idx = next_idx;
-+	ret = true;
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+out:
-+	if (len)
-+		*len = l;
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
-+
-+/**
-+ * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-+ * @dumper: registered kmsg dumper
-+ *
-+ * Reset the dumper's iterator so that kmsg_dump_get_line() and
-+ * kmsg_dump_get_buffer() can be called again and used multiple
-+ * times within the same dumper.dump() callback.
-+ *
-+ * The function is similar to kmsg_dump_rewind(), but grabs no locks.
-+ */
-+void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
-+{
-+	dumper->cur_seq = printk_log_clear_seq;
-+	dumper->cur_idx = printk_log_clear_idx;
-+	dumper->next_seq = printk_log_next_seq;
-+	dumper->next_idx = printk_log_next_idx;
-+}
-+
-+/**
-+ * kmsg_dump_rewind - reset the interator
-+ * @dumper: registered kmsg dumper
-+ *
-+ * Reset the dumper's iterator so that kmsg_dump_get_line() and
-+ * kmsg_dump_get_buffer() can be called again and used multiple
-+ * times within the same dumper.dump() callback.
-+ */
-+void kmsg_dump_rewind(struct kmsg_dumper *dumper)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
-+	kmsg_dump_rewind_nolock(dumper);
-+	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index bed0e7d..9b31ded 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -33,7 +33,6 @@
- #include <linux/kexec.h>
- #include <linux/kdb.h>
- #include <linux/ratelimit.h>
--#include <linux/kmsg_dump.h>
- #include <linux/cpu.h>
- #include <linux/notifier.h>
- #include <linux/rculist.h>
-@@ -1511,321 +1510,4 @@ bool printk_timed_ratelimit(unsigned long *caller_jiffies,
- }
- EXPORT_SYMBOL(printk_timed_ratelimit);
- 
--static DEFINE_SPINLOCK(dump_list_lock);
--static LIST_HEAD(dump_list);
--
--/**
-- * kmsg_dump_register - register a kernel log dumper.
-- * @dumper: pointer to the kmsg_dumper structure
-- *
-- * Adds a kernel log dumper to the system. The dump callback in the
-- * structure will be called when the kernel oopses or panics and must be
-- * set. Returns zero on success and %-EINVAL or %-EBUSY otherwise.
-- */
--int kmsg_dump_register(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--	int err = -EBUSY;
--
--	/* The dump callback needs to be set */
--	if (!dumper->dump)
--		return -EINVAL;
--
--	spin_lock_irqsave(&dump_list_lock, flags);
--	/* Don't allow registering multiple times */
--	if (!dumper->registered) {
--		dumper->registered = 1;
--		list_add_tail_rcu(&dumper->list, &dump_list);
--		err = 0;
--	}
--	spin_unlock_irqrestore(&dump_list_lock, flags);
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_register);
--
--/**
-- * kmsg_dump_unregister - unregister a kmsg dumper.
-- * @dumper: pointer to the kmsg_dumper structure
-- *
-- * Removes a dump device from the system. Returns zero on success and
-- * %-EINVAL otherwise.
-- */
--int kmsg_dump_unregister(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--	int err = -EINVAL;
--
--	spin_lock_irqsave(&dump_list_lock, flags);
--	if (dumper->registered) {
--		dumper->registered = 0;
--		list_del_rcu(&dumper->list);
--		err = 0;
--	}
--	spin_unlock_irqrestore(&dump_list_lock, flags);
--	synchronize_rcu();
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_unregister);
--
--static bool always_kmsg_dump;
--module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
--
--/**
-- * kmsg_dump - dump kernel log to kernel message dumpers.
-- * @reason: the reason (oops, panic etc) for dumping
-- *
-- * Call each of the registered dumper's dump() callback, which can
-- * retrieve the kmsg records with kmsg_dump_get_line() or
-- * kmsg_dump_get_buffer().
-- */
--void kmsg_dump(enum kmsg_dump_reason reason)
--{
--	struct kmsg_dumper *dumper;
--	unsigned long flags;
--
--	if ((reason > KMSG_DUMP_OOPS) && !always_kmsg_dump)
--		return;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(dumper, &dump_list, list) {
--		if (dumper->max_reason && reason > dumper->max_reason)
--			continue;
--
--		/* initialize iterator with data about the stored records */
--		dumper->active = true;
--
--		raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--		dumper->cur_seq = printk_log_clear_seq;
--		dumper->cur_idx = printk_log_clear_idx;
--		dumper->next_seq = printk_log_next_seq;
--		dumper->next_idx = printk_log_next_idx;
--		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--
--		/* invoke dumper which will iterate over records */
--		dumper->dump(dumper, reason);
--
--		/* reset iterator */
--		dumper->active = false;
--	}
--	rcu_read_unlock();
--}
--
--/**
-- * kmsg_dump_get_line_nolock - retrieve one kmsg log line (unlocked version)
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @line: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the beginning of the kmsg buffer, with the oldest kmsg
-- * record, and copy one record into the provided buffer.
-- *
-- * Consecutive calls will return the next available record moving
-- * towards the end of the buffer with the youngest messages.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- *
-- * The function is similar to kmsg_dump_get_line(), but grabs no locks.
-- */
--bool kmsg_dump_get_line_nolock(struct kmsg_dumper *dumper, bool syslog,
--			       char *line, size_t size, size_t *len)
--{
--	struct printk_log *msg;
--	size_t l = 0;
--	bool ret = false;
--
--	if (!dumper->active)
--		goto out;
--
--	if (dumper->cur_seq < printk_log_first_seq) {
--		/* messages are gone, move to first available one */
--		dumper->cur_seq = printk_log_first_seq;
--		dumper->cur_idx = printk_log_first_idx;
--	}
--
--	/* last entry */
--	if (dumper->cur_seq >= printk_log_next_seq)
--		goto out;
--
--	msg = printk_log_from_idx(dumper->cur_idx);
--	l = printk_msg_print_text(msg, 0, syslog, line, size);
--
--	dumper->cur_idx = printk_log_next(dumper->cur_idx);
--	dumper->cur_seq++;
--	ret = true;
--out:
--	if (len)
--		*len = l;
--	return ret;
--}
--
--/**
-- * kmsg_dump_get_line - retrieve one kmsg log line
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @line: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the beginning of the kmsg buffer, with the oldest kmsg
-- * record, and copy one record into the provided buffer.
-- *
-- * Consecutive calls will return the next available record moving
-- * towards the end of the buffer with the youngest messages.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- */
--bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
--			char *line, size_t size, size_t *len)
--{
--	unsigned long flags;
--	bool ret;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	ret = kmsg_dump_get_line_nolock(dumper, syslog, line, size, len);
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--
--	return ret;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_get_line);
--
--/**
-- * kmsg_dump_get_buffer - copy kmsg log lines
-- * @dumper: registered kmsg dumper
-- * @syslog: include the "<4>" prefixes
-- * @buf: buffer to copy the line to
-- * @size: maximum size of the buffer
-- * @len: length of line placed into buffer
-- *
-- * Start at the end of the kmsg buffer and fill the provided buffer
-- * with as many of the the *youngest* kmsg records that fit into it.
-- * If the buffer is large enough, all available kmsg records will be
-- * copied with a single call.
-- *
-- * Consecutive calls will fill the buffer with the next block of
-- * available older records, not including the earlier retrieved ones.
-- *
-- * A return value of FALSE indicates that there are no more records to
-- * read.
-- */
--bool kmsg_dump_get_buffer(struct kmsg_dumper *dumper, bool syslog,
--			  char *buf, size_t size, size_t *len)
--{
--	unsigned long flags;
--	u64 seq;
--	u32 idx;
--	u64 next_seq;
--	u32 next_idx;
--	enum printk_log_flags prev;
--	size_t l = 0;
--	bool ret = false;
--
--	if (!dumper->active)
--		goto out;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	if (dumper->cur_seq < printk_log_first_seq) {
--		/* messages are gone, move to first available one */
--		dumper->cur_seq = printk_log_first_seq;
--		dumper->cur_idx = printk_log_first_idx;
--	}
--
--	/* last entry */
--	if (dumper->cur_seq >= dumper->next_seq) {
--		raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--		goto out;
--	}
--
--	/* calculate length of entire buffer */
--	seq = dumper->cur_seq;
--	idx = dumper->cur_idx;
--	prev = 0;
--	while (seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l += printk_msg_print_text(msg, prev, true, NULL, 0);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	/* move first record forward until length fits into the buffer */
--	seq = dumper->cur_seq;
--	idx = dumper->cur_idx;
--	prev = 0;
--	while (l > size && seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l -= printk_msg_print_text(msg, prev, true, NULL, 0);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	/* last message in next interation */
--	next_seq = seq;
--	next_idx = idx;
--
--	l = 0;
--	prev = 0;
--	while (seq < dumper->next_seq) {
--		struct printk_log *msg = printk_log_from_idx(idx);
--
--		l += printk_msg_print_text(msg, prev, syslog, buf + l, size - l);
--		idx = printk_log_next(idx);
--		seq++;
--		prev = msg->flags;
--	}
--
--	dumper->next_seq = next_seq;
--	dumper->next_idx = next_idx;
--	ret = true;
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--out:
--	if (len)
--		*len = l;
--	return ret;
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_get_buffer);
--
--/**
-- * kmsg_dump_rewind_nolock - reset the interator (unlocked version)
-- * @dumper: registered kmsg dumper
-- *
-- * Reset the dumper's iterator so that kmsg_dump_get_line() and
-- * kmsg_dump_get_buffer() can be called again and used multiple
-- * times within the same dumper.dump() callback.
-- *
-- * The function is similar to kmsg_dump_rewind(), but grabs no locks.
-- */
--void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
--{
--	dumper->cur_seq = printk_log_clear_seq;
--	dumper->cur_idx = printk_log_clear_idx;
--	dumper->next_seq = printk_log_next_seq;
--	dumper->next_idx = printk_log_next_idx;
--}
--
--/**
-- * kmsg_dump_rewind - reset the interator
-- * @dumper: registered kmsg dumper
-- *
-- * Reset the dumper's iterator so that kmsg_dump_get_line() and
-- * kmsg_dump_get_buffer() can be called again and used multiple
-- * times within the same dumper.dump() callback.
-- */
--void kmsg_dump_rewind(struct kmsg_dumper *dumper)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&printk_logbuf_lock, flags);
--	kmsg_dump_rewind_nolock(dumper);
--	raw_spin_unlock_irqrestore(&printk_logbuf_lock, flags);
--}
--EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
- #endif
 -- 
-1.7.8.112.g3fd21
+liguang    lig.fnst@cn.fujitsu.com
+FNST linux kernel team
 
