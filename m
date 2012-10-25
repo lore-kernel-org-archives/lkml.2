@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758917Ab2JYASa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:18:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40191 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758852Ab2JYAS2 (ORCPT
+	id S1758924Ab2JYAUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:20:08 -0400
+Received: from mailbigip.dreamhost.com ([208.97.132.5]:47000 "EHLO
+	homiemail-a66.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755351Ab2JYAUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:18:28 -0400
-Date: Wed, 24 Oct 2012 17:18:23 -0700
-From: Joel Becker <jlbec@evilplan.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/21] ocfs2: drop vmtruncate
-Message-ID: <20121025001822.GC3140@localhost>
-Mail-Followup-To: Marco Stornelli <marco.stornelli@gmail.com>,
-	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-	linux-kernel@vger.kernel.org
-References: <508296B4.60508@gmail.com>
- <20121023085448.GM5635@localhost>
- <CANGUGtB0VR4hnRf5hk3_7Rc23fo5ejtj3J2yZZ50tD_Tk+sigw@mail.gmail.com>
- <20121023090232.GA13027@localhost>
- <CANGUGtAiktPm5J+yViNhEN+udU60Z+JH+4bEozwHxeXe2Oec6w@mail.gmail.com>
+	Wed, 24 Oct 2012 20:20:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANGUGtAiktPm5J+yViNhEN+udU60Z+JH+4bEozwHxeXe2Oec6w@mail.gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+	<m2fw5mtffg.fsf_-_@firstfloor.org>
+	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+	<5086F5A7.9090406@vlnb.net>
+	<CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+	<alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+Date: Wed, 24 Oct 2012 19:20:04 -0500
+Message-ID: <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
+Subject: Re: [sqlite] light weight write barriers
+From: Nico Williams <nico@cryptonector.com>
+To: david@lang.hm
+Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drh@hwaci.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 02:48:38PM +0200, Marco Stornelli wrote:
-> 2012/10/23 Joel Becker <jlbec@evilplan.org>:
-> > On Tue, Oct 23, 2012 at 10:58:42AM +0200, Marco Stornelli wrote:
-> >> 2012/10/23 Joel Becker <jlbec@evilplan.org>:
-> >> > On Sat, Oct 20, 2012 at 02:19:00PM +0200, Marco Stornelli wrote:
-> >> >> Removed vmtruncate
-> >> >>
-> >> >> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-> >> >
-> >> > Acked-by: Joel Becker <jlbec@evilplan.org>
-> >> >
-> >> > Do you want me to pull this, or are you going to send it with your set?
-> >> >
-> >> > Joel
-> >> >
-> >>
-> >> I'd prefer to push all via Al's tree since there is a VFS change.
-> >
-> > SGTM.  Thanks!
-> >
-> > Joel
-> >
-> 
-> I've got a doubt and I ask to ocfs2 expert :) It seems i_size_write()
-> and truncate_inode_pages() and so on, they are already called in each
-> path of setattr for a size change, so maybe we can remove
-> truncate_setsize() and simply to remove the vmtuncate code, can you
-> give me your opinion?
+On Wed, Oct 24, 2012 at 5:03 PM,  <david@lang.hm> wrote:
+> I'm doing some work with rsyslog and it's disk-baded queues and there is a
+> similar issue there. The good news is that we can have a version that is
+> linux specific (rsyslog is used on other OSs, but there is an existing queue
+> implementation that they can use, if the faster one is linux-only, but is
+> significantly faster, that's just a win for Linux)
+>
+> Like what is being described for sqlite, loosing the tail end of the
+> messages is not a big problem under normal conditions. But there is a need
+> to be sure that what is there is complete up to the point where it's lost.
+>
+> this is similar in concept to write-ahead-logs done for databases (without
+> the absolute durability requirement)
+>
+> [...]
+>
+> I am not fully understanding how what you are describing (COW, separate
+> fsync threads, etc) would be implemented on top of existing filesystems.
+> Most of what you are describing seems like it requires access to the
+> underlying storage to implement.
+>
+> could you give a more detailed explination?
 
-	Actually, I have to revisit this, because Chrisoph points out
-your adjusting i_size outside of a transaction.
+COW is "copy on write", which is actually a bit of a misnomer -- all
+COW means is that blocks aren't over-written, instead new blocks are
+written.  In particular this means that inodes, indirect blocks, data
+blocks, and so on, that are changed are actually written to new
+locations, and the on-disk format needs to handle this indirection.
 
-Joel
+As for fsyn() and background threads... fsync() is synchronous, but in
+this scheme we want it to happen asynchronously and then we want to
+update each transaction with a pointer to the last transaction that is
+known stable given an fsync()'s return.
 
-> Thanks.
-> 
-> Marco
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-
-"Practice random acts of kindness and senseless acts of beauty."
-
- Oh, and don't forget where your towel is.
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
+Nico
+--
