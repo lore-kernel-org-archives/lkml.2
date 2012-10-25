@@ -1,211 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992466Ab2JYRdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:33:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37390 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759429Ab2JYRdb (ORCPT
+	id S936007Ab2JYRgG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:36:06 -0400
+Received: from server505c.appriver.com ([98.129.35.7]:3992 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S935904Ab2JYRgE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:33:31 -0400
-Date: Thu, 25 Oct 2012 10:33:26 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] fs: xattr: rewrite simple_xattr_set()
-Message-ID: <20121025173326.GH11442@htj.dyndns.org>
-References: <20121025152613.GF14085@redhat.com>
+	Thu, 25 Oct 2012 13:36:04 -0400
+X-Note-AR-ScanTimeLocal: 10/25/2012 12:35:57 PM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: 
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Oct 2012 12:35:54 -0500
+Subject: Re: [PATCH] aoe: avoid using skb member after dev_queue_xmit
+Thread-Topic: [PATCH] aoe: avoid using skb member after dev_queue_xmit
+Thread-Index: Ac2y1y+KyT9E7InoQl2WPHSlUhPl+Q==
+Message-ID: <4918A364-8C8A-4F69-B03F-644339FC1A7B@coraid.com>
+References: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
+ <20121024150807.82ce2677.akpm@linux-foundation.org>
+ <20121025063322.GH20754@mwanda>
+In-Reply-To: <20121025063322.GH20754@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121025152613.GF14085@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Hugh and keeping the whole body)
+On Oct 25, 2012, at 2:33 AM, Dan Carpenter wrote:
 
-Hello,
-
-On Thu, Oct 25, 2012 at 11:26:14AM -0400, Aristeu Rozanski wrote:
-> The way this function was written is confusing and already caused problems.
-> Rewriting it to be easier to understand and maintain.
+> On Wed, Oct 24, 2012 at 03:08:07PM -0700, Andrew Morton wrote:
+>> On Wed, 24 Oct 2012 14:26:13 -0400
+>> Ed Cashin <ecashin@coraid.com> wrote:
+>> 
+>>> After calling dev_queue_xmit it is no longer safe to access the
+>>> members of the skb.
+>>> 
+>>> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> 
+>> hm, that was clever.  How did Dan detect this bug?
 > 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizefan@huawei.com>
-> Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> It was a Smatch thing, but it wasn't enabled by default.  I think I
+> will enable it.  This is the second bug use after dev_queue_xmit()
+> in two years.
 
-Generally looks okay to me but I think the return value from removal
-path is wrong.  More below.
-
-> ---
->  fs/xattr.c |  124 +++++++++++++++++++++++++++++++++++++------------------------
->  1 file changed, 76 insertions(+), 48 deletions(-)
-> 
-> Index: github/fs/xattr.c
-> ===================================================================
-> --- github.orig/fs/xattr.c	2012-10-23 16:02:41.155857391 -0400
-> +++ github/fs/xattr.c	2012-10-25 11:17:15.118197552 -0400
-> @@ -842,55 +842,46 @@
->  	return ret;
->  }
->  
-> -static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
-> -			      const void *value, size_t size, int flags)
-> +static struct simple_xattr *__find_xattr(struct simple_xattrs *xattrs,
-> +					 const char *name)
->  {
->  	struct simple_xattr *xattr;
-> -	struct simple_xattr *new_xattr = NULL;
-> -	int err = 0;
-> -
-> -	/* value == NULL means remove */
-> -	if (value) {
-> -		new_xattr = simple_xattr_alloc(value, size);
-> -		if (!new_xattr)
-> -			return -ENOMEM;
-> -
-> -		new_xattr->name = kstrdup(name, GFP_KERNEL);
-> -		if (!new_xattr->name) {
-> -			kfree(new_xattr);
-> -			return -ENOMEM;
-> -		}
-> -	}
->  
-> -	spin_lock(&xattrs->lock);
->  	list_for_each_entry(xattr, &xattrs->head, list) {
-> -		if (!strcmp(name, xattr->name)) {
-> -			if (flags & XATTR_CREATE) {
-> -				xattr = new_xattr;
-> -				err = -EEXIST;
-> -			} else if (new_xattr) {
-> -				list_replace(&xattr->list, &new_xattr->list);
-> -			} else {
-> -				list_del(&xattr->list);
-> -			}
-> -			goto out;
-> -		}
-> +		if (!strcmp(name, xattr->name))
-> +			return xattr;
->  	}
-> -	if (flags & XATTR_REPLACE) {
-> -		xattr = new_xattr;
-> -		err = -ENODATA;
-> -	} else {
-> -		list_add(&new_xattr->list, &xattrs->head);
-> -		xattr = NULL;
-> -	}
-> -out:
-> -	spin_unlock(&xattrs->lock);
-> +	return NULL;
-> +}
-> +
-> +static int __simple_xattr_remove(struct simple_xattrs *xattrs,
-> +				 const char *name)
-> +{
-> +	struct simple_xattr *xattr;
-> +
-> +	xattr = __find_xattr(xattrs, name);
->  	if (xattr) {
-> +		list_del(&xattr->list);
->  		kfree(xattr->name);
->  		kfree(xattr);
-> +		return 0;
->  	}
-> -	return err;
->  
-> +	return 1;
-> +}
-
-So, it returns 0 on success and 1 on failure, which in itself isn't a
-particularly good idea.
-
-> +
-> +/*
-> + * xattr REMOVE operation for in-memory/pseudo filesystems
-> + */
-> +int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
-> +{
-> +	int rc;
-> +
-> +	spin_lock(&xattrs->lock);
-> +	rc = __simple_xattr_remove(xattrs, name);
-> +	spin_unlock(&xattrs->lock);
-> +
-> +	return rc;
->  }
->  
->  /**
-> @@ -910,17 +901,54 @@
->  int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
->  		     const void *value, size_t size, int flags)
->  {
-> +	struct simple_xattr *found, *new_xattr;
-> +	int err = 0;
-> +
->  	if (size == 0)
-> -		value = ""; /* empty EA, do not remove */
-> -	return __simple_xattr_set(xattrs, name, value, size, flags);
-> -}
-> +		value = ""; /* empty EA */
->  
-> -/*
-> - * xattr REMOVE operation for in-memory/pseudo filesystems
-> - */
-> -int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
-> -{
-> -	return __simple_xattr_set(xattrs, name, NULL, 0, XATTR_REPLACE);
-> +	/* if value == NULL is specified, remove the item */
-> +	if (value == NULL)
-> +		return simple_xattr_remove(xattrs, name);
-
-And gets relayed to the caller.
-
-> +
-> +	new_xattr = simple_xattr_alloc(value, size);
-> +	if (!new_xattr)
-> +		return -ENOMEM;
-> +
-> +	new_xattr->name = kstrdup(name, GFP_KERNEL);
-> +	if (!new_xattr->name) {
-> +		kfree(new_xattr);
-> +		return -ENOMEM;
-> +	}
-> +
-> +	spin_lock(&xattrs->lock);
-> +
-> +	found = __find_xattr(xattrs, name);
-> +	if (found) {
-> +		if (flags & XATTR_CREATE) {
-> +			err = -EEXIST;
-> +			goto free_new;
-> +		}
-> +
-> +		list_replace(&found->list, &new_xattr->list);
-> +		kfree(found->name);
-> +		kfree(found);
-> +	} else {
-> +		if (flags & XATTR_REPLACE) {
-> +			err = -ENODATA;
-> +			goto free_new;
-> +		}
-> +
-> +		list_add_tail(&new_xattr->list, &xattrs->head);
-> +	}
-> +
-> +out:
-> +	spin_unlock(&xattrs->lock);
-> +	return err;
-> +free_new:
-> +	kfree(new_xattr->name);
-> +	kfree(new_xattr);
-> +	goto out;
->  }
->  
->  static bool xattr_is_trusted(const char *name)
+OK, no more procrastinating.  I'm using smatch from today forward.
 
 -- 
-tejun
+  Ed Cashin
+  ecashin@coraid.com
+
+
