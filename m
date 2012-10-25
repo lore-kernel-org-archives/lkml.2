@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab2JYTsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:48:52 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:26743 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760244Ab2JYTss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:48:48 -0400
-Message-ID: <1351194525.2662.21.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH] tilegx: fix some issues in the SW TSO support
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 25 Oct 2012 20:48:45 +0100
-In-Reply-To: <1351193806.2662.18.camel@bwh-desktop.uk.solarflarecom.com>
-References: <201210251737.q9PHbgev032681@farm-0012.internal.tilera.com>
-	 <1351187513.2662.9.camel@bwh-desktop.uk.solarflarecom.com>
-	 <508981E1.4030600@tilera.com>
-	 <1351193806.2662.18.camel@bwh-desktop.uk.solarflarecom.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1760228Ab2JYTv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:51:27 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59917 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759761Ab2JYTvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:51:25 -0400
+Date: Thu, 25 Oct 2012 15:51:10 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mhocko@suse.cz, peterz@infradead.org,
+        akpm@linux-foundation.org, Chris Metcalf <cmetcalf@tilera.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on
+ access fault.
+Message-ID: <20121025195110.GA4771@cmpxchg.org>
+References: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-25 at 20:36 +0100, Ben Hutchings wrote:
-[...]
-> There's a simple way to test this - configure the 'attacker' host and
-> interface like this:
+On Thu, Oct 25, 2012 at 05:44:31PM +0100, Will Deacon wrote:
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
 > 
-> # ip link set $IFACE mtu 128
-> # sysctl net.ipv4.route.min_adv_mss=88
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
 > 
-> and then use something like netperf to generate a high bandwidth stream
-> of TCP traffic toward it from the tilegx interface.
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
+> 
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-Also you would need to run some other traffic in parallel (multiple
-streams to the 'attacker' and some more normal streams) to ensure there
-is real contention.
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Ben.
+> Ok chaps, I rebased this thing onto today's next (which basically
+> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
+> ask if you could eyeball the new code, especially where the locking is
+> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
+> that the page is not splitting, but I can't see why that is required.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+I don't either.  If the thing was splitting when the fault happened,
+that path is not taken.  And the locked pmd_same() check should rule
+out splitting setting in after testing pmd_trans_huge_splitting().
 
+Peter?
