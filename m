@@ -1,82 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409Ab2JYLDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:03:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:46006 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759393Ab2JYLDX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:03:23 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-c6-50891c79138e
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'H Hartley Sweeten'" <hsweeten@visionengravers.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/3] backlight: ep93xx: fix section mismatch
-Date: Thu, 25 Oct 2012 20:03:21 +0900
-Message-id: <001001cdb2a0$58c17f80$0a447e80$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2yoFiqa8gwXpqqSuWkk7J8877xPg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd1Kmc4Ag7ffLS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGtflWBYt4Km7t28zewLiHq4uRk0NCwESi+dM5FghbTOLCvfVs
-	XYxcHEICixglXi09zA7hzGaS2PxiPyNIFZuAmsSXLyAJTg4RgQiJ5hmzmEGKmAVaGCWuvLzA
-	DJIQFrCRuHKiGWwsi4CqxJUrbUwgNq+ArcSp3gOMELagxI/J98BqmAW0JNbvPM4EYctLbF7z
-	FmgOB9BJ6hKP/upC7NKT+Pv1NDtEiYjEvhfvGCcwCsxCMmkWkkmzkEyahaRlASPLKkbR1ILk
-	guKk9FwjveLE3OLSvHS95PzcTYzgwHwmvYNxVYPFIUYBDkYlHt6DHh0BQqyJZcWVuYcYJTiY
-	lUR4t78HCvGmJFZWpRblxxeV5qQWH2KU5mBREudt9kgJEBJITyxJzU5NLUgtgskycXBKNTDK
-	3vi8a+oGvUo52xPZOwSnzp7kn+co6RieNnVvRpR56B3v2Xbv3fiiPogHWBd/uSW8y4jFMfcl
-	s2RksHJdy5VQmed+z1iCa3Ztq5gxV4nn0VaTnwvkrr32s7kbnri0V9/o38H1s4KXxD9ty/nv
-	+rXtnmty0lnB/40xDq/+TBDSyJjj5iH7ulWJpTgj0VCLuag4EQAlmRKESAIAAA==
+	id S934287Ab2JYLED (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:04:03 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:39611 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932913Ab2JYLEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 07:04:00 -0400
+Date: Thu, 25 Oct 2012 13:03:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH v3] Add support for AMD64 EDAC on multiple PCI domains
+Message-ID: <20121025110353.GA2623@aftab.osrc.amd.com>
+Reply-To: Borislav Petkov <bp@alien8.de>
+References: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix section mismatch warning as below:
+On Thu, Oct 25, 2012 at 04:32:52PM +0800, Daniel J Blueman wrote:
+> The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
+> are contiguous, which no longer holds on federated systems with multiple
+> HyperTransport fabrics and multiple PCI domains, eg on Numascale's
+> Numaconnect systems with NumaChip.
+> 
+> Address this assumption by searching the Northbridge ID array, rather than
+> directly indexing it, using the upper bits for the PCI domain.
+> 
+> RFC->v2: Correct array initialisation
+> v2->v3: Add Boris's neater linked list approach
+> 
+> Todo:
+> 1. fix kobject/sysfs oops (see http://quora.org/2012/16-server-boot.txt later)
+> 2. reorder amd64_edac.c or add amd64_per_family_init/pci_get_related_function
+>    forward declarations, based on feedback
+> 
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 
-WARNING: drivers/video/backlight/built-in.o(.data+0x110): Section mismatch in reference from the variable ep93xxbl_driver to the
-function .init.text:ep93xxbl_probe()
-The variable ep93xxbl_driver references
-the function __init ep93xxbl_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+This patch contains code from both of us and thus needs both our SOBs:
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/video/backlight/ep93xx_bl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Signed-off-by: Borislav Petkov <bp@alien8.de>
 
-diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
-index 08214e1..d0c688b 100644
---- a/drivers/video/backlight/ep93xx_bl.c
-+++ b/drivers/video/backlight/ep93xx_bl.c
-@@ -60,7 +60,7 @@ static const struct backlight_ops ep93xxbl_ops = {
- 	.get_brightness	= ep93xxbl_get_brightness,
- };
- 
--static int __init ep93xxbl_probe(struct platform_device *dev)
-+static int __devinit ep93xxbl_probe(struct platform_device *dev)
- {
- 	struct ep93xxbl *ep93xxbl;
- 	struct backlight_device *bl;
-@@ -106,7 +106,7 @@ static int __init ep93xxbl_probe(struct platform_device *dev)
- 	return 0;
- }
- 
--static int ep93xxbl_remove(struct platform_device *dev)
-+static int __devexit ep93xxbl_remove(struct platform_device *dev)
- {
- 	struct backlight_device *bl = platform_get_drvdata(dev);
- 
+> ---
+>  arch/x86/include/asm/amd_nb.h            |   63 +++++++++++++++-
+>  arch/x86/include/asm/numachip/numachip.h |   22 ++++++
+>  arch/x86/kernel/amd_gart_64.c            |    8 +-
+>  arch/x86/kernel/amd_nb.c                 |   85 ++++++++++++---------
+>  arch/x86/pci/numachip.c                  |  121 ++++++++++++++++++++++++++++++
+>  drivers/char/agp/amd64-agp.c             |   12 +--
+>  drivers/edac/amd64_edac.c                |   34 +++++----
+>  drivers/edac/amd64_edac.h                |    6 --
+>  8 files changed, 283 insertions(+), 68 deletions(-)
+>  create mode 100644 arch/x86/include/asm/numachip/numachip.h
+>  create mode 100644 arch/x86/pci/numachip.c
+> 
+> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+> index b3341e9..6a27226 100644
+> --- a/arch/x86/include/asm/amd_nb.h
+> +++ b/arch/x86/include/asm/amd_nb.h
+> @@ -4,6 +4,8 @@
+>  #include <linux/ioport.h>
+>  #include <linux/pci.h>
+>  
+> +#define NUM_POSSIBLE_NBS	8
+> +
+>  struct amd_nb_bus_dev_range {
+>  	u8 bus;
+>  	u8 dev_base;
+> @@ -51,12 +53,22 @@ struct amd_northbridge {
+>  	struct pci_dev *link;
+>  	struct amd_l3_cache l3_cache;
+>  	struct threshold_bank *bank4;
+> +	u16 node;
+> +	struct list_head nbl;
+>  };
+>  
+>  struct amd_northbridge_info {
+>  	u16 num;
+>  	u64 flags;
+> -	struct amd_northbridge *nb;
+> +
+> +	/*
+> +	 * The first 8 elems are for fast lookup of NB descriptors on single-
+> +	 * system setups, i.e. "normal" boxes. The nb_list, OTOH, is list of
+> +	 * additional NB descriptors which exist on confederate systems
+> +	 * like using Numascale's Numaconnect/NumaChip.
+> +	 */
+> +	struct amd_northbridge *nbs[NUM_POSSIBLE_NBS];
+> +	struct list_head nb_list;
+>  };
+>  extern struct amd_northbridge_info amd_northbridges;
+>  
+> @@ -78,7 +90,54 @@ static inline bool amd_nb_has_feature(unsigned feature)
+>  
+>  static inline struct amd_northbridge *node_to_amd_nb(int node)
+>  {
+> -	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+> +	struct amd_northbridge_info *nbi = &amd_northbridges;
+> +	struct amd_northbridge *nb;
+> +	int i;
+> +
+> +	/* Quick search for first domain */
+> +	if (node < NUM_POSSIBLE_NBS) {
+> +		if (node < nbi->num)
+> +			return nbi->nbs[node];
+> +		else
+> +			return NULL;
+> +	}
+
+Why change that here from what I had before?
+
+nbi->nbs[node] will either return a valid descriptor or NULL because it
+is statically allocated in amd_northbridge_info.
+
+So why add a conditional where you clearly don't need it?
+
+> +	/* Search for NBs from later domains in array */
+> +	for (i = 0; i < NUM_POSSIBLE_NBS; i++)
+> +		if (nbi->nbs[i]->node == node)
+> +			return nbi->nbs[i];
+
+And then this is not needed.
+
+> +
+> +	list_for_each_entry(nb, &nbi->nb_list, nbl)
+> +		if (node == nb->node)
+> +			return nb;
+
+And why change the list_for_each_entry_safe variant? It is not needed
+now but who knows what code changes where in the future.
+
+> +
+> +	return NULL;
+> +}
+> +
+> +static inline struct amd_northbridge *index_to_amd_nb(int index)
+> +{
+> +	struct amd_northbridge_info *nbi = &amd_northbridges;
+> +	struct amd_northbridge *nb;
+> +	int count = NUM_POSSIBLE_NBS;
+> +
+> +	if (index < NUM_POSSIBLE_NBS) {
+> +		if (index < nbi->num)
+> +			return nbi->nbs[index];
+> +		else
+> +			return NULL;
+> +	}
+> +
+> +	list_for_each_entry(nb, &nbi->nb_list, nbl) {
+> +		if (count++ == index)
+> +			return nb;
+> +	}
+> +
+> +	return NULL;
+> +}
+
+Huh, what do we need that function for? node should be equal to index
+for the first 8 and then we use the linked list. What's up?
+
+> +
+> +static inline u16 amd_get_node_id(struct pci_dev *pdev)
+> +{
+> +	return (pci_domain_nr(pdev->bus) << 3) | (PCI_SLOT(pdev->devfn) - 0x18);
+>  }
+>  
+>  #else
+
+[ … ]
+
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
 
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
