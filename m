@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759665Ab2JYOOY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:14:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58821 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759638Ab2JYOOP (ORCPT
+	id S1759677Ab2JYOOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:14:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53248 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759643Ab2JYOOZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:14:15 -0400
-Date: Thu, 25 Oct 2012 15:14:13 +0100
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] mfd: arizona: Correctly report when AIF2/AIF1 is
-	underclocked
-Message-ID: <20121025141413.GA31418@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Thu, 25 Oct 2012 10:14:25 -0400
+Message-ID: <1351174434.12171.11.camel@twins>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Thu, 25 Oct 2012 16:13:54 +0200
+In-Reply-To: <1351172849.12171.10.camel@twins>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+	 <1351172849.12171.10.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the interrupt handler for an underclocked event, whilst checking for
-the source of the interrupt, AIF3 was checked twice and AIF1 was not
-checked. This change correctly checks the AIF1 underclocked bit and
-reports the correct error messages for all cases.
+On Thu, 2012-10-25 at 15:47 +0200, Peter Zijlstra wrote:
+>  1) the proposed SCHED_DEADLINE needs to do some u64xu64 math, it
+>     ends up having to multiply a deadline (in usec) with runtime (also
+>     in usec). 
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 166254b..202bf55 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -98,9 +98,9 @@ static irqreturn_t arizona_underclocked(int irq, void *data)
- 
- 	if (val & ARIZONA_AIF3_UNDERCLOCKED_STS)
- 		dev_err(arizona->dev, "AIF3 underclocked\n");
--	if (val & ARIZONA_AIF3_UNDERCLOCKED_STS)
--		dev_err(arizona->dev, "AIF3 underclocked\n");
- 	if (val & ARIZONA_AIF2_UNDERCLOCKED_STS)
-+		dev_err(arizona->dev, "AIF2 underclocked\n");
-+	if (val & ARIZONA_AIF1_UNDERCLOCKED_STS)
- 		dev_err(arizona->dev, "AIF1 underclocked\n");
- 	if (val & ARIZONA_ISRC2_UNDERCLOCKED_STS)
- 		dev_err(arizona->dev, "ISRC2 underclocked\n");
--- 
-1.7.2.5
-
+s/usec/nsec/g
