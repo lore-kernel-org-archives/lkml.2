@@ -1,70 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965028Ab2JYDnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 23:43:05 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35027 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934502Ab2JYDnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 23:43:01 -0400
-Date: Thu, 25 Oct 2012 14:42:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2012-10-24-17-15 uploaded
-Message-Id: <20121025144258.60c751a4ec733f7a1dfec4cf@canb.auug.org.au>
-In-Reply-To: <20121025001628.1DEDE100047@wpzn3.hot.corp.google.com>
-References: <20121025001628.1DEDE100047@wpzn3.hot.corp.google.com>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__25_Oct_2012_14_42_58_+1100_51PLtnKt7_QU8KmN"
+	id S1758655Ab2JYDnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 23:43:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64734 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933902Ab2JYDmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 23:42:45 -0400
+X-IronPort-AV: E=Sophos;i="4.80,645,1344182400"; 
+   d="scan'208";a="6064363"
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH v11 6/6] allower the user to disable pv event support
+Date: Thu, 25 Oct 2012 11:42:38 +0800
+Message-Id: <1351136563-15073-6-git-send-email-hutao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
+References: <0a2274eccf1b1dd420f16359f7e1de74fa2f9fbe.1351131144.git.hutao@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 11:42:00,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/25 11:42:02,
+	Serialize complete at 2012/10/25 11:42:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__25_Oct_2012_14_42_58_+1100_51PLtnKt7_QU8KmN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-Hi Andrew,
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ hw/pc_piix.c    |    6 +++++-
+ qemu-config.c   |    4 ++++
+ qemu-options.hx |    3 ++-
+ 3 files changed, 11 insertions(+), 2 deletions(-)
 
-On Wed, 24 Oct 2012 17:16:27 -0700 akpm@linux-foundation.org wrote:
->
-> The mm-of-the-moment snapshot 2012-10-24-17-15 has been uploaded to
->=20
->    http://www.ozlabs.org/~akpm/mmotm/
+diff --git a/hw/pc_piix.c b/hw/pc_piix.c
+index fb67dc1..864d356 100644
+--- a/hw/pc_piix.c
++++ b/hw/pc_piix.c
+@@ -149,6 +149,8 @@ static void pc_init1(MemoryRegion *system_memory,
+     MemoryRegion *pci_memory;
+     MemoryRegion *rom_memory;
+     void *fw_cfg = NULL;
++    QemuOptsList *list = qemu_find_opts("machine");
++    bool enable_pv_event;
+ 
+     pc_cpus_init(cpu_model);
+ 
+@@ -287,7 +289,9 @@ static void pc_init1(MemoryRegion *system_memory,
+         pc_pci_device_init(pci_bus);
+     }
+ 
+-    if (kvm_enabled()) {
++    enable_pv_event = qemu_opt_get_bool(QTAILQ_FIRST(&list->head),
++                                        "enable_pv_event", false);
++    if (kvm_enabled() && enable_pv_event) {
+         kvm_pv_event_init(isa_bus);
+     }
+ }
+diff --git a/qemu-config.c b/qemu-config.c
+index cd1ec21..db8f828 100644
+--- a/qemu-config.c
++++ b/qemu-config.c
+@@ -619,6 +619,10 @@ static QemuOptsList qemu_machine_opts = {
+             .name = "mem-merge",
+             .type = QEMU_OPT_BOOL,
+             .help = "enable/disable memory merge support",
++        }, {
++            .name = "enable_pv_event",
++            .type = QEMU_OPT_BOOL,
++            .help = "handle pv event"
+         },
+         { /* End of list */ }
+     },
+diff --git a/qemu-options.hx b/qemu-options.hx
+index 46f0539..de667d6 100644
+--- a/qemu-options.hx
++++ b/qemu-options.hx
+@@ -35,7 +35,8 @@ DEF("machine", HAS_ARG, QEMU_OPTION_machine, \
+     "                kernel_irqchip=on|off controls accelerated irqchip support\n"
+     "                kvm_shadow_mem=size of KVM shadow MMU\n"
+     "                dump-guest-core=on|off include guest memory in a core dump (default=on)\n"
+-    "                mem-merge=on|off controls memory merge support (default: on)\n",
++    "                mem-merge=on|off controls memory merge support (default: on)\n"
++    "                enable_pv_event=on|off controls pv event support\n",
+     QEMU_ARCH_ALL)
+ STEXI
+ @item -machine [type=]@var{name}[,prop=@var{value}[,...]]
+-- 
+1.7.10.2
 
-I have split this series so that all the next tagged patches before
-linux-next.patch are in the akpm-current tree (based on Linus' tree) and
-all the rest are as before (rebased onto today's linux-next including
-the akpm-current tree).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__25_Oct_2012_14_42_58_+1100_51PLtnKt7_QU8KmN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQiLVCAAoJEECxmPOUX5FERXcP/2aUDKWe5gqOp4EkgFuTdSRn
-GCYGZUXwxl8aynEa31jx6iBs5i1QiCYeBagwMJ0bagjDj0lElv4KW9vwl2rsmgpo
-B9g90rwWh99rAaMNBb9c+vopH5FsIuP5MvgQnKMccpY/oZsPCJ6d3XkGWTO5bbOr
-6ziUeVBrr6WOBWKaSYZM/U6Zq8R+dyhHdX4TZoCaX8+7Ts+eJnsTVhgu3WPFO4nJ
-aLWi9+yA6BAi14pOA9nYCEnXBjB5+eX7/01CBPGj2OK2HXBN6uA8FOsFyKCwEL8U
-1xts+gG4fXWateGd9Wx6PCllqTNuHNkt/uAJOrPMwWC9IEa8K+XZ26SssD2mKSkK
-R0bK4idC0ygXkjrBvOKO5wi/vFoymBuUZr7ntc1ipnIyIbQutlkGKW4uBEW2VwNt
-TRghRsr+fyRQfZWpPG01MwRQtkKaheb/z7+OfueUD6rE6kX8w2LRFkospA+655Fa
-qF6331bGibD9bHL4EbDZZSuw4bK0lbMN+TLJFxRZNTHuEScDTeWR2jHaq7eEPvBT
-nyKLPJ5MXW5ClRz8ev3U/SylF1udiAUFHjyMsoteOjsfMKRW/qowyGZKD1W6tUVY
-iqgxNe/GbTparVk8jgNx/+HG47M79FRPErWMs3AyRBt8POKUZeA9KM3K7nmWu6Bw
-U34xP/W3FU1UqtmlgMYP
-=eiZ8
------END PGP SIGNATURE-----
-
---Signature=_Thu__25_Oct_2012_14_42_58_+1100_51PLtnKt7_QU8KmN--
