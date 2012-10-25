@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935872Ab2JYQQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:16:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50746 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933072Ab2JYQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:16:06 -0400
-Date: Thu, 25 Oct 2012 12:15:26 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] percpu-rw-semaphores: use rcu_read_lock_sched
-In-Reply-To: <20121025150755.GV2465@linux.vnet.ibm.com>
-Message-ID: <Pine.LNX.4.64.1210251204140.23712@file.rdu.redhat.com>
-References: <20121017224430.GC2518@linux.vnet.ibm.com> <20121018162409.GA28504@redhat.com>
- <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com>
- <20121019192838.GM2518@linux.vnet.ibm.com> <Pine.LNX.4.64.1210221910150.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221936570.25995@file.rdu.redhat.com>
- <Pine.LNX.4.64.1210221937550.25995@file.rdu.redhat.com>
- <20121024161638.GA2465@linux.vnet.ibm.com> <Pine.LNX.4.64.1210251050400.14454@file.rdu.redhat.com>
- <20121025150755.GV2465@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759982Ab2JYQQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:16:24 -0400
+Received: from mail.southpole.se ([193.12.106.18]:51709 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab2JYQQV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 12:16:21 -0400
+Message-ID: <1351181778.6232.71.camel@jerome.southpole.se>
+Subject: Re: [PATCH 1/2] openrisc: move sys_clone's stack determination to
+ copy_thread
+From: Jonas Bonn <jonas@southpole.se>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 25 Oct 2012 18:16:18 +0200
+In-Reply-To: <20121025155516.GL2616@ZenIV.linux.org.uk>
+References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
+	 <1351179999-8376-2-git-send-email-jonas@southpole.se>
+	 <20121025155516.GL2616@ZenIV.linux.org.uk>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-3MQ9IX334AcX5kyd5rbZ"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Mime-Version: 1.0
+X-Assp-Version: 2.2.1(12265) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-Server-TLS: yes
+X-Assp-ID: assp.southpole.se 81779-03494
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-3MQ9IX334AcX5kyd5rbZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 25 Oct 2012, Paul E. McKenney wrote:
+On Thu, 2012-10-25 at 16:55 +0100, Al Viro wrote:
+> On Thu, Oct 25, 2012 at 05:46:38PM +0200, Jonas Bonn wrote:
+> > +		else
+> > +			userregs->sp =3D regs->sp;	/* fork/clone */
+>=20
+> What for?  userregs->sp will be equal to regs->sp at that point, unless
+> your compiler is very badly broken.  You've copied *regs to *userregs
+> wholesale, just above that if...
 
-> On Thu, Oct 25, 2012 at 10:54:11AM -0400, Mikulas Patocka wrote:
-> > 
-> > 
-> > On Wed, 24 Oct 2012, Paul E. McKenney wrote:
-> > 
-> > > On Mon, Oct 22, 2012 at 07:39:16PM -0400, Mikulas Patocka wrote:
-> > > > Use rcu_read_lock_sched / rcu_read_unlock_sched / synchronize_sched
-> > > > instead of rcu_read_lock / rcu_read_unlock / synchronize_rcu.
-> > > > 
-> > > > This is an optimization. The RCU-protected region is very small, so
-> > > > there will be no latency problems if we disable preempt in this region.
-> > > > 
-> > > > So we use rcu_read_lock_sched / rcu_read_unlock_sched that translates
-> > > > to preempt_disable / preempt_disable. It is smaller (and supposedly
-> > > > faster) than preemptible rcu_read_lock / rcu_read_unlock.
-> > > > 
-> > > > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > > 
-> > > OK, as promised/threatened, I finally got a chance to take a closer look.
-> > > 
-> > > The light_mb() and heavy_mb() definitions aren't doing much for me,
-> > > the code would be cleared with them expanded inline.  And while the
-> > > approach of pairing barrier() with synchronize_sched() is interesting,
-> > > it would be simpler to rely on RCU's properties.  The key point is that
-> > > if RCU cannot prove that a given RCU-sched read-side critical section
-> > > is seen by all CPUs to have started after a given synchronize_sched(),
-> > > then that synchronize_sched() must wait for that RCU-sched read-side
-> > > critical section to complete.
-> > 
-> > Also note that you can define both light_mb() and heavy_mb() to be 
-> > smp_mb() and slow down the reader path a bit and speed up the writer path.
-> > 
-> > On architectures with in-order memory access (and thus smp_mb() equals 
-> > barrier()), it doesn't hurt the reader but helps the writer, for example:
-> > #ifdef ARCH_HAS_INORDER_MEMORY_ACCESS
-> > #define light_mb()      smp_mb()
-> > #define heavy_mb()      smp_mb()
-> > #else
-> > #define light_mb()      barrier()
-> > #define heavy_mb()      synchronize_sched()
-> > #endif
-> 
-> Except that there are no systems running Linux with in-order memory
-> access.  Even x86 and s390 require a barrier instruction for smp_mb()
-> on SMP=y builds.
-> 
-> 							Thanx, Paul
+So true... that makes it even simpler.  Will resend.
+/Jonas
 
-PA-RISC is in-order. But it is used very rarely.
+--=-3MQ9IX334AcX5kyd5rbZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Mikulas
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlCJZdIACgkQ70gcjN2673OC6gCg0THkX8ziDmRhFdVFr4uoe8k0
+azoAn2bDbS/agCMw+R0ImgjrTtqLmqsl
+=VfOF
+-----END PGP SIGNATURE-----
+
+--=-3MQ9IX334AcX5kyd5rbZ--
+
