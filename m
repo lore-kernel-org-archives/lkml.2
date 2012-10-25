@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759456Ab2JYMcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:32:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8591 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759035Ab2JYMb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:31:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,646,1344236400"; 
-   d="scan'208,223";a="240107351"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
-Thread-Topic: [PATCH 2/2] Revert pad config check in xen_check_mwait
-Thread-Index: Ac2yq1FN1e+6ZP87QOCrcigNApJpmA==
-Date: Thu, 25 Oct 2012 12:21:53 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335371593@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_"
+	id S1759462Ab2JYMdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:33:05 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60224 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758999Ab2JYMdD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 08:33:03 -0400
 MIME-Version: 1.0
+In-Reply-To: <CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+	<1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+	<CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+	<20121025073127.GB971@gmail.com>
+	<5088F0EE.8030900@stericsson.com>
+	<20121025082341.GC3348@gmail.com>
+	<CAPDyKFromkv_VYgiQsERR=PbrwYqgux=teF_HSZxCtk2BCsk1A@mail.gmail.com>
+Date: Thu, 25 Oct 2012 14:33:01 +0200
+Message-ID: <CACRpkdaoGV3+iQHV-gHd3n1mROTZvCuuu59+U_zHpK=yXs6Bsw@mail.gmail.com>
+Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
+ pinctrl-nomadik GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 25, 2012 at 11:29 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
 
->From 9ed5cd6012ac0832973be6e7fa01fc159f373e1c Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Fri, 26 Oct 2012 03:14:46 +0800
-Subject: [PATCH 2/2] Revert pad config check in xen_check_mwait
+> Depending on clock type, a clk_disable is actually not going to "gate"
+> the clock, that might happen only in unprepare. This depends on if the
+> clock is a fast or slow clock.
 
-With Xen acpi pad logic added into kernel, we can now revert xen mwait rela=
-ted
-patch df88b2d96e36d9a9e325bfcd12eb45671cbbc937. The reason is, when runs un=
-der
-Xen platform, Xen pad driver would be early loaded, so native pad driver wo=
-uld
-fail to be loaded, and hence no mwait/monitor #UD risk again.
+Hm thats interesting. Now I need to drill down into this.
+So looking at it in this case:
 
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- arch/x86/xen/enlighten.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+clk_disable() from the GPIO block of the pin controller will
+hit "gpio.0", "gpio.1" etc in drivers/clk/ux500/u8500_clk.c.
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 586d838..8bf28b1 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -287,8 +287,7 @@ static void xen_cpuid(unsigned int *ax, unsigned int *b=
-x,
-=20
- static bool __init xen_check_mwait(void)
- {
--#if defined(CONFIG_ACPI) && !defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) && =
-\
--	!defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
-+#ifdef CONFIG_ACPI
- 	struct xen_platform_op op =3D {
- 		.cmd			=3D XENPF_set_processor_pminfo,
- 		.u.set_pminfo.id	=3D -1,
---=20
-1.7.1
+These are PRCC (Programmable Clock Controller) clocks
+registered using clk_reg_prcc_pclk() from clk-prcc.c.
 
---_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0002-Revert-pad-config-check-in-xen_check_mwait.patch"
-Content-Description: 0002-Revert-pad-config-check-in-xen_check_mwait.patch
-Content-Disposition: attachment;
-	filename="0002-Revert-pad-config-check-in-xen_check_mwait.patch"; size=1201;
-	creation-date="Thu, 25 Oct 2012 12:15:46 GMT";
-	modification-date="Thu, 25 Oct 2012 20:07:22 GMT"
-Content-Transfer-Encoding: base64
+pclk:s are using the clk_prcc_pclk_ops and these point to
+clk_prcc_pclk_enable()/clk_prcc_pclk_disable() for
+enable/disable respectively.
 
-RnJvbSA5ZWQ1Y2Q2MDEyYWMwODMyOTczYmU2ZTdmYTAxZmMxNTlmMzczZTFjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogRnJpLCAyNiBPY3QgMjAxMiAwMzoxNDo0NiArMDgwMApTdWJqZWN0OiBbUEFUQ0ggMi8y
-XSBSZXZlcnQgcGFkIGNvbmZpZyBjaGVjayBpbiB4ZW5fY2hlY2tfbXdhaXQKCldpdGggWGVuIGFj
-cGkgcGFkIGxvZ2ljIGFkZGVkIGludG8ga2VybmVsLCB3ZSBjYW4gbm93IHJldmVydCB4ZW4gbXdh
-aXQgcmVsYXRlZApwYXRjaCBkZjg4YjJkOTZlMzZkOWE5ZTMyNWJmY2QxMmViNDU2NzFjYmJjOTM3
-LiBUaGUgcmVhc29uIGlzLCB3aGVuIHJ1bnMgdW5kZXIKWGVuIHBsYXRmb3JtLCBYZW4gcGFkIGRy
-aXZlciB3b3VsZCBiZSBlYXJseSBsb2FkZWQsIHNvIG5hdGl2ZSBwYWQgZHJpdmVyIHdvdWxkCmZh
-aWwgdG8gYmUgbG9hZGVkLCBhbmQgaGVuY2Ugbm8gbXdhaXQvbW9uaXRvciAjVUQgcmlzayBhZ2Fp
-bi4KClNpZ25lZC1vZmYtYnk6IExpdSwgSmluc29uZyA8amluc29uZy5saXVAaW50ZWwuY29tPgot
-LS0KIGFyY2gveDg2L3hlbi9lbmxpZ2h0ZW4uYyB8ICAgIDMgKy0tCiAxIGZpbGVzIGNoYW5nZWQs
-IDEgaW5zZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni94
-ZW4vZW5saWdodGVuLmMgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKaW5kZXggNTg2ZDgzOC4u
-OGJmMjhiMSAxMDA2NDQKLS0tIGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jCisrKyBiL2FyY2gv
-eDg2L3hlbi9lbmxpZ2h0ZW4uYwpAQCAtMjg3LDggKzI4Nyw3IEBAIHN0YXRpYyB2b2lkIHhlbl9j
-cHVpZCh1bnNpZ25lZCBpbnQgKmF4LCB1bnNpZ25lZCBpbnQgKmJ4LAogCiBzdGF0aWMgYm9vbCBf
-X2luaXQgeGVuX2NoZWNrX213YWl0KHZvaWQpCiB7Ci0jaWYgZGVmaW5lZChDT05GSUdfQUNQSSkg
-JiYgIWRlZmluZWQoQ09ORklHX0FDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1IpICYmIFwKLQkhZGVm
-aW5lZChDT05GSUdfQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9NT0RVTEUpCisjaWZkZWYgQ09O
-RklHX0FDUEkKIAlzdHJ1Y3QgeGVuX3BsYXRmb3JtX29wIG9wID0gewogCQkuY21kCQkJPSBYRU5Q
-Rl9zZXRfcHJvY2Vzc29yX3BtaW5mbywKIAkJLnUuc2V0X3BtaW5mby5pZAk9IC0xLAotLSAKMS43
-LjEKCg==
+These will just write a PRCC register.
 
---_002_DE8DF0795D48FD4CA783C40EC8292335371593SHSMSX101ccrcorpi_--
+And prepare() and unprepare() are not implemented for
+this clock.
+
+So far we can conclude that clk_enable()/disable()
+will indeed achieve the desired effect of gating the
+clock to the GPIO block per se, so we are saving
+some power for sure.
+
+However the prepare()/unprepare() calls will of course
+also accumulate upwards and in e.g. the example of
+"gpio.0" and "gpio.1" the parent is "per1clk" which is the
+clock for the entire peripheral group.
+
+(At this point I can stick in a reminder of the idea to
+restructure the device tree in peripheral groups, because
+that exercise will certainly pay off the day we try to encode
+clocks in the device tree, I think the point can be clearly
+seen as we proceed...)
+
+This "per1clk" is registered using clk_req_prcmu_gate()
+from clk-prcmu.c.
+
+Looking at that clock type we find it's a plain software
+dummy for the clk_enable()/clk_disable() path.
+The real action is happening in the prepare()/unprepare()
+path.
+
+So to be able to shut down the entire peripheral cluster,
+indeed both functions need to be called.
+
+So in accordance with this we can see that the patch
+should be applied, in some form.
+
+However it is not removing the initial clk_prepare()
+so the entire patch will be pointless, the prepare count
+will currently always be > 0.
+
+I'll mangle Lee's patch a bit, hold on..
+
+Yours,
+Linus Walleij
