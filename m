@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab2JYV24 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:28:56 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:34767 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750906Ab2JYV2y (ORCPT
+	id S1751513Ab2JYV3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:29:03 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:60499 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab2JYV27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:28:54 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Oct 2012 17:28:54 EDT
-Date: Thu, 25 Oct 2012 14:18:52 -0700 (PDT)
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: pv-drivers@vmware.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, vm-crosstalk@vmware.com,
-        George Zhang <georgezhang@vmware.com>,
-        Dmitry Torokhov <dtor@vmware.com>
-Message-ID: <1451569351.17004753.1351199932851.JavaMail.root@vmware.com>
-In-Reply-To: <20121025210448.GB12352@kroah.com>
-Subject: Re: [Pv-drivers] [PATCH 04/10] VMCI: device driver implementaton.
+	Thu, 25 Oct 2012 17:28:59 -0400
+Date: Thu, 25 Oct 2012 14:28:59 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
+In-Reply-To: <20121025111411.GB24886@redhat.com>
+Message-ID: <alpine.LNX.2.00.1210251427570.3623@eggly.anvils>
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils> <20121025111411.GB24886@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.160.14]
-X-Mailer: Zimbra 7.2.0_GA_2674 (ZimbraWebClient - GC22 (Mac)/7.2.0_GA_2669)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For many many years, you shipped closed source Linux kernel drivers
-> for
-> your products.  Only recently has this changed.
-
-and
-
-> > all our Linux drivers, even if not all are upstream [yet], are GPL.
+On Thu, 25 Oct 2012, Dave Jones wrote:
+> On Wed, Oct 24, 2012 at 09:36:27PM -0700, Hugh Dickins wrote:
 > 
-> That's nice to hear, although without proof of that, we have to take
-> your word :)
+>  > Clutching at straws, I expect this is entirely irrelevant, but:
+>  > there isn't a warning on line 1151 of mm/shmem.c in 3.7.0-rc2 nor
+>  > in current linux.git; rather, there's a VM_BUG_ON on line 1149.
+>  > 
+>  > So you've inserted a couple of lines for some reason (more useful
+>  > trinity behaviour, perhaps)? 
+> 
+> detritus from the recent mpol_to_str bug that I was chasing.
+> Shouldn't be relevant...
+> 
+>  > And have some config option I'm
+>  > unfamiliar with, that mutates a BUG_ON or VM_BUG_ON into a warning?
+> 
+> Yes, I do have this..
+> 
+> -#define VM_BUG_ON(cond) BUG_ON(cond)
+> +#define VM_BUG_ON(cond) WARN_ON(cond)
+> 
+> because I got tired of things not going over my usb serial port when I hit them
+> a while ago. BUG_ON is pretty unfriendly to bug finding.
 
-The following VMware drivers are in mainline Linux now (thanks to you and other members of the kernel community for that!)
+Makes sense, thanks for the reassurance.
 
-vmxnet3: Tue Oct 13 00:15:51 2009 -0700
-vmw_pvscsi: Tue Oct 13 14:51:05 2009 -0700
-vmwgfx: Thu Dec 10 00:19:58 2009 +0000
-vmw_balloon: Fri Apr 23 13:18:08 2010 -0400
-
-Thanks
-
-- Bhavesh
+Hugh
