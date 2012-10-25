@@ -1,58 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932185Ab2JYLis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:38:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58808 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2JYLie (ORCPT
+	id S1754158Ab2JYLjz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:39:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63403 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab2JYLjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:38:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121024165436.GG1855@beef>
-References: <1349456686-22736-1-git-send-email-mporter@ti.com>
-	<5072B190.1060200@ti.com>
-	<20121024165436.GG1855@beef>
-Date: Thu, 25 Oct 2012 17:08:33 +0530
-Message-ID: <CAKG51UBTu19DtVG2oL7XQ+0aZaKQKkRpfvwRm8Oe8+NxAdbsag@mail.gmail.com>
-Subject: Re: [PATCH v4 0/7] uio_pruss cleanup and platform support
-From: Sekhar Nori <nori.sekhar@gmail.com>
-To: Matt Porter <mporter@ti.com>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Oct 2012 07:39:53 -0400
+From: "hongbo.zhang" <hongbo.zhang@linaro.org>
+To: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Subject: [PATCH V2 6/6] Thermal: Add ST-Ericsson DB8500 thermal properties and platform data.
+Date: Thu, 25 Oct 2012 19:39:39 +0800
+Message-Id: <1351165179-30599-1-git-send-email-hongbo.zhang@linaro.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <1351163752-29389-1-git-send-email-hongbo.zhang@linaro.com>
+References: <1351163752-29389-1-git-send-email-hongbo.zhang@linaro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:24 PM, Matt Porter <mporter@ti.com> wrote:
-> On Mon, Oct 08, 2012 at 04:27:20PM +0530, Sekhar Nori wrote:
->> On 10/5/2012 10:34 PM, Matt Porter wrote:
->>
->> > This series enables uio_pruss on DA850 and removes use of the
->> > private SRAM API by the driver. The driver previously was not
->> > enabled by any platform and the private SRAM API was accessing
->> > an invalid SRAM bank.
->> >
->> > It is regression tested on AM180x EVM with suspend/resume due
->> > to the new use of the shared SRAM for both PM and PRUSS. The
->> > uio_pruss driver is tested on the same platform using the
->> > PRU_memAccessPRUDataRam and PRU_memAccessL3andDDR examples from
->> > the PRU userspace tools available from http://www.ti.com/tool/sprc940
->>
->> I applied patches 2/7, 3/7 and 6/7 of this series for v3.8. I have some
->> comments on the board patch. Rest of the patches depend on acceptance of
->> 1/7 so I will take them only after that is accepted.
->
-> Ok, Hans has accepted 1/7, will you take the entire series through the
-> Davinci tree?
+From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-Yes.
+This patch adds device tree properties for ST-Ericsson DB8500 thermal driver,
+also adds the platform data to support the old fashion.
 
-Thanks,
-Sekhar
+Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+---
+ arch/arm/boot/dts/dbx5x0.dtsi      | 14 +++++++++
+ arch/arm/boot/dts/snowball.dts     | 31 ++++++++++++++++++
+ arch/arm/configs/u8500_defconfig   |  4 +++
+ arch/arm/mach-ux500/board-mop500.c | 64 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 113 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dbx5x0.dtsi b/arch/arm/boot/dts/dbx5x0.dtsi
+index 748ba7a..949edc2 100644
+--- a/arch/arm/boot/dts/dbx5x0.dtsi
++++ b/arch/arm/boot/dts/dbx5x0.dtsi
+@@ -203,6 +203,14 @@
+ 				reg = <0x80157450 0xC>;
+ 			};
+ 
++			thermal@801573c0 {
++				compatible = "stericsson,db8500-thermal";
++				reg = <0x801573c0 0x40>;
++				interrupts = <21 0x4>, <22 0x4>;
++				interrupt-names = "IRQ_HOTMON_LOW", "IRQ_HOTMON_HIGH";
++				status = "disabled";
++			 };
++
+ 			db8500-prcmu-regulators {
+ 				compatible = "stericsson,db8500-prcmu-regulator";
+ 
+@@ -645,5 +653,11 @@
+ 			ranges = <0 0x50000000 0x4000000>;
+ 			status = "disabled";
+ 		};
++
++		cpufreq-cooling {
++			compatible = "stericsson,db8500-cpufreq-cooling";
++			status = "disabled";
++		 };
++
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+index 702c0ba..c6f85f0 100644
+--- a/arch/arm/boot/dts/snowball.dts
++++ b/arch/arm/boot/dts/snowball.dts
+@@ -99,6 +99,33 @@
+ 			status = "okay";
+ 		};
+ 
++		prcmu@80157000 {
++			thermal@801573c0 {
++				num-trips = <4>;
++
++				trip0-temp = <70000>;
++				trip0-type = "active";
++				trip0-cdev-num = <1>;
++				trip0-cdev-name0 = "thermal-cpufreq-0";
++
++				trip1-temp = <75000>;
++				trip1-type = "active";
++				trip1-cdev-num = <1>;
++				trip1-cdev-name0 = "thermal-cpufreq-0";
++
++				trip2-temp = <80000>;
++				trip2-type = "active";
++				trip2-cdev-num = <1>;
++				trip2-cdev-name0 = "thermal-cpufreq-0";
++
++				trip3-temp = <85000>;
++				trip3-type = "critical";
++				trip3-cdev-num = <0>;
++
++				status = "okay";
++			 };
++		};
++
+ 		external-bus@50000000 {
+ 			status = "okay";
+ 
+@@ -183,5 +210,9 @@
+ 				reg = <0x33>;
+ 			};
+ 		};
++
++		cpufreq-cooling {
++			status = "okay";
++		};
+ 	};
+ };
+diff --git a/arch/arm/configs/u8500_defconfig b/arch/arm/configs/u8500_defconfig
+index cc5e7a8..34918c4 100644
+--- a/arch/arm/configs/u8500_defconfig
++++ b/arch/arm/configs/u8500_defconfig
+@@ -118,3 +118,7 @@ CONFIG_DEBUG_KERNEL=y
+ CONFIG_DEBUG_INFO=y
+ # CONFIG_FTRACE is not set
+ CONFIG_DEBUG_USER=y
++CONFIG_THERMAL=y
++CONFIG_CPU_THERMAL=y
++CONFIG_DB8500_THERMAL=y
++CONFIG_DB8500_CPUFREQ_COOLING=y
+diff --git a/arch/arm/mach-ux500/board-mop500.c b/arch/arm/mach-ux500/board-mop500.c
+index 416d436..b03216b 100644
+--- a/arch/arm/mach-ux500/board-mop500.c
++++ b/arch/arm/mach-ux500/board-mop500.c
+@@ -16,6 +16,7 @@
+ #include <linux/io.h>
+ #include <linux/i2c.h>
+ #include <linux/platform_data/i2c-nomadik.h>
++#include <linux/platform_data/db8500_thermal.h>
+ #include <linux/gpio.h>
+ #include <linux/amba/bus.h>
+ #include <linux/amba/pl022.h>
+@@ -229,6 +230,67 @@ static struct ab8500_platform_data ab8500_platdata = {
+ };
+ 
+ /*
++ * Thermal Sensor
++ */
++
++static struct resource db8500_thsens_resources[] = {
++	{
++		.name = "IRQ_HOTMON_LOW",
++		.start  = IRQ_PRCMU_HOTMON_LOW,
++		.end    = IRQ_PRCMU_HOTMON_LOW,
++		.flags  = IORESOURCE_IRQ,
++	},
++	{
++		.name = "IRQ_HOTMON_HIGH",
++		.start  = IRQ_PRCMU_HOTMON_HIGH,
++		.end    = IRQ_PRCMU_HOTMON_HIGH,
++		.flags  = IORESOURCE_IRQ,
++	},
++};
++
++static struct db8500_thsens_platform_data db8500_thsens_data = {
++	.trip_points[0] = {
++		.temp = 70000,
++		.type = THERMAL_TRIP_ACTIVE,
++		.cdev_name = {
++			[0] = "thermal-cpufreq-0",
++		},
++	},
++	.trip_points[1] = {
++		.temp = 75000,
++		.type = THERMAL_TRIP_ACTIVE,
++		.cdev_name = {
++			[0] = "thermal-cpufreq-0",
++		},
++	},
++	.trip_points[2] = {
++		.temp = 80000,
++		.type = THERMAL_TRIP_ACTIVE,
++		.cdev_name = {
++			[0] = "thermal-cpufreq-0",
++		},
++	},
++	.trip_points[3] = {
++		.temp = 85000,
++		.type = THERMAL_TRIP_CRITICAL,
++	},
++	.num_trips = 4,
++};
++
++static struct platform_device u8500_thsens_device = {
++	.name           = "db8500-thermal",
++	.resource       = db8500_thsens_resources,
++	.num_resources  = ARRAY_SIZE(db8500_thsens_resources),
++	.dev	= {
++		.platform_data	= &db8500_thsens_data,
++	},
++};
++
++static struct platform_device u8500_cpufreq_cooling_device = {
++	.name           = "db8500-cpufreq-cooling",
++};
++
++/*
+  * TPS61052
+  */
+ 
+@@ -583,6 +645,8 @@ static struct platform_device *snowball_platform_devs[] __initdata = {
+ 	&snowball_key_dev,
+ 	&snowball_sbnet_dev,
+ 	&snowball_gpio_en_3v3_regulator_dev,
++	&u8500_thsens_device,
++	&u8500_cpufreq_cooling_device,
+ };
+ 
+ static void __init mop500_init_machine(void)
+-- 
+1.7.11.3
+
