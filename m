@@ -1,118 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992634Ab2JYTJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:09:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59497 "EHLO mx2.suse.de"
+	id S2992650Ab2JYTJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:09:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:52518 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935206Ab2JYTJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:09:00 -0400
-Date: Wed, 24 Oct 2012 22:17:17 +0200
-From: Jan Kara <jack@suse.cz>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121024201717.GA5572@quack.suse.cz>
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <20121023221913.GC28626@thunk.org>
- <50873CE5.8090303@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50873CE5.8090303@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S2992635Ab2JYTJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:09:11 -0400
+Message-ID: <1351191980.18115.116.camel@falcor>
+Subject: Re: [RFC] Kdump with signed images
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Matthew Garrett <mjg@redhat.com>, Khalid Aziz <khalid@gonehiking.org>,
+        kexec@lists.infradead.org, horms@verge.net.au,
+        Dave Young <dyoung@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Kees Cook <keescook@chromium.org>
+Date: Thu, 25 Oct 2012 15:06:20 -0400
+In-Reply-To: <20121025135437.GC9377@redhat.com>
+References: <20121019020630.GA27052@redhat.com>
+	 <877gqnnnf0.fsf@xmission.com> <20121019143112.GB27052@redhat.com>
+	 <871ugqb4gj.fsf@xmission.com> <20121023131854.GA16496@redhat.com>
+	 <20121023145920.GD16496@redhat.com> <20121023154123.GA30730@srcf.ucam.org>
+	 <87d309xhmc.fsf_-_@xmission.com> <20121024171926.GD1821@redhat.com>
+	 <1351143839.18115.57.camel@falcor> <20121025135437.GC9377@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102519-7182-0000-0000-000002F31168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-10-12 19:57:09, Eric Sandeen wrote:
-> On 10/23/12 5:19 PM, Theodore Ts'o wrote:
-> > On Tue, Oct 23, 2012 at 09:57:08PM +0100, Nix wrote:
-> >>
-> >> It is now quite clear that this is a bug introduced by one or more of
-> >> the post-3.6.1 ext4 patches (which have all been backported at least to
-> >> 3.5, so the problem is probably there too).
-> >>
-> >> [   60.290844] EXT4-fs error (device dm-3): ext4_mb_generate_buddy:741: group 202, 1583 clusters in bitmap, 1675 in gd
-> >> [   60.291426] JBD2: Spotted dirty metadata buffer (dev = dm-3, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-> >>
+On Thu, 2012-10-25 at 09:54 -0400, Vivek Goyal wrote:
+> On Thu, Oct 25, 2012 at 01:43:59AM -0400, Mimi Zohar wrote:
+> > On Wed, 2012-10-24 at 13:19 -0400, Vivek Goyal wrote:
+> > > On Tue, Oct 23, 2012 at 09:44:59AM -0700, Eric W. Biederman wrote:
+> > > > Matthew Garrett <mjg@redhat.com> writes:
+> > > > 
+> > > > > On Tue, Oct 23, 2012 at 10:59:20AM -0400, Vivek Goyal wrote:
+> > > > >
+> > > > >> But what about creation of a new program which can call kexec_load()
+> > > > >> and execute an unsigned kernel. Doesn't look like that will be
+> > > > >> prevented using IMA.
 > > 
-> > I think I've found the problem.  I believe the commit at fault is commit
-> > 14b4ed22a6 (upstream commit eeecef0af5e):
+> > Like the existing kernel modules, kexec_load() is not file descriptor
+> > based.  There isn't an LSM or IMA-appraisal hook here.
 > > 
-> >     jbd2: don't write superblock when if its empty
+> > > > > Right. Trusting userspace would require a new system call that passes in 
+> > > > > a signature of the userspace binary, and the kernel would then have to 
+> > > > > verify the ELF object in memory in order to ensure that it 
+> > > > > matches the signature. Verifying that the copy on the filesystem is 
+> > > > > unmodified isn't adequate - an attacker could simply have paused the 
+> > > > > process and injected code. 
 > > 
-> > which first appeared in v3.6.2.
+> > I haven't looked at kexec_load() in detail, but like kernel modules, I
+> > think the better solution would be to pass a file descriptor, especially
+> > if you're discussing a new system call.  (cc'ing Kees.)
+> 
+> If we decide to go for a new system call, then yes it looks like passing
+> fd will make sense.
+> 
 > > 
-> > The reason why the problem happens rarely is that the effect of the
-> > buggy commit is that if the journal's starting block is zero, we fail
-> > to truncate the journal when we unmount the file system.  This can
-> > happen if we mount and then unmount the file system fairly quickly,
-> > before the log has a chance to wrap.After the first time this has
-> > happened, it's not a disaster, since when we replay the journal, we'll
-> > just replay some extra transactions.  But if this happens twice, the
-> > oldest valid transaction will still not have gotten updated, but some
-> > of the newer transactions from the last mount session will have gotten
-> > written by the very latest transacitons, and when we then try to do
-> > the extra transaction replays, the metadata blocks can end up getting
-> > very scrambled indeed.
+> > > > Verifying the copy on the filesystem at exec time is perfectly adequate
+> > > > for gating extra permissions.  Certainly that is the model everywhere
+> > > > else in the signed key chain.
+> > > > 
+> > > > Where IMA falls short is there is no offline signing capability in IMA
+> > > > itself.  I think EVM may fix that.
+> > 
+> > I'm not sure what you mean by offline signing capability.  IMA-appraisal
+> > verifies a file's 'security.ima' xattr, which may contain a hash or a
+> > digital signature.  EVM protects a file's metadata, including
+> > 'security.ima'.  'security.evm' can be either an hmac or a digital
+> > signature.
 > 
-> I'm stumped by this; maybe Ted can see if I'm missing something.
-> 
-> (and Nix, is there anything special about your fs?  Any nondefault
-> mkfs or mount options, external journal, inordinately large fs, or
-> anything like that?)
-> 
-> The suspect commit added this in jbd2_mark_journal_empty():
-> 
->         /* Is it already empty? */
->         if (sb->s_start == 0) {
->                 read_unlock(&journal->j_state_lock);
->                 return;
->         }
-> 
-> thereby short circuiting the function.
-> 
-> But Ted's suggestion that mounting the fs, doing a little work, and
-> unmounting before we wrap would lead to this doesn't make sense to
-> me.  When I do a little work, s_start is at 1, not 0.  We start
-> the journal at s_first:
-> 
-> load_superblock()
-> 	journal->j_first = be32_to_cpu(sb->s_first);
-> 
-> And when we wrap the journal, we wrap back to j_first:
-> 
-> jbd2_journal_next_log_block():
->         if (journal->j_head == journal->j_last)
->                 journal->j_head = journal->j_first;
-> 
-> and j_first comes from s_first, which is set at journal creation
-> time to be "1" for an internal journal.
-> 
-> So s_start == 0 sure looks special to me; so far I can only see that
-> we get there if we've been through jbd2_mark_journal_empty() already,
-> though I'm eyeballing jbd2_journal_get_log_tail() as well.
-> 
-> Ted's proposed patch seems harmless but so far I don't understand
-> what problem it fixes, and I cannot recreate getting to
-> jbd2_mark_journal_empty() with a dirty log and s_start == 0.
-  Agreed. I rather thing we might miss journal->j_flags |= JBD2_FLUSHED
-when shortcircuiting jbd2_mark_journal_empty(). But I still don't exactly
-see how that would cause the corruption...
+> By offline we mean that signature generation/signing does not happen on
+> system in question. It happens say on build time. IIUC, in case of IMA,
+> security.ima is generated and signed on the system and that means private
+> key needs to be present on the system? 
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The signature for 'security.ima' can definitely be created offline.
+'security.evm' can also be created offline, as long as the target's
+inode and other metadata doesn't change.
+
+> We wanted something like module signing where modules are signed at
+> build time and verification happens at load time but no private key
+> needs to be present on the system.
+
+Modules are identifiable.  As long as you have some mechanism to
+identify mutable vs immutable files during build, there shouldn't be a
+problem.  I'd use the same private key for signing modules and all
+others.
+
+> > 
+> > > [ CCing lkml. I think it is a good idea to open discussion to wider
+> > > audience. Also CCing IMA/EVM folks ]
+> > 
+> > thanks!
+> > 
+> > > Based on reading following wiki page, looks like EVM also does not allow
+> > > offline signing capability. And EVM is protecting IMA data to protect
+> > > against offline attack. If we can assume that unisgned kernels can't be
+> > > booted on the platform, then EVM might not be a strict requirement in
+> > > this case.
+> > 
+> > > So as you said, one of the main problem with IMA use to verify /sbin/kexec
+> > > is that IMA does not provide offline signing capability.
+> > 
+> > ?
+> 
+> See above.
+> 
+> >  
+> > > > 
+> > > > > Realistically, the only solution here is for 
+> > > > > the kernel to verify that the kernel it's about to boot is signed and 
+> > > > > for it not to take any untrusted executable code from userspace.
+> > 
+> > >From an IMA, as opposed to an IMA-appraisal, perspective, kexec is
+> > problematic.  IMA maintains a measurement list and extends a PCR with
+> > the file hash.  The measurement list and PCR value are used to attest to
+> > the integrity of the running system.  As the original measurement list
+> > is lost after kexec, but the PCR value hasn't been reset, the
+> > measuremnet list and PCR value won't agree.
+> > 
+> > > > Hogwash.  The kernel verifing a signature of /sbin/kexec at exec time is
+> > > > perfectly reasonable, and realistic.  In fact finding a way to trust
+> > > > small bits of userspace even if root is compromised seems a far superior
+> > > > model to simply solving the signing problem for /sbin/kexec.
+> > 
+> > Huh?  I don't understand what you're suggesting.  Once root has been
+> > compromised, that's it.
+> > 
+> > > > Although I do admit some part of the kexec process will need to verify
+> > > > keys on the images we decide to boot.
+> > 
+> > Which keys?  Isn't the kernel module key builtin to the kernel and
+> > included in the kernel image signature?
+> 
+> I think Eric is referring to verifying bzImage signature. One can sign
+> PE/COFF bzImage so IIUC, Eric seems to be suggesting that let /sbin/kexec
+> verify the integrity/authenticity of bzImage and figure a way out to
+> verify integrity/authenticity of /sbin/kexec.
+
+Yes that would work.  IMA-appraisal/EVM would verify and enforce the
+integrity of /sbin/kexec, like any other file.  Verifying the signature
+of the kernel image itself could be left up to kexec.
+
+> That way one does not have to change current logic and most of the logic
+> of kexec/kdump can still be in user space. Otherwise we shall probably
+> have to implement a new system call which takes kernel and initrd as
+> input parameters and kernel does signature verification and prepares
+> bzImage for loading. This is like re-writing kexec/kdump again with
+> restricted functionality.
+> 
+> Thanks
+> Vivek
+> 
+
+>From an attestation perspective, it would be better to add a new hook to
+measure the kernel image and append the measurement to the IMA
+measurement list.  With the new hook, the integrity of the kernel image
+could be enforced.   I assume you realize that calculating a hash
+requires reading the entire file.
+
+thanks,
+
+Mimi
+
