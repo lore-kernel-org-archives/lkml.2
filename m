@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965624Ab2JYOJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:09:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37998 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965084Ab2JYOJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:09:55 -0400
-Date: Thu, 25 Oct 2012 10:09:31 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Dave Chinner <david@fromorbit.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-In-Reply-To: <20121024030845.GT4291@dastard>
-Message-ID: <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com>
-References: <20121017165902.GB9872@redhat.com> <20121017224430.GC2518@linux.vnet.ibm.com>
- <20121018162409.GA28504@redhat.com> <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com> <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
- <1350650286.30157.28.camel@twins> <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com>
- <1350668451.2768.60.camel@twins> <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com>
- <20121024030845.GT4291@dastard>
+	id S1946093Ab2JYOKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:10:25 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53709 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945971Ab2JYOKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:10:23 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH RESEND] mtip32xx: fix potential crash on SEC_ERASE_UNIT
+To: smain@micron.com, linux-kernel@vger.kernel.org
+Date: Thu, 25 Oct 2012 15:12:13 +0100
+Message-ID: <20121025141133.30303.3712.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Resending to the list as the maintainer is not responding to direct email)
+
+From: Alan Cox <alan@linux.intel.com>
+
+The mtip driver lifted this code from elsewhere and then added a special
+handling check for SEC_ERASE_UNIT. If the caller tries to do a security
+erase but passes no output data for the command then outbuf is not
+allocated and the driver duly explodes.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/block/mtip32xx/mtip32xx.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 
-On Wed, 24 Oct 2012, Dave Chinner wrote:
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index adc6f36..d11e9e7 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -2218,8 +2218,8 @@ static int exec_drive_taskfile(struct driver_data *dd,
+ 		fis.device);
+ 
+ 	/* check for erase mode support during secure erase.*/
+-	if ((fis.command == ATA_CMD_SEC_ERASE_UNIT)
+-					&& (outbuf[0] & MTIP_SEC_ERASE_MODE)) {
++	if (fis.command == ATA_CMD_SEC_ERASE_UNIT && outbuf &&
++					(outbuf[0] & MTIP_SEC_ERASE_MODE)) {
+ 		erasemode = 1;
+ 	}
+ 
 
-> On Fri, Oct 19, 2012 at 06:54:41PM -0400, Mikulas Patocka wrote:
-> > 
-> > 
-> > On Fri, 19 Oct 2012, Peter Zijlstra wrote:
-> > 
-> > > > Yes, I tried this approach - it involves doing LOCK instruction on read 
-> > > > lock, remembering the cpu and doing another LOCK instruction on read 
-> > > > unlock (which will hopefully be on the same CPU, so no cacheline bouncing 
-> > > > happens in the common case). It was slower than the approach without any 
-> > > > LOCK instructions (43.3 seconds seconds for the implementation with 
-> > > > per-cpu LOCKed access, 42.7 seconds for this implementation without atomic 
-> > > > instruction; the benchmark involved doing 512-byte direct-io reads and 
-> > > > writes on a ramdisk with 8 processes on 8-core machine).
-> > > 
-> > > So why is that a problem? Surely that's already tons better then what
-> > > you've currently got.
-> > 
-> > Percpu rw-semaphores do not improve performance at all. I put them there 
-> > to avoid performance regression, not to improve performance.
-> > 
-> > All Linux kernels have a race condition - when you change block size of a 
-> > block device and you read or write the device at the same time, a crash 
-> > may happen. This bug is there since ever. Recently, this bug started to 
-> > cause major trouble - multiple high profile business sites report crashes 
-> > because of this race condition.
-> >
-> > You can fix this race by using a read lock around I/O paths and write lock 
-> > around block size changing, but normal rw semaphore cause cache line 
-> > bouncing when taken for read by multiple processors and I/O performance 
-> > degradation because of it is measurable.
-> 
-> This doesn't sound like a new problem.  Hasn't this global access,
-> single modifier exclusion problem been solved before in the VFS?
-> e.g. mnt_want_write()/mnt_make_readonly()
-> 
-> Cheers,
-> 
-> Dave.
-
-Yes, mnt_want_write()/mnt_make_readonly() do the same thing as percpu rw 
-semaphores. I think you can convert mnt_want_write()/mnt_make_readonly() 
-to use percpu rw semaphores and remove the duplicated code.
-
-Mikulas
