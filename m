@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759474Ab2JYM5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 08:57:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754050Ab2JYM5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 08:57:51 -0400
-Date: Thu, 25 Oct 2012 18:27:32 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: keescook@chromium.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        josh@joshtriplett.org, serge.hallyn@canonical.com,
-        linux-fsdevel@vger.kernel.org, me@halfdog.net
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-In-Reply-To: <201210252103.BJG56875.OtHFLOOVSFFQMJ@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.LFD.2.02.1210251757200.24078@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
- <201210252103.BJG56875.OtHFLOOVSFFQMJ@I-love.SAKURA.ne.jp>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759448Ab2JYM6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 08:58:46 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53586 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803Ab2JYM6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 08:58:45 -0400
+Date: Thu, 25 Oct 2012 14:03:25 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
+        =?UTF-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121025140325.49cd7c79@pyramind.ukuu.org.uk>
+In-Reply-To: <20121025051445.GA9860@thunk.org>
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
+	<m2fw5mtffg.fsf_-_@firstfloor.org>
+	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+	<5086F5A7.9090406@vlnb.net>
+	<20121025051445.GA9860@thunk.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > Hopefully, eventually the storage developers will realize the value
+> > behind ordered commands and learn corresponding SCSI facilities to
+> > deal with them.
+> 
+> Eventually, drive manufacturers will realize that trying to price
+> guage people who want advanced features such as TCQ, DIF/DIX, is the
+> best way to gaurantee that most people won't bother to purchase them,
+> and hence the features will remain largely unused....
 
-   Hello Tetsuo,
+I doubt they care. The profit on high end features from the people who
+really need them I would bet far exceeds any other benefit of giving it to
+others. Welcome to capitalism 8)
 
-+-- On Thu, 25 Oct 2012, Tetsuo Handa wrote --+
-| Excuse me, but why do you change definition of printable(c) ?
-| Looks like a regression.
+Plus - spinning rust for those end users is on the way out, SATA to flash
+is a bit of hack and people are already putting a lot of focus onto
+things like NVM Express.
 
-#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
-
- Earlier definition of printable() as above was used to - break; - out of the 
-loop when (c) was either tab or new line or any printable character. Whereas, 
-in the patch it is used to call the request_module routine if the (c) is 
-printable character, and hence the change to - printable().
-
-
-| Wouldn't your patch trigger call request_module() whenever a script
-| starting with "#!/bin/sh" is executed?
-
- Yes, Petr(a colleague here) already pointed out about excessive call to 
-request_module() routine, in case if the requested module is already loaded or 
-is not required/available. I'm trying to find a possible fix for the same.
-
-Is there a way to to see if the requested module 'binfmt-xxxx' is accessible 
-or not? The call to - request_module - could be conditioned accordingly.
-
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+Alan
