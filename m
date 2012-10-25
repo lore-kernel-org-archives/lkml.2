@@ -1,232 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab2JYNKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:10:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51606 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934858Ab2JYNJ7 (ORCPT
+	id S1422915Ab2JYNKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:10:15 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:38956 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759528Ab2JYNKH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:09:59 -0400
-Message-Id: <20121025124833.785487250@chello.nl>
-User-Agent: quilt/0.48-1
-Date: Thu, 25 Oct 2012 14:16:34 +0200
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 17/31] mm/migrate: Introduce migrate_misplaced_page()
-References: <20121025121617.617683848@chello.nl>
-Content-Disposition: inline; filename=0017-mm-migrate-Introduce-migrate_misplaced_page.patch
+	Thu, 25 Oct 2012 09:10:07 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH v2] media: davinci: vpbe: fix build warning
+Date: Thu, 25 Oct 2012 15:10:56 +0200
+Message-ID: <2557607.c0P57CM58Q@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <1350998677-19890-1-git-send-email-prabhakar.lad@ti.com>
+References: <1350998677-19890-1-git-send-email-prabhakar.lad@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add migrate_misplaced_page() which deals with migrating pages from
-faults. 
+Hi Prabhakar,
 
-This includes adding a new MIGRATE_FAULT migration mode to
-deal with the extra page reference required due to having to look up
-the page.
+Thanks for the patch.
 
-Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/migrate.h      |    7 +++
- include/linux/migrate_mode.h |    3 +
- mm/migrate.c                 |   85 ++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 87 insertions(+), 8 deletions(-)
+On Tuesday 23 October 2012 18:54:37 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.lad@ti.com>
+> 
+> Warnings were generated because of the following commit changed data type
+> for address pointer
+> 
+> 195bbca ARM: 7500/1: io: avoid writeback addressing modes for __raw_
+> accessors add  __iomem annotation to fix following warnings
+> 
+> drivers/media/platform/davinci/vpbe_osd.c: In function ‘osd_read’:
+> drivers/media/platform/davinci/vpbe_osd.c:49:2: warning: passing
+>  argument 1 of ‘__raw_readl’ makes pointer from integer without a cast
+> [enabled by default] arch/arm/include/asm/io.h:104:19: note: expected
+> ‘const volatile
+>  void *’ but argument is of type ‘long unsigned int’
 
-Index: tip/include/linux/migrate.h
-===================================================================
---- tip.orig/include/linux/migrate.h
-+++ tip/include/linux/migrate.h
-@@ -30,6 +30,7 @@ extern int migrate_vmas(struct mm_struct
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
-+extern int migrate_misplaced_page(struct page *page, int node);
- #else
- 
- static inline void putback_lru_pages(struct list_head *l) {}
-@@ -63,5 +64,11 @@ static inline int migrate_huge_page_move
- #define migrate_page NULL
- #define fail_migrate_page NULL
- 
-+static inline
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	return -EAGAIN; /* can't migrate now */
-+}
- #endif /* CONFIG_MIGRATION */
-+
- #endif /* _LINUX_MIGRATE_H */
-Index: tip/include/linux/migrate_mode.h
-===================================================================
---- tip.orig/include/linux/migrate_mode.h
-+++ tip/include/linux/migrate_mode.h
-@@ -6,11 +6,14 @@
-  *	on most operations but not ->writepage as the potential stall time
-  *	is too significant
-  * MIGRATE_SYNC will block when migrating pages
-+ * MIGRATE_FAULT called from the fault path to migrate-on-fault for mempolicy
-+ *	this path has an extra reference count
-  */
- enum migrate_mode {
- 	MIGRATE_ASYNC,
- 	MIGRATE_SYNC_LIGHT,
- 	MIGRATE_SYNC,
-+	MIGRATE_FAULT,
- };
- 
- #endif		/* MIGRATE_MODE_H_INCLUDED */
-Index: tip/mm/migrate.c
-===================================================================
---- tip.orig/mm/migrate.c
-+++ tip/mm/migrate.c
-@@ -225,7 +225,7 @@ static bool buffer_migrate_lock_buffers(
- 	struct buffer_head *bh = head;
- 
- 	/* Simple case, sync compaction */
--	if (mode != MIGRATE_ASYNC) {
-+	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT) {
- 		do {
- 			get_bh(bh);
- 			lock_buffer(bh);
-@@ -279,12 +279,22 @@ static int migrate_page_move_mapping(str
- 		struct page *newpage, struct page *page,
- 		struct buffer_head *head, enum migrate_mode mode)
- {
--	int expected_count;
-+	int expected_count = 0;
- 	void **pslot;
- 
-+	if (mode == MIGRATE_FAULT) {
-+		/*
-+		 * MIGRATE_FAULT has an extra reference on the page and
-+		 * otherwise acts like ASYNC, no point in delaying the
-+		 * fault, we'll try again next time.
-+		 */
-+		expected_count++;
-+	}
-+
- 	if (!mapping) {
- 		/* Anonymous page without mapping */
--		if (page_count(page) != 1)
-+		expected_count += 1;
-+		if (page_count(page) != expected_count)
- 			return -EAGAIN;
- 		return 0;
- 	}
-@@ -294,7 +304,7 @@ static int migrate_page_move_mapping(str
- 	pslot = radix_tree_lookup_slot(&mapping->page_tree,
-  					page_index(page));
- 
--	expected_count = 2 + page_has_private(page);
-+	expected_count += 2 + page_has_private(page);
- 	if (page_count(page) != expected_count ||
- 		radix_tree_deref_slot_protected(pslot, &mapping->tree_lock) != page) {
- 		spin_unlock_irq(&mapping->tree_lock);
-@@ -313,7 +323,7 @@ static int migrate_page_move_mapping(str
- 	 * the mapping back due to an elevated page count, we would have to
- 	 * block waiting on other references to be dropped.
- 	 */
--	if (mode == MIGRATE_ASYNC && head &&
-+	if ((mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT) && head &&
- 			!buffer_migrate_lock_buffers(head, mode)) {
- 		page_unfreeze_refs(page, expected_count);
- 		spin_unlock_irq(&mapping->tree_lock);
-@@ -521,7 +531,7 @@ int buffer_migrate_page(struct address_s
- 	 * with an IRQ-safe spinlock held. In the sync case, the buffers
- 	 * need to be locked now
- 	 */
--	if (mode != MIGRATE_ASYNC)
-+	if (mode != MIGRATE_ASYNC && mode != MIGRATE_FAULT)
- 		BUG_ON(!buffer_migrate_lock_buffers(head, mode));
- 
- 	ClearPagePrivate(page);
-@@ -687,7 +697,7 @@ static int __unmap_and_move(struct page
- 	struct anon_vma *anon_vma = NULL;
- 
- 	if (!trylock_page(page)) {
--		if (!force || mode == MIGRATE_ASYNC)
-+		if (!force || mode == MIGRATE_ASYNC || mode == MIGRATE_FAULT)
- 			goto out;
- 
- 		/*
-@@ -1403,4 +1413,63 @@ int migrate_vmas(struct mm_struct *mm, c
-  	}
-  	return err;
- }
--#endif
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	struct address_space *mapping = page_mapping(page);
-+	int page_lru = page_is_file_cache(page);
-+	struct page *newpage;
-+	int ret = -EAGAIN;
-+	gfp_t gfp = GFP_HIGHUSER_MOVABLE;
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 */
-+	if (page_mapcount(page) != 1)
-+		goto out;
-+
-+	/*
-+	 * Never wait for allocations just to migrate on fault, but don't dip
-+	 * into reserves. And, only accept pages from the specified node. No
-+	 * sense migrating to a different "misplaced" page!
-+	 */
-+	if (mapping)
-+		gfp = mapping_gfp_mask(mapping);
-+	gfp &= ~__GFP_WAIT;
-+	gfp |= __GFP_NOMEMALLOC | GFP_THISNODE;
-+
-+	newpage = alloc_pages_node(node, gfp, 0);
-+	if (!newpage) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	if (isolate_lru_page(page)) {
-+		ret = -EBUSY;
-+		goto put_new;
-+	}
-+
-+	inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+	ret = __unmap_and_move(page, newpage, 0, 0, MIGRATE_FAULT);
-+	/*
-+	 * A page that has been migrated has all references removed and will be
-+	 * freed. A page that has not been migrated will have kepts its
-+	 * references and be restored.
-+	 */
-+	dec_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+	putback_lru_page(page);
-+put_new:
-+	/*
-+	 * Move the new page to the LRU. If migration was not successful
-+	 * then this will free the page.
-+	 */
-+	putback_lru_page(newpage);
-+out:
-+	return ret;
-+}
-+
-+#endif /* CONFIG_NUMA */
+Please add a sentence here that explains what your patch does. Something like
 
+"Store the ioremap_nocache() returned address in a void __iomem * instead of a 
+unsigned long."
+
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+>  Changes for v2:
+>  1: Made the base addr to void __iomem * instead of long unsigned,
+>     as pointed by Laurent.
+> 
+>  drivers/media/platform/davinci/vpbe_osd.c |    9 ++++-----
+>  include/media/davinci/vpbe_osd.h          |    2 +-
+>  2 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpbe_osd.c
+> b/drivers/media/platform/davinci/vpbe_osd.c index bba299d..707f243 100644
+> --- a/drivers/media/platform/davinci/vpbe_osd.c
+> +++ b/drivers/media/platform/davinci/vpbe_osd.c
+> @@ -62,7 +62,7 @@ static inline u32 osd_set(struct osd_state *sd, u32 mask,
+> u32 offset) {
+>  	struct osd_state *osd = sd;
+> 
+> -	u32 addr = osd->osd_base + offset;
+> +	void __iomem *addr = osd->osd_base + offset;
+>  	u32 val = readl(addr) | mask;
+> 
+>  	writel(val, addr);
+> @@ -74,7 +74,7 @@ static inline u32 osd_clear(struct osd_state *sd, u32
+> mask, u32 offset) {
+>  	struct osd_state *osd = sd;
+> 
+> -	u32 addr = osd->osd_base + offset;
+> +	void __iomem *addr = osd->osd_base + offset;
+>  	u32 val = readl(addr) & ~mask;
+> 
+>  	writel(val, addr);
+> @@ -87,7 +87,7 @@ static inline u32 osd_modify(struct osd_state *sd, u32
+> mask, u32 val, {
+>  	struct osd_state *osd = sd;
+> 
+> -	u32 addr = osd->osd_base + offset;
+> +	void __iomem *addr = osd->osd_base + offset;
+>  	u32 new_val = (readl(addr) & ~mask) | (val & mask);
+> 
+>  	writel(new_val, addr);
+> @@ -1559,8 +1559,7 @@ static int osd_probe(struct platform_device *pdev)
+>  		ret = -ENODEV;
+>  		goto free_mem;
+>  	}
+> -	osd->osd_base = (unsigned long)ioremap_nocache(res->start,
+> -							osd->osd_size);
+> +	osd->osd_base = ioremap_nocache(res->start, osd->osd_size);
+>  	if (!osd->osd_base) {
+>  		dev_err(osd->dev, "Unable to map the OSD region\n");
+>  		ret = -ENODEV;
+> diff --git a/include/media/davinci/vpbe_osd.h
+> b/include/media/davinci/vpbe_osd.h index d7e397a..5ab0d8d 100644
+> --- a/include/media/davinci/vpbe_osd.h
+> +++ b/include/media/davinci/vpbe_osd.h
+> @@ -357,7 +357,7 @@ struct osd_state {
+>  	spinlock_t lock;
+>  	struct device *dev;
+>  	dma_addr_t osd_base_phys;
+> -	unsigned long osd_base;
+> +	void __iomem *osd_base;
+>  	unsigned long osd_size;
+>  	/* 1-->the isr will toggle the VID0 ping-pong buffer */
+>  	int pingpong;
+-- 
+Regards,
+
+Laurent Pinchart
 
