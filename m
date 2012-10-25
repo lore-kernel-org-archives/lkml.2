@@ -1,72 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935953Ab2JYRda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:33:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759429Ab2JYRd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:33:28 -0400
-Date: Thu, 25 Oct 2012 19:34:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] freezer: change ptrace_stop/do_signal_stop to use
-	freezable_schedule()
-Message-ID: <20121025173433.GA7650@redhat.com>
-References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-3-git-send-email-tj@kernel.org> <20121022174404.GA21553@redhat.com> <20121022211317.GD5951@atj.dyndns.org> <20121023153919.GA16201@redhat.com> <20121024185710.GA12182@atj.dyndns.org> <20121025163941.GA3801@redhat.com> <20121025163959.GB3801@redhat.com> <20121025171812.GE11442@htj.dyndns.org>
+	id S2992466Ab2JYRdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:33:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37390 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759429Ab2JYRdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 13:33:31 -0400
+Date: Thu, 25 Oct 2012 10:33:26 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] fs: xattr: rewrite simple_xattr_set()
+Message-ID: <20121025173326.GH11442@htj.dyndns.org>
+References: <20121025152613.GF14085@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121025171812.GE11442@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121025152613.GF14085@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Thu, Oct 25, 2012 at 06:39:59PM +0200, Oleg Nesterov wrote:
-> > Change ptrace_stop() and do_signal_stop() to use freezable_schedule()
-> > rather than rely on subsequent try_to_freeze().
-> >
-> > This allows to remove the task_is_stopped_or_traced() checks from
-> > try_to_freeze_tasks() and update_if_frozen(), and this fixes the
-> > unlikely race with ptrace_stop(). If the tracee does not schedule()
-> > it can miss a freezing condition.
->
-> I think it would be great if the description is more detailed.  This
-> code path always makes my head spin and I think we can definitely use
-> some more guiding in understanding this dang thing. :)
+(cc'ing Hugh and keeping the whole body)
 
-Do you mean describe the race in more details? OK, will do and resend
-tomorrow.
+Hello,
 
-> > @@ -2092,7 +2085,7 @@ static bool do_signal_stop(int signr)
-> >  		}
-> >
-> >  		/* Now we don't run again until woken by SIGCONT or SIGKILL */
-> > -		schedule();
-> > +		freezable_schedule();
->
-> This makes me wonder whether we still need try_to_freeze() in
-> get_signal_to_deliver() right after the relock: label.  Freezer no
-> longer treats STOPPED/TRACED special and both sleeping sites in signal
-> deliver path are marked freezable_schedule().  We shouldn't need the
-> explicit try_to_freeze(), right?
+On Thu, Oct 25, 2012 at 11:26:14AM -0400, Aristeu Rozanski wrote:
+> The way this function was written is confusing and already caused problems.
+> Rewriting it to be easier to understand and maintain.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Al Viro <viro@ZenIV.linux.org.uk>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-OOPS.
+Generally looks okay to me but I think the return value from removal
+path is wrong.  More below.
 
-I'd say this doesn't really matter but yes we can move it up,
-get_signal_to_deliver() will be called again.
+> ---
+>  fs/xattr.c |  124 +++++++++++++++++++++++++++++++++++++------------------------
+>  1 file changed, 76 insertions(+), 48 deletions(-)
+> 
+> Index: github/fs/xattr.c
+> ===================================================================
+> --- github.orig/fs/xattr.c	2012-10-23 16:02:41.155857391 -0400
+> +++ github/fs/xattr.c	2012-10-25 11:17:15.118197552 -0400
+> @@ -842,55 +842,46 @@
+>  	return ret;
+>  }
+>  
+> -static int __simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
+> -			      const void *value, size_t size, int flags)
+> +static struct simple_xattr *__find_xattr(struct simple_xattrs *xattrs,
+> +					 const char *name)
+>  {
+>  	struct simple_xattr *xattr;
+> -	struct simple_xattr *new_xattr = NULL;
+> -	int err = 0;
+> -
+> -	/* value == NULL means remove */
+> -	if (value) {
+> -		new_xattr = simple_xattr_alloc(value, size);
+> -		if (!new_xattr)
+> -			return -ENOMEM;
+> -
+> -		new_xattr->name = kstrdup(name, GFP_KERNEL);
+> -		if (!new_xattr->name) {
+> -			kfree(new_xattr);
+> -			return -ENOMEM;
+> -		}
+> -	}
+>  
+> -	spin_lock(&xattrs->lock);
+>  	list_for_each_entry(xattr, &xattrs->head, list) {
+> -		if (!strcmp(name, xattr->name)) {
+> -			if (flags & XATTR_CREATE) {
+> -				xattr = new_xattr;
+> -				err = -EEXIST;
+> -			} else if (new_xattr) {
+> -				list_replace(&xattr->list, &new_xattr->list);
+> -			} else {
+> -				list_del(&xattr->list);
+> -			}
+> -			goto out;
+> -		}
+> +		if (!strcmp(name, xattr->name))
+> +			return xattr;
+>  	}
+> -	if (flags & XATTR_REPLACE) {
+> -		xattr = new_xattr;
+> -		err = -ENODATA;
+> -	} else {
+> -		list_add(&new_xattr->list, &xattrs->head);
+> -		xattr = NULL;
+> -	}
+> -out:
+> -	spin_unlock(&xattrs->lock);
+> +	return NULL;
+> +}
+> +
+> +static int __simple_xattr_remove(struct simple_xattrs *xattrs,
+> +				 const char *name)
+> +{
+> +	struct simple_xattr *xattr;
+> +
+> +	xattr = __find_xattr(xattrs, name);
+>  	if (xattr) {
+> +		list_del(&xattr->list);
+>  		kfree(xattr->name);
+>  		kfree(xattr);
+> +		return 0;
+>  	}
+> -	return err;
+>  
+> +	return 1;
+> +}
 
-But! the comment above try_to_freeze() becomes misleading with
-this patch, so this really needs v2.
+So, it returns 0 on success and 1 on failure, which in itself isn't a
+particularly good idea.
 
-Thanks.
+> +
+> +/*
+> + * xattr REMOVE operation for in-memory/pseudo filesystems
+> + */
+> +int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
+> +{
+> +	int rc;
+> +
+> +	spin_lock(&xattrs->lock);
+> +	rc = __simple_xattr_remove(xattrs, name);
+> +	spin_unlock(&xattrs->lock);
+> +
+> +	return rc;
+>  }
+>  
+>  /**
+> @@ -910,17 +901,54 @@
+>  int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
+>  		     const void *value, size_t size, int flags)
+>  {
+> +	struct simple_xattr *found, *new_xattr;
+> +	int err = 0;
+> +
+>  	if (size == 0)
+> -		value = ""; /* empty EA, do not remove */
+> -	return __simple_xattr_set(xattrs, name, value, size, flags);
+> -}
+> +		value = ""; /* empty EA */
+>  
+> -/*
+> - * xattr REMOVE operation for in-memory/pseudo filesystems
+> - */
+> -int simple_xattr_remove(struct simple_xattrs *xattrs, const char *name)
+> -{
+> -	return __simple_xattr_set(xattrs, name, NULL, 0, XATTR_REPLACE);
+> +	/* if value == NULL is specified, remove the item */
+> +	if (value == NULL)
+> +		return simple_xattr_remove(xattrs, name);
 
-Oleg.
+And gets relayed to the caller.
 
+> +
+> +	new_xattr = simple_xattr_alloc(value, size);
+> +	if (!new_xattr)
+> +		return -ENOMEM;
+> +
+> +	new_xattr->name = kstrdup(name, GFP_KERNEL);
+> +	if (!new_xattr->name) {
+> +		kfree(new_xattr);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	spin_lock(&xattrs->lock);
+> +
+> +	found = __find_xattr(xattrs, name);
+> +	if (found) {
+> +		if (flags & XATTR_CREATE) {
+> +			err = -EEXIST;
+> +			goto free_new;
+> +		}
+> +
+> +		list_replace(&found->list, &new_xattr->list);
+> +		kfree(found->name);
+> +		kfree(found);
+> +	} else {
+> +		if (flags & XATTR_REPLACE) {
+> +			err = -ENODATA;
+> +			goto free_new;
+> +		}
+> +
+> +		list_add_tail(&new_xattr->list, &xattrs->head);
+> +	}
+> +
+> +out:
+> +	spin_unlock(&xattrs->lock);
+> +	return err;
+> +free_new:
+> +	kfree(new_xattr->name);
+> +	kfree(new_xattr);
+> +	goto out;
+>  }
+>  
+>  static bool xattr_is_trusted(const char *name)
+
+-- 
+tejun
