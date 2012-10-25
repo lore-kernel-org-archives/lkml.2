@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759787Ab2JYOSN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:18:13 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:47991 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759519Ab2JYOSJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:18:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <50893C45.7010109@gmail.com>
-References: <425b4bec021bce9a2de49959121907aeede6a0b9.1350064805.git.viresh.kumar@linaro.org>
-	<CAKohpom42SCMJ+=TdvAjqT0ibRugJi_gXkLy+49N6ExcRZqxLQ@mail.gmail.com>
-	<50893C45.7010109@gmail.com>
-Date: Thu, 25 Oct 2012 19:48:09 +0530
-Message-ID: <CAKohpom5QmO5vbREsMgi4EefLpBxXsk=QWVaZwTwC_Knf72GVA@mail.gmail.com>
-Subject: Re: [PATCH] dt: add helper function to read u8 & u16 variables & arrays
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: grant.likely@secretlab.ca, spear-devel@list.st.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        andriy.shevchenko@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759765Ab2JYOR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:17:59 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:40929 "EHLO mail.x86-64.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759691Ab2JYORz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:17:55 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Greg Kroah-Hartman <greg@kroah.com>,
+        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/5] drivers/base: Add a DEVICE_BOOL_ATTR macro
+Date: Thu, 25 Oct 2012 16:17:43 +0200
+Message-Id: <1351174667-5098-2-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1351174667-5098-1-git-send-email-bp@amd64.org>
+References: <1351174667-5098-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 October 2012 18:49, Rob Herring <robherring2@gmail.com> wrote:
-> For some reason, this does not show up on the list either in my mail or
-> mail list archives, but it is in patchwork. Can you resend it please.
+From: Borislav Petkov <bp@alien8.de>
 
-Strange. I kept you in --to field. I know people added in cc are
-sometimes removed
-by the list when they have selected "avoid duplicate mails" option for
-their list.
+... which, analogous to DEVICE_INT_ATTR provides functionality to
+set/clear bools. Its purpose is to be used where values need to be used
+as booleans in configuration context.
 
-> The main question I have is be32_to_cpup() the right thing to do. I
-> would expect byte arrays to not need endian conversion, but I haven't
-> looked at how '/bits/ x' data is stored.
+Next patch uses this.
 
-The problem i see here is:
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ drivers/base/core.c    | 21 +++++++++++++++++++++
+ include/linux/device.h |  7 +++++++
+ 2 files changed, 28 insertions(+)
 
-The data passed via DT comes as Little Endian in the kernel.
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index abea76c36a4b..c8ae1f6b01b9 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -171,6 +171,27 @@ ssize_t device_show_int(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(device_show_int);
+ 
++ssize_t device_store_bool(struct device *dev, struct device_attribute *attr,
++			  const char *buf, size_t size)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++
++	if (strtobool(buf, ea->var) < 0)
++		return -EINVAL;
++
++	return size;
++}
++EXPORT_SYMBOL_GPL(device_store_bool);
++
++ssize_t device_show_bool(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct dev_ext_attribute *ea = to_ext_attr(attr);
++
++	return snprintf(buf, PAGE_SIZE, "%d\n", *(bool *)(ea->var));
++}
++EXPORT_SYMBOL_GPL(device_show_bool);
++
+ /**
+  *	device_release - free device structure.
+  *	@kobj:	device's kobject.
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 86ef6ab553b1..50c85a26b003 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -496,6 +496,10 @@ ssize_t device_show_int(struct device *dev, struct device_attribute *attr,
+ 			char *buf);
+ ssize_t device_store_int(struct device *dev, struct device_attribute *attr,
+ 			 const char *buf, size_t count);
++ssize_t device_show_bool(struct device *dev, struct device_attribute *attr,
++			char *buf);
++ssize_t device_store_bool(struct device *dev, struct device_attribute *attr,
++			 const char *buf, size_t count);
+ 
+ #define DEVICE_ATTR(_name, _mode, _show, _store) \
+ 	struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
+@@ -505,6 +509,9 @@ ssize_t device_store_int(struct device *dev, struct device_attribute *attr,
+ #define DEVICE_INT_ATTR(_name, _mode, _var) \
+ 	struct dev_ext_attribute dev_attr_##_name = \
+ 		{ __ATTR(_name, _mode, device_show_int, device_store_int), &(_var) }
++#define DEVICE_BOOL_ATTR(_name, _mode, _var) \
++	struct dev_ext_attribute dev_attr_##_name = \
++		{ __ATTR(_name, _mode, device_show_bool, device_store_bool), &(_var) }
+ #define DEVICE_ATTR_IGNORE_LOCKDEP(_name, _mode, _show, _store) \
+ 	struct device_attribute dev_attr_##_name =		\
+ 		__ATTR_IGNORE_LOCKDEP(_name, _mode, _show, _store)
+-- 
+1.8.0
 
-For a little endian system, byte zero will contain the data and so
-(u8) val
-
-look to be the correct thing.
-
-For a big endian system, byte 3 will contain data as it is swapped by
-be32_to_cpup.
-So (u8) val would return value stored by byte 0 instead. ??
-
-Does my logic look correct to you??
-
---
-viresh
