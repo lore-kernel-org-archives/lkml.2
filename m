@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab2JYEpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 00:45:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20323 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab2JYEpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 00:45:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,645,1344236400"; 
-   d="scan'208";a="160337117"
-Message-ID: <5088C397.3000501@linux.intel.com>
-Date: Wed, 24 Oct 2012 21:44:07 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1752833Ab2JYEu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 00:50:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41278 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838Ab2JYEu6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 00:50:58 -0400
+Message-ID: <5088C51D.3060009@gmail.com>
+Date: Thu, 25 Oct 2012 12:50:37 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: pi futex oops in __lock_acquire
-References: <20121018015312.GA29865@redhat.com> <507F9944.50505@kernel.dk> <20121019052136.GA30852@redhat.com> <1350650972.30157.34.camel@twins> <20121023195026.GA2872@redhat.com> <20121024202411.GA20597@redhat.com>
-In-Reply-To: <20121024202411.GA20597@redhat.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
+References: <20121025023738.GA27001@redhat.com> <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/25/2012 12:36 PM, Hugh Dickins wrote:
+> On Wed, 24 Oct 2012, Dave Jones wrote:
+>
+>> Machine under significant load (4gb memory used, swap usage fluctuating)
+>> triggered this...
+>>
+>> WARNING: at mm/shmem.c:1151 shmem_getpage_gfp+0xa5c/0xa70()
+>> Pid: 29795, comm: trinity-child4 Not tainted 3.7.0-rc2+ #49
+>> Call Trace:
+>>   [<ffffffff8107100f>] warn_slowpath_common+0x7f/0xc0
+>>   [<ffffffff8107106a>] warn_slowpath_null+0x1a/0x20
+>>   [<ffffffff811903fc>] shmem_getpage_gfp+0xa5c/0xa70
+>>   [<ffffffff8118fc3e>] ? shmem_getpage_gfp+0x29e/0xa70
+>>   [<ffffffff81190e4f>] shmem_fault+0x4f/0xa0
+>>   [<ffffffff8119f391>] __do_fault+0x71/0x5c0
+>>   [<ffffffff810e1ac6>] ? __lock_acquire+0x306/0x1ba0
+>>   [<ffffffff810b6ff9>] ? local_clock+0x89/0xa0
+>>   [<ffffffff811a2767>] handle_pte_fault+0x97/0xae0
+>>   [<ffffffff816d1069>] ? sub_preempt_count+0x79/0xd0
+>>   [<ffffffff8136d68e>] ? delay_tsc+0xae/0x120
+>>   [<ffffffff8136d578>] ? __const_udelay+0x28/0x30
+>>   [<ffffffff811a4a39>] handle_mm_fault+0x289/0x350
+>>   [<ffffffff816d091e>] __do_page_fault+0x18e/0x530
+>>   [<ffffffff810b6ff9>] ? local_clock+0x89/0xa0
+>>   [<ffffffff810b0e51>] ? get_parent_ip+0x11/0x50
+>>   [<ffffffff810b0e51>] ? get_parent_ip+0x11/0x50
+>>   [<ffffffff816d1069>] ? sub_preempt_count+0x79/0xd0
+>>   [<ffffffff8112d389>] ? rcu_user_exit+0xc9/0xf0
+>>   [<ffffffff816d0ceb>] do_page_fault+0x2b/0x50
+>>   [<ffffffff816cd3b8>] page_fault+0x28/0x30
+>>   [<ffffffff8136d259>] ? copy_user_enhanced_fast_string+0x9/0x20
+>>   [<ffffffff8121c181>] ? sys_futimesat+0x41/0xe0
+>>   [<ffffffff8102bf35>] ? syscall_trace_enter+0x25/0x2c0
+>>   [<ffffffff816d5625>] ? tracesys+0x7e/0xe6
+>>   [<ffffffff816d5688>] tracesys+0xe1/0xe6
+>>
+>>
+>>
+>> 1148                         error = shmem_add_to_page_cache(page, mapping, index,
+>> 1149                                                 gfp, swp_to_radix_entry(swap));
+>> 1150                         /* We already confirmed swap, and make no allocation */
+>> 1151                         VM_BUG_ON(error);
+>> 1152                 }
+> That's very surprising.  Easy enough to handle an error there, but
+> of course I made it a VM_BUG_ON because it violates my assumptions:
+> I rather need to understand how this can be, and I've no idea.
+>
+> Clutching at straws, I expect this is entirely irrelevant, but:
+> there isn't a warning on line 1151 of mm/shmem.c in 3.7.0-rc2 nor
+> in current linux.git; rather, there's a VM_BUG_ON on line 1149.
+>
+> So you've inserted a couple of lines for some reason (more useful
+> trinity behaviour, perhaps)?  And have some config option I'm
+> unfamiliar with, that mutates a BUG_ON or VM_BUG_ON into a warning?
 
+Hi Hugh,
 
-On 10/24/2012 01:24 PM, Dave Jones wrote:
-> I've been able to trigger this for the last week or so.
-> Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
-> pi-futex code hasn't changed since the last time it found something..
-> 
->  > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
->  > IP: [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
->  > PGD 8e72c067 PUD 34f07067 PMD 0 
->  > Oops: 0000 [#1] PREEMPT SMP 
->  > CPU 7 
->  > Pid: 27513, comm: trinity-child0 Not tainted 3.7.0-rc2+ #43
->  > RIP: 0010:[<ffffffff810e185e>]  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
->  > RSP: 0018:ffff8800803f7b28  EFLAGS: 00010046
->  > RAX: 0000000000000086 RBX: 0000000000000000 RCX: 0000000000000000
->  > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
->  > RBP: ffff8800803f7c18 R08: 0000000000000002 R09: 0000000000000000
->  > R10: 0000000000000000 R11: 2222222222222222 R12: 0000000000000002
->  > R13: ffff880051dd8000 R14: 0000000000000002 R15: 0000000000000018
->  > FS:  00007f9fc6ccb740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
->  > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->  > CR2: 0000000000000018 CR3: 000000008e6fb000 CR4: 00000000001407e0
->  > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  > Process trinity-child0 (pid: 27513, threadinfo ffff8800803f6000, task ffff880051dd8000)
->  > Stack:
->  >  ffff8800803f7b48 ffffffff816c5c59 ffff8800803f7b48 ffff88014840ebc0
->  >  ffff8800803f7b68 ffffffff816c18e3 ffff8800803f7d10 0000000000000001
->  >  ffff8800803f7ba8 ffffffff810a1e62 ffff8800803f7d10 0000000000000282
->  > Call Trace:
->  >  [<ffffffff816c5c59>] ? sub_preempt_count+0x79/0xd0
->  >  [<ffffffff816c18e3>] ? _raw_spin_unlock_irqrestore+0x73/0xa0
->  >  [<ffffffff810a1e62>] ? hrtimer_try_to_cancel+0x52/0x210
->  >  [<ffffffff810eb9e5>] ? debug_rt_mutex_free_waiter+0x15/0x180
->  >  [<ffffffff816c0107>] ? rt_mutex_slowlock+0x127/0x1b0
->  >  [<ffffffff810b7039>] ? local_clock+0x89/0xa0
->  >  [<ffffffff810e3ac2>] lock_acquire+0xa2/0x220
->  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
->  >  [<ffffffff816c09e0>] _raw_spin_lock+0x40/0x80
->  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
->  >  [<ffffffff810e812c>] futex_lock_pi.isra.18+0x1cc/0x390
->  >  [<ffffffff810a1980>] ? update_rmtp+0x70/0x70
->  >  [<ffffffff810e99e4>] do_futex+0x394/0xa50
->  >  [<ffffffff8119ec43>] ? might_fault+0x53/0xb0
->  >  [<ffffffff810ea12d>] sys_futex+0x8d/0x190
->  >  [<ffffffff816ca288>] tracesys+0xe1/0xe6
->  > Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 22 fe f3 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d c0 81 06 82 44 0f 44 e2 83 fb 01 
->  > RIP  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
->  >  RSP <ffff8800803f7b28>
->  > CR2: 0000000000000018
-> 
-> It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
-> 
-> Darren, any idea how this could happen ?
+I think it maybe caused by your commit [d189922862e03ce: shmem: fix 
+negative rss in memcg memory.stat], one question:
 
-I'm digging. Can you get trinity to provide the arguments it used that
-trigger the crash? That might help hone in on the exact path.
+if function shmem_confirm_swap confirm the entry has already brought 
+back from swap by a racing thread, then why call shmem_add_to_page_cache 
+to add page from swapcache to pagecache again? otherwise, will goto 
+unlock and then go to repeat? where I miss?
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+Regards,
+Chen
+
+>
+> Hugh
+>
+>>
+>>               total       used       free     shared    buffers     cached
+>> Mem:       3885528    2854064    1031464          0       9624      19208
+>> -/+ buffers/cache:    2825232    1060296
+>> Swap:      6029308      30656    5998652
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
