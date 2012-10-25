@@ -1,537 +1,1139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474Ab2JYWOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 18:14:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:63829 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2JYWOi convert rfc822-to-8bit (ORCPT
+	id S1751338Ab2JYWTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 18:19:12 -0400
+Received: from usindpps06.hds.com ([207.126.252.19]:59380 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab2JYWTJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 18:14:38 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-29-5089b9cc304d
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: "'Vyacheslav Dubeyko'" <slava@dubeyko.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
-        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
-        jooyoung.hwang@samsung.com
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
- <001101cdb0c5$a1052fd0$e30f8f70$%kim@samsung.com>
- <1350992475.2041.44.camel@slavad-ubuntu>
-In-reply-to: <1350992475.2041.44.camel@slavad-ubuntu>
-Subject: RE: [PATCH 01/16 v2] f2fs: add document
-Date: Fri, 26 Oct 2012 07:14:35 +0900
-Message-id: <00c001cdb2fe$1dad0cd0$59072670$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2xE1Ot/QAdjgxwRu6UP66wfvFOPgB6jIhA
-Content-language: en-us
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zY90zOzsDDLrPMFvs2XuSxeLyrjls
-	DkwenzfJBTBGcdmkpOZklqUW6dslcGXs+/+TqaDvHGNF27IFbA2MW2YydjFyckgImEg8XL2Z
-	BcIWk7hwbz1bFyMXh5DAMkaJS/v3McMUXejvYIRITGeUaN66H6rqH6PEtVUHgao4ONgEtCU2
-	7zcAaRAR0JH4sXIFO0gNs8BDRok5N0+wQzTMYZQ4erkPbDengKnEof09bCC2sICBxIfW8+wg
-	NouAqsScPctZQYbyCthK9GyKBAnzCghK/Jh8D+xUZgF1iUnzFjFD2NoST95dACuXAIo/+qsL
-	cYORxOYjV5ggSsQlJj14CDVdQOLb5EMsEOWyEpsOMINcJiGwiV1i+pn1rBAPS0ocXHGDZQKj
-	xCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRESadI7GFc1WBxi
-	FOBgVOLh3ZDWGSDEmlhWXJl7iFGCg1lJhHf3VKAQb0piZVVqUX58UWlOavEhRh+gyycyS4km
-	5wOTQF5JvKGxsYmZiamJuaWpuSkOYSVx3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjPmz8n5I
-	KL1br1P/S88t8O4NRtZM9d/7HlrEsIaYxSw6XT/FUCl4LntSnukUy/uveG5Up60PWzrlX9TK
-	MG6pExJRVWK7XOa3/53iOS2K5+qCg8mLAvPMz/8N4frzZzazzwmLtoNXnnlZTZb9HLAlq32C
-	1KyfP3vLXiQqpX/UX89cHJaSnW57TImlOCPRUIu5qDgRAAQYwzbhAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jQd3TOzsDDHbc1LHYs/cki8XlXXPY
-	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM2Pf/J1NB3znG
-	irZlC9gaGLfMZOxi5OSQEDCRuNDfAWWLSVy4t56ti5GLQ0hgOqNE89b9UM4/Rolrqw4ydzFy
-	cLAJaEts3m8A0iAioCPxY+UKdpAaZoGHjBJzbp5gh2iYwyhx9HIf2FhOAVOJQ/t72EBsYQED
-	iQ+t59lBbBYBVYk5e5azggzlFbCV6NkUCRLmFRCU+DH5HguIzSygLjFp3iJmCFtb4sm7C2Dl
-	EkDxR391IW4wkth85AoTRIm4xKQHD9knMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRc
-	I73ixNzi0rx0veT83E2M4Dh+Jr2DcVWDxSFGAQ5GJR7eDWmdAUKsiWXFlbmHGCU4mJVEeHdP
-	BQrxpiRWVqUW5ccXleakFh9i9AH6cyKzlGhyPjDF5JXEGxqbmBlZGplZGJmYm+MQVhLnbfZI
-	CRASSE8sSc1OTS1ILYIZx8TBKdXA6Ps6zmZOzfNbv17te35v08fcwHSVj+3nPmlLfw7bJfHl
-	k51ts6ekmufuJZcLYqXm2P5V4naaGnfiZ0P9ioBTT1J2XNvJc+xhS5ekrVXgQv8/5xsPhMZU
-	512e+XDx+tAb53Z+XD3XvsH0zJfvGYZvqu58cFffdWHy/pbSWTFPep56sMUE/wqUcldiKc5I
-	NNRiLipOBAAwJXcMEAMAAA==
-X-CFilter-Loop: Reflected
+	Thu, 25 Oct 2012 18:19:09 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Borislav Petkov <bp@alien8.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>
+Subject: RE: [RFC][PATCH v5]trace,x86: add x86 irq vector tracepoints
+Thread-Topic: [RFC][PATCH v5]trace,x86: add x86 irq vector tracepoints
+Thread-Index: Ac2n1PstsBuNZ4qeTLCH+v993BU1BAFiwlVwAWecWXA=
+Date: Thu, 25 Oct 2012 22:18:07 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138899E5@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D41387876E@USINDEM103.corp.hds.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41387876E@USINDEM103.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-25_04:2012-10-25,2012-10-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210250293
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll enhance the document as much as possible according to your
-recommendation.
-Thank you for intensive review. :)
+Peter,
 
----
-Jaegeuk Kim
-Samsung
+I made a patch below making a time penalty zero when not being traced in accordance with your comment.
+But I'm not sure if it is reasonable to non-tracepoint users.
 
-> On Tue, 2012-10-23 at 11:25 +0900, Jaegeuk Kim wrote:
-> > This adds a document describing the mount options, proc entries, usage, and
-> > design of Flash-Friendly File System, namely F2FS.
+I agree that a tracepoint should be designed to minimize its impact for non-tracepoint users.
+But duplicating a function call by using macro makes a code readablity worse.
+It has a big impact for all users although a time penalty is zero.
+
+As compared the time penalty to the code readability, I think it is reasonable for all users to just add a tracepoint 
+to an existing function call because ,as Steven said, a tracepoint is just nops when not being traced.
+
+Seiji
+
+> -----Original Message-----
+> From: Seiji Aguchi
+> Sent: Thursday, October 18, 2012 2:41 PM
+> To: 'H. Peter Anvin'
+> Cc: 'Thomas Gleixner (tglx@linutronix.de)'; 'linux-kernel@vger.kernel.org'; ''mingo@elte.hu' (mingo@elte.hu)'; 'x86@kernel.org'; 'dle-
+> develop@lists.sourceforge.net'; Satoru Moriya; 'Borislav Petkov'; rostedt@goodmis.org
+> Subject: RE: [RFC][PATCH v5]trace,x86: add x86 irq vector tracepoints
+> 
+> Any comment?
+> 
+> Seiji
+> 
+> > -----Original Message-----
+> > From: Seiji Aguchi
+> > Sent: Thursday, October 11, 2012 1:25 PM
+> > To: 'H. Peter Anvin'; 'Steven Rostedt'
+> > Cc: 'Thomas Gleixner (tglx@linutronix.de)';
+> > 'linux-kernel@vger.kernel.org'; ''mingo@elte.hu' (mingo@elte.hu)'; 'x86@kernel.org'; 'dle- develop@lists.sourceforge.net'; Satoru
+> Moriya; 'Borislav Petkov'
+> > Subject: [RFC][PATCH v5]trace,x86: add x86 irq vector tracepoints
 > >
-> > Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> > Change log
+> >
+> >  v4 -> v5
+> >  - Rebased to 3.6.0
+> >
+> >  - Introduce a logic switching IDT at enabling/disabling TP time
+> >    so that a time penalty makes a zero when tracepoints are disabled.
+> >    This IDT is created only when CONFIG_TRACEPOINTS is enabled.
+> >
+> >  - Remove arch_irq_vector_entry/exit and add followings again
+> >    so that we can add each tracepoint in a generic way.
+> >    - error_apic_vector
+> >    - thermal_apic_vector
+> >    - threshold_apic_vector
+> >    - spurious_apic_vector
+> >    - x86_platform_ipi_vector
+> >
+> >  - Drop nmi tracepoints to begin with apic interrupts and discuss a logic switching
+> >    IDT first.
+> >
+> >  - Move irq_vectors.h in the directory of arch/x86/include/asm/trace because
+> >    I'm not sure if a logic switching IDT is sharable with other architectures.
+> >
+> >  v3 -> v4
+> >  - Add a latency measurement of each tracepoint
+> >  - Rebased to 3.6-rc6
+> >
+> >  v2 -> v3
+> >  - Remove an invalidate_tlb_vector event because it was replaced by a call function vector
+> >    in a following commit.
+> >
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;
+> > h=52aec3308db85f4e9f5c8b9f5dc4fbd0138c6fa4
+> >
+> >  v1 -> v2
+> >  - Modify variable name from irq to vector.
+> >  - Merge arch-specific tracepoints below to an arch_irq_vector_entry/exit.
+> >    - error_apic_vector
+> >    - thermal_apic_vector
+> >    - threshold_apic_vector
+> >    - spurious_apic_vector
+> >    - x86_platform_ipi_vector
+> >
+> > [Purpose of this patch]
+> >
+> > As Vaibhav explained in the thread below, tracepoints for irq vectors are useful.
+> >
+> > http://www.spinics.net/lists/mm-commits/msg85707.html
+> >
+> > <snip>
+> > The current interrupt traces from irq_handler_entry and
+> > irq_handler_exit provide when an interrupt is handled.  They provide good data about when the system has switched to kernel
+> space and how it affects the currently running processes.
+> >
+> > There are some IRQ vectors which trigger the system into kernel space,
+> > which are not handled in generic IRQ handlers.  Tracing such events gives us the information about IRQ interaction with other system
+> events.
+> >
+> > The trace also tells where the system is spending its time.  We want
+> > to know which cores are handling interrupts and how they are affecting
+> > other processes in the system.  Also, the trace provides information about when the cores are idle and which interrupts are
+> changing that state.
+> > <snip>
+> >
+> > On the other hand, my usecase is tracing just local timer event and getting a value of instruction pointer.
+> >
+> >   I suggested to add an argument local timer event to get instruction pointer before.
+> >   But there is another way to get it with external module like systemtap.
+> >   So, I don't need to add any argument to irq vector tracepoints now.
+> >
+> > [Patch Description]
+> >
+> > Vaibhav's patch shared a trace point ,irq_vector_entry/irq_vector_exit, in all events.
+> > But there is an above use case to trace specific irq_vector rather than tracing all events.
+> > In this case, we are concerned about overhead due to unwanted events.
+> >
+> > This patch adds following tracepoints instead of introducing irq_vector_entry/exit.
+> > so that we can enable them independently.
+> >    - local_timer_vector
+> >    - reschedule_vector
+> >    - call_function_vector
+> >    - call_function_single_vector
+> >    - irq_work_entry_vector
+> >    - error_apic_vector
+> >    - thermal_apic_vector
+> >    - threshold_apic_vector
+> >    - spurious_apic_vector
+> >    - x86_platform_ipi_vector
+> >
+> > Also, it introduces a logic switching IDT at enabling/disabling time
+> > so that a time penalty makes a complete zero when tracepoints are disabled. Detailed explanations are as follows.
+> >  - Create new irq handlers inserted tracepoints by using macros.
+> >  - Create a new IDT, trace_idt_table, at boot time by duplicating original IDT, idt table, and
+> >    registering the new handers for tracpoints.
+> >  - Switch IDT to new one at enabling TP time.
+> >  - Restore to an original IDT at disabling TP time.
+> > The new IDT is created only when CONFIG_TRACEPOINTS is enabled to avoid being used for other purposes.
+> >
+> > Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 > > ---
-> >  Documentation/filesystems/00-INDEX |    2 +
-> >  Documentation/filesystems/f2fs.txt |  404 ++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 406 insertions(+)
-> >  create mode 100644 Documentation/filesystems/f2fs.txt
+> >  arch/x86/include/asm/desc.h              |   27 +++++
+> >  arch/x86/include/asm/entry_arch.h        |   32 +++++
+> >  arch/x86/include/asm/hw_irq.h            |   14 +++
+> >  arch/x86/include/asm/trace/irq_vectors.h |  153 ++++++++++++++++++++++++
+> >  arch/x86/kernel/Makefile                 |    1 +
+> >  arch/x86/kernel/apic/apic.c              |  186 +++++++++++++++++-------------
+> >  arch/x86/kernel/cpu/mcheck/therm_throt.c |   26 +++--
+> >  arch/x86/kernel/cpu/mcheck/threshold.c   |   27 +++--
+> >  arch/x86/kernel/entry_64.S               |   33 ++++++
+> >  arch/x86/kernel/head_64.S                |    6 +
+> >  arch/x86/kernel/irq.c                    |   44 ++++---
+> >  arch/x86/kernel/irq_work.c               |   22 +++-
+> >  arch/x86/kernel/irqinit.c                |    2 +
+> >  arch/x86/kernel/smp.c                    |   68 ++++++++----
+> >  arch/x86/kernel/tracepoint.c             |  102 ++++++++++++++++
+> >  15 files changed, 600 insertions(+), 143 deletions(-)  create mode
+> > 100644 arch/x86/include/asm/trace/irq_vectors.h
+> >  create mode 100644 arch/x86/kernel/tracepoint.c
 > >
-> > diff --git a/Documentation/filesystems/00-INDEX b/Documentation/filesystems/00-INDEX
-> > index 8c624a1..ce5fd46 100644
-> > --- a/Documentation/filesystems/00-INDEX
-> > +++ b/Documentation/filesystems/00-INDEX
-> > @@ -48,6 +48,8 @@ ext4.txt
-> >  	- info, mount options and specifications for the Ext4 filesystem.
-> >  files.txt
-> >  	- info on file management in the Linux kernel.
-> > +f2fs.txt
-> > +	- info and mount options for the F2FS filesystem.
-> >  fuse.txt
-> >  	- info on the Filesystem in User SpacE including mount options.
-> >  gfs2.txt
-> > diff --git a/Documentation/filesystems/f2fs.txt b/Documentation/filesystems/f2fs.txt
+> > diff --git a/arch/x86/include/asm/desc.h b/arch/x86/include/asm/desc.h
+> > index 8bf1c06..52becf4 100644
+> > --- a/arch/x86/include/asm/desc.h
+> > +++ b/arch/x86/include/asm/desc.h
+> > @@ -345,6 +345,33 @@ static inline void set_intr_gate(unsigned int n, void *addr)
+> >  	_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS);  }
+> >
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +extern gate_desc trace_idt_table[];
+> > +extern void trace_idt_table_init(void); static inline void
+> > +_trace_set_gate(int gate, unsigned type, void *addr,
+> > +				   unsigned dpl, unsigned ist, unsigned seg) {
+> > +	gate_desc s;
+> > +
+> > +	pack_gate(&s, type, (unsigned long)addr, dpl, ist, seg);
+> > +	/*
+> > +	 * does not need to be atomic because it is only done once at
+> > +	 * setup time
+> > +	 */
+> > +	write_idt_entry(trace_idt_table, gate, &s); }
+> > +
+> > +static inline void trace_set_intr_gate(unsigned int n, void *addr) {
+> > +	BUG_ON((unsigned)n > 0xFF);
+> > +	_trace_set_gate(n, GATE_INTERRUPT, addr, 0, 0, __KERNEL_CS); } #else
+> > +static inline void trace_idt_table_init(void) { } #endif
+> > +
+> >  extern int first_system_vector;
+> >  /* used_vectors is BITMAP for irq is not managed by percpu vector_irq
+> > */  extern unsigned long used_vectors[]; diff --git
+> > a/arch/x86/include/asm/entry_arch.h
+> > b/arch/x86/include/asm/entry_arch.h
+> > index 40afa00..8ef3900 100644
+> > --- a/arch/x86/include/asm/entry_arch.h
+> > +++ b/arch/x86/include/asm/entry_arch.h
+> > @@ -45,3 +45,35 @@
+> > BUILD_INTERRUPT(threshold_interrupt,THRESHOLD_APIC_VECTOR)
+> >  #endif
+> >
+> >  #endif
+> > +
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +#ifdef CONFIG_SMP
+> > +BUILD_INTERRUPT(trace_reschedule_interrupt, RESCHEDULE_VECTOR)
+> > +BUILD_INTERRUPT(trace_call_function_interrupt, CALL_FUNCTION_VECTOR)
+> > +BUILD_INTERRUPT(trace_call_function_single_interrupt,
+> > +		CALL_FUNCTION_SINGLE_VECTOR)
+> > +#endif
+> > +
+> > +BUILD_INTERRUPT(trace_x86_platform_ipi, X86_PLATFORM_IPI_VECTOR)
+> > +
+> > +#ifdef CONFIG_X86_LOCAL_APIC
+> > +
+> > +BUILD_INTERRUPT(trace_apic_timer_interrupt, LOCAL_TIMER_VECTOR)
+> > +BUILD_INTERRUPT(trace_error_interrupt, ERROR_APIC_VECTOR)
+> > +BUILD_INTERRUPT(trace_spurious_interrupt, SPURIOUS_APIC_VECTOR)
+> > +
+> > +#ifdef CONFIG_IRQ_WORK
+> > +BUILD_INTERRUPT(trace_irq_work_interrupt, IRQ_WORK_VECTOR) #endif
+> > +
+> > +#ifdef CONFIG_X86_THERMAL_VECTOR
+> > +BUILD_INTERRUPT(trace_thermal_interrupt, THERMAL_APIC_VECTOR) #endif
+> > +
+> > +#ifdef CONFIG_X86_MCE_THRESHOLD
+> > +BUILD_INTERRUPT(trace_threshold_interrupt, THRESHOLD_APIC_VECTOR)
+> > +#endif
+> > +
+> > +#endif
+> > +
+> > +#endif /* CONFIG_TRACEPOINTS */
+> > diff --git a/arch/x86/include/asm/hw_irq.h
+> > b/arch/x86/include/asm/hw_irq.h index eb92a6e..4472a78 100644
+> > --- a/arch/x86/include/asm/hw_irq.h
+> > +++ b/arch/x86/include/asm/hw_irq.h
+> > @@ -76,6 +76,20 @@ extern void threshold_interrupt(void);  extern void
+> > call_function_interrupt(void);  extern void
+> > call_function_single_interrupt(void);
+> >
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +/* Interrupt handlers registered during init_IRQ */ extern void
+> > +trace_apic_timer_interrupt(void);
+> > +extern void trace_x86_platform_ipi(void); extern void
+> > +trace_error_interrupt(void); extern void
+> > +trace_irq_work_interrupt(void); extern void
+> > +trace_spurious_interrupt(void); extern void
+> > +trace_thermal_interrupt(void); extern void
+> > +trace_reschedule_interrupt(void);
+> > +extern void trace_threshold_interrupt(void); extern void
+> > +trace_call_function_interrupt(void);
+> > +extern void trace_call_function_single_interrupt(void);
+> > +#endif /* CONFIG_TRACEPOINTS */
+> > +
+> >  /* IOAPIC */
+> >  #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) &
+> > io_apic_irqs))  extern unsigned long io_apic_irqs; diff --git
+> > a/arch/x86/include/asm/trace/irq_vectors.h
+> > b/arch/x86/include/asm/trace/irq_vectors.h
 > > new file mode 100644
-> > index 0000000..f2b4fde
+> > index 0000000..47858f1
 > > --- /dev/null
-> > +++ b/Documentation/filesystems/f2fs.txt
-> > @@ -0,0 +1,404 @@
-> > +================================================================================
-> > +WHAT IS Flash-Friendly File System (F2FS)?
-> > +================================================================================
-> > +
-> > +NAND flash memory-based storage devices, such as SSD, eMMC, and SD cards, have
-> > +been widely being used for storage ranging from mobile to server systems. Since
-> 
-> Maybe, it needs to reformulate "... have been widely being used ..."?
-> 
-> > +they are known to have different characteristics from the conventional rotating
-> > +disks, a file system, an upper layer to the storage device, should adapt to the
-> > +changes from the sketch in the design level.
-> > +
-> > +F2FS is a file system exploiting NAND flash memory-based storage devices, which
-> > +is based on Log-structured File System (LFS). The design has been focused on
-> > +addressing the fundamental issues in LFS, which are snowball effect of wandering
-> > +tree and high cleaning overhead.
-> > +
-> > +Since a NAND flash memory-based storage device shows different characteristic
-> > +according to its internal geometry or flash memory management scheme, namely FTL,
-> > +F2FS and its tools support various parameters not only for configuring on-disk
-> > +layout, but also for selecting allocation and cleaning algorithms.
-> > +
-> > +The file system formatting tool, "mkfs.f2fs", is available from the following
-> > +download page:		http://sourceforge.net/projects/f2fs-tools/
-> > +
-> > +================================================================================
-> > +BACKGROUND AND DESIGN ISSUES
-> > +================================================================================
-> > +
-> > +Log-structured File System (LFS)
-> > +--------------------------------
-> > +"A log-structured file system writes all modifications to disk sequentially in
-> > +a log-like structure, thereby speeding up  both file writing and crash recovery.
-> > +The log is the only structure on disk; it contains indexing information so that
-> > +files can be read back from the log efficiently. In order to maintain large free
-> > +areas on disk for fast writing, we divide  the log into segments and use a
-> > +segment cleaner to compress the live information from heavily fragmented
-> > +segments." from Rosenblum, M. and Ousterhout, J. K., 1992, "The design and
-> > +implementation of a log-structured file system", ACM Trans. Computer Systems
-> > +10, 1, 26–52.
-> > +
-> > +Wandering Tree Problem
-> > +----------------------
-> > +In LFS, when a file data is updated and written to the end of log, its direct
-> > +pointer block is updated due to the changed location. Then the indirect pointer
-> > +block is also updated due to the direct pointer block update. In this manner,
-> > +the upper index structures such as inode, inode map, and checkpoint block are
-> > +also updated recursively. This problem is called as wandering tree problem [1],
-> > +and in order to enhance the performance, it should eliminate or relax the update
-> > +propagation as much as possible.
-> > +
-> > +[1] Bityutskiy, A. 2005. JFFS3 design issues. http://www.linux-mtd.infradead.org/
-> > +
-> > +Cleaning Overhead
-> > +-----------------
-> > +Since LFS is based on out-of-place writes, it produces so many obsolete blocks
-> > +scattered across the whole storage. In order to serve new empty log space, it
-> > +needs to reclaim these obsolete blocks seamlessly to users. This job is called
-> > +as a cleaning process.
-> > +
-> > +The process consists of three operations as follows.
-> > +1. A victim segment is selected through referencing segment usage table.
-> > +2. It loads parent index structures of all the data in the victim identified by
-> > +   segment summary blocks.
-> > +3. It checks the cross-reference between the data and its parent index structure.
-> > +4. It moves valid data selectively.
-> > +
-> > +This cleaning job may cause unexpected long delays, so the most important goal
-> > +is to hide the latencies to users. And also definitely, it should reduce the
-> > +amount of valid data to be moved, and move them quickly as well.
-> > +
-> > +================================================================================
-> > +KEY FEATURES
-> > +================================================================================
-> > +
-> > +Flash Awareness
-> > +---------------
-> > +- Enlarge the random write area for better performance, but provide the high
-> > +  spatial locality
-> > +- Align FS data structures to the operational units in FTL as best efforts
-> > +
-> > +Wandering Tree Problem
-> > +----------------------
-> > +- Use a term, “node”, that represents inodes as well as various pointer blocks
-> > +- Introduce Node Address Table (NAT) containing the locations of all the “node”
-> > +  blocks; this will cut off the update propagation.
-> > +
-> > +Cleaning Overhead
-> > +-----------------
-> > +- Support a background cleaning process
-> > +- Support greedy and cost-benefit algorithms for victim selection policies
-> > +- Support multi-head logs for static/dynamic hot and cold data separation
-> > +- Introduce adaptive logging for efficient block allocation
-> > +
-> > +================================================================================
-> > +MOUNT OPTIONS
-> > +================================================================================
-> > +
-> > +background_gc_off      Turn off cleaning operations, namely garbage collection,
-> > +		       triggered in background when I/O subsystem is idle.
-> > +disable_roll_forward   Disable the roll-forward recovery routine
-> > +discard                Issue discard/TRIM commands when a segment is cleaned.
-> > +no_heap                Disable heap-style segment allocation which finds free
-> > +                       segments for data from the beginning of main area, while
-> > +		       for node from the end of main area.
-> > +nouser_xattr           Disable Extended User Attributes. Note: xattr is enabled
-> > +                       by default if CONFIG_F2FS_FS_XATTR is selected.
-> > +noacl                  Disable POSIX Access Control List. Note: acl is enabled
-> > +                       by default if CONFIG_F2FS_FS_POSIX_ACL is selected.
-> > +active_logs=%u         Support configuring the number of active logs. In the
-> > +                       current design, f2fs supports only 2, 4, and 6 logs.
-> > +                       Default number is 6.
-> > +disable_ext_identify   Disable the extension list configured by mkfs, so f2fs
-> > +                       does not aware of cold files such as media files.
-> > +
-> > +================================================================================
-> > +PROC ENTRIES
-> > +================================================================================
-> > +
-> > +/proc/fs/f2fs/ contains information about partitions mounted as f2fs. For each
-> > +partition, a corresponding directory, named as its device name, is provided with
-> > +the following proc entries.
-> > +
-> > +- f2fs_stat	major file system information managed by f2fs currently
-> > +- f2fs_sit_stat	average utilization information of the whole segments
-> > +- f2fs_mem_stat	current memory footprint consumed by f2fs
-> > +
-> > +e.g., in /proc/fs/f2fs/sdb1/
-> > +
-> > +================================================================================
-> > +USAGE
-> > +================================================================================
-> > +
-> > +1. Download userland tools
-> > +
-> > +2. Insmod f2fs.ko module:
-> > + # insmod f2fs.ko
-> > +
-> 
-> What about the case of static compilation of f2fs in the kernel?
-> 
-> > +3. Check the directory trying to mount
-> > + # mkdir /mnt/f2fs
-> > +
-> 
-> Create or check?
-> 
-> > +4. Format the block device, and then mount as f2fs
-> > + # mkfs.f2fs -l label /dev/block_device
-> > + # mount -t f2fs /dev/block_device /mnt/f2fs
-> > +
-> > +Mount options
-> 
-> Sorry, is it really mount options? Maybe, I misunderstand possibility to
-> set volume label during mount.
-> 
-> > +-------------
-> > +-l [label]   : Give a volume label, up to 256 unicode name.
-> > +-a [0 or 1]  : Split start location of each area for heap-based allocation.
-> > +               1 is set by default, which performs this.
-> > +-o [int]     : Set overprovision ratio in percent over volume size.
-> > +               5 is set by default.
-> > +-s [int]     : Set the number of segments per section.
-> > +               1 is set by default.
-> > +-z [int]     : Set the number of sections per zone.
-> > +               1 is set by default.
-> > +-e [str]     : Set basic extension list. e.g. "mp3,gif,mov"
-> > +
-> > +================================================================================
-> > +DESIGN
-> > +================================================================================
-> > +
-> > +On-disk Layout
-> > +--------------
-> > +
-> > +F2FS divides the whole volume into a number of segments, each of which is 2MB in
-> > +size by default. A section is composed of consecutive segments, and a zone
-> > +consists of a set of sections.
-> > +
-> 
-> Maybe, it makes sense to describe here possible sizes of sections and
-> zones?
-> 
-> > +F2FS maintains logically six log areas. Except SB, all the log areas are managed
-> > +in a unit of multiple segments. SB is located at the beginning of the partition,
-> > +and there exist two superblocks to avoid file system crash. Other file system
-> > +metadata such as CP, NAT, SIT, and SSA are located in the front part of the
-> > +volume. Main area contains file and directory data including their indices.
-> > +
-> 
-> I feel necessity to know more details about log concept here. Could you
-> add slightly more description about log?
-> 
-> > +Each area manages the following contents.
-> > +- CP		File system information, bitmaps for valid NAT/SIT sets, orphan
-> > +		inode lists, and summary entries of current active segments.
-> > +- NAT		Block address table for all the node blocks stored in Main area.
-> > +- SIT		Segment information such as valid block count and bitmap for the
-> > +		validity of all the blocks.
-> > +- SSA		Summary entries which contains the owner information of all the
-> > +		data and node blocks stored in Main area.
-> > +- Main		Node and data blocks.
-> > +
-> 
-> Could you add definition of abbreviations here also (for example, NAT
-> Node Address Table: <description>)?
-> 
-> > +In order to avoid misalignment between file system and flash-based storage, F2FS
-> > +aligns the start block address of CP with the segment size. Also, it aligns the
-> > +start block address of Main area with the zone size by reserving some segments
-> > +in SSA area.
-> 
-> Maybe, it makes sense to add some technical details about aligning
-> procedure here?
-> 
-> > +
-> > +                                            align with the zone size <-|
-> > +                 |-> align with the segment size
-> > +     _________________________________________________________________________
-> > +    |            |            |    Node     |   Segment   |   Segment  |      |
-> > +    | Superblock | Checkpoint |   Address   |    Info.    |   Summary  | Main |
-> > +    |    (SB)    |   (CP)     | Table (NAT) | Table (SIT) | Area (SSA) |      |
-> > +    |____________|_____2______|______N______|______N______|______N_____|__N___|
-> > +                                                                       .      .
-> > +                                                             .                .
-> > +                                                 .                            .
-> > +                                    ._________________________________________.
-> > +                                    |_Segment_|_..._|_Segment_|_..._|_Segment_|
-> > +                                    .           .
-> > +                                    ._________._________
-> > +                                    |_section_|__...__|_
-> > +                                    .            .
-> > +		                    .________.
-> > +	                            |__zone__|
-> > +
-> > +
-> > +File System Metadata Structure
-> > +------------------------------
-> > +
-> > +F2FS adopts the checkpointing scheme to maintain file system consistency. At
-> > +mount time, F2FS first tries to find the last valid checkpoint data by scanning
-> > +CP area. In order to reduce the scanning time, F2FS uses only two copies of CP.
-> > +One of them always indicates the last valid data, which is called as shadow copy
-> > +mechanism. In addition to CP, NAT and SIT also adopt the shadow copy mechanism.
-> > +
-> > +For file system consistency, each CP points to which NAT and SIT copies are
-> > +valid, as shown as below.
-> > +
-> > +  +--------+----------+---------+
-> > +  |   CP   |    NAT   |   SIT   |
-> > +  +--------+----------+---------+
-> > +  .         .          .          .
-> > +  .            .              .              .
-> > +  .               .                 .                 .
-> > +  +-------+-------+--------+--------+--------+--------+
-> > +  | CP #0 | CP #1 | NAT #0 | NAT #1 | SIT #0 | SIT #1 |
-> > +  +-------+-------+--------+--------+--------+--------+
-> > +     |             ^                          ^
-> > +     |             |                          |
-> > +     `----------------------------------------'
-> > +
-> > +Index Structure
-> > +---------------
-> > +
-> > +The key data structure to manage the data locations is a "node". Similar to
-> > +traditional file structures, F2FS has three types of node: inode, direct node,
-> > +indirect node. F2FS assigns 4KB to an inode block which contains 929 data block
-> > +indices, two direct node pointers, two indirect node pointers, and one double
-> > +indirect node pointer as described below. One direct node block contains 1018
-> > +data blocks, and one indirect node block contains also 1018 node blocks. Thus,
-> > +one inode block (i.e., a file) covers:
-> > +
-> > +  4KB * (927 + 2 * 1018 + 2 * 1018 * 1018 + 1018 * 1018 * 1018) := 3.94TB.
-> > +
-> > +   Inode block (4KB)
-> > +     |- data (927)
-> > +     |- direct node (2)
-> > +     |          `- data (1018)
-> > +     |- indirect node (2)
-> > +     |            `- direct node (1018)
-> > +     |                       `- data (1018)
-> > +     `- double indirect node (1)
-> > +                         `- indirect node (1018)
-> > +			              `- direct node (1018)
-> > +	                                         `- data (1018)
-> > +
-> > +Note that, all the node blocks are mapped by NAT which means the location of
-> > +each node is translated by the NAT table. In the consideration of the wandering
-> > +tree problem, F2FS is able to cut off the propagation of node updates caused by
-> > +leaf data writes.
-> > +
-> > +Directory Structure
-> > +-------------------
-> > +
-> > +A directory entry occupies 11 bytes, which consists of the following attributes.
-> > +
-> > +- hash		hash value of the file name
-> > +- ino		inode number
-> > +- len		the length of file name
-> > +- type		file type such as directory, symlink, etc
-> > +
-> > +A dentry block consists of 214 dentry slots and file names. Therein a bitmap is
-> > +used to represent whether each dentry is valid or not. A dentry block occupies
-> > +4KB with the following composition.
-> > +
-> > +  Dentry Block(4 K) = bitmap (27 bytes) + reserved (3 bytes) +
-> > +	              dentries(11 * 214 bytes) + file name (8 * 214 bytes)
-> > +
-> > +                         [Bucket]
-> > +             +--------------------------------+
-> > +             |dentry block 1 | dentry block 2 |
-> > +             +--------------------------------+
-> > +             .               .
-> > +       .                             .
-> > +  .       [Dentry Block Structure: 4KB]       .
-> > +  +--------+----------+----------+------------+
-> > +  | bitmap | reserved | dentries | file names |
-> > +  +--------+----------+----------+------------+
-> > +  [Dentry Block: 4KB] .   .
-> > +		 .               .
-> > +            .                          .
-> > +            +------+------+-----+------+
-> > +            | hash | ino  | len | type |
-> > +            +------+------+-----+------+
-> > +            [Dentry Structure: 11 bytes]
-> > +
-> > +F2FS implements multi-level hash tables for directory structure. Each level has
-> > +a hash table with dedicated number of hash buckets as shown below. Note that
-> > +"A(2B)" means a bucket includes 2 data blocks.
-> > +
-> > +----------------------
-> > +A : bucket
-> > +B : block
-> > +N : MAX_DIR_HASH_DEPTH
-> > +----------------------
-> > +
-> > +level #0   | A(2B)
-> > +           |
-> > +level #1   | A(2B) - A(2B)
-> > +           |
-> > +level #2   | A(2B) - A(2B) - A(2B) - A(2B)
-> > +     .     |   .       .       .       .
-> > +level #N/2 | A(2B) - A(2B) - A(2B) - A(2B) - A(2B) - ... - A(2B)
-> > +     .     |   .       .       .       .
-> > +level #N   | A(4B) - A(4B) - A(4B) - A(4B) - A(4B) - ... - A(4B)
-> > +
-> > +The number of blocks and buckets are determined by,
-> > +
-> > +                            ,- 2, if n < MAX_DIR_HASH_DEPTH / 2,
-> > +  # of blocks in level #n = |
-> > +                            `- 4, Otherwise
-> > +
-> > +                             ,- 2^n, if n < MAX_DIR_HASH_DEPTH / 2,
-> > +  # of buckets in level #n = |
-> > +                             `- 2^((MAX_DIR_HASH_DEPTH / 2) - 1), Otherwise
-> > +
-> > +When F2FS finds a file name in a directory, at first a hash value of the file
-> > +name is calculated. Then, F2FS scans the hash table in level #0 to find the
-> > +dentry consisting of the file name and its inode number. If not found, F2FS
-> > +scans the next hash table in level #1. In this way, F2FS scans hash tables in
-> > +each levels incrementally from 1 to N. In each levels F2FS needs to scan only
-> > +one bucket determined by the following equation, which shows O(log(# of files))
-> > +complexity.
-> > +
-> > +  bucket number to scan in level #n = (hash value) % (# of buckets in level #n)
-> > +
-> > +In the case of file creation, F2FS finds empty consecutive slots that cover the
-> > +file name. F2FS searches the empty slots in the hash tables of whole levels from
-> > +1 to N in the same way as the lookup operation.
-> > +
-> > +The following figure shows an example of two cases holding children.
-> > +       --------------> Dir <--------------
-> > +       |                                 |
-> > +    child                             child
-> > +
-> > +    child - child                     [hole] - child
-> > +
-> > +    child - child - child             [hole] - [hole] - child
-> > +
-> > +   Case 1:                           Case 2:
-> > +   Number of children = 6,           Number of children = 3,
-> > +   File size = 7                     File size = 7
-> > +
-> > +Default Block Allocation
-> > +------------------------
-> > +
-> > +At runtime, F2FS manages six active logs inside "Main" area: Hot/Warm/Cold node
-> > +and Hot/Warm/Cold data.
-> > +
-> > +- Hot node	contains direct node blocks of directories.
-> > +- Warm node	contains direct node blocks except hot node blocks.
-> > +- Cold node	contains indirect node blocks
-> > +- Hot data	contains dentry blocks
-> > +- Warm data	contains data blocks except hot and cold data blocks
-> > +- Cold data	contains multimedia data or migrated data blocks
-> > +
-> > +LFS has two schemes for free space management: threaded log and copy-and-compac-
-> > +tion. The copy-and-compaction scheme which is known as cleaning, is well-suited
-> > +for devices showing very good sequential write performance, since free segments
-> > +are served all the time for writing new data. However, it suffers from cleaning
-> > +overhead under high utilization. Contrarily, the threaded log scheme suffers
-> > +from random writes, but no cleaning process is needed. F2FS adopts a hybrid
-> > +scheme where the copy-and-compaction scheme is adopted by default, but the
-> > +policy is dynamically changed to the threaded log scheme according to the file
-> > +system status.
-> > +
-> > +In order to align F2FS with underlying flash-based storage, F2FS allocates a
-> > +segment in a unit of section. F2FS expects that the section size would be the
-> > +same as the unit size of garbage collection in FTL. Furthermore, with respect
-> > +to the mapping granularity in FTL, F2FS allocates each section of the active
-> > +logs from different zones as much as possible, since FTL can write the data in
-> > +the active logs into one allocation unit according to its mapping granularity.
-> > +
-> > +Cleaning process
-> > +----------------
-> > +
-> > +F2FS does cleaning both on demand and in the background. On-demand cleaning is
-> > +triggered when there are not enough free segments to serve VFS calls. Background
-> > +cleaner is operated by a kernel thread, and triggers the cleaning job when the
-> > +system is idle.
-> > +
-> > +F2FS supports two victim selection policies: greedy and cost-benefit algorithms.
-> > +In the greedy algorithm, F2FS selects a victim segment having the smallest number
-> > +of valid blocks. In the cost-benefit algorithm, F2FS selects a victim segment
-> > +according to the segment age and the number of valid blocks in order to address
-> > +log block thrashing problem in the greedy algorithm. F2FS adopts the greedy
-> > +algorithm for on-demand cleaner, while background cleaner adopts cost-benefit
-> > +algorithm.
-> > +
-> > +In order to identify whether the data in the victim segment are valid or not,
-> > +F2FS manages a bitmap. Each bit represents the validity of a block, and the
-> > +bitmap is composed of a bit stream covering whole blocks in main area.
-> 
-> With the best regards,
-> Vyacheslav Dubeyko.
-
-
+> > +++ b/arch/x86/include/asm/trace/irq_vectors.h
+> > @@ -0,0 +1,153 @@
+> > +#undef TRACE_SYSTEM
+> > +#define TRACE_SYSTEM irq_vectors
+> > +
+> > +#if !defined(_TRACE_IRQ_VECTORS_H) ||
+> > +defined(TRACE_HEADER_MULTI_READ) #define _TRACE_IRQ_VECTORS_H
+> > +
+> > +#include <linux/tracepoint.h>
+> > +
+> > +extern void trace_irq_vector_regfunc(void); extern void
+> > +trace_irq_vector_unregfunc(void);
+> > +
+> > +#define DECLARE_IRQ_VECTOR_EVENT(name)				\
+> > +TRACE_EVENT_FN(name,						\
+> > +	TP_PROTO(int vector),					\
+> > +								\
+> > +	TP_ARGS(vector),					\
+> > +								\
+> > +	TP_STRUCT__entry(					\
+> > +		__field(	int,	vector	)		\
+> > +	),							\
+> > +								\
+> > +	TP_fast_assign(						\
+> > +		__entry->vector = vector;			\
+> > +	),							\
+> > +								\
+> > +	TP_printk("vector=%d", __entry->vector),		\
+> > +	trace_irq_vector_regfunc, trace_irq_vector_unregfunc	\
+> > +);
+> > +
+> > +/*
+> > + * local_timer_entry - called before enterring a local timer
+> > +interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(local_timer_entry)
+> > +
+> > +/*
+> > + * local_timer_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(local_timer_exit)
+> > +
+> > +/*
+> > + * reschedule_entry - called before enterring a reschedule vector
+> > +handler  */
+> > +DECLARE_IRQ_VECTOR_EVENT(reschedule_entry)
+> > +
+> > +/*
+> > + * reschedule_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(reschedule_exit)
+> > +
+> > +/*
+> > + * spurious_apic_entry - called before enterring a spurious apic
+> > +vector handler  */
+> > +DECLARE_IRQ_VECTOR_EVENT(spurious_apic_entry)
+> > +
+> > +/*
+> > + * spurious_apic_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(spurious_apic_exit)
+> > +
+> > +/*
+> > + * error_apic_entry - called before enterring an error apic vector
+> > +handler  */
+> > +DECLARE_IRQ_VECTOR_EVENT(error_apic_entry)
+> > +
+> > +/*
+> > + * error_apic_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(error_apic_exit)
+> > +
+> > +/*
+> > + * x86_platform_ipi_entry - called before enterring a x86 platform
+> > +ipi interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(x86_platform_ipi_entry)
+> > +
+> > +/*
+> > + * x86_platform_ipi_exit - called immediately after the interrupt
+> > +vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(x86_platform_ipi_exit)
+> > +
+> > +/*
+> > + * irq_work_entry - called before enterring a irq work interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(irq_work_entry)
+> > +
+> > +/*
+> > + * irq_work_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(irq_work_exit)
+> > +
+> > +/*
+> > + * call_function_entry - called before enterring a call function
+> > +interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(call_function_entry)
+> > +
+> > +/*
+> > + * call_function_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(call_function_exit)
+> > +
+> > +/*
+> > + * call_function_single_entry - called before enterring a call
+> > +function
+> > + * single interrupt vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(call_function_single_entry)
+> > +
+> > +/*
+> > + * call_function_single_exit - called immediately after the interrupt
+> > +vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(call_function_single_exit)
+> > +
+> > +/*
+> > + * threshold_apic_entry - called before enterring a threshold apic
+> > +interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(threshold_apic_entry)
+> > +
+> > +/*
+> > + * threshold_apic_exit - called immediately after the interrupt
+> > +vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(threshold_apic_exit)
+> > +
+> > +/*
+> > + * thermal_apic_entry - called before enterring a thermal apic
+> > +interrupt
+> > + * vector handler
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(thermal_apic_entry)
+> > +
+> > +/*
+> > + * thrmal_apic_exit - called immediately after the interrupt vector
+> > + * handler returns
+> > + */
+> > +DECLARE_IRQ_VECTOR_EVENT(thermal_apic_exit)
+> > +
+> > +#undef TRACE_INCLUDE_PATH
+> > +#define TRACE_INCLUDE_PATH ../../arch/x86/include/asm/trace #define
+> > +TRACE_INCLUDE_FILE irq_vectors #endif /*  _TRACE_IRQ_VECTORS_H */
+> > +
+> > +/* This part must be outside protection */ #include
+> > +<trace/define_trace.h>
+> > diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile index
+> > 91ce48f..fe4635d 100644
+> > --- a/arch/x86/kernel/Makefile
+> > +++ b/arch/x86/kernel/Makefile
+> > @@ -100,6 +100,7 @@ obj-$(CONFIG_OF)			+= devicetree.o
+> >  obj-$(CONFIG_UPROBES)			+= uprobes.o
+> >
+> >  obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o
+> > +obj-$(CONFIG_TRACEPOINTS)		+= tracepoint.o
+> >
+> >  ###
+> >  # 64 bit specific files
+> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> > index b17416e..abbee29 100644
+> > --- a/arch/x86/kernel/apic/apic.c
+> > +++ b/arch/x86/kernel/apic/apic.c
+> > @@ -55,6 +55,9 @@
+> >  #include <asm/tsc.h>
+> >  #include <asm/hypervisor.h>
+> >
+> > +#define CREATE_TRACE_POINTS
+> > +#include <asm/trace/irq_vectors.h>
+> > +
+> >  unsigned int num_processors;
+> >
+> >  unsigned disabled_cpus __cpuinitdata; @@ -879,27 +882,34 @@ static
+> > void local_apic_timer_interrupt(void)
+> >   * [ if a single-CPU system runs an SMP kernel then we call the local
+> >   *   interrupt as well. Thus we cannot inline the local irq ... ]
+> >   */
+> > -void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs) -{
+> > -	struct pt_regs *old_regs = set_irq_regs(regs);
+> > -
+> > -	/*
+> > -	 * NOTE! We'd better ACK the irq immediately,
+> > -	 * because timer handling can be slow.
+> > -	 */
+> > -	ack_APIC_irq();
+> > -	/*
+> > -	 * update_process_times() expects us to have done irq_enter().
+> > -	 * Besides, if we don't timer interrupts ignore the global
+> > -	 * interrupt lock, which is the WrongThing (tm) to do.
+> > -	 */
+> > -	irq_enter();
+> > -	exit_idle();
+> > -	local_apic_timer_interrupt();
+> > -	irq_exit();
+> > -
+> > -	set_irq_regs(old_regs);
+> > -}
+> > +#define SMP_APIC_TIMER_INTERRUPT(trace, trace_enter, trace_exit)	\
+> > +void __irq_entry smp_##trace##apic_timer_interrupt(struct pt_regs *regs)\
+> > +{									\
+> > +	struct pt_regs *old_regs = set_irq_regs(regs);			\
+> > +									\
+> > +	/*								\
+> > +	 * NOTE! We'd better ACK the irq immediately,			\
+> > +	 * because timer handling can be slow.				\
+> > +	 */								\
+> > +	ack_APIC_irq();							\
+> > +	/*								\
+> > +	 * update_process_times() expects us to have done irq_enter().	\
+> > +	 * Besides, if we don't timer interrupts ignore the global	\
+> > +	 * interrupt lock, which is the WrongThing (tm) to do.		\
+> > +	 */								\
+> > +	irq_enter();							\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	local_apic_timer_interrupt();					\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +									\
+> > +	set_irq_regs(old_regs);						\
+> > +}
+> > +
+> > +SMP_APIC_TIMER_INTERRUPT(,,)
+> > +SMP_APIC_TIMER_INTERRUPT(trace_, trace_local_timer_entry(LOCAL_TIMER_VECTOR),
+> > +			 trace_local_timer_exit(LOCAL_TIMER_VECTOR))
+> >
+> >  int setup_profiling_timer(unsigned int multiplier)  { @@ -1875,71
+> > +1885,91 @@ int __init APIC_init_uniprocessor(void)
+> >  /*
+> >   * This interrupt should _never_ happen with our APIC/SMP architecture
+> >   */
+> > -void smp_spurious_interrupt(struct pt_regs *regs) -{
+> > -	u32 v;
+> > -
+> > -	irq_enter();
+> > -	exit_idle();
+> > -	/*
+> > -	 * Check if this really is a spurious interrupt and ACK it
+> > -	 * if it is a vectored one.  Just in case...
+> > -	 * Spurious interrupts should not be ACKed.
+> > -	 */
+> > -	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));
+> > -	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))
+> > -		ack_APIC_irq();
+> > -
+> > -	inc_irq_stat(irq_spurious_count);
+> > -
+> > -	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
+> > -	pr_info("spurious APIC interrupt on CPU#%d, "
+> > -		"should never happen.\n", smp_processor_id());
+> > -	irq_exit();
+> > -}
+> > +#define SMP_SPURIOUS_INTERRUPT(trace, trace_enter, trace_exit)		\
+> > +void smp_##trace##spurious_interrupt(struct pt_regs *regs)		\
+> > +{									\
+> > +	u32 v;								\
+> > +									\
+> > +	irq_enter();							\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	/*								\
+> > +	 * Check if this really is a spurious interrupt and ACK it	\
+> > +	 * if it is a vectored one.  Just in case...			\
+> > +	 * Spurious interrupts should not be ACKed.			\
+> > +	 */								\
+> > +	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));\
+> > +	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))			\
+> > +		ack_APIC_irq();						\
+> > +									\
+> > +	inc_irq_stat(irq_spurious_count);				\
+> > +									\
+> > +	/* see sw-dev-man vol 3, chapter 7.4.13.5 */			\
+> > +	pr_info("spurious APIC interrupt on CPU#%d, "			\
+> > +		"should never happen.\n", smp_processor_id());		\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +}
+> > +
+> > +SMP_SPURIOUS_INTERRUPT(,,)
+> > +SMP_SPURIOUS_INTERRUPT(trace_, trace_spurious_apic_entry(SPURIOUS_APIC_VECTOR),
+> > +		       trace_spurious_apic_exit(SPURIOUS_APIC_VECTOR))
+> >
+> >  /*
+> >   * This interrupt should never happen with our APIC/SMP architecture
+> >   */
+> > -void smp_error_interrupt(struct pt_regs *regs) -{
+> > -	u32 v0, v1;
+> > -	u32 i = 0;
+> > -	static const char * const error_interrupt_reason[] = {
+> > -		"Send CS error",		/* APIC Error Bit 0 */
+> > -		"Receive CS error",		/* APIC Error Bit 1 */
+> > -		"Send accept error",		/* APIC Error Bit 2 */
+> > -		"Receive accept error",		/* APIC Error Bit 3 */
+> > -		"Redirectable IPI",		/* APIC Error Bit 4 */
+> > -		"Send illegal vector",		/* APIC Error Bit 5 */
+> > -		"Received illegal vector",	/* APIC Error Bit 6 */
+> > -		"Illegal register address",	/* APIC Error Bit 7 */
+> > -	};
+> > -
+> > -	irq_enter();
+> > -	exit_idle();
+> > -	/* First tickle the hardware, only then report what went on. -- REW */
+> > -	v0 = apic_read(APIC_ESR);
+> > -	apic_write(APIC_ESR, 0);
+> > -	v1 = apic_read(APIC_ESR);
+> > -	ack_APIC_irq();
+> > -	atomic_inc(&irq_err_count);
+> > -
+> > -	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
+> > -		    smp_processor_id(), v0 , v1);
+> > -
+> > -	v1 = v1 & 0xff;
+> > -	while (v1) {
+> > -		if (v1 & 0x1)
+> > -			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
+> > -		i++;
+> > -		v1 >>= 1;
+> > -	}
+> > -
+> > -	apic_printk(APIC_DEBUG, KERN_CONT "\n");
+> > -
+> > -	irq_exit();
+> > -}
+> > +#define SMP_ERROR_INTERRUPT(trace, trace_enter, trace_exit)		\
+> > +void smp_##trace##error_interrupt(struct pt_regs *regs)		\
+> > +{									\
+> > +	u32 v0, v1;							\
+> > +	u32 i = 0;							\
+> > +	static const char * const error_interrupt_reason[] = {		\
+> > +		"Send CS error",		/* APIC Error Bit 0 */	\
+> > +		"Receive CS error",		/* APIC Error Bit 1 */	\
+> > +		"Send accept error",		/* APIC Error Bit 2 */	\
+> > +		"Receive accept error",		/* APIC Error Bit 3 */	\
+> > +		"Redirectable IPI",		/* APIC Error Bit 4 */	\
+> > +		"Send illegal vector",		/* APIC Error Bit 5 */	\
+> > +		"Received illegal vector",	/* APIC Error Bit 6 */	\
+> > +		"Illegal register address",	/* APIC Error Bit 7 */	\
+> > +	};								\
+> > +									\
+> > +	irq_enter();							\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	/*								\
+> > +	 * First tickle the hardware, only then report what went on.	\
+> > +	 * -- REW							\
+> > +	 */								\
+> > +	v0 = apic_read(APIC_ESR);					\
+> > +	apic_write(APIC_ESR, 0);					\
+> > +	v1 = apic_read(APIC_ESR);					\
+> > +	ack_APIC_irq();							\
+> > +	atomic_inc(&irq_err_count);					\
+> > +									\
+> > +	apic_printk(APIC_DEBUG,						\
+> > +		    KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",	\
+> > +		    smp_processor_id(), v0 , v1);			\
+> > +									\
+> > +	v1 = v1 & 0xff;							\
+> > +	while (v1) {							\
+> > +		if (v1 & 0x1)						\
+> > +			apic_printk(APIC_DEBUG, KERN_CONT " : %s",	\
+> > +				    error_interrupt_reason[i]);		\
+> > +		i++;							\
+> > +		v1 >>= 1;						\
+> > +	}								\
+> > +									\
+> > +	apic_printk(APIC_DEBUG, KERN_CONT "\n");			\
+> > +									\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +}
+> > +
+> > +
+> > +SMP_ERROR_INTERRUPT(,,)
+> > +SMP_ERROR_INTERRUPT(trace_, trace_error_apic_entry(ERROR_APIC_VECTOR),
+> > +		    trace_error_apic_exit(ERROR_APIC_VECTOR))
+> >
+> >  /**
+> >   * connect_bsp_APIC - attach the APIC to the interrupt system diff
+> > --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > index 47a1870..a1c86ab 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+> > @@ -23,6 +23,7 @@
+> >  #include <linux/init.h>
+> >  #include <linux/smp.h>
+> >  #include <linux/cpu.h>
+> > +#include <asm/trace/irq_vectors.h>
+> >
+> >  #include <asm/processor.h>
+> >  #include <asm/apic.h>
+> > @@ -378,17 +379,24 @@ static void unexpected_thermal_interrupt(void)
+> >
+> >  static void (*smp_thermal_vector)(void) =
+> > unexpected_thermal_interrupt;
+> >
+> > -asmlinkage void smp_thermal_interrupt(struct pt_regs *regs) -{
+> > -	irq_enter();
+> > -	exit_idle();
+> > -	inc_irq_stat(irq_thermal_count);
+> > -	smp_thermal_vector();
+> > -	irq_exit();
+> > -	/* Ack only at the end to avoid potential reentry */
+> > -	ack_APIC_irq();
+> > +#define SMP_THERMAL_INTERRUPT(trace, trace_enter, trace_exit)		\
+> > +asmlinkage void smp_##trace##thermal_interrupt(struct pt_regs *regs)	\
+> > +{									\
+> > +	irq_enter();							\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	inc_irq_stat(irq_thermal_count);				\
+> > +	smp_thermal_vector();						\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +	/* Ack only at the end to avoid potential reentry */		\
+> > +	ack_APIC_irq();							\
+> >  }
+> >
+> > +SMP_THERMAL_INTERRUPT(,,)
+> > +SMP_THERMAL_INTERRUPT(trace_, trace_thermal_apic_entry(THERMAL_APIC_VECTOR),
+> > +		      trace_thermal_apic_exit(THERMAL_APIC_VECTOR))
+> > +
+> >  /* Thermal monitoring depends on APIC, ACPI and clock modulation */
+> > static int intel_thermal_supported(struct cpuinfo_x86 *c) { diff --git
+> > a/arch/x86/kernel/cpu/mcheck/threshold.c
+> > b/arch/x86/kernel/cpu/mcheck/threshold.c
+> > index aa578ca..b7a95c5 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/threshold.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/threshold.c
+> > @@ -4,6 +4,7 @@
+> >  #include <linux/interrupt.h>
+> >  #include <linux/kernel.h>
+> >
+> > +#include <asm/trace/irq_vectors.h>
+> >  #include <asm/irq_vectors.h>
+> >  #include <asm/apic.h>
+> >  #include <asm/idle.h>
+> > @@ -17,13 +18,21 @@ static void default_threshold_interrupt(void)
+> >
+> >  void (*mce_threshold_vector)(void) = default_threshold_interrupt;
+> >
+> > -asmlinkage void smp_threshold_interrupt(void) -{
+> > -	irq_enter();
+> > -	exit_idle();
+> > -	inc_irq_stat(irq_threshold_count);
+> > -	mce_threshold_vector();
+> > -	irq_exit();
+> > -	/* Ack only at the end to avoid potential reentry */
+> > -	ack_APIC_irq();
+> > +#define SMP_THRESHOLD_INTERRUPT(trace, trace_enter, trace_exit)	\
+> > +asmlinkage void smp_##trace##threshold_interrupt(void)			\
+> > +{									\
+> > +	irq_enter();							\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	inc_irq_stat(irq_threshold_count);				\
+> > +	mce_threshold_vector();						\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +	/* Ack only at the end to avoid potential reentry */		\
+> > +	ack_APIC_irq();							\
+> >  }
+> > +
+> > +SMP_THRESHOLD_INTERRUPT(,,)
+> > +SMP_THRESHOLD_INTERRUPT(trace_,
+> > +			trace_threshold_apic_entry(THRESHOLD_APIC_VECTOR),
+> > +			trace_threshold_apic_exit(THRESHOLD_APIC_VECTOR))
+> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> > index cdc790c..20faa26 100644
+> > --- a/arch/x86/kernel/entry_64.S
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -1187,6 +1187,39 @@ apicinterrupt IRQ_WORK_VECTOR \
+> >  	irq_work_interrupt smp_irq_work_interrupt  #endif
+> >
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +
+> > +apicinterrupt LOCAL_TIMER_VECTOR \
+> > +	trace_apic_timer_interrupt smp_trace_apic_timer_interrupt
+> > +apicinterrupt X86_PLATFORM_IPI_VECTOR \
+> > +	trace_x86_platform_ipi smp_trace_x86_platform_ipi
+> > +
+> > +apicinterrupt THRESHOLD_APIC_VECTOR \
+> > +	trace_threshold_interrupt smp_trace_threshold_interrupt
+> > +apicinterrupt THERMAL_APIC_VECTOR \
+> > +	trace_thermal_interrupt smp_trace_thermal_interrupt
+> > +
+> > +#ifdef CONFIG_SMP
+> > +apicinterrupt CALL_FUNCTION_SINGLE_VECTOR \
+> > +	trace_call_function_single_interrupt \
+> > +	smp_trace_call_function_single_interrupt
+> > +apicinterrupt CALL_FUNCTION_VECTOR \
+> > +	trace_call_function_interrupt smp_trace_call_function_interrupt
+> > +apicinterrupt RESCHEDULE_VECTOR \
+> > +	trace_reschedule_interrupt smp_trace_reschedule_interrupt #endif
+> > +
+> > +apicinterrupt ERROR_APIC_VECTOR \
+> > +	trace_error_interrupt smp_trace_error_interrupt apicinterrupt
+> > +SPURIOUS_APIC_VECTOR \
+> > +	trace_spurious_interrupt smp_trace_spurious_interrupt
+> > +
+> > +#ifdef CONFIG_IRQ_WORK
+> > +apicinterrupt IRQ_WORK_VECTOR \
+> > +	trace_irq_work_interrupt smp_trace_irq_work_interrupt #endif #endif
+> > +/* CONFIG_TRACEPOINTS */
+> > +
+> >  /*
+> >   * Exception entry points.
+> >   */
+> > diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+> > index 94bf9cc..cc32708 100644
+> > --- a/arch/x86/kernel/head_64.S
+> > +++ b/arch/x86/kernel/head_64.S
+> > @@ -455,6 +455,12 @@ ENTRY(idt_table)
+> >  ENTRY(nmi_idt_table)
+> >  	.skip IDT_ENTRIES * 16
+> >
+> > +#ifdef CONFIG_TRACEPOINTS
+> > +	.align L1_CACHE_BYTES
+> > +ENTRY(trace_idt_table)
+> > +	.skip IDT_ENTRIES * 16
+> > +#endif
+> > +
+> >  	__PAGE_ALIGNED_BSS
+> >  	.align PAGE_SIZE
+> >  ENTRY(empty_zero_page)
+> > diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c index
+> > e4595f1..9fd70ad 100644
+> > --- a/arch/x86/kernel/irq.c
+> > +++ b/arch/x86/kernel/irq.c
+> > @@ -18,6 +18,8 @@
+> >  #include <asm/mce.h>
+> >  #include <asm/hw_irq.h>
+> >
+> > +#include <asm/trace/irq_vectors.h>
+> > +
+> >  atomic_t irq_err_count;
+> >
+> >  /* Function pointer for generic interrupt vector handling */ @@
+> > -208,26 +210,32 @@ unsigned int __irq_entry do_IRQ(struct pt_regs
+> > *regs)
+> >  /*
+> >   * Handler for X86_PLATFORM_IPI_VECTOR.
+> >   */
+> > -void smp_x86_platform_ipi(struct pt_regs *regs) -{
+> > -	struct pt_regs *old_regs = set_irq_regs(regs);
+> > -
+> > -	ack_APIC_irq();
+> > -
+> > -	irq_enter();
+> > -
+> > -	exit_idle();
+> > -
+> > -	inc_irq_stat(x86_platform_ipis);
+> > -
+> > -	if (x86_platform_ipi_callback)
+> > -		x86_platform_ipi_callback();
+> > -
+> > -	irq_exit();
+> > -
+> > -	set_irq_regs(old_regs);
+> > +#define SMP_X86_PLATFORM_IPI(trace, trace_enter, trace_exit)		\
+> > +void smp_##trace##x86_platform_ipi(struct pt_regs *regs)		\
+> > +{									\
+> > +	struct pt_regs *old_regs = set_irq_regs(regs);			\
+> > +									\
+> > +	ack_APIC_irq();							\
+> > +									\
+> > +	irq_enter();							\
+> > +									\
+> > +	exit_idle();							\
+> > +	trace_enter;							\
+> > +	inc_irq_stat(x86_platform_ipis);				\
+> > +									\
+> > +	if (x86_platform_ipi_callback)					\
+> > +		x86_platform_ipi_callback();				\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> > +									\
+> > +	set_irq_regs(old_regs);						\
+> >  }
+> >
+> > +SMP_X86_PLATFORM_IPI(,,)
+> > +SMP_X86_PLATFORM_IPI(trace_,
+> > +		     trace_x86_platform_ipi_entry(X86_PLATFORM_IPI_VECTOR),
+> > +		     trace_x86_platform_ipi_exit(X86_PLATFORM_IPI_VECTOR))
+> > +
+> >  EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
+> >
+> >  #ifdef CONFIG_HOTPLUG_CPU
+> > diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+> > index ca8f703..a669b94 100644
+> > --- a/arch/x86/kernel/irq_work.c
+> > +++ b/arch/x86/kernel/irq_work.c
+> > @@ -8,16 +8,24 @@
+> >  #include <linux/irq_work.h>
+> >  #include <linux/hardirq.h>
+> >  #include <asm/apic.h>
+> > +#include <asm/trace/irq_vectors.h>
+> >
+> > -void smp_irq_work_interrupt(struct pt_regs *regs) -{
+> > -	irq_enter();
+> > -	ack_APIC_irq();
+> > -	inc_irq_stat(apic_irq_work_irqs);
+> > -	irq_work_run();
+> > -	irq_exit();
+> > +#define SMP_IRQ_WORK_INTERRUPT(trace, trace_enter, trace_exit)		\
+> > +void smp_##trace##irq_work_interrupt(struct pt_regs *regs)		\
+> > +{									\
+> > +	irq_enter();							\
+> > +	ack_APIC_irq();							\
+> > +	trace_enter;							\
+> > +	inc_irq_stat(apic_irq_work_irqs);				\
+> > +	irq_work_run();							\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> >  }
+> >
+> > +SMP_IRQ_WORK_INTERRUPT(,,)
+> > +SMP_IRQ_WORK_INTERRUPT(trace_, trace_irq_work_entry(IRQ_WORK_VECTOR),
+> > +		       trace_irq_work_exit(IRQ_WORK_VECTOR))
+> > +
+> >  void arch_irq_work_raise(void)
+> >  {
+> >  #ifdef CONFIG_X86_LOCAL_APIC
+> > diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+> > index 6e03b0d..cf76128 100644
+> > --- a/arch/x86/kernel/irqinit.c
+> > +++ b/arch/x86/kernel/irqinit.c
+> > @@ -251,4 +251,6 @@ void __init native_init_IRQ(void)
+> >
+> >  	irq_ctx_init(smp_processor_id());
+> >  #endif
+> > +
+> > +	trace_idt_table_init();
+> >  }
+> > diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c index
+> > 48d2b7d..d8e1a2c 100644
+> > --- a/arch/x86/kernel/smp.c
+> > +++ b/arch/x86/kernel/smp.c
+> > @@ -23,6 +23,7 @@
+> >  #include <linux/interrupt.h>
+> >  #include <linux/cpu.h>
+> >  #include <linux/gfp.h>
+> > +#include <asm/trace/irq_vectors.h>
+> >
+> >  #include <asm/mtrr.h>
+> >  #include <asm/tlbflush.h>
+> > @@ -249,34 +250,57 @@ finish:
+> >  /*
+> >   * Reschedule call back.
+> >   */
+> > -void smp_reschedule_interrupt(struct pt_regs *regs) -{
+> > -	ack_APIC_irq();
+> > -	inc_irq_stat(irq_resched_count);
+> > -	scheduler_ipi();
+> > -	/*
+> > -	 * KVM uses this interrupt to force a cpu out of guest mode
+> > -	 */
+> > +#define SMP_RESCHEDULE_INTERRUPT(trace, trace_enter, trace_exit)	\
+> > +void smp_##trace##reschedule_interrupt(struct pt_regs *regs)		\
+> > +{									\
+> > +	ack_APIC_irq();							\
+> > +	trace_enter;							\
+> > +	inc_irq_stat(irq_resched_count);				\
+> > +	scheduler_ipi();						\
+> > +	trace_exit;							\
+> > +	/*								\
+> > +	 * KVM uses this interrupt to force a cpu out of guest mode	\
+> > +	 */								\
+> >  }
+> >
+> > -void smp_call_function_interrupt(struct pt_regs *regs) -{
+> > -	ack_APIC_irq();
+> > -	irq_enter();
+> > -	generic_smp_call_function_interrupt();
+> > -	inc_irq_stat(irq_call_count);
+> > -	irq_exit();
+> > +SMP_RESCHEDULE_INTERRUPT(,,)
+> > +SMP_RESCHEDULE_INTERRUPT(trace_, trace_reschedule_entry(RESCHEDULE_VECTOR),
+> > +			 trace_reschedule_exit(RESCHEDULE_VECTOR))
+> > +
+> > +#define SMP_CALL_FUNCTION_INTERRUPT(trace, trace_enter, trace_exit)	\
+> > +void smp_##trace##call_function_interrupt(struct pt_regs *regs)	\
+> > +{									\
+> > +	ack_APIC_irq();							\
+> > +	irq_enter();							\
+> > +	trace_enter;							\
+> > +	generic_smp_call_function_interrupt();				\
+> > +	inc_irq_stat(irq_call_count);					\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> >  }
+> >
+> > -void smp_call_function_single_interrupt(struct pt_regs *regs) -{
+> > -	ack_APIC_irq();
+> > -	irq_enter();
+> > -	generic_smp_call_function_single_interrupt();
+> > -	inc_irq_stat(irq_call_count);
+> > -	irq_exit();
+> > +SMP_CALL_FUNCTION_INTERRUPT(,,)
+> > +SMP_CALL_FUNCTION_INTERRUPT(trace_,
+> > +			    trace_call_function_entry(CALL_FUNCTION_VECTOR),
+> > +			    trace_call_function_exit(CALL_FUNCTION_VECTOR))
+> > +
+> > +#define SMP_CALL_FUNCTION_SINGLE_INTERRUPT(trace, trace_enter, trace_exit)\
+> > +void smp_##trace##call_function_single_interrupt(struct pt_regs *regs)	\
+> > +{									\
+> > +	ack_APIC_irq();							\
+> > +	irq_enter();							\
+> > +	trace_enter;							\
+> > +	generic_smp_call_function_single_interrupt();			\
+> > +	inc_irq_stat(irq_call_count);					\
+> > +	trace_exit;							\
+> > +	irq_exit();							\
+> >  }
+> >
+> > +SMP_CALL_FUNCTION_SINGLE_INTERRUPT(,,)
+> > +SMP_CALL_FUNCTION_SINGLE_INTERRUPT(trace_,
+> > +		trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR),
+> > +		trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR))
+> > +
+> >  static int __init nonmi_ipi_setup(char *str)  {
+> >  	smp_no_nmi_ipi = true;
+> > diff --git a/arch/x86/kernel/tracepoint.c
+> > b/arch/x86/kernel/tracepoint.c new file mode 100644 index
+> > 0000000..d7c96ba
+> > --- /dev/null
+> > +++ b/arch/x86/kernel/tracepoint.c
+> > @@ -0,0 +1,102 @@
+> > +/*
+> > + * Code for supporting irq vector tracepoints.
+> > + *
+> > + * Copyright (C) 2012 Seiji Aguchi <seiji.aguchi@hds.com>
+> > + *
+> > + */
+> > +#include <asm/hw_irq.h>
+> > +#include <asm/desc.h>
+> > +
+> > +static struct desc_ptr trace_idt_descr = { NR_VECTORS * 16 - 1,
+> > +				    (unsigned long) trace_idt_table };
+> > +
+> > +#ifndef CONFIG_X86_64
+> > +gate_desc trace_idt_table[NR_VECTORS] __page_aligned_data
+> > +					= { { { { 0, 0 } } }, };
+> > +#endif
+> > +
+> > +void __init trace_idt_table_init(void) {
+> > +	memcpy(&trace_idt_table, &idt_table, IDT_ENTRIES * 16);
+> > +	/*
+> > +	 * The reschedule interrupt is a CPU-to-CPU reschedule-helper
+> > +	 * IPI, driven by wakeup.
+> > +	 */
+> > +	trace_set_intr_gate(RESCHEDULE_VECTOR, trace_reschedule_interrupt);
+> > +
+> > +	/* IPI for generic function call */
+> > +	trace_set_intr_gate(CALL_FUNCTION_VECTOR,
+> > +			    trace_call_function_interrupt);
+> > +
+> > +	/* IPI for generic single function call */
+> > +	trace_set_intr_gate(CALL_FUNCTION_SINGLE_VECTOR,
+> > +			    trace_call_function_single_interrupt);
+> > +
+> > +#ifdef CONFIG_X86_THERMAL_VECTOR
+> > +	trace_set_intr_gate(THERMAL_APIC_VECTOR, trace_thermal_interrupt);
+> > +#endif #ifdef CONFIG_X86_MCE_THRESHOLD
+> > +	trace_set_intr_gate(THRESHOLD_APIC_VECTOR,
+> > +trace_threshold_interrupt); #endif
+> > +
+> > +#if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
+> > +	/* self generated IPI for local APIC timer */
+> > +	trace_set_intr_gate(LOCAL_TIMER_VECTOR, trace_apic_timer_interrupt);
+> > +
+> > +	/* IPI for X86 platform specific use */
+> > +	trace_set_intr_gate(X86_PLATFORM_IPI_VECTOR,
+> > +trace_x86_platform_ipi);
+> > +
+> > +	/* IPI vectors for APIC spurious and error interrupts */
+> > +	trace_set_intr_gate(SPURIOUS_APIC_VECTOR, trace_spurious_interrupt);
+> > +	trace_set_intr_gate(ERROR_APIC_VECTOR, trace_error_interrupt);
+> > +
+> > +	/* IRQ work interrupts: */
+> > +# ifdef CONFIG_IRQ_WORK
+> > +	trace_set_intr_gate(IRQ_WORK_VECTOR, trace_irq_work_interrupt); #
+> > +endif # endif }
+> > +
+> > +static struct desc_ptr orig_idt_descr[NR_CPUS]; static int
+> > +trace_irq_vector_refcount;
+> > +
+> > +static void switch_trace_idt(void *arg) {
+> > +	store_idt(&orig_idt_descr[smp_processor_id()]);
+> > +	load_idt(&trace_idt_descr);
+> > +
+> > +	return;
+> > +}
+> > +
+> > +static void restore_original_idt(void *arg) {
+> > +	if (orig_idt_descr[smp_processor_id()].address) {
+> > +		load_idt(&orig_idt_descr[smp_processor_id()]);
+> > +		memset(&orig_idt_descr[smp_processor_id()], 0,
+> > +		       sizeof(struct desc_ptr));
+> > +	}
+> > +
+> > +	return;
+> > +}
+> > +
+> > +void trace_irq_vector_regfunc(void)
+> > +{
+> > +	if (!trace_irq_vector_refcount) {
+> > +		smp_call_function(switch_trace_idt, NULL, 0);
+> > +		local_irq_disable();
+> > +		switch_trace_idt(NULL);
+> > +		local_irq_enable();
+> > +	}
+> > +	trace_irq_vector_refcount++;
+> > +}
+> > +
+> > +void trace_irq_vector_unregfunc(void) {
+> > +	trace_irq_vector_refcount--;
+> > +	if (!trace_irq_vector_refcount) {
+> > +		smp_call_function(restore_original_idt, NULL, 0);
+> > +		local_irq_disable();
+> > +		restore_original_idt(NULL);
+> > +		local_irq_enable();
+> > +	}
+> > +}
+> > -- 1.7.1
