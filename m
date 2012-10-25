@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab2JYAUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:20:08 -0400
-Received: from mailbigip.dreamhost.com ([208.97.132.5]:47000 "EHLO
-	homiemail-a66.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755351Ab2JYAUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:20:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
-References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>
-	<m2fw5mtffg.fsf_-_@firstfloor.org>
-	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
-	<5086F5A7.9090406@vlnb.net>
-	<CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
-	<alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
-Date: Wed, 24 Oct 2012 19:20:04 -0500
-Message-ID: <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
-Subject: Re: [sqlite] light weight write barriers
-From: Nico Williams <nico@cryptonector.com>
-To: david@lang.hm
-Cc: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
-        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        drh@hwaci.com
-Content-Type: text/plain; charset=UTF-8
+	id S1758928Ab2JYAUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:20:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61717 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab2JYAUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 20:20:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,643,1344236400"; 
+   d="scan'208";a="210450513"
+Message-ID: <1351124446.2207.12.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH v2] drivers-core: move the calling to device_pm_remove
+ behind the calling to bus_remove_device
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        zhanglong <longzhax@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Date: Thu, 25 Oct 2012 08:20:46 +0800
+In-Reply-To: <2349638.6Av6Qi7uZi@vostro.rjw.lan>
+References: <507D7D08.7010903@intel.com> <1871387.QctMb7gSFB@vostro.rjw.lan>
+	 <20121024221327.GA23353@kroah.com> <2349638.6Av6Qi7uZi@vostro.rjw.lan>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 5:03 PM,  <david@lang.hm> wrote:
-> I'm doing some work with rsyslog and it's disk-baded queues and there is a
-> similar issue there. The good news is that we can have a version that is
-> linux specific (rsyslog is used on other OSs, but there is an existing queue
-> implementation that they can use, if the faster one is linux-only, but is
-> significantly faster, that's just a win for Linux)
->
-> Like what is being described for sqlite, loosing the tail end of the
-> messages is not a big problem under normal conditions. But there is a need
-> to be sure that what is there is complete up to the point where it's lost.
->
-> this is similar in concept to write-ahead-logs done for databases (without
-> the absolute durability requirement)
->
-> [...]
->
-> I am not fully understanding how what you are describing (COW, separate
-> fsync threads, etc) would be implemented on top of existing filesystems.
-> Most of what you are describing seems like it requires access to the
-> underlying storage to implement.
->
-> could you give a more detailed explination?
+On Thu, 2012-10-25 at 00:33 +0200, Rafael J. Wysocki wrote:
+> On Wednesday 24 of October 2012 15:13:27 Greg Kroah-Hartman wrote:
+> > On Wed, Oct 24, 2012 at 09:46:19PM +0200, Rafael J. Wysocki wrote:
+> > > On Tuesday 16 of October 2012 23:28:08 zhanglong wrote:
+> > > > We hit an hang issue when removing a mmc device on Medfield Android phone by sysfs interface.
+> > > > 
+> > > > device_pm_remove will call pm_runtime_remove which would disable
+> > > > runtime PM of the device. After that pm_runtime_get* or
+> > > > pm_runtime_put* will be ignored. So if we disable the runtime PM
+> > > > before device really be removed, drivers' _remove callback may
+> > > > access HW even pm_runtime_get* fails. That is bad.
+> > > > 
+> > > > Consider below call sequence when removing a device:
+> > > > device_del => device_pm_remove
+> > > >              => class_intf->remove_dev(dev, class_intf)  => pm_runtime_get_sync/put_sync
+> > > >              => bus_remove_device => device_release_driver => pm_runtime_get_sync/put_sync
+> > > > 
+> > > > remove_dev might call pm_runtime_get_sync/put_sync.
+> > > > Then, generic device_release_driver also calls pm_runtime_get_sync/put_sync.
+> > > > Since device_del => device_pm_remove firstly, later _get_sync wouldn't really wake up the device. 
+> > > > 
+> > > > I git log -p to find the patch which moves the calling to device_pm_remove ahead.
+> > > > It's below patch:
+> > > > 
+> > > > commit  775b64d2b6ca37697de925f70799c710aab5849a
+> > > > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > Date:   Sat Jan 12 20:40:46 2008 +0100
+> > > > 
+> > > >      PM: Acquire device locks on suspend
+> > > > 
+> > > >      This patch reorganizes the way suspend and resume notifications are
+> > > >      sent to drivers.  The major changes are that now the PM core acquires
+> > > >      every device semaphore before calling the methods, and calls to
+> > > >      device_add() during suspends will fail, while calls to device_del()
+> > > >      during suspends will block.
+> > > > 
+> > > >      It also provides a way to safely remove a suspended device with the
+> > > >      help of the PM core, by using the device_pm_schedule_removal() callback
+> > > >      introduced specifically for this purpose, and updates two drivers (msr
+> > > >      and cpuid) that need to use it. 
+> > > > 
+> > > > 
+> > > > As device_pm_schedule_removal is deleted by another patch, we need also revert other parts of the patch,
+> > > > i.e. move the calling of device_pm_remove after the calling to bus_remove_device.
+> > > > 
+> > > > Signed-off-by: LongX Zhang <longx.zhang@intel.com>
+> > > 
+> > > Greg, do you see any potential problems with this patch?
+> > 
+> > No, no objection from me:
+> > 
+> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> OK, thanks!
+> 
+> Applied to linux-pm.git/linux-next as v3.8 material.
+Rafael,
 
-COW is "copy on write", which is actually a bit of a misnomer -- all
-COW means is that blocks aren't over-written, instead new blocks are
-written.  In particular this means that inodes, indirect blocks, data
-blocks, and so on, that are changed are actually written to new
-locations, and the on-disk format needs to handle this indirection.
+As usual, I really appreciate it!
 
-As for fsyn() and background threads... fsync() is synchronous, but in
-this scheme we want it to happen asynchronously and then we want to
-update each transaction with a pointer to the last transaction that is
-known stable given an fsync()'s return.
+Yanmin
 
-Nico
---
+
