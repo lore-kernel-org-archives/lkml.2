@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936029Ab2JYRjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:39:48 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:35636 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935887Ab2JYRjr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:39:47 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount)
-References: <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
-	<20121025011056.GC4559@thunk.org> <87y5iv5noq.fsf@spindle.srvr.nix>
-	<20121025141226.GC13562@thunk.org> <8739124oyz.fsf@spindle.srvr.nix>
-Emacs: or perhaps you'd prefer Russian Roulette, after all?
-Date: Thu, 25 Oct 2012 18:39:32 +0100
-In-Reply-To: <8739124oyz.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
-	"Thu, 25 Oct 2012 15:15:48 +0100")
-Message-ID: <87y5iu30yz.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S936033Ab2JYRla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:41:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49092 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757050Ab2JYRl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 13:41:28 -0400
+Date: Thu, 25 Oct 2012 19:42:33 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 1/7] cgroup: cgroup_subsys->fork() should be called
+	after the task is added to css_set
+Message-ID: <20121025174233.GC7650@redhat.com>
+References: <1350426526-14254-1-git-send-email-tj@kernel.org> <1350426526-14254-2-git-send-email-tj@kernel.org> <20121021191141.GA26218@redhat.com> <20121021192222.GB5951@atj.dyndns.org> <20121022180445.GB21553@redhat.com> <20121022211631.GE5951@atj.dyndns.org> <20121023155128.GB16201@redhat.com> <20121024190458.GB12182@atj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=10 Fuz1=10 Fuz2=10
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121024190458.GB12182@atj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 Oct 2012, nix@esperi.org.uk said:
+On 10/24, Tejun Heo wrote:
+>
+> Hello,
+>
+> On Tue, Oct 23, 2012 at 05:51:28PM +0200, Oleg Nesterov wrote:
+> > Yes, yes. But in this case (I mean, for uprobes) "threadgroup" in the name
+> > is misleading. It should be called unconditially without any argument.
+> >
+> > Please see
+> >
+> > 	[PATCH 1/2] brw_mutex: big read-write mutex
+> > 	http://marc.info/?l=linux-kernel&m=135032816223715
+>
+> Ooh... that's something completely different.
+>
+> > 	[PATCH 2/2] uprobes: Use brw_mutex to fix register/unregister vs dup_mmap() race
+> > 	http://marc.info/?l=linux-kernel&m=135032817823720
+> >
+> > for details, but in short 2/2 needs this giant lock to block dup_mmap()
+> > system-wide, while cgroup (currently) only needs threadgroup lock if
+> > CLONE_THREAD (ignoring do_exit) and per-task.
+> >
+> > So please forget, I no longer think it makes sense to use the same
+> > thing for uprobes and cgroups.
+>
+> It is quite tempting to reduce hot path overhead and penalize cgroup
+> migration ops more tho.  Write-locking brw_mutex on migration might
+> not be too bad.  Why did you change your mind?
 
-> This I can verify, sometime this evening.
+Well, mostly because I do not think 1/2 will be ever applied ;)
 
-Sometime *tomorrow* evening. This has been quite stressful and I can
-hardly keep my eyes open. I'm not doing anything risky in this state.
+Since we already have (to my surprise!) percpu_rw_semaphore, I do
+not think I can add another similar lock.
 
--- 
-NULL && (void)
+Perhaps uprobes can use percpu_rw_semaphore, but I am not sure...
+
+Oleg.
+
