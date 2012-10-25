@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab2JYXkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 19:40:52 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30001 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750751Ab2JYXkv (ORCPT
+	id S1752325Ab2JYXmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 19:42:32 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:4085 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab2JYXmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 19:40:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnIXAHHNiVB5LCG2/2dsb2JhbAA8CIUttxeEbAKBBoEJgh4BAQU6HCMQCAMOCi4UJQMhE4gDvgsUi00WgXGEZgOVdYlFhnmDAw
-Date: Fri, 26 Oct 2012 10:40:48 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121025234048.GH29378@dastard>
-References: <20121018162409.GA28504@redhat.com>
- <20121018163833.GK2518@linux.vnet.ibm.com>
- <20121018175747.GA30691@redhat.com>
- <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
- <1350650286.30157.28.camel@twins>
- <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com>
- <1350668451.2768.60.camel@twins>
- <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com>
- <20121024030845.GT4291@dastard>
- <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Oct 2012 19:42:31 -0400
+Message-ID: <1351208548.6851.19.camel@lorien2>
+Subject: [PATCH RFT] openrisc: dma-mapping: support debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: jonas@southpole.se
+Cc: linux@openrisc.net, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Thu, 25 Oct 2012 17:42:28 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 10:09:31AM -0400, Mikulas Patocka wrote:
-> 
-> 
-> On Wed, 24 Oct 2012, Dave Chinner wrote:
-> 
-> > On Fri, Oct 19, 2012 at 06:54:41PM -0400, Mikulas Patocka wrote:
-> > > 
-> > > 
-> > > On Fri, 19 Oct 2012, Peter Zijlstra wrote:
-> > > 
-> > > > > Yes, I tried this approach - it involves doing LOCK instruction on read 
-> > > > > lock, remembering the cpu and doing another LOCK instruction on read 
-> > > > > unlock (which will hopefully be on the same CPU, so no cacheline bouncing 
-> > > > > happens in the common case). It was slower than the approach without any 
-> > > > > LOCK instructions (43.3 seconds seconds for the implementation with 
-> > > > > per-cpu LOCKed access, 42.7 seconds for this implementation without atomic 
-> > > > > instruction; the benchmark involved doing 512-byte direct-io reads and 
-> > > > > writes on a ramdisk with 8 processes on 8-core machine).
-> > > > 
-> > > > So why is that a problem? Surely that's already tons better then what
-> > > > you've currently got.
-> > > 
-> > > Percpu rw-semaphores do not improve performance at all. I put them there 
-> > > to avoid performance regression, not to improve performance.
-> > > 
-> > > All Linux kernels have a race condition - when you change block size of a 
-> > > block device and you read or write the device at the same time, a crash 
-> > > may happen. This bug is there since ever. Recently, this bug started to 
-> > > cause major trouble - multiple high profile business sites report crashes 
-> > > because of this race condition.
-> > >
-> > > You can fix this race by using a read lock around I/O paths and write lock 
-> > > around block size changing, but normal rw semaphore cause cache line 
-> > > bouncing when taken for read by multiple processors and I/O performance 
-> > > degradation because of it is measurable.
-> > 
-> > This doesn't sound like a new problem.  Hasn't this global access,
-> > single modifier exclusion problem been solved before in the VFS?
-> > e.g. mnt_want_write()/mnt_make_readonly()
-> > 
-> > Cheers,
-> > 
-> > Dave.
-> 
-> Yes, mnt_want_write()/mnt_make_readonly() do the same thing as percpu rw 
-> semaphores. I think you can convert mnt_want_write()/mnt_make_readonly() 
-> to use percpu rw semaphores and remove the duplicated code.
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-I think you misunderstood my point - that rather than re-inventing
-the wheel, why didn't you just copy something that is known to
-work?
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/openrisc/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-Cheers,
-
-Dave.
+diff --git a/arch/openrisc/include/asm/dma-mapping.h b/arch/openrisc/include/asm/dma-mapping.h
+index fab8628..f12de49 100644
+--- a/arch/openrisc/include/asm/dma-mapping.h
++++ b/arch/openrisc/include/asm/dma-mapping.h
+@@ -95,6 +95,7 @@ static inline int dma_supported(struct device *dev, u64 dma_mask)
+ 
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
++	debug_dma_mapping_error(dev, dma_addr);
+ 	return 0;
+ }
+ 
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
+
+
