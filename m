@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab2JYARK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:17:10 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40438 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665Ab2JYARG (ORCPT
+	id S1758899Ab2JYARk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:17:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40176 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758858Ab2JYARi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:17:06 -0400
+	Wed, 24 Oct 2012 20:17:38 -0400
+Date: Wed, 24 Oct 2012 17:17:32 -0700
+From: Joel Becker <jlbec@evilplan.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/21] ocfs2: drop vmtruncate
+Message-ID: <20121025001731.GB3140@localhost>
+Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
+	Marco Stornelli <marco.stornelli@gmail.com>,
+	Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org
+References: <508296B4.60508@gmail.com>
+ <20121023085448.GM5635@localhost>
+ <20121023130237.GA21594@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20121024201921.GX4291@dastard>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
-	<20121023224706.GR4291@dastard>
-	<CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
-	<20121024201921.GX4291@dastard>
-Date: Thu, 25 Oct 2012 08:17:05 +0800
-Message-ID: <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-From: YingHang Zhu <casualfisher@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: akpm@linux-foundation.org, Fengguang Wu <fengguang.wu@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121023130237.GA21594@infradead.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 4:19 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Wed, Oct 24, 2012 at 07:53:59AM +0800, YingHang Zhu wrote:
->> Hi Dave,
->> On Wed, Oct 24, 2012 at 6:47 AM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Tue, Oct 23, 2012 at 08:46:51PM +0800, Ying Zhu wrote:
->> >> Hi,
->> >>   Recently we ran into the bug that an opened file's ra_pages does not
->> >> synchronize with it's backing device's when the latter is changed
->> >> with blockdev --setra, the application needs to reopen the file
->> >> to know the change,
->> >
->> > or simply call fadvise(fd, POSIX_FADV_NORMAL) to reset the readhead
->> > window to the (new) bdi default.
->> >
->> >> which is inappropriate under our circumstances.
->> >
->> > Which are? We don't know your circumstances, so you need to tell us
->> > why you need this and why existing methods of handling such changes
->> > are insufficient...
->> >
->> > Optimal readahead windows tend to be a physical property of the
->> > storage and that does not tend to change dynamically. Hence block
->> > device readahead should only need to be set up once, and generally
->> > that can be done before the filesystem is mounted and files are
->> > opened (e.g. via udev rules). Hence you need to explain why you need
->> > to change the default block device readahead on the fly, and why
->> > fadvise(POSIX_FADV_NORMAL) is "inappropriate" to set readahead
->> > windows to the new defaults.
->> Our system is a fuse-based file system, fuse creates a
->> pseudo backing device for the user space file systems, the default readahead
->> size is 128KB and it can't fully utilize the backing storage's read ability,
->> so we should tune it.
->
-> Sure, but that doesn't tell me anything about why you can't do this
-> at mount time before the application opens any files. i.e.  you've
-> simply stated the reason why readahead is tunable, not why you need
-> to be fully dynamic.....
-We store our file system's data on different disks so we need to change ra_pages
-dynamically according to where the data resides, it can't be fixed at mount time
-or when we open files.
-The abstract bdi of fuse and btrfs provides some dynamically changing
-bdi.ra_pages
-based on the real backing device. IMHO this should not be ignored.
->
->> The above third-party application using our file system maintains
->> some long-opened files, we does not have any chances
->> to force them to call fadvise(POSIX_FADV_NORMAL). :(
->
-> So raise a bug/feature request with the third party.  Modifying
-> kernel code because you can't directly modify the application isn't
-> the best solution for anyone. This really is an application problem
-> - the kernel already provides the mechanisms to solve this
-> problem...  :/
-Thanks for advice, I will consult the above application's developers
-for more information.
-Now from the code itself should we merge the gap between the real
-device's ra_pages and the file's?
-Obviously the ra_pages is duplicated, otherwise each time we run into this
-problem, someone will do the same work as I have done here.
+On Tue, Oct 23, 2012 at 09:02:38AM -0400, Christoph Hellwig wrote:
+> On Tue, Oct 23, 2012 at 01:54:48AM -0700, Joel Becker wrote:
+> > On Sat, Oct 20, 2012 at 02:19:00PM +0200, Marco Stornelli wrote:
+> > > Removed vmtruncate
+> > > 
+> > > Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> > 
+> > Acked-by: Joel Becker <jlbec@evilplan.org>
+> > 
+> > Do you want me to pull this, or are you going to send it with your set?
+> 
+> Is this really correct?  It now updates i_size before starting a
+> transaction.
 
-Thanks,
-         Ying Zhu
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+	Ok, I missed that, and I need to re-check.
+
+Joel
+
+-- 
+
+"If at first you don't succeed, cover all traces that you tried."
+                                                        -Unknown
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
