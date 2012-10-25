@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab2JYVhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 17:37:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55086 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab2JYVhJ (ORCPT
+	id S1751617Ab2JYVi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 17:38:27 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:40576 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab2JYViY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 17:37:09 -0400
-Date: Thu, 25 Oct 2012 14:37:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 10/10] thp: implement refcounting for huge zero page
-Message-Id: <20121025143707.b212d958.akpm@linux-foundation.org>
-In-Reply-To: <20121025212251.GA31749@shutemov.name>
-References: <20121023063532.GA15870@shutemov.name>
-	<20121022234349.27f33f62.akpm@linux-foundation.org>
-	<20121023070018.GA18381@otc-wbsnb-06>
-	<20121023155915.7d5ef9d1.akpm@linux-foundation.org>
-	<20121023233801.GA21591@shutemov.name>
-	<20121024122253.5ecea992.akpm@linux-foundation.org>
-	<20121024194552.GA24460@otc-wbsnb-06>
-	<20121024132552.5f9a5f5b.akpm@linux-foundation.org>
-	<20121025204959.GA27251@otc-wbsnb-06>
-	<20121025140524.17083937.akpm@linux-foundation.org>
-	<20121025212251.GA31749@shutemov.name>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Oct 2012 17:38:24 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Mike Waychison <mikew@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from
+ a write callback to hold multiple logs
+Thread-Topic: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from
+ a write callback to hold multiple logs
+Thread-Index: Ac2yU45Umwbisi8ERWqdMazeX7tkNwAs24eAAAdb8lD//9btAIAAP3Sw///QzoCAAEAzEA==
+Date: Thu, 25 Oct 2012 21:37:50 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138899AF@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
+ <CAGTjWtDVZGq7VKou10xC-zJXGmane_kKjGo1xMjgPUkKAedFqQ@mail.gmail.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D413889851@USINDEM103.corp.hds.com>
+ <CAGTjWtAUv=HzOGPDeDuTb_6z81bnSQ-F7DDERZ2tqmfaP4wXwQ@mail.gmail.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D413889905@USINDEM103.corp.hds.com>
+ <CAGTjWtDEQx8mCKtNTGGSOMajAoSCJTaKWG8TBmYinQMPfx5DQQ@mail.gmail.com>
+In-Reply-To: <CAGTjWtDEQx8mCKtNTGGSOMajAoSCJTaKWG8TBmYinQMPfx5DQQ@mail.gmail.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-25_04:2012-10-25,2012-10-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1210250280
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012 00:22:51 +0300
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-
-> On Thu, Oct 25, 2012 at 02:05:24PM -0700, Andrew Morton wrote:
-> > On Thu, 25 Oct 2012 23:49:59 +0300
-> > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > 
-> > > On Wed, Oct 24, 2012 at 01:25:52PM -0700, Andrew Morton wrote:
-> > > > On Wed, 24 Oct 2012 22:45:52 +0300
-> > > > "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-> > > > 
-> > > > > On Wed, Oct 24, 2012 at 12:22:53PM -0700, Andrew Morton wrote:
-> > > > > > 
-> > > > > > I'm thinking that such a workload would be the above dd in parallel
-> > > > > > with a small app which touches the huge page and then exits, then gets
-> > > > > > executed again.  That "small app" sounds realistic to me.  Obviously
-> > > > > > one could exercise the zero page's refcount at higher frequency with a
-> > > > > > tight map/touch/unmap loop, but that sounds less realistic.  It's worth
-> > > > > > trying that exercise as well though.
-> > > > > > 
-> > > > > > Or do something else.  But we should try to probe this code's
-> > > > > > worst-case behaviour, get an understanding of its effects and then
-> > > > > > decide whether any such workload is realisic enough to worry about.
-> > > > > 
-> > > > > Okay, I'll try few memory pressure scenarios.
-> > > 
-> > > A test program:
-> > > 
-> > >         while (1) {
-> > >                 posix_memalign((void **)&p, 2 * MB, 2 * MB);
-> > >                 assert(*p == 0);
-> > >                 free(p);
-> > >         }
-> > > 
-> > > With this code in background we have pretty good chance to have huge zero
-> > > page freeable (refcount == 1) when shrinker callback called - roughly one
-> > > of two.
-> > > 
-> > > Pagecache hog (dd if=hugefile of=/dev/null bs=1M) creates enough pressure
-> > > to get shrinker callback called, but it was only asked about cache size
-> > > (nr_to_scan == 0).
-> > > I was not able to get it called with nr_to_scan > 0 on this scenario, so
-> > > hzp never freed.
-> > 
-> > hm.  It's odd that the kernel didn't try to shrink slabs in this case. 
-> > Why didn't it??
+> > On the other hand, patch 5/5 changes the format by adding sequence counter.
+> > But efi_pstore_read is modied to work correctly in it.
+> >
+> >         dump-type0-1-1-1351113059-cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+> >
+> >         Variable Name: dump-type0-1-1-1351113059
+> >         GUID: cfc8fc79-be2e-4ddc-97f0-9f98bfe298a0
+> >
+> > If I need to elaborate more, please feel free to ask me:) I'm not sure
+> > if I understand your question completely.
 > 
-> nr_to_scan == 0 asks for the fast path. shrinker callback can shink, if
-> it thinks it's good idea.
+> In this case, I think efi_pstore_read in patch 5/5 should probably fall-back to trying to do a sscanf(...) == 3 if the sscanf(...) == 4 test fails
+> so that dumps for older dumps from previous kernels are still visible to users, no?  They can perhaps get a default count of 0?
+> efi_pstore_erase would have to be updated to understand this as well.
 
-What nr_objects does your shrinker return in that case?  If it's "1"
-then it wouild be unsurprising that the core code decides not to
-shrink.
+OK. I understand your concern.
+I will update my patch to work with an old format too.
+In addition to efi_pstore_read(), efi_pstore_erase should be modified.
 
-> > 
-> > > I also tried another scenario: usemem -n16 100M -r 1000. It creates real
-> > > memory pressure - no easy reclaimable memory. This time callback called
-> > > with nr_to_scan > 0 and we freed hzp. Under pressure we fails to allocate
-> > > hzp and code goes to fallback path as it supposed to.
-> > > 
-> > > Do I need to check any other scenario?
-> > 
-> > I'm thinking that if we do hit problems in this area, we could avoid
-> > freeing the hugepage unless the scan_control.priority is high enough. 
-> > That would involve adding a magic number or a tunable to set the
-> > threshold.
-> 
-> What about ratelimit on alloc path to force fallback if we allocate
-> to often? Is it good idea?
+Anyway, I will post a patch v3 later.
 
-mmm...  ratelimit via walltime is always a bad idea.  We could
-ratelimit by "number of times the shrinker was called", and maybe that
-would work OK, unsure.
+Thank you for reviewing.
 
-It *is* appropriate to use sc->priority to be more reluctant to release
-expensive-to-reestablish objects.  But there is already actually a
-mechanism in the shrinker code to handle this: the shrink_control.seeks
-field.  That was originally added to provide an estimate of "how
-expensive will it be to recreate this object if we were to reclaim it".
-So perhaps we could generalise that a bit, and state that the zero
-hugepage is an expensive thing.
-
-I don't think the shrink_control.seeks facility had ever been used much,
-so it's possible that it is presently mistuned or not working very
-well.
-
-
+Seiji
