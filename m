@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946206Ab2JYPOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:14:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40558 "EHLO mx1.redhat.com"
+	id S1946193Ab2JYPOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:14:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36747 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946127Ab2JYPOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:14:00 -0400
+	id S1946030Ab2JYPN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 11:13:59 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>
 Cc: Wu Fengguang <fengguang.wu@intel.com>,
@@ -15,88 +15,50 @@ Cc: Wu Fengguang <fengguang.wu@intel.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-ext4@vger.kernel.org
-Subject: [PATCH 3/3] ext3: introduce ext3_error_remove_page
-Date: Thu, 25 Oct 2012 11:12:49 -0400
-Message-Id: <1351177969-893-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 1/3] mm: print out information of file affected by memory error
+Date: Thu, 25 Oct 2012 11:12:47 -0400
+Message-Id: <1351177969-893-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What I suggested in the previous patch for ext4 is ditto with ext3,
-so do the same thing for ext3.
+Printing out the information about which file can be affected by a
+memory error in generic_error_remove_page() is helpful for user to
+estimate the impact of the error.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 ---
- fs/ext3/inode.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ mm/truncate.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git v3.7-rc2.orig/fs/ext3/inode.c v3.7-rc2/fs/ext3/inode.c
-index 7e87e37..7f708bf 100644
---- v3.7-rc2.orig/fs/ext3/inode.c
-+++ v3.7-rc2/fs/ext3/inode.c
-@@ -1967,6 +1967,33 @@ static int ext3_journalled_set_page_dirty(struct page *page)
- 	return __set_page_dirty_nobuffers(page);
- }
- 
-+static int ext3_error_remove_page(struct address_space *mapping,
-+				struct page *page)
-+{
+diff --git v3.7-rc2.orig/mm/truncate.c v3.7-rc2/mm/truncate.c
+index d51ce92..df0c6ab7 100644
+--- v3.7-rc2.orig/mm/truncate.c
++++ v3.7-rc2/mm/truncate.c
+@@ -151,14 +151,20 @@ int truncate_inode_page(struct address_space *mapping, struct page *page)
+  */
+ int generic_error_remove_page(struct address_space *mapping, struct page *page)
+ {
++	int ret;
 +	struct inode *inode = mapping->host;
-+	struct buffer_head *bh, *head;
-+	ext3_fsblk_t block = 0;
 +
-+	if (!PageDirty(page) || !page_has_buffers(page))
-+		goto remove_page;
-+
-+	/* Lost data. Handle as critical fs error. */
-+	bh = head = page_buffers(page);
-+	do {
-+		if (buffer_dirty(bh)) {
-+			block = bh->b_blocknr;
-+			ext3_error(inode->i_sb, "ext3_error_remove_page",
-+				"inode #%lu: block %lu: "
-+				"Removing dirty pagecache page",
-+				inode->i_ino, block);
-+		}
-+		bh = bh->b_this_page;
-+	} while (bh != head);
-+
-+remove_page:
-+	return generic_error_remove_page(mapping, page);
-+}
-+
- static const struct address_space_operations ext3_ordered_aops = {
- 	.readpage		= ext3_readpage,
- 	.readpages		= ext3_readpages,
-@@ -1979,7 +2006,7 @@ static const struct address_space_operations ext3_ordered_aops = {
- 	.direct_IO		= ext3_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext3_error_remove_page,
- };
- 
- static const struct address_space_operations ext3_writeback_aops = {
-@@ -1994,7 +2021,7 @@ static const struct address_space_operations ext3_writeback_aops = {
- 	.direct_IO		= ext3_direct_IO,
- 	.migratepage		= buffer_migrate_page,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext3_error_remove_page,
- };
- 
- static const struct address_space_operations ext3_journalled_aops = {
-@@ -2008,7 +2035,7 @@ static const struct address_space_operations ext3_journalled_aops = {
- 	.invalidatepage		= ext3_invalidatepage,
- 	.releasepage		= ext3_releasepage,
- 	.is_partially_uptodate  = block_is_partially_uptodate,
--	.error_remove_page	= generic_error_remove_page,
-+	.error_remove_page	= ext3_error_remove_page,
- };
- 
- void ext3_set_aops(struct inode *inode)
+ 	if (!mapping)
+ 		return -EINVAL;
+ 	/*
+ 	 * Only punch for normal data pages for now.
+ 	 * Handling other types like directories would need more auditing.
+ 	 */
+-	if (!S_ISREG(mapping->host->i_mode))
++	if (!S_ISREG(inode->i_mode))
+ 		return -EIO;
++	pr_info("MCE %#lx: file info pgoff:%lu, inode:%lu, dev:%s\n",
++		page_to_pfn(page), page_index(page),
++		inode->i_ino, inode->i_sb->s_id);
+ 	return truncate_inode_page(mapping, page);
+ }
+ EXPORT_SYMBOL(generic_error_remove_page);
 -- 
 1.7.11.7
 
