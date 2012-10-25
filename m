@@ -1,131 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab2JYLMf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 07:12:35 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33938 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab2JYLMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 07:12:33 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH v3] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hdpi.c
-Date: Thu, 25 Oct 2012 20:12:26 +0900
-Message-Id: <1351163546-13261-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121025024357.GA24008@kroah.com>
-References: <20121025024357.GA24008@kroah.com>
+	id S935188Ab2JYLOS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 07:14:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933181Ab2JYLOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 07:14:16 -0400
+Date: Thu, 25 Oct 2012 07:14:11 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: shmem_getpage_gfp VM_BUG_ON triggered. [3.7rc2]
+Message-ID: <20121025111411.GB24886@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org
+References: <20121025023738.GA27001@redhat.com>
+ <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1210242121410.1697@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+On Wed, Oct 24, 2012 at 09:36:27PM -0700, Hugh Dickins wrote:
 
-some of them have been replaced by dev_dbg,
-and added pr_fmt.
+ > > 1148                         error = shmem_add_to_page_cache(page, mapping, index,
+ > > 1149                                                 gfp, swp_to_radix_entry(swap));
+ > > 1150                         /* We already confirmed swap, and make no allocation */
+ > > 1151                         VM_BUG_ON(error);
+ > > 1152                 }
+ > 
+ > That's very surprising.  Easy enough to handle an error there, but
+ > of course I made it a VM_BUG_ON because it violates my assumptions:
+ > I rather need to understand how this can be, and I've no idea.
+ > 
+ > Clutching at straws, I expect this is entirely irrelevant, but:
+ > there isn't a warning on line 1151 of mm/shmem.c in 3.7.0-rc2 nor
+ > in current linux.git; rather, there's a VM_BUG_ON on line 1149.
+ > 
+ > So you've inserted a couple of lines for some reason (more useful
+ > trinity behaviour, perhaps)? 
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/gsc_hpdi.c |   31 +++++++++++++++--------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+detritus from the recent mpol_to_str bug that I was chasing.
+Shouldn't be relevant...
 
-diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
-index abff660..a9d4372 100644
---- a/drivers/staging/comedi/drivers/gsc_hpdi.c
-+++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
-@@ -45,6 +45,8 @@ support could be added to this driver.
- 
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/interrupt.h>
- #include "../comedidev.h"
- #include <linux/delay.h>
-@@ -107,8 +109,7 @@ enum hpdi_registers {
- int command_channel_valid(unsigned int channel)
+diff -durpN '--exclude-from=/home/davej/.exclude' src/git-trees/kernel/linux/mm>
+--- src/git-trees/kernel/linux/mm/shmem.c       2012-10-12 10:01:46.613408580 ->
++++ linux-dj/mm/shmem.c 2012-10-15 12:31:32.979653309 -0400
+@@ -885,13 +885,15 @@ redirty:
+ static void shmem_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
  {
- 	if (channel == 0 || channel > 6) {
--		printk(KERN_WARNING
--		       "gsc_hpdi: bug! invalid cable command channel\n");
-+		pr_warn("bug! invalid cable command channel\n");
- 		return 0;
- 	}
- 	return 1;
-@@ -553,7 +554,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int i;
- 	int retval;
+        char buffer[64];
++       int ret;
  
--	printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
-+	dev_dbg(dev->class_dev, "gsc_hpdi\n");
+        if (!mpol || mpol->mode == MPOL_DEFAULT)
+                return;         /* show nothing */
  
- 	if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
- 		return -ENOMEM;
-@@ -582,17 +583,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		} while (pcidev != NULL);
- 	}
- 	if (dev->board_ptr == NULL) {
--		printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
-+		dev_warn(dev->class_dev, "no hpdi card found\n");
- 		return -EIO;
- 	}
- 
--	printk(KERN_WARNING
--	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_warn(dev->class_dev,
-+		 "found %s on bus %i, slot %i\n", board(dev)->name,
-+		 pcidev->bus->number, PCI_SLOT(pcidev->devfn));
- 
- 	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
--		printk(KERN_WARNING
--		       " failed enable PCI device and request regions\n");
-+		dev_warn(dev->class_dev,
-+			 " failed enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	pci_set_master(pcidev);
-@@ -613,7 +614,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    ioremap(priv(dev)->hpdi_phys_iobase,
- 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
- 	if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
--		printk(KERN_WARNING " failed to remap io memory\n");
-+		dev_warn(dev->class_dev, "failed to remap io memory\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -625,13 +626,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  get irq */
- 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
- 			dev->driver->driver_name, dev)) {
--		printk(KERN_WARNING
--		       " unable to allocate irq %u\n", pcidev->irq);
-+		dev_warn(dev->class_dev,
-+			 "unable to allocate irq %u\n", pcidev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = pcidev->irq;
- 
--	printk(KERN_WARNING " irq %u\n", dev->irq);
-+	dev_dbg(dev->class_dev, "irq %u\n", dev->irq);
- 
- 	/*  allocate pci dma buffers */
- 	for (i = 0; i < NUM_DMA_BUFFERS; i++) {
-@@ -649,8 +650,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 						   &priv(dev)->
- 						   dma_desc_phys_addr);
- 	if (priv(dev)->dma_desc_phys_addr & 0xf) {
--		printk(KERN_WARNING
--		       " dma descriptors not quad-word aligned (bug)\n");
-+		dev_warn(dev->class_dev,
-+			 "dma descriptors not quad-word aligned (bug)\n");
- 		return -EIO;
- 	}
- 
--- 
-1.7.9.5
+-       mpol_to_str(buffer, sizeof(buffer), mpol, 1);
+-
+-       seq_printf(seq, ",mpol=%s", buffer);
++       memset(buffer, 0, sizeof(buffer));
++       ret = mpol_to_str(buffer, sizeof(buffer), mpol, 1);
++       if (ret > 0)
++               seq_printf(seq, ",mpol=%s", buffer);
+ }
+
+
+ > And have some config option I'm
+ > unfamiliar with, that mutates a BUG_ON or VM_BUG_ON into a warning?
+
+Yes, I do have this..
+
+-#define VM_BUG_ON(cond) BUG_ON(cond)
++#define VM_BUG_ON(cond) WARN_ON(cond)
+
+because I got tired of things not going over my usb serial port when I hit them
+a while ago. BUG_ON is pretty unfriendly to bug finding.
+
+	Dave
 
