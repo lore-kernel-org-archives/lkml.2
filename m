@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936055Ab2JYURn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:17:43 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50967 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934218Ab2JYURl (ORCPT
+	id S2992673Ab2JYUWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:22:06 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44994 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992660Ab2JYUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:17:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121025124832.840241082@chello.nl>
-References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 25 Oct 2012 13:17:19 -0700
-X-Google-Sender-Auth: fsNcE9xXVHgNlg_8CrAxRlmB7nI
-Message-ID: <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Thu, 25 Oct 2012 16:22:02 -0400
+Date: Thu, 25 Oct 2012 13:22:00 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
+ numa_maps
+In-Reply-To: <1351175972.12171.14.camel@twins>
+Message-ID: <alpine.DEB.2.00.1210251317190.17938@chino.kir.corp.google.com>
+References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
+ <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
+ <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com> <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
+ <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com> <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com> <1351167554.23337.14.camel@twins> <1351175972.12171.14.camel@twins>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 5:16 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> From: Rik van Riel <riel@redhat.com>
->
-> @@ -306,11 +306,26 @@ int ptep_set_access_flags(struct vm_area
->                           pte_t entry, int dirty)
->  {
->         int changed = !pte_same(*ptep, entry);
-> +       /*
-> +        * If the page used to be inaccessible (_PAGE_PROTNONE), or
-> +        * this call upgrades the access permissions on the same page,
-> +        * it is safe to skip the remote TLB flush.
-> +        */
-> +       bool flush_remote = false;
-> +       if (!pte_accessible(*ptep))
-> +               flush_remote = false;
-> +       else if (pte_pfn(*ptep) != pte_pfn(entry) ||
-> +                       (pte_write(*ptep) && !pte_write(entry)) ||
-> +                       (pte_exec(*ptep) && !pte_exec(entry)))
-> +               flush_remote = true;
->
->         if (changed && dirty) {
+On Thu, 25 Oct 2012, Peter Zijlstra wrote:
 
-Did anybody ever actually look at this sh*t-for-brains patch?
+> So I think the below should work, we hold the spinlock over both rb-tree
+> modification as sp free, this makes mpol_shared_policy_lookup() which
+> returns the policy with an incremented refcount work with just the
+> spinlock.
+> 
+> Comments?
+> 
 
-Yeah, I'm grumpy. But I'm wasting time looking at patches that have
-new code in them that is stupid and retarded.
+It's rather unfortunate that we need to protect modification with a 
+spinlock and a mutex but since sharing was removed in commit 869833f2c5c6 
+("mempolicy: remove mempolicy sharing") it requires that sp_alloc() is 
+blockable to do the whole mpol_new() and rebind if necessary, which could 
+require mm->mmap_sem; it's not as simple as just converting all the 
+allocations to GFP_ATOMIC.
 
-This is the VM, guys, we don't add stupid and retarded code.
-
-LOOK at the code, for chrissake. Just look at it. And if you don't see
-why the above is stupid and retarded, you damn well shouldn't be
-touching VM code.
-
-              Linus
+It looks as though there is no other alternative other than protecting 
+modification with both the spinlock and mutex, which is a clever 
+solution, so it looks good to me, thanks!
