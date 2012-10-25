@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760228Ab2JYTv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:51:27 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59917 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759761Ab2JYTvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:51:25 -0400
-Date: Thu, 25 Oct 2012 15:51:10 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mhocko@suse.cz, peterz@infradead.org,
-        akpm@linux-foundation.org, Chris Metcalf <cmetcalf@tilera.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-ID: <20121025195110.GA4771@cmpxchg.org>
-References: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
+	id S936022Ab2JYT4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:56:25 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:36122 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935352Ab2JYT4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:56:23 -0400
+Message-ID: <1351194980.2432.88.camel@lorien2>
+Subject: dma_mapping_error() interfaces
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, akpm@linux-foundation.org,
+        Joerg Roedel <joerg.roedel@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Thu, 25 Oct 2012 13:56:20 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 05:44:31PM +0100, Will Deacon wrote:
-> On x86 memory accesses to pages without the ACCESSED flag set result in the
-> ACCESSED flag being set automatically. With the ARM architecture a page access
-> fault is raised instead (and it will continue to be raised until the ACCESSED
-> flag is set for the appropriate PTE/PMD).
-> 
-> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> be called for a write fault.
-> 
-> This patch ensures that faults on transparent hugepages which do not result
-> in a CoW update the access flags for the faulting pmd.
-> 
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+I am working on changing dma_mapping_error() interfaces to add call to
+debug_dma_mapping_error() interface. I found several dma_mapping_error()
+defines in various arch specific dma-mapping.h files.
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Majority of these arch specific defines look identical - simply
 
-> Ok chaps, I rebased this thing onto today's next (which basically
-> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
-> ask if you could eyeball the new code, especially where the locking is
-> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
-> that the page is not splitting, but I can't see why that is required.
+static inline int dma_mapping_error(struct device *dev, dma_ addr_t
+dma_addr)
+{
+       struct dma_map_ops *dma_ops = get_dma_ops(dev);
 
-I don't either.  If the thing was splitting when the fault happened,
-that path is not taken.  And the locked pmd_same() check should rule
-out splitting setting in after testing pmd_trans_huge_splitting().
+       if (dma_ops->mapping_error)
+                return dma_ops->mapping_error(dev, dma_addr);
+}
 
-Peter?
+Maybe a generic dma_mapping_error() could be added to augment the
+existing dma_map_page() and dma_map_single() generic interfaces in
+include/asm-generic/dma-mapping-common.h (Future work)
+
+For the most part, architecture specific
+dma_map_page()/dma_map_single(), dma_unmap_page() interfaces are
+implemented as a pair, however arch/m68k/include/asm/dma-mapping.h is an
+exception. In this case generic dma_map_page()/dma_map_single() are
+used, and arch specific dma_unmap_page() is defined. Couple of issues,
+unmap routines do nothing. Maybe just fine for this architecture.
+However, when dma_debug is enabled, debug is lopsided and debug entries
+don't get releases.
+
+For the present here is what I am planning to do:
+
+Change dma_mapping_error() defines to add debug_dma_mapping_error() on
+architectures that use the generic dma_map_page() and dma_map_single()
+interfaces from include/asm-generic/dma-mapping-common.h to debug
+inconsistency between invoking dma-debug at mapping time and missing
+debug at error check time. Inconsistency will result in false warnings.
+The following fall into this category.
+
+arch/alpha/include/asm/dma-mapping.h
+arch/arm/include/asm/dma-mapping.h
+arch/arm64/include/asm/dma-mapping.h
+arch/c6x/include/asm/dma-mapping.h
+arch/frv/include/asm/dma-mapping.h
+arch/hexagon/include/asm/dma-mapping.h
+arch/ia64/include/asm/dma-mapping.h
+arch/m68k/include/asm/dma-mapping.h
+arch/microblaze/include/asm/dma-mapping.h
+arch/mips/include/asm/dma-mapping.h
+arch/powerpc/include/asm/dma-mapping.h
+arch/sh/include/asm/dma-mapping.h
+arch/sparc/include/asm/dma-mapping.h
+
+Leave dma_mapping_error() defines as is in arch header files that also
+define dma_map_page() and dma_map_single() and not call
+debug_dma_map_page() interface. The following fall into this category.
+
+arch/avr32/include/asm/dma-mapping.h
+arch/blackfin/include/asm/dma-mapping.h
+arch/cris/include/asm/dma-mapping.h
+arch/mn10300/include/asm/dma-mapping.h
+arch/parisc/include/asm/dma-mapping.h
+arch/xtensa/include/asm/dma-mapping.h
+
+- There is this inconsistency now with the debug_dma_mapping_error()
+interface in linux-next. If this is unacceptable, I will send a patch
+that marks dma debug entries checked for mapping errors in the interim
+(an easy change to initialize the flag to have been checked) while I get
+the existing dma_mapping_error() interface patches done.
+
+Comments, concerns.
+
+Thanks,
+-- Shuah
+
+
+
+- 
+
+
