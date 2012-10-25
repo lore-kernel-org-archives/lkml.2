@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab2JYWXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 18:23:38 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53179 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751075Ab2JYWXe (ORCPT
+	id S1751701Ab2JYWXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 18:23:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55568 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2JYWXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 18:23:34 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(z555ehz98dI9371I103dK1432Izz1202h1d1ah1d2ahzz8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
-X-WSS-ID: 0MCGZJ2-02-1S2-02
-X-M-MSG: 
-Date: Thu, 25 Oct 2012 17:23:27 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@kernel.org>, <hpa@zytor.com>,
-        <linux-kernel@vger.kernel.org>, <tglx@linutronix.de>, <trini@ti.com>,
-        <hpa@linux.intel.com>, <linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86, mm: Find_early_table_space based on ranges
- that are actually being mapped
-Message-ID: <20121025222327.GA3736@jshin-Toonie>
-References: <20121024195311.GB11779@jshin-Toonie>
- <tip-844ab6f993b1d32eb40512503d35ff6ad0c57030@git.kernel.org>
- <CAE9FiQX0MvxAsZKFwH50joR5qz1oGhbXz+BD9W-QC_BrD9zKFQ@mail.gmail.com>
- <20121025075508.GD3712@gmail.com>
- <CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Thu, 25 Oct 2012 18:23:39 -0400
+Date: Thu, 25 Oct 2012 15:23:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Stefani Seibold <stefani@seibold.net>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: linux-next: build warnings after merge of the akpm tree
+Message-Id: <20121025152337.7f14919d.akpm@linux-foundation.org>
+In-Reply-To: <508948de.01dc440a.58ed.ffffff17SMTPIN_ADDED@mx.google.com>
+References: <20121025142854.1924363d6a607004f918ac63@canb.auug.org.au>
+	<20121025143044.d21e2c29b16ee2005f93a371@canb.auug.org.au>
+	<508948de.01dc440a.58ed.ffffff17SMTPIN_ADDED@mx.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 07:33:32AM -0700, Yinghai Lu wrote:
-> On Thu, Oct 25, 2012 at 12:55 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >> > -               ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> >> > +                       /* The first 2/4M doesn't use large pages. */
-> >> > +                       if (mr[i].start < PMD_SIZE)
-> >> > +                               extra += range;
-> >>
-> >> those three lines should be added back.
-> 
-> missed "not" ...
-> 
-> >>
-> >> it just get reverted in 7b16bbf9
+On Thu, 25 Oct 2012 22:12:32 +0800
+Richard Yang <weiyang@linux.vnet.ibm.com> wrote:
+
+> >drivers/scsi/libiscsi.c: In function 'iscsi_free_task':
+> >drivers/scsi/libiscsi.c:507:2: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi.c: In function 'iscsi_pool_init':
+> >drivers/scsi/libiscsi.c:2510:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi.c: In function 'iscsi_conn_setup':
+> >drivers/scsi/libiscsi.c:2881:2: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi.c: In function 'iscsi_conn_teardown':
+> >drivers/scsi/libiscsi.c:2944:2: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c: In function 'iscsi_tcp_cleanup_task':
+> >drivers/scsi/libiscsi_tcp.c:462:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c:469:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c: In function 'iscsi_tcp_r2t_rsp':
+> >drivers/scsi/libiscsi_tcp.c:570:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c:586:3: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c:596:2: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+> >drivers/scsi/libiscsi_tcp.c: In function 'iscsi_tcp_get_curr_r2t':
+> >drivers/scsi/libiscsi_tcp.c:998:5: warning: comparison of distinct pointer types lacks a cast [enabled by default]
 > >
-> > Could you please send a delta patch against tip:x86/urgent?
 > 
-> please check attached one.
-
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-
-Sorry about that, I just retrofitted the patch and didn't see those lines got
-reverted out,
-
-Thanks!
-
+> ...
+>
+> I did a quick check. 
 > 
-> Thanks
+> The root reason is, 
+> 1. kfifo_in() second parameter should be type "const void *"
+> 2. kfifo_out_locked() second parameter should be type "void *"
+> 3. kfifo_in_locked() second parameter should be type "const void *"
 > 
-> Yinghai
+> And I am curious about why the original code couldn't detect this type
+> mismatch.  
 
+Well, just looking at __cxio_init_resource_fifo():
 
+	u32 entry = 0;
+	
+	...
+	
+	kfifo_in(fifo, (unsigned char *) &entry, sizeof(u32));
+
+This is silly - we shouldn't warn about this code.  There is no reason
+for the kfifo library code to require that the *caller*'s storage be
+const!
+
+kfifo_in() is (or should be) simulating a C function with the interface:
+
+unsigned int kfifo_in(struct kfifo *fifo, const void *buf, size_t n);
+
+This states "this function does not modify the memory at *buf" and it's
+perfectly OK for a caller to pass a non-const pointer into kfifo_in(). 
+We shouldn't warn about this.
+
+In fact, the __cxio_init_resource_fifo() shouldn't need to cast `buf'
+to uchar* either.  The need to add that cast is a shortcoming in the
+existing kfifo code.
+
+We should be able to pass *any* pointer, of any type, const or
+non-const into code which expects a const void *, without any warning.
+
+And holy cow that code is hard to read :( Why was kfifo_in()
+implemented as a macro, anyway?  AFAICT all its args have a known type,
+so we could have used a proper C interface, which would have fixed all
+this nicely.
+
+Anyway,
+include-linux-kfifoh-replace-open-coded-type-check-code-with-typecheck.patch
+takes the kfifo typechecking from "too strict" to "far too strict", so
+I'll drop that patch.
 
