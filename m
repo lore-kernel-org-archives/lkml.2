@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934715Ab2JYIB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 04:01:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38345 "EHLO
+	id S934761Ab2JYICz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 04:02:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38366 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307Ab2JYIBy (ORCPT
+	with ESMTP id S932252Ab2JYICv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 04:01:54 -0400
-Date: Thu, 25 Oct 2012 01:01:29 -0700
-From: tip-bot for David Ahern <dsahern@gmail.com>
-Message-ID: <tip-2305c82fb35dd2c8c9533303bb1693f1636c66e4@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, robert.richter@amd.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, robert.richter@amd.com, peterz@infradead.org,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1347569955-54626-4-git-send-email-dsahern@gmail.com>
-References: <1347569955-54626-4-git-send-email-dsahern@gmail.com>
+	Thu, 25 Oct 2012 04:02:51 -0400
+Date: Thu, 25 Oct 2012 01:02:29 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-rkisq85w24il3e2yl3nzumhu@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Give user better message if precise is not supported
-Git-Commit-ID: 2305c82fb35dd2c8c9533303bb1693f1636c66e4
+Subject: [tip:perf/core] perf test: Align the 'Ok'/'FAILED!' test results
+Git-Commit-ID: 9a8e85ad0b61ec0720df7d24392163c2a12626d0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,80 +29,80 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 25 Oct 2012 01:01:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 25 Oct 2012 01:02:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2305c82fb35dd2c8c9533303bb1693f1636c66e4
-Gitweb:     http://git.kernel.org/tip/2305c82fb35dd2c8c9533303bb1693f1636c66e4
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Thu, 13 Sep 2012 14:59:15 -0600
+Commit-ID:  9a8e85ad0b61ec0720df7d24392163c2a12626d0
+Gitweb:     http://git.kernel.org/tip/9a8e85ad0b61ec0720df7d24392163c2a12626d0
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Wed, 24 Oct 2012 15:44:41 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 24 Oct 2012 14:20:11 -0200
+CommitDate: Wed, 24 Oct 2012 15:44:41 -0200
 
-perf tools: Give user better message if precise is not supported
+perf test: Align the 'Ok'/'FAILED!' test results
 
-Platforms (e.g., VM's) without support for precise mode get a confusing
-error message. e.g.,
-$ perf record -e cycles:p -a -- sleep 1
+And also print 'FAILED!' in red.
 
-  Error: sys_perf_event_open() syscall returned with 95 (Operation not
-  supported).  /bin/dmesg may provide additional information.
-
-  No hardware sampling interrupt available. No APIC? If so then you can
-  boot the kernel with the "lapic" boot parameter to force-enable it.
-  sleep: Terminated
-
-which is not clear that precise mode might be the root problem. With this
-patch:
-
-$ perf record -e cycles:p -fo /tmp/perf.data -- sleep 1
-  Error:
-  'precise' request may not be supported. Try removing 'p' modifier
-  sleep: Terminated
-
-v2: softened message to 'may not be' supported per Robert's suggestion
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Link: http://lkml.kernel.org/r/1347569955-54626-4-git-send-email-dsahern@gmail.com
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-rkisq85w24il3e2yl3nzumhu@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    5 +++++
- tools/perf/builtin-top.c    |    4 ++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ tools/perf/builtin-test.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 73b5d7f..53c9892 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -317,6 +317,11 @@ try_again:
- 					  perf_evsel__name(pos));
- 				rc = -err;
- 				goto out;
-+			} else if ((err == EOPNOTSUPP) && (attr->precise_ip)) {
-+				ui__error("\'precise\' request may not be supported. "
-+					  "Try removing 'p' modifier\n");
-+				rc = -err;
-+				goto out;
- 			}
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index e2d9872d..a04276e 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -6,6 +6,7 @@
+ #include "builtin.h"
  
- 			printf("\n");
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index fb9da71..f2ecd49 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -977,6 +977,10 @@ try_again:
- 				ui__error("Too many events are opened.\n"
- 					    "Try again after reducing the number of events\n");
- 				goto out_err;
-+			} else if ((err == EOPNOTSUPP) && (attr->precise_ip)) {
-+				ui__error("\'precise\' request may not be supported. "
-+					  "Try removing 'p' modifier\n");
-+				goto out_err;
- 			}
+ #include "util/cache.h"
++#include "util/color.h"
+ #include "util/debug.h"
+ #include "util/debugfs.h"
+ #include "util/evlist.h"
+@@ -1485,18 +1486,31 @@ static bool perf_test__matches(int curr, int argc, const char *argv[])
+ static int __cmd_test(int argc, const char *argv[])
+ {
+ 	int i = 0;
++	int width = 0;
  
- 			ui__error("The sys_perf_event_open() syscall "
+ 	while (tests[i].func) {
++		int len = strlen(tests[i].desc);
++
++		if (width < len)
++			width = len;
++		++i;
++	}
++		
++	i = 0;
++	while (tests[i].func) {
+ 		int curr = i++, err;
+ 
+ 		if (!perf_test__matches(curr, argc, argv))
+ 			continue;
+ 
+-		pr_info("%2d: %s:", i, tests[curr].desc);
++		pr_info("%2d: %-*s:", i, width, tests[curr].desc);
+ 		pr_debug("\n--- start ---\n");
+ 		err = tests[curr].func();
+ 		pr_debug("---- end ----\n%s:", tests[curr].desc);
+-		pr_info(" %s\n", err ? "FAILED!\n" : "Ok");
++		if (err)
++			color_fprintf(stderr, PERF_COLOR_RED, " FAILED!\n");
++		else
++			pr_info(" Ok\n");
+ 	}
+ 
+ 	return 0;
