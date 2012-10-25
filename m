@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab2JYEoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 00:44:39 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42253 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2JYEoi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 00:44:38 -0400
+	id S1753665Ab2JYEpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 00:45:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20323 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858Ab2JYEpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 00:45:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,645,1344236400"; 
+   d="scan'208";a="160337117"
+Message-ID: <5088C397.3000501@linux.intel.com>
+Date: Wed, 24 Oct 2012 21:44:07 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <5088C1BE.9010203@linux.intel.com>
-References: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com>
-	<1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<5086A3D1.7080709@linux.intel.com>
-	<alpine.LFD.2.02.1210232138540.2756@ionos>
-	<CAAHN_R0jTey+4TOXfKh96aApOPUXQq6wwobejmhFeRuTV2VJKA@mail.gmail.com>
-	<alpine.LFD.2.02.1210242006450.2756@ionos>
-	<5088C1BE.9010203@linux.intel.com>
-Date: Thu, 25 Oct 2012 10:14:37 +0530
-Message-ID: <CAAHN_R1QpjbBPxWiDHsKmHyqU9KLPPGFkMKmMWJCqsVk2AaUrw@mail.gmail.com>
-Subject: Re: [PATCH] [RESEND 2] Take over futex of dead task only if
- FUTEX_WAITERS is not set
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: pi futex oops in __lock_acquire
+References: <20121018015312.GA29865@redhat.com> <507F9944.50505@kernel.dk> <20121019052136.GA30852@redhat.com> <1350650972.30157.34.camel@twins> <20121023195026.GA2872@redhat.com> <20121024202411.GA20597@redhat.com>
+In-Reply-To: <20121024202411.GA20597@redhat.com>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 October 2012 10:06, Darren Hart <dvhart@linux.intel.com> wrote:
-> Absolutely, that was great. Siddhesh, any objection to this test being
-> incorporated into futextest?
->
-> http://git.kernel.org/?p=linux/kernel/git/dvhart/futextest.git;a=summary
->
 
-I have no objection to the test being incorporated into futextest.
 
-Thanks,
-Siddhesh
+On 10/24/2012 01:24 PM, Dave Jones wrote:
+> I've been able to trigger this for the last week or so.
+> Unclear whether this is a new bug, or my fuzzer got smarter, but I see the
+> pi-futex code hasn't changed since the last time it found something..
+> 
+>  > BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+>  > IP: [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  > PGD 8e72c067 PUD 34f07067 PMD 0 
+>  > Oops: 0000 [#1] PREEMPT SMP 
+>  > CPU 7 
+>  > Pid: 27513, comm: trinity-child0 Not tainted 3.7.0-rc2+ #43
+>  > RIP: 0010:[<ffffffff810e185e>]  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  > RSP: 0018:ffff8800803f7b28  EFLAGS: 00010046
+>  > RAX: 0000000000000086 RBX: 0000000000000000 RCX: 0000000000000000
+>  > RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+>  > RBP: ffff8800803f7c18 R08: 0000000000000002 R09: 0000000000000000
+>  > R10: 0000000000000000 R11: 2222222222222222 R12: 0000000000000002
+>  > R13: ffff880051dd8000 R14: 0000000000000002 R15: 0000000000000018
+>  > FS:  00007f9fc6ccb740(0000) GS:ffff880148a00000(0000) knlGS:0000000000000000
+>  > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  > CR2: 0000000000000018 CR3: 000000008e6fb000 CR4: 00000000001407e0
+>  > DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  > DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  > Process trinity-child0 (pid: 27513, threadinfo ffff8800803f6000, task ffff880051dd8000)
+>  > Stack:
+>  >  ffff8800803f7b48 ffffffff816c5c59 ffff8800803f7b48 ffff88014840ebc0
+>  >  ffff8800803f7b68 ffffffff816c18e3 ffff8800803f7d10 0000000000000001
+>  >  ffff8800803f7ba8 ffffffff810a1e62 ffff8800803f7d10 0000000000000282
+>  > Call Trace:
+>  >  [<ffffffff816c5c59>] ? sub_preempt_count+0x79/0xd0
+>  >  [<ffffffff816c18e3>] ? _raw_spin_unlock_irqrestore+0x73/0xa0
+>  >  [<ffffffff810a1e62>] ? hrtimer_try_to_cancel+0x52/0x210
+>  >  [<ffffffff810eb9e5>] ? debug_rt_mutex_free_waiter+0x15/0x180
+>  >  [<ffffffff816c0107>] ? rt_mutex_slowlock+0x127/0x1b0
+>  >  [<ffffffff810b7039>] ? local_clock+0x89/0xa0
+>  >  [<ffffffff810e3ac2>] lock_acquire+0xa2/0x220
+>  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+>  >  [<ffffffff816c09e0>] _raw_spin_lock+0x40/0x80
+>  >  [<ffffffff810e812c>] ? futex_lock_pi.isra.18+0x1cc/0x390
+>  >  [<ffffffff810e812c>] futex_lock_pi.isra.18+0x1cc/0x390
+>  >  [<ffffffff810a1980>] ? update_rmtp+0x70/0x70
+>  >  [<ffffffff810e99e4>] do_futex+0x394/0xa50
+>  >  [<ffffffff8119ec43>] ? might_fault+0x53/0xb0
+>  >  [<ffffffff810ea12d>] sys_futex+0x8d/0x190
+>  >  [<ffffffff816ca288>] tracesys+0xe1/0xe6
+>  > Code: d8 45 0f 45 e0 4c 89 75 f0 4c 89 7d f8 85 c0 0f 84 f8 00 00 00 8b 05 22 fe f3 00 49 89 ff 89 f3 41 89 d2 85 c0 0f 84 02 01 00 00 <49> 8b 07 ba 01 00 00 00 48 3d c0 81 06 82 44 0f 44 e2 83 fb 01 
+>  > RIP  [<ffffffff810e185e>] __lock_acquire+0x5e/0x1ba0
+>  >  RSP <ffff8800803f7b28>
+>  > CR2: 0000000000000018
+> 
+> It looks like we got all the way to lock_acquire with a NULL 'lock' somehow.
+> 
+> Darren, any idea how this could happen ?
+
+I'm digging. Can you get trinity to provide the arguments it used that
+trigger the crash? That might help hone in on the exact path.
 
 -- 
-http://siddhesh.in
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
