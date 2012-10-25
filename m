@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936011Ab2JYQ6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 12:58:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32782 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935954Ab2JYQ52 (ORCPT
+	id S2992470Ab2JYQ6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 12:58:31 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:39580 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933975Ab2JYQ6J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 12:57:28 -0400
-From: Brian Norris <computersforpeace@gmail.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: <linux-ide@vger.kernel.org>, <linux-pm@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Kevin Cernekee <cernekee@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [RFC 1/3] ahci_platform: enable hotplug unbinding
-Date: Thu, 25 Oct 2012 09:55:59 -0700
-Message-Id: <1351184161-31433-2-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1351184161-31433-1-git-send-email-computersforpeace@gmail.com>
-References: <1351184161-31433-1-git-send-email-computersforpeace@gmail.com>
+	Thu, 25 Oct 2012 12:58:09 -0400
+From: Benjamin Segall <bsegall@google.com>
+To: li guang <lig.fnst@cn.fujitsu.com>
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Track the runnable average on a per-task entity basis
+References: <20120823141506.372695337@google.com>
+	<tip-9d85f21c94f7f7a84d0ba686c58aa6d9da58fdbb@git.kernel.org>
+	<1351135702.22927.8.camel@liguang.fnst.cn.fujitsu.com>
+Date: Thu, 25 Oct 2012 09:58:04 -0700
+In-Reply-To: <1351135702.22927.8.camel@liguang.fnst.cn.fujitsu.com> (li
+	guang's message of "Thu, 25 Oct 2012 11:28:22 +0800")
+Message-ID: <xm26r4om7alf.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-platform_driver_probe() should be used for registering this driver only
-if we want to
+li guang <lig.fnst@cn.fujitsu.com> writes:
 
-    "...remove its run-once probe() infrastructure from memory after the
-    driver has bound to the device."
-
-However, we may want to leave the probe infrastructure in place in order
-to support binding/unbinding a device dynamically. This is useful, for
-instance, as a power management mechanism, where a device can be totally
-powered down when unbound (whereas with runtime power management,
-powering down the SATA core would incur unacceptable loss of
-functionality).
-
-Thus, convert this driver to use platform_driver_register().
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
----
- drivers/ata/ahci_platform.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 9e419e1..f467ba8 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -73,7 +73,7 @@ static struct scsi_host_template ahci_platform_sht = {
- 	AHCI_SHT("ahci_platform"),
- };
- 
--static int __init ahci_probe(struct platform_device *pdev)
-+static int __devinit ahci_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
-@@ -286,6 +286,7 @@ static const struct of_device_id ahci_of_match[] = {
- MODULE_DEVICE_TABLE(of, ahci_of_match);
- 
- static struct platform_driver ahci_driver = {
-+	.probe = ahci_probe,
- 	.remove = __devexit_p(ahci_remove),
- 	.driver = {
- 		.name = "ahci",
-@@ -300,7 +301,7 @@ static struct platform_driver ahci_driver = {
- 
- static int __init ahci_init(void)
- {
--	return platform_driver_probe(&ahci_driver, ahci_probe);
-+	return platform_driver_register(&ahci_driver);
- }
- module_init(ahci_init);
- 
--- 
-1.7.11.3
-
+> 在 2012-10-24三的 02:43 -0700，tip-bot for Paul Turner写道：
+>> +		do {
+>> +			if (runnable)
+>> +				sa->runnable_avg_sum += delta_w;
+>> +			sa->runnable_avg_period += delta_w;
+>> +
+>> +			/*
+>> +			 * Remainder of delta initiates a new period, roll over
+>> +			 * the previous.
+>> +			 */
+>> +			sa->runnable_avg_sum =
+>> +				decay_load(sa->runnable_avg_sum, 1);
+>
+> Is this u0+u1*y+u2*y^2+u3*y^3 ...,
+> seems no, this is u0+u1*y+u2*y+u3*y+u4*y ...
+>
+It is cumulative, so it is u0+y*(u1+y*(u2+..., which is u0+u1*y+u2*y^2+...
