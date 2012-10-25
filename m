@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab2JYHbD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 03:31:03 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:45445 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758404Ab2JYHbA convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Thu, 25 Oct 2012 03:31:00 -0400
-Message-Id: <508906CE02000078000A4553@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 25 Oct 2012 08:30:54 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        <gregkh@linuxfoundation.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>
-Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        <virtualization@lists.linux-foundation.org>,
-        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>
-Subject: Re: [Xen-devel] linux-next: Tree for Oct 24 (xen)
-References: <20121024151957.28a1626cd9a59c014e78c401@canb.auug.org.au>
- <50885EA8.3050007@xenotime.net>
-In-Reply-To: <50885EA8.3050007@xenotime.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1759123Ab2JYHbe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 03:31:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52107 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758290Ab2JYHbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 03:31:32 -0400
+Date: Thu, 25 Oct 2012 08:31:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
+ pinctrl-nomadik GPIO driver
+Message-ID: <20121025073127.GB971@gmail.com>
+References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
+ <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
+ <CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaeBW2ecQZ2fA-hL8o47pYpjZ=5Mn131F87u58rX+dekw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.10.12 at 23:33, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 10/23/2012 09:19 PM, Stephen Rothwell wrote:
+On Wed, 24 Oct 2012, Linus Walleij wrote:
+
+> On Wed, Oct 24, 2012 at 4:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
 > 
->> Hi all,
->> 
->> Changes since 201201023:
->> 
+> > The clock framework has changed somewhat and it's now better to
+> > invoke clock_prepare_enable() and clk_disable_unprepare() rather
+> > than the legacy clk_enable() and clk_disable() calls. This patch
+> > converts the Nomadik Pin Control driver to the new framework.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > 
-> on x86_64:
+> (...)
+> > -               clk_enable(chip->clk);
+> > +               clk_prepare_enable(chip->clk);
+> (...)
+> > -               clk_disable(chip->clk);
+> > +               clk_disable_unprepare(chip->clk);
 > 
-> drivers/built-in.o: In function `dbgp_reset_prep':
-> (.text+0xb96b5): undefined reference to `xen_dbgp_reset_prep'
-> drivers/built-in.o: In function `dbgp_external_startup':
-> (.text+0xb9d95): undefined reference to `xen_dbgp_external_startup'
+> (Repeated for each occurence.)
 > 
+> Is this *really* causing a regression? I mean the driver
+> begin like this in nmk_gpio_probe():
 > 
-> Full randconfig file is attached.
+>         clk = devm_clk_get(&dev->dev, NULL);
+>         if (IS_ERR(clk)) {
+>                 ret = PTR_ERR(clk);
+>                 goto out;
+>         }
+>         clk_prepare(clk);
+> 
+> Then it leaves the clock prepared. So the clock is always
+> prepared. You would only need to enable/disable it at times.
+> 
+> And the semantics of the clk_enable/clk_disable call pair
+> is such that it is fastpath and should be real quick, and that
+> is exactly why we're using it repeatedly like that. Inserting
+> clk_unprepare() effectively could make the whole driver a
+> lot slower, so convince me on this one. ...
+> 
+> I suspect the real bug (if there is one) must be in the clock
+> implementation.
 
-So this is because with !USB_SUPPORT but EARLY_PRINTK_DBGP
-dbgp_reset_prep() and dbgp_external_startup() get pointlessly
-defined and exported. This got broken by the merge
-recommendation for the ARM side changes (originally compilation
-of drivers/xen/dbgp.c depended on just CONFIG_XEN_DOM0).
+This certainly doesn't fix the bug we spoke about. I believe Ulf
+is still working on that one.
 
->From my pov, fixing the USB side would be the clean solution (i.e.
-putting those function definitions inside a CONFIG_USB_SUPPORT
-conditional).
+So do you want me to remove this patch?
 
-The alternative of a smaller change would be to extend the
-conditional around the respective xen_dbgp_...() declarations
-in include/linux/usb/ehci_def.h to become
-
-#if defined(CONFIG_XEN_DOM0) && defined(CONFIG_USB_SUPPORT)
-
-Please advise towards your preference.
-
-Jan
-
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
