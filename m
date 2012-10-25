@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936007Ab2JYRgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 13:36:06 -0400
-Received: from server505c.appriver.com ([98.129.35.7]:3992 "EHLO
-	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S935904Ab2JYRgE convert rfc822-to-8bit (ORCPT
+	id S2992501Ab2JYRgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 13:36:22 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46317 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992477Ab2JYRgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 13:36:04 -0400
-X-Note-AR-ScanTimeLocal: 10/25/2012 12:35:57 PM
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Policy: GLOBAL - coraid.com
-X-Primary: ecashin@coraid.com
-X-Note: This Email was scanned by AppRiver SecureTide
-X-ALLOW: @coraid.com ALLOWED
-X-Virus-Scan: V-
-X-Note: Spam Tests Failed: 
-X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
-X-Note-Sending-IP: 98.129.35.1
-X-Note-Reverse-DNS: 
-X-Note-Return-Path: ecashin@coraid.com
-X-Note: User Rule Hits: 
-X-Note: Global Rule Hits: G329 G330 G331 G332 G336 G337 G348 G444 
-X-Note: Encrypt Rule Hits: 
-X-Note: Mail Class: ALLOWEDSENDER
-X-Note: Headers Injected
-From: Ed Cashin <ecashin@coraid.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 25 Oct 2012 12:35:54 -0500
-Subject: Re: [PATCH] aoe: avoid using skb member after dev_queue_xmit
-Thread-Topic: [PATCH] aoe: avoid using skb member after dev_queue_xmit
-Thread-Index: Ac2y1y+KyT9E7InoQl2WPHSlUhPl+Q==
-Message-ID: <4918A364-8C8A-4F69-B03F-644339FC1A7B@coraid.com>
-References: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
- <20121024150807.82ce2677.akpm@linux-foundation.org>
- <20121025063322.GH20754@mwanda>
-In-Reply-To: <20121025063322.GH20754@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 25 Oct 2012 13:36:19 -0400
 MIME-Version: 1.0
+In-Reply-To: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Oct 2012 11:35:57 -0600
+Message-ID: <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+Subject: Re: Use PCI ROMs from EFI boot services
+To: Matthew Garrett <mjg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 25, 2012, at 2:33 AM, Dan Carpenter wrote:
+On Thu, Aug 23, 2012 at 10:36 AM, Matthew Garrett <mjg@redhat.com> wrote:
+> V3 just fixes all the casting issues and incorporates David's change in
+> search ordering.
 
-> On Wed, Oct 24, 2012 at 03:08:07PM -0700, Andrew Morton wrote:
->> On Wed, 24 Oct 2012 14:26:13 -0400
->> Ed Cashin <ecashin@coraid.com> wrote:
->> 
->>> After calling dev_queue_xmit it is no longer safe to access the
->>> members of the skb.
->>> 
->>> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
->> 
->> hm, that was clever.  How did Dan detect this bug?
-> 
-> It was a Smatch thing, but it wasn't enabled by default.  I think I
-> will enable it.  This is the second bug use after dev_queue_xmit()
-> in two years.
+I think there's still a section mismatch issue with these patches, so
+I haven't merged them yet.
 
-OK, no more procrastinating.  I'm using smatch from today forward.
+I rebased my pci/mjg-pci-roms-from-efi branch to v3.7-rc2, and if we
+get this issue fixed I'll put it in -next as v3.8 material.
 
--- 
-  Ed Cashin
-  ecashin@coraid.com
-
-
+Bjorn
