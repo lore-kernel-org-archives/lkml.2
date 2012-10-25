@@ -1,131 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759215Ab2JYCXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 22:23:22 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60624 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759113Ab2JYCXU (ORCPT
+	id S1422656Ab2JYC00 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 22:26:26 -0400
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:43180 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758953Ab2JYC0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 22:23:20 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH v2] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hdpi.c
-Date: Thu, 25 Oct 2012 11:23:13 +0900
-Message-Id: <1351131793-6611-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121022195250.GD8567@kroah.com>
-References: <20121022195250.GD8567@kroah.com>
+	Wed, 24 Oct 2012 22:26:24 -0400
+Date: Wed, 24 Oct 2012 19:23:21 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
+Subject: Re: [RFC 1/2] vmevent: Implement pressure attribute
+Message-ID: <20121025022321.GA8892@lizard>
+References: <20121022111928.GA12396@lizard>
+ <20121022112149.GA29325@lizard>
+ <alpine.LFD.2.02.1210241159590.13035@tux.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1210241159590.13035@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+Hello Pekka,
 
-some of them have been replaced by dev_dbg or pr_debug,
-and added pr_fmt.
+Thanks for taking a look into this!
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/comedi/drivers/gsc_hpdi.c |   31 +++++++++++++++--------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+On Wed, Oct 24, 2012 at 12:03:10PM +0300, Pekka Enberg wrote:
+> On Mon, 22 Oct 2012, Anton Vorontsov wrote:
+> > This patch introduces VMEVENT_ATTR_PRESSURE, the attribute reports Linux
+> > virtual memory management pressure. There are three discrete levels:
+> > 
+> > VMEVENT_PRESSURE_LOW: Notifies that the system is reclaiming memory for
+> > new allocations. Monitoring reclaiming activity might be useful for
+> > maintaining overall system's cache level.
+> > 
+> > VMEVENT_PRESSURE_MED: The system is experiencing medium memory pressure,
+> > there is some mild swapping activity. Upon this event applications may
+> > decide to free any resources that can be easily reconstructed or re-read
+> > from a disk.
+> 
+> Nit:
+> 
+> s/VMEVENT_PRESSURE_MED/VMEVENT_PRESSUDE_MEDIUM/
 
-diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
-index abff660..31d89d5 100644
---- a/drivers/staging/comedi/drivers/gsc_hpdi.c
-+++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
-@@ -45,6 +45,8 @@ support could be added to this driver.
- 
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/interrupt.h>
- #include "../comedidev.h"
- #include <linux/delay.h>
-@@ -107,8 +109,7 @@ enum hpdi_registers {
- int command_channel_valid(unsigned int channel)
- {
- 	if (channel == 0 || channel > 6) {
--		printk(KERN_WARNING
--		       "gsc_hpdi: bug! invalid cable command channel\n");
-+		pr_debug("bug! invalid cable command channel\n");
- 		return 0;
- 	}
- 	return 1;
-@@ -553,7 +554,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int i;
- 	int retval;
- 
--	printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
-+	dev_dbg(dev->class_dev, "gsc_hpdi\n");
- 
- 	if (alloc_private(dev, sizeof(struct hpdi_private)) < 0)
- 		return -ENOMEM;
-@@ -582,17 +583,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		} while (pcidev != NULL);
- 	}
- 	if (dev->board_ptr == NULL) {
--		printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
-+		dev_warn(dev->class_dev, "no hpdi card found\n");
- 		return -EIO;
- 	}
- 
--	printk(KERN_WARNING
--	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_dbg(dev->class_dev,
-+		"found %s on bus %i, slot %i\n", board(dev)->name,
-+		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
- 
- 	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
--		printk(KERN_WARNING
--		       " failed enable PCI device and request regions\n");
-+		dev_warn(dev->class_dev,
-+			 " failed enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	pci_set_master(pcidev);
-@@ -613,7 +614,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    ioremap(priv(dev)->hpdi_phys_iobase,
- 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
- 	if (!priv(dev)->plx9080_iobase || !priv(dev)->hpdi_iobase) {
--		printk(KERN_WARNING " failed to remap io memory\n");
-+		dev_warn(dev->class_dev, "failed to remap io memory\n");
- 		return -ENOMEM;
- 	}
- 
-@@ -625,13 +626,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  get irq */
- 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
- 			dev->driver->driver_name, dev)) {
--		printk(KERN_WARNING
--		       " unable to allocate irq %u\n", pcidev->irq);
-+		dev_warn(dev->class_dev,
-+			 "unable to allocate irq %u\n", pcidev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = pcidev->irq;
- 
--	printk(KERN_WARNING " irq %u\n", dev->irq);
-+	dev_dbg(dev->class_dev, "irq %u\n", dev->irq);
- 
- 	/*  allocate pci dma buffers */
- 	for (i = 0; i < NUM_DMA_BUFFERS; i++) {
-@@ -649,8 +650,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 						   &priv(dev)->
- 						   dma_desc_phys_addr);
- 	if (priv(dev)->dma_desc_phys_addr & 0xf) {
--		printk(KERN_WARNING
--		       " dma descriptors not quad-word aligned (bug)\n");
-+		dev_warn(dev->class_dev,
-+			 "dma descriptors not quad-word aligned (bug)\n");
- 		return -EIO;
- 	}
- 
--- 
-1.7.9.5
+Sure thing, will change.
 
+> Other than that, I'm OK with this. Mel and others, what are your thoughts 
+> on this?
+> 
+> Anton, have you tested this with real world scenarios?
+
+Yup, I was mostly testing it on a desktop. I.e. in a KVM instance I was
+running a full fedora17 desktop w/ a lot of apps opened. The pressure
+index was pretty good in the sense that it was indeed reflecting the
+sluggishness in the system during swap activity. It's not ideal, i.e. the
+index might drop slightly for some time, but we usually interested in
+"above some value" threshold, so it should be fine.
+
+The _LOW level is defined very strictly, and cannot be tuned anyhow. So
+it's very solid, and that's what we mostly use for Android.
+
+The _OOM level is also defined quite strict, so from the API point of
+view, it's also solid, and should not be a problem.
+
+Although the problem with _OOM is delivering the event in time (i.e. we
+must be quick in predicting it, before OOMK triggers). Today the patch has
+a shortcut for _OOM level: we send _OOM notification when reclaimer's
+priority is below empirically found value '3' (we might make it tunable
+via sysctl too, but that would expose another mm detail -- although sysctl
+sounds not that bad as exposing something in the C API; we have plenty of
+mm knobs in /proc/sys/vm/ already).
+
+The real tunable is _MED level, and this should be tuned based on the
+desired system's behaviour that I described in more detail in this long
+post: http://lkml.org/lkml/2012/10/7/29.
+
+Based on my observations, I wouldn't say that we have plenty of room to
+tune the value, though. Usual swapping activity causes index to rise to
+say to 30%, and when the system can't keep up, it raises to 50..90 (but we
+still have plenty of swap space, so the system is far away from OOM,
+although it is thrashing. Ideally I'd prefer to not have any sysctl, but I
+believe _MED level is really based on user's definition of "medium".
+
+> How does it stack up against Android's low memory killer, for example?
+
+The LMK driver is effectively using what we call _LOW pressure
+notifications here, so by definition it is enough to build a full
+replacement for the in-kernel LMK using just the _LOW level. But in the
+future, we might want to use _MED as well, e.g. kill unneeded services
+based not on the cache level, but based on the pressure.
+
+Thanks,
+Anton.
