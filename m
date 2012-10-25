@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992673Ab2JYUWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 16:22:06 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44994 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992660Ab2JYUWC (ORCPT
+	id S2992690Ab2JYUWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 16:22:15 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:57288 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992676Ab2JYUWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 16:22:02 -0400
-Date: Thu, 25 Oct 2012 13:22:00 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, bhutchings@solarflare.com,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch for-3.7] mm, mempolicy: fix printing stack contents in
- numa_maps
-In-Reply-To: <1351175972.12171.14.camel@twins>
-Message-ID: <alpine.DEB.2.00.1210251317190.17938@chino.kir.corp.google.com>
-References: <20121008150949.GA15130@redhat.com> <CAHGf_=pr1AYeWZhaC2MKN-XjiWB7=hs92V0sH-zVw3i00X-e=A@mail.gmail.com> <alpine.DEB.2.00.1210152055150.5400@chino.kir.corp.google.com> <CAHGf_=rLjQbtWQLDcbsaq5=zcZgjdveaOVdGtBgBwZFt78py4Q@mail.gmail.com>
- <alpine.DEB.2.00.1210152306320.9480@chino.kir.corp.google.com> <CAHGf_=pemT6rcbu=dBVSJE7GuGWwVFP+Wn-mwkcsZ_gBGfaOsg@mail.gmail.com> <alpine.DEB.2.00.1210161657220.14014@chino.kir.corp.google.com> <alpine.DEB.2.00.1210161714110.17278@chino.kir.corp.google.com>
- <20121017040515.GA13505@redhat.com> <alpine.DEB.2.00.1210162222100.26279@chino.kir.corp.google.com> <CA+1xoqe74R6DX8Yx2dsp1MkaWkC1u6yAEd8eWEdiwi88pYdPaw@mail.gmail.com> <alpine.DEB.2.00.1210241633290.22819@chino.kir.corp.google.com>
- <CA+1xoqd6MEFP-eWdnWOrcz2EmE6tpd7UhgJyS8HjQ8qrGaMMMw@mail.gmail.com> <alpine.DEB.2.00.1210241659260.22819@chino.kir.corp.google.com> <1351167554.23337.14.camel@twins> <1351175972.12171.14.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 25 Oct 2012 16:22:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D413889851@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D4138889AD@USINDEM103.corp.hds.com>
+ <CAGTjWtDVZGq7VKou10xC-zJXGmane_kKjGo1xMjgPUkKAedFqQ@mail.gmail.com> <A5ED84D3BB3A384992CBB9C77DEDA4D413889851@USINDEM103.corp.hds.com>
+From: Mike Waychison <mikew@google.com>
+Date: Thu, 25 Oct 2012 13:21:48 -0700
+Message-ID: <CAGTjWtAUv=HzOGPDeDuTb_6z81bnSQ-F7DDERZ2tqmfaP4wXwQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/5] efi_pstore: Remove a logic erasing entries from a
+ write callback to hold multiple logs
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Peter Zijlstra wrote:
+On Thu, Oct 25, 2012 at 1:03 PM, Seiji Aguchi <seiji.aguchi@hds.com> wrote:
+>> > -               list_del(&found->list);
+>> > +       sprintf(name, "dump-type%u-%u-%lu", type, part,
+>> > +               get_seconds());
+>>
+>> Actually, nothing seems to be ensuring that the value used here ends up being the same as the ctime :\  Consider what happens if the
+>> get_seconds() call here happens at second N, and the i_ctime is collected at time N+1. The object wouldn't be able to be deleted after
+>> patch 4/5 is applied.  How can we better ensure that the i_ctime is the same value as serialized into the efi var name here?
+>
+>  i_ctime of pstore file system is different from normal file systems.
+> As I said in patch v1, i_ctime of pstore means the date that the record was "originally" stored.
+>
+> I_ctime is always set to N.
+> Here is the scenario.
+>
+> 1.  writing time
+>     - get_seconds() call here happens at second N
+>     - "N" is stored to a variable name
+>
+> 2. System reboots...
+> 3. System boots up...
+>
+> 4. reading time
+>    - pstore calls a read callback, efi_pstore_read()
+>    -  efi_pstore_read extracts ctime, "N", from the virable name
 
-> So I think the below should work, we hold the spinlock over both rb-tree
-> modification as sp free, this makes mpol_shared_policy_lookup() which
-> returns the policy with an incremented refcount work with just the
-> spinlock.
-> 
-> Comments?
-> 
+Ah, I accidentally glossed over this bit.  Thanks for correcting me :)
 
-It's rather unfortunate that we need to protect modification with a 
-spinlock and a mutex but since sharing was removed in commit 869833f2c5c6 
-("mempolicy: remove mempolicy sharing") it requires that sp_alloc() is 
-blockable to do the whole mpol_new() and rebind if necessary, which could 
-require mm->mmap_sem; it's not as simple as just converting all the 
-allocations to GFP_ATOMIC.
+>    -  efi_pstore passes "N" to pstore file system
+>     - pstore create a file, /dev/pstore/dmesg* and set "N" to i_ctime
+>
+> Pstore file system doesn't set i_ctime by itself but set ctime passed by platform drivers.
+>
 
-It looks as though there is no other alternative other than protecting 
-modification with both the spinlock and mutex, which is a clever 
-solution, so it looks good to me, thanks!
+So doesn't this break erasing of existing dumps in pstore-efivars?
+Unless efi_pstore_read still understands the older variable name
+formats, users will be stranded with dumps consuming space in efivars
+that aren't exported via pstore anymore.
