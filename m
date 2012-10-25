@@ -1,130 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422915Ab2JYNKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:10:15 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:38956 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759528Ab2JYNKH convert rfc822-to-8bit (ORCPT
+	id S1945951Ab2JYNKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:10:22 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51648 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759347Ab2JYNKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:10:07 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [PATCH v2] media: davinci: vpbe: fix build warning
-Date: Thu, 25 Oct 2012 15:10:56 +0200
-Message-ID: <2557607.c0P57CM58Q@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1350998677-19890-1-git-send-email-prabhakar.lad@ti.com>
-References: <1350998677-19890-1-git-send-email-prabhakar.lad@ti.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Thu, 25 Oct 2012 09:10:15 -0400
+Message-Id: <20121025124834.720647725@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Thu, 25 Oct 2012 14:16:47 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 30/31] sched, numa, mm: Implement slow start for working set sampling
+References: <20121025121617.617683848@chello.nl>
+Content-Disposition: inline; filename=0030-sched-numa-mm-Implement-slow-start-for-working-set-s.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
+Add a 1 second delay before starting to scan the working set of
+a task and starting to balance it amongst nodes.
 
-Thanks for the patch.
+[ note that before the constant per task WSS sampling rate patch
+  the initial scan would happen much later still, in effect that
+  patch caused this regression. ]
 
-On Tuesday 23 October 2012 18:54:37 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.lad@ti.com>
-> 
-> Warnings were generated because of the following commit changed data type
-> for address pointer
-> 
-> 195bbca ARM: 7500/1: io: avoid writeback addressing modes for __raw_
-> accessors add  __iomem annotation to fix following warnings
-> 
-> drivers/media/platform/davinci/vpbe_osd.c: In function ‘osd_read’:
-> drivers/media/platform/davinci/vpbe_osd.c:49:2: warning: passing
->  argument 1 of ‘__raw_readl’ makes pointer from integer without a cast
-> [enabled by default] arch/arm/include/asm/io.h:104:19: note: expected
-> ‘const volatile
->  void *’ but argument is of type ‘long unsigned int’
+The theory is that short-run tasks benefit very little from NUMA
+placement: they come and go, and they better stick to the node
+they were started on. As tasks mature and rebalance to other CPUs
+and nodes, so does their NUMA placement have to change and so
+does it start to matter more and more.
 
-Please add a sentence here that explains what your patch does. Something like
+In practice this change fixes an observable kbuild regression:
 
-"Store the ioremap_nocache() returned address in a void __iomem * instead of a 
-unsigned long."
+   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
 
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+   !NUMA:
+   45.291088843 seconds time elapsed                                          ( +-  0.40% )
+   45.154231752 seconds time elapsed                                          ( +-  0.36% )
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+   +NUMA, no slow start:
+   46.172308123 seconds time elapsed                                          ( +-  0.30% )
+   46.343168745 seconds time elapsed                                          ( +-  0.25% )
 
-> ---
->  Changes for v2:
->  1: Made the base addr to void __iomem * instead of long unsigned,
->     as pointed by Laurent.
-> 
->  drivers/media/platform/davinci/vpbe_osd.c |    9 ++++-----
->  include/media/davinci/vpbe_osd.h          |    2 +-
->  2 files changed, 5 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpbe_osd.c
-> b/drivers/media/platform/davinci/vpbe_osd.c index bba299d..707f243 100644
-> --- a/drivers/media/platform/davinci/vpbe_osd.c
-> +++ b/drivers/media/platform/davinci/vpbe_osd.c
-> @@ -62,7 +62,7 @@ static inline u32 osd_set(struct osd_state *sd, u32 mask,
-> u32 offset) {
->  	struct osd_state *osd = sd;
-> 
-> -	u32 addr = osd->osd_base + offset;
-> +	void __iomem *addr = osd->osd_base + offset;
->  	u32 val = readl(addr) | mask;
-> 
->  	writel(val, addr);
-> @@ -74,7 +74,7 @@ static inline u32 osd_clear(struct osd_state *sd, u32
-> mask, u32 offset) {
->  	struct osd_state *osd = sd;
-> 
-> -	u32 addr = osd->osd_base + offset;
-> +	void __iomem *addr = osd->osd_base + offset;
->  	u32 val = readl(addr) & ~mask;
-> 
->  	writel(val, addr);
-> @@ -87,7 +87,7 @@ static inline u32 osd_modify(struct osd_state *sd, u32
-> mask, u32 val, {
->  	struct osd_state *osd = sd;
-> 
-> -	u32 addr = osd->osd_base + offset;
-> +	void __iomem *addr = osd->osd_base + offset;
->  	u32 new_val = (readl(addr) & ~mask) | (val & mask);
-> 
->  	writel(new_val, addr);
-> @@ -1559,8 +1559,7 @@ static int osd_probe(struct platform_device *pdev)
->  		ret = -ENODEV;
->  		goto free_mem;
->  	}
-> -	osd->osd_base = (unsigned long)ioremap_nocache(res->start,
-> -							osd->osd_size);
-> +	osd->osd_base = ioremap_nocache(res->start, osd->osd_size);
->  	if (!osd->osd_base) {
->  		dev_err(osd->dev, "Unable to map the OSD region\n");
->  		ret = -ENODEV;
-> diff --git a/include/media/davinci/vpbe_osd.h
-> b/include/media/davinci/vpbe_osd.h index d7e397a..5ab0d8d 100644
-> --- a/include/media/davinci/vpbe_osd.h
-> +++ b/include/media/davinci/vpbe_osd.h
-> @@ -357,7 +357,7 @@ struct osd_state {
->  	spinlock_t lock;
->  	struct device *dev;
->  	dma_addr_t osd_base_phys;
-> -	unsigned long osd_base;
-> +	void __iomem *osd_base;
->  	unsigned long osd_size;
->  	/* 1-->the isr will toggle the VID0 ping-pong buffer */
->  	int pingpong;
--- 
-Regards,
+   +NUMA, 1 sec slow start:
+   45.224189155 seconds time elapsed                                          ( +-  0.25% )
+   45.160866532 seconds time elapsed                                          ( +-  0.17% )
 
-Laurent Pinchart
+and it also fixes an observable perf bench (hackbench) regression:
+
+   # perf stat --null --repeat 10 perf bench sched messaging
+
+   -NUMA:
+
+   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
+   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
+
+   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
+
+The implementation is simple and straightforward, most of the patch
+deals with adding the /proc/sys/kernel/sched_numa_scan_delay_ms tunable
+knob.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+[ Wrote the changelog, ran measurements, tuned the default. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched/core.c   |    2 +-
+ kernel/sched/fair.c   |   11 +++++++----
+ kernel/sysctl.c       |    7 +++++++
+ 4 files changed, 16 insertions(+), 5 deletions(-)
+
+Index: tip/include/linux/sched.h
+===================================================================
+--- tip.orig/include/linux/sched.h
++++ tip/include/linux/sched.h
+@@ -2020,6 +2020,7 @@ enum sched_tunable_scaling {
+ };
+ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ 
++extern unsigned int sysctl_sched_numa_scan_delay;
+ extern unsigned int sysctl_sched_numa_scan_period_min;
+ extern unsigned int sysctl_sched_numa_scan_period_max;
+ extern unsigned int sysctl_sched_numa_scan_size;
+Index: tip/kernel/sched/core.c
+===================================================================
+--- tip.orig/kernel/sched/core.c
++++ tip/kernel/sched/core.c
+@@ -1545,7 +1545,7 @@ static void __sched_fork(struct task_str
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+ 	p->numa_faults = NULL;
+-	p->numa_scan_period = sysctl_sched_numa_scan_period_min;
++	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+ 	p->numa_work.next = &p->numa_work;
+ #endif /* CONFIG_SCHED_NUMA */
+ }
+Index: tip/kernel/sched/fair.c
+===================================================================
+--- tip.orig/kernel/sched/fair.c
++++ tip/kernel/sched/fair.c
+@@ -827,11 +827,12 @@ static void account_numa_dequeue(struct
+ }
+ 
+ /*
+- * numa task sample period in ms: 5s
++ * Scan @scan_size MB every @scan_period after an initial @scan_delay.
+  */
+-unsigned int sysctl_sched_numa_scan_period_min = 100;
+-unsigned int sysctl_sched_numa_scan_period_max = 100*16;
+-unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
++unsigned int sysctl_sched_numa_scan_delay = 1000;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_min = 100;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_max = 100*16;/* ms */
++unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
+ 
+ /*
+  * Wait for the 2-sample stuff to settle before migrating again
+@@ -985,6 +986,8 @@ void task_tick_numa(struct rq *rq, struc
+ 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+ 
+ 	if (now - curr->node_stamp > period) {
++		if (!curr->node_stamp)
++			curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
+ 		curr->node_stamp = now;
+ 
+ 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+Index: tip/kernel/sysctl.c
+===================================================================
+--- tip.orig/kernel/sysctl.c
++++ tip/kernel/sysctl.c
+@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
+ #endif /* CONFIG_SMP */
+ #ifdef CONFIG_SCHED_NUMA
+ 	{
++		.procname	= "sched_numa_scan_delay_ms",
++		.data		= &sysctl_sched_numa_scan_delay,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "sched_numa_scan_period_min_ms",
+ 		.data		= &sysctl_sched_numa_scan_period_min,
+ 		.maxlen		= sizeof(unsigned int),
+
 
