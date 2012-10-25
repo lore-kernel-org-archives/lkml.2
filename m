@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946038Ab2JYOAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:00:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49391 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1945982Ab2JYOAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:00:17 -0400
-Date: Thu, 25 Oct 2012 15:00:13 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars Poeschel <poeschel@lemonage.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Lars Poeschel <larsi@wh2.tu-dresden.de>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, khali@linux-fr.org,
-        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca
-Subject: Re: [PATCH v2 2/4] gpio: add viperboard gpio driver
-Message-ID: <20121025140013.GK18814@opensource.wolfsonmicro.com>
-References: <20120925085559.GL28670@sortiz-mobl>
- <CACRpkdZ3=VFOHqmo=XbyDGUKoxFaG+PpzDUsBQTQ1O3F-DhTvg@mail.gmail.com>
- <20121024163155.GH18814@opensource.wolfsonmicro.com>
- <201210251202.36708.poeschel@lemonage.de>
+	id S1946042Ab2JYODk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:03:40 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57489 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933124Ab2JYODi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 10:03:38 -0400
+Date: Thu, 25 Oct 2012 10:03:27 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: david@lang.hm
+Cc: Nico Williams <nico@cryptonector.com>,
+        General Discussion of SQLite Database 
+	<sqlite-users@sqlite.org>,
+        =?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+Message-ID: <20121025140327.GB13562@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, david@lang.hm,
+	Nico Williams <nico@cryptonector.com>,
+	General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+	=?utf-8?B?5p2o6IuP56uL?= Yang Su Li <suli@cs.wisc.edu>,
+	linux-fsdevel@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>, drh@hwaci.com
+References: <m2fw5mtffg.fsf_-_@firstfloor.org>
+ <CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>
+ <5086F5A7.9090406@vlnb.net>
+ <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+ <alpine.DEB.2.02.1210241447210.8519@asgard.lang.hm>
+ <CAK3OfOh4MEq5PwW5xk07d4fDZi64tF-vgCKYOuA3oq=9PLwyUQ@mail.gmail.com>
+ <alpine.DEB.2.02.1210241748180.8519@asgard.lang.hm>
+ <CAK3OfOjtH9qVghb6+33HSb8+dPZVexLC9Z5XO1KKvjoTYiYp4A@mail.gmail.com>
+ <20121025060231.GC9860@thunk.org>
+ <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rnP2AJ7yb1j09OW/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201210251202.36708.poeschel@lemonage.de>
-X-Cookie: You should go home.
+In-Reply-To: <alpine.DEB.2.02.1210242331060.31862@asgard.lang.hm>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 24, 2012 at 11:58:49PM -0700, david@lang.hm wrote:
+> The frustrating thing is that when people point out how things like
+> sqlite are so horribly slow, the reply seems to be "well, that's
+> what you get for doing so many fsyncs, don't do that", when there is
+> a 'problem' like the KDE "config loss" problem a few years ago, the
+> response is "well, that's what you get for not doing fsync"
 
---rnP2AJ7yb1j09OW/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Sure... but the answer is to only do the fsync's when you need to.
+For example, if GNOME and KDE is rewriting the entire registry file
+each time the application is changing a single registry key, sure, if
+you rewrite the entire registry file, and then fsync after each
+rewrite before you replace the file, you will be safe.  And if the
+application needs to update dozens or hundreds of registry keys (or
+every time the window gets moved or resized), then yes, it will be
+slow.  But the application didn't have to do that!  It could have
+updated all the registry keys in memory, and then update the registry
+file periodically instead.
 
-On Thu, Oct 25, 2012 at 12:02:36PM +0200, Lars Poeschel wrote:
+Similarly, Firefox didn't need to do a sqllite commit after every
+single time its history file was written, causing a third of a
+megabyte of write traffic each time you clicked on a web page.  It
+could have batched its updates to the history file, since most of the
+time, you don't care about making sure the web history is written to
+stable store before you're allowed to click on a web page and visit
+the next web page.
 
-> You can reread our conversation before Linus Walleij brought you in start=
-ing=20
-> with my first patch submission here:
+Or does rsyslog *really* need to issue an fsync after each log
+message?  Or could it batch updates so that every N seconds, it
+flushes writes to the disk?
 
-> https://lkml.org/lkml/2012/10/12/218
+(And this is a problem with most Android applications as well.
+Apparently the framework API's are such that it's easier for an
+application to treat each sqlite statement as an atomic update, so
+many/most application writers don't use explicit transaction
+boundaries, so updates don't get batched even though it would be more
+efficient if they did so.)
 
-This has all the problems of this and your previous mail - here we've
-got about 40 lines of unbroken text (with very wide lines too, notice
-how things start to wrap when I quote them) none of which is easy to
-read.
+Sometimes, the answer is not to try to create exotic database like
+functionality in the file system --- the answer is to be more
+intelligent at the application leyer.  Not only will the application
+be more portable, it will also in the end be more efficient, since
+even with the most exotic database technologies, the most efficient
+transactional commit is the unneeded commit that you optimize away at
+the application layer.
 
-> As there is no general regmap_bus for reading/writing registers over USB =
-(and=20
-> probably will never be). I had to implement it in my driver for the speci=
-al=20
-> case of this device. I also have a regmap_config, that provides a volatil=
-e_reg=20
-> function. I need this to decide if the pin the value is queried is an out=
-put=20
-> or an input. In the latter case I obviously can't use the cache, in the f=
-ormer=20
-Why would you want to implement this as a bus?  If you're not actually
-rendering things down into a register and value on the bus then you
-should be hooking in at the level before we do the marshalling since
-that's totally irrelevant.  This should be done by making the
-marashalling pluggable.
-
-> case I want to use it. Here the first problem arises. In the volatile_reg=
-=20
-> function I can not do a read of a regmap register since regmap internally=
- uses=20
-> a mutex lock. Thus I have my own cache in a device private variable. This=
- is a=20
-> bit strange. To use the cache to have to implement my own cache ;-)
-
-What do you actually need to read back here?
-
-> The other problem is, that the volatile_reg function is called with struc=
-t=20
-> device and I can not container_of up to my device vprbrd_gpio struct, sin=
-ce=20
-
-Why on earth can't you do that?  That sounds like something that should
-be fixed for whatever bus you're using if it's an issue but normally
-this is simply a case of setting and reading some driver data.
-
-> The last problem is that I have 16 registers for setting/reading the firs=
-t 16=20
-> pins value. And there is another 16 registers for setting the pins direct=
-ion=20
-> (input/output). Setting the pin to output is an atomic operation of setti=
-ng=20
-> the pins direction AND setting it's value. So if there is a set pin direc=
-tion=20
-> to output operation in my driver I want to update the value of the=20
-> corresponding value register, since regmap does not know of this change. =
-But=20
-> the regcache_write I would use for this seems also not intended for use b=
-y=20
-> drivers. It is not exported.
-
-So just invalidate the cache and it'll get restored next time we look at
-the register.
-
---rnP2AJ7yb1j09OW/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQiUXmAAoJELSic+t+oim9xNUP/2nYkOwqPERMu5jzfom50Ha1
-7GUfsCkRFZU+TAhBcZNFZljsRGlBeafpJRQ1fwoNQ+kwvjnpAo4rfMy8AEgz9NHO
-7yjkMDj8w8iuY5GL01p3PStGHFne2FkONb8ByFIfY5VaCAQtqUUqwQcBNtYHkNNf
-3MhL7hWXOCQpqA94PKEAXr6XxAH4jQ9wPxayL7CWHemarvlUKBtwcmx37ddDPupu
-sn5DQA31D1Kc3nDzq5jL87rKnD9Pfl/kOG4sqFelBOuQ0vsnZvnid2DIFUCF4wo9
-mfdEa8FHcTdYNRqW0FKTm1PsnpNzEevViwevQwU6VCScwTsGItzCn0MJY/DWwrrB
-nKDoWS29fHZIt7WBtL5n4cczvVKpNK0yIXS3N53Dq3LHrukqG1/Sw9VBynzsRQvF
-W6QKFtuubVszr/28186vpp8MVN6Ed1/k9A0ek3JPklrdhLYm88YvD5A8Iv6AjYoc
-RFvHW78fwBbu0Xa69Sf5Q+KsXFg2TFsZuHof5QWDA9B9FhmkyrsvSbi37Mn3JC+e
-MEO4TGZZ2QwZmgeQMu2RNpK6+ZUQT55FK91jZxltMPJXQmH77FzklqW5JxGCKMvb
-0g53Xf7G4VzRbykwLOoZ1w3tbnhFToJvbp6Du4ziDTT6Tl8eQy0MC99TGPMcStpF
-JsUbVXCg4JR/cWoA+UsE
-=MEaq
------END PGP SIGNATURE-----
-
---rnP2AJ7yb1j09OW/--
+						- Ted
