@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946028Ab2JYN5Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:57:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37773 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933157Ab2JYN5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:57:22 -0400
-Message-ID: <50894534.2000602@gmail.com>
-Date: Thu, 25 Oct 2012 08:57:08 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1161227Ab2JYN7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:59:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41084 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161116Ab2JYN7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 09:59:48 -0400
+Date: Thu, 25 Oct 2012 15:59:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Multiple patch authors (was: Re: [PATCH v3] Add support for AMD64
+ EDAC on multiple PCI domains)
+Message-ID: <20121025135948.GA308@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>,
+	Daniel J Blueman <daniel@numascale-asia.com>,
+	Ingo Molnar <mingo@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+	x86@kernel.org, linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com>
+ <20121025110353.GA2623@aftab.osrc.amd.com>
+ <20121025115654.GA27611@gmail.com>
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
-        Ike Pan <ike.pan@canonical.com>, Nadav Haklai <nadavh@marvell.com>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Jon Masters <jcm@redhat.com>, Ben Dooks <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] arm: mvebu: adding SATA support: dt binding and config
- update
-References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <1351086561-13569-3-git-send-email-gregory.clement@free-electrons.com> <20121024160139.6dbf5e16@skate> <5087F5B9.0@free-electrons.com> <20121025131818.GF18811@titan.lakedaemon.net> <20121025152114.73e69c92@skate> <50893FC8.1050503@free-electrons.com>
-In-Reply-To: <50893FC8.1050503@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121025115654.GA27611@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 08:34 AM, Gregory CLEMENT wrote:
-> On 10/25/2012 03:21 PM, Thomas Petazzoni wrote:
->> Jason,
->>
->> On Thu, 25 Oct 2012 09:18:18 -0400, Jason Cooper wrote:
->>
->>>> Jason, Andrew, do you want I split this patch as suggested by
->>>> Thomas or are you fine with having one single patch?
->>>
->>> Yes, please make the defconfig changes a separate patch.  Also, please
->>> make sure only the minimum is enabled (eq RAID... isn't needed).
->>
->> I haven't looked in details at the driver, but is nr-ports = <foo> the
->> right way of doing things? We may have platforms were port 0 is not
->> used, but port 1 is used, and just a number of ports doesn't allow to
->> express this.
->>
->> Shouldn't the DT property be
->>
->>   ports = <0>, <1>
->>   ports = <1>
->>   ports = <1>, <3>
->>
->> In order to allow to more precisely enabled SATA ports? Or maybe the
->> SATA ports cannot be enabled/disabled on a per-port basis, in which
->> case I'm obviously wrong here.
-> 
-> The actual implementation of mv_sata.c doesn't work like this. You can
-> only pass the number of ports supported not the list of the port you
-> want to support. I've checked in the device tree binding documentation
-> _and_ also in the code.
+On Thu, Oct 25, 2012 at 01:56:54PM +0200, Ingo Molnar wrote:
+> No, SOBs are to document patch forwarding. Co-authorship can be
+> expressed a number of ways, such as:
+>
+> Based-on-patch-from: Borislav Petkov <bp@alien8.de>
+>
+> and/or by adding you as a copyright holder to one of the files.
 
-Is that a statement about the driver or the h/w? It does not matter what
-the driver does. If the h/w can support skipping a port, then the dts
-should allow that.
+Ok, let's hold this down in writing for future reference and in case I
+forget (which will happen, most probably :-)).
 
-A bitmask would be most appropriate here (and matches how AHCI does the
-equivalent).
+How about the following:
 
-Rob
+--
+>From e28a8a940b219878d57add0d067a07764a6ef4a5 Mon Sep 17 00:00:00 2001
+From: Borislav Petkov <bp@alien8.de>
+Date: Thu, 25 Oct 2012 15:52:59 +0200
+Subject: [PATCH] SubmittingPatches: Document multiple authorship
 
+Put down the way to express multiple authorship in writing for future
+reference.
+
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ Documentation/SubmittingPatches | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index c379a2a6949f..f61b1d8b6f9c 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -339,6 +339,16 @@ then you just add a line saying
+ 
+ using your real name (sorry, no pseudonyms or anonymous contributions.)
+ 
++In the case where two or more people work on one patch and contribute to
++its final version, stating multiple authorship should be expressed by
++adding the other co-authors of said patch to the tag chain like this:
++
++	Based-on-work-by: Second Author <second.author@example.org>
++	Based-on-work-by: Third Author  <third.author@example.org>
++
++Alternatively, the second, third, etc. authors can be credited as
++copyright holders in the files being changed.
++
+ Some people also put extra tags at the end.  They'll just be ignored for
+ now, but you can do this to mark internal company procedures or just
+ point out some special detail about the sign-off. 
+-- 
+1.8.0
+
+-- 
+Regards/Gruss,
+Boris.
