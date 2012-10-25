@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759243Ab2JYITc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 04:19:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27472 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab2JYIT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 04:19:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,646,1344236400"; 
-   d="scan'208";a="238184021"
-Message-ID: <5088F5D0.7010604@linux.intel.com>
-Date: Thu, 25 Oct 2012 01:18:24 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] [RESEND 2] Take over futex of dead task only if FUTEX_WAITERS
- is not set
-References: <CAAHN_R1O3asyJGXqjs5qt0b_qGR6S6RuM+E_85VaEoWAyAMheQ@mail.gmail.com> <1350876034-22023-1-git-send-email-siddhesh.poyarekar@gmail.com> <5086A3D1.7080709@linux.intel.com> <alpine.LFD.2.02.1210232138540.2756@ionos> <5088C10C.80503@linux.intel.com> <alpine.LFD.2.02.1210250936270.2756@ionos>
-In-Reply-To: <alpine.LFD.2.02.1210250936270.2756@ionos>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759278Ab2JYIVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 04:21:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47387 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756284Ab2JYIVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 04:21:42 -0400
+Subject: Re: [PATCHv3 0/6] dw_dmac: few cleanups to the driver
+From: Vinod Koul <vkoul@infradead.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: vinod.koul@intel.com, Viresh Kumar <viresh.linux@gmail.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>,
+        balbi@ti.com
+In-Reply-To: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1350570852-10398-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Oct 2012 13:36:59 +0530
+Message-ID: <1351152419.7077.10.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-10-18 at 17:34 +0300, Andy Shevchenko wrote:
+> There are few cleanups to the driver which partialy acked and reviewed.
+> 
+> Since v2:
+>  - add one more clean up (patch 6/6)
+>  - make a separate patch to WARN a user in dwc_handle_error (suggested by
+>    Felipe Balbi)
+>  - add a description to patch 4/6
+> 
+> Andy Shevchenko (4):
+>   dw_dmac: change dev_printk() to corresponding macros
+>   dw_dmac: don't call platform_get_drvdata twice
+>   dw_dmac: change dev_crit to dev_WARN in dwc_handle_error
+>   dw_dmac: introduce to_dw_desc() macro
+> 
+> Heikki Krogerus (2):
+>   dmaengine: dw_dmac: remove CLK dependency
+>   dmaengine: dw_dmac: amend description and indentation
+> 
+>  drivers/dma/Kconfig        |    1 -
+>  drivers/dma/dw_dmac.c      |   33 ++++++++++++++-------------------
+>  drivers/dma/dw_dmac_regs.h |    2 ++
+>  3 files changed, 16 insertions(+), 20 deletions(-)
+> 
 
-
-On 10/25/2012 01:14 AM, Thomas Gleixner wrote:
-> On Wed, 24 Oct 2012, Darren Hart wrote:
->> On 10/23/2012 01:29 PM, Thomas Gleixner wrote:
-
-> Nah. I'm just too paranoid to apply any futex patch w/o understanding
-> the root cause of it.  Darn, if I only could remember how that stale
-> waiters bit issue got inflicted ....
-
-Stale waiters happens in userspace for non-pi mutexes and there we make
-one extra FUTEX_WAKE syscall just in case. The futex value policy is much
-more rigid with PI obviously, so I wasn't aware this could happen there.
+Applied thanks
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+Vinod Koul
+Intel Corp.
+
