@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760187Ab2JYT2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 15:28:55 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39446 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab2JYT2y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 15:28:54 -0400
-Date: Thu, 25 Oct 2012 12:28:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Zhang <georgezhang@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com, vm-crosstalk@vmware.com
-Subject: Re: [PATCH 04/10] VMCI: device driver implementaton.
-Message-ID: <20121025192851.GA26627@kroah.com>
-References: <20121016002550.26205.67037.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20121016002832.26205.60696.stgit@promb-2n-dhcp175.eng.vmware.com>
+	id S1760171Ab2JYTc5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 15:32:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60176 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757284Ab2JYTcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 15:32:55 -0400
+Date: Thu, 25 Oct 2012 21:32:49 +0200
+From: Jan Kara <jack@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm: print out information of file affected by
+ memory error
+Message-ID: <20121025193249.GC3262@quack.suse.cz>
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1351177969-893-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121016002832.26205.60696.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351177969-893-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 15, 2012 at 05:28:47PM -0700, George Zhang wrote:
-> +/*
-> + * vmci_device_get() - Checks for VMCI device.
-> + * @api_version:        The API version to use
-> + * @device_shutdown_cb: Callback used when shutdown happens (Unused)
-> + * @user_data:  Data to be passed to the callback (Unused)
-> + * @device_registration:        A device registration handle. (Unused)
-> + *
-> + * Verifies that a valid VMCI device is present, and indicates
-> + * the callers intention to use the device until it calls
-> + * vmci_device_release().
-> + */
-> +bool vmci_device_get(u32 *api_version,
-> +		     vmci_device_shutdown_fn *device_shutdown_cb,
-> +		     void *user_data, void **device_registration)
-> +{
-> +	if (*api_version > VMCI_KERNEL_API_VERSION) {
-> +		*api_version = VMCI_KERNEL_API_VERSION;
-> +		return false;
-> +	}
+On Thu 25-10-12 11:12:47, Naoya Horiguchi wrote:
+> Printing out the information about which file can be affected by a
+> memory error in generic_error_remove_page() is helpful for user to
+> estimate the impact of the error.
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  mm/truncate.c | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git v3.7-rc2.orig/mm/truncate.c v3.7-rc2/mm/truncate.c
+> index d51ce92..df0c6ab7 100644
+> --- v3.7-rc2.orig/mm/truncate.c
+> +++ v3.7-rc2/mm/truncate.c
+> @@ -151,14 +151,20 @@ int truncate_inode_page(struct address_space *mapping, struct page *page)
+>   */
+>  int generic_error_remove_page(struct address_space *mapping, struct page *page)
+>  {
+> +	int ret;
+> +	struct inode *inode = mapping->host;
 > +
-> +	return drv_device_enabled();
-> +}
-> +EXPORT_SYMBOL(vmci_device_get);
+  This will oops if mapping == NULL. Currently the only caller seems to
+check beforehand but still, it's better keep the code as robust as it it.
 
-EXPORT_SYMBOL_GPL() for this, and all other exports?
+>  	if (!mapping)
+>  		return -EINVAL;
+>  	/*
+>  	 * Only punch for normal data pages for now.
+>  	 * Handling other types like directories would need more auditing.
+>  	 */
+> -	if (!S_ISREG(mapping->host->i_mode))
+> +	if (!S_ISREG(inode->i_mode))
+>  		return -EIO;
+> +	pr_info("MCE %#lx: file info pgoff:%lu, inode:%lu, dev:%s\n",
+> +		page_to_pfn(page), page_index(page),
+> +		inode->i_ino, inode->i_sb->s_id);
+>  	return truncate_inode_page(mapping, page);
+>  }
+>  EXPORT_SYMBOL(generic_error_remove_page);
+  Otherwise the patch looks OK.
 
-And it seems that you have a bunch of "unused" parameters for this, and
-other public functions.  Please just remove them entirely, otherwise it
-just confuses reviewers, and anyone who wants to write code to interface
-with the code.  You can always add parameters at a later point in time
-if you find that you really need them.
-
-thanks,
-
-greg k-h
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
