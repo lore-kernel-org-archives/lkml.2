@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160996Ab2JYPvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:51:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33302 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933029Ab2JYPvs (ORCPT
+	id S933372Ab2JYPzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:55:20 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46954 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678Ab2JYPzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:51:48 -0400
-Date: Thu, 25 Oct 2012 16:51:43 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH 2/6] pinctrl: Update clock handling for the
- pinctrl-nomadik GPIO driver
-Message-ID: <20121025155143.GK4008@gmail.com>
-References: <1351089926-32161-1-git-send-email-lee.jones@linaro.org>
- <1351089926-32161-3-git-send-email-lee.jones@linaro.org>
- <CACRpkda2NQok7kzh0pFmZPYd4nky1kUw=67DZAYAJAXGuc1yzQ@mail.gmail.com>
- <CACRpkdbNWE6hOdVFPxHv7MVHkZUBW3LC035CxJkZVmr8j05Kqw@mail.gmail.com>
+	Thu, 25 Oct 2012 11:55:18 -0400
+Date: Thu, 25 Oct 2012 16:55:16 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] openrisc: move sys_clone's stack determination to
+ copy_thread
+Message-ID: <20121025155516.GL2616@ZenIV.linux.org.uk>
+References: <1351179999-8376-1-git-send-email-jonas@southpole.se>
+ <1351179999-8376-2-git-send-email-jonas@southpole.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbNWE6hOdVFPxHv7MVHkZUBW3LC035CxJkZVmr8j05Kqw@mail.gmail.com>
+In-Reply-To: <1351179999-8376-2-git-send-email-jonas@southpole.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012, Linus Walleij wrote:
+On Thu, Oct 25, 2012 at 05:46:38PM +0200, Jonas Bonn wrote:
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> ---
+>  arch/openrisc/kernel/process.c  |    6 +++++-
+>  arch/openrisc/kernel/sys_or32.c |    8 +-------
+>  2 files changed, 6 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/openrisc/kernel/process.c b/arch/openrisc/kernel/process.c
+> index e0874b8..efbe4f8 100644
+> --- a/arch/openrisc/kernel/process.c
+> +++ b/arch/openrisc/kernel/process.c
+> @@ -170,7 +170,11 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
+>  	} else {
+>  		*userregs = *regs;
+>  
+> -		userregs->sp = usp;
+> +		if (usp)
+> +			userregs->sp = usp;		/* clone */
 
-> On Thu, Oct 25, 2012 at 2:41 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Wed, Oct 24, 2012 at 4:45 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> >> The clock framework has changed somewhat and it's now better to
-> >> invoke clock_prepare_enable() and clk_disable_unprepare() rather
-> >> than the legacy clk_enable() and clk_disable() calls. This patch
-> >> converts the Nomadik Pin Control driver to the new framework.
-> >>
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > I was convinced that this is a good change but no regression,
-> > so applied to the devel branch for 3.8.
-> >
-> > I also removed the initial clk_prepare() so the reference count
-> > may actually go down to 0 for the GPIO block and the peripheral
-> > cluster eventually gets relaxed.
-> 
-> Famous last words!
-> 
-> The good news is that this actually works, and the refcount
-> *does* go down to zero and gate off entire peripheral
-> clusters.
-> 
-> However that was not good because something vital in
-> some peripheral cluster died and killed the system :-D
-> 
-> Lee, could to to track down the reason and fix it so the patch
-> can be applied?
-> 
-> The only thing you need to do is to remove the superfluous
-> clk_prepare() right after the devm_clk_get() that hogs each
-> peripheral cluster.
-> 
-> Probably some driver is needing a clk_get() or a clk_get_sys() is
-> needs to be added somewhere to bring up some vital cluster,
-> or there may be some out-of-tree driver needed to bring up the
-> cluster properly I have no clue... Maybe some cluster just
-> cannot be declocked like that.
+OK
 
-I leave work in 10 mins and won't be coding again for ~2.5 weeks.
-So if this is something you could squeeze in and fix-up, I'd be
-very grateful.
+> +		else
+> +			userregs->sp = regs->sp;	/* fork/clone */
 
-Kind regards,
-Lee
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+What for?  userregs->sp will be equal to regs->sp at that point, unless
+your compiler is very badly broken.  You've copied *regs to *userregs
+wholesale, just above that if...
