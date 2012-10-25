@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934057Ab2JYGdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 02:33:38 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:44294 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112Ab2JYGdg (ORCPT
+	id S934502Ab2JYGdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 02:33:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:33236 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab2JYGdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 02:33:36 -0400
-Date: Thu, 25 Oct 2012 09:33:22 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ed Cashin <ecashin@coraid.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] aoe: avoid using skb member after dev_queue_xmit
-Message-ID: <20121025063322.GH20754@mwanda>
-References: <d1523cdc8a606d65418dc242e958ff1c@coraid.com>
- <20121024150807.82ce2677.akpm@linux-foundation.org>
+	Thu, 25 Oct 2012 02:33:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121024150807.82ce2677.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <CACRpkda_2HCyY2hAcQ_xehqKqjF2-JCjsr67BHYyaqggd0xgUw@mail.gmail.com>
+References: <CACRpkdbwUMbTeKnGX3u4KNQbGdY0wY518=tAm5MocwyVPZbBfQ@mail.gmail.com>
+	<CA+55aFxVe77iv=SrG7tBa1OkRtdmeqmtr+vMYe3rxphvvMtV-g@mail.gmail.com>
+	<CACRpkda_2HCyY2hAcQ_xehqKqjF2-JCjsr67BHYyaqggd0xgUw@mail.gmail.com>
+Date: Thu, 25 Oct 2012 08:33:37 +0200
+Message-ID: <CACRpkdYC4A_zO3E0WNm2M-69CCwmKtXhbET7NH4-FfO2tKHVFQ@mail.gmail.com>
+Subject: Re: [GIT PULL] pinctrl patches for v3.7-rc3+
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 03:08:07PM -0700, Andrew Morton wrote:
-> On Wed, 24 Oct 2012 14:26:13 -0400
-> Ed Cashin <ecashin@coraid.com> wrote:
-> 
-> > After calling dev_queue_xmit it is no longer safe to access the
-> > members of the skb.
-> > 
-> > Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> hm, that was clever.  How did Dan detect this bug?
+On Thu, Oct 25, 2012 at 8:31 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Oct 25, 2012 at 2:04 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>
+>> On Wed, Oct 24, 2012 at 4:57 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>
+>>> here are some accumulated pinctrl patches since -rc1, with a
+>>> verboser description in the (signed) tag.
+>>
+>> Hmm. Your description contains several commits that were already
+>> merged long ago (well, a week ago from your previous pull request). So
+>> your shortlog etc are all bogus, and contains stuff that isn't
+>> actually new to this pull. What happened?
+>
+> Hmmmm forgot to merge -rc1 and -rc2 into the fixes branch I
+> guess, I'll fix it up and respin, sorry.
 
-It was a Smatch thing, but it wasn't enabled by default.  I think I
-will enable it.  This is the second bug use after dev_queue_xmit()
-in two years.
+Bah I see you merged it all and let git sort it out :-)
 
-regards,
-dan carpenter
+I'll be more careful next time, thanks!
 
+Yours,
+Linus Walleij
