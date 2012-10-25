@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935834Ab2JYPVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 11:21:19 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:56984 "EHLO
+	id S1946187Ab2JYPTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 11:19:30 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:56965 "EHLO
 	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946211Ab2JYPTf (ORCPT
+	with ESMTP id S933480Ab2JYPT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 11:19:35 -0400
+	Thu, 25 Oct 2012 11:19:28 -0400
 From: Aaro Koskinen <aaro.koskinen@iki.fi>
 To: wim@iguana.be, linux-watchdog@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
 Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [RESEND PATCH v3 2/6] watchdog: omap_wdt: convert kzalloc() to devm_kzalloc()
-Date: Thu, 25 Oct 2012 18:19:08 +0300
-Message-Id: <1351178352-3989-3-git-send-email-aaro.koskinen@iki.fi>
+Subject: [RESEND PATCH v3 0/6] watchdog: omap_wdt: convert to new watchdog core
+Date: Thu, 25 Oct 2012 18:19:06 +0300
+Message-Id: <1351178352-3989-1-git-send-email-aaro.koskinen@iki.fi>
 X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1351178352-3989-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1351178352-3989-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use devm_kzalloc() to simplify the code.
+Hello,
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/watchdog/omap_wdt.c |   23 ++++++-----------------
- 1 files changed, 6 insertions(+), 17 deletions(-)
+This is a third version of the patch to convert omap_wdt to new watchdog
+core. On OMAP boards, there are usually multiple watchdogs. Since the new
+watchdog core supports multiple watchdogs, all watchdog drivers used on
+OMAP should be converted. This is especially important on devices like
+Nokia N9 or N800 where multiple watchdogs are present and watchdog HW
+cannot be disabled on devices available to consumers/hobbyists.
 
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index d28ad5e..d6722db 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -208,24 +208,20 @@ static int __devinit omap_wdt_probe(struct platform_device *pdev)
- 	struct omap_wdt_dev *wdev;
- 	int ret;
- 
--	omap_wdt = kzalloc(sizeof(*omap_wdt), GFP_KERNEL);
-+	omap_wdt = devm_kzalloc(&pdev->dev, sizeof(*omap_wdt), GFP_KERNEL);
- 	if (!omap_wdt)
- 		return -ENOMEM;
- 
- 	/* reserve static register mappings */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res) {
--		ret = -ENOENT;
--		goto err_get_resource;
--	}
-+	if (!res)
-+		return -ENOENT;
- 
- 	mem = request_mem_region(res->start, resource_size(res), pdev->name);
--	if (!mem) {
--		ret = -EBUSY;
--		goto err_busy;
--	}
-+	if (!mem)
-+		return -EBUSY;
- 
--	wdev = kzalloc(sizeof(struct omap_wdt_dev), GFP_KERNEL);
-+	wdev = devm_kzalloc(&pdev->dev, sizeof(*wdev), GFP_KERNEL);
- 	if (!wdev) {
- 		ret = -ENOMEM;
- 		goto err_kzalloc;
-@@ -292,14 +288,10 @@ err_misc:
- 
- err_ioremap:
- 	wdev->base = NULL;
--	kfree(wdev);
- 
- err_kzalloc:
- 	release_mem_region(res->start, resource_size(res));
- 
--err_busy:
--err_get_resource:
--	kfree(omap_wdt);
- 	return ret;
- }
- 
-@@ -329,9 +321,6 @@ static int __devexit omap_wdt_remove(struct platform_device *pdev)
- 
- 	iounmap(wdev->base);
- 
--	kfree(wdev);
--	kfree(wdog);
--
- 	return 0;
- }
- 
+I have also done additional cleanups to utilize devres. They are separate
+patches to make reviewing easier.
+
+Please review and consider applying/queueing these patches, perhaps
+maybe for 3.8. Thanks.
+
+Tested on top of current mainline
+(4864ccbb5a6f99e4c44dc816304007547a268b9f) on Nokia N950.
+
+Patch set history:
+
+	v3 (https://lkml.org/lkml/2012/10/10/402): Patch 1 rebased on
+	top of current mainline. Added received Tested by -tags. Added
+	patches 2..6.
+
+	v2 (https://lkml.org/lkml/2012/9/8/134): Fix a bug in the
+	first version of the patch: __omap_wdt_disable() in probe was
+	mistakenly moved outside PM runtime calls. This caused a crash
+	as device was probably accessed with some clocks off. Thanks to
+	Jarkko Nikula <jarkko.nikula@bitmer.com> for reporting this.
+
+	v1 (https://lkml.org/lkml/2012/9/4/217): The initial version.
+
+Aaro Koskinen (6):
+  watchdog: omap_wdt: convert to new watchdog core
+  watchdog: omap_wdt: convert kzalloc() to devm_kzalloc()
+  watchdog: omap_wdt: convert request_mem_region() to
+    devm_request_mem_region()
+  watchdog: omap_wdt: convert ioremap() to devm_ioremap()
+  watchdog: omap_wdt: delete redundant platform_set_drvdata() calls
+  watchdog: omap_wdt: eliminate goto
+
+ drivers/watchdog/Kconfig    |    1 +
+ drivers/watchdog/omap_wdt.c |  329 +++++++++++++++++--------------------------
+ 2 files changed, 131 insertions(+), 199 deletions(-)
+
 -- 
 1.7.2.5
 
