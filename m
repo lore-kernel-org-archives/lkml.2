@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935471Ab2JYJxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:53:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36329 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934884Ab2JYJxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:53:38 -0400
-Date: Thu, 25 Oct 2012 11:53:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, peterz@infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org
-Subject: Re: [RFC][PATCH 00/16] sched: SCHED_DEADLINE v6
-Message-ID: <20121025095335.GB17169@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ingo Molnar <mingo@kernel.org>, Juri Lelli <juri.lelli@gmail.com>,
-	peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-	rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-	darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-	linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-	michael@amarulasolutions.com, fchecconi@gmail.com,
-	tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-	luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-	paulmck@linux.vnet.ibm.com, raistlin@linux.it,
-	insop.song@ericsson.com, liming.wang@windriver.com,
-	jkacur@redhat.com, harald.gustafsson@ericsson.com,
-	vincent.guittot@linaro.org
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
- <20121025071801.GA3265@gmail.com>
+	id S935526Ab2JYJz5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:55:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48830 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934884Ab2JYJzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 05:55:55 -0400
+Message-ID: <50890CA0.1070608@kernel.dk>
+Date: Thu, 25 Oct 2012 11:55:44 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121025071801.GA3265@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH 1/2] block: move blk_queue_bypass_{start,end} to include/linux/blkdev.h
+References: <50890931.3050906@ce.jp.nec.com>
+In-Reply-To: <50890931.3050906@ce.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 09:18:01AM +0200, Ingo Molnar wrote:
+On 2012-10-25 11:41, Jun'ichi Nomura wrote:
+> [PATCH] block: move blk_queue_bypass_{start,end} to include/linux/blkdev.h
 > 
-> * Juri Lelli <juri.lelli@gmail.com> wrote:
+> dm wants to use those functions to control the bypass status of
+> half-initialized device.
 > 
-> >  kernel/sched/dl.c                          | 1650 ++++++++++++++++++++++++++++
-> 
-> I've got a stupid nit here: please make that deadline.c. Same 
-> for cpudl.c.
-> 
-> (Just to stop future generations from wondering why the Linux 
-> scheduler has a downloading module.)
+> This patch is a preparation for:
+>   [PATCH] dm: stay in blk_queue_bypass until queue becomes initialized
 
-Why not?
-
-In case it needs to download vendor- or system-specific scheduling
-policies.
-
-:-)
+Applied. The previous state of private blk.h declaration but the symbols
+exported was wrong, too.
 
 -- 
-Regards/Gruss,
-    Boris.
+Jens Axboe
+
