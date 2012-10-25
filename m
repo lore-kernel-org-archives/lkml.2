@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab2JYAVh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:21:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59294 "EHLO mga03.intel.com"
+	id S933134Ab2JYAXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:23:21 -0400
+Received: from ozlabs.org ([203.10.76.45]:51295 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab2JYAVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:21:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,643,1344236400"; 
-   d="scan'208,223";a="160267971"
-Date: Wed, 24 Oct 2012 17:25:09 -0700
-From: Bin Gao <bin.gao@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Subject: Exclude X86_MPPARSE when either ACPI or SFI is present
-Message-ID: <20121025002509.GA37301@bingao-desk1.fm.intel.com>
+	id S1754017Ab2JYAXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Oct 2012 20:23:20 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Masaki Kimura <masaki.kimura.kz@hitachi.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND PATCH] module: Fix kallsyms to show the last symbol properly
+In-Reply-To: <508781AD.80902@hitachi.com>
+References: <508781AD.80902@hitachi.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 25 Oct 2012 10:50:28 +1030
+Message-ID: <87y5ivmmgj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="sdtB3X0nJg68CQEu"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Masaki Kimura <masaki.kimura.kz@hitachi.com> writes:
+> This patch fixes a bug that the last symbol in the .symtab section of
+> kernel modules is not displayed with /proc/kallsyms. This happens
+> because the first symbol is processed twice before and inside the loop
+> without incrementing "src".
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Misaki!
 
+        Sorry I dropped this the first time, thanks for the re-send!
 
+        The real problem is that we use 1-based counters, because we
+always want to copy the 0th entry (which is always empty).  This results
+in the truncation you found.
 
---sdtB3X0nJg68CQEu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-arch-x86-Kconfig-not-select-X86_MPPARSE-when-SFI-is-.patch"
+So I prefer the following fix:
 
->From 6f439bdcc027fe9c0cb4ce2ca4f7d1879d84097d Mon Sep 17 00:00:00 2001
-From: Bin Gao <bin.gao@intel.com>
-Date: Thu, 18 Oct 2012 16:13:46 -0700
-Subject: [PATCH] arch/x86/Kconfig: not select X86_MPPARSE when SFI is present
+module: fix out-by-one error in kallsyms
 
-MPS tables are not needed for systems that have proper ACPI support.
-This is also true for systems that have SFI in place.
+Masaki found and patched a kallsyms issue: the last symbol in a
+module's symtab wasn't transferred.  This is because we manually copy
+the zero'th entry (which is always empty) then copy the rest in a loop
+starting at 1, though from src[0].  His fix was minimal, I prefer to
+rewrite the loops in more standard form.
 
-So this patch is to exclude X86_MPPARSE when either ACPI or SFI is present.
+There are two loops: one to get the size, and one to copy.  Make these
+identical: always count entry 0 and any defined symbol in an allocated
+non-init section.
 
-Signed-off-by: Bin Gao <bin.gao@intel.com>
----
- arch/x86/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This bug exists since the following commit was introduced.
+   module: reduce symbol table for loaded modules (v2)
+   commit: 4a4962263f07d14660849ec134ee42b63e95ea9a
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..b1494bd 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -310,7 +310,7 @@ config X86_X2APIC
- 	  If you don't know what to do here, say N.
+LKML: http://lkml.org/lkml/2012/10/24/27
+Cc: stable@kernel.org
+Reported-by: Masaki Kimura <masaki.kimura.kz@hitachi.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 261bf82..879a154 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2295,12 +2295,17 @@ static void layout_symtab(struct module *mod, struct load_info *info)
+ 	src = (void *)info->hdr + symsect->sh_offset;
+ 	nsrc = symsect->sh_size / sizeof(*src);
  
- config X86_MPPARSE
--	bool "Enable MPS table" if ACPI
-+	bool "Enable MPS table" if ACPI || SFI
- 	default y
- 	depends on X86_LOCAL_APIC
- 	---help---
--- 
-1.7.4.4
-
-
---sdtB3X0nJg68CQEu--
++	/* strtab always starts with a nul, so offset 0 is the empty string. */
++	strtab_size = 1;
++
+ 	/* Compute total space required for the core symbols' strtab. */
+-	for (ndst = i = strtab_size = 1; i < nsrc; ++i, ++src)
+-		if (is_core_symbol(src, info->sechdrs, info->hdr->e_shnum)) {
+-			strtab_size += strlen(&info->strtab[src->st_name]) + 1;
++	for (ndst = i = 0; i < nsrc; i++) {
++		if (i == 0 ||
++		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
++			strtab_size += strlen(&info->strtab[src[i].st_name])+1;
+ 			ndst++;
+ 		}
++	}
+ 
+ 	/* Append room for core symbols at end of core part. */
+ 	info->symoffs = ALIGN(mod->core_size, symsect->sh_addralign ?: 1);
+@@ -2334,15 +2339,15 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+ 	mod->core_symtab = dst = mod->module_core + info->symoffs;
+ 	mod->core_strtab = s = mod->module_core + info->stroffs;
+ 	src = mod->symtab;
+-	*dst = *src;
+ 	*s++ = 0;
+-	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
+-		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
+-			continue;
+-
+-		dst[ndst] = *src;
+-		dst[ndst++].st_name = s - mod->core_strtab;
+-		s += strlcpy(s, &mod->strtab[src->st_name], KSYM_NAME_LEN) + 1;
++	for (ndst = i = 0; i < mod->num_symtab; i++) {
++		if (i == 0 ||
++		    is_core_symbol(src+i, info->sechdrs, info->hdr->e_shnum)) {
++			dst[ndst] = src[i];
++			dst[ndst++].st_name = s - mod->core_strtab;
++			s += strlcpy(s, &mod->strtab[src[i].st_name],
++				     KSYM_NAME_LEN) + 1;
++		}
+ 	}
+ 	mod->core_num_syms = ndst;
+ }
