@@ -1,87 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945998Ab2JYNrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 09:47:00 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47109 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935671Ab2JYNq7 (ORCPT
+	id S965668Ab2JYNrh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 09:47:37 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52038 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935671Ab2JYNrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 09:46:59 -0400
-Date: Thu, 25 Oct 2012 09:46:30 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Jan Beulich <JBeulich@suse.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [Xen-devel] linux-next: Tree for Oct 24 (xen)
-Message-ID: <20121025134628.GE26209@localhost.localdomain>
-References: <20121024151957.28a1626cd9a59c014e78c401@canb.auug.org.au>
- <50885EA8.3050007@xenotime.net>
- <508906CE02000078000A4553@nat28.tlf.novell.com>
- <alpine.DEB.2.02.1210251118010.2689@kaball.uk.xensource.com>
+	Thu, 25 Oct 2012 09:47:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH 1/2] arm: mvebu: increase atomic coherent pool size for armada 370/XP
+Date: Thu, 25 Oct 2012 13:46:41 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, "Eran Ben-Avi" <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+References: <1351086561-13569-1-git-send-email-gregory.clement@free-electrons.com> <201210251127.36960.arnd@arndb.de> <20121025134352.16a8ef81@skate>
+In-Reply-To: <20121025134352.16a8ef81@skate>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1210251118010.2689@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210251346.41596.arnd@arndb.de>
+X-Provags-ID: V02:K0:s56hGXD726yj68GJS1csfIjynH66JpU7iBcYKJEpyJ0
+ vwQVjWpoVgbycML6kMsmiaYKs8WIUic8OaqBWxUr429d1rUWE5
+ IvZ4zbCKNSPUv1dfAvAQS5frWhCm7oOSSEy1zhT/yzJthA9ygb
+ 7C53sehRPGBoXQ1Y7L+aHa7Eqjlpp48eDebOgD8h754m/oIv+e
+ 5o8LcVq+ZFG4d08YVOfeEd1mXaWYEdVXj+FABEbhKjC9xoGbK4
+ sAPSDt7JS0DdIqOYyg7VQKWfWuVTtciEtKckZgVHc88sI7UBlC
+ PhqjqUpJQJqR46DwiIvdSKUylhpWj3zvChi0X3V82CdwZZKDf+
+ lUvydpz09gpend1peCDk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 11:48:30AM +0100, Stefano Stabellini wrote:
-> On Thu, 25 Oct 2012, Jan Beulich wrote:
-> > >>> On 24.10.12 at 23:33, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> > > On 10/23/2012 09:19 PM, Stephen Rothwell wrote:
+On Thursday 25 October 2012, Thomas Petazzoni wrote:
+> On Thu, 25 Oct 2012 11:27:36 +0000, Arnd Bergmann wrote:
+> > On Wednesday 24 October 2012, Gregory CLEMENT wrote:
+> > > For Armada 370/XP we have the same problem that for the commit
+> > > cb01b63, so we applied the same solution: "The default 256 KiB
+> > > coherent pool may be too small for some of the Kirkwood devices, so
+> > > increase it to make sure that devices will be able to allocate their
+> > > buffers with GFP_ATOMIC flag"
 > > > 
-> > >> Hi all,
-> > >> 
-> > >> Changes since 201201023:
-> > >> 
-> > > 
-> > > on x86_64:
-> > > 
-> > > drivers/built-in.o: In function `dbgp_reset_prep':
-> > > (.text+0xb96b5): undefined reference to `xen_dbgp_reset_prep'
-> > > drivers/built-in.o: In function `dbgp_external_startup':
-> > > (.text+0xb9d95): undefined reference to `xen_dbgp_external_startup'
-> > > 
-> > > 
-> > > Full randconfig file is attached.
+> > > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > > 
-> > So this is because with !USB_SUPPORT but EARLY_PRINTK_DBGP
-> > dbgp_reset_prep() and dbgp_external_startup() get pointlessly
-> > defined and exported. This got broken by the merge
-> > recommendation for the ARM side changes (originally compilation
-> > of drivers/xen/dbgp.c depended on just CONFIG_XEN_DOM0).
-> > 
-> > >From my pov, fixing the USB side would be the clean solution (i.e.
-> > putting those function definitions inside a CONFIG_USB_SUPPORT
-> > conditional).
-> >
-> > The alternative of a smaller change would be to extend the
-> > conditional around the respective xen_dbgp_...() declarations
-> > in include/linux/usb/ehci_def.h to become
-> > 
-> > #if defined(CONFIG_XEN_DOM0) && defined(CONFIG_USB_SUPPORT)
-> > 
-> > Please advise towards your preference.
+> > Do you know why the ATA driver needs this? I find it surprising that
+> > it's necessary, so I'd like to make sure we're not just working around
+> > a device driver bug here.
 > 
-> I think that your first suggestion is the right one.
+> The sata_mv driver create dma_pool and allocate objects from them, and
+> all the memory allocated for dma_pools is allocated using
+> dma_alloc_coherent(), and I guess the driver is using too much of them.
+> 
+> Seems like the driver is too lazy and allocates everything coherent to
+> avoid the hassle of doing dma_map/dma_unmap operations when needed, but
+> I haven't looked in details at the driver yet to see if it would be
+> possible to switch those DMA coherent allocations into non-coherent
+> allocations + appropriate calls to the DMA operations.
 
-Can you guys spin up a patch pls and make sure it does not break
-compilation. Thx.
-> 
-> 
-> Otherwise we could also make drivers/xen/dbgp.c compile if
-> CONFIG_EARLY_PRINTK_DBGP rather than CONFIG_USB_SUPPORT.
-> I think that it would create fewer maintenance pains if dbgp_reset_prep
-> and dbgp_external_startup had the same compile requirements as their xen
-> counterparts (aside from Xen support of course).
+Using coherent allocations is fine, I was wondering whether they need
+to be atomic or not.
+
+> That said, that's for sure a larger task than just enabling SATA on
+> Armada 370/XP, so I would advocate to handle this problem separately.
+
+Agreed.
+
+	Arnd
