@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab2JYOYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 10:24:24 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53771 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758281Ab2JYOYX (ORCPT
+	id S1759732Ab2JYOYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 10:24:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42312 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758746Ab2JYOYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 10:24:23 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] unshare: remove dead code
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Date: Thu, 25 Oct 2012 15:25:54 +0100
-Message-ID: <20121025142539.16724.76390.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Thu, 25 Oct 2012 10:24:44 -0400
+Date: Thu, 25 Oct 2012 15:24:42 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@opensource.wolfsonmicro.com, lrg@ti.com, perex@perex.cz,
+        tiwai@suse.de
+Cc: patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: wm5102: Correct micbias DAPM supplies
+Message-ID: <20121025142442.GA32126@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+ARIZONA_MICB1_ENA_SHIFT was used for micbias 2 and 3. This change
+correctly uses the ARIZONA_MICBX_ENA_SHIFT for each corresponding DAPM
+supply. This should not have caused any problems as the micbias enables
+are in the same place in each register.
 
-If new_nsproxy is set we will always call switch_task_namespaces and then
-set new_nsproxy back to NULL so the reassignment and fall through check
-are redundant
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
+ sound/soc/codecs/wm5102.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- kernel/fork.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index acc4cb6..60854b2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1792,10 +1792,8 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- 			exit_sem(current);
- 		}
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index 1722b58..8714d62 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -344,9 +344,9 @@ SND_SOC_DAPM_PGA_E("IN3R PGA", ARIZONA_INPUT_ENABLES, ARIZONA_IN3R_ENA_SHIFT,
+ SND_SOC_DAPM_SUPPLY("MICBIAS1", ARIZONA_MIC_BIAS_CTRL_1,
+ 		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
+ SND_SOC_DAPM_SUPPLY("MICBIAS2", ARIZONA_MIC_BIAS_CTRL_2,
+-		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
++		    ARIZONA_MICB2_ENA_SHIFT, 0, NULL, 0),
+ SND_SOC_DAPM_SUPPLY("MICBIAS3", ARIZONA_MIC_BIAS_CTRL_3,
+-		    ARIZONA_MICB1_ENA_SHIFT, 0, NULL, 0),
++		    ARIZONA_MICB3_ENA_SHIFT, 0, NULL, 0),
  
--		if (new_nsproxy) {
-+		if (new_nsproxy)
- 			switch_task_namespaces(current, new_nsproxy);
--			new_nsproxy = NULL;
--		}
- 
- 		task_lock(current);
- 
-@@ -1819,9 +1817,6 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- 		task_unlock(current);
- 	}
- 
--	if (new_nsproxy)
--		put_nsproxy(new_nsproxy);
--
- bad_unshare_cleanup_fd:
- 	if (new_fd)
- 		put_files_struct(new_fd);
+ SND_SOC_DAPM_PGA("Noise Generator", ARIZONA_COMFORT_NOISE_GENERATOR,
+ 		 ARIZONA_NOISE_GEN_ENA_SHIFT, 0, NULL, 0),
+-- 
+1.7.2.5
 
