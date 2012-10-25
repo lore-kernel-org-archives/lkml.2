@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab2JYJVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 05:21:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58548 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757836Ab2JYJVt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 05:21:49 -0400
-X-AuditID: cbfee61b-b7f616d00000319b-f4-5089049f8b24
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, "'Bob Liu'" <lliubbo@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH] mm: fix build warning in try_to_unmap_cluster()
-Date: Thu, 25 Oct 2012 18:21:34 +0900
-Message-id: <000f01cdb292$20df5910$629e0b30$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac2ykiCFL5JQQOd7QSCIyo4ugvXrLg==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd35LJ0BBg19vBaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj05o1jAWb2CvOzX7I2MDYwdbFyMkhIWAi8ejBNihbTOLCvfVA
-	NheHkMB0Rolr9/rZIZzZTBJ3Xk9nBaliE1CT+PLlMDuILSLgK/F98QYmEJtZIFriwL8tzCC2
-	sICDxKZb9xlBbBYBVYkTkxaCbeAVsJX42zMfyhaU+DH5HgtEr5bE+p3HoebIS2xe8xZoDgfQ
-	ReoSj/7qQqzSk2g5eQqqXERi34t3jBMYBWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6R
-	XnFibnFpXrpecn7uJkZwYD6T3sG4qsHiEKMAB6MSD+9Bj44AIdbEsuLK3EOMEhzMSiK8298D
-	hXhTEiurUovy44tKc1KLDzFKc7AoifM2e6QECAmkJ5akZqemFqQWwWSZODilGhjr9VZyvvvj
-	uCrXdIZm4N3zwosWX5ry3LY3OiXIO5FrZ+aNZu9Wm+ys2w/vGolYBUxy/eha4tDxNuGE41YL
-	DYH3+/nXe50RFY2JKgvae7OZ6zXDc62fduKaZ4Sv7NI5Ok3Zt3vN082OmrNc3utcimo+8X2y
-	08YcUwGDoyIB+Y5nzG6dvjrlRZUSS3FGoqEWc1FxIgB3IWMXSAIAAA==
+	id S935121Ab2JYJYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 05:24:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58356 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934971Ab2JYJY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 05:24:29 -0400
+Date: Thu, 25 Oct 2012 11:24:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121025092424.GA16601@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Dave Hansen <dave@linux.vnet.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20121023164546.747e90f6.akpm@linux-foundation.org>
+ <20121024062938.GA6119@dhcp22.suse.cz>
+ <20121024125439.c17a510e.akpm@linux-foundation.org>
+ <50884F63.8030606@linux.vnet.ibm.com>
+ <20121024134836.a28d223a.akpm@linux-foundation.org>
+ <20121024210600.GA17037@liondog.tnic>
+ <50885B2E.5050500@linux.vnet.ibm.com>
+ <20121024224817.GB8828@liondog.tnic>
+ <5088725B.2090700@linux.vnet.ibm.com>
+ <CAHGf_=pfdgoeG5pPJb+UgjqfieU1yxt=46FGW1=th0RbgVKNRQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=pfdgoeG5pPJb+UgjqfieU1yxt=46FGW1=th0RbgVKNRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix build warning in try_to_unmap_cluster() as below:
+On Wed, Oct 24, 2012 at 08:56:45PM -0400, KOSAKI Motohiro wrote:
+> > That effectively means removing it from the kernel since distros ship
+> > with those config options off.  We don't want to do that since there
+> > _are_ valid, occasional uses like benchmarking that we want to be
+> > consistent.
+> 
+> Agreed. we don't want to remove valid interface never.
 
-mm/rmap.c: In function 'try_to_unmap_cluster':
-mm/rmap.c:1364:9: warning: unused variable 'pud' [-Wunused-variable]
-mm/rmap.c:1363:9: warning: unused variable 'pgd' [-Wunused-variable]
+Ok, duly noted.
 
-This build warning is introduced by commit 0981230
-"mm: introduce mm_find_pmd()".
+But let's discuss this a bit further. So, for the benchmarking aspect,
+you're either going to have to always require dmesg along with
+benchmarking results or /proc/vmstat, depending on where the drop_caches
+stats end up.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Bob Liu <lliubbo@gmail.com>
----
-This patch is based on linux-next-20121025 code tree.
+Is this how you envision it?
 
- mm/rmap.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+And then there are the VM bug cases, where you might not always get
+full dmesg from a panicked system. In that case, you'd want the kernel
+tainting thing too, so that it at least appears in the oops backtrace.
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 6c686c2..98b100e 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1360,8 +1360,6 @@ static int try_to_unmap_cluster(unsigned long cursor, unsigned int *mapcount,
- 		struct vm_area_struct *vma, struct page *check_page)
- {
- 	struct mm_struct *mm = vma->vm_mm;
--	pgd_t *pgd;
--	pud_t *pud;
- 	pmd_t *pmd;
- 	pte_t *pte;
- 	pte_t pteval;
+Although the tainting thing might not be enough - a user could
+drop_caches at some point in time and the oops happening much later
+could be unrelated but that can't be expressed in taint flags.
+
+So you'd need some sort of a drop_caches counter, I'd guess. Or a last
+drop_caches timestamp something.
+
+Am I understanding the intent correctly?
+
+Thanks.
+
 -- 
-1.7.1
-
-
+Regards/Gruss,
+    Boris.
