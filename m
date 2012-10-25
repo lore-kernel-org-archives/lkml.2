@@ -1,99 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852Ab2JYKbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 06:31:32 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58205 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab2JYKbb (ORCPT
+	id S1758820Ab2JYKn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 06:43:58 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:44697 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2JYKn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 06:31:31 -0400
-Subject: [RFC PATCH 01/13] sched:Prevent movement of short running tasks
- during load balancing
-To: svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, venki@google.com, robin.randhawa@arm.com,
-        linaro-dev@lists.linaro.org, a.p.zijlstra@chello.nl,
-        mjg59@srcf.ucam.org, viresh.kumar@linaro.org,
-        akpm@linux-foundation.org, amit.kucheria@linaro.org,
-        deepthi@linux.vnet.ibm.com, paul.mckenney@linaro.org,
-        arjan@linux.intel.com, paulmck@linux.vnet.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        tglx@linutronix.de, Arvind.Chauhan@arm.com, pjt@google.com,
-        Morten.Rasmussen@arm.com, linux-arm-kernel@lists.infradead.org,
-        suresh.b.siddha@intel.com
-Date: Thu, 25 Oct 2012 15:54:52 +0530
-Message-ID: <20121025102452.21022.70635.stgit@preeti.in.ibm.com>
-In-Reply-To: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
-References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
+	Thu, 25 Oct 2012 06:43:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12102510-0260-0000-0000-000002091570
+In-Reply-To: <CAKohpokVR3wmung6SY=e2G3mdHnvbZRGvB8JYNxz1vFXTAma7w@mail.gmail.com>
+References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
+	<1351079900-32236-6-git-send-email-hongbo.zhang@linaro.com>
+	<CAKohpo=L-Xz90h90Q78gr7enOHK3u1TwHSs-QPQNE=0896SjRA@mail.gmail.com>
+	<CAJLyvQxEAeP__drUAAz6D_UeeDRvdqKdmim3xAO7sXP8cCM8=g@mail.gmail.com>
+	<CAKohpomZZiXnnkUC=9ZQoux1BVh+uJZw_oM1Ahndua2PZaKiDw@mail.gmail.com>
+	<CAJLyvQw7=ucSTXH8YyPrm6LS8uDyxJkWGEVP2jQ3FL=cYN7frg@mail.gmail.com>
+	<CAKohpokVR3wmung6SY=e2G3mdHnvbZRGvB8JYNxz1vFXTAma7w@mail.gmail.com>
+Date: Thu, 25 Oct 2012 18:43:55 +0800
+Message-ID: <CAJLyvQw-fpo5mNi6yxS7a2BGjazwiJ=i7=XWxSLbn3a40ykV8A@mail.gmail.com>
+Subject: Re: [PATCH V2 5/6] Thermal: Add ST-Ericsson DB8500 thermal dirver.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, linaro-dev@lists.linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        linaro-kernel@lists.linaro.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent sched groups with low load as tracked by PJT's metrics
-from being candidates of the load balance routine.This metric is chosen to be
-1024+15%*1024.But using PJT's metrics it has been observed that even when
-three 10% tasks are running,the load sometimes does not exceed this
-threshold.The call should be taken if the tasks can afford to be throttled.
-
-This is why an additional metric has been included,which can determine how
-long we can tolerate tasks not being moved even if the load is low.
-
-Signed-off-by:  Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
- kernel/sched/fair.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dbddcf6..e02dad4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4188,6 +4188,7 @@ struct sd_lb_stats {
-  */
- struct sg_lb_stats {
- 	unsigned long avg_load; /*Avg load across the CPUs of the group */
-+	u64 avg_cfs_runnable_load; /* Equivalent of avg_load but calculated using PJT's metric */
- 	unsigned long group_load; /* Total load over the CPUs of the group */
- 	unsigned long sum_nr_running; /* Nr tasks running in the group */
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
-@@ -4504,6 +4505,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	unsigned long load, max_cpu_load, min_cpu_load;
- 	unsigned int balance_cpu = -1, first_idle_cpu = 0;
- 	unsigned long avg_load_per_task = 0;
-+	u64 group_load = 0; /* computed using PJT's metric */
- 	int i;
- 
- 	if (local_group)
-@@ -4548,6 +4550,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 		if (idle_cpu(i))
- 			sgs->idle_cpus++;
- 
-+		group_load += cpu_rq(i)->cfs.runnable_load_avg;
- 		update_sg_numa_stats(sgs, rq);
- 	}
- 
-@@ -4572,6 +4575,19 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 	sgs->avg_load = (sgs->group_load*SCHED_POWER_SCALE) / group->sgp->power;
- 
- 	/*
-+	 * Check if the sched group has not crossed the threshold.
-+	 *
-+	 * Also check if the sched_group although being within the threshold,is not
-+	 * queueing too many tasks.If yes to both,then make it an
-+	 * invalid candidate for load balancing
-+	 *
-+	 * The below condition is included as a tunable to meet performance and power needs
-+	 */
-+	sgs->avg_cfs_runnable_load = (group_load * SCHED_POWER_SCALE) / group->sgp->power;
-+	if (sgs->avg_cfs_runnable_load <= 1178 && sgs->sum_nr_running <= 2)
-+		sgs->avg_cfs_runnable_load = 0;
-+
-+	/*
- 	 * Consider the group unbalanced when the imbalance is larger
- 	 * than the average weight of a task.
- 	 *
-
+On 25 October 2012 17:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 25 October 2012 15:03, Hongbo Zhang <hongbo.zhang@linaro.org> wrote:
+>> On 25 October 2012 16:41, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>
+>> Just paste my current pieces of codes here:
+>>
+>> static struct db8500_thsens_platform_data*
+>>                 db8500_thermal_parse_dt(struct platform_device *pdev)
+>> {
+>
+>>         if (!np) {
+>>                 dev_err(&pdev->dev, "Missing device tree data\n");
+>
+>> }
+>>
+>> static int db8500_thermal_probe(struct platform_device *pdev)
+>> {
+>
+>>         ptrips = db8500_thermal_parse_dt(pdev);
+>>         if (!ptrips)
+>>                 ptrips = dev_get_platdata(&pdev->dev);
+>
+> So, the above code still has the flaw i pointed out. It will print
+> "Missing device tree data", while booting for non-DT case.
+>
+> What i would suggest you is:
+>
+> static int db8500_thermal_probe(struct platform_device *pdev)
+> {
+>         struct device_node *np = pdev->dev.of_node;
+>
+>         if (np)
+>                 ptrips = db8500_thermal_parse_dt(pdev);
+>         else
+>                 ptrips = dev_get_platdata(&pdev->dev);
+>
+>        if (!ptrips)
+>               explode!!
+>
+This seems neat.
+>
+>>>>>> +       ret = devm_request_threaded_irq(&pdev->dev, low_irq, NULL,
+>
+>> I just saw that all the PRCMU and ab8500 related irqs use request_threaded_irq
+>> only difference is that I use devm_request_threaded_irq
+>
+> See, i started this threaded_irq thread is to make sure you know
+> exactly what you
+> are doing. Others are doing it doesn't mean you should do it too.. :)
+>
+> You must dig in a bit to see why is it required for your case? If
+> earlier code related
+> to PRCMU and db8500 is correct, then i am sure you need to sleep from your
+> handler.
+>
+> --
+> viresh
