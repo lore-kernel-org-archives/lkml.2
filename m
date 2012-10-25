@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757509Ab2JYAfn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Oct 2012 20:35:43 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:45312 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab2JYAfm (ORCPT
+	id S1757630Ab2JYApR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Oct 2012 20:45:17 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1987 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab2JYApP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Oct 2012 20:35:42 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: balbi@ti.com
-Cc: Li Yang-R58472 <r58472@freescale.com>,
-        Simon Haggett <simon.haggett@realvnc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a disabled USB endpoint on Freescale hardware
-Date: Thu, 25 Oct 2012 02:36:24 +0200
-Message-ID: <3862785.b8vaFMSbLQ@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121022105601.GS14033@arwen.pp.htv.fi>
-References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com> <1535820.NU10ADjvOZ@avalon> <20121022105601.GS14033@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart2939656.n0tmhdiSaC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+	Wed, 24 Oct 2012 20:45:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6875"; a="1620146"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCHv3] ARM: Sort exception table at compile time
+Date: Wed, 24 Oct 2012 17:44:42 -0700
+Message-Id: <1351125882-13046-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the ARM machine identifier to sortextable and select the
+config option so that we can sort the exception table at compile
+time. sortextable relies on a section named __ex_table existing
+in the vmlinux, but ARM's linker script places the exception
+table in the data section. Give the exception table its own
+section so that sortextable can find it.
 
---nextPart2939656.n0tmhdiSaC
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+This allows us to skip the sorting step during boot.
 
-Hi Felipe,
+Cc: David Daney <david.daney@cavium.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
 
-On Monday 22 October 2012 13:56:01 Felipe Balbi wrote:
-> On Mon, Oct 22, 2012 at 12:47:21PM +0200, Laurent Pinchart wrote:
-> > On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
-> > > On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
-> > > > On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
-> > > > > Some gadget drivers may attempt to dequeue requests for an endpoint
-> > > > > that has already been disabled. For example, in the UVC gadget
-> > > > > driver, uvc_function_set_alt() will call usb_ep_disable() when alt
-> > > > > setting 0 is selected. When the userspace application subsequently
-> > > > > issues the VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes
-> > > > > usb_ep_dequeue() to ensure that all requests have been cancelled.
-> > > > 
-> > > > bug is on uvc gadget, then. Laurent ?
-> > 
-> > We've discussed this topic a couple of months before. I believe that's not
-> > a bug.
-> > 
-> > http://68.183.106.108/lists/linux-usb/msg68869.html
-> 
-> fair enough :-)
-> 
-> That's a different case, however. At the link above we're discussing
-> dequeueing a request which is already being dequeued. $SUBJECT is trying
-> to fix dequeueing of a request for an endpoint which isn't even enabled.
+Changes since v2:
+ * Refreshed against linux-next
 
-You've got a point there :-) That's a different case indeed, I'm open to (at 
-least evaluating) a fix in the UVC gadget driver if you think that's better.
+ arch/arm/Kconfig              |  1 +
+ arch/arm/kernel/vmlinux.lds.S | 19 +++++++++----------
+ scripts/sortextable.c         |  1 +
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 73067ef..208414c 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -5,6 +5,7 @@ config ARM
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_HAVE_CUSTOM_GPIO_H
+ 	select ARCH_WANT_IPC_PARSE_VERSION
++	select BUILDTIME_EXTABLE_SORT if MMU
+ 	select CPU_PM if (SUSPEND || CPU_IDLE)
+ 	select DCACHE_WORD_ACCESS if (CPU_V6 || CPU_V6K || CPU_V7) && !CPU_BIG_ENDIAN
+ 	select GENERIC_ATOMIC64 if (CPU_V6 || !CPU_32v6K || !AEABI)
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 36ff15b..b9f38e3 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -114,6 +114,15 @@ SECTIONS
+ 
+ 	RO_DATA(PAGE_SIZE)
+ 
++	. = ALIGN(4);
++	__ex_table : AT(ADDR(__ex_table) - LOAD_OFFSET) {
++		__start___ex_table = .;
++#ifdef CONFIG_MMU
++		*(__ex_table)
++#endif
++		__stop___ex_table = .;
++	}
++
+ #ifdef CONFIG_ARM_UNWIND
+ 	/*
+ 	 * Stack unwinding tables
+@@ -220,16 +229,6 @@ SECTIONS
+ 		READ_MOSTLY_DATA(L1_CACHE_BYTES)
+ 
+ 		/*
+-		 * The exception fixup table (might need resorting at runtime)
+-		 */
+-		. = ALIGN(4);
+-		__start___ex_table = .;
+-#ifdef CONFIG_MMU
+-		*(__ex_table)
+-#endif
+-		__stop___ex_table = .;
+-
+-		/*
+ 		 * and the usual data section
+ 		 */
+ 		DATA_DATA
+diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+index f19ddc4..1f10e89 100644
+--- a/scripts/sortextable.c
++++ b/scripts/sortextable.c
+@@ -248,6 +248,7 @@ do_file(char const *const fname)
+ 	case EM_S390:
+ 		custom_sort = sort_relative_table;
+ 		break;
++	case EM_ARM:
+ 	case EM_MIPS:
+ 		break;
+ 	}  /* end switch */
 -- 
-Regards,
-
-Laurent Pinchart
-
---nextPart2939656.n0tmhdiSaC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQEcBAABAgAGBQJQiImPAAoJEIkPb2GL7hl13ScIAKAgbjsfgiOs9qkQdjxleIgs
-Up1w/sVtjvIg6B4iQaDa5XJPNksymEB20NIuIfz3C7D645YBKrsKY7Hq7XdWgQNV
-30pkcFOrP/u1mpDqT7DHVX7EAgFzporCKIlL/6jSFK5QmlXlazE2Grq9YoPChPj7
-+3m0twwg2OD6xy537Z8/xmyfuRhBFEuDARY8gQoZS8YP1Jxczaxj5M55Zk3YCHsc
-5d5VM6jifdh8QRRQw/81G47xUO45SngexxsU0FLeVOi/8033yN38s8dJTq5KIXLS
-XGkD329kKsFn/8SZZgPnlJuhQy4+90wqtN2P9WDWX9HD8lQm6/d5yll+7m7Oxyw=
-=gDVD
------END PGP SIGNATURE-----
-
---nextPart2939656.n0tmhdiSaC--
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
