@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab2JZMsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:48:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65209 "EHLO mga09.intel.com"
+	id S932776Ab2JZMsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:48:36 -0400
+Received: from mail.x86-64.org ([217.9.48.20]:47779 "EHLO mail.x86-64.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932740Ab2JZMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:48:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
-   d="scan'208";a="232902316"
-From: Andi Kleen <andi@firstfloor.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
-References: <20121025121617.617683848@chello.nl>
-	<20121025124832.840241082@chello.nl>
-	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-	<5089F5B5.1050206@redhat.com>
-	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
-	<508A0A0D.4090001@redhat.com>
-	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-Date: Fri, 26 Oct 2012 05:48:03 -0700
-In-Reply-To: <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-	(Michel Lespinasse's message of "Fri, 26 Oct 2012 05:34:02 -0700")
-Message-ID: <m2pq45qu0s.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S932731Ab2JZMsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 08:48:33 -0400
+Date: Fri, 26 Oct 2012 14:48:26 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>
+Subject: [GIT PULL] RAS: MCA config cleanup
+Message-ID: <20121026124826.GA5762@aftab.osrc.amd.com>
+Reply-To: Borislav Petkov <bp@alien8.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel Lespinasse <walken@google.com> writes:
+Hi guys,
 
-> On Thu, Oct 25, 2012 at 9:23 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Thu, Oct 25, 2012 at 8:57 PM, Rik van Riel <riel@redhat.com> wrote:
->>>
->>> That may not even be needed.  Apparently Intel chips
->>> automatically flush an entry from the TLB when it
->>> causes a page fault.  I assume AMD chips do the same,
->>> because flush_tlb_fix_spurious_fault evaluates to
->>> nothing on x86.
->>
->> Yes. It's not architected as far as I know, though. But I agree, it's
->> possible - even likely - we could avoid TLB flushing entirely on x86.
->
-> Actually, it is architected on x86. This was first described in the
-> intel appnote 317080 "TLBs, Paging-Structure Caches, and Their
-> Invalidation", last paragraph of section 5.1. Nowadays, the same
-> contents are buried somewhere in Volume 3 of the architecture manual
-> (in my copy: 4.10.4.1 Operations that Invalidate TLBs and
-> Paging-Structure Caches)
+this is 5-patch set reworking the config variables in the MCA code.
+There's an out-of-tree change which Greg and I agreed to push through
+the RAS tree. These changes are for the next merge window.
 
-This unfortunately would only work for processes with no threads
-because it only works on the current logical CPU.
+Please pull,
+thanks.
 
--Andi
+The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+
+  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/mca_cfg
+
+for you to fetch changes up to 1462594bf2866c1dc80066ed6f49f4331c551901:
+
+  x86, MCA: Finish mca_config conversion (2012-10-26 14:37:58 +0200)
+
+----------------------------------------------------------------
+Rework all config variables used throughout the MCA code and collect
+them together into a mca_config struct. This keeps them tightly and
+neatly packed together instead of spilled all over the place.
+
+Then, convert those which are used as booleans into real booleans and
+save some space.
+
+----------------------------------------------------------------
+Borislav Petkov (5):
+      drivers/base: Add a DEVICE_BOOL_ATTR macro
+      x86, MCA: Convert dont_log_ce, banks and tolerant
+      x86, MCA: Convert rip_msr, mce_bootlog, monarch_timeout
+      x86, MCA: Convert the next three variables batch
+      x86, MCA: Finish mca_config conversion
+
+ arch/x86/include/asm/mce.h                |  21 ++-
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |   2 -
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   4 +-
+ arch/x86/kernel/cpu/mcheck/mce.c          | 209 +++++++++++++++---------------
+ arch/x86/kernel/cpu/mcheck/mce_intel.c    |   8 +-
+ arch/x86/lguest/boot.c                    |   2 +-
+ drivers/base/core.c                       |  21 +++
+ include/linux/device.h                    |   7 +
+ 8 files changed, 159 insertions(+), 115 deletions(-)
+
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
