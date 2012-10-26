@@ -1,48 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966630Ab2JZVyf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:54:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36311 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964839Ab2JZVyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:54:33 -0400
-Date: Fri, 26 Oct 2012 23:54:28 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, netfilter@vger.kernel.org
-Subject: Re: Process Hang in __read_seqcount_begin
-In-Reply-To: <CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1210262351330.2756@ionos>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com> <1350925299.8609.978.camel@edumazet-glaptop> <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com> <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
- <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com> <1351053164.6537.95.camel@edumazet-glaptop> <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com> <1351270087.30380.9.camel@edumazet-glaptop>
- <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com> <1351285552.30380.20.camel@edumazet-glaptop> <CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S966634Ab2JZVzq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:55:46 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40766 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964787Ab2JZVzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 17:55:44 -0400
+Date: Fri, 26 Oct 2012 14:55:33 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>,
+        John Johansen <john.johansen@canonical.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org
+Subject: [PATCH] Yama: enable link restrictions when selected
+Message-ID: <20121026215533.GA10402@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, Peter LaDow wrote:
-> On Fri, Oct 26, 2012 at 2:05 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> If this were safe, we wouldn't be seeing this lockup and your patch
-> wouldn't be needed.  So it seems that your patch doesn't really
-> address the issue that we are not "sure a thread cannot be interrupted
-> by a softirq, and cannot migrate to another cpu".  Well, we know it
-> cannot migrate to another CPU, because there isn't another CPU.  So
-> apparently, it can be interrupted by a softirq.  So local_bh_disable
-> isn't doing anything useful in the RT patches with regard to this.
+Systems running with Yama enabled expect restrictions on various
+potentially dangerous operations that could create backward-compaibility
+issues with rare userspace corner-cases. Since 561ec64ae67e ("VFS:
+don't do protected {sym,hard}links by default") has disabled VFS link
+restrictions by default, enable them for systems using Yama.
 
-RT changes the semantics slightly. And yes it's not prepared for stuff
-which is relying on some of the magic mainline implicit semantics.
+Cc: stable@vger.kernel.org # v3.6
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ security/yama/Kconfig    |    4 +++-
+ security/yama/yama_lsm.c |    5 +++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-Let me have a look at the whole scenario, once I'm more awake.
+diff --git a/security/yama/Kconfig b/security/yama/Kconfig
+index 20ef514..2a91598 100644
+--- a/security/yama/Kconfig
++++ b/security/yama/Kconfig
+@@ -8,7 +8,9 @@ config SECURITY_YAMA
+ 	  This selects Yama, which extends DAC support with additional
+ 	  system-wide security settings beyond regular Linux discretionary
+ 	  access controls. Currently available is ptrace scope restriction.
+-	  Further information can be found in Documentation/security/Yama.txt.
++	  Enables the VFS link restriction sysctls (protected_symlinks and
++	  protected_hardlinks) by default. Further information can be found
++	  in Documentation/security/Yama.txt.
+ 
+ 	  If you are unsure how to answer this question, answer N.
+ 
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index b4c2984..3bef1c1 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -17,6 +17,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/prctl.h>
+ #include <linux/ratelimit.h>
++#include <linux/fs.h>
+ 
+ #define YAMA_SCOPE_DISABLED	0
+ #define YAMA_SCOPE_RELATIONAL	1
+@@ -397,6 +398,10 @@ static __init int yama_init(void)
+ 		panic("Yama: sysctl registration failed.\n");
+ #endif
+ 
++	/* Enable link restrictions when Yama is enabled. */
++	sysctl_protected_symlinks = 1;
++	sysctl_protected_hardlinks = 1;
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
-Thanks,
 
-	tglx
+-- 
+Kees Cook
+Chrome OS Security
