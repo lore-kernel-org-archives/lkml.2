@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966036Ab2JZSqT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52267 "EHLO mx1.redhat.com"
+	id S1754159Ab2JZSq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:46:58 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33157 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab2JZSqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:46:17 -0400
-Date: Fri, 26 Oct 2012 14:46:15 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 3/3] mm,generic: only flush the local TLB in
- ptep_set_access_flags
-Message-ID: <20121026144615.2276cd59@dull>
-In-Reply-To: <20121026132601.GC9886@gmail.com>
-References: <20121025121617.617683848@chello.nl>
-	<20121025124832.840241082@chello.nl>
-	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-	<5089F5B5.1050206@redhat.com>
-	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
-	<508A0A0D.4090001@redhat.com>
-	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-	<m2pq45qu0s.fsf@firstfloor.org>
-	<508A8D31.9000106@redhat.com>
-	<20121026132601.GC9886@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751145Ab2JZSq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:46:57 -0400
+Message-ID: <508ADA8E.9000604@linux.vnet.ibm.com>
+Date: Fri, 26 Oct 2012 13:46:38 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] debugfs: add get/set for atomic types
+References: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com> <20121026161315.GA13134@kroah.com>
+In-Reply-To: <20121026161315.GA13134@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102618-9360-0000-0000-00000C1A7D2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function ptep_set_access_flags is only ever used to upgrade
-access permissions to a page. That means the only negative side
-effect of not flushing remote TLBs is that other CPUs may incur
-spurious page faults, if they happen to access the same address,
-and still have a PTE with the old permissions cached in their
-TLB.
+On 10/26/2012 11:13 AM, Greg Kroah-Hartman wrote:
+> On Fri, Oct 26, 2012 at 10:49:01AM -0500, Seth Jennings wrote:
+>> debugfs currently lacks the ability to create attributes
+>> that set/get atomic_t values.
+>>
+>> This patch adds support for this through a new
+>> debugfs_create_atomic_t() function.
+> 
+> Why would you want to set an atomic variable type from userspace?
 
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
+In my particular use case, I'm not setting from userspace, only getting.
 
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
+All the other types are symmetric, being both settable and gettable,
+so I was just trying to blend with the other types.
 
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault to actually flush the TLB entry.
+> What in-kernel code needs this?
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
----
- mm/pgtable-generic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+None, yet.  I am working on code that does.
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e642627..0361369 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
- 	}
- 	return changed;
- }
+If you would rather me send this as part of the patchset for that
+code, I can.  I just wanted to get this in early if I could since it
+is functionality I can see others using.
+
+For an example, see drivers/staging/ramster/zcache-main.c:132 where
+both atomic and non-atomic version of stats are being maintained so
+that the non-atomic version can be read by debugfs.
+
+Beside not having an in-kernel user yet, does this approach look good
+to you?
+
+Seth
+
