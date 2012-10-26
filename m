@@ -1,155 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab2JZAWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:22:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53659 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab2JZAHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 37/85] USB: cp210x: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:55 -0700
-Message-Id: <20121026000034.836872293@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755213Ab2JZAWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:22:42 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:36872 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab2JZAWj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:22:39 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+        nick.cheng@areca.com.tw
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount) (possibly blockdev / arcmsr at fault??)
+References: <20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
+	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
+	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
+	<20121025011056.GC4559@thunk.org>
+Emacs: the Swiss Army of Editors.
+Date: Fri, 26 Oct 2012 01:22:22 +0100
+In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
+	"Wed, 24 Oct 2012 21:10:56 -0400")
+Message-ID: <871ugm2ibl.fsf_-_@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=11 Fuz1=11 Fuz2=11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 25 Oct 2012, Theodore Ts'o told this:
+> If that does make the problem go away, that will be a very interesting
+> data point....
 
-------------------
+I'll be looking at this tomorrow, but as sod's law would have it I have
+another user on this machine who didn't want it mega-rebooted tonight,
+so I was reduced to trying to reproduce the problem in virtualization
+under qemu.
 
-From: Johan Hovold <jhovold@gmail.com>
+I failed, for one very simple reason: on 3.6.3, even with a umount -l
+still in the process of unmounting the fs and flushing changes, even on
+an fs mounted nobarrier,journal_async_commit, even when mounted atop
+LVM, reboot(2) will block until umount's writeout is complete (and lvm
+vgchange refuses to deactivate the volume group while that is happening,
+but I don't bother deactivating volume groups on the afflicted machine
+so I know that can't be related). Obviously, this suffices to ensure
+that a reboot is not possible while umounts are underway -- though a
+power cut is still possible, I suppose.
 
-commit 4295fe7791a1b20c90cbaaa6f23f2fb94218b8a7 upstream.
+On the afflicted machine (with a block device stack running LVM, then
+libata/arcmsr), as far as I can tell reboot(8) is *not* blocking if a
+unmount is underway: it shoots down everything and restarts at once. I
+have no direct proof of this yet, but during the last week I've
+routinely seen it reboot with lots of writes underway and umount -l log
+messages streaming up the screen: it certainly doesn't wait for all the
+umount -l's to be done the way it is in virtualization. I have no idea
+how this can be possible: I thought fses on a block device had to be
+quiesced (thus, in the case of an ongoing umount, unmounted and flushed)
+before any attempt at all was made to shut the underlying block device
+down, and I'd be fairly surprised if a flush wasn't done even if
+nobarrier was active (it certainly seems to be for virtio-blk, but that
+may well be a special case). But arcmsr (or libata? I should test with a
+simulated libata rather than virtio-blk next) appears to be getting
+around that somehow. This would probably explain all sorts of horrible
+corruption if umounting during a reboot, right?
 
-Fix port data memory leak by replacing port private data with serial
-private data.
-
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at
-release.
-
-The private data is used to store the control interface number, but as
-this is the same for all ports on an interface it should be stored as
-usb-serial data anyway.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/cp210x.c |   43 ++++++++++++++++++-------------------------
- 1 file changed, 18 insertions(+), 25 deletions(-)
-
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -164,7 +164,7 @@ static const struct usb_device_id id_tab
- 
- MODULE_DEVICE_TABLE(usb, id_table);
- 
--struct cp210x_port_private {
-+struct cp210x_serial_private {
- 	__u8			bInterfaceNumber;
- };
- 
-@@ -278,7 +278,7 @@ static int cp210x_get_config(struct usb_
- 		unsigned int *data, int size)
- {
- 	struct usb_serial *serial = port->serial;
--	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
-+	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
- 	__le32 *buf;
- 	int result, i, length;
- 
-@@ -294,7 +294,7 @@ static int cp210x_get_config(struct usb_
- 	/* Issue the request, attempting to read 'size' bytes */
- 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
- 				request, REQTYPE_INTERFACE_TO_HOST, 0x0000,
--				port_priv->bInterfaceNumber, buf, size,
-+				spriv->bInterfaceNumber, buf, size,
- 				USB_CTRL_GET_TIMEOUT);
- 
- 	/* Convert data into an array of integers */
-@@ -326,7 +326,7 @@ static int cp210x_set_config(struct usb_
- 		unsigned int *data, int size)
- {
- 	struct usb_serial *serial = port->serial;
--	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
-+	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
- 	__le32 *buf;
- 	int result, i, length;
- 
-@@ -348,13 +348,13 @@ static int cp210x_set_config(struct usb_
- 		result = usb_control_msg(serial->dev,
- 				usb_sndctrlpipe(serial->dev, 0),
- 				request, REQTYPE_HOST_TO_INTERFACE, 0x0000,
--				port_priv->bInterfaceNumber, buf, size,
-+				spriv->bInterfaceNumber, buf, size,
- 				USB_CTRL_SET_TIMEOUT);
- 	} else {
- 		result = usb_control_msg(serial->dev,
- 				usb_sndctrlpipe(serial->dev, 0),
- 				request, REQTYPE_HOST_TO_INTERFACE, data[0],
--				port_priv->bInterfaceNumber, NULL, 0,
-+				spriv->bInterfaceNumber, NULL, 0,
- 				USB_CTRL_SET_TIMEOUT);
- 	}
- 
-@@ -854,37 +854,30 @@ static void cp210x_break_ctl (struct tty
- 
- static int cp210x_startup(struct usb_serial *serial)
- {
--	struct cp210x_port_private *port_priv;
--	int i;
-+	struct usb_host_interface *cur_altsetting;
-+	struct cp210x_serial_private *spriv;
- 
- 	/* cp210x buffers behave strangely unless device is reset */
- 	usb_reset_device(serial->dev);
- 
--	for (i = 0; i < serial->num_ports; i++) {
--		port_priv = kzalloc(sizeof(*port_priv), GFP_KERNEL);
--		if (!port_priv)
--			return -ENOMEM;
--
--		memset(port_priv, 0x00, sizeof(*port_priv));
--		port_priv->bInterfaceNumber =
--		    serial->interface->cur_altsetting->desc.bInterfaceNumber;
-+	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
-+	if (!spriv)
-+		return -ENOMEM;
- 
--		usb_set_serial_port_data(serial->port[i], port_priv);
--	}
-+	cur_altsetting = serial->interface->cur_altsetting;
-+	spriv->bInterfaceNumber = cur_altsetting->desc.bInterfaceNumber;
-+
-+	usb_set_serial_data(serial, spriv);
- 
- 	return 0;
- }
- 
- static void cp210x_release(struct usb_serial *serial)
- {
--	struct cp210x_port_private *port_priv;
--	int i;
-+	struct cp210x_serial_private *spriv;
- 
--	for (i = 0; i < serial->num_ports; i++) {
--		port_priv = usb_get_serial_port_data(serial->port[i]);
--		kfree(port_priv);
--		usb_set_serial_port_data(serial->port[i], NULL);
--	}
-+	spriv = usb_get_serial_data(serial);
-+	kfree(spriv);
- }
- 
- module_usb_serial_driver(serial_drivers, id_table);
+So maybe it's the stack of block devices that's at fault, and not the
+filesystem at all! I'll admit I don't really understand what happens at
+system halt time well enough to be sure, and getting log info from a
+machine in the middle of reboot(8) appears likely to be a complete sod
+(maybe halt(8) would be better: at least I could take a photo of the
+screen then). If that's true, it would *certainly* explain why nobody
+else can see this problem: only arcmsr users who also do umount -l's
+would have a chance, and that population probably has a size of one.
 
 
+I'll try to prove this tomorrow by writing a few gigs of junk to a temp
+filesytem held open by a temporary cat /dev/null, umount -l'ing it and
+killing off the cat the instant before the reboot -f call. If I don't
+see the reboot call blocking, the hypothesis is proved. (This is much
+what I did in virtualization, where I observe reboot blocking.)
+
+(Another blockdev-related possibility, if reboot *is* observed to block,
+is that arcmsr may be throwing away very-recently-written data when the
+adapter is shut down right before reboot.)
+
+
+Argh. How can rebooting a system be so damn complicated. Bring back the
+C64 or BBC Master where I could just pull the power lead out and stick
+it back in. :)
