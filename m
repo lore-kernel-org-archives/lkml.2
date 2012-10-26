@@ -1,123 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab2JZKbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 06:31:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38392 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501Ab2JZKbE (ORCPT
+	id S1758244Ab2JZKhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 06:37:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33608 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758111Ab2JZKhJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 06:31:04 -0400
-Message-ID: <508A665C.80107@pengutronix.de>
-Date: Fri, 26 Oct 2012 12:30:52 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 26 Oct 2012 06:37:09 -0400
+Date: Fri, 26 Oct 2012 12:36:49 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+In-Reply-To: <1351245264.16863.12.camel@twins>
+Message-ID: <alpine.LFD.2.02.1210261208170.2756@ionos>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>  <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>  <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>  <1351172849.12171.10.camel@twins> 
+ <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>  <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>  <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com> <1351245264.16863.12.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "tru@work-microwave.de" <tru@work-microwave.de>
-Subject: Re: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
-References: <1351164400-27940-1-git-send-email-stigge@antcom.de> <1351164400-27940-2-git-send-email-stigge@antcom.de> <20121026085934.GA1641@pengutronix.de> <508A54E4.2060108@antcom.de>
-In-Reply-To: <508A54E4.2060108@antcom.de>
-X-Enigmail-Version: 1.4.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC898E9FA45354770F015320E"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC898E9FA45354770F015320E
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 26 Oct 2012, Peter Zijlstra wrote:
+> On Fri, 2012-10-26 at 11:42 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Fri, 2012-10-26 at 11:24 +0200, Ingo Molnar wrote:
+> > > 
+> > > > So can we control this by restricting the users and avoiding 
+> > > > the overflow?
+> > > > 
+> > > > A 2^64 result should be a *huge* amount of space already for 
+> > > > just about anything.
+> > > 
+> > > I _think_ something like: dl_runtime * dl_deadline < U64_MAX, 
+> > > might do that. The question is, is this constraint usable? 
+> > > Simplified that boils down to about 4 seconds each, which 
+> > > sounds pretty much ok for most people -- but such statements 
+> > > usually come back to bite you (640kb anybody...).
+> > 
+> > We could constrain the precision, not the maximum value.
+> > 
+> > Having a 4 seconds hard limit is one thing, only having 10 nsecs 
+> > precision at 40 seconds is another.
+> 
+> That gets to be rather ugly I think.. for one it might surprise people,
+> secondly you get to have a bunch of conditionals and shifts in that code
+> path.
+> 
+> Personally I'd prefer to do the simple thing, esp. for a new interface.
+> So either do the hard limit or the u128 thing.
+> 
+> If we go with the hard limit, we can always address things when people
+> run into it and complain, at such a time we also have a better view of
+> people's uses and expectations methinks.
 
-On 10/26/2012 11:16 AM, Roland Stigge wrote:
-> Hi!
->=20
-> On 10/26/2012 10:59 AM, Sascha Hauer wrote:
->> On Thu, Oct 25, 2012 at 01:26:40PM +0200, Roland Stigge wrote:
->>> This patch fixes CAN clocking on i.MX53.
->>>
->>> Signed-off-by: Roland Stigge <stigge@antcom.de>
->>>
->>> ---
->>>  arch/arm/mach-imx/clk-imx51-imx53.c |    8 ++++----
->>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> --- linux-2.6.orig/arch/arm/mach-imx/clk-imx51-imx53.c
->>> +++ linux-2.6/arch/arm/mach-imx/clk-imx51-imx53.c
->>> @@ -426,10 +426,10 @@ int __init mx53_clocks_init(unsigned lon
->>>  	clk[usb_phy2_gate] =3D imx_clk_gate2("usb_phy2_gate", "usb_phy_sel"=
-, MXC_CCM_CCGR4, 12);
->>>  	clk[can_sel] =3D imx_clk_mux("can_sel", MXC_CCM_CSCMR2, 6, 2,
->>>  				mx53_can_sel, ARRAY_SIZE(mx53_can_sel));
->>> -	clk[can1_serial_gate] =3D imx_clk_gate2("can1_serial_gate", "can_se=
-l", MXC_CCM_CCGR6, 22);
->>> -	clk[can1_ipg_gate] =3D imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CC=
-M_CCGR6, 20);
->>> -	clk[can2_serial_gate] =3D imx_clk_gate2("can2_serial_gate", "can_se=
-l", MXC_CCM_CCGR4, 8);
->>> -	clk[can2_ipg_gate] =3D imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CC=
-M_CCGR4, 6);
->>
->> I just rechecked. The above matches the i.MX53 Reference Manual rev 2.=
-1
+By all means. nsec precision is a completly academic thought
+exercise. It's really pointless to even think about anything below
+microseconds resolution.
 
-An old rev 1 manual has lists the same bits.
+We can still have the user space interface handing in the information
+in nsec resolution, but it's reasonable to scale it down to something
+useful. Just shift the incoming information right by 10, so you're in
+the 1us resolution for all the internal math and all your limitation
+problems are gone. A shift by ten for converting back and forth to
+nsecs is not a real performance issue.
 
->>> +	clk[can1_serial_gate] =3D imx_clk_gate2("can1_serial_gate", "can_se=
-l", MXC_CCM_CCGR4, 6);
->>> +	clk[can1_ipg_gate] =3D imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CC=
-M_CCGR4, 8);
->>> +	clk[can2_serial_gate] =3D imx_clk_gate2("can2_serial_gate", "can_se=
-l", MXC_CCM_CCGR4, 6);
->>> +	clk[can2_ipg_gate] =3D imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CC=
-M_CCGR4, 8);
->>
->> This doesn't.
->=20
-> This may be right, but unfortunately, since the introduction of your
-> can1 + can2 clocking change, the first block stopped working for me.
+Thanks,
 
-You are effectively using can2's clock for can1. Are you sure you
-haven't mixed up can1 and can2?
-
-> My above patch is basically a rollback which works for the first block.=
-
->=20
-> An interesting hint is: can2 (which was the only one defined _before_
-> your can1 + can2 change) didn't work before and afterwards at all. (But=
-
-> I'm not using it anyway.)
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+	tglx
 
 
---------------enigC898E9FA45354770F015320E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://www.enigmail.net/
 
-iEYEARECAAYFAlCKZmAACgkQjTAFq1RaXHPrZACeKEjSK9DO1HxNo88lqDBhsBXU
-UUIAnim5gg/QsBF1WPL9tnt8gyXSKBQA
-=Itv2
------END PGP SIGNATURE-----
 
---------------enigC898E9FA45354770F015320E--
