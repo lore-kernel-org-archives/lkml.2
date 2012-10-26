@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab2JZA1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:27:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53463 "EHLO mail.kernel.org"
+	id S1755263Ab2JZA1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:27:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53474 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab2JZAHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:34 -0400
+	id S1753402Ab2JZAHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 32/85] USB: belkin_sa: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:50 -0700
-Message-Id: <20121026000034.345135232@linuxfoundation.org>
+Subject: [ 33/85] USB: pl2303: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:51 -0700
+Message-Id: <20121026000034.447295680@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,97 +27,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit fa919751a2d26a88140fc5810124dd81644efe51 upstream.
+commit 8bf769eb5f6efc33f95088850f33fcc05d28b508 upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+Fix port-data memory leak by allocating and freeing port data in
+port_probe/remove rather than in attach/release, and by introducing
+serial private data to store the device type which is interface rather
+than port specific.
 
 Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
-
-Note that the write waitqueue was initialised but never used.
-
-Compile-only tested.
+driver is bound) the port private data is no longer freed at release.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/belkin_sa.c |   31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ drivers/usb/serial/pl2303.c |   90 ++++++++++++++++++++++++++------------------
+ 1 file changed, 54 insertions(+), 36 deletions(-)
 
---- a/drivers/usb/serial/belkin_sa.c
-+++ b/drivers/usb/serial/belkin_sa.c
-@@ -47,8 +47,8 @@ static bool debug;
- #define DRIVER_DESC "USB Belkin Serial converter driver"
- 
- /* function prototypes for a Belkin USB Serial Adapter F5U103 */
--static int  belkin_sa_startup(struct usb_serial *serial);
--static void belkin_sa_release(struct usb_serial *serial);
-+static int belkin_sa_port_probe(struct usb_serial_port *port);
-+static int belkin_sa_port_remove(struct usb_serial_port *port);
- static int  belkin_sa_open(struct tty_struct *tty,
- 			struct usb_serial_port *port);
- static void belkin_sa_close(struct usb_serial_port *port);
-@@ -90,8 +90,8 @@ static struct usb_serial_driver belkin_d
- 	.break_ctl =		belkin_sa_break_ctl,
- 	.tiocmget =		belkin_sa_tiocmget,
- 	.tiocmset =		belkin_sa_tiocmset,
--	.attach =		belkin_sa_startup,
--	.release =		belkin_sa_release,
-+	.port_probe =		belkin_sa_port_probe,
-+	.port_remove =		belkin_sa_port_remove,
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -135,12 +135,15 @@ enum pl2303_type {
+ 	HX,		/* HX version of the pl2303 chip */
  };
  
- static struct usb_serial_driver * const serial_drivers[] = {
-@@ -120,17 +120,15 @@ struct belkin_sa_private {
- 					    (c), BELKIN_SA_SET_REQUEST_TYPE, \
- 					    (v), 0, NULL, 0, WDR_TIMEOUT)
++struct pl2303_serial_private {
++	enum pl2303_type type;
++};
++
+ struct pl2303_private {
+ 	spinlock_t lock;
+ 	wait_queue_head_t delta_msr_wait;
+ 	u8 line_control;
+ 	u8 line_status;
+-	enum pl2303_type type;
+ };
  
--/* do some startup allocations not currently performed by usb_serial_probe() */
--static int belkin_sa_startup(struct usb_serial *serial)
-+static int belkin_sa_port_probe(struct usb_serial_port *port)
+ static int pl2303_vendor_read(__u16 value, __u16 index,
+@@ -169,14 +172,19 @@ static int pl2303_vendor_write(__u16 val
+ 
+ static int pl2303_startup(struct usb_serial *serial)
  {
--	struct usb_device *dev = serial->dev;
-+	struct usb_device *dev = port->serial->dev;
- 	struct belkin_sa_private *priv;
+-	struct pl2303_private *priv;
++	struct pl2303_serial_private *spriv;
+ 	enum pl2303_type type = type_0;
+ 	unsigned char *buf;
+-	int i;
++
++	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
++	if (!spriv)
++		return -ENOMEM;
  
--	/* allocate the private data structure */
- 	priv = kmalloc(sizeof(struct belkin_sa_private), GFP_KERNEL);
- 	if (!priv)
--		return -1; /* error */
--	/* set initial values for control structures */
+ 	buf = kmalloc(10, GFP_KERNEL);
+-	if (buf == NULL)
++	if (!buf) {
++		kfree(spriv);
+ 		return -ENOMEM;
++	}
+ 
+ 	if (serial->dev->descriptor.bDeviceClass == 0x02)
+ 		type = type_0;
+@@ -188,15 +196,8 @@ static int pl2303_startup(struct usb_ser
+ 		type = type_1;
+ 	dev_dbg(&serial->interface->dev, "device type: %d\n", type);
+ 
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		priv = kzalloc(sizeof(struct pl2303_private), GFP_KERNEL);
+-		if (!priv)
+-			goto cleanup;
+-		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->delta_msr_wait);
+-		priv->type = type;
+-		usb_set_serial_port_data(serial->port[i], priv);
+-	}
++	spriv->type = type;
++	usb_set_serial_data(serial, spriv);
+ 
+ 	pl2303_vendor_read(0x8484, 0, serial, buf);
+ 	pl2303_vendor_write(0x0404, 0, serial);
+@@ -215,15 +216,40 @@ static int pl2303_startup(struct usb_ser
+ 
+ 	kfree(buf);
+ 	return 0;
++}
+ 
+-cleanup:
+-	kfree(buf);
+-	for (--i; i >= 0; --i) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
+-	return -ENOMEM;
++static void pl2303_release(struct usb_serial *serial)
++{
++	struct pl2303_serial_private *spriv;
++
++	spriv = usb_get_serial_data(serial);
++	kfree(spriv);
++}
++
++static int pl2303_port_probe(struct usb_serial_port *port)
++{
++	struct pl2303_private *priv;
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
 +		return -ENOMEM;
 +
- 	spin_lock_init(&priv->lock);
- 	priv->control_state = 0;
- 	priv->last_lsr = 0;
-@@ -142,18 +140,19 @@ static int belkin_sa_startup(struct usb_
- 					le16_to_cpu(dev->descriptor.bcdDevice),
- 					priv->bad_flow_control);
- 
--	init_waitqueue_head(&serial->port[0]->write_wait);
--	usb_set_serial_port_data(serial->port[0], priv);
++	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->delta_msr_wait);
++
 +	usb_set_serial_port_data(port, priv);
- 
- 	return 0;
- }
- 
--static void belkin_sa_release(struct usb_serial *serial)
-+static int belkin_sa_port_remove(struct usb_serial_port *port)
- {
--	int i;
-+	struct belkin_sa_private *priv;
- 
--	for (i = 0; i < serial->num_ports; ++i)
--		kfree(usb_get_serial_port_data(serial->port[i]));
++
++	return 0;
++}
++
++static int pl2303_port_remove(struct usb_serial_port *port)
++{
++	struct pl2303_private *priv;
++
 +	priv = usb_get_serial_port_data(port);
 +	kfree(priv);
 +
 +	return 0;
  }
  
- static int belkin_sa_open(struct tty_struct *tty,
+ static int set_control_lines(struct usb_device *dev, u8 value)
+@@ -242,6 +268,7 @@ static void pl2303_set_termios(struct tt
+ 		struct usb_serial_port *port, struct ktermios *old_termios)
+ {
+ 	struct usb_serial *serial = port->serial;
++	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
+ 	struct pl2303_private *priv = usb_get_serial_port_data(port);
+ 	unsigned long flags;
+ 	unsigned int cflag;
+@@ -325,7 +352,7 @@ static void pl2303_set_termios(struct tt
+ 		}
+ 		if (baud > 1228800) {
+ 			/* type_0, type_1 only support up to 1228800 baud */
+-			if (priv->type != HX)
++			if (spriv->type != HX)
+ 				baud = 1228800;
+ 			else if (baud > 6000000)
+ 				baud = 6000000;
+@@ -428,7 +455,7 @@ static void pl2303_set_termios(struct tt
+ 	     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
+ 
+ 	if (cflag & CRTSCTS) {
+-		if (priv->type == HX)
++		if (spriv->type == HX)
+ 			pl2303_vendor_write(0x0, 0x61, serial);
+ 		else
+ 			pl2303_vendor_write(0x0, 0x41, serial);
+@@ -470,10 +497,10 @@ static int pl2303_open(struct tty_struct
+ {
+ 	struct ktermios tmp_termios;
+ 	struct usb_serial *serial = port->serial;
+-	struct pl2303_private *priv = usb_get_serial_port_data(port);
++	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
+ 	int result;
+ 
+-	if (priv->type != HX) {
++	if (spriv->type != HX) {
+ 		usb_clear_halt(serial->dev, port->write_urb->pipe);
+ 		usb_clear_halt(serial->dev, port->read_urb->pipe);
+ 	} else {
+@@ -657,17 +684,6 @@ static void pl2303_break_ctl(struct tty_
+ 		dev_err(&port->dev, "error sending break = %d\n", result);
+ }
+ 
+-static void pl2303_release(struct usb_serial *serial)
+-{
+-	int i;
+-	struct pl2303_private *priv;
+-
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-	}
+-}
+-
+ static void pl2303_update_line_status(struct usb_serial_port *port,
+ 				      unsigned char *data,
+ 				      unsigned int actual_length)
+@@ -829,6 +845,8 @@ static struct usb_serial_driver pl2303_d
+ 	.read_int_callback =	pl2303_read_int_callback,
+ 	.attach =		pl2303_startup,
+ 	.release =		pl2303_release,
++	.port_probe =		pl2303_port_probe,
++	.port_remove =		pl2303_port_remove,
+ };
+ 
+ static struct usb_serial_driver * const serial_drivers[] = {
 
 
