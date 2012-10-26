@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966471Ab2JZUe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:34:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35840 "EHLO mga01.intel.com"
+	id S966459Ab2JZUe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:34:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35829 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759095Ab2JZUa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759098Ab2JZUa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 16:30:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="238932610"
+   d="scan'208";a="240686957"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 19/33] perf, core: Add generic transaction flags
-Date: Fri, 26 Oct 2012 13:30:01 -0700
-Message-Id: <1351283415-13170-20-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 28/33] perf, x86: Add Haswell TSX event aliases
+Date: Fri, 26 Oct 2012 13:30:10 -0700
+Message-Id: <1351283415-13170-29-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,120 +25,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add a generic qualifier for transaction events, as a new sample
-type that returns a flag word. This is particularly useful
-for qualifying aborts: to distinguish aborts which happen
-due to asynchronous events (like conflicts caused by another
-CPU) versus instructions that lead to an abort.
+Add infrastructure to generate event aliases in /sys/devices/cpu/events/
 
-The tuning strategies are very different for those cases,
-so it's important to distinguish them easily and early.
+And use this to set up user friendly aliases for the common TSX events.
+TSX tuning relies heavily on the PMU, so it's important to be user friendly.
 
-Since it's inconvenient and inflexible to filter for this
-in the kernel we report all the events out and allow
-some post processing in user space.
+This replaces the generic transaction events in an earlier version
+of this patchkit.
 
-The flags are based on the Intel TSX events, but should be fairly
-generic and mostly applicable to other architectures too. In addition
-to various flag words there's also reserved space to report an
-program supplied abort code. For TSX this is used to distinguish specific
-classes of aborts, like a lock busy abort when doing lock elision.
+tx-start/commit/abort  to count RTM transactions
+el-start/commit/abort  to count HLE ("elision") transactions
+tx-conflict/overflow   to count conflict/overflow for both combined.
 
-This adds the perf core glue needed for reporting the new flag word out.
+The general abort events exist in precise and non precise variants
+Since the common case is sampling plain "tx-aborts" in precise.
+
+This is very important because abort sampling only really works
+with PEBS enabled, otherwise it would report the IP after the abort,
+not the abort point. But counting with PEBS has more overhead,
+so also have tx/el-abort-count aliases that do not enable PEBS
+for perf stat.
+
+It would be nice to switch automatically between those two, like in the
+previous version, but that would need more new infrastructure for sysfs
+first.
+
+There is an tx-abort<->tx-aborts alias too, because I found myself
+using both variants.
+
+Also added friendly aliases for cpu/cycles,intx=1/ and
+cpu/cycles,intx=1,intx_cp=1/ and the same for instructions.
+These will be used by perf stat -T, and are also useful for users directly.
+
+So for example to get transactional cycles can use "perf stat -e cycles-t"
+
+Some of the sysfs macros/functions could probably move to generic code, but
+I left it in the Intel code for now until there are more users.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   24 ++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   95 ++++++++++++++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f4ded17..7e6a4b6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -589,6 +589,7 @@ struct perf_sample_data {
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
- 	u64				weight;
-+	u64				transaction;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -603,6 +604,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->transaction = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c3beee1..e9706f0 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2054,6 +2054,99 @@ static __init void intel_gen_arch_events(void)
+ 	x86_pmu.events_attrs = intel_arch_events;
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 809a5fd..7155205 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_TRANSACTION			= 1U << 15,
- 
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
- };
- 
- /*
-@@ -179,6 +179,26 @@ enum perf_sample_regs_abi {
- };
- 
- /*
-+ * Values for the transaction event qualifier, mostly for abort events.
-+ */
-+enum {
-+	PERF_SAMPLE_TXN_ELISION     = (1 << 0), /* From elision */
-+	PERF_SAMPLE_TXN_TRANSACTION = (1 << 1), /* From transaction */
-+	PERF_SAMPLE_TXN_SYNC        = (1 << 2), /* Instruction is related */
-+	PERF_SAMPLE_TXN_ASYNC       = (1 << 3), /* Instruction not related */
-+	PERF_SAMPLE_TXN_RETRY       = (1 << 4), /* Retry possible */
-+	PERF_SAMPLE_TXN_CONFLICT    = (1 << 5), /* Conflict abort */
-+	PERF_SAMPLE_TXN_CAPACITY    = (1 << 6), /* Capacity abort */
-+
-+	PERF_SAMPLE_TXN_MAX	    = (1 << 7),  /* non-ABI */
-+
-+	/* bits 24..31 are reserved for the abort code */
-+
-+	PERF_SAMPLE_TXN_ABORT_MASK  = 0xff000000,
-+	PERF_SAMPLE_TXN_ABORT_SHIFT = 24,
++struct sevent_attribute {
++	struct device_attribute		attr;
++	const char			*val;
 +};
 +
-+/*
-  * The format of the data returned by read() on a perf event fd,
-  * as specified by attr.read_format:
-  *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d633581..534810d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -955,6 +955,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		size += sizeof(data->transaction);
++#define PMU_EVENT(_name, _id, _val)					\
++	static struct sevent_attribute attr_ ## _name =			\
++	{ .attr =							\
++	  { .attr = { .name = _id, .mode = 0444 },			\
++	    .show = show_sevent },					\
++	  .val = _val }
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4086,6 +4089,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
-+	if (sample_type & PERF_SAMPLE_TRANSACTION)
-+		perf_output_put(handle, data->transaction);
++static ssize_t show_sevent(struct device *dev,
++			  struct device_attribute *attr,
++			  char *page)
++{
++	struct sevent_attribute *e = container_of(attr, struct sevent_attribute, attr);
 +
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
++	return sprintf(page, "%s", e->val);
++}
++
++/* Haswell special events */
++PMU_EVENT(tx_start,       "tx-start",       "event=0xc9,umask=0x1");
++PMU_EVENT(tx_commit,      "tx-commit",      "event=0xc9,umask=0x2");
++PMU_EVENT(tx_abort,       "tx-abort",       "event=0xc9,umask=0x4,precise=2");
++PMU_EVENT(tx_abort_count, "tx-abort-count", "event=0xc9,umask=0x4");
++/* alias */
++PMU_EVENT(tx_aborts,      "tx-aborts",      "event=0xc9,umask=0x4,precise=2");
++PMU_EVENT(tx_capacity,    "tx-capacity",    "event=0x54,umask=0x2");
++PMU_EVENT(tx_conflict,    "tx-conflict",    "event=0x54,umask=0x1");
++PMU_EVENT(el_start,       "el-start",       "event=0xc8,umask=0x1");
++PMU_EVENT(el_commit,      "el-commit",      "event=0xc8,umask=0x2");
++PMU_EVENT(el_abort,       "el-abort",       "event=0xc8,umask=0x4,precise=2");
++PMU_EVENT(el_abort_count, "el-abort-count", "event=0xc8,umask=0x4");
++/* alias */
++PMU_EVENT(el_aborts,      "el-aborts",      "event=0xc8,umask=0x4,precise=2");
++/* shared with tx-* */
++PMU_EVENT(el_capacity,    "el-capacity",    "event=0x54,umask=0x2");
++/* shared with tx-* */
++PMU_EVENT(el_conflict,    "el-conflict",    "event=0x54,umask=0x1");
++PMU_EVENT(cycles_t,       "cycles-t",       "event=0x3c,intx=1");
++PMU_EVENT(cycles_ct,      "cycles-ct",      "event=0x3c,intx=1,intx_cp=1");
++PMU_EVENT(insns_t,        "instructions-t", "event=0xc0,intx=1");
++PMU_EVENT(insns_ct,       "instructions-ct","event=0xc0,intx=1,intx_cp=1");
++
++#define PMU_EVENT_PTR(x) &attr_ ## x .attr.attr
++
++static struct attribute *hsw_events_attrs[] = {
++	PMU_EVENT_PTR(tx_start),
++	PMU_EVENT_PTR(tx_commit),
++	PMU_EVENT_PTR(tx_abort),
++	PMU_EVENT_PTR(tx_aborts),
++	PMU_EVENT_PTR(tx_abort_count),
++	PMU_EVENT_PTR(tx_capacity),
++	PMU_EVENT_PTR(tx_conflict),
++	PMU_EVENT_PTR(el_start),
++	PMU_EVENT_PTR(el_commit),
++	PMU_EVENT_PTR(el_abort),
++	PMU_EVENT_PTR(el_aborts),
++	PMU_EVENT_PTR(el_abort_count),
++	PMU_EVENT_PTR(el_capacity),
++	PMU_EVENT_PTR(el_conflict),
++	PMU_EVENT_PTR(cycles_t),
++	PMU_EVENT_PTR(cycles_ct),
++	PMU_EVENT_PTR(insns_t),
++	PMU_EVENT_PTR(insns_ct),
++	NULL
++};
++
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a,
++					    struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
++
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return a;
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++	return new;
++}
++
+ __init int intel_pmu_init(void)
+ {
+ 	union cpuid10_edx edx;
+@@ -2281,6 +2374,8 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.get_event_constraints = hsw_get_event_constraints;
+ 		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		x86_pmu.memory_lat_events = intel_hsw_memory_latency_events;
++		x86_pmu.events_attrs = merge_attr(x86_pmu.events_attrs,
++						  hsw_events_attrs);
+ 		pr_cont("Haswell events, ");
+ 		break;
  
 -- 
 1.7.7.6
