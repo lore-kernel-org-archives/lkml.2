@@ -1,108 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab2JZGSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 02:18:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32933 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab2JZGSw (ORCPT
+	id S1756447Ab2JZGUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 02:20:11 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45902 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756321Ab2JZGUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 02:18:52 -0400
-X-AuditID: cbfee612-b7f8f6d000003efa-00-508a2b47d918
-Date: Fri, 26 Oct 2012 06:18:32 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] devfreq: exynos4_bus.c: Fixed an alignment of the func
- call args.
-To: Sangho Yi <antiroot@gmail.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20121026061719829@myungjoo.ham
-Msgkey: 20121026061719829@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20121026061719829@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <20045605.160791351232311768.JavaMail.weblogic@epv6ml08>
-DLP-Filter: Pass
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t8zTV1P7a4Ag6ldOhaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj0OTvLAXruCsWn1zD2MDYwt3FyMkhJKAusWjJSTYQW0LARGLH
-	o/2sELaYxIV764HiXEA1yxglut89ZIQp2jNhKyNEYj6jxMkDHWAdLAKqEus2H2bvYuTgYBPQ
-	k5j5ORkkLCwQJrHn80ewEhGBVIm2W41gy5gFHCUeXb7DDHGEksSafa9YQGxeAUGJkzOfsEDs
-	UpXYPLmXFSKuJnFu/wKouITErOkXoA7llZjR/hQqLicx7esaZghbWuL8rA2MMM8s/v4YKs4v
-	cez2DiaQM0F6n9wPhhmze/MXaDgISEw9cxCqVUuid84sqPF8EmsWvmWBGbPr1HJmmN77W+Yy
-	QbylKDGl+yE7hK0l8eXHPjZ0b/EKuEiseDWTaQKj8iwkqVlI2mchaUdWs4CRZRWjaGpBckFx
-	UnqqhV5xYm5xaV66XnJ+7iZGSFoQ2sG4rMHiEKMAB6MSD++Bks4AIdbEsuLK3EOMEhzMSiK8
-	u6cChXhTEiurUovy44tKc1KLDzH6AONvIrOUaHI+MGXllcQbGhsYGxpaGpqZWpoa4BBWEuet
-	8EgJEBJITyxJzU5NLUgtghnHxMEp1cBYf+Op1m+pg/OcXgYbufy9l6W80O+C/nz/M6aJHBUH
-	lil+8DCVXXOvZpfPQkGNokWvXrP4l/jzTJfm/Hzz1QYbFZbi+No0Rs2AFce/Cz3aI/43/cDl
-	CO+nd1Oeq0TYzDjwR8mtcceBE2I7RW89Ov9DtXBfVugZXrcIweUzpcRE7yyZaTJr3dy7SizF
-	GYmGWsxFxYkA0Z8N3zgDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFKsWRmVeSWpSXmKPExsVy+t/tGbru2l0BBh93C1pc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jEOTv7MUrOOuWHxyDWMDYwt3FyMnh5CAusSiJSfZQGwJAROJPRO2MkLYYhIX7q0HinMB1cxn
-	lDh5oIMVJMEioCqxbvNh9i5GDg42AT2JmZ+TQcLCAmESez5/BCsREUiVaLvVCDaTWcBR4tHl
-	O8wQu5Qk1ux7xQJi8woISpyc+YQFYpeqxObJvawQcTWJc/sXQMUlJGZNv8AKYfNKzGh/ChWX
-	k5j2dQ0zhC0tcX7WBribF39/DBXnlzh2ewcTyJkgvU/uB8OM2b35C9S7AhJTzxyEatWS6J0z
-	C2o8n8SahW9ZYMbsOrWcGab3/pa5TBBvKUpM6X7IDmFrSXz5sY8N3Vu8Ai4SK17NZJrAKDcL
-	SWoWkvZZSNqR1SxgZFnFKJpakFxQnJSeaqFXnJhbXJqXrpecn7uJEZygngntYFzWYHGIUYCD
-	UYmH90BJZ4AQa2JZcWXuIUYJDmYlEd7dU4FCvCmJlVWpRfnxRaU5qcWHGH2A8TeRWUo0OR+Y
-	PPNK4g2NDYwNDS3NDUwNjSxwCCuJ81Z4pAQICaQnlqRmp6YWpBbBjGPi4JRqYDzqu50zcOKK
-	Y6I7locqGPpvOi1YUvLc/UX2/C25y/LezzlxIlXxfNS29zuXtS+Skrvw3/tOkNC8mDtOx3Sf
-	vZpX7nNhhTvHkyn3bK7ct6j8Vj+zdb6H6LKfnpcP/O/fz8OstaCq5snx5GO6mWsuhB9NDa0Q
-	f3R8O6evVM2HlKSQTU1PF85Y1v1WiaU4I9FQi7moOBEAXJoTbn0DAAA=
-X-CFilter-Loop: Reflected
+	Fri, 26 Oct 2012 02:20:07 -0400
+Message-ID: <508A2B8B.7020608@gmail.com>
+Date: Fri, 26 Oct 2012 14:19:55 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, mhocko@suse.cz, peterz@infradead.org,
+        akpm@linux-foundation.org, Chris Metcalf <cmetcalf@tilera.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on access
+ fault.
+References: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9Q6It7W023111
 
-> I fixed the following check item (via checkpatch.pl --strict option):
-> CHECK: Alignment should match open parenthesis
-> 
-> Signed-off-by: Sangho Yi <antiroot@gmail.com>
+On 10/26/2012 12:44 AM, Will Deacon wrote:
+> On x86 memory accesses to pages without the ACCESSED flag set result in the
+> ACCESSED flag being set automatically. With the ARM architecture a page access
+> fault is raised instead (and it will continue to be raised until the ACCESSED
+> flag is set for the appropriate PTE/PMD).
+>
+> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+> be called for a write fault.
+>
+> This patch ensures that faults on transparent hugepages which do not result
+> in a CoW update the access flags for the faulting pmd.
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Could you write changlog?
 
-I'll apply the patch after setting up devfreq for next tree.
-Thanks.
-
-
-Cheers,
-MyungJoo
-
+>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 > ---
->  drivers/devfreq/exynos4_bus.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 88ddc77..f4089c4 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -1034,7 +1034,7 @@ static __devinit int exynos4_busfreq_probe(struct platform_device *pdev)
->  	opp = opp_find_freq_floor(dev, &exynos4_devfreq_profile.initial_freq);
->  	if (IS_ERR(opp)) {
->  		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
-> -		       exynos4_devfreq_profile.initial_freq);
-> +			exynos4_devfreq_profile.initial_freq);
->  		err = PTR_ERR(opp);
->  		goto err_opp_add;
->  	}
-> --
-> 1.7.9.5
-> 
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>
+> Ok chaps, I rebased this thing onto today's next (which basically
+> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
+> ask if you could eyeball the new code, especially where the locking is
+> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
+> that the page is not splitting, but I can't see why that is required.
+>
+> Cheers,
+>
+> Will
+
+Could you explain why you not call pmd_trans_huge_lock to confirm the 
+pmd is splitting or stable as Andrea point out?
+
+>
+>   include/linux/huge_mm.h |    4 ++++
+>   mm/huge_memory.c        |   22 ++++++++++++++++++++++
+>   mm/memory.c             |    7 ++++++-
+>   3 files changed, 32 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 4f0f948..766fb27 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -8,6 +8,10 @@ extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
+>   extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+>   			 pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
+>   			 struct vm_area_struct *vma);
+> +extern void huge_pmd_set_accessed(struct mm_struct *mm,
+> +				  struct vm_area_struct *vma,
+> +				  unsigned long address, pmd_t *pmd,
+> +				  pmd_t orig_pmd, int dirty);
+>   extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   			       unsigned long address, pmd_t *pmd,
+>   			       pmd_t orig_pmd);
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 3c14a96..f024d98 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -932,6 +932,28 @@ out:
+>   	return ret;
+>   }
+>   
+> +void huge_pmd_set_accessed(struct mm_struct *mm,
+> +			   struct vm_area_struct *vma,
+> +			   unsigned long address,
+> +			   pmd_t *pmd, pmd_t orig_pmd,
+> +			   int dirty)
+> +{
+> +	pmd_t entry;
+> +	unsigned long haddr;
+> +
+> +	spin_lock(&mm->page_table_lock);
+> +	if (unlikely(!pmd_same(*pmd, orig_pmd)))
+> +		goto unlock;
+> +
+> +	entry = pmd_mkyoung(orig_pmd);
+> +	haddr = address & HPAGE_PMD_MASK;
+> +	if (pmdp_set_access_flags(vma, haddr, pmd, entry, dirty))
+> +		update_mmu_cache_pmd(vma, address, pmd);
+> +
+> +unlock:
+> +	spin_unlock(&mm->page_table_lock);
+> +}
+> +
+>   static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+>   					struct vm_area_struct *vma,
+>   					unsigned long address,
+> diff --git a/mm/memory.c b/mm/memory.c
+> index f21ac1c..bcbc084 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3650,12 +3650,14 @@ retry:
+>   
+>   		barrier();
+>   		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
+> +			unsigned int dirty = flags & FAULT_FLAG_WRITE;
+> +
+>   			if (pmd_numa(vma, orig_pmd)) {
+>   				do_huge_pmd_numa_page(mm, vma, address, pmd,
+>   						      flags, orig_pmd);
+>   			}
+>   
+> -			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
+> +			if (dirty && !pmd_write(orig_pmd)) {
+>   				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
+>   							  orig_pmd);
+>   				/*
+> @@ -3665,6 +3667,9 @@ retry:
+>   				 */
+>   				if (unlikely(ret & VM_FAULT_OOM))
+>   					goto retry;
+> +			} else {
+> +				huge_pmd_set_accessed(mm, vma, address, pmd,
+> +						      orig_pmd, dirty);
+>   			}
+>   
+>   			return ret;
+
