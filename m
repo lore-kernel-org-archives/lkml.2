@@ -1,61 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab2JZHDY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:03:24 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58031 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab2JZHDW (ORCPT
+	id S1756694Ab2JZHJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:09:25 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35945 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756600Ab2JZHJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:03:22 -0400
-Message-ID: <508A35B0.30106@gmail.com>
-Date: Fri, 26 Oct 2012 15:03:12 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Dave Chinner <david@fromorbit.com>, YingHang Zhu <casualfisher@gmail.com>,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-References: <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com> <20121024201921.GX4291@dastard> <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com> <20121025015014.GC29378@dastard> <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com> <50889FF1.9030107@gmail.com> <20121025025826.GB23462@localhost> <20121026002544.GI29378@dastard> <20121026012758.GA6282@localhost> <5089F5AD.5040708@gmail.com> <20121026065855.GA9179@localhost>
-In-Reply-To: <20121026065855.GA9179@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Oct 2012 03:09:24 -0400
+From: "hongbo.zhang" <hongbo.zhang@linaro.org>
+To: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
+        "hongbo.zhang" <hongbo.zhang@linaro.com>
+Subject: [PATCH V2 4/6] Thermal: Remove the cooling_cpufreq_list.
+Date: Fri, 26 Oct 2012 15:09:05 +0800
+Message-Id: <1351235345-13050-1-git-send-email-hongbo.zhang@linaro.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <50898F97.3000202@gmail.com>
+References: <50898F97.3000202@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 02:58 PM, Fengguang Wu wrote:
->>   static void shrink_readahead_size_eio(struct file *filp,
->>                                          struct file_ra_state *ra)
->>   {
->> -       ra->ra_pages /= 4;
->> +       spin_lock(&filp->f_lock);
->> +       filp->f_mode |= FMODE_RANDOM;
->> +       spin_unlock(&filp->f_lock);
->>
->> As the example in comment above this function, the read maybe still
->> sequential, and it will waste IO bandwith if modify to FMODE_RANDOM
->> directly.
-> Yes immediately disabling readahead may hurt IO performance, the
-> original '/ 4' may perform better when there are only 1-3 IO errors
-> encountered.
+From: "hongbo.zhang" <hongbo.zhang@linaro.com>
 
-Hi Fengguang,
+Problem of using this list is that the cpufreq_get_max_state callback will be
+called when register cooling device by thermal_cooling_device_register, but
+this list isn't ready at this moment. What's more, there is no need to maintain
+such a list, we can get cpufreq_cooling_device instance by the private
+thermal_cooling_device.devdata.
 
-Why the number should be 1-3?
+Signed-off-by: hongbo.zhang <hongbo.zhang@linaro.com>
+---
+ drivers/thermal/cpu_cooling.c | 91 +++++++++----------------------------------
+ 1 file changed, 19 insertions(+), 72 deletions(-)
 
-Regards,
-Chen
-
->
-> Thanks,
-> Fengguang
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 415b041..2ffd12c 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -58,8 +58,9 @@ struct cpufreq_cooling_device {
+ };
+ static LIST_HEAD(cooling_cpufreq_list);
+ static DEFINE_IDR(cpufreq_idr);
++static DEFINE_MUTEX(cooling_cpufreq_lock);
+ 
+-static struct mutex cooling_cpufreq_lock;
++static unsigned int cpufreq_dev_count;
+ 
+ /* notify_table passes value to the CPUFREQ_ADJUST callback function. */
+ #define NOTIFY_INVALID NULL
+@@ -240,28 +241,18 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
+ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+ 				 unsigned long *state)
+ {
+-	int ret = -EINVAL, i = 0;
+-	struct cpufreq_cooling_device *cpufreq_device;
+-	struct cpumask *maskPtr;
++	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
++	struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
+ 	unsigned int cpu;
+ 	struct cpufreq_frequency_table *table;
+ 	unsigned long count = 0;
++	int i = 0;
+ 
+-	mutex_lock(&cooling_cpufreq_lock);
+-	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+-		if (cpufreq_device && cpufreq_device->cool_dev == cdev)
+-			break;
+-	}
+-	if (cpufreq_device == NULL)
+-		goto return_get_max_state;
+-
+-	maskPtr = &cpufreq_device->allowed_cpus;
+ 	cpu = cpumask_any(maskPtr);
+ 	table = cpufreq_frequency_get_table(cpu);
+ 	if (!table) {
+ 		*state = 0;
+-		ret = 0;
+-		goto return_get_max_state;
++		return 0;
+ 	}
+ 
+ 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+@@ -272,12 +263,10 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
+ 
+ 	if (count > 0) {
+ 		*state = --count;
+-		ret = 0;
++		return 0;
+ 	}
+ 
+-return_get_max_state:
+-	mutex_unlock(&cooling_cpufreq_lock);
+-	return ret;
++	return -EINVAL;
+ }
+ 
+ /**
+@@ -288,20 +277,10 @@ return_get_max_state:
+ static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+ 				 unsigned long *state)
+ {
+-	int ret = -EINVAL;
+-	struct cpufreq_cooling_device *cpufreq_device;
++	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+ 
+-	mutex_lock(&cooling_cpufreq_lock);
+-	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+-		if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+-			*state = cpufreq_device->cpufreq_state;
+-			ret = 0;
+-			break;
+-		}
+-	}
+-	mutex_unlock(&cooling_cpufreq_lock);
+-
+-	return ret;
++	*state = cpufreq_device->cpufreq_state;
++	return 0;
+ }
+ 
+ /**
+@@ -312,22 +291,9 @@ static int cpufreq_get_cur_state(struct thermal_cooling_device *cdev,
+ static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
+ 				 unsigned long state)
+ {
+-	int ret = -EINVAL;
+-	struct cpufreq_cooling_device *cpufreq_device;
++	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+ 
+-	mutex_lock(&cooling_cpufreq_lock);
+-	list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
+-		if (cpufreq_device && cpufreq_device->cool_dev == cdev) {
+-			ret = 0;
+-			break;
+-		}
+-	}
+-	if (!ret)
+-		ret = cpufreq_apply_cooling(cpufreq_device, state);
+-
+-	mutex_unlock(&cooling_cpufreq_lock);
+-
+-	return ret;
++	return cpufreq_apply_cooling(cpufreq_device, state);
+ }
+ 
+ /* Bind cpufreq callbacks to thermal cooling device ops */
+@@ -351,7 +317,7 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+ {
+ 	struct thermal_cooling_device *cool_dev;
+ 	struct cpufreq_cooling_device *cpufreq_dev = NULL;
+-	unsigned int cpufreq_dev_count = 0, min = 0, max = 0;
++	unsigned int min = 0, max = 0;
+ 	char dev_name[THERMAL_NAME_LENGTH];
+ 	int ret = 0, i;
+ 	struct cpufreq_policy policy;
+@@ -360,9 +326,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+ 	if (!cpufreq_frequency_get_table(cpumask_any(clip_cpus)))
+ 		return ERR_PTR(-EPROBE_DEFER);
+ 
+-	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node)
+-		cpufreq_dev_count++;
+-
+ 	/*Verify that all the clip cpus have same freq_min, freq_max limit*/
+ 	for_each_cpu(i, clip_cpus) {
+ 		/*continue if cpufreq policy not found and not return error*/
+@@ -384,9 +347,6 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+ 
+ 	cpumask_copy(&cpufreq_dev->allowed_cpus, clip_cpus);
+ 
+-	if (cpufreq_dev_count == 0)
+-		mutex_init(&cooling_cpufreq_lock);
+-
+ 	ret = get_idr(&cpufreq_idr, &cpufreq_dev->id);
+ 	if (ret) {
+ 		kfree(cpufreq_dev);
+@@ -405,12 +365,12 @@ struct thermal_cooling_device *cpufreq_cooling_register(
+ 	cpufreq_dev->cool_dev = cool_dev;
+ 	cpufreq_dev->cpufreq_state = 0;
+ 	mutex_lock(&cooling_cpufreq_lock);
+-	list_add_tail(&cpufreq_dev->node, &cooling_cpufreq_list);
+ 
+ 	/* Register the notifier for first cpufreq cooling device */
+ 	if (cpufreq_dev_count == 0)
+ 		cpufreq_register_notifier(&thermal_cpufreq_notifier_block,
+ 						CPUFREQ_POLICY_NOTIFIER);
++	cpufreq_dev_count++;
+ 
+ 	mutex_unlock(&cooling_cpufreq_lock);
+ 	return cool_dev;
+@@ -423,33 +383,20 @@ EXPORT_SYMBOL(cpufreq_cooling_register);
+  */
+ void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
+ {
+-	struct cpufreq_cooling_device *cpufreq_dev = NULL;
+-	unsigned int cpufreq_dev_count = 0;
++	struct cpufreq_cooling_device *cpufreq_dev = cdev->devdata;
+ 
+ 	mutex_lock(&cooling_cpufreq_lock);
+-	list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
+-		if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
+-			break;
+-		cpufreq_dev_count++;
+-	}
+-
+-	if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
+-		mutex_unlock(&cooling_cpufreq_lock);
+-		return;
+-	}
+-
+-	list_del(&cpufreq_dev->node);
++	cpufreq_dev_count--;
+ 
+ 	/* Unregister the notifier for the last cpufreq cooling device */
+-	if (cpufreq_dev_count == 1) {
++	if (cpufreq_dev_count == 0) {
+ 		cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
+ 					CPUFREQ_POLICY_NOTIFIER);
+ 	}
+ 	mutex_unlock(&cooling_cpufreq_lock);
++
+ 	thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
+ 	release_idr(&cpufreq_idr, cpufreq_dev->id);
+-	if (cpufreq_dev_count == 1)
+-		mutex_destroy(&cooling_cpufreq_lock);
+ 	kfree(cpufreq_dev);
+ }
+ EXPORT_SYMBOL(cpufreq_cooling_unregister);
+-- 
+1.7.11.3
 
