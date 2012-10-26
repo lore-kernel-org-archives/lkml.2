@@ -1,111 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab2JZIUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:20:45 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40773 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757043Ab2JZIUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:20:42 -0400
-Date: Fri, 26 Oct 2012 11:14:48 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: <balbi@ti.com>, Li Yang-R58472 <r58472@freescale.com>,
-        Simon Haggett <simon.haggett@realvnc.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a
- disabled USB endpoint on Freescale hardware
-Message-ID: <20121026081448.GD23501@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
- <1535820.NU10ADjvOZ@avalon>
- <20121022105601.GS14033@arwen.pp.htv.fi>
- <3862785.b8vaFMSbLQ@avalon>
+	id S1757313Ab2JZIWQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:22:16 -0400
+Received: from smtp1.smmp-rueil.gmessaging.net ([81.80.3.134]:42447 "EHLO
+	smtp1.smmp-rueil.gmessaging.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757043Ab2JZIWI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 04:22:08 -0400
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Oct 2012 04:22:07 EDT
+Message-ID: <26026_1351239109_508A45C4_26026_63_1_508A45C1.3010407@sagemcom.com>
+Date: Fri, 26 Oct 2012 10:11:45 +0200
+From: Guillaume Juan <guillaume.juan@sagemcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="J5MfuwkIyy7RmF4Q"
-Content-Disposition: inline
-In-Reply-To: <3862785.b8vaFMSbLQ@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] n_gsm: prevent crash due to dereferencing NULL gsm->tty
+X-MIMETrack: Itemize by SMTP Server on CHELS01SC/SERV/SAGEMCOM(Release 7.0.4|March 23, 2009) at
+ 10/26/2012 10:11:46 AM,
+	Serialize by Router on CHELS01SC/SERV/SAGEMCOM(Release 7.0.4|March 23, 2009) at
+ 10/26/2012 10:11:48 AM,
+	Serialize complete at 10/26/2012 10:11:48 AM
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---J5MfuwkIyy7RmF4Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Guillaume Juan <guillaume.juan@sagemcom.com>
 
-Hi,
+If gsm->tty happens to be NULL in gsmld_output, avoid crashing the kernel (the crash is replaced by a warning dump).
+Prevent at earlier level such situation:
+- gsmtty_hangup does no longer call gsm_dlci_begin_close when called synchronously from gsm_cleanup_mux, because this would arm a timer that will asynchronously lead to use gms->tty, potentially after it is nullified.
+- in gsm_cleanup_mux, release DLCIs (other than DLCI#0 which is the control one) before closing mux. Else, it can happen that the T2 timer is rearmed by another thread scheduled between del_timer_sync and gsm_dlci release
+(for example by the following call-stack: fput => tty_release => tty_port_close_start => tty_port_lower_dtr_rts => gsm_dtr_rts => gsmtty_modem_update)
 
-On Thu, Oct 25, 2012 at 02:36:24AM +0200, Laurent Pinchart wrote:
-> Hi Felipe,
->=20
-> On Monday 22 October 2012 13:56:01 Felipe Balbi wrote:
-> > On Mon, Oct 22, 2012 at 12:47:21PM +0200, Laurent Pinchart wrote:
-> > > On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
-> > > > On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
-> > > > > On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
-> > > > > > Some gadget drivers may attempt to dequeue requests for an endp=
-oint
-> > > > > > that has already been disabled. For example, in the UVC gadget
-> > > > > > driver, uvc_function_set_alt() will call usb_ep_disable() when =
-alt
-> > > > > > setting 0 is selected. When the userspace application subsequen=
-tly
-> > > > > > issues the VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes
-> > > > > > usb_ep_dequeue() to ensure that all requests have been cancelle=
-d.
-> > > > >=20
-> > > > > bug is on uvc gadget, then. Laurent ?
-> > >=20
-> > > We've discussed this topic a couple of months before. I believe that'=
-s not
-> > > a bug.
-> > >=20
-> > > http://68.183.106.108/lists/linux-usb/msg68869.html
-> >=20
-> > fair enough :-)
-> >=20
-> > That's a different case, however. At the link above we're discussing
-> > dequeueing a request which is already being dequeued. $SUBJECT is trying
-> > to fix dequeueing of a request for an endpoint which isn't even enabled.
->=20
-> You've got a point there :-) That's a different case indeed, I'm open to =
-(at=20
-> least evaluating) a fix in the UVC gadget driver if you think that's bett=
-er.
+Signed-off-by: Guillaume Juan <guillaume.juan@sagemcom.com>
+---
+ drivers/tty/n_gsm.c |   35 ++++++++++++++++++++++++++---------
+ 1 files changed, 26 insertions(+), 9 deletions(-)
 
-I _do_ think that's better. If the endpoint isn't even enabled, why are
-you trying to dequeue a request ? :-)
+diff --git a/drivers/tty/n_gsm.c b/drivers/tty/n_gsm.c
+index 1e8e8ce..fe3c6ad 100644
+--- a/drivers/tty/n_gsm.c
++++ b/drivers/tty/n_gsm.c
+@@ -1510,8 +1510,8 @@ static void gsm_dlci_begin_open(struct gsm_dlci *dlci)
+ }
+ 
+ /**
+- *	gsm_dlci_begin_close	-	start channel open procedure
+- *	@dlci: DLCI to open
++ *	gsm_dlci_begin_close	-	start channel close procedure
++ *	@dlci: DLCI to close
+  *
+  *	Commence closing a DLCI from the Linux side. We issue DISC messages
+  *	to the modem which should then reply with a UA, at which point we
+@@ -2031,6 +2031,13 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
+ 	spin_unlock(&gsm_mux_lock);
+ 	WARN_ON(i == MAX_MUX);
+ 
++	/* Free up any link layer users */
++	if (dlci)
++		dlci->dead = 1;
++	for (i = 1; i < NUM_DLCI; i++)
++		if (gsm->dlci[i])
++			gsm_dlci_release(gsm->dlci[i]);
++
+ 	/* In theory disconnecting DLCI 0 is sufficient but for some
+ 	   modems this is apparently not the case. */
+ 	if (dlci) {
+@@ -2041,15 +2048,11 @@ void gsm_cleanup_mux(struct gsm_mux *gsm)
+ 	del_timer_sync(&gsm->t2_timer);
+ 	/* Now we are sure T2 has stopped */
+ 	if (dlci) {
+-		dlci->dead = 1;
+ 		gsm_dlci_begin_close(dlci);
+ 		wait_event_interruptible(gsm->event,
+ 					dlci->state == DLCI_CLOSED);
++		gsm_dlci_release(dlci);
+ 	}
+-	/* Free up any link layer users */
+-	for (i = 0; i < NUM_DLCI; i++)
+-		if (gsm->dlci[i])
+-			gsm_dlci_release(gsm->dlci[i]);
+ 	/* Now wipe the queues */
+ 	list_for_each_entry_safe(txq, ntxq, &gsm->tx_list, list)
+ 		kfree(txq);
+@@ -2192,6 +2195,10 @@ EXPORT_SYMBOL_GPL(gsm_alloc_mux);
+ 
+ static int gsmld_output(struct gsm_mux *gsm, u8 *data, int len)
+ {
++	if (gsm->tty == NULL) {
++		WARN(1, "NULL gsm->tty pointer in gsmld_output\n");
++		return -EINVAL;
++	}
+ 	if (tty_write_room(gsm->tty) < len) {
+ 		set_bit(TTY_DO_WRITE_WAKEUP, &gsm->tty->flags);
+ 		return -ENOSPC;
+@@ -2323,7 +2330,7 @@ static void gsmld_flush_buffer(struct tty_struct *tty)
+  *	@tty: device
+  *
+  *	Called from the terminal layer when this line discipline is
+- *	being shut down, either because of a close or becsuse of a
++ *	being shut down, either because of a close or because of a
+  *	discipline change. The function will not be called while other
+  *	ldisc methods are in progress.
+  */
+@@ -2954,6 +2961,15 @@ static void gsmtty_close(struct tty_struct *tty, struct file *filp)
+ 	gsm = dlci->gsm;
+ 	if (tty_port_close_start(&dlci->port, tty, filp) == 0)
+ 		goto out;
++	/* Should not happen because the DLCI ttys are hung up (which causes
++	   tty_port_close_start to return 0) by gsm_dlci_release before setting
++	   gsm->tty to NULL */
++	if (gsm->tty == NULL) {
++		WARN(1, "NULL gsm->tty pointer in gsmtty_close for %s\n",
++			tty->name);
++		goto out;
++	}
++
+ 	gsm_dlci_begin_close(dlci);
+ 	tty_port_close_end(&dlci->port, tty);
+ 	tty_port_tty_set(&dlci->port, NULL);
+@@ -2967,7 +2983,8 @@ static void gsmtty_hangup(struct tty_struct *tty)
+ {
+ 	struct gsm_dlci *dlci = tty->driver_data;
+ 	tty_port_hangup(&dlci->port);
+-	gsm_dlci_begin_close(dlci);
++	if (!dlci->gsm->dead)
++		gsm_dlci_begin_close(dlci);
+ }
+ 
+ static int gsmtty_write(struct tty_struct *tty, const unsigned char *buf,
+-- 
+1.7.0.4
 
-cheers
 
---=20
-balbi
 
---J5MfuwkIyy7RmF4Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+#
+" Ce courriel et les documents qui lui sont joints peuvent contenir des
+informations confidentielles ou ayant un caractère privé. S'ils ne vous sont
+pas destinés, nous vous signalons qu'il est strictement interdit de les
+divulguer, de les reproduire ou d'en utiliser de quelque manière que ce
+soit le contenu. Si ce message vous a été transmis par erreur, merci d'en
+informer l'expéditeur et de supprimer immédiatement de votre système
+informatique ce courriel ainsi que tous les documents qui y sont attachés."
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQikZ4AAoJEIaOsuA1yqRE3+0P/i23khVOl6XHW6nheK2QsTTh
-vljymPE3/DjIF0gpSo3CmE/iJI2Rfv3WLOppfiTZLz8tPsidyJ81D6A43fIUFqbn
-LRt8LGmsYmXHivetORjmkbn9tY5Bq8FwwS2HCTrxMKArhhMo3heTohNAfPMv3+F7
-pGnbFpci5GabUygU2OOZnxZKNmAcA3+yYtfGV3PIDsx3Kws+O44OBF4AM3X1F5cw
-irIbPAGiMMsJp4siSWnTjQRRHI7S64M5n8DE494DrnqEP0lLeeIZ72x8ETndZ4N2
-dmuE8nPf63F4UoGV+UeOjej2xgzLOJ4DOzBJeBAJVefb2VMb7n+RCdncNyLv6Hrq
-98NkJDTc1D1C91+KMMl4tkIY4Ji2M1/po9XUfhvWNl8CzHYO380wYqUCOqhIQ2sK
-0MhNVJ1kgeAIA5rywyOsX84ZCo3LnCrTZkq95rhG2PKwgZiPlMju1XSVUyxXLepm
-X/8mtnDuo1Kw3u86/EZ49d99VH53nsYso5blBgC4sJ/YEVeEkSZSzbAhWA86K2Gk
-ezftfTCyfvV2w4VbL8sw06g1gYzD2ExYNyV35zunjr/ioEOoPKK5mBz31f+gnZc4
-Fis0rHCmukzgn8Oj+DU4j/pQ7hD0bXUvsGbhSF/6ekL7/2/a7rgkmN/ZMuuwGb5Z
-x3XcZZMgzC1FE7y1rsP/
-=vNTh
------END PGP SIGNATURE-----
+                               ******
 
---J5MfuwkIyy7RmF4Q--
+" This e-mail and any attached documents may contain confidential or
+proprietary information. If you are not the intended recipient, you are
+notified that any dissemination, copying of this e-mail and any attachments
+thereto or use of their contents by any means whatsoever is strictly
+prohibited. If you have received this e-mail in error, please advise the
+sender immediately and delete this e-mail and all attached documents
+from your computer system."
+#
+
