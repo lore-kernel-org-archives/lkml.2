@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933278Ab2JZOTh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:19:37 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:52662 "EHLO mx2.fusionio.com"
+	id S933284Ab2JZOVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:21:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37686 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933217Ab2JZOTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:19:36 -0400
-X-ASG-Debug-ID: 1351261174-0421b562ecaac50001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 26 Oct 2012 10:19:32 -0400
-From: Chris Mason <chris.mason@fusionio.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs fixes
-Message-ID: <20121026141932.GD23729@shiny>
-X-ASG-Orig-Subj: [GIT PULL] Btrfs fixes
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1351261174
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.112446
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S933043Ab2JZOVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:21:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
+   d="asc'?scan'208";a="209695273"
+Message-ID: <1351261326.1823.24.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] mtd: use the NAND_STATUS_FAIL to replace the hardcode
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Huang Shijie <shijie8@gmail.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Oct 2012 17:22:06 +0300
+In-Reply-To: <1350272844-21866-1-git-send-email-shijie8@gmail.com>
+References: <1350272844-21866-1-git-send-email-shijie8@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-sjwSloIewUGlOOkaYi6V"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-My for-linus branch:
+--=-sjwSloIewUGlOOkaYi6V
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+On Sun, 2012-10-14 at 23:47 -0400, Huang Shijie wrote:
+> Use the NAND_STATUS_FAIL to replace the hardcode "0x01",
+> which make the code more readable.
+>=20
+> Signed-off-by: Huang Shijie <shijie8@gmail.com>
 
-Has our series of fixes for the next rc.  The biggest batch is from Jan
-Schmidt, fixing up some problems in our subvolume quota code and fixing
-btrfs send/receive to work with the new extended inode refs.
+Pushed to l2-mtd.git, thanks!
 
-My git tree is against 3.6, but these were all retested against your
-current git.
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Jan Schmidt (7) commits (+149/-76):
-    Btrfs: don't put removals from push_node_left into tree mod log twice (+7/-2)
-    Btrfs: fix a tree mod logging issue for root replacement operations (+2/-8)
-    Btrfs: tree mod log's old roots could still be part of the tree (+21/-4)
-    Btrfs: fix extent buffer reference for tree mod log roots (+1/-1)
-    Btrfs: extended inode refs support for send mechanism (+94/-58)
-    Btrfs: comment for loop in tree_mod_log_insert_move (+5/-0)
-    Btrfs: determine level of old roots (+19/-3)
+--=-sjwSloIewUGlOOkaYi6V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Josef Bacik (2) commits (+8/-6):
-    Btrfs: Use btrfs_update_inode_fallback when creating a snapshot (+6/-5)
-    Btrfs: do not bug when we fail to commit the transaction (+2/-1)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Stefan Behrens (1) commits (+2/-2):
-    Btrfs: Fix wrong error handling code
+iQIcBAABAgAGBQJQipyOAAoJECmIfjd9wqK0Q5sP/jKrGUHgtQeURDmkaYm+wOUF
+OH/+TcqsoLojSXPdVydXbsw5XIGH0xKFMNarcmSZBGkM0DzAjWGXjdGj77I7V4PN
+yQSpUJHNE8abrZhrrjVPyfjxko4JltkKzIVphmx9tmklry6pH+XwovqX4xeZ8/8/
+HWEHfumbBE6hJGEkjsMKVaB8eKvjtwv8OCoqns99sXNU1c1foI0qZMns8QFBgRo2
+gJZ7jZ22yhpncXfFEE9FsPtcOsq5vhxqJMPnzrIla/UrQBS0mqe8EfRJbyvAS5sg
+JkBB8OA/7dkvDwEzS7ljD4lXzZyyT7X0hJ0yXSiDJ0vU5wQ7Ax6Raug+J0+RJYpU
+PS3Aer//9HxnbpRiUs6Sht2lhCG6+No9UQJmigdabK2YsrK2SzBNCJt2ob0BQN+O
+6UBw3U3P64NwgG7zWDk31DoVpSBUT848XCXTe2qy2QxDsG9N9LevnjpXZT/5GqKl
+KNZdKVyu09isml65UWOIJ5XdmYiifPLzqf+Q7PLJG7Tkz/eWduixcOO4sq5F/rwm
+79o6b4y7YSqvoairA2Fx+vVTASF4OekLDXcnWX21OZ8b9f7uKlSPuEiig2gASjdY
+Y5AJx9RqosX8KBlLsgK/f0aueDxuYSA/229k8ZMqvekL6Lga9652/0HhEWG+Bikj
+FeIQ57SEx1z1AMJbV7jV
+=8sLp
+-----END PGP SIGNATURE-----
 
-Lukas Czerner (1) commits (+2/-1):
-    btrfs: Return EINVAL when length to trim is less than FSB
+--=-sjwSloIewUGlOOkaYi6V--
 
-Arne Jansen (1) commits (+2/-1):
-    Btrfs: send correct rdev and mode in btrfs-send
-
-Gabriel de Perthuis (1) commits (+1/-1):
-    Fix a sign bug causing invalid memory access in the ino_paths ioctl.
-
-Liu Bo (1) commits (+5/-3):
-    Btrfs: fix memory leak when cloning root's node
-
-Alex Lyakas (1) commits (+13/-14):
-    Btrfs: Send: preserve ownership (uid and gid) also for symlinks.
-
-Miao Xie (1) commits (+7/-0):
-    Btrfs: fix deadlock caused by the nested chunk allocation
-
-Tsutomu Itoh (1) commits (+13/-4):
-    Btrfs: fix memory leak in btrfs_quota_enable()
-
-Total: (17) commits (+202/-108)
- fs/btrfs/backref.c     |  28 ++++-----
- fs/btrfs/backref.h     |   4 ++
- fs/btrfs/ctree.c       |  70 +++++++++++++++++-----
- fs/btrfs/ctree.h       |   3 +
- fs/btrfs/extent_io.c   |   4 +-
- fs/btrfs/inode.c       |   7 +--
- fs/btrfs/ioctl.c       |   6 +-
- fs/btrfs/qgroup.c      |  17 ++++--
- fs/btrfs/send.c        | 156 ++++++++++++++++++++++++++++++-------------------
- fs/btrfs/transaction.c |   2 +-
- fs/btrfs/volumes.c     |   7 +++
- 11 files changed, 199 insertions(+), 105 deletions(-)
