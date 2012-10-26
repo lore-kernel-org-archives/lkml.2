@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab2JZAdP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:33:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53199 "EHLO mail.kernel.org"
+	id S1754314Ab2JZAde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:33:34 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55706 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753862Ab2JZAHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 42/42] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
-Date: Thu, 25 Oct 2012 17:05:50 -0700
-Message-Id: <20121026000129.021347820@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
-References: <20121026000124.790781113@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754006Ab2JZAdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:33:32 -0400
+Date: Thu, 25 Oct 2012 17:33:25 -0700
+From: Kees Cook <kees@outflux.net>
+To: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Enabling hardlink restrictions to the Linux VFS in 3.6 by default
+Message-ID: <20121026003325.GB17208@outflux.net>
+References: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi Holger,
 
-------------------
+On Thu, Oct 25, 2012 at 12:13:40PM +0000, Holger Kiehl wrote:
+> as of linux 3.6 hardlink restrictions to the Linux VFS have been enabled
+> by default. This breaks the application AFD [1] of which I am the author.
 
-From: Brian Norris <computersforpeace@gmail.com>
+Sorry this created a problem for you!
 
-commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
+> Internally it uses hardlink to distribute files. The reason for hardlinks
+> is that AFD can distribute one file to many destinations and for each
+> distributing process it creates a directory with hardlinks to the original
+> file. That way AFD itself never needs to copy the content of a file. Another
+> nice feature about hardlinks was that there is no need to have any logic in
+> the code needing AFD to know where the original file was, each distributing
+> process could delete its hardlink and the last one would delete the real
+> file. This way AFD could distribute files at rates of more then 20000 files
+> per second (in benchmarks). This has worked from the first linux kernel
+> up to 3.5.7 and with solaris, hpux, aix, ftx, irix. As of 3.6 this does
+> not work for files where AFD does not have write permissions. It was always
+> sufficient to just have read permission on a file it wants to distribute.
 
-The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
-silently masks off at least one flag that might be set by the driver
-(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
-others.
+Just to clarify, not even read access was needed for hardlinks:
 
-Really, as long as driver writers exercise a small amount of care with
-NAND_* options, this mask is not necessary at all; it was only here to
-prevent certain options from accidentally being set by the driver. But the
-original thought turns out to be a bad idea occasionally. Thus, kill it.
+$ whoami
+kees
+$ ls -l /etc/shadow
+-r--r----- 1 root shadow 3112 Oct 22 17:02 /etc/shadow
+$ ln /etc/shadow /tmp/ohai
+$ ls -l /tmp/ohai
+-r--r----- 2 root shadow 3112 Oct 22 17:02 ohai
 
-Note, this patch fixes some major gpmi-nand breakage.
+You mention "the last one would delete the real file". That would have
+required AFD to have write permission to the directory where the original
+file existed? Maybe there is something in your architecture that could
+take advantage of that? Directory group-write set-gid? I haven't taken
+a look at AFD's code.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Tested-by: Huang Shijie <shijie8@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/mtd/nand/nand_base.c |    9 +++------
- include/linux/mtd/nand.h     |    3 ---
- 2 files changed, 3 insertions(+), 9 deletions(-)
+> The fix for the "at" daemon [2] mentioned in the commitdiff [3] cannot
+> be used for AFD since it is not run with root privileges. Is there any
+> other way I can "fix" my application? I currently can see no other way
+> then doing it via: echo 0 > /proc/sys/fs/protected_hardlinks
 
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2897,9 +2897,7 @@ static int nand_flash_detect_onfi(struct
- 	if (le16_to_cpu(p->features) & 1)
- 		*busw = NAND_BUSWIDTH_16;
- 
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= (NAND_NO_READRDY |
--			NAND_NO_AUTOINCR) & NAND_CHIPOPTIONS_MSK;
-+	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
- 
- 	pr_info("ONFI flash detected\n");
- 	return 1;
-@@ -3064,9 +3062,8 @@ static struct nand_flash_dev *nand_get_f
- 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
- 		}
- 	}
--	/* Get chip options, preserve non chip based options */
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
-+	/* Get chip options */
-+	chip->options |= type->options;
- 
- 	/*
- 	 * Check if chip is not a Samsung device. Do not clear the
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -215,9 +215,6 @@ typedef enum {
- #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
- 					&& (chip->page_shift > 9))
- 
--/* Mask to zero out the chip options, which come from the id table */
--#define NAND_CHIPOPTIONS_MSK	(0x0000ffff & ~NAND_NO_AUTOINCR)
--
- /* Non chip related options */
- /* This option skips the bbt scan during initialization. */
- #define NAND_SKIP_BBTSCAN	0x00010000
+You said you have read access to these files, so perhaps you can make
+a copy when you have read but not write, and then all the subsequent
+duplication would be able to hardlink?
 
+If you wanted to turn off the sysctl, you could have AFD could ship
+files in /etc/sysctl.d/ (or your distro equivalent) to turn it off.
 
+I'm sure there are plenty of options available.
+
+> Why is such a fundamentally change to the linux kernel activated by default?
+
+Based on about two years of testing in Ubuntu, the number of problems
+was vanishingly small, so the security benefit is seen to outweigh
+the downside.
+
+> Would it not be better if it is the other way around, that the system
+> administrator or distributions enable this?
+
+Virtually all distributions would have turned this on by default,
+so it seemed better to many people to just make it the default in the
+kernel. Only unusual corner-cases would need it disabled.
+
+I hope that helps!
+
+-Kees
+
+-- 
+Kees Cook                                            @outflux.net
