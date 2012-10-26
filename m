@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab2JZMF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:05:58 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:64742 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932551Ab2JZMFy (ORCPT
+	id S932558Ab2JZMJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:09:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33990 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469Ab2JZMJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:05:54 -0400
-From: <Vineet.Gupta1@synopsys.com>
-To: <gregkh@linuxfoundation.org>, <alan@linux.intel.com>
-CC: <arc-linux-dev@synopsys.com>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH v5] serial/arc-uart: Add new driver
-Date: Fri, 26 Oct 2012 17:33:15 +0530
-Message-ID: <1351252996-28484-1-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 26 Oct 2012 08:09:36 -0400
+Date: Fri, 26 Oct 2012 14:09:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Zhang, Yanmin" <yanmin.zhang@intel.com>
+cc: "He, Bo" <bo.he@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
+Subject: RE: [PATCH] hrtimer:__run_hrtimer races with enqueue_hrtimer
+In-Reply-To: <144086DDB7BB6D429C79280EB1C804D41687C9@SHSMSX101.ccr.corp.intel.com>
+Message-ID: <alpine.LFD.2.02.1210261359210.2756@ionos>
+References: <1351219917.28400.6.camel@hebo> <alpine.LFD.2.02.1210261147000.2756@ionos> <144086DDB7BB6D429C79280EB1C804D41687C9@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.197.56]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vineet Gupta <vgupta@synopsys.com>
+On Fri, 26 Oct 2012, Zhang, Yanmin wrote:
+> >From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> >Your code is returning HRTIMER_RESTART from the timer callback and at
+> >the same time it starts the timer from some other context. That's what
+> >needs to be fixed.
+> 
+> The timer user should fix it. But could we also change hrtimer to
+> make it more stable?  At least, instead of panic, could we print
+> some information and go ahead to let kernel continue?
 
-Hi Greg,
+That's unfortunately not possible. At this point the timer might be
+already corrupted.
 
-Here's the updated revision with fixes per your review comments.
--Rebased off tty-next tip.
--Build tested for x86, both as builtin and as module
--Same driver (as module) verified on ARCAngel4 Board.
+CPU0				CPU 1
 
-Please consider applying.
+timer expires
+  callback runs		
+                                hrtimer_start()
+				   expiry value is set
+				   hrtimer_enqueue()
+
+   hrtimer_forward()
+      expiry value is set
+
+  return HRTIMER_RESTART				
+
+So while we can prevent the double enqueue, we have no way to deal
+with the corrupted expiry value and the inconsistent RB tree. We can
+give better debugging information, but we can't pretend that
+everything is nice and cool.
+
+If we really want to do something about it which keeps the machine
+alive, then we need to 
+
+       1) dequeue the timer
+       2) run a consistency check over the rbtree
+       3) enqueue the timer
+
+Not sure if that's worth the trouble.
 
 Thanks,
-Vineet
 
-v5:
-* Driver now builds as module; default !y
-* Fixed some build wreckage due to SERIAL_ARC && !SERIAL_ARC_CONSOLE
-* Fixed a sparse warning due to forced cast, hence reg offsets now in bytes
-
-v4:
-* UAPI disintegration fallout for serial_core.h
-* rebased off of tty-next
-
-v3:
-* Removed empty arc_serial_set_ldisc()
-* More set_termios fixes - CSIZE forced to CS8 (for 8N1)
-* global @running_on_iss replaced with platform data, saved in device
-  specific port structure.
-
-v2:
-* ttyARC used as device name
-* Dynamic assignment of major/minor numbers.
-* Ref counting tty in rx routine to prevent it from disappearing in
-  case of a hangup
-* set_termios fixes:
-  - hardware flow control/parity are marked as unsupported
-  - baud written back to termios
-* cosmetics such as commenting the need for @running_on_iss, empty lines
-  etc
-
-Vineet Gupta (1):
-  serial/arc-uart: Add new driver
-
- drivers/tty/serial/Kconfig       |   23 ++
- drivers/tty/serial/Makefile      |    1 +
- drivers/tty/serial/arc_uart.c    |  754 ++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/serial_core.h |    2 +
- 4 files changed, 780 insertions(+), 0 deletions(-)
- create mode 100644 drivers/tty/serial/arc_uart.c
-
--- 
-1.7.4.1
-
+	tglx
