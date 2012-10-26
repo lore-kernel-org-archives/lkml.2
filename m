@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab2JZMsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:48:16 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:47039 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932694Ab2JZMsO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:48:14 -0400
-Date: Fri, 26 Oct 2012 14:48:04 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/4] Adding SATA support for Armada 370/XP
-Message-ID: <20121026144804.640eabaf@skate>
-In-Reply-To: <20121026123908.GH21046@lunn.ch>
-References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
-	<20121026123908.GH21046@lunn.ch>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932757Ab2JZMsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:48:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65209 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932740Ab2JZMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 08:48:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
+   d="scan'208";a="232902316"
+From: Andi Kleen <andi@firstfloor.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+References: <20121025121617.617683848@chello.nl>
+	<20121025124832.840241082@chello.nl>
+	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+	<5089F5B5.1050206@redhat.com>
+	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+	<508A0A0D.4090001@redhat.com>
+	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+Date: Fri, 26 Oct 2012 05:48:03 -0700
+In-Reply-To: <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+	(Michel Lespinasse's message of "Fri, 26 Oct 2012 05:34:02 -0700")
+Message-ID: <m2pq45qu0s.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michel Lespinasse <walken@google.com> writes:
 
-On Fri, 26 Oct 2012 14:39:08 +0200, Andrew Lunn wrote:
+> On Thu, Oct 25, 2012 at 9:23 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Oct 25, 2012 at 8:57 PM, Rik van Riel <riel@redhat.com> wrote:
+>>>
+>>> That may not even be needed.  Apparently Intel chips
+>>> automatically flush an entry from the TLB when it
+>>> causes a page fault.  I assume AMD chips do the same,
+>>> because flush_tlb_fix_spurious_fault evaluates to
+>>> nothing on x86.
+>>
+>> Yes. It's not architected as far as I know, though. But I agree, it's
+>> possible - even likely - we could avoid TLB flushing entirely on x86.
+>
+> Actually, it is architected on x86. This was first described in the
+> intel appnote 317080 "TLBs, Paging-Structure Caches, and Their
+> Invalidation", last paragraph of section 5.1. Nowadays, the same
+> contents are buried somewhere in Volume 3 of the architecture manual
+> (in my copy: 4.10.4.1 Operations that Invalidate TLBs and
+> Paging-Structure Caches)
 
-> What about the openblocks-ax3?
+This unfortunately would only work for processes with no threads
+because it only works on the current logical CPU.
 
-Grégory does not (yet) have an OpenBlocks AX3, but I'm planning to do
-the work for SATA soon for this platform. However, supporting the
-OpenBlocks AX3 is not part of our official contract with Marvell, it's
-just an additional thing I'm happily doing on my spare time. So I'll
-provide support for SATA, network and SMP on OpenBlocks AX3, but we
-would like to first see the SATA support for the Marvell evaluation
-boards being merged, and on my side the basic support for the
-OpenBlocks AX3. I'll send followup patches to enable SATA/network/SMP
-on OpenBlocks AX3 later on, if that's ok for you?
-
-Thanks!
-
-Thomas
+-Andi
 -- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+ak@linux.intel.com -- Speaking for myself only
