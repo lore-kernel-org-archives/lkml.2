@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2JZAjz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:39:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52896 "EHLO mail.kernel.org"
+	id S1754080Ab2JZAkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:40:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52882 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab2JZAGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:38 -0400
+	id S1753254Ab2JZAGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [ 21/42] Revert "cgroup: Remove task_lock() from cgroup_post_fork()"
-Date: Thu, 25 Oct 2012 17:05:29 -0700
-Message-Id: <20121026000126.914584418@linuxfoundation.org>
+        PaX Team <pageexec@freemail.hu>, Kees Cook <keescook@chromium.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/42] kernel/sys.c: fix stack memory content leak via UNAME26
+Date: Thu, 25 Oct 2012 17:05:19 -0700
+Message-Id: <20121026000125.924243838@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -26,58 +29,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit d87838321124061f6c935069d97f37010fa417e6 upstream.
+commit 2702b1526c7278c4d65d78de209a465d4de2885e upstream.
 
-This reverts commit 7e3aa30ac8c904a706518b725c451bb486daaae9.
+Calling uname() with the UNAME26 personality set allows a leak of kernel
+stack contents.  This fixes it by defensively calculating the length of
+copy_to_user() call, making the len argument unsigned, and initializing
+the stack buffer to zero (now technically unneeded, but hey, overkill).
 
-The commit incorrectly assumed that fork path always performed
-threadgroup_change_begin/end() and depended on that for
-synchronization against task exit and cgroup migration paths instead
-of explicitly grabbing task_lock().
+CVE-2012-0957
 
-threadgroup_change is not locked when forking a new process (as
-opposed to a new thread in the same process) and even if it were it
-wouldn't be effective as different processes use different threadgroup
-locks.
-
-Revert the incorrect optimization.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-LKML-Reference: <20121008020000.GB2575@localhost>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Reported-by: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ kernel/sys.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4539,19 +4539,10 @@ void cgroup_post_fork(struct task_struct
- 	 */
- 	if (use_task_css_set_links) {
- 		write_lock(&css_set_lock);
--		if (list_empty(&child->cg_list)) {
--			/*
--			 * It's safe to use child->cgroups without task_lock()
--			 * here because we are protected through
--			 * threadgroup_change_begin() against concurrent
--			 * css_set change in cgroup_task_migrate(). Also
--			 * the task can't exit at that point until
--			 * wake_up_new_task() is called, so we are protected
--			 * against cgroup_exit() setting child->cgroup to
--			 * init_css_set.
--			 */
-+		task_lock(child);
-+		if (list_empty(&child->cg_list))
- 			list_add(&child->cg_list, &child->cgroups->tasks);
--		}
-+		task_unlock(child);
- 		write_unlock(&css_set_lock);
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1180,15 +1180,16 @@ DECLARE_RWSEM(uts_sem);
+  * Work around broken programs that cannot handle "Linux 3.0".
+  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
+  */
+-static int override_release(char __user *release, int len)
++static int override_release(char __user *release, size_t len)
+ {
+ 	int ret = 0;
+-	char buf[65];
+ 
+ 	if (current->personality & UNAME26) {
+-		char *rest = UTS_RELEASE;
++		const char *rest = UTS_RELEASE;
++		char buf[65] = { 0 };
+ 		int ndots = 0;
+ 		unsigned v;
++		size_t copy;
+ 
+ 		while (*rest) {
+ 			if (*rest == '.' && ++ndots >= 3)
+@@ -1198,8 +1199,9 @@ static int override_release(char __user
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		snprintf(buf, len, "2.6.%u%s", v, rest);
+-		ret = copy_to_user(release, buf, len);
++		copy = min(sizeof(buf), max_t(size_t, 1, len));
++		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
++		ret = copy_to_user(release, buf, copy + 1);
  	}
+ 	return ret;
  }
 
 
