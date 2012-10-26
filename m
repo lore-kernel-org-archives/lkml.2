@@ -1,161 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab2JZHMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:12:22 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:47273 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756600Ab2JZHMU (ORCPT
+	id S1756738Ab2JZHPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:15:40 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59883 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756600Ab2JZHPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:12:20 -0400
-Message-ID: <508A37E6.8000401@st.com>
-Date: Fri, 26 Oct 2012 08:12:38 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 26 Oct 2012 03:15:38 -0400
+Date: Fri, 26 Oct 2012 09:15:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 26/31] sched, numa, mm: Add fault driven placement and
+ migration policy
+Message-ID: <20121026071532.GC8141@gmail.com>
+References: <20121025121617.617683848@chello.nl>
+ <20121025124834.467791319@chello.nl>
+ <CA+55aFwJdn8Kz9UByuRfGNtf9Hkv-=8xB+WRd47uHZU1YMagZw@mail.gmail.com>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 3.7.0-rc2] dt: match id-table before creating platform
- device
-References: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com> <5086988F.6090107@gmail.com>
-In-Reply-To: <5086988F.6090107@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwJdn8Kz9UByuRfGNtf9Hkv-=8xB+WRd47uHZU1YMagZw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/12 14:15, Rob Herring wrote:
-re-sending my reply again, as it did not appear in my inbox from dt
-mailing list.
-> Adding lkml. DT patches should go to both lists.
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Thu, Oct 25, 2012 at 5:16 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > +       /*
+> > +        * Using runtime rather than walltime has the dual advantage that
+> > +        * we (mostly) drive the selection from busy threads and that the
+> > +        * task needs to have done some actual work before we bother with
+> > +        * NUMA placement.
+> > +        */
+> 
+> That explanation makes sense..
+> 
+> > +       now = curr->se.sum_exec_runtime;
+> > +       period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+> > +
+> > +       if (now - curr->node_stamp > period) {
+> > +               curr->node_stamp = now;
+> > +
+> > +               if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+> 
+> .. but then the whole "numa_next_scan" thing ends up being 
+> about real-time anyway?
 >
-> On 10/23/2012 05:30 AM, Srinivas KANDAGATLA wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> As part of of_platform_populate call, the existing code iterates each
->> child node and then creates a platform device for each child, however
->> there is bug in the code which does not check the match table before
->> creating the platform device. This might result creating two platfrom
->> devices and also invoking driver probe twice, which is incorrect.
->>
->> This patch moves a existing of_match_node check to start of the function
->> to fix the bug, doing this way will return immediately without creating
->> any datastructures if the child does not match the supplied match-table.
->>
->> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->> ---
->>  drivers/of/platform.c |    5 ++++-
->>  1 files changed, 4 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->> index b80891b..1aaa560 100644
->> --- a/drivers/of/platform.c
->> +++ b/drivers/of/platform.c
->> @@ -367,6 +367,9 @@ static int of_platform_bus_create(struct device_node *bus,
->>  		return 0;
->>  	}
->>  
->> +	if (!of_match_node(matches, bus))
->> +		return 0;
->> +
-> This is not right. This function is recursive and this change would
-> break that.
+> So 'numa_scan_period' in in CPU time (msec, converted to nsec 
+> at runtime rather than when setting it), but 'numa_next_scan' 
+> is in wallclock time (jiffies)?
+> 
+> But *both* of them are based on the same 'numa_scan_period' 
+> thing that the user sets in ms.
+> 
+> So numa_scan_period is interpreted as both wallclock *and* as 
+> runtime?
+> 
+> Maybe this works, but it doesn't really make much sense.
 
-You are correct, this change might break the functionality.
+So, the relationship between wall clock time and execution 
+runtime is that on the limit they run at the same speed: when 
+there's a single task running. In any other case execution 
+runtime can only run slower than wall time.
 
+So the bit you found weird:
 
->  Perhaps we could only call of_platform_device_create_pdata
-> if !of_match_node instead, but I'm not completely sure that would be the
-> right thing to do.
+> > +               if (!time_before(jiffies, curr->mm->numa_next_scan)) {
 
-I did try to do the same thing in the patch.
-May be I should have moved check just before calling
-of_platform_device_create_pdata?
+together with the task_numa_work() frequency limit:
 
->  There's also some historical things we have to
-> support which is why we have of_platform_populate and of_platform_bus_probe.
+        /*
+         * Enforce maximal scan/migration frequency..
+         */
+        migrate = mm->numa_next_scan;
+        if (time_before(now, migrate))
+                return;
 
-m just trying to understand the difference between of_platform_populate
-and of_platform_bus_probe.
-Looking at the function documentation, which states
-of_platform_bus_probe will only create children of the root which are
-selected by the @matches argument.
+        next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
+        if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+                return;
 
-of_platform_populate walks the device tree and creates devices from
-nodes.  It differs in that it follows the modern convention of requiring
-all device nodes to have a 'compatible' property, and it is suitable for
-creating devices which are children of the root node.
+puts an upper limit on the per mm scanning frequency.
 
-Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
-on a device trees like the below with
-struct of_device_id match_table[] = {
-    { .compatible = "simple-bus", }
-    {}
-};
+This filters us from over-sampling if there are many threads: if 
+all threads happen to come in at the same time we don't create a 
+spike in overhead.
 
-parent@0{
-    compatible    = "xxx,parent1", "simple-bus";
-    ...
-    child@0 {
-        compatible    = "xxx,child0", "simple-bus";
-        ...
-    };
-    child@1 {
-        compatible    = "xxx,child1";
-        ...
-    };
-    child@2 {
-        compatible    = "xxx,child2", "simple-bus";
-        ...
-    };
-};
+We also avoid multiple threads scanning at once in parallel to 
+each other. Faults are nicely parallel, especially with all the 
+preparatory patches in place, so the distributed nature of the 
+faults itself is not a problem.
 
-of_platform_bus_probe would create platform-devices for parent@0,
-child@0and child@2
-where as
-of_platform_populate would create platform-devices for parent@0,
-child@0, child@1 and child@2 nodes.
+So we have to conflicting goals here: on one hand we have a 
+quality of sampling goal which asks for per task runtime 
+proportional scanning on all threads, but we also have a 
+performance goal and don't actually want all threads running at 
+the same time. This frequency limit avoids the over-sampling 
+scenario while still fulfilling the per task sampling property, 
+statistically on average.
 
-So the question is
-why do we need to have @matches argument to of_platform_populate in the
-first place, if it creates all the devices by walking the dt nodes?
+If you agree that we should do it like that and if the 
+implementation is correct and optimal, I will put a better 
+explanation into the code.
 
-It is bit confusing, As some platforms use of_platform_populate(NULL,
-of_default_bus_match_table, NULL, NULL) assuming that only matching
-nodes will end up having platform device.
-Also
-some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
-where match table is of_default_bus_match_table.
+[
+  task_numa_work() performance side note:
 
-Am not 100% sure what is the right solution, but I think lot of platforms would want behavior like of_platform_bus_probe which takes lookups aswell.
+  We are also *very* close to be able to use down_read() instead
+  of down_write() in the sampling-unmap code in 
+  task_numa_work(), as it should be safe in theory to call 
+  change_protection(PROT_NONE) in parallel - but there's one 
+  regression that disagrees with this theory so we use 
+  down_write() at the moment.
 
-IMO, we could do two things to avoid this confusion in future and achieve the expected behaviour.
+  Maybe you could help us there: can you see a reason why the
+  change_prot_none()->change_protection() call in
+  task_numa_work() can not occur in parallel to a page fault in
+  another thread on another CPU? It should be safe - yet if we 
+  change it I can see occasional corruption of user-space state: 
+  segfaults and register corruption.
+]
 
-1. Remove matches from of_platform_populate
-2. add Lookup argument to of_platform_bus_probe
+> [...] And what is the impact of this on machines that run lots 
+> of loads with delays (whether due to IO or timers)?
 
-??
+I've done sysbench OLTP measurements which showed no apparent 
+regressions:
 
---srini
+ #
+ # Comparing { res-schednuma-NO_NUMA.txt } to { res-schednuma-+NUMA.txt }:
+ #
+ #  threads     improvement %       SysBench OLTP transactions/second
+ #-------------------------------------------------------------------
+         2:            2.11 %              #    2160.20  vs.  2205.80
+         4:           -5.52 %              #    4202.04  vs.  3969.97
+         8:            0.01 %              #    6894.45  vs.  6895.45
+        16:           -0.31 %              #   11840.77  vs. 11804.30
+        24:           -0.56 %              #   15053.98  vs. 14969.14
+        30:            0.56 %              #   17043.23  vs. 17138.21
+        32:           -1.08 %              #   17797.04  vs. 17604.67
+        34:            1.04 %              #   18158.10  vs. 18347.22
+        36:           -0.16 %              #   18125.42  vs. 18096.68
+        40:            0.45 %              #   18218.73  vs. 18300.59
+        48:           -0.39 %              #   18266.91  vs. 18195.26
+        56:           -0.11 %              #   18285.56  vs. 18265.74
+        64:            0.23 %              #   18304.74  vs. 18347.51
+        96:            0.18 %              #   18268.44  vs. 18302.04
+       128:            0.22 %              #   18058.92  vs. 18099.34
+       256:            1.63 %              #   17068.55  vs. 17347.14
+       512:            6.86 %              #   13452.18  vs. 14375.08
 
-> Rob
->
->>  	auxdata = of_dev_lookup(lookup, bus);
->>  	if (auxdata) {
->>  		bus_id = auxdata->name;
->> @@ -379,7 +382,7 @@ static int of_platform_bus_create(struct device_node *bus,
->>  	}
->>  
->>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
->> -	if (!dev || !of_match_node(matches, bus))
->> +	if (!dev)
->>  		return 0;
->>  
->>  	for_each_child_of_node(bus, child) {
->>
->
->
+No regression is the best we can hope for I think, given that 
+OLTP typically has huge global caches and global serialization, 
+so any NUMA conscious will at most be a nuisance.
 
+We've also done kbuild measurements - which too is a pretty 
+sleepy workload that is too fast for any migration techniques to 
+help.
+
+But even sysbench isn't doing very long delays, so I will do 
+more IO delay targeted measurements.
+
+So I've been actively looking for and checking the worst-case 
+loads for this feature. The feature obviously helps long-run, 
+CPU-intense workloads, but those aren't the challenging ones 
+really IMO: I spent 70% of the time analyzing workloads that are 
+not expected to be friends with this feature.
+
+We are also keeping CONFIG_SCHED_NUMA off by default for good 
+measure.
+
+Thanks,
+
+	Ingo
