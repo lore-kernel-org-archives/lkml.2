@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965294Ab2JZQUJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:20:09 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:2263 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965226Ab2JZQUH (ORCPT
+	id S965321Ab2JZQZj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:25:39 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49988 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965226Ab2JZQZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:20:07 -0400
-Message-ID: <1351268403.4013.24.camel@lorien2>
-Subject: [PATCH RFT linux-next] sh: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: lethal@linux-sh.org, kyungmin.park@samsung.com, m.szyprowski@samsung.com,
-        arnd@arndb.de, andrzej.p@samsung.com
-Cc: linux-sh@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Fri, 26 Oct 2012 10:20:03 -0600
-Organization: ISS-Linux
+	Fri, 26 Oct 2012 12:25:37 -0400
+Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read
+ support
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <508AB6FC.3080904@gmail.com>
+References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
+	 <87txti81i2.fsf@sejong.aot.lge.com> <1351242885.16863.0.camel@twins>
+	 <20121026102336.GA1067@krava.brq.redhat.com>
+	 <1351265946.1619.20.camel@leonhard>  <508AB6FC.3080904@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+Date: Sat, 27 Oct 2012 01:25:30 +0900
+Message-ID: <1351268730.1619.21.camel@leonhard>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for debug_dma_mapping_error() call to avoid warning from
-debug_dma_unmap() interface when it checks for mapping error checked
-status. Without this patch, device driver failed to check map error
-warning is generated.
+2012-10-26 (금), 10:14 -0600, David Ahern:
+> On 10/26/12 9:39 AM, Namhyung Kim wrote:
+> >> hm, thats the unique sample_type issue again ;) Once we set
+> >> PERF_SAMPLE_READ for event or group, we need to set it for
+> >> all other events in session, otherwise the report fails
+> >
+> > Sorry, I don't understand why we need to set it for all events.  Just
+> > setting it for a group is not sufficient?  Please shed some light on
+> > this.
+> 
+> perf does not support multiple sample_types -- all events in the session 
+> need to use the same one.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- arch/sh/include/asm/dma-mapping.h |    1 +
- 1 file changed, 1 insertion(+)
+Can I ask why? :)
 
-diff --git a/arch/sh/include/asm/dma-mapping.h b/arch/sh/include/asm/dma-mapping.h
-index 8bd965e..b437f2c 100644
---- a/arch/sh/include/asm/dma-mapping.h
-+++ b/arch/sh/include/asm/dma-mapping.h
-@@ -46,6 +46,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
- 
-+	debug_dma_mapping_error(dev, dma_addr);
- 	if (ops->mapping_error)
- 		return ops->mapping_error(dev, dma_addr);
- 
--- 
-1.7.9.5
-
+Thanks,
+Namhyung
 
 
