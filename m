@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab2JZAs0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:48:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52477 "EHLO mail.kernel.org"
+	id S1753747Ab2JZAsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:48:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52442 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab2JZAFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:47 -0400
+	id S1752816Ab2JZAFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>
-Subject: [ 12/31] usb: acm: fix the computation of the number of data bits
-Date: Thu, 25 Oct 2012 17:04:19 -0700
-Message-Id: <20121026000216.208082359@linuxfoundation.org>
+        Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 09/31] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+Date: Thu, 25 Oct 2012 17:04:16 -0700
+Message-Id: <20121026000215.915269528@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -25,56 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Boullis <nboullis@debian.org>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
+commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
 
-The current code assumes that CSIZE is 0000060, which appears to be
-wrong on some arches (such as powerpc).
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-Signed-off-by: Nicolas Boullis <nboullis@debian.org>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+[ hpa: this should be done not just for > 4 GB but for everything above the legacy
+  region (1 MB), at the very least.  That, however, turns out to require significant
+  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -760,10 +760,6 @@ static const __u32 acm_tty_speed[] = {
- 	2500000, 3000000, 3500000, 4000000
- };
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -937,8 +937,21 @@ void __init setup_arch(char **cmdline_p)
  
--static const __u8 acm_tty_size[] = {
--	5, 6, 7, 8
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
-@@ -780,7 +776,21 @@ static void acm_tty_set_termios(struct t
- 	newline.bParityType = termios->c_cflag & PARENB ?
- 				(termios->c_cflag & PARODD ? 1 : 2) +
- 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
- 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
 
 
