@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2JZAH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53589 "EHLO mail.kernel.org"
+	id S1755295Ab2JZAVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:21:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53695 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754240Ab2JZAHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:47 -0400
+	id S1754340Ab2JZAH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 19/85] xen/x86: dont corrupt %eip when returning from a signal handler
-Date: Thu, 25 Oct 2012 17:05:37 -0700
-Message-Id: <20121026000033.050564844@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 40/85] USB: kl5kusb105: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:58 -0700
+Message-Id: <20121026000035.151513573@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -28,97 +25,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a349e23d1cf746f8bdc603dcc61fae9ee4a695f6 upstream.
+commit 99a6f73c495c420df826e5b267fb073fd6766fc3 upstream.
 
-In 32 bit guests, if a userspace process has %eax == -ERESTARTSYS
-(-512) or -ERESTARTNOINTR (-513) when it is interrupted by an event
-/and/ the process has a pending signal then %eip (and %eax) are
-corrupted when returning to the main process after handling the
-signal.  The application may then crash with SIGSEGV or a SIGILL or it
-may have subtly incorrect behaviour (depending on what instruction it
-returned to).
+Fix port-data memory leak by replacing attach and release with
+port_probe and port_remove.
 
-The occurs because handle_signal() is incorrectly thinking that there
-is a system call that needs to restarted so it adjusts %eip and %eax
-to re-execute the system call instruction (even though user space had
-not done a system call).
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
 
-If %eax == -514 (-ERESTARTNOHAND (-514) or -ERESTART_RESTARTBLOCK
-(-516) then handle_signal() only corrupted %eax (by setting it to
--EINTR).  This may cause the application to crash or have incorrect
-behaviour.
+Note that the write waitqueue was initialised but never used.
 
-handle_signal() assumes that regs->orig_ax >= 0 means a system call so
-any kernel entry point that is not for a system call must push a
-negative value for orig_ax.  For example, for physical interrupts on
-bare metal the inverse of the vector is pushed and page_fault() sets
-regs->orig_ax to -1, overwriting the hardware provided error code.
+Compile-only tested.
 
-xen_hypervisor_callback() was incorrectly pushing 0 for orig_ax
-instead of -1.
-
-Classic Xen kernels pushed %eax which works as %eax cannot be both
-non-negative and -RESTARTSYS (etc.), but using -1 is consistent with
-other non-system call entry points and avoids some of the tests in
-handle_signal().
-
-There were similar bugs in xen_failsafe_callback() of both 32 and
-64-bit guests. If the fault was corrected and the normal return path
-was used then 0 was incorrectly pushed as the value for orig_ax.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/entry_32.S |    8 +++++---
- arch/x86/kernel/entry_64.S |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/kl5kusb105.c |   68 ++++++++++++++--------------------------
+ 1 file changed, 25 insertions(+), 43 deletions(-)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1016,7 +1016,7 @@ ENTRY(xen_sysenter_target)
+--- a/drivers/usb/serial/kl5kusb105.c
++++ b/drivers/usb/serial/kl5kusb105.c
+@@ -62,8 +62,8 @@ static bool debug;
+ /*
+  * Function prototypes
+  */
+-static int  klsi_105_startup(struct usb_serial *serial);
+-static void klsi_105_release(struct usb_serial *serial);
++static int klsi_105_port_probe(struct usb_serial_port *port);
++static int klsi_105_port_remove(struct usb_serial_port *port);
+ static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port);
+ static void klsi_105_close(struct usb_serial_port *port);
+ static void klsi_105_set_termios(struct tty_struct *tty,
+@@ -101,8 +101,8 @@ static struct usb_serial_driver kl5kusb1
+ 	/*.break_ctl =		klsi_105_break_ctl,*/
+ 	.tiocmget =		klsi_105_tiocmget,
+ 	.tiocmset =		klsi_105_tiocmset,
+-	.attach =		klsi_105_startup,
+-	.release =		klsi_105_release,
++	.port_probe =		klsi_105_port_probe,
++	.port_remove =		klsi_105_port_remove,
+ 	.throttle =		usb_serial_generic_throttle,
+ 	.unthrottle =		usb_serial_generic_unthrottle,
+ 	.process_read_urb =	klsi_105_process_read_urb,
+@@ -225,58 +225,40 @@ static int klsi_105_get_line_state(struc
+  * Driver's tty interface functions
+  */
  
- ENTRY(xen_hypervisor_callback)
- 	CFI_STARTPROC
--	pushl_cfi $0
-+	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	TRACE_IRQS_OFF
+-static int klsi_105_startup(struct usb_serial *serial)
++static int klsi_105_port_probe(struct usb_serial_port *port)
+ {
+ 	struct klsi_105_private *priv;
+-	int i;
  
-@@ -1058,14 +1058,16 @@ ENTRY(xen_failsafe_callback)
- 2:	mov 8(%esp),%es
- 3:	mov 12(%esp),%fs
- 4:	mov 16(%esp),%gs
-+	/* EAX == 0 => Category 1 (Bad segment)
-+	   EAX != 0 => Category 2 (Bad IRET) */
- 	testl %eax,%eax
- 	popl_cfi %eax
- 	lea 16(%esp),%esp
- 	CFI_ADJUST_CFA_OFFSET -16
- 	jz 5f
- 	addl $16,%esp
--	jmp iret_exc		# EAX != 0 => Category 2 (Bad IRET)
--5:	pushl_cfi $0		# EAX == 0 => Category 1 (Bad segment)
-+	jmp iret_exc
-+5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp ret_from_exception
- 	CFI_ENDPROC
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1363,7 +1363,7 @@ ENTRY(xen_failsafe_callback)
- 	CFI_RESTORE r11
- 	addq $0x30,%rsp
- 	CFI_ADJUST_CFA_OFFSET -0x30
--	pushq_cfi $0
-+	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp error_exit
- 	CFI_ENDPROC
+-	/* check if we support the product id (see keyspan.c)
+-	 * FIXME
+-	 */
+-
+-	/* allocate the private data structure */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		priv = kmalloc(sizeof(struct klsi_105_private),
+-						   GFP_KERNEL);
+-		if (!priv) {
+-			dbg("%skmalloc for klsi_105_private failed.", __func__);
+-			i--;
+-			goto err_cleanup;
+-		}
+-		/* set initial values for control structures */
+-		priv->cfg.pktlen    = 5;
+-		priv->cfg.baudrate  = kl5kusb105a_sio_b9600;
+-		priv->cfg.databits  = kl5kusb105a_dtb_8;
+-		priv->cfg.unknown1  = 0;
+-		priv->cfg.unknown2  = 1;
++	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
+ 
+-		priv->line_state    = 0;
++	/* set initial values for control structures */
++	priv->cfg.pktlen    = 5;
++	priv->cfg.baudrate  = kl5kusb105a_sio_b9600;
++	priv->cfg.databits  = kl5kusb105a_dtb_8;
++	priv->cfg.unknown1  = 0;
++	priv->cfg.unknown2  = 1;
+ 
+-		usb_set_serial_port_data(serial->port[i], priv);
++	priv->line_state    = 0;
+ 
+-		spin_lock_init(&priv->lock);
++	spin_lock_init(&priv->lock);
+ 
+-		/* priv->termios is left uninitialized until port opening */
+-		init_waitqueue_head(&serial->port[i]->write_wait);
+-	}
++	/* priv->termios is left uninitialized until port opening */
+ 
+-	return 0;
++	usb_set_serial_port_data(port, priv);
+ 
+-err_cleanup:
+-	for (; i >= 0; i--) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
+-	return -ENOMEM;
++	return 0;
+ }
+ 
+-static void klsi_105_release(struct usb_serial *serial)
++static int klsi_105_port_remove(struct usb_serial_port *port)
+ {
+-	int i;
++	struct klsi_105_private *priv;
+ 
+-	for (i = 0; i < serial->num_ports; ++i)
+-		kfree(usb_get_serial_port_data(serial->port[i]));
++	priv = usb_get_serial_port_data(port);
++	kfree(priv);
++
++	return 0;
+ }
+ 
+ static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port)
 
 
