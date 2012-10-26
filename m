@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2JZAaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:30:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53372 "EHLO mail.kernel.org"
+	id S1755373Ab2JZAac (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:30:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53360 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab2JZAHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:25 -0400
+	id S1754002Ab2JZAHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [ 09/85] oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
-Date: Thu, 25 Oct 2012 17:05:27 -0700
-Message-Id: <20121026000032.062086513@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 08/85] NLM: nlm_lookup_file() may return NLMv4-specific error codes
+Date: Thu, 25 Oct 2012 17:05:26 -0700
+Message-Id: <20121026000031.961944230@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,31 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 44009105081b51417f311f4c3be0061870b6b8ed upstream.
+commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
 
-The "event" variable is a u16 so the shift will always wrap to zero
-making the line a no-op.
+If the filehandle is stale, or open access is denied for some reason,
+nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
+or nlm4_failed. These get passed right through nlm_lookup_file(),
+and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
+the result through the cast_status() machinery.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Larry McVoy <lm@bitmover.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/oprofile/nmi_int.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/lockd/clntxdr.c |    2 +-
+ fs/lockd/svcproc.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -55,7 +55,7 @@ u64 op_x86_get_ctrl(struct op_x86_model_
- 	val |= counter_config->extra;
- 	event &= model->event_mask ? model->event_mask : 0xFF;
- 	val |= event & 0xFF;
--	val |= (event & 0x0F00) << 24;
-+	val |= (u64)(event & 0x0F00) << 24;
+--- a/fs/lockd/clntxdr.c
++++ b/fs/lockd/clntxdr.c
+@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_s
+ {
+ 	__be32 *p;
  
- 	return val;
+-	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
++	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
+ 	p = xdr_reserve_space(xdr, 4);
+ 	*p = stat;
  }
+--- a/fs/lockd/svcproc.c
++++ b/fs/lockd/svcproc.c
+@@ -68,7 +68,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rq
+ 
+ 	/* Obtain file pointer. Not used by FREE_ALL call. */
+ 	if (filp != NULL) {
+-		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
++		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
++		if (error != 0)
+ 			goto no_locks;
+ 		*filp = file;
+ 
 
 
