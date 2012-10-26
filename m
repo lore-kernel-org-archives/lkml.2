@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758524Ab2JZLSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:18:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52716 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523Ab2JZLSr (ORCPT
+	id S1758529Ab2JZLTP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:19:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:49034 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755711Ab2JZLTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:18:47 -0400
-Date: Fri, 26 Oct 2012 04:18:28 -0700
-From: tip-bot for Daniel Lezcano <daniel.lezcano@linaro.org>
-Message-ID: <tip-4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, daniel.lezcano@linaro.org
-In-Reply-To: <1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org>
-References: <1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Remove dead hlt_use_halt code
-Git-Commit-ID: 4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 26 Oct 2012 07:19:14 -0400
+Date: Fri, 26 Oct 2012 04:16:50 -0700
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: lots of suspicious RCU traces
+Message-ID: <20121026111621.GA2236@swordfish.minsk.epam.com>
+References: <20121017034918.GA13295@redhat.com>
+ <20121024164235.GA2467@swordfish>
+ <20121024180608.GA22840@redhat.com>
+ <20121024182111.GA2340@swordfish>
+ <CAFTL4hxmh7yV8ePUhY_7hOuG=JrbZZcNvV88bWcUmwG9X0W04A@mail.gmail.com>
+ <20121025055056.GA2661@swordfish>
+ <CAFTL4hxM8KqL3=GLkJDU-9pKVHrb1nSoDgFx8UVB7F7tryw6HA@mail.gmail.com>
+ <20121025074147.GA2240@swordfish>
+ <CAFTL4hw=orRVYzuk8L1aBHCxVD05uT_fdFoRJ_BkihoNd0huJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 26 Oct 2012 04:18:36 -0700 (PDT)
+In-Reply-To: <CAFTL4hw=orRVYzuk8L1aBHCxVD05uT_fdFoRJ_BkihoNd0huJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
-Gitweb:     http://git.kernel.org/tip/4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
-Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
-AuthorDate: Thu, 25 Oct 2012 18:13:11 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 26 Oct 2012 12:25:03 +0200
+On (10/26/12 11:44), Frederic Weisbecker wrote:
+> Thanks.
+> 
+> Sergey, Dave,
+> 
+> Does the patch I just sent you fix the issue?
+> 
+> Patch is "[PATCH] rcu: Fix unrecovered RCU user mode in syscall_trace_leave()"
+>
 
-x86: Remove dead hlt_use_halt code
+good job, works fine for me.
 
-The hlt_use_halt function returns always true and there is only
-one definition of it.
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-The default_idle function can then get ride of the if ...
-statement and we can remove the else branch.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linaro-dev@lists.linaro.org
-Cc: patches@linaro.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/process.c |   39 ++++++++++++++-------------------------
- 1 files changed, 14 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index b644e1c..2f99e31 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -306,11 +306,6 @@ void (*pm_idle)(void);
- EXPORT_SYMBOL(pm_idle);
- #endif
+	-ss
  
--static inline int hlt_use_halt(void)
--{
--	return 1;
--}
--
- #ifndef CONFIG_SMP
- static inline void play_dead(void)
- {
-@@ -410,28 +405,22 @@ void cpu_idle(void)
-  */
- void default_idle(void)
- {
--	if (hlt_use_halt()) {
--		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
--		trace_cpu_idle_rcuidle(1, smp_processor_id());
--		current_thread_info()->status &= ~TS_POLLING;
--		/*
--		 * TS_POLLING-cleared state must be visible before we
--		 * test NEED_RESCHED:
--		 */
--		smp_mb();
-+	trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
-+	trace_cpu_idle_rcuidle(1, smp_processor_id());
-+	current_thread_info()->status &= ~TS_POLLING;
-+	/*
-+	 * TS_POLLING-cleared state must be visible before we
-+	 * test NEED_RESCHED:
-+	 */
-+	smp_mb();
- 
--		if (!need_resched())
--			safe_halt();	/* enables interrupts racelessly */
--		else
--			local_irq_enable();
--		current_thread_info()->status |= TS_POLLING;
--		trace_power_end_rcuidle(smp_processor_id());
--		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
--	} else {
-+	if (!need_resched())
-+		safe_halt();	/* enables interrupts racelessly */
-+	else
- 		local_irq_enable();
--		/* loop is done by the caller */
--		cpu_relax();
--	}
-+	current_thread_info()->status |= TS_POLLING;
-+	trace_power_end_rcuidle(smp_processor_id());
-+	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
- }
- #ifdef CONFIG_APM_MODULE
- EXPORT_SYMBOL(default_idle);
+> Thanks.
+> 
