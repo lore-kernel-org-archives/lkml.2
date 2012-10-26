@@ -1,132 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab2JZJKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:10:48 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35319 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab2JZJKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:10:43 -0400
+	id S1751284Ab2JZJMt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:12:49 -0400
+Received: from ns.gsystems.sk ([62.176.172.50]:55210 "EHLO www.gsystems.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab2JZJMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 05:12:44 -0400
+X-Greylist: delayed 938 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Oct 2012 05:12:44 EDT
+To: hpa@zytor.com
+Subject: [PATCH v3] Enable A20 using KBC for some MSI laptops to fix S3 resume
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Disposition: inline
+From: Ondrej Zary <zary@gsystems.sk>
+Date: Fri, 26 Oct 2012 10:56:44 +0200
 MIME-Version: 1.0
-In-Reply-To: <1350593430-24470-4-git-send-email-yinghai@kernel.org>
-References: <1350593430-24470-1-git-send-email-yinghai@kernel.org> <1350593430-24470-4-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 26 Oct 2012 03:10:21 -0600
-Message-ID: <CAErSpo5s9sz+i+Qkuu1=HpfrSh271axkLDRgJSaKED5q3DNfPg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PCI: correctly detect ACPI PCI host bridge objects
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Tejun Heo <tj@kernel.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210261056.44225.zary@gsystems.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 2:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> From: Jiang Liu <jiang.liu@huawei.com>
->
-> The code in pci_root_hp.c depends on function acpi_is_root_bridge()
-> to check whether an ACPI object is a PCI host bridge or not.
-> If an ACPI device hasn't been created for the ACPI object yet,
-> function acpi_is_root_bridge() will return false even if the object
-> is a PCI host bridge object. That behavior will cause two issues:
-> 1) No ACPI notification handler installed for PCI host bridges absent
->    at startup, so hotplug events for those bridges won't be handled.
-> 2) rescan_root_bridge() can't reenumerate offlined PCI host bridges
->    because the ACPI devices have been already destroyed.
->
-> So use acpi_match_object_info_ids() to correctly detect PCI host bridges.
->
-> -v2: update to use acpi_match_object_info_ids() from Tang Chen  - Yinghai
->
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: linux-acpi@vger.kernel.org
-> ---
->  drivers/acpi/pci_root_hp.c |   25 ++++++++++++++++++++++++-
->  1 files changed, 24 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
-> index 2aebf78..3edec7f 100644
-> --- a/drivers/acpi/pci_root_hp.c
-> +++ b/drivers/acpi/pci_root_hp.c
-> @@ -19,6 +19,12 @@ struct acpi_root_bridge {
->         u32 flags;
->  };
->
-> +static const struct acpi_device_id root_device_ids[] = {
-> +       {"PNP0A03", 0},
-> +       {"PNP0A08", 0},
+Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+line but resume code assumes that KBC was used.
+The laptop will not resume from S3 otherwise but powers off after a while
+and then powers on again stuck with a blank screen.
 
-Why do we need PNP0A08 here?
+Fix it by enabling A20 using KBC. Affected laptop list and DMI data are from
+bug reports at Ubuntu Launchpad.
 
-Per the PCI Firmware Spec, sec 4.1.5, PNP0A08 identifies a PCI Express
-or a PCI-X Mode 2 host bridge, and such a device is required to
-include PNP0A03 in _CID.  Therefore, it should be sufficient to look
-only for PNP0A03.
+Also add kernel parameter to easily activate this quirk on any system.
 
-That raises the question of why the spec defined PNP0A08 in the first
-place.  It looks like PNP0A08 is intended specifically to indicate
-support for extended config space (offsets 256-4095), per sec 4.1.5
-(Note 1) and sec 4.3.1.
+Only compile tested. The original patch was tested with EX600 and PR200.
 
-I don't think Linux currently does anything differently with PNP0A08,
-so if the spec authors thought it was important to add PNP0A08, maybe
-Linux is missing something.  For example, maybe we should be limiting
-config space size to 256 unless we're below a PNP0A08 device.  I don't
-know what that could *fix*, unless it would allow us to get rid of
-some quirks or something, but usually spec authors don't add things
-unless they think there's a reason it's needed.
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
 
-> +       {"", 0},
-> +};
-> +
->  /* bridge flags */
->  #define ROOT_BRIDGE_HAS_EJ0    (0x00000002)
->  #define ROOT_BRIDGE_HAS_PS3    (0x00000080)
-> @@ -256,6 +262,23 @@ static void handle_hotplug_event_root(acpi_handle handle, u32 type,
->                                 _handle_hotplug_event_root);
->  }
->
-> +static bool acpi_is_root_bridge_object(acpi_handle handle)
-> +{
-> +       struct acpi_device_info *info = NULL;
-> +       acpi_status status;
-> +       bool ret;
-> +
-> +       status = acpi_get_object_info(handle, &info);
-> +       if (ACPI_FAILURE(status))
-> +               return false;
-> +
-> +       ret = !acpi_match_object_info_ids(info, root_device_ids);
-> +
-> +       kfree(info);
-> +
-> +       return ret;
-> +}
-> +
->  static acpi_status __init
->  find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->  {
-> @@ -264,7 +287,7 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
->                                       .pointer = objname };
->         int *count = (int *)context;
->
-> -       if (!acpi_is_root_bridge(handle))
-> +       if (!acpi_is_root_bridge_object(handle))
->                 return AE_OK;
->
->         (*count)++;
-> --
-> 1.7.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ Documentation/kernel-parameters.txt |    6 ++
+ arch/x86/kernel/acpi/boot.c         |  122 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 128 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9776f06..eb3d6a4 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -153,6 +153,12 @@ multipliers 'Kilo', 'Mega', and 'Giga', equalling 2^10, 2^20, and 2^30
+ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 
++	a20_enable_kbc	[ACPI,X86]
++			Enable A20 line using KBC even if it's already
++			enabled using other method.
++			This is needed for some MSI laptops to resume from
++			S3.
++
+ 	acpi=		[HW,ACPI,X86]
+ 			Advanced Configuration and Power Interface
+ 			Format: { force | off | strict | noirq | rsdt }
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index e651f7a..64169ca 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -1349,6 +1349,67 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ }
+ 
+ /*
++ * Copied from arch/x86/boot/a20.c. Direct port writes (and no locking) are safe
++ * here because this is executed very early, before any drivers (like i8042).
++ */
++#define MAX_8042_LOOPS	100000
++#define MAX_8042_FF	32
++
++static int empty_8042(void)
++{
++	u8 status;
++	int loops = MAX_8042_LOOPS;
++	int ffs   = MAX_8042_FF;
++
++	while (loops--) {
++		outb(0, 0x80); /* delay */
++
++		status = inb(0x64);
++		if (status == 0xff) {
++			/* FF is a plausible, but very unlikely status */
++			if (!--ffs)
++				return -1; /* Assume no KBC present */
++		}
++		if (status & 1) {
++			/* Read and discard input data */
++			outb(0, 0x80); /* delay */
++			(void)inb(0x60);
++		} else if (!(status & 2)) {
++			/* Buffers empty, finished! */
++			return 0;
++		}
++	}
++
++	return -1;
++}
++
++static void enable_a20_kbc(void)
++{
++	empty_8042();
++
++	outb(0xd1, 0x64);	/* Command write */
++	empty_8042();
++
++	outb(0xdf, 0x60);	/* A20 on */
++	empty_8042();
++
++	outb(0xff, 0x64);	/* Null command, but UHCI wants it */
++	empty_8042();
++}
++
++/*
++ * Enable A20 line using KBC even if it's already enabled using other method.
++ * This is needed for some MSI laptops to resume from S3.
++ */
++static int __init a20_enable_kbc(const struct dmi_system_id *d)
++{
++	printk(KERN_NOTICE "%s detected: enabling A20 using KBC\n", d->ident);
++	enable_a20_kbc();
++
++	return 0;
++}
++
++/*
+  * If your system is blacklisted here, but you find that acpi=force
+  * works for you, please contact linux-acpi@vger.kernel.org
+  */
+@@ -1423,6 +1484,60 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
+ 		     DMI_MATCH(DMI_PRODUCT_NAME, "TravelMate 360"),
+ 		     },
+ 	 },
++	/*
++	 * Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to
++	 * enable A20 line but resume code assumes that KBC was used.
++	 * The laptop will not resume from S3 otherwise but powers off
++	 * after a while and then powers on again stuck with a blank screen.
++	 */
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI EX600 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook EX600"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI EX700 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "EX700"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI GX700 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI VR201 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR201"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI VR601 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook VR601"),
++		     },
++	 },
++	{
++	 .callback = a20_enable_kbc,
++	 .ident = "MSI PR200 Laptop",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "MSI Notebook PR200"),
++		     },
++	 },
+ 	{}
+ };
+ 
+@@ -1679,6 +1794,13 @@ static int __init setup_acpi_sci(char *s)
+ }
+ early_param("acpi_sci", setup_acpi_sci);
+ 
++static int __init parse_a20_enable_kbc(char *arg)
++{
++	enable_a20_kbc();
++	return 0;
++}
++early_param("a20_enable_kbc", parse_a20_enable_kbc);
++
+ int __acpi_acquire_global_lock(unsigned int *lock)
+ {
+ 	unsigned int old, new, val;
+-- 
+Ondrej Zary
