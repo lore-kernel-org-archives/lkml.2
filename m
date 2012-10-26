@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329Ab2JZX4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 19:56:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47602 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934214Ab2JZX4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 19:56:51 -0400
-Date: Fri, 26 Oct 2012 16:56:49 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3 v2] firmware: Add /proc/firmware_path entry to list
- the firmware paths
-Message-ID: <20121026235649.GB13263@kroah.com>
-References: <1350996776-17864-1-git-send-email-dp@opensource.wolfsonmicro.com>
- <1350996776-17864-3-git-send-email-dp@opensource.wolfsonmicro.com>
- <20121025184833.GA22114@kroah.com>
- <20121026100731.GA10468@opensource.wolfsonmicro.com>
+	id S934342Ab2JZX6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 19:58:16 -0400
+Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:47500
+	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934214Ab2JZX6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 19:58:15 -0400
+Message-ID: <508B2382.60108@free.fr>
+Date: Sat, 27 Oct 2012 01:57:54 +0200
+From: Wallak <wallak@free.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20100101 Firefox/16.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026100731.GA10468@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Friesen <chris.friesen@genband.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linix-3.6.3 sda, sdb drives in reverse order (with a USB 2.0
+ drives and a monolithic kernel configuration)
+References: <5089C20E.4090707@free.fr> <5089C70B.1020007@genband.com> <508AE7D7.309@free.fr> <508AF0E4.7030701@genband.com>
+In-Reply-To: <508AF0E4.7030701@genband.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:07:31AM +0100, Dimitris Papastamos wrote:
-> On Thu, Oct 25, 2012 at 11:48:33AM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Oct 23, 2012 at 01:52:55PM +0100, Dimitris Papastamos wrote:
-> > > This patch provides the aforementioned procfs file that lists
-> > > the default firmware paths that are used during firmware lookup.
-> > > 
-> > > The file contains a white space separated list of paths.
-> > 
-> > Paths can have whitespaces :(
-> > 
-> > How about using the "universal" path seperator of ':' that shells are
-> > used to using?  Yeah, it gets messy if you have a ':' in a path, but
-> > from what I can tell, only the openSUSE build system does looney things
-> > like that.
-> 
-> Sure I can do that, however, could you comment on Ming's comments?  Is
-> this patchset something we find useful at the moment as regards listing
-> and/or updating the firmware path list.
+Chris Friesen wrote:
+> On 10/26/2012 01:43 PM, Wallak wrote:
+>> Chris Friesen wrote:
+>>> On 10/25/2012 04:49 PM, Wallak wrote:
+>>>> I've a very annoying behavior with the linux-3.6.x kernels release, 
+>>>> and
+>>>> a monolithic configuration. The USB 2.0 drives are mapped first with
+>>>> /dev/sda, /dev/sdb... devices, and than the SATA AHCI drives come 
+>>>> after.
+>>>> This is out of order with the BIOS configuration and breaks a program
+>>>> like lilo. This is also annoying when we use a static partition 
+>>>> mapping.
+>>>>
+>>>> Linux-3.5 works fine. Where this bug come from ? Is this a patch to 
+>>>> get
+>>>> the old, and classical behavior ?
+>>>
+>>> As you have discovered it's fragile to rely on /dev/sd* names since a
+>>> BIOS update, kernel update, or motherboard replacement could
+>>> conceivably cause them to change.
+>>>
+>>> Better to use something like partition labels that you control and
+>>> that don't change.
+>>>
+>>> Chris
+>>>
+>> You are right, when we have a configuration with a lot of drvies and
+>> adapters SATA, old SCSI,.. etc. the order may change. But having the
+>> main SATA hard drive defined, as the BIOS boot device, behind external
+>> and removable USB drives is in my opinion a bug.And may lead to security
+>> issues (drives with the same label, etc...).
+>>
+>> Using =LABEL, or =UUID with a bootloader like grub or lilo, save the the
+>> boot device mapped drive partition number , and so booting on an older
+>> kernel like linux 3.5 will fail. If we remove the external USB drive,
+>> the boot process will fail too...
+>>
+>> So such a bug have to be fix.
+>
+> If you specify "root=LABEL=<label>" as part of the kernel boot args in 
+> grub does it not check the label at boot time?
 
-I really don't remember anymore, sorry.  That was a few hunderd or so
-patches ago that I've reviewed...
+Using root=LABEL= or root=UUID= don't work on a plain kernel, this 
+feature may be handled by an initrd trick. Otherwise for all non root 
+partitions UUID= work fine.
+Nevertheless not fixing this bug yields some other issues:  Using lilo 
+to launch a second OS (other= option) fail, the command try to parse 
+partitions available on /dev/sda, and miss the real main HDD. Boot drive 
+must be force with lilo options...
+SATA drives have, most of the time, no reason to be behind USB drives. 
+If we want to get a reliable behavior: /dev/sda must be mapped to the 
+BIOS boot device. Using the same behavior as linux-3.5 will be fine.
 
-greg k-h
+Wallak.
+
+>
+> Chris
+>
+
