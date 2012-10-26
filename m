@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2JZAId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:08:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54036 "EHLO mail.kernel.org"
+	id S1755031Ab2JZANE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:13:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54079 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754657Ab2JZAI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:29 -0400
+	id S1754689Ab2JZAId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ramesh Nagappa <ramesh.nagappa@ericsson.com>,
-        Shawn Lu <shawn.lu@ericsson.com>,
-        Robert Coulson <robert.coulson@ericsson.com>,
-        Billie Alsup <billie.alsup@ericsson.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 66/85] net: Fix skb_under_panic oops in neigh_resolve_output
-Date: Thu, 25 Oct 2012 17:06:24 -0700
-Message-Id: <20121026000037.757852824@linuxfoundation.org>
+Subject: [ 70/85] ipv4: Dont report stale pmtu values to userspace
+Date: Thu, 25 Oct 2012 17:06:28 -0700
+Message-Id: <20121026000038.155639517@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -30,54 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "ramesh.nagappa@gmail.com" <ramesh.nagappa@gmail.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit e1f165032c8bade3a6bdf546f8faf61fda4dd01c ]
+[ Upstream commit ee9a8f7ab2edf801b8b514c310455c94acc232f6 ]
 
-The retry loop in neigh_resolve_output() and neigh_connected_output()
-call dev_hard_header() with out reseting the skb to network_header.
-This causes the retry to fail with skb_under_panic. The fix is to
-reset the network_header within the retry loop.
+We report cached pmtu values even if they are already expired.
+Change this to not report these values after they are expired
+and fix a race in the expire time calculation, as suggested by
+Eric Dumazet.
 
-Signed-off-by: Ramesh Nagappa <ramesh.nagappa@ericsson.com>
-Reviewed-by: Shawn Lu <shawn.lu@ericsson.com>
-Reviewed-by: Robert Coulson <robert.coulson@ericsson.com>
-Reviewed-by: Billie Alsup <billie.alsup@ericsson.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/neighbour.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ net/ipv4/route.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -1301,8 +1301,6 @@ int neigh_resolve_output(struct neighbou
- 	if (!dst)
- 		goto discard;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2187,8 +2187,18 @@ static int rt_fill_info(struct net *net,
+ 	    nla_put_be32(skb, RTA_GATEWAY, rt->rt_gateway))
+ 		goto nla_put_failure;
  
--	__skb_pull(skb, skb_network_offset(skb));
--
- 	if (!neigh_event_send(neigh, skb)) {
- 		int err;
- 		struct net_device *dev = neigh->dev;
-@@ -1312,6 +1310,7 @@ int neigh_resolve_output(struct neighbou
- 			neigh_hh_init(neigh, dst);
++	expires = rt->dst.expires;
++	if (expires) {
++		unsigned long now = jiffies;
++
++		if (time_before(now, expires))
++			expires -= now;
++		else
++			expires = 0;
++	}
++
+ 	memcpy(metrics, dst_metrics_ptr(&rt->dst), sizeof(metrics));
+-	if (rt->rt_pmtu)
++	if (rt->rt_pmtu && expires)
+ 		metrics[RTAX_MTU - 1] = rt->rt_pmtu;
+ 	if (rtnetlink_put_metrics(skb, metrics) < 0)
+ 		goto nla_put_failure;
+@@ -2198,13 +2208,6 @@ static int rt_fill_info(struct net *net,
+ 		goto nla_put_failure;
  
- 		do {
-+			__skb_pull(skb, skb_network_offset(skb));
- 			seq = read_seqbegin(&neigh->ha_lock);
- 			err = dev_hard_header(skb, dev, ntohs(skb->protocol),
- 					      neigh->ha, NULL, skb->len);
-@@ -1342,9 +1341,8 @@ int neigh_connected_output(struct neighb
- 	unsigned int seq;
- 	int err;
+ 	error = rt->dst.error;
+-	expires = rt->dst.expires;
+-	if (expires) {
+-		if (time_before(jiffies, expires))
+-			expires -= jiffies;
+-		else
+-			expires = 0;
+-	}
  
--	__skb_pull(skb, skb_network_offset(skb));
--
- 	do {
-+		__skb_pull(skb, skb_network_offset(skb));
- 		seq = read_seqbegin(&neigh->ha_lock);
- 		err = dev_hard_header(skb, dev, ntohs(skb->protocol),
- 				      neigh->ha, NULL, skb->len);
+ 	if (rt_is_input_route(rt)) {
+ 		if (nla_put_u32(skb, RTA_IIF, rt->rt_iif))
 
 
