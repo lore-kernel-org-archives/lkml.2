@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab2JZAZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:25:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53524 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab2JZAHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 23/85] USB: io_ti: fix sysfs-attribute creation
-Date: Thu, 25 Oct 2012 17:05:41 -0700
-Message-Id: <20121026000033.440846638@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754440Ab2JZAZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:25:56 -0400
+Received: from exprod6og103.obsmtp.com ([64.18.1.185]:36350 "EHLO
+	exprod6og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab2JZAZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:25:54 -0400
+Message-ID: <5089D883.1010704@adobe.com>
+Date: Thu, 25 Oct 2012 17:25:39 -0700
+From: "Paton J. Lewis" <palewis@adobe.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:15.0) Gecko/20120824 Thunderbird/15.0
+MIME-Version: 1.0
+To: Andreas Jaeger <aj@suse.com>
+CC: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jason Baron <jbaron@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Holland <pholland@adobe.com>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v2] epoll: Support for disabling items, and a self-test
+ app.
+References: <1345756535-8372-1-git-send-email-palewis@adobe.com> <CAKgNAkg0R2LwfpF8beCkawTfPu7oj_DDaDxf2VJ+xB6UTgRSaw@mail.gmail.com> <5086D27F.1000007@adobe.com> <5086ECDE.4030300@suse.com>
+In-Reply-To: <5086ECDE.4030300@suse.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 10/23/12 12:15 PM, Andreas Jaeger wrote:
+> On 10/23/2012 07:23 PM, Paton J. Lewis wrote:
+>> [Re-sending without HTML formatting; all vger.kernel.org destination
+>> addresses bounced my original response.]
+>>
+>> On 10/16/12 8:12 AM, Michael Kerrisk (man-pages) wrote:
+>>> [CC += linux-api@]
+>>
+>> Thank you; is this sufficient to coordinate the required changes to the
+>> glibc version of epoll.h?
+>
+> Paton, we normally review the diffs between kernel versions but noticing
+> us via libc-alpha is great.
+>
+> So, you ask to get this added to <sys/epoll.h>?
+>
+> #define EPOLL_CTL_DISABLE 4
 
-------------------
+Yes, that's correct (assuming that v3 the patch proposal is approved).
 
-From: Johan Hovold <jhovold@gmail.com>
+> Once 3.7 is out and contains it, we will add it. A friendly reminder
+> once the patch is in would be nice so that we don't miss it during the
+> review.
+>
+> thanks,
+> Andreas
+>
 
-commit 5d8c61bc283826827e1f06816c146bfc507d3834 upstream.
-
-Make sure port data is initialised before creating sysfs attributes to
-avoid a race.
-
-A recent patch ("USB: io_ti: fix port-data memory leak") got the
-sysfs-attribute creation and port-data initialisation ordering wrong.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/io_ti.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2641,13 +2641,6 @@ static int edge_port_probe(struct usb_se
- 		return -ENOMEM;
- 	}
- 
--	ret = edge_create_sysfs_attrs(port);
--	if (ret) {
--		kfifo_free(&edge_port->write_fifo);
--		kfree(edge_port);
--		return ret;
--	}
--
- 	spin_lock_init(&edge_port->ep_lock);
- 	edge_port->port = port;
- 	edge_port->edge_serial = usb_get_serial_data(port->serial);
-@@ -2655,6 +2648,13 @@ static int edge_port_probe(struct usb_se
- 
- 	usb_set_serial_port_data(port, edge_port);
- 
-+	ret = edge_create_sysfs_attrs(port);
-+	if (ret) {
-+		kfifo_free(&edge_port->write_fifo);
-+		kfree(edge_port);
-+		return ret;
-+	}
-+
- 	return 0;
- }
- 
-
-
+Thank you,
+Pat
