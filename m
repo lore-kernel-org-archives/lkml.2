@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab2JZAkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:40:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52882 "EHLO mail.kernel.org"
+	id S1753490Ab2JZAGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52675 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab2JZAGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:37 -0400
+	id S1752962Ab2JZAGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        PaX Team <pageexec@freemail.hu>, Kees Cook <keescook@chromium.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/42] kernel/sys.c: fix stack memory content leak via UNAME26
-Date: Thu, 25 Oct 2012 17:05:19 -0700
-Message-Id: <20121026000125.924243838@linuxfoundation.org>
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, deepthi@linux.vnet.ibm.com
+Subject: [ 03/42] nohz: Fix idle ticks in cpu summary line of /proc/stat
+Date: Thu, 25 Oct 2012 17:05:11 -0700
+Message-Id: <20121026000125.142547174@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -29,63 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 2702b1526c7278c4d65d78de209a465d4de2885e upstream.
+commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f upstream.
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents.  This fixes it by defensively calculating the length of
-copy_to_user() call, making the len argument unsigned, and initializing
-the stack buffer to zero (now technically unneeded, but hey, overkill).
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+conditional" introduced a bug in regard to cpu hotplug. The effect is
+that the number of idle ticks in the cpu summary line in /proc/stat is
+still counting ticks for offline cpus.
 
-CVE-2012-0957
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
+%0.0 st
+
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this we should make sure that the cpu is online when calling
+get_cpu_idle_time_us and get_cpu_iowait_time_us.
+
+[Srivatsa: Rebased to current mainline]
+
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com
+Cc: deepthi@linux.vnet.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ fs/proc/stat.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1180,15 +1180,16 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int c
+ 
+ static u64 get_idle_time(int cpu)
  {
- 	int ret = 0;
--	char buf[65];
+-	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle, idle_time = -1ULL;
++
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
  
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
-+		const char *rest = UTS_RELEASE;
-+		char buf[65] = { 0 };
- 		int ndots = 0;
- 		unsigned v;
-+		size_t copy;
+ 	if (idle_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.idle */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+ 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+ 	else
+ 		idle = usecs_to_cputime64(idle_time);
+@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
  
- 		while (*rest) {
- 			if (*rest == '.' && ++ndots >= 3)
-@@ -1198,8 +1199,9 @@ static int override_release(char __user
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
--		ret = copy_to_user(release, buf, len);
-+		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
-+		ret = copy_to_user(release, buf, copy + 1);
- 	}
- 	return ret;
- }
+ static u64 get_iowait_time(int cpu)
+ {
+-	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait, iowait_time = -1ULL;
++
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 
+ 	if (iowait_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.iowait */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+ 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+ 	else
+ 		iowait = usecs_to_cputime64(iowait_time);
 
 
