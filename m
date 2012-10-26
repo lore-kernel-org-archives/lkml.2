@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab2JZAuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:50:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52345 "EHLO mail.kernel.org"
+	id S1755733Ab2JZAvX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:51:23 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52302 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab2JZAFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:37 -0400
+	id S1752645Ab2JZAFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Timo Aaltonen <timo.aaltonen@canonical.com>
-Subject: [ 18/31] drm/i915: apply timing generator bug workaround on CPT and PPT
-Date: Thu, 25 Oct 2012 17:04:25 -0700
-Message-Id: <20121026000216.803084512@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Ben Blum <bblum@andrew.cmu.edu>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 15/31] cgroup: notify_on_release may not be triggered in some cases
+Date: Thu, 25 Oct 2012 17:04:22 -0700
+Message-Id: <20121026000216.506409749@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -27,58 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-commit 3bcf603f6d5d18bd9d076dc280de71f48add4101 upstream.
+commit 1f5320d5972aa50d3e8d2b227b636b370e608359 upstream.
 
-On CougarPoint and PantherPoint PCH chips, the timing generator may fail
-to start after DP training completes.  This is due to a bug in the
-FDI autotraining detect logic (which will stall the timing generator and
-re-enable it once training completes), so disable it to avoid silent DP
-mode setting failures.
+notify_on_release must be triggered when the last process in a cgroup is
+move to another. But if the first(and only) process in a cgroup is moved to
+another, notify_on_release is not triggered.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Timo Aaltonen <timo.aaltonen@canonical.com>
+	# mkdir /cgroup/cpu/SRC
+	# mkdir /cgroup/cpu/DST
+	#
+	# echo 1 >/cgroup/cpu/SRC/notify_on_release
+	# echo 1 >/cgroup/cpu/DST/notify_on_release
+	#
+	# sleep 300 &
+	[1] 8629
+	#
+	# echo 8629 >/cgroup/cpu/SRC/tasks
+	# echo 8629 >/cgroup/cpu/DST/tasks
+	-> notify_on_release for /SRC must be triggered at this point,
+	   but it isn't.
+
+This is because put_css_set() is called before setting CGRP_RELEASABLE
+in cgroup_task_migrate(), and is a regression introduce by the
+commit:74a1166d(cgroups: make procs file writable), which was merged
+into v3.0.
+
+Acked-by: Li Zefan <lizefan@huawei.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    5 +++++
- drivers/gpu/drm/i915/intel_display.c |    4 ++++
- 2 files changed, 9 insertions(+)
+ kernel/cgroup.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3113,6 +3113,11 @@
- #define  TRANS_6BPC             (2<<5)
- #define  TRANS_12BPC            (3<<5)
- 
-+#define _TRANSA_CHICKEN2	 0xf0064
-+#define _TRANSB_CHICKEN2	 0xf1064
-+#define TRANS_CHICKEN2(pipe) _PIPE(pipe, _TRANSA_CHICKEN2, _TRANSB_CHICKEN2)
-+#define   TRANS_AUTOTRAIN_GEN_STALL_DIS	(1<<31)
-+
- #define SOUTH_CHICKEN2		0xc2004
- #define  DPLS_EDP_PPS_FIX_DIS	(1<<0)
- 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7584,6 +7584,7 @@ static void ibx_init_clock_gating(struct
- static void cpt_init_clock_gating(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-+	int pipe;
- 
- 	/*
- 	 * On Ibex Peak and Cougar Point, we need to disable clock
-@@ -7593,6 +7594,9 @@ static void cpt_init_clock_gating(struct
- 	I915_WRITE(SOUTH_DSPCLK_GATE_D, PCH_DPLSUNIT_CLOCK_GATE_DISABLE);
- 	I915_WRITE(SOUTH_CHICKEN2, I915_READ(SOUTH_CHICKEN2) |
- 		   DPLS_EDP_PPS_FIX_DIS);
-+	/* Without this, mode sets may fail silently on FDI */
-+	for_each_pipe(pipe)
-+		I915_WRITE(TRANS_CHICKEN2(pipe), TRANS_AUTOTRAIN_GEN_STALL_DIS);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1800,9 +1800,8 @@ static int cgroup_task_migrate(struct cg
+ 	 * trading it for newcg is protected by cgroup_mutex, we're safe to drop
+ 	 * it here; it will be freed under RCU.
+ 	 */
+-	put_css_set(oldcg);
+-
+ 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
++	put_css_set(oldcg);
+ 	return 0;
  }
  
- static void ironlake_teardown_rc6(struct drm_device *dev)
 
 
