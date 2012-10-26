@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2JZAde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:33:34 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:55706 "EHLO smtp.outflux.net"
+	id S1755491Ab2JZAdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:33:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53131 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754006Ab2JZAdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:33:32 -0400
-Date: Thu, 25 Oct 2012 17:33:25 -0700
-From: Kees Cook <kees@outflux.net>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Enabling hardlink restrictions to the Linux VFS in 3.6 by default
-Message-ID: <20121026003325.GB17208@outflux.net>
-References: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
-Organization: Outflux
-X-HELO: www.outflux.net
+	id S1753101Ab2JZAHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:01 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <james.l.morris@oracle.com>,
+        Jie Liu <jeff.liu@oracle.com>
+Subject: [ 34/42] RDS: fix rds-ping spinlock recursion
+Date: Thu, 25 Oct 2012 17:05:42 -0700
+Message-Id: <20121026000128.236926419@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
+References: <20121026000124.790781113@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Holger,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Oct 25, 2012 at 12:13:40PM +0000, Holger Kiehl wrote:
-> as of linux 3.6 hardlink restrictions to the Linux VFS have been enabled
-> by default. This breaks the application AFD [1] of which I am the author.
+------------------
 
-Sorry this created a problem for you!
 
-> Internally it uses hardlink to distribute files. The reason for hardlinks
-> is that AFD can distribute one file to many destinations and for each
-> distributing process it creates a directory with hardlinks to the original
-> file. That way AFD itself never needs to copy the content of a file. Another
-> nice feature about hardlinks was that there is no need to have any logic in
-> the code needing AFD to know where the original file was, each distributing
-> process could delete its hardlink and the last one would delete the real
-> file. This way AFD could distribute files at rates of more then 20000 files
-> per second (in benchmarks). This has worked from the first linux kernel
-> up to 3.5.7 and with solaris, hpux, aix, ftx, irix. As of 3.6 this does
-> not work for files where AFD does not have write permissions. It was always
-> sufficient to just have read permission on a file it wants to distribute.
+From: "jeff.liu" <jeff.liu@oracle.com>
 
-Just to clarify, not even read access was needed for hardlinks:
+[ Upstream commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 ]
 
-$ whoami
-kees
-$ ls -l /etc/shadow
--r--r----- 1 root shadow 3112 Oct 22 17:02 /etc/shadow
-$ ln /etc/shadow /tmp/ohai
-$ ls -l /tmp/ohai
--r--r----- 2 root shadow 3112 Oct 22 17:02 ohai
+This is the revised patch for fixing rds-ping spinlock recursion
+according to Venkat's suggestions.
 
-You mention "the last one would delete the real file". That would have
-required AFD to have write permission to the directory where the original
-file existed? Maybe there is something in your architecture that could
-take advantage of that? Directory group-write set-gid? I haven't taken
-a look at AFD's code.
+RDS ping/pong over TCP feature has been broken for years(2.6.39 to
+3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
+ping/pong which both need to lock "struct sock *sk". However, this
+lock has already been hold before rds_tcp_data_ready() callback is
+triggerred. As a result, we always facing spinlock resursion which
+would resulting in system panic.
 
-> The fix for the "at" daemon [2] mentioned in the commitdiff [3] cannot
-> be used for AFD since it is not run with root privileges. Is there any
-> other way I can "fix" my application? I currently can see no other way
-> then doing it via: echo 0 > /proc/sys/fs/protected_hardlinks
+Given that RDS ping is only used to test the connectivity and not for
+serious performance measurements, we can queue the pong transmit to
+rds_wq as a delayed response.
 
-You said you have read access to these files, so perhaps you can make
-a copy when you have read but not write, and then all the subsequent
-duplication would be able to hardlink?
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/rds/send.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-If you wanted to turn off the sysctl, you could have AFD could ship
-files in /etc/sysctl.d/ (or your distro equivalent) to turn it off.
+--- a/net/rds/send.c
++++ b/net/rds/send.c
+@@ -1122,7 +1122,7 @@ rds_send_pong(struct rds_connection *con
+ 	rds_stats_inc(s_send_pong);
+ 
+ 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
+-		rds_send_xmit(conn);
++		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
+ 
+ 	rds_message_put(rm);
+ 	return 0;
 
-I'm sure there are plenty of options available.
 
-> Why is such a fundamentally change to the linux kernel activated by default?
-
-Based on about two years of testing in Ubuntu, the number of problems
-was vanishingly small, so the security benefit is seen to outweigh
-the downside.
-
-> Would it not be better if it is the other way around, that the system
-> administrator or distributions enable this?
-
-Virtually all distributions would have turned this on by default,
-so it seemed better to many people to just make it the default in the
-kernel. Only unusual corner-cases would need it disabled.
-
-I hope that helps!
-
--Kees
-
--- 
-Kees Cook                                            @outflux.net
