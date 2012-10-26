@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2JZAHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53222 "EHLO mail.kernel.org"
+	id S1754102Ab2JZAHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53324 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab2JZAHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:09 -0400
+	id S1753909Ab2JZAHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [ 02/85] ext4: Checksum the block bitmap properly with bigalloc enabled
-Date: Thu, 25 Oct 2012 17:05:20 -0700
-Message-Id: <20121026000031.372997632@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>
+Subject: [ 05/85] hwmon: (coretemp) Add support for Atom CE4110/4150/4170
+Date: Thu, 25 Oct 2012 17:05:23 -0700
+Message-Id: <20121026000031.671998081@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,163 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 79f1ba49569e5aec919b653c55b03274c2331701 upstream.
+commit 1102dcab849313bd5a340b299b5cf61b518fbc0f upstream.
 
-In mke2fs, we only checksum the whole bitmap block and it is right.
-While in the kernel, we use EXT4_BLOCKS_PER_GROUP to indicate the
-size of the checksumed bitmap which is wrong when we enable bigalloc.
-The right size should be EXT4_CLUSTERS_PER_GROUP and this patch fixes
-it.
+TjMax for the CE4100 series of Atom CPUs was previously reported to be
+110 degrees C.
 
-Also as every caller of ext4_block_bitmap_csum_set and
-ext4_block_bitmap_csum_verify pass in EXT4_BLOCKS_PER_GROUP(sb)/8,
-we'd better removes this parameter and sets it in the function itself.
+cpuinfo logs on the web show existing CPU types CE4110, CE4150, and CE4170,
+reported as "model name : Intel(R) Atom(TM) CPU CE41{1|5|7}0 @ 1.{2|6}0GHz"
+with model 28 (0x1c) and stepping 10 (0x0a). Add the three known variants
+to the tjmax table.
 
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/balloc.c  |    8 +++-----
- fs/ext4/bitmap.c  |    6 ++++--
- fs/ext4/ext4.h    |    4 ++--
- fs/ext4/ialloc.c  |    4 +---
- fs/ext4/mballoc.c |    9 +++------
- fs/ext4/resize.c  |    3 +--
- 6 files changed, 14 insertions(+), 20 deletions(-)
+ Documentation/hwmon/coretemp |    1 +
+ drivers/hwmon/coretemp.c     |    7 +++++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -174,8 +174,7 @@ void ext4_init_block_bitmap(struct super
- 		ext4_free_inodes_set(sb, gdp, 0);
- 		ext4_itable_unused_set(sb, gdp, 0);
- 		memset(bh->b_data, 0xff, sb->s_blocksize);
--		ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
--					   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+		ext4_block_bitmap_csum_set(sb, block_group, gdp, bh);
- 		return;
- 	}
- 	memset(bh->b_data, 0, sb->s_blocksize);
-@@ -212,8 +211,7 @@ void ext4_init_block_bitmap(struct super
- 	 */
- 	ext4_mark_bitmap_end(num_clusters_in_group(sb, block_group),
- 			     sb->s_blocksize * 8, bh->b_data);
--	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
--				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh);
- 	ext4_group_desc_csum_set(sb, block_group, gdp);
- }
+--- a/Documentation/hwmon/coretemp
++++ b/Documentation/hwmon/coretemp
+@@ -105,6 +105,7 @@ Process		Processor					TjMax(C)
+ 		330/230						125
+ 		E680/660/640/620				90
+ 		E680T/660T/640T/620T				110
++		CE4170/4150/4110				110
  
-@@ -350,7 +348,7 @@ void ext4_validate_block_bitmap(struct s
- 		return;
- 	}
- 	if (unlikely(!ext4_block_bitmap_csum_verify(sb, block_group,
--			desc, bh, EXT4_BLOCKS_PER_GROUP(sb) / 8))) {
-+			desc, bh))) {
- 		ext4_unlock_group(sb, block_group);
- 		ext4_error(sb, "bg %u: bad block bitmap checksum", block_group);
- 		return;
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -58,11 +58,12 @@ void ext4_inode_bitmap_csum_set(struct s
+ 45nm		Core2 Processors
+ 		Solo ULV SU3500/3300				100
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -205,8 +205,11 @@ static const struct tjmax __cpuinitconst
+ 	{ "CPU N455", 100000 },
+ 	{ "CPU N470", 100000 },
+ 	{ "CPU N475", 100000 },
+-	{ "CPU  230", 100000 },
+-	{ "CPU  330", 125000 },
++	{ "CPU  230", 100000 },		/* Model 0x1c, stepping 2	*/
++	{ "CPU  330", 125000 },		/* Model 0x1c, stepping 2	*/
++	{ "CPU CE4110", 110000 },	/* Model 0x1c, stepping 10	*/
++	{ "CPU CE4150", 110000 },	/* Model 0x1c, stepping 10	*/
++	{ "CPU CE4170", 110000 },	/* Model 0x1c, stepping 10	*/
+ };
  
- int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
- 				  struct ext4_group_desc *gdp,
--				  struct buffer_head *bh, int sz)
-+				  struct buffer_head *bh)
- {
- 	__u32 hi;
- 	__u32 provided, calculated;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+	int sz = EXT4_CLUSTERS_PER_GROUP(sb) / 8;
- 
- 	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
- 					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-@@ -84,8 +85,9 @@ int ext4_block_bitmap_csum_verify(struct
- 
- void ext4_block_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
- 				struct ext4_group_desc *gdp,
--				struct buffer_head *bh, int sz)
-+				struct buffer_head *bh)
- {
-+	int sz = EXT4_CLUSTERS_PER_GROUP(sb) / 8;
- 	__u32 csum;
- 	struct ext4_sb_info *sbi = EXT4_SB(sb);
- 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1867,10 +1867,10 @@ int ext4_inode_bitmap_csum_verify(struct
- 				  struct buffer_head *bh, int sz);
- void ext4_block_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
- 				struct ext4_group_desc *gdp,
--				struct buffer_head *bh, int sz);
-+				struct buffer_head *bh);
- int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
- 				  struct ext4_group_desc *gdp,
--				  struct buffer_head *bh, int sz);
-+				  struct buffer_head *bh);
- 
- /* balloc.c */
- extern void ext4_validate_block_bitmap(struct super_block *sb,
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -753,9 +753,7 @@ got:
- 			ext4_free_group_clusters_set(sb, gdp,
- 				ext4_free_clusters_after_init(sb, group, gdp));
- 			ext4_block_bitmap_csum_set(sb, group, gdp,
--						   block_bitmap_bh,
--						   EXT4_BLOCKS_PER_GROUP(sb) /
--						   8);
-+						   block_bitmap_bh);
- 			ext4_group_desc_csum_set(sb, group, gdp);
- 		}
- 		ext4_unlock_group(sb, group);
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2804,8 +2804,7 @@ ext4_mb_mark_diskspace_used(struct ext4_
- 	}
- 	len = ext4_free_group_clusters(sb, gdp) - ac->ac_b_ex.fe_len;
- 	ext4_free_group_clusters_set(sb, gdp, len);
--	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh,
--				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh);
- 	ext4_group_desc_csum_set(sb, ac->ac_b_ex.fe_group, gdp);
- 
- 	ext4_unlock_group(sb, ac->ac_b_ex.fe_group);
-@@ -4664,8 +4663,7 @@ do_more:
- 
- 	ret = ext4_free_group_clusters(sb, gdp) + count_clusters;
- 	ext4_free_group_clusters_set(sb, gdp, ret);
--	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
--				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh);
- 	ext4_group_desc_csum_set(sb, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
-@@ -4809,8 +4807,7 @@ int ext4_group_add_blocks(handle_t *hand
- 	mb_free_blocks(NULL, &e4b, bit, count);
- 	blk_free_count = blocks_freed + ext4_free_group_clusters(sb, desc);
- 	ext4_free_group_clusters_set(sb, desc, blk_free_count);
--	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh,
--				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh);
- 	ext4_group_desc_csum_set(sb, block_group, desc);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeclusters_counter,
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1121,8 +1121,7 @@ static int ext4_set_bitmap_checksums(str
- 	bh = ext4_get_bitmap(sb, group_data->block_bitmap);
- 	if (!bh)
- 		return -EIO;
--	ext4_block_bitmap_csum_set(sb, group, gdp, bh,
--				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
-+	ext4_block_bitmap_csum_set(sb, group, gdp, bh);
- 	brelse(bh);
- 
- 	return 0;
+ static int __cpuinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
 
 
