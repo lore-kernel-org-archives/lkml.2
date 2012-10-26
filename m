@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab2JZAHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53600 "EHLO mail.kernel.org"
+	id S1754449Ab2JZAIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53685 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2JZAHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:48 -0400
+	id S1754038Ab2JZAH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Moiz Sonasath <m-sonasath@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 45/85] usb: dwc3: gadget: fix endpoint always busy bug
-Date: Thu, 25 Oct 2012 17:06:03 -0700
-Message-Id: <20121026000035.661888335@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 39/85] USB: ti_usb_3410_5052: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:57 -0700
+Message-Id: <20121026000035.055477377@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,40 +25,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 041d81f493d90c940ec41f0ec98bc7c4f2fba431 upstream.
+commit 51ef847df74632e7cfdf952afc3887de105b8b35 upstream.
 
-If a USB transfer has already been started, meaning
-we have already issued StartTransfer command to that
-particular endpoint, DWC3_EP_BUSY flag has also
-already been set.
+Fix port-data memory leak by moving port data allocation and
+deallocation to port_probe and port_remove.
 
-When we try to cancel this transfer which is already
-in controller's cache, we will not receive XferComplete
-event and we must clear DWC3_EP_BUSY in order to allow
-subsequent requests to be properly started.
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
 
-The best place to clear that flag is right after issuing
-DWC3_DEPCMD_ENDTRANSFER.
+Compile-only tested.
 
-Reported-by: Moiz Sonasath <m-sonasath@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/gadget.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ti_usb_3410_5052.c |   88 ++++++++++++++++------------------
+ 1 file changed, 43 insertions(+), 45 deletions(-)
 
---- a/drivers/usb/dwc3/gadget.c
-+++ b/drivers/usb/dwc3/gadget.c
-@@ -1899,6 +1899,7 @@ static void dwc3_stop_active_transfer(st
- 	ret = dwc3_send_gadget_ep_cmd(dwc, dep->number, cmd, &params);
- 	WARN_ON_ONCE(ret);
- 	dep->resource_index = 0;
-+	dep->flags &= ~DWC3_EP_BUSY;
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -98,6 +98,8 @@ struct ti_device {
+ 
+ static int ti_startup(struct usb_serial *serial);
+ static void ti_release(struct usb_serial *serial);
++static int ti_port_probe(struct usb_serial_port *port);
++static int ti_port_remove(struct usb_serial_port *port);
+ static int ti_open(struct tty_struct *tty, struct usb_serial_port *port);
+ static void ti_close(struct usb_serial_port *port);
+ static int ti_write(struct tty_struct *tty, struct usb_serial_port *port,
+@@ -223,6 +225,8 @@ static struct usb_serial_driver ti_1port
+ 	.num_ports		= 1,
+ 	.attach			= ti_startup,
+ 	.release		= ti_release,
++	.port_probe		= ti_port_probe,
++	.port_remove		= ti_port_remove,
+ 	.open			= ti_open,
+ 	.close			= ti_close,
+ 	.write			= ti_write,
+@@ -251,6 +255,8 @@ static struct usb_serial_driver ti_2port
+ 	.num_ports		= 2,
+ 	.attach			= ti_startup,
+ 	.release		= ti_release,
++	.port_probe		= ti_port_probe,
++	.port_remove		= ti_port_remove,
+ 	.open			= ti_open,
+ 	.close			= ti_close,
+ 	.write			= ti_write,
+@@ -358,11 +364,8 @@ module_exit(ti_exit);
+ static int ti_startup(struct usb_serial *serial)
+ {
+ 	struct ti_device *tdev;
+-	struct ti_port *tport;
+ 	struct usb_device *dev = serial->dev;
+ 	int status;
+-	int i;
+-
+ 
+ 	dbg("%s - product 0x%4X, num configurations %d, configuration value %d",
+ 	    __func__, le16_to_cpu(dev->descriptor.idProduct),
+@@ -409,42 +412,8 @@ static int ti_startup(struct usb_serial
+ 		goto free_tdev;
+ 	}
+ 
+-	/* set up port structures */
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		tport = kzalloc(sizeof(struct ti_port), GFP_KERNEL);
+-		if (tport == NULL) {
+-			dev_err(&dev->dev, "%s - out of memory\n", __func__);
+-			status = -ENOMEM;
+-			goto free_tports;
+-		}
+-		spin_lock_init(&tport->tp_lock);
+-		tport->tp_uart_base_addr = (i == 0 ?
+-				TI_UART1_BASE_ADDR : TI_UART2_BASE_ADDR);
+-		tport->tp_closing_wait = closing_wait;
+-		init_waitqueue_head(&tport->tp_msr_wait);
+-		init_waitqueue_head(&tport->tp_write_wait);
+-		if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE,
+-								GFP_KERNEL)) {
+-			dev_err(&dev->dev, "%s - out of memory\n", __func__);
+-			kfree(tport);
+-			status = -ENOMEM;
+-			goto free_tports;
+-		}
+-		tport->tp_port = serial->port[i];
+-		tport->tp_tdev = tdev;
+-		usb_set_serial_port_data(serial->port[i], tport);
+-		tport->tp_uart_mode = 0;	/* default is RS232 */
+-	}
+-
+ 	return 0;
+ 
+-free_tports:
+-	for (--i; i >= 0; --i) {
+-		tport = usb_get_serial_port_data(serial->port[i]);
+-		kfifo_free(&tport->write_fifo);
+-		kfree(tport);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
+ free_tdev:
+ 	kfree(tdev);
+ 	usb_set_serial_data(serial, NULL);
+@@ -454,21 +423,50 @@ free_tdev:
+ 
+ static void ti_release(struct usb_serial *serial)
+ {
+-	int i;
+ 	struct ti_device *tdev = usb_get_serial_data(serial);
++
++	kfree(tdev);
++}
++
++static int ti_port_probe(struct usb_serial_port *port)
++{
+ 	struct ti_port *tport;
+ 
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		tport = usb_get_serial_port_data(serial->port[i]);
+-		if (tport) {
+-			kfifo_free(&tport->write_fifo);
+-			kfree(tport);
+-		}
++	tport = kzalloc(sizeof(*tport), GFP_KERNEL);
++	if (!tport)
++		return -ENOMEM;
++
++	spin_lock_init(&tport->tp_lock);
++	if (port == port->serial->port[0])
++		tport->tp_uart_base_addr = TI_UART1_BASE_ADDR;
++	else
++		tport->tp_uart_base_addr = TI_UART2_BASE_ADDR;
++	tport->tp_closing_wait = closing_wait;
++	init_waitqueue_head(&tport->tp_msr_wait);
++	init_waitqueue_head(&tport->tp_write_wait);
++	if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE, GFP_KERNEL)) {
++		kfree(tport);
++		return -ENOMEM;
+ 	}
++	tport->tp_port = port;
++	tport->tp_tdev = usb_get_serial_data(port->serial);
++	tport->tp_uart_mode = 0;	/* default is RS232 */
+ 
+-	kfree(tdev);
++	usb_set_serial_port_data(port, tport);
++
++	return 0;
  }
  
- static void dwc3_stop_active_transfers(struct dwc3 *dwc)
++static int ti_port_remove(struct usb_serial_port *port)
++{
++	struct ti_port *tport;
++
++	tport = usb_get_serial_port_data(port);
++	kfifo_free(&tport->write_fifo);
++	kfree(tport);
++
++	return 0;
++}
+ 
+ static int ti_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
 
 
