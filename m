@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2JZAUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:20:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53705 "EHLO mail.kernel.org"
+	id S1755276Ab2JZAUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:20:30 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53714 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754369Ab2JZAH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:59 -0400
+	id S1754240Ab2JZAIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 41/85] USB: io_edgeport: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:59 -0700
-Message-Id: <20121026000035.249018751@linuxfoundation.org>
+Subject: [ 42/85] USB: keyspan_pda: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:06:00 -0700
+Message-Id: <20121026000035.344346518@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,151 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit c27f3efc56080a246f6ab7f57f0a6f56d256d769 upstream.
+commit 94ab71ce288921490ca857e25ad174e1921b1e29 upstream.
 
-Fix port-data memory leak by moving port data allocation and
-deallocation to port_probe and port_remove.
+Fix port-data memory leak by replacing attach and release with
+port_probe and port_remove.
 
 Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
 driver is bound) the port private data is no longer freed at release as
 it is no longer accessible.
 
+Note that the write waitqueue was initialised but never used.
+
 Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_edgeport.c |   54 ++++++++++++++++++++-------------------
- drivers/usb/serial/io_tables.h   |    8 +++++
- 2 files changed, 37 insertions(+), 25 deletions(-)
+ drivers/usb/serial/keyspan_pda.c |   30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -228,6 +228,8 @@ static int  edge_get_icount(struct tty_s
- static int  edge_startup(struct usb_serial *serial);
- static void edge_disconnect(struct usb_serial *serial);
- static void edge_release(struct usb_serial *serial);
-+static int edge_port_probe(struct usb_serial_port *port);
-+static int edge_port_remove(struct usb_serial_port *port);
+--- a/drivers/usb/serial/keyspan_pda.c
++++ b/drivers/usb/serial/keyspan_pda.c
+@@ -735,29 +735,33 @@ MODULE_FIRMWARE("keyspan_pda/keyspan_pda
+ MODULE_FIRMWARE("keyspan_pda/xircom_pgs.fw");
+ #endif
  
- #include "io_tables.h"	/* all of the devices that this driver supports */
- 
-@@ -2921,9 +2923,8 @@ static void load_application_firmware(st
- static int edge_startup(struct usb_serial *serial)
+-static int keyspan_pda_startup(struct usb_serial *serial)
++static int keyspan_pda_port_probe(struct usb_serial_port *port)
  {
- 	struct edgeport_serial *edge_serial;
--	struct edgeport_port *edge_port;
- 	struct usb_device *dev;
--	int i, j;
-+	int i;
- 	int response;
- 	bool interrupt_in_found;
- 	bool bulk_in_found;
-@@ -3007,26 +3008,6 @@ static int edge_startup(struct usb_seria
- 	/* we set up the pointers to the endpoints in the edge_open function,
- 	 * as the structures aren't created yet. */
  
--	/* set up our port private structures */
--	for (i = 0; i < serial->num_ports; ++i) {
--		edge_port = kzalloc(sizeof(struct edgeport_port), GFP_KERNEL);
--		if (edge_port == NULL) {
--			dev_err(&serial->dev->dev, "%s - Out of memory\n",
--								   __func__);
--			for (j = 0; j < i; ++j) {
--				kfree(usb_get_serial_port_data(serial->port[j]));
--				usb_set_serial_port_data(serial->port[j],
--									NULL);
--			}
--			usb_set_serial_data(serial, NULL);
--			kfree(edge_serial);
--			return -ENOMEM;
--		}
--		spin_lock_init(&edge_port->ep_lock);
--		edge_port->port = serial->port[i];
--		usb_set_serial_port_data(serial->port[i], edge_port);
--	}
+ 	struct keyspan_pda_private *priv;
+ 
+-	/* allocate the private data structures for all ports. Well, for all
+-	   one ports. */
 -
- 	response = 0;
- 
- 	if (edge_serial->is_epic) {
-@@ -3175,12 +3156,35 @@ static void edge_release(struct usb_seri
- 
- 	dbg("%s", __func__);
- 
--	for (i = 0; i < serial->num_ports; ++i)
--		kfree(usb_get_serial_port_data(serial->port[i]));
--
- 	kfree(edge_serial);
- }
- 
-+static int edge_port_probe(struct usb_serial_port *port)
-+{
-+	struct edgeport_port *edge_port;
-+
-+	edge_port = kzalloc(sizeof(*edge_port), GFP_KERNEL);
-+	if (!edge_port)
+ 	priv = kmalloc(sizeof(struct keyspan_pda_private), GFP_KERNEL);
+ 	if (!priv)
+-		return 1; /* error */
+-	usb_set_serial_port_data(serial->port[0], priv);
+-	init_waitqueue_head(&serial->port[0]->write_wait);
 +		return -ENOMEM;
 +
-+	spin_lock_init(&edge_port->ep_lock);
-+	edge_port->port = port;
+ 	INIT_WORK(&priv->wakeup_work, keyspan_pda_wakeup_write);
+ 	INIT_WORK(&priv->unthrottle_work, keyspan_pda_request_unthrottle);
+-	priv->serial = serial;
+-	priv->port = serial->port[0];
++	priv->serial = port->serial;
++	priv->port = port;
 +
-+	usb_set_serial_port_data(port, edge_port);
++	usb_set_serial_port_data(port, priv);
 +
-+	return 0;
-+}
-+
-+static int edge_port_remove(struct usb_serial_port *port)
-+{
-+	struct edgeport_port *edge_port;
-+
-+	edge_port = usb_get_serial_port_data(port);
-+	kfree(edge_port);
-+
-+	return 0;
-+}
-+
- module_usb_serial_driver(serial_drivers, id_table_combined);
+ 	return 0;
+ }
  
- MODULE_AUTHOR(DRIVER_AUTHOR);
---- a/drivers/usb/serial/io_tables.h
-+++ b/drivers/usb/serial/io_tables.h
-@@ -110,6 +110,8 @@ static struct usb_serial_driver edgeport
- 	.attach			= edge_startup,
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
-+	.port_probe		= edge_port_probe,
-+	.port_remove		= edge_port_remove,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
-@@ -139,6 +141,8 @@ static struct usb_serial_driver edgeport
- 	.attach			= edge_startup,
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
-+	.port_probe		= edge_port_probe,
-+	.port_remove		= edge_port_remove,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
-@@ -168,6 +172,8 @@ static struct usb_serial_driver edgeport
- 	.attach			= edge_startup,
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
-+	.port_probe		= edge_port_probe,
-+	.port_remove		= edge_port_remove,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
-@@ -197,6 +203,8 @@ static struct usb_serial_driver epic_dev
- 	.attach			= edge_startup,
- 	.disconnect		= edge_disconnect,
- 	.release		= edge_release,
-+	.port_probe		= edge_port_probe,
-+	.port_remove		= edge_port_remove,
- 	.ioctl			= edge_ioctl,
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
+-static void keyspan_pda_release(struct usb_serial *serial)
++static int keyspan_pda_port_remove(struct usb_serial_port *port)
+ {
+-	kfree(usb_get_serial_port_data(serial->port[0]));
++	struct keyspan_pda_private *priv;
++
++	priv = usb_get_serial_port_data(port);
++	kfree(priv);
++
++	return 0;
+ }
+ 
+ #ifdef KEYSPAN
+@@ -808,8 +812,8 @@ static struct usb_serial_driver keyspan_
+ 	.break_ctl =		keyspan_pda_break_ctl,
+ 	.tiocmget =		keyspan_pda_tiocmget,
+ 	.tiocmset =		keyspan_pda_tiocmset,
+-	.attach =		keyspan_pda_startup,
+-	.release =		keyspan_pda_release,
++	.port_probe =		keyspan_pda_port_probe,
++	.port_remove =		keyspan_pda_port_remove,
+ };
+ 
+ static struct usb_serial_driver * const serial_drivers[] = {
 
 
