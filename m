@@ -1,139 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964989Ab2JZVlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:41:21 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:55012 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933923Ab2JZVlT convert rfc822-to-8bit (ORCPT
+	id S965125Ab2JZVlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:41:40 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38514 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933967Ab2JZVli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:41:19 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "mikew@google.com" <mikew@google.com>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: [PATCH v3 3/7] efi_pstore: Remove a logic erasing entries from a
- write callback to hold multiple logs
-Thread-Topic: [PATCH v3 3/7] efi_pstore: Remove a logic erasing entries from
- a write callback to hold multiple logs
-Thread-Index: Ac2zwpW6aHT58zlhT4SB+eH6M80yWQ==
-Date: Fri, 26 Oct 2012 21:41:08 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388EFFB@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Oct 2012 17:41:38 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-26_06:2012-10-26,2012-10-26,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1210260270
+In-Reply-To: <CA+55aFywEzhrxV0wMPwT0SNEL4mjo72kqbgcsmqm7JYKRYTCYQ@mail.gmail.com>
+References: <20121026185021.GA1960@www.outflux.net>
+	<CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
+	<CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com>
+	<CA+55aFzw_p-WJyBBGc5UFDU8yN698REH+Vc1fk=CDeq4JG8AFA@mail.gmail.com>
+	<CAGXu5jKP5XxSkz48PsqbrpBZMU=wjsmq+HExZGKMOeHrB9PHrg@mail.gmail.com>
+	<CA+55aFywEzhrxV0wMPwT0SNEL4mjo72kqbgcsmqm7JYKRYTCYQ@mail.gmail.com>
+Date: Fri, 26 Oct 2012 14:41:37 -0700
+X-Google-Sender-Auth: 3p9P17df9c9XCdZe0uMak_1Mbh4
+Message-ID: <CAGXu5jK4-=c96YgrNJ+SLYZdqpG5WtR4WkfrSdwOwqt2pm5dFw@mail.gmail.com>
+Subject: Re: [PATCH] VFS: add config options to enable link restrictions
+From: Kees Cook <keescook@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Issue]
+On Fri, Oct 26, 2012 at 1:27 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Oct 26, 2012 at 1:23 PM, Kees Cook <keescook@chromium.org> wrote:
+>>
+>> I'd like it to be the exception to turn it _off_, rather than the
+>> exception to turn it on.
+>
+> Kees, you don't seem to understand.
+>
+> Breaking applications is unacceptable. End of story. It's broken them.
+> Get over it.
 
-Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
-So, in the following scenario, we will lose 1st panic messages.
+No, I get that. I've been over it. I can handle it being off by
+default. I just want there to be a way to make it enabled at build
+time. I'll explore some other options; it's sensible to tie it to
+other settings/things that are security-sensitive.
 
-1. kernel panics.
-2. efi_pstore is kicked and writes panic messages to NVRAM.
-3. system reboots.
-4. kernel panics again before a user checks the 1st panic messages in NVRAM.
+-Kees
 
-[Solution]
-
-A reasonable solution to fix the issue is just holding multiple logs without erasing
-existing entries.
-This patch removes a logic erasing existing entries in a write callback
-because the logic is not needed in the write callback to support holding multiple logs.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- drivers/firmware/efivars.c |   39 ++-------------------------------------
- 1 files changed, 2 insertions(+), 37 deletions(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index bee14cc..fbe9202 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -701,18 +701,13 @@ static int efi_pstore_write(enum pstore_type_id type,
- 		unsigned int part, size_t size, struct pstore_info *psi)
- {
- 	char name[DUMP_NAME_LEN];
--	char stub_name[DUMP_NAME_LEN];
- 	efi_char16_t efi_name[DUMP_NAME_LEN];
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
- 	struct efivars *efivars = psi->data;
--	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
- 	u64 storage_space, remaining_space, max_variable_size;
- 	efi_status_t status = EFI_NOT_FOUND;
- 
--	sprintf(stub_name, "dump-type%u-%u-", type, part);
--	sprintf(name, "%s%lu", stub_name, get_seconds());
--
- 	spin_lock(&efivars->lock);
- 
- 	/*
-@@ -730,35 +725,8 @@ static int efi_pstore_write(enum pstore_type_id type,
- 		return -ENOSPC;
- 	}
- 
--	for (i = 0; i < DUMP_NAME_LEN; i++)
--		efi_name[i] = stub_name[i];
--
--	/*
--	 * Clean up any entries with the same name
--	 */
--
--	list_for_each_entry(entry, &efivars->list, list) {
--		get_var_data_locked(efivars, &entry->var);
--
--		if (efi_guidcmp(entry->var.VendorGuid, vendor))
--			continue;
--		if (utf16_strncmp(entry->var.VariableName, efi_name,
--				  utf16_strlen(efi_name)))
--			continue;
--		/* Needs to be a prefix */
--		if (entry->var.VariableName[utf16_strlen(efi_name)] == 0)
--			continue;
--
--		/* found */
--		found = entry;
--		efivars->ops->set_variable(entry->var.VariableName,
--					   &entry->var.VendorGuid,
--					   PSTORE_EFI_ATTRIBUTES,
--					   0, NULL);
--	}
--
--	if (found)
--		list_del(&found->list);
-+	sprintf(name, "dump-type%u-%u-%lu", type, part,
-+		get_seconds());
- 
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = name[i];
-@@ -768,9 +736,6 @@ static int efi_pstore_write(enum pstore_type_id type,
- 
- 	spin_unlock(&efivars->lock);
- 
--	if (found)
--		efivar_unregister(found);
--
- 	if (size)
- 		ret = efivar_create_sysfs_entry(efivars,
- 					  utf16_strsize(efi_name,
--- 1.7.1
+-- 
+Kees Cook
+Chrome OS Security
