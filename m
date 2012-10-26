@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab2JZI4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:56:00 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:59725 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932212Ab2JZIzg (ORCPT
+	id S1757605Ab2JZI4j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:56:39 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46717 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757360Ab2JZI4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:55:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
-References: <3100e691db3f94c22afd98b609a1568d7e70dfe7.1350360935.git.viresh.kumar@linaro.org>
-	<169edae67b9a051ca7448e5b62c3cd2c5c1db470.1350360935.git.viresh.kumar@linaro.org>
-Date: Fri, 26 Oct 2012 14:25:36 +0530
-Message-ID: <CAKohpokEXAGD-nUF6u8tugvF2ffJx3HLLd+Zgc2+6GB9hxnT6Q@mail.gmail.com>
-Subject: Re: [PATCH V3 2/3] dmaengine: dw_dmac: Enhance device tree support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        andriy.shevchenko@linux.intel.com,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Oct 2012 04:56:33 -0400
+X-AuditID: 9c930179-b7c8bae000003559-52-508a503e455d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Borislav Petkov <bp@amd64.org>
+Subject: [PATCH 2/5] perf tools: Cleanup doc related targets
+Date: Fri, 26 Oct 2012 17:55:49 +0900
+Message-Id: <1351241752-2919-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
+References: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-On 16 October 2012 09:49, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> dw_dmac driver already supports device tree but it used to have its platform
-> data passed the non-DT way.
->
-> This patch does following changes:
-> - pass platform data via DT, non-DT way still takes precedence if both are used.
-> - create generic filter routine
-> - Earlier slave information was made available by slave specific filter routines
->   in chan->private field. Now, this information would be passed from within dmac
->   DT node. Slave drivers would now be required to pass bus_id (a string) as
->   parameter to this generic filter(), which would be compared against the slave
->   data passed from DT, by the generic filter routine.
-> - Update binding document
+Documentation targets handling rules are duplicate.  Consolidate them
+with DOC_TARGETS and INSTALL_DOC_TARGETS.
 
-I can see that you applied these patches and they are present in
-linux-next. But i feel
-the order of patches is bad.
+Cc: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Makefile | 46 +++++++++-------------------------------------
+ 1 file changed, 9 insertions(+), 37 deletions(-)
 
-git log --oneline gives following:
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b14eeb86d8d7..5cf40cbdaaf9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -977,20 +977,15 @@ help:
+ 	@echo 'Perf maintainer targets:'
+ 	@echo '  clean			- clean all binary objects and build output'
+ 
+-doc:
+-	$(MAKE) -C Documentation all
+ 
+-man:
+-	$(MAKE) -C Documentation man
++DOC_TARGETS := doc man html info pdf
+ 
+-html:
+-	$(MAKE) -C Documentation html
++INSTALL_DOC_TARGETS := $(patsubst %,install-%,$(DOC_TARGETS)) try-install-man
++INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
+ 
+-info:
+-	$(MAKE) -C Documentation info
+-
+-pdf:
+-	$(MAKE) -C Documentation pdf
++# 'make doc' should call 'make -C Documentation all'
++$(DOC_TARGETS):
++	$(MAKE) -C Documentation $(@:doc=all)
+ 
+ TAGS:
+ 	$(RM) TAGS
+@@ -1061,32 +1056,9 @@ install: all try-install-man
+ install-python_ext:
+ 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+ 
+-install-doc:
+-	$(MAKE) -C Documentation install
+-
+-install-man:
+-	$(MAKE) -C Documentation install-man
+-
+-try-install-man:
+-	$(MAKE) -C Documentation try-install-man
+-
+-install-html:
+-	$(MAKE) -C Documentation install-html
+-
+-install-info:
+-	$(MAKE) -C Documentation install-info
+-
+-install-pdf:
+-	$(MAKE) -C Documentation install-pdf
+-
+-quick-install-doc:
+-	$(MAKE) -C Documentation quick-install
+-
+-quick-install-man:
+-	$(MAKE) -C Documentation quick-install-man
+-
+-quick-install-html:
+-	$(MAKE) -C Documentation quick-install-html
++# 'make install-doc' should call 'make -C Documentation install'
++$(INSTALL_DOC_TARGETS):
++	$(MAKE) -C Documentation $(@:-doc=)
+ 
+ ### Cleaning rules
+ 
+-- 
+1.7.11.7
 
-879a0ec dmaengine: dw_dmac: Update documentation style comments for
-dw_dma_platform_data
-d0e35f3 dmaengine: dw_dmac: Enhance device tree support
-4c4c30c ARM: SPEAr13xx: Pass DW DMAC platform data from DT
-
-The last patch "ARM: SPEAr13xx: Pass DW DMAC platform data from DT" has
-dependency on second patch.
-
-The correct order would be:
-4c4c30c ARM: SPEAr13xx: Pass DW DMAC platform data from DT
-d0e35f3 dmaengine: dw_dmac: Enhance device tree support
-879a0ec dmaengine: dw_dmac: Update documentation style comments for
-dw_dma_platform_data
-
-
-PS: We are looking at output of git log. Last patch (or first from
-bottom) was applied first.
-
---
-viresh
