@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945964Ab2JZVWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:22:37 -0400
-Received: from natasha.panasas.com ([67.152.220.90]:45124 "EHLO
-	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945930Ab2JZVWg (ORCPT
+	id S966607Ab2JZVZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:25:56 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:46365 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965612Ab2JZVZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:22:36 -0400
-Message-ID: <508AFF17.6050705@panasas.com>
-Date: Fri, 26 Oct 2012 14:22:31 -0700
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 26 Oct 2012 17:25:54 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] VFS: add config options to enable link restrictions
-References: <20121026185021.GA1960@www.outflux.net> <CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com> <CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com> <CA+55aFzw_p-WJyBBGc5UFDU8yN698REH+Vc1fk=CDeq4JG8AFA@mail.gmail.com> <CAGXu5jKP5XxSkz48PsqbrpBZMU=wjsmq+HExZGKMOeHrB9PHrg@mail.gmail.com>
-In-Reply-To: <CAGXu5jKP5XxSkz48PsqbrpBZMU=wjsmq+HExZGKMOeHrB9PHrg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1351285552.30380.20.camel@edumazet-glaptop>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	<1350925299.8609.978.camel@edumazet-glaptop>
+	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+	<CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
+	<1351053164.6537.95.camel@edumazet-glaptop>
+	<CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+	<1351270087.30380.9.camel@edumazet-glaptop>
+	<CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
+	<1351285552.30380.20.camel@edumazet-glaptop>
+Date: Fri, 26 Oct 2012 14:25:52 -0700
+X-Google-Sender-Auth: RpK6w1qNu3fDa-8WcD_OarFvL1Y
+Message-ID: <CAN8Q1Ecx-pDR=NBQm4O=VaynQsxBU1wku9e_kcKkWB=xU0OtMA@mail.gmail.com>
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Peter LaDow <petela@gocougs.wsu.edu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        netfilter@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 01:23 PM, Kees Cook wrote:
-> 
-> Every distro will ship with this enabled (except perhaps Damn
-> Vulnerable Linux), so why make it harder?
-> 
+On Fri, Oct 26, 2012 at 2:05 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Do you know what is per cpu data in linux kernel ?
 
-So please remind me why can't it be on by default in code.
-And the normal sysctl to turn it off for these who want to
-experiment with "filesystem corruption".
+I sorta did.  But since your response, I did more reading, and now I
+see what you mean.  But I don't think this is a per cpu issue.  More
+below.
 
-So the basic premise is that you must not have any
-filesystem corruption at the parts used by boot up until
-the init portion that turns "filesystem corruption" on
+> Because its not needed. Really I dont know why you want that.
+>
+> Once you are sure a thread cannot be interrupted by a softirq, and
+> cannot migrate to another cpu, access to percpu data doesnt need other
+> synchronization at all.
 
-> -Kees
-> 
+Because there are multiple entry points on the same CPU.  In
+net/ipv4/netfilter/ip_tables, there are two entries to
+xt_write_recseq_begin().  The first is in ipt_do_table and the other
+is in get_counters.  Where we are seeing the lockup is with a
+getsockopt syscall leading to do_counters.  The other path is through
+ipt_do_table, which is installed as a hook.  I'm not sure from what
+context the hooks are called, but it is certainly from a different
+context than the syscall.
 
-Cheers
-Boaz
+> Following sequence is safe :
+>
+> addend = (__this_cpu_read(xt_recseq.sequence) + 1) & 1;
+> /*
+>  * This is kind of a write_seqcount_begin(), but addend is 0 or 1
+>  * We dont check addend value to avoid a test and conditional jump,
+>  * since addend is most likely 1
+>  */
+> __this_cpu_add(xt_recseq.sequence, addend);
+
+If this were safe, we wouldn't be seeing this lockup and your patch
+wouldn't be needed.  So it seems that your patch doesn't really
+address the issue that we are not "sure a thread cannot be interrupted
+by a softirq, and cannot migrate to another cpu".  Well, we know it
+cannot migrate to another CPU, because there isn't another CPU.  So
+apparently, it can be interrupted by a softirq.  So local_bh_disable
+isn't doing anything useful in the RT patches with regard to this.
+
+As I mentioned earlier, I think perhaps what your patch did was ensure
+an atomic update of the sequence counter.  But it does nothing to
+synchronize two writers.  If they were already synchronized (such as
+via the call to local_bh_disable), then we wouldn't see sequence
+counter corruption, no?
+
+Pete
