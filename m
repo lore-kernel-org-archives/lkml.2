@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab2JZAlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:41:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52839 "EHLO mail.kernel.org"
+	id S1754196Ab2JZAlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:41:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52824 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479Ab2JZAGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:33 -0400
+	id S1753460Ab2JZAGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 14/42] xen/x86: dont corrupt %eip when returning from a signal handler
-Date: Thu, 25 Oct 2012 17:05:22 -0700
-Message-Id: <20121026000126.215486409@linuxfoundation.org>
+        Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 13/42] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+Date: Thu, 25 Oct 2012 17:05:21 -0700
+Message-Id: <20121026000126.117091470@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -28,97 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit a349e23d1cf746f8bdc603dcc61fae9ee4a695f6 upstream.
+commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
 
-In 32 bit guests, if a userspace process has %eax == -ERESTARTSYS
-(-512) or -ERESTARTNOINTR (-513) when it is interrupted by an event
-/and/ the process has a pending signal then %eip (and %eax) are
-corrupted when returning to the main process after handling the
-signal.  The application may then crash with SIGSEGV or a SIGILL or it
-may have subtly incorrect behaviour (depending on what instruction it
-returned to).
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-The occurs because handle_signal() is incorrectly thinking that there
-is a system call that needs to restarted so it adjusts %eip and %eax
-to re-execute the system call instruction (even though user space had
-not done a system call).
+[ hpa: this should be done not just for > 4 GB but for everything above the legacy
+  region (1 MB), at the very least.  That, however, turns out to require significant
+  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
 
-If %eax == -514 (-ERESTARTNOHAND (-514) or -ERESTART_RESTARTBLOCK
-(-516) then handle_signal() only corrupted %eax (by setting it to
--EINTR).  This may cause the application to crash or have incorrect
-behaviour.
-
-handle_signal() assumes that regs->orig_ax >= 0 means a system call so
-any kernel entry point that is not for a system call must push a
-negative value for orig_ax.  For example, for physical interrupts on
-bare metal the inverse of the vector is pushed and page_fault() sets
-regs->orig_ax to -1, overwriting the hardware provided error code.
-
-xen_hypervisor_callback() was incorrectly pushing 0 for orig_ax
-instead of -1.
-
-Classic Xen kernels pushed %eax which works as %eax cannot be both
-non-negative and -RESTARTSYS (etc.), but using -1 is consistent with
-other non-system call entry points and avoids some of the tests in
-handle_signal().
-
-There were similar bugs in xen_failsafe_callback() of both 32 and
-64-bit guests. If the fault was corrected and the normal return path
-was used then 0 was incorrectly pushed as the value for orig_ax.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/entry_32.S |    8 +++++---
- arch/x86/kernel/entry_64.S |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1025,7 +1025,7 @@ ENTRY(xen_sysenter_target)
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -927,8 +927,21 @@ void __init setup_arch(char **cmdline_p)
  
- ENTRY(xen_hypervisor_callback)
- 	CFI_STARTPROC
--	pushl_cfi $0
-+	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	TRACE_IRQS_OFF
- 
-@@ -1067,14 +1067,16 @@ ENTRY(xen_failsafe_callback)
- 2:	mov 8(%esp),%es
- 3:	mov 12(%esp),%fs
- 4:	mov 16(%esp),%gs
-+	/* EAX == 0 => Category 1 (Bad segment)
-+	   EAX != 0 => Category 2 (Bad IRET) */
- 	testl %eax,%eax
- 	popl_cfi %eax
- 	lea 16(%esp),%esp
- 	CFI_ADJUST_CFA_OFFSET -16
- 	jz 5f
- 	addl $16,%esp
--	jmp iret_exc		# EAX != 0 => Category 2 (Bad IRET)
--5:	pushl_cfi $0		# EAX == 0 => Category 1 (Bad segment)
-+	jmp iret_exc
-+5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp ret_from_exception
- 	CFI_ENDPROC
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1351,7 +1351,7 @@ ENTRY(xen_failsafe_callback)
- 	CFI_RESTORE r11
- 	addq $0x30,%rsp
- 	CFI_ADJUST_CFA_OFFSET -0x30
--	pushq_cfi $0
-+	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp error_exit
- 	CFI_ENDPROC
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
 
 
