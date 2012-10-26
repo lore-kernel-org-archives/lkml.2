@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab2JZAGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52801 "EHLO mail.kernel.org"
+	id S1753563Ab2JZAGl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52867 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab2JZAGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:31 -0400
+	id S1753529Ab2JZAGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 12/42] use clamp_t in UNAME26 fix
-Date: Thu, 25 Oct 2012 17:05:20 -0700
-Message-Id: <20121026000126.021840027@linuxfoundation.org>
+        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>
+Subject: [ 16/42] usb: acm: fix the computation of the number of data bits
+Date: Thu, 25 Oct 2012 17:05:24 -0700
+Message-Id: <20121026000126.410743125@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -27,35 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Nicolas Boullis <nboullis@debian.org>
 
-commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
+commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
 
-The min/max call needed to have explicit types on some architectures
-(e.g. mn10300). Use clamp_t instead to avoid the warning:
+The current code assumes that CSIZE is 0000060, which appears to be
+wrong on some arches (such as powerpc).
 
-  kernel/sys.c: In function 'override_release':
-  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nicolas Boullis <nboullis@debian.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1199,7 +1199,7 @@ static int override_release(char __user
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = clamp_t(size_t, len, 1, sizeof(buf));
- 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
- 		ret = copy_to_user(release, buf, copy + 1);
- 	}
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -818,10 +818,6 @@ static const __u32 acm_tty_speed[] = {
+ 	2500000, 3000000, 3500000, 4000000
+ };
+ 
+-static const __u8 acm_tty_size[] = {
+-	5, 6, 7, 8
+-};
+-
+ static void acm_tty_set_termios(struct tty_struct *tty,
+ 						struct ktermios *termios_old)
+ {
+@@ -835,7 +831,21 @@ static void acm_tty_set_termios(struct t
+ 	newline.bParityType = termios->c_cflag & PARENB ?
+ 				(termios->c_cflag & PARODD ? 1 : 2) +
+ 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
+-	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		newline.bDataBits = 5;
++		break;
++	case CS6:
++		newline.bDataBits = 6;
++		break;
++	case CS7:
++		newline.bDataBits = 7;
++		break;
++	case CS8:
++	default:
++		newline.bDataBits = 8;
++		break;
++	}
+ 	/* FIXME: Needs to clear unsupported bits in the termios */
+ 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+ 
 
 
