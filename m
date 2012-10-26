@@ -1,143 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab2JZC7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 22:59:10 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:44650 "EHLO
+	id S1755859Ab2JZDIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:08:13 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60282 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab2JZC7H (ORCPT
+	with ESMTP id S1755795Ab2JZDIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 22:59:07 -0400
+	Thu, 25 Oct 2012 23:08:11 -0400
+Message-ID: <5089FE8E.4030603@gmail.com>
+Date: Fri, 26 Oct 2012 11:07:58 +0800
+From: Ni zhan Chen <nizhan.chen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <50898F97.3000202@gmail.com>
-References: <1350387889-15324-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-1-git-send-email-hongbo.zhang@linaro.com>
-	<1351079900-32236-5-git-send-email-hongbo.zhang@linaro.com>
-	<50898F97.3000202@gmail.com>
-Date: Fri, 26 Oct 2012 10:59:06 +0800
-Message-ID: <CAJLyvQxSTB3ECO9oAUtSdAyGiaHkG-G-Ydz=J4XD0oF3PWi1rg@mail.gmail.com>
-Subject: Re: [PATCH V2 4/6] Thermal: Remove the cooling_cpufreq_list
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Francesco Lavra <francescolavra.fl@gmail.com>
-Cc: "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com, kernel@igloocommunity.org,
-        linaro-kernel@lists.linaro.org, Patch Tracking <patches@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mhocko@suse.cz, peterz@infradead.org, akpm@linux-foundation.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on access
+ fault.
+References: <1351183471-14710-1-git-send-email-will.deacon@arm.com> <20121025195110.GA4771@cmpxchg.org>
+In-Reply-To: <20121025195110.GA4771@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 October 2012 03:14, Francesco Lavra <francescolavra.fl@gmail.com> wrote:
-> Hi,
-> Hongbo Zhang wrote:
->> Problem of using this list is that the cpufreq_get_max_state callback will be
->> called when register cooling device by thermal_cooling_device_register, but
->> this list isn't ready at this moment. What's more, there is no need to maintain
->> such a list, we can get cpufreq_cooling_device instance by the private
->> thermal_cooling_device.devdata.
+On 10/26/2012 03:51 AM, Johannes Weiner wrote:
+> On Thu, Oct 25, 2012 at 05:44:31PM +0100, Will Deacon wrote:
+>> On x86 memory accesses to pages without the ACCESSED flag set result in the
+>> ACCESSED flag being set automatically. With the ARM architecture a page access
+>> fault is raised instead (and it will continue to be raised until the ACCESSED
+>> flag is set for the appropriate PTE/PMD).
 >>
->> Signed-off-by: hongbo.zhang <hongbo.zhang at linaro.com>
->> ---
->>  drivers/thermal/cpu_cooling.c | 81 +++++++++----------------------------------
->>  1 file changed, 16 insertions(+), 65 deletions(-)
+>> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
+>> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
+>> be called for a write fault.
 >>
->> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
->> index 415b041..cc80d29 100644
->> --- a/drivers/thermal/cpu_cooling.c
->> +++ b/drivers/thermal/cpu_cooling.c
->> @@ -58,8 +58,9 @@ struct cpufreq_cooling_device {
->>  };
->>  static LIST_HEAD(cooling_cpufreq_list);
->>  static DEFINE_IDR(cpufreq_idr);
->> +static DEFINE_MUTEX(cooling_cpufreq_lock);
+>> This patch ensures that faults on transparent hugepages which do not result
+>> in a CoW update the access flags for the faulting pmd.
 >>
->> -static struct mutex cooling_cpufreq_lock;
->> +static unsigned int cpufreq_dev_count;
->>
->>  /* notify_table passes value to the CPUFREQ_ADJUST callback function. */
->>  #define NOTIFY_INVALID NULL
->> @@ -241,20 +242,12 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
->>                                unsigned long *state)
->>  {
->>       int ret = -EINVAL, i = 0;
->> -     struct cpufreq_cooling_device *cpufreq_device;
->> +     struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
->>       struct cpumask *maskPtr;
->>       unsigned int cpu;
->>       struct cpufreq_frequency_table *table;
->>       unsigned long count = 0;
->>
->> -     mutex_lock(&cooling_cpufreq_lock);
->> -     list_for_each_entry(cpufreq_device, &cooling_cpufreq_list, node) {
->> -             if (cpufreq_device && cpufreq_device->cool_dev == cdev)
->> -                     break;
->> -     }
->> -     if (cpufreq_device == NULL)
->> -             goto return_get_max_state;
->> -
->>       maskPtr = &cpufreq_device->allowed_cpus;
->>       cpu = cpumask_any(maskPtr);
->>       table = cpufreq_frequency_get_table(cpu);
->> @@ -276,7 +269,6 @@ static int cpufreq_get_max_state(struct thermal_cooling_device *cdev,
->>       }
->>
->>  return_get_max_state:
->> -     mutex_unlock(&cooling_cpufreq_lock);
->>       return ret;
+>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>> Cc: Kirill A. Shutemov <kirill@shutemov.name>
+>> Cc: Andrea Arcangeli <aarcange@redhat.com>
+>> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 >
-> Since there is no mutex locking/unlocking anymore, I'd say the goto
-> label should be removed.
-Good.
->
-> [...]
->>  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
->>  {
->> -     struct cpufreq_cooling_device *cpufreq_dev = NULL;
->> -     unsigned int cpufreq_dev_count = 0;
->> +     struct cpufreq_cooling_device *cpufreq_dev = cdev->devdata;
->>
->> -     mutex_lock(&cooling_cpufreq_lock);
->> -     list_for_each_entry(cpufreq_dev, &cooling_cpufreq_list, node) {
->> -             if (cpufreq_dev && cpufreq_dev->cool_dev == cdev)
->> -                     break;
->> -             cpufreq_dev_count++;
->> -     }
->> -
->> -     if (!cpufreq_dev || cpufreq_dev->cool_dev != cdev) {
->> -             mutex_unlock(&cooling_cpufreq_lock);
->> -             return;
->> -     }
->> +     thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
->>
->> -     list_del(&cpufreq_dev->node);
->> +     mutex_lock(&cooling_cpufreq_lock);
->> +     cpufreq_dev_count--;
->>
->>       /* Unregister the notifier for the last cpufreq cooling device */
->> -     if (cpufreq_dev_count == 1) {
->> +     if (cpufreq_dev_count == 0) {
->>               cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
->>                                       CPUFREQ_POLICY_NOTIFIER);
->>       }
->>       mutex_unlock(&cooling_cpufreq_lock);
->> -     thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
->
-> Why did you move the call to thermal_cooling_device_unregister() from
-> here? I don't see any reason for moving it.
-In common sense, usually unregister first and then count--;
-But here it should be opposite sequence of cpufreq_cooling_register,
-will update it.
+>> Ok chaps, I rebased this thing onto today's next (which basically
+>> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
+>> ask if you could eyeball the new code, especially where the locking is
+>> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
+>> that the page is not splitting, but I can't see why that is required.
+> I don't either.  If the thing was splitting when the fault happened,
+> that path is not taken.  And the locked pmd_same() check should rule
+> out splitting setting in after testing pmd_trans_huge_splitting().
+
+Why I can't find function pmd_trans_huge_splitting() you mentioned in 
+latest mainline codes and linux-next?
 
 >
->> +
->>       release_idr(&cpufreq_idr, cpufreq_dev->id);
->> -     if (cpufreq_dev_count == 1)
->> -             mutex_destroy(&cooling_cpufreq_lock);
->>       kfree(cpufreq_dev);
->>  }
->>  EXPORT_SYMBOL(cpufreq_cooling_unregister);
->> --
->> 1.7.11.3
+> Peter?
 >
 > --
-> Francesco
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
