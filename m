@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966575Ab2JZVn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:43:29 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:56189 "EHLO
+	id S966602Ab2JZVn7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:43:59 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:56460 "EHLO
 	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965014Ab2JZVn0 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S964893Ab2JZVn5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:43:26 -0400
+	Fri, 26 Oct 2012 17:43:57 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
@@ -18,13 +18,13 @@ To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
 CC: "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Subject: [PATCH v3 6/7] efi_pstore: Add a format check for an existing
- variable name at reading time
-Thread-Topic: [PATCH v3 6/7] efi_pstore: Add a format check for an existing
- variable name at reading time
-Thread-Index: Ac2zwt72eK09iNgHR7WUUZexYzUqOg==
-Date: Fri, 26 Oct 2012 21:43:15 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388F045@USINDEM103.corp.hds.com>
+Subject: [PATCH v3 7/7] Add a format check for an existing variable name at
+ erasing time
+Thread-Topic: [PATCH v3 7/7] Add a format check for an existing variable
+ name at erasing time
+Thread-Index: Ac2zwvFR+xYuXJbURSmiNIlI2zWcyQ==
+Date: Fri, 26 Oct 2012 21:43:47 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388F059@USINDEM103.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -57,7 +57,7 @@ Format of current variable name
   ctime:12345678
 
 On the other hand, if an old variable name before being updated 
-remains, users can't read it via /dev/pstore.
+remains, users can't erase it via /dev/pstore.
 
 Format of old variable name
   dump-type0-1-12345678
@@ -68,62 +68,43 @@ Format of old variable name
 
 [Solution]
 
-This patch adds a format check for the old variable name in a read callback
-to make it readable.
+This patch adds a format check for the old variable name in a erase callback to make it erasable.
 
 Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 ---
- drivers/firmware/efivars.c |   38 ++++++++++++++++++++++++++++----------
- 1 files changed, 28 insertions(+), 10 deletions(-)
+ drivers/firmware/efivars.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index dc69802..dd228d5 100644
+index dd228d5..b1cd028 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -681,17 +681,35 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 				*count = cnt;
- 				timespec->tv_sec = time;
- 				timespec->tv_nsec = 0;
--				get_var_data_locked(efivars, &efivars->walk_entry->var);
--				size = efivars->walk_entry->var.DataSize;
--				*buf = kmalloc(size, GFP_KERNEL);
--				if (*buf == NULL)
--					return -ENOMEM;
--				memcpy(*buf, efivars->walk_entry->var.Data,
--				       size);
--				efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
--					           struct efivar_entry, list);
--				return size;
-+			} else if (sscanf(name, "dump-type%u-%u-%lu",
-+				   type, &part, &time) == 3) {
-+				/*
-+				 * Check if an old format,
-+				 * which doesn't support holding
-+				 * multiple logs, remains.
-+				 */
-+				*id = part;
-+				*count = 0;
-+				timespec->tv_sec = time;
-+				timespec->tv_nsec = 0;
-+			} else {
-+				efivars->walk_entry = list_entry(
-+					efivars->walk_entry->list.next,
-+					 struct efivar_entry, list);
+@@ -777,6 +777,8 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i;
++	unsigned int type_old, part_old;
++	unsigned long time_old;
+ 
+ 	sprintf(name, "dump-type%u-%u-%d-%lu", type, (unsigned int)id, count,
+ 		time.tv_sec);
+@@ -796,8 +798,16 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
+ 		if (efi_guidcmp(entry->var.VendorGuid, vendor))
+ 			continue;
+ 		if (utf16_strncmp(entry->var.VariableName, efi_name,
+-				  utf16_strlen(efi_name)))
+-			continue;
++				  utf16_strlen(efi_name))) {
++			/*
++			 * Check if an old format,
++			 * which doesn't support holding
++			 * multiple logs, remains.
++			 */
++			if (sscanf(name, "dump-type%u-%u-%lu",
++				   &type_old, &part_old, &time_old) != 3)
 +				continue;
- 			}
-+
-+			get_var_data_locked(efivars, &efivars->walk_entry->var);
-+			size = efivars->walk_entry->var.DataSize;
-+			*buf = kmalloc(size, GFP_KERNEL);
-+			if (*buf == NULL)
-+				return -ENOMEM;
-+			memcpy(*buf, efivars->walk_entry->var.Data,
-+			       size);
-+			efivars->walk_entry = list_entry(
-+					efivars->walk_entry->list.next,
-+					struct efivar_entry, list);
-+			return size;
- 		}
- 		efivars->walk_entry = list_entry(efivars->walk_entry->list.next,
- 						 struct efivar_entry, list);
++		}
+ 
+ 		/* found */
+ 		found = entry;
 -- 1.7.1
