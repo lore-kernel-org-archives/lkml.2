@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab2JZA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:28:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53423 "EHLO mail.kernel.org"
+	id S1754064Ab2JZAH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53349 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab2JZAHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:30 -0400
+	id S1753569Ab2JZAHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Stuge <peter@stuge.se>, Hans de Goede <hdegoede@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [ 04/85] usbdevfs: Fix broken scatter-gather transfer
-Date: Thu, 25 Oct 2012 17:05:22 -0700
-Message-Id: <20121026000031.575096656@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 07/85] arch/tile: avoid generating .eh_frame information in modules
+Date: Thu, 25 Oct 2012 17:05:25 -0700
+Message-Id: <20121026000031.868347603@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,32 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Henrik Rydberg <rydberg@euromail.se>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 014639003c77a51fc319c9fdf225e7747cb6e18d upstream.
+commit 627072b06c362bbe7dc256f618aaa63351f0cfe6 upstream.
 
-The handling of large output bulk transfers is broken; the same user
-page is read over and over again. Fixed with this patch.
+The tile tool chain uses the .eh_frame information for backtracing.
+The vmlinux build drops any .eh_frame sections at link time, but when
+present in kernel modules, it causes a module load failure due to the
+presence of unsupported pc-relative relocations.  When compiling to
+use compiler feedback support, the compiler by default omits .eh_frame
+information, so we don't see this problem.  But when not using feedback,
+we need to explicitly suppress the .eh_frame.
 
-Acked-by: Peter Stuge <peter@stuge.se>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/devio.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/tile/Makefile |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -1348,6 +1348,7 @@ static int proc_do_submiturb(struct dev_
- 					ret = -EFAULT;
- 					goto error;
- 				}
-+				uurb->buffer += u;
- 			}
- 			totlen -= u;
- 		}
+--- a/arch/tile/Makefile
++++ b/arch/tile/Makefile
+@@ -26,6 +26,10 @@ $(error Set TILERA_ROOT or CROSS_COMPILE
+   endif
+ endif
+ 
++# The tile compiler may emit .eh_frame information for backtracing.
++# In kernel modules, this causes load failures due to unsupported relocations.
++KBUILD_CFLAGS   += -fno-asynchronous-unwind-tables
++
+ ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
+ KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
+ endif
 
 
