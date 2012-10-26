@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab2JZLRo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:17:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52696 "EHLO
+	id S1758524Ab2JZLSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:18:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52716 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755406Ab2JZLRm (ORCPT
+	with ESMTP id S1755523Ab2JZLSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:17:42 -0400
-Date: Fri, 26 Oct 2012 04:17:29 -0700
-From: tip-bot for Bin Gao <bin.gao@linux.intel.com>
-Message-ID: <tip-6e87f9b7e48e165cb8e6092b9abe682e7065614a@git.kernel.org>
+	Fri, 26 Oct 2012 07:18:47 -0400
+Date: Fri, 26 Oct 2012 04:18:28 -0700
+From: tip-bot for Daniel Lezcano <daniel.lezcano@linaro.org>
+Message-ID: <tip-4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bin.gao@intel.com, tglx@linutronix.de, len.brown@intel.com,
-        bin.gao@linux.intel.com
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        tglx@linutronix.de, daniel.lezcano@linaro.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bin.gao@intel.com, bin.gao@linux.intel.com,
-        len.brown@intel.com
-In-Reply-To: <20121025163544.GB38477@bingao-desk1.fm.intel.com>
-References: <20121025163544.GB38477@bingao-desk1.fm.intel.com>
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, daniel.lezcano@linaro.org
+In-Reply-To: <1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/boot] arch/x86/Kconfig:
-  Allow turning off CONFIG_X86_MPPARSE when either ACPI or SFI is present
-Git-Commit-ID: 6e87f9b7e48e165cb8e6092b9abe682e7065614a
+Subject: [tip:x86/cleanups] x86: Remove dead hlt_use_halt code
+Git-Commit-ID: 4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,45 +29,94 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 26 Oct 2012 04:17:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 26 Oct 2012 04:18:36 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6e87f9b7e48e165cb8e6092b9abe682e7065614a
-Gitweb:     http://git.kernel.org/tip/6e87f9b7e48e165cb8e6092b9abe682e7065614a
-Author:     Bin Gao <bin.gao@linux.intel.com>
-AuthorDate: Thu, 25 Oct 2012 09:35:44 -0700
+Commit-ID:  4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
+Gitweb:     http://git.kernel.org/tip/4d0e42cc66f4e7e0bf08b29da1ae6ebd60549c4e
+Author:     Daniel Lezcano <daniel.lezcano@linaro.org>
+AuthorDate: Thu, 25 Oct 2012 18:13:11 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 26 Oct 2012 12:20:38 +0200
+CommitDate: Fri, 26 Oct 2012 12:25:03 +0200
 
-arch/x86/Kconfig: Allow turning off CONFIG_X86_MPPARSE when either ACPI or SFI is present
+x86: Remove dead hlt_use_halt code
 
-MPS tables are not needed for systems that have proper ACPI
-support. This is also true for systems that have SFI in place.
+The hlt_use_halt function returns always true and there is only
+one definition of it.
 
-So this patch allows the configuration (turning off) of
-CONFIG_X86_MPPARSE when either ACPI or SFI is present.
+The default_idle function can then get ride of the if ...
+statement and we can remove the else branch.
 
-Signed-off-by: Bin Gao <bin.gao@intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Bin Gao <bin.gao@linux.intel.com>
-Link: http://lkml.kernel.org/r/20121025163544.GB38477@bingao-desk1.fm.intel.com
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linaro-dev@lists.linaro.org
+Cc: patches@linaro.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1351181591-8710-1-git-send-email-daniel.lezcano@linaro.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/process.c |   39 ++++++++++++++-------------------------
+ 1 files changed, 14 insertions(+), 25 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..b1494bd 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -310,7 +310,7 @@ config X86_X2APIC
- 	  If you don't know what to do here, say N.
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index b644e1c..2f99e31 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -306,11 +306,6 @@ void (*pm_idle)(void);
+ EXPORT_SYMBOL(pm_idle);
+ #endif
  
- config X86_MPPARSE
--	bool "Enable MPS table" if ACPI
-+	bool "Enable MPS table" if ACPI || SFI
- 	default y
- 	depends on X86_LOCAL_APIC
- 	---help---
+-static inline int hlt_use_halt(void)
+-{
+-	return 1;
+-}
+-
+ #ifndef CONFIG_SMP
+ static inline void play_dead(void)
+ {
+@@ -410,28 +405,22 @@ void cpu_idle(void)
+  */
+ void default_idle(void)
+ {
+-	if (hlt_use_halt()) {
+-		trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
+-		trace_cpu_idle_rcuidle(1, smp_processor_id());
+-		current_thread_info()->status &= ~TS_POLLING;
+-		/*
+-		 * TS_POLLING-cleared state must be visible before we
+-		 * test NEED_RESCHED:
+-		 */
+-		smp_mb();
++	trace_power_start_rcuidle(POWER_CSTATE, 1, smp_processor_id());
++	trace_cpu_idle_rcuidle(1, smp_processor_id());
++	current_thread_info()->status &= ~TS_POLLING;
++	/*
++	 * TS_POLLING-cleared state must be visible before we
++	 * test NEED_RESCHED:
++	 */
++	smp_mb();
+ 
+-		if (!need_resched())
+-			safe_halt();	/* enables interrupts racelessly */
+-		else
+-			local_irq_enable();
+-		current_thread_info()->status |= TS_POLLING;
+-		trace_power_end_rcuidle(smp_processor_id());
+-		trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+-	} else {
++	if (!need_resched())
++		safe_halt();	/* enables interrupts racelessly */
++	else
+ 		local_irq_enable();
+-		/* loop is done by the caller */
+-		cpu_relax();
+-	}
++	current_thread_info()->status |= TS_POLLING;
++	trace_power_end_rcuidle(smp_processor_id());
++	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ }
+ #ifdef CONFIG_APM_MODULE
+ EXPORT_SYMBOL(default_idle);
