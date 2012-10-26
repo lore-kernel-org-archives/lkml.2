@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966039Ab2JZSjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:39:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:40541 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966012Ab2JZSjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:39:46 -0400
-Message-ID: <1351276649.18115.217.camel@falcor>
-Subject: Re: Kdump with signed images
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Date: Fri, 26 Oct 2012 14:37:29 -0400
-In-Reply-To: <20121026170609.GB24687@redhat.com>
-References: <20121023131854.GA16496@redhat.com>
-	 <20121023145920.GD16496@redhat.com> <87fw552mb4.fsf_-_@xmission.com>
-	 <20121024173651.GE1821@redhat.com> <1351145401.18115.78.camel@falcor>
-	 <20121025141048.GD9377@redhat.com> <1351190421.18115.92.camel@falcor>
-	 <20121025185520.GA17995@redhat.com> <1351214158.18115.186.camel@falcor>
-	 <20121026023916.GA16762@srcf.ucam.org> <20121026170609.GB24687@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102618-7182-0000-0000-000002F61EB6
+	id S966049Ab2JZSlk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:41:40 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42678 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966020Ab2JZSlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:41:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <508AD2FF.5020306@redhat.com>
+References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl>
+ <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+ <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+ <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+ <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+ <CA+55aFwpZ5pO2G7gs3Pga5et1DQZ4qMoe1CLFkSrVQK_4K4rhA@mail.gmail.com>
+ <508ACE6E.8060303@redhat.com> <CA+55aFyYvu20qHtJ2SuNK3Dd466Hs9m9U3_41E8HtQ6KiRVRKw@mail.gmail.com>
+ <508AD2FF.5020306@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 26 Oct 2012 11:41:17 -0700
+X-Google-Sender-Auth: PQ8SoJD-nIXSkHZnGbk81N2IOcg
+Message-ID: <CA+55aFy7LvPP+DAENWftMpL=H_M5Pn9mVCHiEP7YVbFHcmbVbQ@mail.gmail.com>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+To: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 13:06 -0400, Vivek Goyal wrote:
-> On Fri, Oct 26, 2012 at 03:39:16AM +0100, Matthew Garrett wrote:
-> > On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
-> > 
-> > > On a running system, the package installer, after verifying the package
-> > > integrity, would install each file with the associated 'security.ima'
-> > > extended attribute.  The 'security.evm' digital signature would be
-> > > installed with an HMAC, calculated using a system unique key. 
-> > 
-> > The idea isn't to prevent /sbin/kexec from being modified after 
-> > installation - it's to prevent it from being possible to install a 
-> > system that has a modified /sbin/kexec. Leaving any part of this up to 
-> > the package installer means that it doesn't solve the problem we're 
-> > trying to solve here. It must be impossible for the kernel to launch any 
-> > /sbin/kexec that hasn't been signed by a trusted key that's been built 
-> > into the kernel, and it must be impossible for anything other than 
-> > /sbin/kexec to make the kexec system call.
-> 
-> I am kind of lost now so just trying to summarize whatever I have
-> learned so far from this thread.
+On Fri, Oct 26, 2012 at 11:14 AM, Rik van Riel <riel@redhat.com> wrote:
+>
+> I suspect the next context switch would flush out the TLB,
+> making it a slowdown, not a lockup.
 
-Thanks for summarizing.
+Common case, yes. But the page fault might happen in kernel space (due
+to a "put_user()" call, say), and with CONFIG_PREEMPT=n.
 
-> - So say we can sign /sbin/kexec at build time and distros can do that.
-> - Verify the signature at exec time using kernel keyring and if
->   verification happens successfully, say process gains extra capability.
-> - Use this new capability to determine whether kexec_load() will be
->   successful or not.
-> 
-> Even if we can do all this, it still has the issue of being able to
-> stop the process in user space and replace the code at run time
-> and be able to launch unsigned kernel.
-> 
-> So until and unless we have a good solution to verify application's
-> integrity/authneticity at the time of kexec_load() system call we
-> still have the problem. And I don't think we have come up with a
-> solution for that yet (until and unless I missed something).
->   
-> Thanks
-> Vivek
-> 
+Sure, put_user() is always done in a context where blocking (and
+scheduling) is legal, but that doesn't necessarily equate scheduling
+actually happening. If we're returning to kernel space and don't have
+any IO, it might never happen.
 
-Agreed, you need a new LSM/integrity hook.
+Anyway, I suspect such behavior it's almost impossible to trigger.
+Which would just make it rather hard to find.
 
-thanks,
-
-Mimi
-
+             Linus
