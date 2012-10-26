@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab2JZLTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:19:15 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:49034 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab2JZLTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:19:14 -0400
-Date: Fri, 26 Oct 2012 04:16:50 -0700
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: lots of suspicious RCU traces
-Message-ID: <20121026111621.GA2236@swordfish.minsk.epam.com>
-References: <20121017034918.GA13295@redhat.com>
- <20121024164235.GA2467@swordfish>
- <20121024180608.GA22840@redhat.com>
- <20121024182111.GA2340@swordfish>
- <CAFTL4hxmh7yV8ePUhY_7hOuG=JrbZZcNvV88bWcUmwG9X0W04A@mail.gmail.com>
- <20121025055056.GA2661@swordfish>
- <CAFTL4hxM8KqL3=GLkJDU-9pKVHrb1nSoDgFx8UVB7F7tryw6HA@mail.gmail.com>
- <20121025074147.GA2240@swordfish>
- <CAFTL4hw=orRVYzuk8L1aBHCxVD05uT_fdFoRJ_BkihoNd0huJg@mail.gmail.com>
+	id S1758583Ab2JZLTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:19:33 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39125 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753575Ab2JZLTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:19:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com
+Subject: Re: [RFC] cpufreq: Make sure target freq is within limits
+Date: Fri, 26 Oct 2012 13:23:28 +0200
+Message-ID: <2173527.XVCDQtU61N@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
+References: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hw=orRVYzuk8L1aBHCxVD05uT_fdFoRJ_BkihoNd0huJg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/26/12 11:44), Frederic Weisbecker wrote:
-> Thanks.
+On Thursday, October 25, 2012 12:03:34 PM Viresh Kumar wrote:
+> Hi Rafael,
 > 
-> Sergey, Dave,
+> __cpufreq_driver_target() must not pass target frequency beyond the limits of
+> current policy.
 > 
-> Does the patch I just sent you fix the issue?
+> Today most of cpufreq platform drivers are doing this check in their target
+> routines. Why not move it to __cpufreq_driver_target().
 > 
-> Patch is "[PATCH] rcu: Fix unrecovered RCU user mode in syscall_trace_leave()"
->
+> I wanted to get your opinion on this before making changes in all driver files.
+> That's why this is an RFC.
 
-good job, works fine for me.
+I'd prefer to apply the patch below before changing the drviers.
 
-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Thanks,
+Rafael
 
 
-	-ss
- 
-> Thanks.
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/cpufreq.c | 11 +++++++++--
+>  1 file changed, 9 insertions(+), 2 deletions(-)
 > 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index f552d5f..59264f1 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1470,12 +1470,19 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+>  			    unsigned int relation)
+>  {
+>  	int retval = -EINVAL;
+> +	unsigned int old_target_freq = target_freq;
+>  
+>  	if (cpufreq_disabled())
+>  		return -ENODEV;
+>  
+> -	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
+> -		target_freq, relation);
+> +	/* Make sure that target_freq is within supported range */
+> +	if (target_freq > policy->max)
+> +		target_freq = policy->max;
+> +	if (target_freq < policy->min)
+> +		target_freq = policy->min;
+> +
+> +	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
+> +			policy->cpu, target_freq, relation, old_target_freq);
+>  	if (cpu_online(policy->cpu) && cpufreq_driver->target)
+>  		retval = cpufreq_driver->target(policy, target_freq, relation);
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
