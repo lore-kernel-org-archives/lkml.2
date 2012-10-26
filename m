@@ -1,151 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965449Ab2JZRWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:22:12 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:23857 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965243Ab2JZRWJ (ORCPT
+	id S965482Ab2JZRW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:22:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61236 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965377Ab2JZRWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:22:09 -0400
-Message-ID: <1351271671.19172.74.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 3/3] acpi,memory-hotplug : add memory offline code to
- acpi_memory_device_remove()
-From: Toshi Kani <toshi.kani@hp.com>
-To: wency@cn.fujitsu.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, liuj97@gmail.com, len.brown@intel.com,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, rjw@sisk.pl, laijs@cn.fujitsu.com,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Date: Fri, 26 Oct 2012 11:14:31 -0600
-In-Reply-To: <1351247463-5653-4-git-send-email-wency@cn.fujitsu.com>
-References: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
-	 <1351247463-5653-4-git-send-email-wency@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Oct 2012 13:22:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
+References: <alpine.LRH.2.02.1210251028470.640@diagnostix.dwd.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 26 Oct 2012 10:22:32 -0700
+X-Google-Sender-Auth: Zuqvb2QAtnjnwrk_Ab7vZ569TC0
+Message-ID: <CA+55aFx+nKJmtmRNXeG1AcSHD1g_6qQwTZuNreFnp0dSSun+ZA@mail.gmail.com>
+Subject: Re: Enabling hardlink restrictions to the Linux VFS in 3.6 by default
+To: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 18:31 +0800, wency@cn.fujitsu.com wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> The memory device can be removed by 2 ways:
-> 1. send eject request by SCI
-> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> 
-> In the 1st case, acpi_memory_disable_device() will be called.
-> In the 2nd case, acpi_memory_device_remove() will be called.
+On Thu, Oct 25, 2012 at 5:13 AM, Holger Kiehl <Holger.Kiehl@dwd.de> wrote:
+>
+> as of linux 3.6 hardlink restrictions to the Linux VFS have been enabled
+> by default. This breaks the application AFD [1] of which I am the author.
 
-Hi Yasuaki, Wen,
+Ok, we had a previous report of breakage, but that was just local
+scripting. Since that was just a single user (Nick Bowler), and he was
+ok with just fixing his setup, I let it go, waiting to see if anybody
+else reacted.
 
-Why do you need to have separate code design & implementation for the
-two cases?  In other words, can the 1st case simply use the same code
-path of the 2nd case, just like I did for the CPU hot-remove patch
-below?  It will simplify the code and make the memory notify handler
-more consistent with other handlers.
-https://lkml.org/lkml/2012/10/19/456
+There may well have been other users that had odd breakage, but didn't
+realize what the cause was.
 
-Thanks,
--Toshi
+Regardless, clearly this does break things, and as such needs to be
+undone. We do not cause regressions that people notice in the kernel.
 
+So I've defaulted these things to off, and marked it for stable. See
+commit 561ec64ae67e ("VFS: don't do protected {sym,hard}links by
+default"). Either distributions can enable it with some security
+setting (along with the other security things they do, like the whole
+selinux thing), or we might at some future date make some config
+option for "boot up in hard-*ss mode that may break things", but for
+now we clearly cannot enable it by default.
 
-> acpi_memory_device_remove() will also be called when we unbind the
-> memory device from the driver acpi_memhotplug or a driver initialization
-> fails.
-> 
-> acpi_memory_disable_device() has already implemented a code which
-> offlines memory and releases acpi_memory_info struct. But
-> acpi_memory_device_remove() has not implemented it yet.
-> 
-> So the patch move offlining memory and releasing acpi_memory_info struct
-> codes to a new function acpi_memory_remove_memory(). And it is used by both
-> acpi_memory_device_remove() and acpi_memory_disable_device().
-> 
-> CC: David Rientjes <rientjes@google.com>
-> CC: Jiang Liu <liuj97@gmail.com>
-> CC: Len Brown <len.brown@intel.com>
-> CC: Christoph Lameter <cl@linux.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  drivers/acpi/acpi_memhotplug.c | 31 ++++++++++++++++++++++++-------
->  1 file changed, 24 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> index 666dac6..92c973a 100644
-> --- a/drivers/acpi/acpi_memhotplug.c
-> +++ b/drivers/acpi/acpi_memhotplug.c
-> @@ -316,16 +316,11 @@ static int acpi_memory_powerdown_device(struct acpi_memory_device *mem_device)
->  	return 0;
->  }
->  
-> -static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
->  {
->  	int result;
->  	struct acpi_memory_info *info, *n;
->  
-> -
-> -	/*
-> -	 * Ask the VM to offline this memory range.
-> -	 * Note: Assume that this function returns zero on success
-> -	 */
->  	mutex_lock(&mem_device->list_lock);
->  	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
->  		if (info->enabled) {
-> @@ -333,10 +328,27 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
->  			if (result)
->  				return result;
->  		}
-> +
-> +		list_del(&info->list);
->  		kfree(info);
->  	}
->  	mutex_unlock(&mem_device->list_lock);
->  
-> +	return 0;
-> +}
-> +
-> +static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
-> +{
-> +	int result;
-> +
-> +	/*
-> +	 * Ask the VM to offline this memory range.
-> +	 * Note: Assume that this function returns zero on success
-> +	 */
-> +	result = acpi_memory_remove_memory(mem_device);
-> +	if (result)
-> +		return result;
-> +
->  	/* Power-off and eject the device */
->  	result = acpi_memory_powerdown_device(mem_device);
->  	if (result) {
-> @@ -487,12 +499,17 @@ static int acpi_memory_device_add(struct acpi_device *device)
->  static int acpi_memory_device_remove(struct acpi_device *device, int type)
->  {
->  	struct acpi_memory_device *mem_device = NULL;
-> -
-> +	int result;
->  
->  	if (!device || !acpi_driver_data(device))
->  		return -EINVAL;
->  
->  	mem_device = acpi_driver_data(device);
-> +
-> +	result = acpi_memory_remove_memory(mem_device);
-> +	if (result)
-> +		return result;
-> +
->  	kfree(mem_device);
->  
->  	return 0;
+I've added people from the original commit and the previous discussion
+to the cc, and marked the commit for stable too.
 
-
+  Thanks,
+              Linus
