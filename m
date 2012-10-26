@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab2JZMdR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:33:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:49508 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932541Ab2JZMdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:33:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
-   d="scan'208";a="160922814"
-Date: Fri, 26 Oct 2012 20:33:21 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
-Message-ID: <20121026123321.GG2778@yliu-dev.sh.intel.com>
-References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1351243827.8719.5.camel@wall-e>
+	id S932632Ab2JZMeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:34:06 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44095 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758615Ab2JZMeD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 08:34:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351243827.8719.5.camel@wall-e>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+References: <20121025121617.617683848@chello.nl>
+	<20121025124832.840241082@chello.nl>
+	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+	<5089F5B5.1050206@redhat.com>
+	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+	<508A0A0D.4090001@redhat.com>
+	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+Date: Fri, 26 Oct 2012 05:34:02 -0700
+Message-ID: <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:30:27AM +0200, Stefani Seibold wrote:
-> Am Freitag, den 26.10.2012, 15:56 +0800 schrieb Yuanhan Liu:
-> > Say, if we want to allocate a filo with size of 6 bytes, it would be safer
-> > to allocate 8 bytes instead of 4 bytes.
-> > ----
-> > I know it works with rounddown_pow_of_two as well, since size is maintained
-> > in the kfifo internal part. But, I'm quite curious why Stefani chose
-> > rounddown_pow_of_two. To reduce memory?
-> > 
-> 
-> Yes, exactly, if a user do the wrong thing, than the user will get also
-> a wrong result, and did not waste memory.
+On Thu, Oct 25, 2012 at 9:23 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Oct 25, 2012 at 8:57 PM, Rik van Riel <riel@redhat.com> wrote:
+>>
+>> That may not even be needed.  Apparently Intel chips
+>> automatically flush an entry from the TLB when it
+>> causes a page fault.  I assume AMD chips do the same,
+>> because flush_tlb_fix_spurious_fault evaluates to
+>> nothing on x86.
+>
+> Yes. It's not architected as far as I know, though. But I agree, it's
+> possible - even likely - we could avoid TLB flushing entirely on x86.
 
-But, isn't it better to 'correct' it? ;-)
+Actually, it is architected on x86. This was first described in the
+intel appnote 317080 "TLBs, Paging-Structure Caches, and Their
+Invalidation", last paragraph of section 5.1. Nowadays, the same
+contents are buried somewhere in Volume 3 of the architecture manual
+(in my copy: 4.10.4.1 Operations that Invalidate TLBs and
+Paging-Structure Caches)
 
-> 
-> But anyway, if the majority like this patch it is okay for me.
+> If you want to try it, I would seriously suggest you do it as a
+> separate commit though, just in case.
+>
+>> Are there architectures where we do need to flush
+>> remote TLBs on upgrading the permissions on a PTE?
+>
+> I *suspect* that whole TLB flush just magically became an SMP one
+> without anybody ever really thinking about it.
 
-Sorry, do you mean you are OK with this patch?
+I would be very worried about assuming every non-x86 arch has similar
+TLB semantics. However, if their fault handlers always invalidate TLB
+for pages that get spurious faults, then skipping the remote
+invalidation would be fine. (I believe this is what
+tlb_fix_spurious_fault() is for ?)
 
-Thanks,
-Yuanhan Liu
-> > 
-> > Cc: Stefani Seibold <stefani@seibold.net>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> > ---
-> >  kernel/kfifo.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/kernel/kfifo.c b/kernel/kfifo.c
-> > index 59dcf5b..0f78378 100644
-> > --- a/kernel/kfifo.c
-> > +++ b/kernel/kfifo.c
-> > @@ -39,11 +39,11 @@ int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
-> >  		size_t esize, gfp_t gfp_mask)
-> >  {
-> >  	/*
-> > -	 * round down to the next power of 2, since our 'let the indices
-> > +	 * round up to the next power of 2, since our 'let the indices
-> >  	 * wrap' technique works only in this case.
-> >  	 */
-> >  	if (!is_power_of_2(size))
-> > -		size = rounddown_pow_of_two(size);
-> > +		size = roundup_pow_of_two(size);
-> >  
-> >  	fifo->in = 0;
-> >  	fifo->out = 0;
-> > @@ -84,7 +84,7 @@ int __kfifo_init(struct __kfifo *fifo, void *buffer,
-> >  	size /= esize;
-> >  
-> >  	if (!is_power_of_2(size))
-> > -		size = rounddown_pow_of_two(size);
-> > +		size = roundup_pow_of_two(size);
-> >  
-> >  	fifo->in = 0;
-> >  	fifo->out = 0;
-> 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
