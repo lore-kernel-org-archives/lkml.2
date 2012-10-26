@@ -1,109 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab2JZAqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:46:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52041 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab2JZAqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:46:31 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v1] firmware loader: introduce module parameter to customize fw search path
-Date: Fri, 26 Oct 2012 08:46:19 +0800
-Message-Id: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753061Ab2JZAF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:05:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52536 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752891Ab2JZAF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 31/31] xHCI: handle command after aborting the command ring
+Date: Thu, 25 Oct 2012 17:04:38 -0700
+Message-Id: <20121026000218.123073789@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
+References: <20121026000214.941721299@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces one module parameter of 'path' in firmware_class
-to support customizing firmware image search path, so that people can
-use its own firmware path if the default built-in paths can't meet their
-demand[1], and the typical usage is passing the below from kernel command
-parameter when 'firmware_class' is built in kernel:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-	firmware_class.path=$CUSTOMIZED_PATH
+------------------
 
-[1], https://lkml.org/lkml/2012/10/11/337
+From: Elric Fu <elricfu1@gmail.com>
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
+commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d upstream.
+
+According to xHCI spec section 4.6.1.1 and section 4.6.1.2,
+after aborting a command on the command ring, xHC will
+generate a command completion event with its completion
+code set to Command Ring Stopped at least. If a command is
+currently executing at the time of aborting a command, xHC
+also generate a command completion event with its completion
+code set to Command Abort. When the command ring is stopped,
+software may remove, add, or rearrage Command Descriptors.
+
+To cancel a command, software will initialize a command
+descriptor for the cancel command, and add it into a
+cancel_cmd_list of xhci. When the command ring is stopped,
+software will find the command trbs described by command
+descriptors in cancel_cmd_list and modify it to No Op
+command. If software can't find the matched trbs, we can
+think it had been finished.
+
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
+
+Note from Sarah: The TRB_TYPE_LINK_LE32 macro is not in the 3.0 stable
+kernel, so I added it to this patch.
+
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
 ---
-V1:
-	- remove kernel boot parameter and only support the feature by
-	module parameter as suggested by Greg
+ drivers/usb/host/xhci-ring.c |  171 +++++++++++++++++++++++++++++++++++++++++--
+ drivers/usb/host/xhci.h      |    3 
+ 2 files changed, 168 insertions(+), 6 deletions(-)
 
- Documentation/firmware_class/README |    5 +++++
- drivers/base/firmware_class.c       |   23 +++++++++++++++++++++--
- 2 files changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
-index 815b711..ce02744 100644
---- a/Documentation/firmware_class/README
-+++ b/Documentation/firmware_class/README
-@@ -22,12 +22,17 @@
- 	- calls request_firmware(&fw_entry, $FIRMWARE, device)
- 	- kernel searchs the fimware image with name $FIRMWARE directly
- 	in the below search path of root filesystem:
-+		User customized search path by module parameter 'path'[1]
- 		"/lib/firmware/updates/" UTS_RELEASE,
- 		"/lib/firmware/updates",
- 		"/lib/firmware/" UTS_RELEASE,
- 		"/lib/firmware"
- 	- If found, goto 7), else goto 2)
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1157,6 +1157,20 @@ static void handle_reset_ep_completion(s
+ 	}
+ }
  
-+	[1], the 'path' is a string parameter which length should be less
-+	than 256, user should pass 'firmware.path=$CUSTOMIZED_PATH' if
-+	firmware_class is built in kernel(the general situation)
++/* Complete the command and detele it from the devcie's command queue.
++ */
++static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
++		struct xhci_command *command, u32 status)
++{
++	command->status = status;
++	list_del(&command->cmd_list);
++	if (command->completion)
++		complete(command->completion);
++	else
++		xhci_free_command(xhci, command);
++}
 +
-  2), userspace:
-  	- /sys/class/firmware/xxx/{loading,data} appear.
- 	- hotplug gets called with a firmware identifier in $FIRMWARE
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 8945f4e..b363103 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -274,6 +274,16 @@ static const char *fw_path[] = {
- 	"/lib/firmware"
- };
++
+ /* Check to see if a command in the device's command queue matches this one.
+  * Signal the completion or free the command, and return 1.  Return 0 if the
+  * completed command isn't at the head of the command list.
+@@ -1175,15 +1189,144 @@ static int handle_cmd_in_cmd_wait_list(s
+ 	if (xhci->cmd_ring->dequeue != command->command_trb)
+ 		return 0;
  
-+static char fw_path_para[256];
+-	command->status = GET_COMP_CODE(le32_to_cpu(event->status));
+-	list_del(&command->cmd_list);
+-	if (command->completion)
+-		complete(command->completion);
+-	else
+-		xhci_free_command(xhci, command);
++	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
++			GET_COMP_CODE(le32_to_cpu(event->status)));
+ 	return 1;
+ }
+ 
++/*
++ * Finding the command trb need to be cancelled and modifying it to
++ * NO OP command. And if the command is in device's command wait
++ * list, finishing and freeing it.
++ *
++ * If we can't find the command trb, we think it had already been
++ * executed.
++ */
++static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
++{
++	struct xhci_segment *cur_seg;
++	union xhci_trb *cmd_trb;
++	u32 cycle_state;
++
++	if (xhci->cmd_ring->dequeue == xhci->cmd_ring->enqueue)
++		return;
++
++	/* find the current segment of command ring */
++	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
++			xhci->cmd_ring->dequeue, &cycle_state);
++
++	/* find the command trb matched by cd from command ring */
++	for (cmd_trb = xhci->cmd_ring->dequeue;
++			cmd_trb != xhci->cmd_ring->enqueue;
++			next_trb(xhci, xhci->cmd_ring, &cur_seg, &cmd_trb)) {
++		/* If the trb is link trb, continue */
++		if (TRB_TYPE_LINK_LE32(cmd_trb->generic.field[3]))
++			continue;
++
++		if (cur_cd->cmd_trb == cmd_trb) {
++
++			/* If the command in device's command list, we should
++			 * finish it and free the command structure.
++			 */
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++
++			/* get cycle state from the origin command trb */
++			cycle_state = le32_to_cpu(cmd_trb->generic.field[3])
++				& TRB_CYCLE;
++
++			/* modify the command trb to NO OP command */
++			cmd_trb->generic.field[0] = 0;
++			cmd_trb->generic.field[1] = 0;
++			cmd_trb->generic.field[2] = 0;
++			cmd_trb->generic.field[3] = cpu_to_le32(
++					TRB_TYPE(TRB_CMD_NOOP) | cycle_state);
++			break;
++		}
++	}
++}
++
++static void xhci_cancel_cmd_in_cd_list(struct xhci_hcd *xhci)
++{
++	struct xhci_cd *cur_cd, *next_cd;
++
++	if (list_empty(&xhci->cancel_cmd_list))
++		return;
++
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		xhci_cmd_to_noop(xhci, cur_cd);
++		list_del(&cur_cd->cancel_cmd_list);
++		kfree(cur_cd);
++	}
++}
 +
 +/*
-+ * Typical usage is that passing 'firmware_class.path=$CUSTOMIZED_PATH'
-+ * from kernel command because firmware_class is generally built in
-+ * kernel instead of module.
++ * traversing the cancel_cmd_list. If the command descriptor according
++ * to cmd_trb is found, the function free it and return 1, otherwise
++ * return 0.
 + */
-+module_param_string(path, fw_path_para, sizeof(fw_path_para), 0644);
-+MODULE_PARM_DESC(path, "customized firmware image search path with a higher priority than default path");
++static int xhci_search_cmd_trb_in_cd_list(struct xhci_hcd *xhci,
++		union xhci_trb *cmd_trb)
++{
++	struct xhci_cd *cur_cd, *next_cd;
 +
- /* Don't inline this: 'struct kstat' is biggish */
- static noinline long fw_file_size(struct file *file)
- {
-@@ -313,9 +323,18 @@ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
- 	bool success = false;
- 	char *path = __getname();
- 
--	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
-+	for (i = -1; i < ARRAY_SIZE(fw_path); i++) {
- 		struct file *file;
--		snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
++	if (list_empty(&xhci->cancel_cmd_list))
++		return 0;
 +
-+		if (i < 0) {
-+			if (!fw_path_para[0])	/* No customized path */
-+				continue;
-+			snprintf(path, PATH_MAX, "%s/%s", fw_path_para,
-+				 buf->fw_id);
-+		} else {
-+			snprintf(path, PATH_MAX, "%s/%s", fw_path[i],
-+				 buf->fw_id);
++	list_for_each_entry_safe(cur_cd, next_cd,
++			&xhci->cancel_cmd_list, cancel_cmd_list) {
++		if (cur_cd->cmd_trb == cmd_trb) {
++			if (cur_cd->command)
++				xhci_complete_cmd_in_cmd_wait_list(xhci,
++					cur_cd->command, COMP_CMD_STOP);
++			list_del(&cur_cd->cancel_cmd_list);
++			kfree(cur_cd);
++			return 1;
 +		}
++	}
++
++	return 0;
++}
++
++/*
++ * If the cmd_trb_comp_code is COMP_CMD_ABORT, we just check whether the
++ * trb pointed by the command ring dequeue pointer is the trb we want to
++ * cancel or not. And if the cmd_trb_comp_code is COMP_CMD_STOP, we will
++ * traverse the cancel_cmd_list to trun the all of the commands according
++ * to command descriptor to NO-OP trb.
++ */
++static int handle_stopped_cmd_ring(struct xhci_hcd *xhci,
++		int cmd_trb_comp_code)
++{
++	int cur_trb_is_good = 0;
++
++	/* Searching the cmd trb pointed by the command ring dequeue
++	 * pointer in command descriptor list. If it is found, free it.
++	 */
++	cur_trb_is_good = xhci_search_cmd_trb_in_cd_list(xhci,
++			xhci->cmd_ring->dequeue);
++
++	if (cmd_trb_comp_code == COMP_CMD_ABORT)
++		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
++	else if (cmd_trb_comp_code == COMP_CMD_STOP) {
++		/* traversing the cancel_cmd_list and canceling
++		 * the command according to command descriptor
++		 */
++		xhci_cancel_cmd_in_cd_list(xhci);
++
++		xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;
++		/*
++		 * ring command ring doorbell again to restart the
++		 * command ring
++		 */
++		if (xhci->cmd_ring->dequeue != xhci->cmd_ring->enqueue)
++			xhci_ring_cmd_db(xhci);
++	}
++	return cur_trb_is_good;
++}
++
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		struct xhci_event_cmd *event)
+ {
+@@ -1209,6 +1352,22 @@ static void handle_cmd_completion(struct
+ 		xhci->error_bitmask |= 1 << 5;
+ 		return;
+ 	}
++
++	if ((GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_ABORT) ||
++		(GET_COMP_CODE(le32_to_cpu(event->status)) == COMP_CMD_STOP)) {
++		/* If the return value is 0, we think the trb pointed by
++		 * command ring dequeue pointer is a good trb. The good
++		 * trb means we don't want to cancel the trb, but it have
++		 * been stopped by host. So we should handle it normally.
++		 * Otherwise, driver should invoke inc_deq() and return.
++		 */
++		if (handle_stopped_cmd_ring(xhci,
++				GET_COMP_CODE(le32_to_cpu(event->status)))) {
++			inc_deq(xhci, xhci->cmd_ring, false);
++			return;
++		}
++	}
++
+ 	switch (le32_to_cpu(xhci->cmd_ring->dequeue->generic.field[3])
+ 		& TRB_TYPE_BITMASK) {
+ 	case TRB_TYPE(TRB_ENABLE_SLOT):
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1070,6 +1070,9 @@ union xhci_trb {
+ #define TRB_MFINDEX_WRAP	39
+ /* TRB IDs 40-47 reserved, 48-63 is vendor-defined */
  
- 		file = filp_open(path, O_RDONLY, 0);
- 		if (IS_ERR(file))
--- 
-1.7.9.5
++#define TRB_TYPE_LINK_LE32(x)   (((x) & cpu_to_le32(TRB_TYPE_BITMASK)) == \
++		cpu_to_le32(TRB_TYPE(TRB_LINK)))
++
+ /* Nec vendor-specific command completion event. */
+ #define	TRB_NEC_CMD_COMP	48
+ /* Get NEC firmware revision. */
+
 
