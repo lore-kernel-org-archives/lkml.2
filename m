@@ -1,54 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2JZFpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 01:45:40 -0400
-Received: from www84.your-server.de ([213.133.104.84]:60649 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab2JZFpi (ORCPT
+	id S1756272Ab2JZFt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:49:28 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62430 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab2JZFt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 01:45:38 -0400
-Message-ID: <1351230291.12511.7.camel@wall-e>
-Subject: Re: linux-next: build warnings after merge of the akpm tree
-From: Stefani Seibold <stefani@seibold.net>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Date: Fri, 26 Oct 2012 07:44:51 +0200
-In-Reply-To: <20121025223656.GA3805@richard.(null)>
-References: <20121025142854.1924363d6a607004f918ac63@canb.auug.org.au>
-	 <20121025143044.d21e2c29b16ee2005f93a371@canb.auug.org.au>
-	 <508948de.01dc440a.58ed.ffffff17SMTPIN_ADDED@mx.google.com>
-	 <20121025152337.7f14919d.akpm@linux-foundation.org>
-	 <20121025223656.GA3805@richard.(null)>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Fri, 26 Oct 2012 01:49:26 -0400
+X-AuditID: 9c930179-b7c8bae000003559-8c-508a2463e094
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: mingo@kernel.org, tglx@linutronix.de, acme@ghostprotocols.net,
+        davem@davemloft.net, torvalds@linux-foundation.org, paulus@samba.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/5] perf: Make perf build for x86 with UAPI disintegration applied
+References: <20121019165558.23037.40181.stgit@warthog.procyon.org.uk>
+	<20121019165624.23037.1780.stgit@warthog.procyon.org.uk>
+Date: Fri, 26 Oct 2012 14:49:22 +0900
+In-Reply-To: <20121019165624.23037.1780.stgit@warthog.procyon.org.uk> (David
+	Howells's message of "Fri, 19 Oct 2012 17:56:24 +0100")
+Message-ID: <87d305940t.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 26.10.2012, 06:36 +0800 schrieb Richard Yang:
+On Fri, 19 Oct 2012 17:56:24 +0100, David Howells wrote:
+> Make perf build for x86 once the UAPI disintegration patches for that arch
+> have been applied by adding the appropriate -I flags - in the right order -
+> and then converting some #includes that use ../.. notation to find main kernel
+> headerfiles to use <asm/foo.h> and <linux/foo.h> instead.
 
-> >
-> >And holy cow that code is hard to read :( Why was kfifo_in()
-> >implemented as a macro, anyway?  AFAICT all its args have a known type,
-> >so we could have used a proper C interface, which would have fixed all
-> >this nicely.
-> 
+Looks nice.
 
-Thats simple for performance reasons, the compiler remove most of the
-code during the compile stage, so no runtime checks are necessary. And
-it is the only way since C does not provides templates like C++.
- 
-> Hmm, move the definition of kfifo_in()/kfifo_out() into the kfifo.c?
-> 
+>
+> Note that -Iarch/foo/include/uapi is present _before_ -Iarch/foo/include.
+> This makes sure we get the userspace version of the pt_regs struct.  Ideally,
+> we wouldn't have the latter -I flag at all, but unfortunately we want
+> asm/svm.h and asm/vmx.h in buildin-kvm.c and these aren't part of the UAPI -
+> at least not for x86.  I wonder if the bits outside of the __KERNEL__ guards
+> *should* be transferred there.
 
-Don't do it. this will result in a performance degradation. Look at the
-disassembled code by each change in code and compare it with the
-previous one. I don't believe that you can produce better code.
+What about asm/kvm.h?  Is it a part of the UAPI?
 
+>
+> I note also that perf seems to do its dependency handling manually by listing
+> all the header files it might want to use in LIB_H in the Makefile.  Can this
+> be changed to use -MD?
+
+Yeah, that part could be improved, probably with -MMD.
+
+>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+>  tools/perf/Makefile      |   16 +++++++++++++++-
+>  tools/perf/builtin-kvm.c |    6 +++---
+>  tools/perf/perf.h        |   16 +++-------------
+>  3 files changed, 21 insertions(+), 17 deletions(-)
+>
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index f7c968a..9024a42 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -169,7 +169,21 @@ endif
+>  
+>  ### --- END CONFIGURATION SECTION ---
+>  
+> -BASIC_CFLAGS = -Iutil/include -Iarch/$(ARCH)/include -I$(OUTPUT)util -I$(TRACE_EVENT_DIR) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+> +ifeq ($(srctree),)
+> +srctree := $(shell pwd)
+> +endif
+
+Isn't the srctree intended to point to kernel root?  Also you missed to
+define the objtree which used below.
+
+> +
+> +BASIC_CFLAGS = \
+> +	-Iutil/include \
+> +	-Iarch/$(ARCH)/include \
+> +	-I$(objtree)/arch/$(ARCH)/include/generated/uapi \
+> +	-I$(srctree)/arch/$(ARCH)/include/uapi \
+> +	-I$(srctree)/arch/$(ARCH)/include \
+> +	-I$(objtree)/include/generated/uapi \
+> +	-I$(srctree)/include/uapi \
+> +	-I$(OUTPUT)util \
+> +	-I$(TRACE_EVENT_DIR) \
+> +	-D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+
+This isn't bad, but using '+=' looks more natural IMHO.
+
+BASIC_CFLAGS  = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+BASIC_CFLAGS += -Iutil/include
+BASIC_CFLAGS += -Iarch/$(ARCH)/include
+...
+
+>  BASIC_LDFLAGS =
+>  
+>  # Guard against environment variables
+> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+> index 260abc5..e013bdb 100644
+> --- a/tools/perf/builtin-kvm.c
+> +++ b/tools/perf/builtin-kvm.c
+> @@ -22,9 +22,9 @@
+>  #include <pthread.h>
+>  #include <math.h>
+>  
+> -#include "../../arch/x86/include/asm/svm.h"
+> -#include "../../arch/x86/include/asm/vmx.h"
+> -#include "../../arch/x86/include/asm/kvm.h"
+> +#include <asm/svm.h>
+> +#include <asm/vmx.h>
+> +#include <asm/kvm.h>
+>  
+>  struct event_key {
+>  	#define INVALID_KEY     (~0ULL)
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 2762877..238f923 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -5,8 +5,9 @@ struct winsize;
+>  
+>  void get_term_dimensions(struct winsize *ws);
+>  
+> +#include <asm/unistd.h>
+> +
+>  #if defined(__i386__)
+> -#include "../../arch/x86/include/asm/unistd.h"
+>  #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+>  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+>  #define CPUINFO_PROC	"model name"
+> @@ -16,7 +17,6 @@ void get_term_dimensions(struct winsize *ws);
+>  #endif
+>  
+>  #if defined(__x86_64__)
+> -#include "../../arch/x86/include/asm/unistd.h"
+>  #define rmb()		asm volatile("lfence" ::: "memory")
+>  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+>  #define CPUINFO_PROC	"model name"
+> @@ -26,20 +26,17 @@ void get_term_dimensions(struct winsize *ws);
+>  #endif
+>  
+>  #ifdef __powerpc__
+> -#include "../../arch/powerpc/include/asm/unistd.h"
+>  #define rmb()		asm volatile ("sync" ::: "memory")
+>  #define cpu_relax()	asm volatile ("" ::: "memory");
+>  #define CPUINFO_PROC	"cpu"
+>  #endif
+>  
+>  #ifdef __s390__
+> -#include "../../arch/s390/include/asm/unistd.h"
+>  #define rmb()		asm volatile("bcr 15,0" ::: "memory")
+>  #define cpu_relax()	asm volatile("" ::: "memory");
+>  #endif
+>  
+>  #ifdef __sh__
+> -#include "../../arch/sh/include/asm/unistd.h"
+>  #if defined(__SH4A__) || defined(__SH5__)
+>  # define rmb()		asm volatile("synco" ::: "memory")
+>  #else
+> @@ -50,35 +47,30 @@ void get_term_dimensions(struct winsize *ws);
+>  #endif
+>  
+>  #ifdef __hppa__
+> -#include "../../arch/parisc/include/asm/unistd.h"
+>  #define rmb()		asm volatile("" ::: "memory")
+>  #define cpu_relax()	asm volatile("" ::: "memory");
+>  #define CPUINFO_PROC	"cpu"
+>  #endif
+>  
+>  #ifdef __sparc__
+> -#include "../../arch/sparc/include/asm/unistd.h"
+
+It might conflict with davem's sparc uapi patch which merged into tip:
+
+commit 77626081849c9050b20670e5d832aca54c966936
+Author: David Miller <davem@davemloft.net>
+Date:   Wed Oct 17 01:06:56 2012 -0400
+
+    perf tools: Fix build on sparc.
+    
+    More UAPI stuff.
+
+
+>  #define rmb()		asm volatile("":::"memory")
+>  #define cpu_relax()	asm volatile("":::"memory")
+>  #define CPUINFO_PROC	"cpu"
+>  #endif
+>  
+>  #ifdef __alpha__
+> -#include "../../arch/alpha/include/asm/unistd.h"
+>  #define rmb()		asm volatile("mb" ::: "memory")
+>  #define cpu_relax()	asm volatile("" ::: "memory")
+>  #define CPUINFO_PROC	"cpu model"
+>  #endif
+>  
+>  #ifdef __ia64__
+> -#include "../../arch/ia64/include/asm/unistd.h"
+>  #define rmb()		asm volatile ("mf" ::: "memory")
+>  #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
+>  #define CPUINFO_PROC	"model name"
+>  #endif
+>  
+>  #ifdef __arm__
+> -#include "../../arch/arm/include/asm/unistd.h"
+>  /*
+>   * Use the __kuser_memory_barrier helper in the CPU helper page. See
+>   * arch/arm/kernel/entry-armv.S in the kernel source for details.
+> @@ -89,13 +81,11 @@ void get_term_dimensions(struct winsize *ws);
+>  #endif
+>  
+>  #ifdef __aarch64__
+> -#include "../../arch/arm64/include/asm/unistd.h"
+>  #define rmb()		asm volatile("dmb ld" ::: "memory")
+>  #define cpu_relax()	asm volatile("yield" ::: "memory")
+>  #endif
+>  
+>  #ifdef __mips__
+> -#include "../../arch/mips/include/asm/unistd.h"
+>  #define rmb()		asm volatile(					\
+>  				".set	mips2\n\t"			\
+>  				"sync\n\t"				\
+> @@ -112,7 +102,7 @@ void get_term_dimensions(struct winsize *ws);
+>  #include <sys/types.h>
+>  #include <sys/syscall.h>
+>  
+> -#include "../../include/uapi/linux/perf_event.h"
+
+And I got a conflict here.
+
+Thanks,
+Namhyung
+
+
+> +#include <linux/perf_event.h>
+>  #include "util/types.h"
+>  #include <stdbool.h>
+>  
