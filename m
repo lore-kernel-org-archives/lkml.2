@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966506Ab2JZUxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:53:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36090 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965143Ab2JZUxK (ORCPT
+	id S966526Ab2JZUx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:53:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49166 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965143Ab2JZUxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:53:10 -0400
-Date: Fri, 26 Oct 2012 22:53:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, netfilter@vger.kernel.org
-Subject: Re: Process Hang in __read_seqcount_begin
-In-Reply-To: <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1210262252390.2756@ionos>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com> <1350925299.8609.978.camel@edumazet-glaptop> <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com> <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
- <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com> <1351053164.6537.95.camel@edumazet-glaptop> <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com> <1351270087.30380.9.camel@edumazet-glaptop>
- <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 26 Oct 2012 16:53:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [GIT PULL] at91: fixes for 3.7-rc3
+Date: Fri, 26 Oct 2012 20:53:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
+        voice <voice.shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>,
+        marek.belisko@open-nandra.com, ivan.shugov@gmail.com
+References: <5088F131.5040600@atmel.com>
+In-Reply-To: <5088F131.5040600@atmel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210262053.11498.arnd@arndb.de>
+X-Provags-ID: V02:K0:SFo9/Aeb0zMvO0LFv1XNp7m0TqfPG0o9uCHPIlK85+g
+ ylW0E2dZDkWKOzW4Nuqb+hQmAlEAxB5wv39C6ytNjl7FdYZnfe
+ D5iw7VZuJwt5E1fm1BjLu8uP9NvOdGd+jF6qhv+cfAzX6Sc45F
+ jQ66tI8xaz6iL6GmWN3yHSL7E3Zu0r7MW1h7PVf9ad3fxfFbZd
+ ALP68BObczMocMLZ0FO1jVbML0ft3RsDYsT0/I7oxIzp9C9GxQ
+ +gLPBuiqGx2IwG1LeqTFoHHqbg3zTeiMvr4kev/GFLuOmSLxAC
+ 4puPcXu+m01hvPqkVaXQW762RNdh+mVrlLDYBaa1PqFNbE48mp
+ /Ds233O28x+7RmwuNnIE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, Peter LaDow wrote:
-> (I've added netfilter and linux-rt-users to try to pull in more help).
-> 
-> On Fri, Oct 26, 2012 at 9:48 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > Upstream kernel is fine, there is no race, as long as :
-> >
-> > local_bh_disable() disables BH and preemption.
-> 
-> Looking at the unpatched code in net/ipv4/netfilter/ip_tables.c, it
-> doesn't appear that any of the code checks the return value for
-> xt_write_receq_begin to determine if it is safe to write.  And neither
-> does the newly patched code.  How did the mainline code prevent
-> corruption of the tables it is updating?
-> 
-> Why isn't there something like:
-> 
->   while ( (addend = xt_write_recseq_begin()) == 0 );
-> 
-> To make sure that only one person has write access to the tables?
-> Better yet, why not use a seqlock_t instead?
-> 
-> > Apparently RT changes this, so RT needs to change the code.
-> 
-> The RT patch only touches local_bh_disable/enable, not the code in
-> ip_tables.c.  Does the local_bh_disable/enable in the mainline code
-> protect against multiple writers?
-> 
-> > cmpxchg() has strong guarantees (and is also slower than upstream code),
-> > and seems a reasonable way to fix RT/iptables
-> 
-> I see this now.  And I agree that your patch would prevent corruption
-> of the sequence counter.
+On Thursday 25 October 2012, Nicolas Ferre wrote:
+>       ARM: at91: fix external interrupts in non-DT case
 
-Thanks for the reminder. I'll have a look.
+This patch now leads to build errors with at91x40_defconfig,
+which I've fixed up by applying the patch below on top.
 
-       tglx
+Please yell if this is not the right fix.
+
+	Arnd
+
+commit 3a8852afde01682083028ee427e0678f9bbddd75
+Author: Arnd Bergmann <arnd@arndb.de>
+Date:   Fri Oct 26 22:49:09 2012 +0200
+
+    ARM: at91: fix at91x40 build
+    
+    patch 738a0fd7 "ARM: at91: fix external interrupts in non-DT case"
+    fixed a run-time error on some at91 platforms but did not apply
+    the same change to at91x40, which now doesn't build.
+    
+    This changes at91x40 in the same way that the other platforms
+    were changed.
+    
+    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
+index 6bd7300..bb7f544 100644
+--- a/arch/arm/mach-at91/at91x40.c
++++ b/arch/arm/mach-at91/at91x40.c
+@@ -88,6 +88,6 @@ void __init at91x40_init_interrupts(unsigned int priority[NR_AIC_IRQS])
+ 	if (!priority)
+ 		priority = at91x40_default_irq_priority;
+ 
+-	at91_aic_init(priority);
++	at91_aic_init(priority, at91_extern_irq);
+ }
+ 
