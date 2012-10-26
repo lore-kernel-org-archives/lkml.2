@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab2JZAOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:14:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54046 "EHLO mail.kernel.org"
+	id S932100Ab2JZAOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:14:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53993 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753688Ab2JZAIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:30 -0400
+	id S1754623Ab2JZAIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 67/85] ipv6: GRO should be ECN friendly
-Date: Thu, 25 Oct 2012 17:06:25 -0700
-Message-Id: <20121026000037.856492617@linuxfoundation.org>
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 76/85] ipv4: introduce rt_uses_gateway
+Date: Thu, 25 Oct 2012 17:06:34 -0700
+Message-Id: <20121026000038.743326564@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -28,58 +26,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-[ Upstream commit 51ec04038c113a811b177baa85d293feff9ce995 ]
+[ Upstream commit 155e8336c373d14d87a7f91e356d85ef4b93b8f9 ]
 
-IPv4 side of the problem was addressed in commit a9e050f4e7f9d
-(net: tcp: GRO should be ECN friendly)
+Add new flag to remember when route is via gateway.
+We will use it to allow rt_gateway to contain address of
+directly connected host for the cases when DST_NOCACHE is
+used or when the NH exception caches per-destination route
+without DST_NOCACHE flag, i.e. when routes are not used for
+other destinations. By this way we force the neighbour
+resolving to work with the routed destination but we
+can use different address in the packet, feature needed
+for IPVS-DR where original packet for virtual IP is routed
+via route to real IP.
 
-This patch does the same, but for IPv6 : A Traffic Class mismatch
-doesnt mean flows are different, but instead should force a flush
-of previous packets.
-
-This patch removes artificial packet reordering problem.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/af_inet6.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ include/net/route.h             |    3 +-
+ net/ipv4/inet_connection_sock.c |    4 +--
+ net/ipv4/ip_forward.c           |    2 -
+ net/ipv4/ip_output.c            |    4 +--
+ net/ipv4/route.c                |   48 +++++++++++++++++++++-------------------
+ net/ipv4/xfrm4_policy.c         |    1 
+ 6 files changed, 34 insertions(+), 28 deletions(-)
 
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -880,22 +880,25 @@ static struct sk_buff **ipv6_gro_receive
- 	nlen = skb_network_header_len(skb);
+--- a/include/net/route.h
++++ b/include/net/route.h
+@@ -48,7 +48,8 @@ struct rtable {
+ 	int			rt_genid;
+ 	unsigned int		rt_flags;
+ 	__u16			rt_type;
+-	__u16			rt_is_input;
++	__u8			rt_is_input;
++	__u8			rt_uses_gateway;
  
- 	for (p = *head; p; p = p->next) {
--		struct ipv6hdr *iph2;
-+		const struct ipv6hdr *iph2;
-+		__be32 first_word; /* <Version:4><Traffic_Class:8><Flow_Label:20> */
+ 	int			rt_iif;
  
- 		if (!NAPI_GRO_CB(p)->same_flow)
- 			continue;
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -386,7 +386,7 @@ struct dst_entry *inet_csk_route_req(str
+ 	rt = ip_route_output_flow(net, fl4, sk);
+ 	if (IS_ERR(rt))
+ 		goto no_route;
+-	if (opt && opt->opt.is_strictroute && rt->rt_gateway)
++	if (opt && opt->opt.is_strictroute && rt->rt_uses_gateway)
+ 		goto route_err;
+ 	return &rt->dst;
  
- 		iph2 = ipv6_hdr(p);
-+		first_word = *(__be32 *)iph ^ *(__be32 *)iph2 ;
+@@ -422,7 +422,7 @@ struct dst_entry *inet_csk_route_child_s
+ 	rt = ip_route_output_flow(net, fl4, sk);
+ 	if (IS_ERR(rt))
+ 		goto no_route;
+-	if (opt && opt->opt.is_strictroute && rt->rt_gateway)
++	if (opt && opt->opt.is_strictroute && rt->rt_uses_gateway)
+ 		goto route_err;
+ 	rcu_read_unlock();
+ 	return &rt->dst;
+--- a/net/ipv4/ip_forward.c
++++ b/net/ipv4/ip_forward.c
+@@ -85,7 +85,7 @@ int ip_forward(struct sk_buff *skb)
  
--		/* All fields must match except length. */
-+		/* All fields must match except length and Traffic Class. */
- 		if (nlen != skb_network_header_len(p) ||
--		    memcmp(iph, iph2, offsetof(struct ipv6hdr, payload_len)) ||
-+		    (first_word & htonl(0xF00FFFFF)) ||
- 		    memcmp(&iph->nexthdr, &iph2->nexthdr,
- 			   nlen - offsetof(struct ipv6hdr, nexthdr))) {
- 			NAPI_GRO_CB(p)->same_flow = 0;
- 			continue;
- 		}
--
-+		/* flush if Traffic Class fields are different */
-+		NAPI_GRO_CB(p)->flush |= !!(first_word & htonl(0x0FF00000));
- 		NAPI_GRO_CB(p)->flush |= flush;
+ 	rt = skb_rtable(skb);
+ 
+-	if (opt->is_strictroute && rt->rt_gateway)
++	if (opt->is_strictroute && rt->rt_uses_gateway)
+ 		goto sr_failed;
+ 
+ 	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
+--- a/net/ipv4/ip_output.c
++++ b/net/ipv4/ip_output.c
+@@ -193,7 +193,7 @@ static inline int ip_finish_output2(stru
  	}
+ 
+ 	rcu_read_lock_bh();
+-	nexthop = rt->rt_gateway ? rt->rt_gateway : ip_hdr(skb)->daddr;
++	nexthop = (__force u32) rt_nexthop(rt, ip_hdr(skb)->daddr);
+ 	neigh = __ipv4_neigh_lookup_noref(dev, nexthop);
+ 	if (unlikely(!neigh))
+ 		neigh = __neigh_create(&arp_tbl, &nexthop, dev, false);
+@@ -371,7 +371,7 @@ int ip_queue_xmit(struct sk_buff *skb, s
+ 	skb_dst_set_noref(skb, &rt->dst);
+ 
+ packet_routed:
+-	if (inet_opt && inet_opt->opt.is_strictroute && rt->rt_gateway)
++	if (inet_opt && inet_opt->opt.is_strictroute && rt->rt_uses_gateway)
+ 		goto no_route;
+ 
+ 	/* OK, we know where to send it, allocate and build IP header. */
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -1129,7 +1129,7 @@ static unsigned int ipv4_mtu(const struc
+ 	mtu = dst->dev->mtu;
+ 
+ 	if (unlikely(dst_metric_locked(dst, RTAX_MTU))) {
+-		if (rt->rt_gateway && mtu > 576)
++		if (rt->rt_uses_gateway && mtu > 576)
+ 			mtu = 576;
+ 	}
+ 
+@@ -1180,7 +1180,9 @@ static bool rt_bind_exception(struct rta
+ 		if (fnhe->fnhe_gw) {
+ 			rt->rt_flags |= RTCF_REDIRECTED;
+ 			rt->rt_gateway = fnhe->fnhe_gw;
+-		}
++			rt->rt_uses_gateway = 1;
++		} else if (!rt->rt_gateway)
++			rt->rt_gateway = daddr;
+ 
+ 		orig = rcu_dereference(fnhe->fnhe_rth);
+ 		rcu_assign_pointer(fnhe->fnhe_rth, rt);
+@@ -1189,13 +1191,6 @@ static bool rt_bind_exception(struct rta
+ 
+ 		fnhe->fnhe_stamp = jiffies;
+ 		ret = true;
+-	} else {
+-		/* Routes we intend to cache in nexthop exception have
+-		 * the DST_NOCACHE bit clear.  However, if we are
+-		 * unsuccessful at storing this route into the cache
+-		 * we really need to set it.
+-		 */
+-		rt->dst.flags |= DST_NOCACHE;
+ 	}
+ 	spin_unlock_bh(&fnhe_lock);
+ 
+@@ -1218,15 +1213,8 @@ static bool rt_cache_route(struct fib_nh
+ 	if (prev == orig) {
+ 		if (orig)
+ 			rt_free(orig);
+-	} else {
+-		/* Routes we intend to cache in the FIB nexthop have
+-		 * the DST_NOCACHE bit clear.  However, if we are
+-		 * unsuccessful at storing this route into the cache
+-		 * we really need to set it.
+-		 */
+-		rt->dst.flags |= DST_NOCACHE;
++	} else
+ 		ret = false;
+-	}
+ 
+ 	return ret;
+ }
+@@ -1287,8 +1275,10 @@ static void rt_set_nexthop(struct rtable
+ 	if (fi) {
+ 		struct fib_nh *nh = &FIB_RES_NH(*res);
+ 
+-		if (nh->nh_gw && nh->nh_scope == RT_SCOPE_LINK)
++		if (nh->nh_gw && nh->nh_scope == RT_SCOPE_LINK) {
+ 			rt->rt_gateway = nh->nh_gw;
++			rt->rt_uses_gateway = 1;
++		}
+ 		dst_init_metrics(&rt->dst, fi->fib_metrics, true);
+ #ifdef CONFIG_IP_ROUTE_CLASSID
+ 		rt->dst.tclassid = nh->nh_tclassid;
+@@ -1297,8 +1287,18 @@ static void rt_set_nexthop(struct rtable
+ 			cached = rt_bind_exception(rt, fnhe, daddr);
+ 		else if (!(rt->dst.flags & DST_NOCACHE))
+ 			cached = rt_cache_route(nh, rt);
+-	}
+-	if (unlikely(!cached))
++		if (unlikely(!cached)) {
++			/* Routes we intend to cache in nexthop exception or
++			 * FIB nexthop have the DST_NOCACHE bit clear.
++			 * However, if we are unsuccessful at storing this
++			 * route into the cache we really need to set it.
++			 */
++			rt->dst.flags |= DST_NOCACHE;
++			if (!rt->rt_gateway)
++				rt->rt_gateway = daddr;
++			rt_add_uncached_list(rt);
++		}
++	} else
+ 		rt_add_uncached_list(rt);
+ 
+ #ifdef CONFIG_IP_ROUTE_CLASSID
+@@ -1366,6 +1366,7 @@ static int ip_route_input_mc(struct sk_b
+ 	rth->rt_iif	= 0;
+ 	rth->rt_pmtu	= 0;
+ 	rth->rt_gateway	= 0;
++	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
+ 	if (our) {
+ 		rth->dst.input= ip_local_deliver;
+@@ -1435,7 +1436,6 @@ static int __mkroute_input(struct sk_buf
+ 		return -EINVAL;
+ 	}
+ 
+-
+ 	err = fib_validate_source(skb, saddr, daddr, tos, FIB_RES_OIF(*res),
+ 				  in_dev->dev, in_dev, &itag);
+ 	if (err < 0) {
+@@ -1491,6 +1491,7 @@ static int __mkroute_input(struct sk_buf
+ 	rth->rt_iif 	= 0;
+ 	rth->rt_pmtu	= 0;
+ 	rth->rt_gateway	= 0;
++	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
+ 
+ 	rth->dst.input = ip_forward;
+@@ -1658,6 +1659,7 @@ local_input:
+ 	rth->rt_iif	= 0;
+ 	rth->rt_pmtu	= 0;
+ 	rth->rt_gateway	= 0;
++	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
+ 	if (res.type == RTN_UNREACHABLE) {
+ 		rth->dst.input= ip_error;
+@@ -1826,6 +1828,7 @@ static struct rtable *__mkroute_output(c
+ 	rth->rt_iif	= orig_oif ? : 0;
+ 	rth->rt_pmtu	= 0;
+ 	rth->rt_gateway = 0;
++	rth->rt_uses_gateway = 0;
+ 	INIT_LIST_HEAD(&rth->rt_uncached);
+ 
+ 	RT_CACHE_STAT_INC(out_slow_tot);
+@@ -2104,6 +2107,7 @@ struct dst_entry *ipv4_blackhole_route(s
+ 		rt->rt_flags = ort->rt_flags;
+ 		rt->rt_type = ort->rt_type;
+ 		rt->rt_gateway = ort->rt_gateway;
++		rt->rt_uses_gateway = ort->rt_uses_gateway;
+ 
+ 		INIT_LIST_HEAD(&rt->rt_uncached);
+ 
+@@ -2182,7 +2186,7 @@ static int rt_fill_info(struct net *net,
+ 		if (nla_put_be32(skb, RTA_PREFSRC, fl4->saddr))
+ 			goto nla_put_failure;
+ 	}
+-	if (rt->rt_gateway &&
++	if (rt->rt_uses_gateway &&
+ 	    nla_put_be32(skb, RTA_GATEWAY, rt->rt_gateway))
+ 		goto nla_put_failure;
+ 
+--- a/net/ipv4/xfrm4_policy.c
++++ b/net/ipv4/xfrm4_policy.c
+@@ -91,6 +91,7 @@ static int xfrm4_fill_dst(struct xfrm_ds
+ 					      RTCF_LOCAL);
+ 	xdst->u.rt.rt_type = rt->rt_type;
+ 	xdst->u.rt.rt_gateway = rt->rt_gateway;
++	xdst->u.rt.rt_uses_gateway = rt->rt_uses_gateway;
+ 	xdst->u.rt.rt_pmtu = rt->rt_pmtu;
+ 	INIT_LIST_HEAD(&xdst->u.rt.rt_uncached);
  
 
 
