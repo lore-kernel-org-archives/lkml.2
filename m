@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab2JZDIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:08:13 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60282 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795Ab2JZDIL (ORCPT
+	id S1755872Ab2JZDMV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:12:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60170 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab2JZDMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:08:11 -0400
-Message-ID: <5089FE8E.4030603@gmail.com>
-Date: Fri, 26 Oct 2012 11:07:58 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 25 Oct 2012 23:12:20 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Will Deacon <will.deacon@arm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mhocko@suse.cz, peterz@infradead.org, akpm@linux-foundation.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on access
- fault.
-References: <1351183471-14710-1-git-send-email-will.deacon@arm.com> <20121025195110.GA4771@cmpxchg.org>
-In-Reply-To: <20121025195110.GA4771@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
+References: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
+	<CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
+Date: Fri, 26 Oct 2012 11:12:18 +0800
+Message-ID: <CACVXFVObmYD9iG1yMkCNqfdx-XxMKOJ41kAROyxx-RBDufKKmQ@mail.gmail.com>
+Subject: Re: [PATCH v1] firmware loader: introduce module parameter to
+ customize fw search path
+From: Ming Lei <ming.lei@canonical.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 03:51 AM, Johannes Weiner wrote:
-> On Thu, Oct 25, 2012 at 05:44:31PM +0100, Will Deacon wrote:
->> On x86 memory accesses to pages without the ACCESSED flag set result in the
->> ACCESSED flag being set automatically. With the ARM architecture a page access
->> fault is raised instead (and it will continue to be raised until the ACCESSED
->> flag is set for the appropriate PTE/PMD).
->>
->> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
->> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
->> be called for a write fault.
->>
->> This patch ensures that faults on transparent hugepages which do not result
->> in a CoW update the access flags for the faulting pmd.
->>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> Cc: Kirill A. Shutemov <kirill@shutemov.name>
->> Cc: Andrea Arcangeli <aarcange@redhat.com>
->> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+On Fri, Oct 26, 2012 at 10:32 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
->> Ok chaps, I rebased this thing onto today's next (which basically
->> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
->> ask if you could eyeball the new code, especially where the locking is
->> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
->> that the page is not splitting, but I can't see why that is required.
-> I don't either.  If the thing was splitting when the fault happened,
-> that path is not taken.  And the locked pmd_same() check should rule
-> out splitting setting in after testing pmd_trans_huge_splitting().
+> Please just make "fw_path[0]" just be the pointer to fw_path_para[]
+> (which sounds like the cleanest fix) and get rid of the negative 'i'
+> and conditional entirely.
 
-Why I can't find function pmd_trans_huge_splitting() you mentioned in 
-latest mainline codes and linux-next?
+Yes, it should be the cleanest, I don't do it because I thought that might
+have caused one compile warning('const char *' points to memory
+without 'const', like below)
 
->
-> Peter?
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+	static char fw_path_para[256];
+	static const char *fw_path[] = {
+		fw_path_para,
+		"/lib/firmware/updates/" UTS_RELEASE,
+		"/lib/firmware/updates",
+		"/lib/firmware/" UTS_RELEASE,
+		"/lib/firmware"
+	};
 
+but in fact there isn't any warning with above change and it does work, still
+don't know why? :-(
+
+Thanks,
+--
+Ming Lei
