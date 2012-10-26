@@ -1,116 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966336Ab2JZUEK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:04:10 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45332 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S966316Ab2JZUEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:04:07 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/1jtRnI7P1Mhwxxr9L6DEFuU4mWbZyUP9fjV8Ioa
-	vtuvRTyqudVuL8
-Message-ID: <1351281877.16639.98.camel@maggy.simpson.net>
-Subject: Re: process hangs on do_exit when oom happens
-From: Mike Galbraith <efault@gmx.de>
-To: Qiang Gao <gaoqiangscut@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri, 26 Oct 2012 13:04:37 -0700
-In-Reply-To: <1351270990.16639.92.camel@maggy.simpson.net>
-References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
-	 <20121019160425.GA10175@dhcp22.suse.cz>
-	 <CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
-	 <CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
-	 <CAKWKT+bYOf0cEDuiibf6eV2raMxe481y-D+nrBgPWR3R+53zvg@mail.gmail.com>
-	 <20121023095028.GD15397@dhcp22.suse.cz>
-	 <CAKWKT+b2s4E7Nne5d0UJwfLGiCXqAUgrCzuuZi6ZPdjszVSmWg@mail.gmail.com>
-	 <20121023101500.GE15397@dhcp22.suse.cz>
-	 <CAKTCnzkiabWK8tAORkhg6oW11VvXS-YqBwDzED_3=J1buhaQnQ@mail.gmail.com>
-	 <CAKWKT+ZahFTnPRJ4FCebxfcrcYEBf+PL9Wa_Foygep_gFst4_g@mail.gmail.com>
-	 <20121025095719.GA11105@dhcp22.suse.cz>
-	 <CAKWKT+ZRTUwer8qhjWGjkra63e10R67UQzezdaCaStz+rvGjxw@mail.gmail.com>
-	 <1351270990.16639.92.camel@maggy.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S966342Ab2JZUFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:05:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37497 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966288Ab2JZUFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:05:12 -0400
+Date: Fri, 26 Oct 2012 22:59:15 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <arnd@arndb.de>,
+        <olof@lixom.net>, <rdunlap@xenotime.net>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
+Message-ID: <20121026195915.GA29548@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1349675983-23803-1-git-send-email-kishon@ti.com>
+ <1349675983-23803-2-git-send-email-kishon@ti.com>
+ <20121016165043.GS15569@atomide.com>
+ <20121025004806.GK11928@atomide.com>
+ <20121025061722.GB4449@arwen.pp.htv.fi>
+ <20121025174446.GT11928@atomide.com>
+ <20121026064736.GA22206@arwen.pp.htv.fi>
+ <20121026171655.GI11908@atomide.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+Content-Disposition: inline
+In-Reply-To: <20121026171655.GI11908@atomide.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 10:03 -0700, Mike Galbraith wrote:
+--cNdxnHkX5QqsyA0e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The bug is in the patch that used sched_setscheduler_nocheck().  Plain
-> sched_setscheduler() would have replied -EGOAWAY.
+Hi,
 
-sched_setscheduler_nocheck() should say go away too methinks.  This
-isn't about permissions, it's about not being stupid in general.
+On Fri, Oct 26, 2012 at 10:16:55AM -0700, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [121025 23:55]:
+> > On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
+> > > * Felipe Balbi <balbi@ti.com> [121024 23:24]:
+> > > > Hi,
+> > > >=20
+> > > > On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
+> > > > > * Tony Lindgren <tony@atomide.com> [121016 09:53]:
+> > > > > > * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+> > > > > > > ocp2scp was not having pdata support which makes *musb* fail =
+for non-dt
+> > > > > > > boot in OMAP platform. The pdata will have information about =
+the devices
+> > > > > > > that is connected to ocp2scp. ocp2scp driver will now make us=
+e of this
+> > > > > > > information to create the devices that is attached to ocp2scp.
+> > > > > > >=20
+> > > > > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> > > > > >=20
+> > > > > > This fixes the regression on my panda es for musb port:
+> > > > > >=20
+> > > > > > Acked-by: Tony Lindgren <tony@atomide.com>
+> > > > >=20
+> > > > > Looks like nobody has picked this one up and we need it to
+> > > > > fix the musb regression on omap, so I'll queue these up.
+> > > >=20
+> > > > I don't seem to have the patches around in any mailbox :-(
+> > >=20
+> > > Bounced them to you. Do you have any better ideas for the
+> > > -rc cycle to fix the MUSB regression on omap4?
+> >=20
+> > Well, there are two regressions that I know of. One is caused by the
+> > mode1 DMA changes, which I'll just revert, and the other is the
+> > missing platform_data support on the new PHY driver which these patches
+> > are supposed to solve, right ?
+>=20
+> Yes that's it AFAIK.
 
-sched: fix __sched_setscheduler() RT_GROUP_SCHED conditionals
+Kishon, any other patches I need to take to get MUSB working on v3.7 ?
 
-Remove user and rt_bandwidth_enabled() RT_GROUP_SCHED conditionals in
-__sched_setscheduler().  The end result of kernel OR user promoting a
-task in a group with zero rt_runtime allocated is the same bad thing,
-and throttle switch position matters little.  It's safer to just say
-no solely based upon bandwidth existence, may save the user a nasty
-surprise if he later flips the throttle switch to 'on'.
+--=20
+balbi
 
-The commit below came about due to sched_setscheduler_nocheck()
-allowing a task in a task group with zero rt_runtime allocated to
-be promoted by the kernel oom logic, thus marooning it forever.
+--cNdxnHkX5QqsyA0e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-<quote>
-commit 341aea2bc48bf652777fb015cc2b3dfa9a451817
-Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date:   Thu Apr 14 15:22:13 2011 -0700
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-    oom-kill: remove boost_dying_task_prio()
-    
-    This is an almost-revert of commit 93b43fa ("oom: give the dying task a
-    higher priority").
-    
-    That commit dramatically improved oom killer logic when a fork-bomb
-    occurs.  But I've found that it has nasty corner case.  Now cpu cgroup has
-    strange default RT runtime.  It's 0!  That said, if a process under cpu
-    cgroup promote RT scheduling class, the process never run at all.
-</quote>
+iQIcBAEBAgAGBQJQiuuTAAoJEIaOsuA1yqREgLQQALIaJJz0yr7gwd4dtEb2flZK
+NDg6B0bpBBIBt2to8IW7nAc3rUfTSYQNSha77vzXsdLO8tumNvdeP+FTc7TKoJBf
+I3cux5Xl18Q42yg1sEjuJdWxlx9O1A2UpJpcqF8OqOejaBZk3pJA8T17YKbVFSbk
+edE5xNNzE8gTs5VphyAq0+QxFoyh2+T80IYUBjDsRTIl76lWKKWLBJvXIFZ8c9T3
+lNvYvRoLffo3SPwjYGSVS+T6L/87g1t8yhIeJrLcvN8I9Ow1xKsfRnXkPkGbufSH
+Q+lacyf9yVqgxfpZnA9kfz3adLtTxIY+vUfVqdArr8fwZm3LnoIjvwr9DokQcswv
+cdvvh/9NXbL9kkPcHLSVU00Sj7ev5xF1Jk0TGM07fLB+FekizqEO6FQJKmzrUuoZ
+nhmt2CT7ZcVYsaL2pRk1Guo87swtW2q5tbdyB/oFnZXTkc/Vc4w/Kah6X+ufTjn8
+/En56XnyqUW9rkZHx+sCRgCTWEk7kfubr6MezrGlZziP4Pfoi8ZAKjDbXOOmA5ni
+uJRlEr0+JTtaFuS9/q5+cqdjHO2gbUnGHiWpXYFyFLu1Vc+NKpGG9RNVnOxlF3A5
+MC14uFheoHNilPyQJb1BogU8ZIS6d38kLDDqBCmUeqaZqiotpCyLqBeGfW7cnrHw
+PCeR/bhA6FkbSbWEa32J
+=n7Hz
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2d8927f..d3a35f8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3810,17 +3810,14 @@ recheck:
- 	}
- 
- #ifdef CONFIG_RT_GROUP_SCHED
--	if (user) {
--		/*
--		 * Do not allow realtime tasks into groups that have no runtime
--		 * assigned.
--		 */
--		if (rt_bandwidth_enabled() && rt_policy(policy) &&
--				task_group(p)->rt_bandwidth.rt_runtime == 0 &&
--				!task_group_is_autogroup(task_group(p))) {
--			task_rq_unlock(rq, p, &flags);
--			return -EPERM;
--		}
-+	/*
-+	 * Do not allow realtime tasks into groups that have no runtime
-+	 * assigned.
-+	 */
-+	if (rt_policy(policy) && task_group(p)->rt_bandwidth.rt_runtime == 0 &&
-+			!task_group_is_autogroup(task_group(p))) {
-+		task_rq_unlock(rq, p, &flags);
-+		return -EPERM;
- 	}
- #endif
- 
-
-
+--cNdxnHkX5QqsyA0e--
