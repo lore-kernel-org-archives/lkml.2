@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965653Ab2JZSCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:02:42 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44601 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964973Ab2JZSCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:02:40 -0400
-Message-ID: <1351274374.18115.205.camel@falcor>
-Subject: Re: Kdump with signed images
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Date: Fri, 26 Oct 2012 13:59:34 -0400
-In-Reply-To: <20121026023916.GA16762@srcf.ucam.org>
-References: <871ugqb4gj.fsf@xmission.com>
-	 <20121023131854.GA16496@redhat.com> <20121023145920.GD16496@redhat.com>
-	 <87fw552mb4.fsf_-_@xmission.com> <20121024173651.GE1821@redhat.com>
-	 <1351145401.18115.78.camel@falcor> <20121025141048.GD9377@redhat.com>
-	 <1351190421.18115.92.camel@falcor> <20121025185520.GA17995@redhat.com>
-	 <1351214158.18115.186.camel@falcor> <20121026023916.GA16762@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102618-7182-0000-0000-000002F5D04B
+	id S965683Ab2JZSDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:03:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48484 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964973Ab2JZSDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:03:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <508ACE6E.8060303@redhat.com>
+References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl>
+ <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+ <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+ <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+ <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+ <CA+55aFwpZ5pO2G7gs3Pga5et1DQZ4qMoe1CLFkSrVQK_4K4rhA@mail.gmail.com> <508ACE6E.8060303@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 26 Oct 2012 11:02:59 -0700
+X-Google-Sender-Auth: YEMuxWt0H2n2k0FpDYLWSbMbV7g
+Message-ID: <CA+55aFyYvu20qHtJ2SuNK3Dd466Hs9m9U3_41E8HtQ6KiRVRKw@mail.gmail.com>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+To: Rik van Riel <riel@redhat.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 03:39 +0100, Matthew Garrett wrote:
-> On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
-> 
-> > On a running system, the package installer, after verifying the package
-> > integrity, would install each file with the associated 'security.ima'
-> > extended attribute.  The 'security.evm' digital signature would be
-> > installed with an HMAC, calculated using a system unique key. 
-> 
-> The idea isn't to prevent /sbin/kexec from being modified after 
-> installation - it's to prevent it from being possible to install a 
-> system that has a modified /sbin/kexec.
+On Fri, Oct 26, 2012 at 10:54 AM, Rik van Riel <riel@redhat.com> wrote:
+>
+> Would tlb_fix_spurious_fault take care of that on those
+> architectures?
 
-Understood.
+.. assuming that they implement it as a real TLB flush, yes.
 
->  Leaving any part of this up to 
-> the package installer means that it doesn't solve the problem we're 
-> trying to solve here. It must be impossible for the kernel to launch any 
-> /sbin/kexec that hasn't been signed by a trusted key that's been built 
-> into the kernel, 
+But maybe the architecture never noticed that it happened to depend on
+the fact that we do a cross-CPU invalidate? So a missing
+tlb_fix_spurious_fault() implementation could cause a short loop of
+repeated page faults, until the IPI happens. And it would be so
+incredibly rare that nobody would ever have noticed.
 
-With Dmitry's patch "5e0d1a4 ima: added policy support for security.ima
-type", or something similar, we can force 'security.ima' to a specific
-type, in this case, a digital signature.  With that patch, this
-shouldn't be a problem.
+And if that could have happened, then with the cross-cpu invalidate
+removed, the "incredibly rare short-lived constant page fault retry"
+could turn into "incredibly rare lockup due to infinite page fault
+retry due to TLB entry that never turns dirty despite it being marked
+dirty by SW in the in-memory page tables".
 
-> and it must be impossible for anything other than 
-> /sbin/kexec to make the kexec system call.
+Very unlikely, I agree. And this is only relevant for the non-x86
+case, so changing the x86-specific optimized version is an independent
+issue.
 
-Permission is a MAC issue. :)
-
-thanks,
-
-Mimi
-
-
+              Linus
