@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab2JZAac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:30:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53360 "EHLO mail.kernel.org"
+	id S1755399Ab2JZAat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:30:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53315 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754002Ab2JZAHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:24 -0400
+	id S1753980Ab2JZAHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 08/85] NLM: nlm_lookup_file() may return NLMv4-specific error codes
-Date: Thu, 25 Oct 2012 17:05:26 -0700
-Message-Id: <20121026000031.961944230@linuxfoundation.org>
+        Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 18/85] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+Date: Thu, 25 Oct 2012 17:05:36 -0700
+Message-Id: <20121026000032.951798157@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,50 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
+commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
 
-If the filehandle is stale, or open access is denied for some reason,
-nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
-or nlm4_failed. These get passed right through nlm_lookup_file(),
-and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
-the result through the cast_status() machinery.
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
+[ hpa: this should be done not just for > 4 GB but for everything above the legacy
+  region (1 MB), at the very least.  That, however, turns out to require significant
+  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reported-by: Larry McVoy <lm@bitmover.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntxdr.c |    2 +-
- fs/lockd/svcproc.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_s
- {
- 	__be32 *p;
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -919,8 +919,21 @@ void __init setup_arch(char **cmdline_p)
  
--	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
-+	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
- 	p = xdr_reserve_space(xdr, 4);
- 	*p = stat;
- }
---- a/fs/lockd/svcproc.c
-+++ b/fs/lockd/svcproc.c
-@@ -68,7 +68,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rq
- 
- 	/* Obtain file pointer. Not used by FREE_ALL call. */
- 	if (filp != NULL) {
--		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
-+		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
-+		if (error != 0)
- 			goto no_locks;
- 		*filp = file;
- 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
 
 
