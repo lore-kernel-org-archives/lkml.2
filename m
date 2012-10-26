@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab2JZIFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:05:15 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51625 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757149Ab2JZIFJ (ORCPT
+	id S1757248Ab2JZIHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:07:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36604 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757110Ab2JZIHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:05:09 -0400
+	Fri, 26 Oct 2012 04:07:36 -0400
+Date: Fri, 26 Oct 2012 01:07:32 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Fengguang Wu <fengguang.wu@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ 08/31] use clamp_t in UNAME26 fix
+Message-ID: <20121026080732.GB3127@elie.Belkin>
+References: <20121026000214.941721299@linuxfoundation.org>
+ <20121026000215.817875317@linuxfoundation.org>
+ <20121026001119.GA3028@elie.Belkin>
+ <20121026022803.GA2938@kroah.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <508A1505.6010809@gmail.com>
-References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com>
-	<5088CC9B.6010009@gmail.com>
-	<CAKMK7uFMaf=ohEKyWKNsd-mSQkW__0BUww_iYLNFo347mEYAMg@mail.gmail.com>
-	<84c8a8$68qvdl@orsmga001.jf.intel.com>
-	<508A1505.6010809@gmail.com>
-Date: Fri, 26 Oct 2012 10:05:07 +0200
-X-Google-Sender-Auth: h-DIm0W5yZO1MXFjMDToqhHoyvs
-Message-ID: <CAKMK7uHm8OXPGmYa3zgn64mmufgGMmqiAE=+5ugBBKQ+i6PTag@mail.gmail.com>
-Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-From: Daniel Vetter <daniel@ffwll.ch>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121026022803.GA2938@kroah.com>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 6:43 AM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
->>
->> No worries, it is another ILK hang similar to the ones reported earlier
->> - it just seems the ring stops advancing. Hopefully it is a missing w/a
->> from http://cgit.freedesktop.org/~danvet/drm/log/?h=ilk-wa-pile
->> -Chris
->>
->
-> well if this means building libdrm etc.. then thats not a problem, more time
-> consuming if anything. perhaps an *.rpm that I can test to see?
+Greg Kroah-Hartman wrote:
+> On Thu, Oct 25, 2012 at 05:11:19PM -0700, Jonathan Nieder wrote:
+>> Greg Kroah-Hartman wrote:
 
-It's not libdrm, the above is just a kernel git tree with a bunch of
-ironlake workarounds.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>>>  		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+>>> -		copy = min(sizeof(buf), max_t(size_t, 1, len));
+>>> +		copy = clamp_t(size_t, len, 1, sizeof(buf));
+>>>  		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
+>>
+>> Does this have any effect at runtime?  If not, why is it needed for
+>> stable kernels?
+>
+> It's a bugfix for the previous patch in this area, fixing the build
+> warning.  I don't like adding stable patches that add new warnings :)
+
+Ok, that's fair.  Thanks for explaining.
+
+Jonathan
