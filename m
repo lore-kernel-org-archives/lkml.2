@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2JZAY6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:24:58 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53544 "EHLO mail.kernel.org"
+	id S1755095Ab2JZAZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:25:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53513 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754180Ab2JZAHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:43 -0400
+	id S1754166Ab2JZAHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stefano Babic <sbabic@denx.de>, Felipe Balbi <balbi@ti.com>,
-        Dmitry Lifshitz <lifshitz@compulab.co.il>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: [ 25/85] usb: musb: am35xx: drop spurious unplugging a device
-Date: Thu, 25 Oct 2012 17:05:43 -0700
-Message-Id: <20121026000033.639329600@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 22/85] USB: io_ti: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:40 -0700
+Message-Id: <20121026000033.344787077@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,63 +25,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Babic <sbabic@denx.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 6ff1f3d3bd7c69c62ca5773b1b684bce42eff06a upstream.
+commit 003615302a16579531932576bcd9582ddeba9018 upstream.
 
-On AM3517, tx and rx interrupt are detected together with
-the disconnect event. This generates a kernel panic in musb_interrupt,
-because rx / tx are handled after disconnect.
-This issue was seen on a Technexion's TAM3517 SOM. Unplugging a device,
-tx / rx interrupts together with disconnect are detected. This brings
-to kernel panic like this:
+Fix port-data memory leak by moving port data allocation and
+deallocation to port_probe and port_remove.
 
-[   68.526153] Unable to handle kernel NULL pointer dereference at virtual address 00000011
-[   68.534698] pgd = c0004000
-[   68.537536] [00000011] *pgd=00000000
-[   68.541351] Internal error: Oops: 17 [#1] ARM
-[   68.545928] Modules linked in:
-[   68.549163] CPU: 0    Not tainted  (3.6.0-rc5-00020-g9e05905 #178)
-[   68.555694] PC is at rxstate+0x8/0xdc
-[   68.559539] LR is at musb_interrupt+0x98/0x858
-[   68.564239] pc : [<c035cd88>]    lr : [<c035af1c>]    psr: 40000193
-[   68.564239] sp : ce83fb40  ip : d0906410  fp : 00000000
-[   68.576293] r10: 00000000  r9 : cf3b0e40  r8 : 00000002
-[   68.581817] r7 : 00000019  r6 : 00000001  r5 : 00000001  r4 : 000000d4
-[   68.588684] r3 : 00000000  r2 : 00000000  r1 : ffffffcc  r0 : cf23c108
-[   68.595550] Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment ke
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
 
-Note: this behavior is not seen with a USB hub, while it is
-easy to reproduce connecting a USB-pen directly to the USB-A of
-the board.
+Compile-only tested.
 
-Drop tx / rx interrupts if disconnect is detected.
-
-Signed-off-by: Stefano Babic <sbabic@denx.de>
-CC: Felipe Balbi <balbi@ti.com>
-Tested-by: Dmitry Lifshitz <lifshitz@compulab.co.il>
-Tested-by: Igor Grinberg <grinberg@compulab.co.il>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/musb/am35x.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/io_ti.c |   91 +++++++++++++++++++++------------------------
+ 1 file changed, 44 insertions(+), 47 deletions(-)
 
---- a/drivers/usb/musb/am35x.c
-+++ b/drivers/usb/musb/am35x.c
-@@ -312,6 +312,12 @@ static irqreturn_t am35x_musb_interrupt(
- 		ret = IRQ_HANDLED;
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -2594,12 +2594,7 @@ static void edge_break(struct tty_struct
+ static int edge_startup(struct usb_serial *serial)
+ {
+ 	struct edgeport_serial *edge_serial;
+-	struct edgeport_port *edge_port;
+-	struct usb_device *dev;
+ 	int status;
+-	int i;
+-
+-	dev = serial->dev;
+ 
+ 	/* create our private serial structure */
+ 	edge_serial = kzalloc(sizeof(struct edgeport_serial), GFP_KERNEL);
+@@ -2617,40 +2612,7 @@ static int edge_startup(struct usb_seria
+ 		return status;
  	}
  
-+	/* Drop spurious RX and TX if device is disconnected */
-+	if (musb->int_usb & MUSB_INTR_DISCONNECT) {
-+		musb->int_tx = 0;
-+		musb->int_rx = 0;
-+	}
-+
- 	if (musb->int_tx || musb->int_rx || musb->int_usb)
- 		ret |= musb_interrupt(musb);
+-	/* set up our port private structures */
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		edge_port = kzalloc(sizeof(struct edgeport_port), GFP_KERNEL);
+-		if (edge_port == NULL) {
+-			dev_err(&serial->dev->dev, "%s - Out of memory\n",
+-								__func__);
+-			goto cleanup;
+-		}
+-		spin_lock_init(&edge_port->ep_lock);
+-		if (kfifo_alloc(&edge_port->write_fifo, EDGE_OUT_BUF_SIZE,
+-								GFP_KERNEL)) {
+-			dev_err(&serial->dev->dev, "%s - Out of memory\n",
+-								__func__);
+-			kfree(edge_port);
+-			goto cleanup;
+-		}
+-		edge_port->port = serial->port[i];
+-		edge_port->edge_serial = edge_serial;
+-		usb_set_serial_port_data(serial->port[i], edge_port);
+-		edge_port->bUartMode = default_uart_mode;
+-	}
+-
+ 	return 0;
+-
+-cleanup:
+-	for (--i; i >= 0; --i) {
+-		edge_port = usb_get_serial_port_data(serial->port[i]);
+-		kfifo_free(&edge_port->write_fifo);
+-		kfree(edge_port);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
+-	kfree(edge_serial);
+-	usb_set_serial_data(serial, NULL);
+-	return -ENOMEM;
+ }
  
+ static void edge_disconnect(struct usb_serial *serial)
+@@ -2660,19 +2622,54 @@ static void edge_disconnect(struct usb_s
+ 
+ static void edge_release(struct usb_serial *serial)
+ {
+-	int i;
++	kfree(usb_get_serial_data(serial));
++}
++
++static int edge_port_probe(struct usb_serial_port *port)
++{
+ 	struct edgeport_port *edge_port;
++	int ret;
+ 
+-	dbg("%s", __func__);
++	edge_port = kzalloc(sizeof(*edge_port), GFP_KERNEL);
++	if (!edge_port)
++		return -ENOMEM;
++
++	ret = kfifo_alloc(&edge_port->write_fifo, EDGE_OUT_BUF_SIZE,
++								GFP_KERNEL);
++	if (ret) {
++		kfree(edge_port);
++		return -ENOMEM;
++	}
+ 
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		edge_port = usb_get_serial_port_data(serial->port[i]);
++	ret = edge_create_sysfs_attrs(port);
++	if (ret) {
+ 		kfifo_free(&edge_port->write_fifo);
+ 		kfree(edge_port);
++		return ret;
+ 	}
+-	kfree(usb_get_serial_data(serial));
++
++	spin_lock_init(&edge_port->ep_lock);
++	edge_port->port = port;
++	edge_port->edge_serial = usb_get_serial_data(port->serial);
++	edge_port->bUartMode = default_uart_mode;
++
++	usb_set_serial_port_data(port, edge_port);
++
++	return 0;
+ }
+ 
++static int edge_port_remove(struct usb_serial_port *port)
++{
++	struct edgeport_port *edge_port;
++
++	edge_port = usb_get_serial_port_data(port);
++
++	edge_remove_sysfs_attrs(port);
++	kfifo_free(&edge_port->write_fifo);
++	kfree(edge_port);
++
++	return 0;
++}
+ 
+ /* Sysfs Attributes */
+ 
+@@ -2732,8 +2729,8 @@ static struct usb_serial_driver edgeport
+ 	.attach			= edge_startup,
+ 	.disconnect		= edge_disconnect,
+ 	.release		= edge_release,
+-	.port_probe		= edge_create_sysfs_attrs,
+-	.port_remove		= edge_remove_sysfs_attrs,
++	.port_probe		= edge_port_probe,
++	.port_remove		= edge_port_remove,
+ 	.ioctl			= edge_ioctl,
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
+@@ -2763,8 +2760,8 @@ static struct usb_serial_driver edgeport
+ 	.attach			= edge_startup,
+ 	.disconnect		= edge_disconnect,
+ 	.release		= edge_release,
+-	.port_probe		= edge_create_sysfs_attrs,
+-	.port_remove		= edge_remove_sysfs_attrs,
++	.port_probe		= edge_port_probe,
++	.port_remove		= edge_port_remove,
+ 	.ioctl			= edge_ioctl,
+ 	.set_termios		= edge_set_termios,
+ 	.tiocmget		= edge_tiocmget,
 
 
