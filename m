@@ -1,68 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab2JZHJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:09:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:26501 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756600Ab2JZHJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:09:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,653,1344236400"; 
-   d="scan'208";a="209566212"
-Date: Fri, 26 Oct 2012 15:09:36 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, YingHang Zhu <casualfisher@gmail.com>,
-        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-Message-ID: <20121026070936.GA12282@localhost>
-References: <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
- <20121025015014.GC29378@dastard>
- <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
- <50889FF1.9030107@gmail.com>
- <20121025025826.GB23462@localhost>
- <20121026002544.GI29378@dastard>
- <20121026012758.GA6282@localhost>
- <5089F5AD.5040708@gmail.com>
- <20121026065855.GA9179@localhost>
- <508A35B0.30106@gmail.com>
+	id S1756717Ab2JZHMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:12:22 -0400
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:47273 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756600Ab2JZHMU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 03:12:20 -0400
+Message-ID: <508A37E6.8000401@st.com>
+Date: Fri, 26 Oct 2012 08:12:38 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508A35B0.30106@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 3.7.0-rc2] dt: match id-table before creating platform
+ device
+References: <1350988259-22767-1-git-send-email-srinivas.kandagatla@st.com> <5086988F.6090107@gmail.com>
+In-Reply-To: <5086988F.6090107@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 03:03:12PM +0800, Ni zhan Chen wrote:
-> On 10/26/2012 02:58 PM, Fengguang Wu wrote:
-> >>  static void shrink_readahead_size_eio(struct file *filp,
-> >>                                         struct file_ra_state *ra)
-> >>  {
-> >>-       ra->ra_pages /= 4;
-> >>+       spin_lock(&filp->f_lock);
-> >>+       filp->f_mode |= FMODE_RANDOM;
-> >>+       spin_unlock(&filp->f_lock);
-> >>
-> >>As the example in comment above this function, the read maybe still
-> >>sequential, and it will waste IO bandwith if modify to FMODE_RANDOM
-> >>directly.
-> >Yes immediately disabling readahead may hurt IO performance, the
-> >original '/ 4' may perform better when there are only 1-3 IO errors
-> >encountered.
-> 
-> Hi Fengguang,
-> 
-> Why the number should be 1-3?
+On 23/10/12 14:15, Rob Herring wrote:
+re-sending my reply again, as it did not appear in my inbox from dt
+mailing list.
+> Adding lkml. DT patches should go to both lists.
+>
+> On 10/23/2012 05:30 AM, Srinivas KANDAGATLA wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>>
+>> As part of of_platform_populate call, the existing code iterates each
+>> child node and then creates a platform device for each child, however
+>> there is bug in the code which does not check the match table before
+>> creating the platform device. This might result creating two platfrom
+>> devices and also invoking driver probe twice, which is incorrect.
+>>
+>> This patch moves a existing of_match_node check to start of the function
+>> to fix the bug, doing this way will return immediately without creating
+>> any datastructures if the child does not match the supplied match-table.
+>>
+>> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>> ---
+>>  drivers/of/platform.c |    5 ++++-
+>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+>> index b80891b..1aaa560 100644
+>> --- a/drivers/of/platform.c
+>> +++ b/drivers/of/platform.c
+>> @@ -367,6 +367,9 @@ static int of_platform_bus_create(struct device_node *bus,
+>>  		return 0;
+>>  	}
+>>  
+>> +	if (!of_match_node(matches, bus))
+>> +		return 0;
+>> +
+> This is not right. This function is recursive and this change would
+> break that.
 
-The original behavior is '/= 4' on each error.
+You are correct, this change might break the functionality.
 
-After 1 errors, readahead size will be shrinked by 1/4
-After 2 errors, readahead size will be shrinked by 1/16
-After 3 errors, readahead size will be shrinked by 1/64
-After 4 errors, readahead size will be effectively 0 (disabled)
 
-Thanks,
-Fengguang
+>  Perhaps we could only call of_platform_device_create_pdata
+> if !of_match_node instead, but I'm not completely sure that would be the
+> right thing to do.
+
+I did try to do the same thing in the patch.
+May be I should have moved check just before calling
+of_platform_device_create_pdata?
+
+>  There's also some historical things we have to
+> support which is why we have of_platform_populate and of_platform_bus_probe.
+
+m just trying to understand the difference between of_platform_populate
+and of_platform_bus_probe.
+Looking at the function documentation, which states
+of_platform_bus_probe will only create children of the root which are
+selected by the @matches argument.
+
+of_platform_populate walks the device tree and creates devices from
+nodes.  It differs in that it follows the modern convention of requiring
+all device nodes to have a 'compatible' property, and it is suitable for
+creating devices which are children of the root node.
+
+Lets say If we call of_platform_populate(NULL, match_table, NULL, NULL)
+on a device trees like the below with
+struct of_device_id match_table[] = {
+    { .compatible = "simple-bus", }
+    {}
+};
+
+parent@0{
+    compatible    = "xxx,parent1", "simple-bus";
+    ...
+    child@0 {
+        compatible    = "xxx,child0", "simple-bus";
+        ...
+    };
+    child@1 {
+        compatible    = "xxx,child1";
+        ...
+    };
+    child@2 {
+        compatible    = "xxx,child2", "simple-bus";
+        ...
+    };
+};
+
+of_platform_bus_probe would create platform-devices for parent@0,
+child@0and child@2
+where as
+of_platform_populate would create platform-devices for parent@0,
+child@0, child@1 and child@2 nodes.
+
+So the question is
+why do we need to have @matches argument to of_platform_populate in the
+first place, if it creates all the devices by walking the dt nodes?
+
+It is bit confusing, As some platforms use of_platform_populate(NULL,
+of_default_bus_match_table, NULL, NULL) assuming that only matching
+nodes will end up having platform device.
+Also
+some platforms use of_platform_bus_probe(NULL, match_table, NULL), 
+where match table is of_default_bus_match_table.
+
+Am not 100% sure what is the right solution, but I think lot of platforms would want behavior like of_platform_bus_probe which takes lookups aswell.
+
+IMO, we could do two things to avoid this confusion in future and achieve the expected behaviour.
+
+1. Remove matches from of_platform_populate
+2. add Lookup argument to of_platform_bus_probe
+
+??
+
+--srini
+
+> Rob
+>
+>>  	auxdata = of_dev_lookup(lookup, bus);
+>>  	if (auxdata) {
+>>  		bus_id = auxdata->name;
+>> @@ -379,7 +382,7 @@ static int of_platform_bus_create(struct device_node *bus,
+>>  	}
+>>  
+>>  	dev = of_platform_device_create_pdata(bus, bus_id, platform_data, parent);
+>> -	if (!dev || !of_match_node(matches, bus))
+>> +	if (!dev)
+>>  		return 0;
+>>  
+>>  	for_each_child_of_node(bus, child) {
+>>
+>
+>
+
