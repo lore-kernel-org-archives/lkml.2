@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966538Ab2JZVGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:06:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33398 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934045Ab2JZVF6 (ORCPT
+	id S966556Ab2JZVIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:08:35 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55875 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966503Ab2JZVId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:05:58 -0400
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        netfilter@vger.kernel.org
-In-Reply-To: <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	 <1350925299.8609.978.camel@edumazet-glaptop>
-	 <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-	 <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
-	 <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
-	 <1351053164.6537.95.camel@edumazet-glaptop>
-	 <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
-	 <1351270087.30380.9.camel@edumazet-glaptop>
-	 <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Oct 2012 23:05:52 +0200
-Message-ID: <1351285552.30380.20.camel@edumazet-glaptop>
+	Fri, 26 Oct 2012 17:08:33 -0400
+Date: Fri, 26 Oct 2012 22:12:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Rik van Riel <riel@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
+Message-ID: <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
+In-Reply-To: <20121026144502.6e94643e@dull>
+References: <20121025121617.617683848@chello.nl>
+	<20121025124832.840241082@chello.nl>
+	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+	<5089F5B5.1050206@redhat.com>
+	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+	<508A0A0D.4090001@redhat.com>
+	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+	<m2pq45qu0s.fsf@firstfloor.org>
+	<508A8D31.9000106@redhat.com>
+	<20121026132601.GC9886@gmail.com>
+	<20121026144502.6e94643e@dull>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 11:51 -0700, Peter LaDow wrote:
-> (I've added netfilter and linux-rt-users to try to pull in more help).
+On Fri, 26 Oct 2012 14:45:02 -0400
+Rik van Riel <riel@redhat.com> wrote:
+
+> Intel has an architectural guarantee that the TLB entry causing
+> a page fault gets invalidated automatically. This means
+> we should be able to drop the local TLB invalidation.
 > 
-> On Fri, Oct 26, 2012 at 9:48 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > Upstream kernel is fine, there is no race, as long as :
-> >
-> > local_bh_disable() disables BH and preemption.
-> 
-> Looking at the unpatched code in net/ipv4/netfilter/ip_tables.c, it
-> doesn't appear that any of the code checks the return value for
-> xt_write_receq_begin to determine if it is safe to write.  And neither
-> does the newly patched code.  How did the mainline code prevent
-> corruption of the tables it is updating?
-> 
+> Because of the way other areas of the page fault code work,
+> chances are good that all x86 CPUs do this.  However, if
+> someone somewhere has an x86 CPU that does not invalidate
+> the TLB entry causing a page fault, this one-liner should
+> be easy to revert.
 
-Do you know what is per cpu data in linux kernel ?
+This does not strike me as a good standard of validation for such a change
 
-> Why isn't there something like
-> 
->   while ( (addend = xt_write_recseq_begin()) == 0 );
-> 
-> To make sure that only one person has write access to the tables?
-> Better yet, why not use a seqlock_t instead?
-> 
+At the very least we should have an ACK from AMD and from VIA, and
+preferably ping RDC and some of the other embedded folks. Given an AMD
+and VIA ACK I'd be fine. I doubt anyone knows any more what Cyrix CPUs
+did or cared about and I imagine H Peter or Linus can answer for
+Transmeta ;-)
 
-Because its not needed. Really I dont know why you want that.
-
-Once you are sure a thread cannot be interrupted by a softirq, and
-cannot migrate to another cpu, access to percpu data doesnt need other
-synchronization at all.
-
-Following sequence is safe :
-
-addend = (__this_cpu_read(xt_recseq.sequence) + 1) & 1;
-/*
- * This is kind of a write_seqcount_begin(), but addend is 0 or 1
- * We dont check addend value to avoid a test and conditional jump,
- * since addend is most likely 1
- */
-__this_cpu_add(xt_recseq.sequence, addend);
-
-Because any other thread will use a different percpu data.
+Alan
 
 
