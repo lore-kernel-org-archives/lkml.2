@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab2JZPvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:51:54 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59906 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964928Ab2JZPvu (ORCPT
+	id S965092Ab2JZPwl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:52:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34890 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964822Ab2JZPwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:51:50 -0400
+	Fri, 26 Oct 2012 11:52:39 -0400
+Date: Fri, 26 Oct 2012 17:52:38 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [PATCH] x86/dt: use linear irq domain for ioapic(s).
+Message-ID: <20121026155238.GB8459@linutronix.de>
+References: <1343890270-13007-1-git-send-email-thierry.reding@avionic-design.de>
+ <502252C8.3090600@linutronix.de>
+ <loom.20121019T133451-621@post.gmane.org>
+ <6899584.nNROmkLzNS@flexo>
 MIME-Version: 1.0
-In-Reply-To: <20121024160253.GB6567@Super-MAGI>
-References: <20121024160253.GB6567@Super-MAGI>
-Date: Fri, 26 Oct 2012 23:51:48 +0800
-Message-ID: <CAD+1EGM6iipgo=hRja0rr=X0d4kGsO4rZOTpLOwXdeN2u-20FA@mail.gmail.com>
-Subject: Re: [PATCH]Documentation:Chinese translation of Documentation/arm64/memory.txt
-From: harryxiyou <harryxiyou@gmail.com>
-To: Tekkaman Ninja <tekkamanninja@gmail.com>
-Cc: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel@vger.linux-kernel.cn, Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <6899584.nNROmkLzNS@flexo>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/25 Tekkaman Ninja <tekkamanninja@gmail.com>:
-> This is a Chinese translated version of
-> Documentation/arm64/memory.txt
+* Florian Fainelli | 2012-10-19 15:40:29 [+0200]:
+
+>On Friday 19 October 2012 11:36:25  Fainelli wrote:
+>> Sebastian Andrzej Siewior <bigeasy <at> linutronix.de> writes:
+>> > 
+>> > No. You do have a compatible entry. It first appeared on the ce4100
+>> > CPU. If it happens to also work on the n450 then it seems to be
+>> > compatible with that one. "This" is documented somewhere???
+>> > Usually you add 'compatible = "your cpu", "generic binding"' in case
+>> > you need a fixup / errata whatever for "your cpu". Even if you compare
+>> > all hpets from Intel there is the one or other difference / errata.
+>> 
+>> Can we make sure that his hits the future 3.6 stable releases? We had to merge
+>> this back to your 3.6 kernel tree in order to have a functionnal CE4100 system.
+>> 
+>> Thank you!
 >
-> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
->
+>Adding Adding Thomas, Ingo and Sebastian in CC.
 
-Acked-by: Harry Wei <harryxiyou@gmail.com>
+If someone needs it, yes. My understanding was that Thierry said we need
+a few OF specific patches and this alone won't help. Care to backport
+and test & post it?
 
-Thanks for your good job ;-)
+>--
+>Florian
 
--- 
-Thanks
-Harry Wei
+Sebastian
