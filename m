@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab2JZQsR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:48:17 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45750 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab2JZQsL (ORCPT
+	id S1754228Ab2JZQs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:48:27 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:16962 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab2JZQsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:48:11 -0400
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter LaDow <petela@gocougs.wsu.edu>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	 <1350925299.8609.978.camel@edumazet-glaptop>
-	 <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-	 <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
-	 <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
-	 <1351053164.6537.95.camel@edumazet-glaptop>
-	 <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+	Fri, 26 Oct 2012 12:48:16 -0400
+Message-ID: <1351270093.4013.29.camel@lorien2>
+Subject: [PATCH RFT linux-next] frv: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: dhowells@redhat.com
+Cc: LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 10:48:13 -0600
+Organization: ISS-Linux
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Oct 2012 18:48:07 +0200
-Message-ID: <1351270087.30380.9.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 09:15 -0700, Peter LaDow wrote:
-> On Tue, Oct 23, 2012 at 9:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > Could you try following patch ?
-> 
-> So, I applied your patch.  And so far, it seems to have fixed the
-> issue.  I've had my systems running for 48 hours, and no lockup in
-> iptables.  Usually, I could get a lockup to occur within 12 to 24
-> hours, and running this long tells me this patch may have things
-> fixed.
-> 
-> Now, I have a couple of questions.
-> 
-> First, I'm not sure how this actually fixes things.  It does seem
-> there was a race before.  But it isn't clear to me how this patch
-> eliminates the race.  I fear that this patch only reduces the window
-> in which a race could occur, but doesn't eliminate it completely.
->  
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-...
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/frv/include/asm/dma-mapping.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-> Second, perhaps use seqlock_t instead of a seqcount_t for xt_recseq?
-> This eliminates the problem.  But given that it has been using
-> seqcount_t for a long time, and is still using it, and nobody else has
-> had this issue appear, makes me wonder if this problem isn't something
-> unique to the RT patches.  Perhaps only use seqlock_t in built for
-> PREEMPT_RT_FULL?
-> 
-> Third, recent RT patches (such as 3.6.2-rt4) have added
-> preempt_disable_rt() and preempt_enable_rt() calls inside of
-> read_seqcount_begin() and write_seqcount_end() respectively.  The call
-> to local_bh_disable/local_bh_enable doesn't do anything to
-> disable/enable preemption (in 3.6.2-rt4), but it does in 3.03.36-rt58.
->  But in 3.0.36-rt58 it only did so if not in an atomic context.  And
-> it doesn't appear to be an atomic context since local_bh_disable
-> increments preempt_count by SOFTIRQ_OFFSET.  And it appeared that
-> building with SMP enabled, even though it did call
-> preempt_disable_rt(), indirectly, through local_bh_disable(), but the
-> lockup still occurred.
-> 
-> Finally, after more testing, if this patch proves a solution to the
-> problem, we could apply it locally.  But what kind of testing would be
-> required as part of a submission back to the general kernel/RT folk?
-> The patch is easy enough to generate, but if it can't be proven that
-> this patch actually fixes anything, I fail to see how it would be
-> useful.
-> 
-> Thanks,
-> Pete LaDow
-
-
-Upstream kernel is fine, there is no race, as long as :
-
-local_bh_disable() disables BH and preemption.
-
-Apparently RT changes this, so RT needs to change the code.
-
-cmpxchg() has strong guarantees (and is also slower than upstream code),
-and seems a reasonable way to fix RT/iptables
+diff --git a/arch/frv/include/asm/dma-mapping.h b/arch/frv/include/asm/dma-mapping.h
+index dfb8110..d8a8aac 100644
+--- a/arch/frv/include/asm/dma-mapping.h
++++ b/arch/frv/include/asm/dma-mapping.h
+@@ -6,6 +6,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/scatterlist.h>
+ #include <asm/io.h>
++#include <linux/dma-debug.h>
+ 
+ /*
+  * See Documentation/DMA-API.txt for the description of how the
+@@ -97,6 +98,7 @@ void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nele
+ static inline
+ int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
++	debug_dma_mapping_error(dev, dma_addr);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
 
 
