@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab2JZRRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:17:10 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:61717 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756440Ab2JZRRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:17:06 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/BZ1nHUQPosPAVNn4rWeoR
-Date: Fri, 26 Oct 2012 10:16:55 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, linux@arm.linux.org.uk,
-        b-cousson@ti.com, arnd@arndb.de, olof@lixom.net, rdunlap@xenotime.net,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
-Message-ID: <20121026171655.GI11908@atomide.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
- <1349675983-23803-2-git-send-email-kishon@ti.com>
- <20121016165043.GS15569@atomide.com>
- <20121025004806.GK11928@atomide.com>
- <20121025061722.GB4449@arwen.pp.htv.fi>
- <20121025174446.GT11928@atomide.com>
- <20121026064736.GA22206@arwen.pp.htv.fi>
+	id S1757799Ab2JZRSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:18:01 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59948 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756874Ab2JZRR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 13:17:58 -0400
+Date: Fri, 26 Oct 2012 10:15:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc changes for 3.7-rc3
+Message-ID: <20121026171500.GA11293@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121026064736.GA22206@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [121025 23:55]:
-> On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
-> > * Felipe Balbi <balbi@ti.com> [121024 23:24]:
-> > > Hi,
-> > > 
-> > > On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
-> > > > * Tony Lindgren <tony@atomide.com> [121016 09:53]:
-> > > > > * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
-> > > > > > ocp2scp was not having pdata support which makes *musb* fail for non-dt
-> > > > > > boot in OMAP platform. The pdata will have information about the devices
-> > > > > > that is connected to ocp2scp. ocp2scp driver will now make use of this
-> > > > > > information to create the devices that is attached to ocp2scp.
-> > > > > > 
-> > > > > > Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> > > > > 
-> > > > > This fixes the regression on my panda es for musb port:
-> > > > > 
-> > > > > Acked-by: Tony Lindgren <tony@atomide.com>
-> > > > 
-> > > > Looks like nobody has picked this one up and we need it to
-> > > > fix the musb regression on omap, so I'll queue these up.
-> > > 
-> > > I don't seem to have the patches around in any mailbox :-(
-> > 
-> > Bounced them to you. Do you have any better ideas for the
-> > -rc cycle to fix the MUSB regression on omap4?
-> 
-> Well, there are two regressions that I know of. One is caused by the
-> mode1 DMA changes, which I'll just revert, and the other is the
-> missing platform_data support on the new PHY driver which these patches
-> are supposed to solve, right ?
+The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
 
-Yes that's it AFAIK.
+  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
 
-Regards,
+are available in the git repository at:
 
-Tony
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.7-rc3
+
+for you to fetch changes up to 2cb55a2f47a3c695a0105b7fc04a3b70c3bc4e4f:
+
+  sonypi: suspend/resume callbacks should be conditionally compiled on CONFIG_PM_SLEEP (2012-10-25 12:05:50 -0700)
+
+----------------------------------------------------------------
+Char/misc driver fixes for 3.7-rc3
+
+Here are some driver fixes for 3.7.  They include extcon driver fixes, a
+hyper-v bugfix, and two other minor driver fixes.
+
+All of these have been in the linux-next releases for a while.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Axel Lin (4):
+      extcon: adc-jack: Fix checking return value of request_any_context_irq
+      extcon: adc-jack: Add missing MODULE_LICENSE
+      extcon: Fix kerneldoc for extcon_set_cable_state and extcon_set_cable_state_
+      extcon: max77693: Use max77693_update_reg for rmw operations
+
+Chanwoo Choi (1):
+      extcon: MAX77693: Add platform data for MUIC device to initialize registers
+
+Devendra Naga (1):
+      extcon-max8997: remove usage of ret in max8997_muic_handle_charger_type_detach
+
+Greg Kroah-Hartman (1):
+      Merge tag 'fixes-for-3.7' of git://git.kernel.org/.../mzx/extcon into char-misc-linus
+
+Jenny TC (1):
+      extcon : register for cable interest by cable name
+
+K. Y. Srinivasan (1):
+      Drivers: hv: Cleanup error handling in vmbus_open()
+
+Peter Huewe (2):
+      extcon: Unregister compat class at module unload to fix oops
+      extcon: unregister compat link on cleanup
+
+Sachin Kamat (2):
+      extcon: Remove duplicate inclusion of extcon.h header file
+      extcon: Fix return value in extcon_register_interest()
+
+Yuanhan Liu (1):
+      sonypi: suspend/resume callbacks should be conditionally compiled on CONFIG_PM_SLEEP
+
+anish kumar (4):
+      extcon: standard cable names definition and declaration changed
+      extcon: optimising the check_mutually_exclusive function
+      extcon: driver model release call not needed
+      extcon: trivial: kfree missed from remove path
+
+ drivers/char/sonypi.c            |   2 +-
+ drivers/extcon/extcon-adc-jack.c |  10 +++++--
+ drivers/extcon/extcon-class.c    | 142 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------
+ drivers/extcon/extcon-gpio.c     |   1 -
+ drivers/extcon/extcon-max77693.c |  46 +++++++++++++++++++++++--------
+ drivers/extcon/extcon-max8997.c  |   6 ++--
+ drivers/hv/channel.c             |  24 ++++++++--------
+ include/linux/extcon.h           |   2 +-
+ include/linux/mfd/max77693.h     |  13 +++++++++
+ 9 files changed, 152 insertions(+), 94 deletions(-)
