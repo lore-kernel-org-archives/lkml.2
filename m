@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934151Ab2JZVKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:10:21 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40167 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966544Ab2JZVKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:10:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to use freezable_schedule()
-Date: Fri, 26 Oct 2012 23:14:17 +0200
-Message-ID: <2566006.UzAQbpOjNQ@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <20121026180149.GA22421@redhat.com>
-References: <20121023153919.GA16201@redhat.com> <20121026175258.GV11442@htj.dyndns.org> <20121026180149.GA22421@redhat.com>
+	id S966567Ab2JZVKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:10:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57867 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934123Ab2JZVKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 17:10:41 -0400
+Date: Fri, 26 Oct 2012 17:10:33 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Martin <marogge@onlinehome.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
+        stable@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121026211033.GD8614@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Martin <marogge@onlinehome.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
+	stable@vger.kernel.org, gregkh@linuxfoundation.org
+References: <jXNl8-5m5-13@gated-at.bofh.it>
+ <jXNOa-5MR-23@gated-at.bofh.it>
+ <jXPGh-87s-5@gated-at.bofh.it>
+ <jXTJW-4CH-55@gated-at.bofh.it>
+ <jXUZj-6mo-13@gated-at.bofh.it>
+ <jXVLH-7kO-5@gated-at.bofh.it>
+ <jXW53-7CC-5@gated-at.bofh.it>
+ <jXWeJ-7Lk-1@gated-at.bofh.it>
+ <50882787.3030504@onlinehome.de>
+ <508AEEF7.8060301@onlinehome.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508AEEF7.8060301@onlinehome.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 26, 2012 08:01:49 PM Oleg Nesterov wrote:
-> On 10/26, Tejun Heo wrote:
-> >
-> >  Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks!
-> 
-> > Rafael, sorry that this one doesn't have pm cc'd
-> 
-> Ah, sorry Rafael. Yes, I have read you email, and I was going to
-> add linux-pm but forgot.
-> 
-> > but can you please
-> > pick up this one too?
-> 
-> Please, and thanks.
+This looks very different.  The symptoms are quite different, and it's
+most likely that an unclean shutdown is involved.  In your case,
+you're doing clean shutdowns, with some suspend/resume cycles thrown
+in.  Also, kernel version 3.5.5 doesn't have the commits that were
+added between 3.6.1 and 3.6.3.
 
-OK, but that will go to Linus in the next batch.
+Are you running e2fsck to fix the file system consistency problems;
+what is e2fsck reporting?
 
-Thanks,
-Rafael
+Do you need to have a suspend/resume in order to trigger the problem?
 
+This could very be some kind of hardware problem or kernel bug related
+to suspend/resume.  Unfortunately, many different problems get noticed
+by the file system, but the root cause is can often be something else;
+a hardware problem, or a bug somewhere else in the kernel.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards,
+
+						- Ted
+
+P.S.  Can you do us a favor and start a separate mail thread with the
+information reposted?  It's can get hard to track different cases when
+a lot of people assume that their random failure (some of which are
+hardware problems) are related to the issue we are trying to track
+down in this mail thread and then they all pile onto the same mail
+thread or the same web forum --- one of the reasons why I detest
+Ubuntu Launchpad.  Thanks!!
