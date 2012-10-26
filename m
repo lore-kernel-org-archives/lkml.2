@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2JZBib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 21:38:31 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50690 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2JZBia (ORCPT
+	id S1752891Ab2JZBkO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:40:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25339 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab2JZBkM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 21:38:30 -0400
-Date: Thu, 25 Oct 2012 18:38:22 -0700
+	Thu, 25 Oct 2012 21:40:12 -0400
+Date: Thu, 25 Oct 2012 18:39:58 -0700
 From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@citrix.com>,
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: xen-devel <xen-devel@lists.xen.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH 5/5] xen: x86 pvh: use
- XENMEM_add_to_physmap_range for foreign gmfn mappings
-Message-ID: <20121025183822.1ec77078@mantra.us.oracle.com>
-In-Reply-To: <1351084777-28898-5-git-send-email-ian.campbell@citrix.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
+ needed for privcmd mappings.
+Message-ID: <20121025183958.0a4ae846@mantra.us.oracle.com>
+In-Reply-To: <1351151219.18035.94.camel@zakaz.uk.xensource.com>
 References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
-	<1351084777-28898-5-git-send-email-ian.campbell@citrix.com>
+	<1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
+	<20121024164411.5b000087@mantra.us.oracle.com>
+	<20121024170746.7c89a790@mantra.us.oracle.com>
+	<1351151219.18035.94.camel@zakaz.uk.xensource.com>
 Organization: Oracle Corporation
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Oct 2012 14:19:37 +0100
-Ian Campbell <ian.campbell@citrix.com> wrote:
+On Thu, 25 Oct 2012 08:46:59 +0100
+Ian Campbell <Ian.Campbell@citrix.com> wrote:
 
-> Squeezing the necessary fields into the existing XENMEM_add_to_physmap
-> interface was proving to be a bit tricky so we have decided to go with
-> a new interface upstream (the XENMAPSPACE_gmfn_foreign interface using
-> XENMEM_add_to_physmap was never committed anywhere). This interface
-> also allows for batching which was impossible to support at the same
-> time as foreign mfns in the old interface.
+> On Thu, 2012-10-25 at 01:07 +0100, Mukesh Rathor wrote:
+> > On Wed, 24 Oct 2012 16:44:11 -0700
+> > Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
+> > 
+> > > >  
+> > > > +    /* Indexes into space being mapped. */
+> > > > +    GUEST_HANDLE(xen_ulong_t) idxs;
+> > > > +
+> > > > +    /* GPFN in domid where the source mapping page should
+> > > > appear. */
+> > > > +    GUEST_HANDLE(xen_pfn_t) gpfns;
+> > > 
+> > > 
+> > > Looking at your arm implementation in xen, doesn't look like you
+> > > are expecting idxs and gpfns to be contigous. In that case,
+> > > shouldn't idxs and gpfns be pointers, ie, they are sent down as
+> > > arrays? Or does GUEST_HANDLE do that, I can't seem to find where
+> > > it's defined quickly.
+> > 
+> > Never mind, I see it got corrected to XEN_GUEST_HANDLE in staging
+> > tree.
 > 
-> This reverts the relevant parts of "PVH: basic and header changes,
-> elfnote changes, ..." and followups and trivially converts
-> pvh_add_to_xen_p2m over.
+> The macro is called XEN_GUEST_HANDLE in Xen and just GUEST_HANDLE in
+> Linux.
 > 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Still doesn't compile tho:
+> > 
+> > public/memory.h:246: error: expected specifier-qualifier-list before
+> > ‘__guest_handle_xen_ulong_t’
+> > 
+> > I'll figure it out.
+> 
+> Looks like you've got it all sorted?
 
-Ok, I made the change on the xen side for x86 and tested it out. Works
-fine. Second ack.
+Yup. I made the change on xen side and added this patch to my tree
+and got it working after reverting Konrad's setup.c changes. Not sure
+if you need an ack from x86, but if you do:
 
-thanks, 
+Acked-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+
+thanks
 Mukesh
 
