@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab2JZAYU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:24:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53567 "EHLO mail.kernel.org"
+	id S1754202Ab2JZAHo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53484 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab2JZAHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:45 -0400
+	id S1754153Ab2JZAHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 27/85] USB: iuu_phoenix: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:45 -0700
-Message-Id: <20121026000033.844046877@linuxfoundation.org>
+        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>
+Subject: [ 21/85] usb: acm: fix the computation of the number of data bits
+Date: Thu, 25 Oct 2012 17:05:39 -0700
+Message-Id: <20121026000033.246145177@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,131 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Nicolas Boullis <nboullis@debian.org>
 
-commit 53636555b9190f88320d9d46cf142f8797895456 upstream.
+commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+The current code assumes that CSIZE is 0000060, which appears to be
+wrong on some arches (such as powerpc).
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Nicolas Boullis <nboullis@debian.org>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/iuu_phoenix.c |   70 ++++++++++++++++-----------------------
- 1 file changed, 30 insertions(+), 40 deletions(-)
+ drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/iuu_phoenix.c
-+++ b/drivers/usb/serial/iuu_phoenix.c
-@@ -80,64 +80,54 @@ struct iuu_private {
- 	u32 clk;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -818,10 +818,6 @@ static const __u32 acm_tty_speed[] = {
+ 	2500000, 3000000, 3500000, 4000000
  };
  
+-static const __u8 acm_tty_size[] = {
+-	5, 6, 7, 8
+-};
 -
--static void iuu_free_buf(struct iuu_private *priv)
-+static int iuu_port_probe(struct usb_serial_port *port)
+ static void acm_tty_set_termios(struct tty_struct *tty,
+ 						struct ktermios *termios_old)
  {
--	kfree(priv->buf);
--	kfree(priv->dbgbuf);
--	kfree(priv->writebuf);
--}
-+	struct iuu_private *priv;
-+
-+	priv = kzalloc(sizeof(struct iuu_private), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
- 
--static int iuu_alloc_buf(struct iuu_private *priv)
--{
- 	priv->buf = kzalloc(256, GFP_KERNEL);
--	priv->dbgbuf = kzalloc(256, GFP_KERNEL);
--	priv->writebuf = kzalloc(256, GFP_KERNEL);
--	if (!priv->buf || !priv->dbgbuf || !priv->writebuf) {
--		iuu_free_buf(priv);
--		dbg("%s problem allocation buffer", __func__);
-+	if (!priv->buf) {
-+		kfree(priv);
- 		return -ENOMEM;
- 	}
--	dbg("%s - Privates buffers allocation success", __func__);
--	return 0;
--}
- 
--static int iuu_startup(struct usb_serial *serial)
--{
--	struct iuu_private *priv;
--	priv = kzalloc(sizeof(struct iuu_private), GFP_KERNEL);
--	dbg("%s- priv allocation success", __func__);
--	if (!priv)
-+	priv->writebuf = kzalloc(256, GFP_KERNEL);
-+	if (!priv->writebuf) {
-+		kfree(priv->buf);
-+		kfree(priv);
- 		return -ENOMEM;
--	if (iuu_alloc_buf(priv)) {
+@@ -835,7 +831,21 @@ static void acm_tty_set_termios(struct t
+ 	newline.bParityType = termios->c_cflag & PARENB ?
+ 				(termios->c_cflag & PARODD ? 1 : 2) +
+ 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
+-	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		newline.bDataBits = 5;
++		break;
++	case CS6:
++		newline.bDataBits = 6;
++		break;
++	case CS7:
++		newline.bDataBits = 7;
++		break;
++	case CS8:
++	default:
++		newline.bDataBits = 8;
++		break;
 +	}
-+
-+	priv->dbgbuf = kzalloc(256, GFP_KERNEL);
-+	if (!priv->writebuf) {
-+		kfree(priv->writebuf);
-+		kfree(priv->buf);
- 		kfree(priv);
- 		return -ENOMEM;
- 	}
-+
- 	priv->vcc = vcc_default;
- 	spin_lock_init(&priv->lock);
- 	init_waitqueue_head(&priv->delta_msr_wait);
--	usb_set_serial_port_data(serial->port[0], priv);
-+
-+	usb_set_serial_port_data(port, priv);
-+
- 	return 0;
- }
+ 	/* FIXME: Needs to clear unsupported bits in the termios */
+ 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
  
--/* Release function */
--static void iuu_release(struct usb_serial *serial)
-+static int iuu_port_remove(struct usb_serial_port *port)
- {
--	struct usb_serial_port *port = serial->port[0];
- 	struct iuu_private *priv = usb_get_serial_port_data(port);
--	if (!port)
--		return;
--
--	if (priv) {
--		iuu_free_buf(priv);
--		dbg("%s - I will free all", __func__);
--		usb_set_serial_port_data(port, NULL);
- 
--		dbg("%s - priv is not anymore in port structure", __func__);
--		kfree(priv);
-+	kfree(priv->dbgbuf);
-+	kfree(priv->writebuf);
-+	kfree(priv->buf);
-+	kfree(priv);
- 
--		dbg("%s priv is now kfree", __func__);
--	}
-+	return 0;
- }
- 
- static int iuu_tiocmset(struct tty_struct *tty,
-@@ -1241,8 +1231,8 @@ static struct usb_serial_driver iuu_devi
- 	.tiocmset = iuu_tiocmset,
- 	.set_termios = iuu_set_termios,
- 	.init_termios = iuu_init_termios,
--	.attach = iuu_startup,
--	.release = iuu_release,
-+	.port_probe = iuu_port_probe,
-+	.port_remove = iuu_port_remove,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
 
 
