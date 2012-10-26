@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab2JZPSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:18:14 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55501 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932078Ab2JZPSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:18:12 -0400
-Message-ID: <508AA965.7080003@linux.vnet.ibm.com>
-Date: Fri, 26 Oct 2012 08:16:53 -0700
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S933776Ab2JZPSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:18:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41153 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2JZPSb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 11:18:31 -0400
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
-Subject: Re: [PATCH] page_alloc: fix the incorrect adjustment to zone->present_pages
-References: <1351245581-16652-1-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1351245581-16652-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1350570453-24546-4-git-send-email-p.zabel@pengutronix.de>
+References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de> <1350570453-24546-4-git-send-email-p.zabel@pengutronix.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Fri, 26 Oct 2012 11:18:00 -0400
+X-Google-Sender-Auth: W2iU4rPrgiDANEN6joN5sH8M2MM
+Message-ID: <CAP=VYLo6CRg9goGivS6h0avfP6cqQZzvsTEGQp=Ky3npmtxcDg@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] misc: sram: Add optional clock
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        kernel@pengutronix.de, devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102615-1976-0000-0000-000012BB3B8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 02:59 AM, Lai Jiangshan wrote:
-> Current free_area_init_core() has incorrect adjustment code to adjust
-> ->present_pages. It will cause ->present_pages overflow, make the
-> system unusable(can't create any process/thread in our test) and cause further problem.
-> 
-> Details:
-> 1) Some/many ZONEs don't have memory which is used by memmap.
->    { Or all the actual memory used for memmap is much less than the "memmap_pages"
->    (memmap_pages = PAGE_ALIGN(span_size * sizeof(struct page)) >> PAGE_SHIFT)
->    CONFIG_SPARSEMEM is an example. }
+On Thu, Oct 18, 2012 at 10:27 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> On some platforms the SRAM needs a clock to be enabled explicitly.
 
-Reading this code, the use of 'size' (which you correctly note is better
-titled 'span_size') looks potentially wrong in the sparsemem cases
-because the mem_map[] can have holes.  But, if we just replaced
-'span_size' with 'realsize' it would probably be wrong in the sparsemem
-case.
+Since this is a file that you've just created in the previous commit,
+I don't see why this needs to exist as a standalone commit, vs just
+being folded back into the previous commit?
 
-> 2) incorrect adjustment in free_area_init_core(): zone->present_pages -= memmap_pages
-> 3) but the zone has big hole, it causes the result of zone->present_pages become much smaller
-> 4) when we offline a/several memory section of the zone: zone->present_pages -= offline_size
-> 5) Now, zone->present_pages will/may be *OVERFLOW*.
-> 
-> So the adjustment is dangerous and incorrect.
-> 
-> Addition 1:
-> And in current kernel, the memmaps have nothing related/bound to any ZONE:
-> 	FLATMEM: global memmap
-> 	CONFIG_DISCONTIGMEM: node-specific memmap
-> 	CONFIG_SPARSEMEM: memorysection-specific memmap
-> None of them is ZONE-specific memmap, and the memory used for memmap is not bound to any ZONE.
-> So the adjustment "zone->present_pages -= memmap_pages" subtracts unrelated value
-> and makes no sense.
+P.
+--
 
-You're right, mem_map[]s are not really _part_ of a zone.  But, we don't
-keep track of watermarks on the basis of nodes or sections, we only keep
-them on zones.  So, if we want to adjust those watermarks to make up for
-the memory that the mem_map[] eats, we don't have a choice to do it
-other than in the zone.
-
-> Addition 2:
-> We introduced this adjustment and tried to make page-reclaim/watermark happier,
-> but the adjustment is wrong in current kernel, and even makes page-reclaim/watermark
-> worse. It is against its original purpose/reason.
-> 
-> This adjustment is incorrect/buggy, subtracts unrelated value and violates its original
-> purpose, so we simply remove the adjustment.
-
-I don't think you can just remove it.  I agree that it needs to get
-fixed, but nuking it isn't the answer.
-
-I there a reason this would not work if we did this (I mean logically...
-please don't do #ifdef monstrosities in code like this):
-
-	spanned_size = zone_spanned_pages_in_node(nid, j,
-						zones_size);
-	realsize = size - zone_absent_pages_in_node(nid, j,
-						zholes_size);
-
-#ifdef CONFIG_HOLES_IN_ZONE
-	zone_size_for_memmap = realsize;
-#else
-	zone_size_for_memmap = spanned_size;
-#endif
-
-The other option for the sparsemem cases would be to go back at this
-point and try to figure out in exactly which zones the bootmem-allocated
-mem_map[]s now lie.
-
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index bb90971..6bf72e3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4455,30 +4455,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
-> 
->  	for (j = 0; j < MAX_NR_ZONES; j++) {
->  		struct zone *zone = pgdat->node_zones + j;
-> -		unsigned long size, realsize, memmap_pages;
-> +		unsigned long size, realsize;
-> 
->  		size = zone_spanned_pages_in_node(nid, j, zones_size);
->  		realsize = size - zone_absent_pages_in_node(nid, j,
->  								zholes_size);
-> 
-> -		/*
-> -		 * Adjust realsize so that it accounts for how much memory
-> -		 * is used by this zone for memmap. This affects the watermark
-> -		 * and per-cpu initialisations
-> -		 */
-> -		memmap_pages =
-> -			PAGE_ALIGN(size * sizeof(struct page)) >> PAGE_SHIFT;
-> -		if (realsize >= memmap_pages) {
-> -			realsize -= memmap_pages;
-> -			if (memmap_pages)
-> -				printk(KERN_DEBUG
-> -				       "  %s zone: %lu pages used for memmap\n",
-> -				       zone_names[j], memmap_pages);
-
-I was actually kind of fond of that printk, despite it being imprecise.
-
+>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/misc/sram.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> index 7a363f2..0cc2e75 100644
+> --- a/drivers/misc/sram.c
+> +++ b/drivers/misc/sram.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+> @@ -29,6 +31,7 @@
+>
+>  struct sram_dev {
+>         struct gen_pool *pool;
+> +       struct clk *clk;
+>  };
+>
+>  static int __devinit sram_probe(struct platform_device *pdev)
+> @@ -53,6 +56,10 @@ static int __devinit sram_probe(struct platform_device *pdev)
+>         if (!sram)
+>                 return -ENOMEM;
+>
+> +       sram->clk = devm_clk_get(&pdev->dev, NULL);
+> +       if (!IS_ERR(sram->clk))
+> +               clk_prepare_enable(sram->clk);
+> +
+>         sram->pool = gen_pool_create(PAGE_SHIFT, -1);
+>         if (!sram->pool)
+>                 return -ENOMEM;
+> @@ -80,6 +87,9 @@ static int __devexit sram_remove(struct platform_device *pdev)
+>
+>         gen_pool_destroy(sram->pool);
+>
+> +       if (!IS_ERR(sram->clk))
+> +               clk_disable_unprepare(sram->clk);
+> +
+>         return 0;
+>  }
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
