@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966511Ab2JZUgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:36:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3927 "EHLO mga14.intel.com"
+	id S966499Ab2JZUgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:36:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50696 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759033Ab2JZUa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759063Ab2JZUa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 16:30:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="209846069"
+   d="scan'208";a="211355412"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 29/33] perf, tools: Add perf stat --transaction v2
-Date: Fri, 26 Oct 2012 13:30:11 -0700
-Message-Id: <1351283415-13170-30-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 11/33] perf, tools: Support sorting by intx, abort branch flags
+Date: Fri, 26 Oct 2012 13:29:53 -0700
+Message-Id: <1351283415-13170-12-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,231 +25,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Add support to perf stat to print the basic transactional execution statistics:
-Total cycles, Cycles in Transaction, Cycles in aborted transsactions
-using the intx and intx_checkpoint qualifiers.
-Transaction Starts and Elision Starts, to compute the average transaction length.
+Extend the perf branch sorting code to support sorting by intx
+or abort qualifiers. Also print out those qualifiers.
 
-This is a reasonable overview over the success of the transactions.
-
-Enable with a new --transaction / -T option.
-
-This requires measuring these events in a group, since they depend on each
-other.
-
-This is implemented by using TM sysfs events exported by the kernel
-
-v2: Only print the extended statistics when the option is enabled.
-This avoids negative output when the user specifies the -T events
-in separate groups.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-stat.txt |    3 +
- tools/perf/builtin-stat.c              |  101 +++++++++++++++++++++++++++++++-
- tools/perf/util/evsel.h                |    6 ++
- 3 files changed, 107 insertions(+), 3 deletions(-)
+ tools/perf/builtin-report.c |    3 +-
+ tools/perf/builtin-top.c    |    4 ++-
+ tools/perf/perf.h           |    4 ++-
+ tools/perf/util/hist.h      |    2 +
+ tools/perf/util/sort.c      |   55 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/sort.h      |    2 +
+ 6 files changed, 67 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 2fa173b..653bdbd 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -108,7 +108,10 @@ with it.  --append may be used here.  Examples:
-      3>results  perf stat --log-fd 3          -- $cmd
-      3>>results perf stat --log-fd 3 --append -- $cmd
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a61725d..d46f887 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -595,7 +595,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+-		   " dso_from, symbol_to, symbol_from, mispredict"),
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ff6db80..3861118 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1221,7 +1221,9 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
++		   " dso_from, symbol_to, symbol_from, mispredict, srcline,"
++		   " abort, intx"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_DEFAULT('G', "call-graph", &top, "output_type,min_percent, call_order",
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index c50985e..22a5502 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -194,7 +194,9 @@ struct ip_callchain {
+ struct branch_flags {
+ 	u64 mispred:1;
+ 	u64 predicted:1;
+-	u64 reserved:62;
++	u64 intx:1;
++	u64 abort:1;
++	u64 reserved:60;
+ };
  
-+-T::
-+--transaction::
+ struct branch_entry {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 66cb31f..d918a1a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -43,6 +43,8 @@ enum hist_column {
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
+ 	HISTC_MISPREDICT,
++	HISTC_INTX,
++	HISTC_ABORT,
+ 	HISTC_SYMBOL_FROM,
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index cfd1c0f..a8d1f1a 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -476,6 +476,55 @@ struct sort_entry sort_mispredict = {
+ 	.se_width_idx	= HISTC_MISPREDICT,
+ };
  
-+Print statistics of transactional execution if supported.
- 
- EXAMPLES
- --------
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 93b9011..a451490 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -64,6 +64,29 @@
- #define CNTR_NOT_SUPPORTED	"<not supported>"
- #define CNTR_NOT_COUNTED	"<not counted>"
- 
-+static const char *transaction_attrs[] = {
-+	"task-clock",
-+	"{"
-+	"instructions,"
-+	"cycles,"
-+	"cpu/cycles-t/,"
-+	"cpu/cycles-ct/,"
-+	"cpu/tx-start/,"
-+	"cpu/el-start/"
-+	"}"
-+};
-+
-+/* must match the transaction_attrs above */
-+enum {
-+	T_TASK_CLOCK,
-+	T_INSTRUCTIONS,
-+	T_CYCLES,
-+	T_CYCLES_INTX,
-+	T_CYCLES_INTX_CP,
-+	T_TRANSACTION_START,
-+	T_ELISION_START
-+};
-+
- static struct perf_evlist	*evsel_list;
- 
- static struct perf_target	target = {
-@@ -77,6 +100,7 @@ static bool			no_aggr				= false;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
- static int			detailed_run			=  0;
-+static bool			transaction_run			=  false;
- static bool			big_num				=  true;
- static int			big_num_opt			=  -1;
- static const char		*csv_sep			= NULL;
-@@ -123,7 +147,11 @@ static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
- static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_intx_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_intxcp_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
-+static struct stats runtime_transaction_stats[MAX_NR_CPUS];
-+static struct stats runtime_elision_stats[MAX_NR_CPUS];
- 
- static int create_perf_stat_counter(struct perf_evsel *evsel,
- 				    struct perf_evsel *first)
-@@ -183,6 +211,18 @@ static inline int nsec_counter(struct perf_evsel *evsel)
- 	return 0;
- }
- 
-+static struct perf_evsel *nth_evsel(int n)
++static int64_t
++sort__abort_cmp(struct hist_entry *left, struct hist_entry *right)
 +{
-+	struct perf_evsel *ev;
-+	int j;
-+
-+	j = 0;
-+	list_for_each_entry (ev, &evsel_list->entries, node)
-+		if (j++ == n)
-+			return ev;
-+	return NULL;
++	return left->branch_info->flags.abort !=
++		right->branch_info->flags.abort;
 +}
 +
++static int hist_entry__abort_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.abort)
++		out = "A";
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_abort = {
++	.se_header	= "Transaction abort",
++	.se_cmp		= sort__abort_cmp,
++	.se_snprintf	= hist_entry__abort_snprintf,
++	.se_width_idx	= HISTC_ABORT,
++};
++
++static int64_t
++sort__intx_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return left->branch_info->flags.intx !=
++		right->branch_info->flags.intx;
++}
++
++static int hist_entry__intx_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	static const char *out = ".";
++
++	if (self->branch_info->flags.intx)
++		out = "T";
++
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_intx = {
++	.se_header	= "Branch in transaction",
++	.se_cmp		= sort__intx_cmp,
++	.se_snprintf	= hist_entry__intx_snprintf,
++	.se_width_idx	= HISTC_INTX,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -497,6 +546,8 @@ static struct sort_dimension sort_dimensions[] = {
+ 	DIM(SORT_CPU, "cpu", sort_cpu),
+ 	DIM(SORT_MISPREDICT, "mispredict", sort_mispredict),
+ 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
++	DIM(SORT_ABORT, "abort", sort_abort),
++	DIM(SORT_INTX, "intx", sort_intx)
+ };
+ 
+ int sort_dimension__add(const char *tok)
+@@ -553,6 +604,10 @@ int sort_dimension__add(const char *tok)
+ 				sort__first_dimension = SORT_DSO_TO;
+ 			else if (!strcmp(sd->name, "mispredict"))
+ 				sort__first_dimension = SORT_MISPREDICT;
++			else if (!strcmp(sd->name, "intx"))
++				sort__first_dimension = SORT_INTX;
++			else if (!strcmp(sd->name, "abort"))
++				sort__first_dimension = SORT_ABORT;
+ 		}
+ 
+ 		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 5786f32..10cf155 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -100,6 +100,8 @@ enum sort_type {
+ 	SORT_SYM_TO,
+ 	SORT_MISPREDICT,
+ 	SORT_SRCLINE,
++	SORT_ABORT,
++	SORT_INTX,
+ };
+ 
  /*
-  * Update various tracking values we maintain to print
-  * more semantic information such as miss/hit ratios,
-@@ -194,8 +234,14 @@ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- 		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
- 		update_stats(&runtime_cycles_stats[0], count[0]);
--	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
--		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX)))
-+		update_stats(&runtime_cycles_intx_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_CYCLES_INTX_CP)))
-+		update_stats(&runtime_cycles_intxcp_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
-+		update_stats(&runtime_transaction_stats[0], count[0]);
-+	else if (perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
-+		update_stats(&runtime_elision_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
- 		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
-@@ -633,7 +679,7 @@ static void print_ll_cache_misses(int cpu,
- 
- static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- {
--	double total, ratio = 0.0;
-+	double total, ratio = 0.0, total2;
- 	char cpustr[16] = { '\0', };
- 	const char *fmt;
- 
-@@ -733,6 +779,41 @@ static void abs_printout(int cpu, struct perf_evsel *evsel, double avg)
- 			ratio = 1.0 * avg / total;
- 
- 		fprintf(output, " # %8.3f GHz                    ", ratio);
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX)) && 
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% transactional cycles   ",
-+				100.0 * (avg / total));
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_INTX_CP)) &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total2 = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+		if (total)
-+			fprintf(output,
-+				" #   %5.2f%% aborted cycles         ",
-+				100.0 * ((total2-avg) / total));
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_intx_stats[cpu].n != 0 &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / transaction ", ratio);
-+	} else if (perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
-+		   avg > 0 &&
-+		   runtime_cycles_intx_stats[cpu].n != 0 &&
-+		   transaction_run) {
-+		total = avg_stats(&runtime_cycles_intx_stats[cpu]);
-+
-+		if (total)
-+			ratio = total / avg;
-+
-+		fprintf(output, " # %8.0f cycles / elision     ", ratio);
- 	} else if (runtime_nsecs_stats[cpu].n != 0) {
- 		char unit = 'M';
- 
-@@ -1039,6 +1120,18 @@ static int add_default_attributes(void)
- 	if (null_run)
- 		return 0;
- 
-+	if (transaction_run) {
-+		unsigned i;
-+
-+		for (i = 0; i < ARRAY_SIZE(transaction_attrs); i++) {
-+			if (parse_events(evsel_list, transaction_attrs[i], 0)) {
-+				fprintf(stderr, "Cannot set up transaction events\n");
-+				return -1;
-+			}
-+		}
-+		return 0;
-+	}
-+
- 	if (!evsel_list->nr_entries) {
- 		if (perf_evlist__add_default_attrs(evsel_list, default_attrs) < 0)
- 			return -1;
-@@ -1114,6 +1207,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "append", &append_file, "append to the output file"),
- 	OPT_INTEGER(0, "log-fd", &output_fd,
- 		    "log output to fd, instead of stderr"),
-+	OPT_BOOLEAN('T', "transaction", &transaction_run,
-+		    "hardware transaction statistics"),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 6f94d6d..418405e 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -158,6 +158,12 @@ static inline bool perf_evsel__match2(struct perf_evsel *e1,
- 	       (e1->attr.config == e2->attr.config);
- }
- 
-+#define perf_evsel__cmp(a, b)			\
-+	((a) &&					\
-+	 (b) &&					\
-+	 (a)->attr.type == (b)->attr.type &&	\
-+	 (a)->attr.config == (b)->attr.config)
-+
- int __perf_evsel__read_on_cpu(struct perf_evsel *evsel,
- 			      int cpu, int thread, bool scale);
- 
 -- 
 1.7.7.6
 
