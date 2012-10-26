@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab2JZLiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:38:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57407 "EHLO mx2.suse.de"
+	id S932414Ab2JZLia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:38:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932347Ab2JZLiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:38:04 -0400
+	id S932370Ab2JZLiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:38:07 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Balbir Singh <bsingharora@gmail.com>,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v3 1/6] memcg: split mem_cgroup_force_empty into reclaiming and reparenting parts
-Date: Fri, 26 Oct 2012 13:37:28 +0200
-Message-Id: <1351251453-6140-2-git-send-email-mhocko@suse.cz>
+Subject: [PATCH v3 6/6] hugetlb: do not fail in hugetlb_cgroup_pre_destroy
+Date: Fri, 26 Oct 2012 13:37:33 +0200
+Message-Id: <1351251453-6140-7-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
 References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
@@ -24,150 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_force_empty did two separate things depending on free_all
-parameter from the very beginning. It either reclaimed as many pages as
-possible and moved the rest to the parent or just moved charges to the
-parent. The first variant is used as memory.force_empty callback while
-the later is used from the mem_cgroup_pre_destroy.
-
-The whole games around gotos are far from being nice and there is no
-reason to keep those two functions inside one. Let's split them and
-also move the responsibility for css reference counting to their callers
-to make to code easier.
-
-This patch doesn't have any functional changes.
+Now that pre_destroy callbacks are called from the context where neither
+any task can attach the group nor any children group can be added there
+is no other way to fail from hugetlb_pre_destroy.
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
 Reviewed-by: Tejun Heo <tj@kernel.org>
 ---
- mm/memcontrol.c |   72 ++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 42 insertions(+), 30 deletions(-)
+ mm/hugetlb_cgroup.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 795e525..07d92b8 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3739,27 +3739,21 @@ static bool mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
- }
- 
- /*
-- * make mem_cgroup's charge to be 0 if there is no task.
-+ * make mem_cgroup's charge to be 0 if there is no task by moving
-+ * all the charges and pages to the parent.
-  * This enables deleting this mem_cgroup.
-+ *
-+ * Caller is responsible for holding css reference on the memcg.
-  */
--static int mem_cgroup_force_empty(struct mem_cgroup *memcg, bool free_all)
-+static int mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
+diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
+index a3f358f..dc595c6 100644
+--- a/mm/hugetlb_cgroup.c
++++ b/mm/hugetlb_cgroup.c
+@@ -159,14 +159,9 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
  {
--	int ret;
--	int node, zid, shrink;
--	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
- 	struct cgroup *cgrp = memcg->css.cgroup;
-+	int node, zid;
-+	int ret;
+ 	struct hstate *h;
+ 	struct page *page;
+-	int ret = 0, idx = 0;
++	int idx = 0;
  
--	css_get(&memcg->css);
--
--	shrink = 0;
--	/* should free all ? */
--	if (free_all)
--		goto try_to_free;
--move_account:
  	do {
--		ret = -EBUSY;
- 		if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
--			goto out;
-+			return -EBUSY;
- 		/* This is for making all *used* pages to be on LRU. */
- 		lru_add_drain_all();
- 		drain_all_stock_sync(memcg);
-@@ -3783,27 +3777,34 @@ move_account:
- 		cond_resched();
- 	/* "ret" should also be checked to ensure all lists are empty. */
- 	} while (res_counter_read_u64(&memcg->res, RES_USAGE) > 0 || ret);
--out:
--	css_put(&memcg->css);
-+
- 	return ret;
-+}
-+
-+/*
-+ * Reclaims as many pages from the given memcg as possible and moves
-+ * the rest to the parent.
-+ *
-+ * Caller is responsible for holding css reference for memcg.
-+ */
-+static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
-+{
-+	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
-+	struct cgroup *cgrp = memcg->css.cgroup;
- 
--try_to_free:
- 	/* returns EBUSY if there is a task or if we come here twice. */
--	if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children) || shrink) {
--		ret = -EBUSY;
--		goto out;
--	}
-+	if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
-+		return -EBUSY;
-+
- 	/* we call try-to-free pages for make this cgroup empty */
- 	lru_add_drain_all();
- 	/* try to free all pages in this cgroup */
--	shrink = 1;
- 	while (nr_retries && res_counter_read_u64(&memcg->res, RES_USAGE) > 0) {
- 		int progress;
- 
--		if (signal_pending(current)) {
--			ret = -EINTR;
+-		if (cgroup_task_count(cgroup) ||
+-		    !list_empty(&cgroup->children)) {
+-			ret = -EBUSY;
 -			goto out;
 -		}
-+		if (signal_pending(current))
-+			return -EINTR;
+ 		for_each_hstate(h) {
+ 			spin_lock(&hugetlb_lock);
+ 			list_for_each_entry(page, &h->hugepage_activelist, lru)
+@@ -177,8 +172,8 @@ static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+ 		}
+ 		cond_resched();
+ 	} while (hugetlb_cgroup_have_usage(cgroup));
+-out:
+-	return ret;
 +
- 		progress = try_to_free_mem_cgroup_pages(memcg, GFP_KERNEL,
- 						false);
- 		if (!progress) {
-@@ -3814,13 +3815,19 @@ try_to_free:
- 
- 	}
- 	lru_add_drain();
--	/* try move_account...there may be some *locked* pages. */
--	goto move_account;
-+	return mem_cgroup_reparent_charges(memcg);
++	return 0;
  }
  
- static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
- {
--	return mem_cgroup_force_empty(mem_cgroup_from_cont(cont), true);
-+	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-+	int ret;
-+
-+	css_get(&memcg->css);
-+	ret = mem_cgroup_force_empty(memcg);
-+	css_put(&memcg->css);
-+
-+	return ret;
- }
- 
- 
-@@ -5003,8 +5010,13 @@ free_out:
- static int mem_cgroup_pre_destroy(struct cgroup *cont)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-+	int ret;
- 
--	return mem_cgroup_force_empty(memcg, false);
-+	css_get(&memcg->css);
-+	ret = mem_cgroup_reparent_charges(memcg);
-+	css_put(&memcg->css);
-+
-+	return ret;
- }
- 
- static void mem_cgroup_destroy(struct cgroup *cont)
+ int hugetlb_cgroup_charge_cgroup(int idx, unsigned long nr_pages,
 -- 
 1.7.10.4
 
