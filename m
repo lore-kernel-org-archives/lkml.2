@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2JZBkO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 21:40:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25339 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab2JZBkM convert rfc822-to-8bit (ORCPT
+	id S1751659Ab2JZBnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:43:51 -0400
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:64925 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2JZBnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 21:40:12 -0400
-Date: Thu, 25 Oct 2012 18:39:58 -0700
-From: Mukesh Rathor <mukesh.rathor@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: xen-devel <xen-devel@lists.xen.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
- needed for privcmd mappings.
-Message-ID: <20121025183958.0a4ae846@mantra.us.oracle.com>
-In-Reply-To: <1351151219.18035.94.camel@zakaz.uk.xensource.com>
-References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
-	<1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
-	<20121024164411.5b000087@mantra.us.oracle.com>
-	<20121024170746.7c89a790@mantra.us.oracle.com>
-	<1351151219.18035.94.camel@zakaz.uk.xensource.com>
-Organization: Oracle Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 25 Oct 2012 21:43:50 -0400
+Message-ID: <5089EA98.9070004@ce.jp.nec.com>
+Date: Fri, 26 Oct 2012 10:42:48 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH 2/2] dm: stay in blk_queue_bypass until queue becomes
+ initialized
+References: <50890937.7010809@ce.jp.nec.com>
+In-Reply-To: <50890937.7010809@ce.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Oct 2012 08:46:59 +0100
-Ian Campbell <Ian.Campbell@citrix.com> wrote:
-
-> On Thu, 2012-10-25 at 01:07 +0100, Mukesh Rathor wrote:
-> > On Wed, 24 Oct 2012 16:44:11 -0700
-> > Mukesh Rathor <mukesh.rathor@oracle.com> wrote:
-> > 
-> > > >  
-> > > > +    /* Indexes into space being mapped. */
-> > > > +    GUEST_HANDLE(xen_ulong_t) idxs;
-> > > > +
-> > > > +    /* GPFN in domid where the source mapping page should
-> > > > appear. */
-> > > > +    GUEST_HANDLE(xen_pfn_t) gpfns;
-> > > 
-> > > 
-> > > Looking at your arm implementation in xen, doesn't look like you
-> > > are expecting idxs and gpfns to be contigous. In that case,
-> > > shouldn't idxs and gpfns be pointers, ie, they are sent down as
-> > > arrays? Or does GUEST_HANDLE do that, I can't seem to find where
-> > > it's defined quickly.
-> > 
-> > Never mind, I see it got corrected to XEN_GUEST_HANDLE in staging
-> > tree.
+On 10/25/12 18:41, Jun'ichi Nomura wrote:
+> With 749fefe677 ("block: lift the initial queue bypass mode on
+> blk_register_queue() instead of blk_init_allocated_queue()"),
+> add_disk() eventually calls blk_queue_bypass_end().
+> This change invokes the following warning when multipath is used.
+...
+> The warning means during queue initialization blk_queue_bypass_start()
+> calls sleeping function (synchronize_rcu) while dm holds md->type_lock.
 > 
-> The macro is called XEN_GUEST_HANDLE in Xen and just GUEST_HANDLE in
-> Linux.
+> dm device initialization basically includes the following 3 steps:
+>   1. create ioctl, allocates queue and call add_disk()
+>   2. table load ioctl, determines device type and initialize queue
+>      if request-based
+>   3. resume ioctl, device becomes functional
 > 
-> > Still doesn't compile tho:
-> > 
-> > public/memory.h:246: error: expected specifier-qualifier-list before
-> > ‘__guest_handle_xen_ulong_t’
-> > 
-> > I'll figure it out.
+> So it is better to have dm's queue stay in bypass mode until
+> the initialization completes in table load ioctl.
 > 
-> Looks like you've got it all sorted?
+> The effect of additional blk_queue_bypass_start():
+> 
+>   3.7-rc2 (plain)
+>     # time for n in $(seq 1000); do dmsetup create --noudevsync --notable a; \
+>                                     dmsetup remove a; done
+> 
+>     real  0m15.434s
+>     user  0m0.423s
+>     sys   0m7.052s
+> 
+>   3.7-rc2 (with this patch)
+>     # time for n in $(seq 1000); do dmsetup create --noudevsync --notable a; \
+>                                     dmsetup remove a; done
+>     real  0m19.766s
+>     user  0m0.442s
+>     sys   0m6.861s
+> 
+> If this additional cost is not negligible, we need a variant of add_disk()
+> that does not end bypassing.
 
-Yup. I made the change on xen side and added this patch to my tree
-and got it working after reverting Konrad's setup.c changes. Not sure
-if you need an ack from x86, but if you do:
+Or call blk_queue_bypass_start() before add_disk():
 
-Acked-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index ad02761..d14639b 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1868,9 +1868,9 @@ static struct mapped_device *alloc_dev(int minor)
+ 	md->disk->queue = md->queue;
+ 	md->disk->private_data = md;
+ 	sprintf(md->disk->disk_name, "dm-%d", minor);
+-	add_disk(md->disk);
+ 	/* Until md type is determined, put the queue in bypass mode */
+ 	blk_queue_bypass_start(md->queue);
++	add_disk(md->disk);
+ 	format_dev_t(md->name, MKDEV(_major, minor));
+ 
+ 	md->wq = alloc_workqueue("kdmflush",
+---
 
-thanks
-Mukesh
+If the patch is modified like above, we could fix the issue
+without incurring additional cost on dm device creation.
+
+# time for n in $(seq 1000); do dmsetup create --noudevsync --notable a; \
+                                dmsetup remove a; done
+
+real	0m15.684s
+user	0m0.404s
+sys	0m7.181s
+
+-- 
+Jun'ichi Nomura, NEC Corporation
 
