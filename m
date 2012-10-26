@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2JZA1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:27:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53474 "EHLO mail.kernel.org"
+	id S1754989Ab2JZA2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:28:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53435 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753402Ab2JZAHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:35 -0400
+	id S1754074Ab2JZAHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 33/85] USB: pl2303: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:51 -0700
-Message-Id: <20121026000034.447295680@linuxfoundation.org>
+Subject: [ 29/85] USB: ark3116: fix NULL-pointer dereference
+Date: Thu, 25 Oct 2012 17:05:47 -0700
+Message-Id: <20121026000034.045371363@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,197 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 8bf769eb5f6efc33f95088850f33fcc05d28b508 upstream.
+commit 7bdce71822f471433dd3014692e9096996c7b5f0 upstream.
 
-Fix port-data memory leak by allocating and freeing port data in
-port_probe/remove rather than in attach/release, and by introducing
-serial private data to store the device type which is interface rather
-than port specific.
+Fix NULL-pointer dereference at release by replacing attach and release
+with port_probe and port_remove.
 
 Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release.
+driver is bound) the port private data is NULL when release is called.
+
+Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |   90 ++++++++++++++++++++++++++------------------
- 1 file changed, 54 insertions(+), 36 deletions(-)
+ drivers/usb/serial/ark3116.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -135,12 +135,15 @@ enum pl2303_type {
- 	HX,		/* HX version of the pl2303 chip */
- };
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -126,9 +126,6 @@ static inline int calc_divisor(int bps)
  
-+struct pl2303_serial_private {
-+	enum pl2303_type type;
-+};
-+
- struct pl2303_private {
- 	spinlock_t lock;
- 	wait_queue_head_t delta_msr_wait;
- 	u8 line_control;
- 	u8 line_status;
--	enum pl2303_type type;
- };
- 
- static int pl2303_vendor_read(__u16 value, __u16 index,
-@@ -169,14 +172,19 @@ static int pl2303_vendor_write(__u16 val
- 
- static int pl2303_startup(struct usb_serial *serial)
+ static int ark3116_attach(struct usb_serial *serial)
  {
--	struct pl2303_private *priv;
-+	struct pl2303_serial_private *spriv;
- 	enum pl2303_type type = type_0;
- 	unsigned char *buf;
--	int i;
-+
-+	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
-+	if (!spriv)
-+		return -ENOMEM;
+-	struct usb_serial_port *port = serial->port[0];
+-	struct ark3116_private *priv;
+-
+ 	/* make sure we have our end-points */
+ 	if ((serial->num_bulk_in == 0) ||
+ 	    (serial->num_bulk_out == 0) ||
+@@ -143,8 +140,15 @@ static int ark3116_attach(struct usb_ser
+ 		return -EINVAL;
+ 	}
  
- 	buf = kmalloc(10, GFP_KERNEL);
--	if (buf == NULL)
-+	if (!buf) {
-+		kfree(spriv);
- 		return -ENOMEM;
-+	}
- 
- 	if (serial->dev->descriptor.bDeviceClass == 0x02)
- 		type = type_0;
-@@ -188,15 +196,8 @@ static int pl2303_startup(struct usb_ser
- 		type = type_1;
- 	dev_dbg(&serial->interface->dev, "device type: %d\n", type);
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		priv = kzalloc(sizeof(struct pl2303_private), GFP_KERNEL);
--		if (!priv)
--			goto cleanup;
--		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->delta_msr_wait);
--		priv->type = type;
--		usb_set_serial_port_data(serial->port[i], priv);
--	}
-+	spriv->type = type;
-+	usb_set_serial_data(serial, spriv);
- 
- 	pl2303_vendor_read(0x8484, 0, serial, buf);
- 	pl2303_vendor_write(0x0404, 0, serial);
-@@ -215,15 +216,40 @@ static int pl2303_startup(struct usb_ser
- 
- 	kfree(buf);
- 	return 0;
-+}
- 
--cleanup:
--	kfree(buf);
--	for (--i; i >= 0; --i) {
--		priv = usb_get_serial_port_data(serial->port[i]);
--		kfree(priv);
--		usb_set_serial_port_data(serial->port[i], NULL);
--	}
--	return -ENOMEM;
-+static void pl2303_release(struct usb_serial *serial)
-+{
-+	struct pl2303_serial_private *spriv;
-+
-+	spriv = usb_get_serial_data(serial);
-+	kfree(spriv);
+-	priv = kzalloc(sizeof(struct ark3116_private),
+-		       GFP_KERNEL);
++	return 0;
 +}
 +
-+static int pl2303_port_probe(struct usb_serial_port *port)
++static int ark3116_port_probe(struct usb_serial_port *port)
 +{
-+	struct pl2303_private *priv;
++	struct usb_serial *serial = port->serial;
++	struct ark3116_private *priv;
 +
 +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&priv->lock);
-+	init_waitqueue_head(&priv->delta_msr_wait);
-+
-+	usb_set_serial_port_data(port, priv);
-+
-+	return 0;
-+}
-+
-+static int pl2303_port_remove(struct usb_serial_port *port)
-+{
-+	struct pl2303_private *priv;
-+
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+@@ -199,18 +203,15 @@ static int ark3116_attach(struct usb_ser
+ 	return 0;
+ }
+ 
+-static void ark3116_release(struct usb_serial *serial)
++static int ark3116_port_remove(struct usb_serial_port *port)
+ {
+-	struct usb_serial_port *port = serial->port[0];
+ 	struct ark3116_private *priv = usb_get_serial_port_data(port);
+ 
+ 	/* device is closed, so URBs and DMA should be down */
+-
+-	usb_set_serial_port_data(port, NULL);
+-
+ 	mutex_destroy(&priv->hw_lock);
+-
+ 	kfree(priv);
 +
 +	return 0;
  }
  
- static int set_control_lines(struct usb_device *dev, u8 value)
-@@ -242,6 +268,7 @@ static void pl2303_set_termios(struct tt
- 		struct usb_serial_port *port, struct ktermios *old_termios)
- {
- 	struct usb_serial *serial = port->serial;
-+	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
- 	struct pl2303_private *priv = usb_get_serial_port_data(port);
- 	unsigned long flags;
- 	unsigned int cflag;
-@@ -325,7 +352,7 @@ static void pl2303_set_termios(struct tt
- 		}
- 		if (baud > 1228800) {
- 			/* type_0, type_1 only support up to 1228800 baud */
--			if (priv->type != HX)
-+			if (spriv->type != HX)
- 				baud = 1228800;
- 			else if (baud > 6000000)
- 				baud = 6000000;
-@@ -428,7 +455,7 @@ static void pl2303_set_termios(struct tt
- 	     buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
- 
- 	if (cflag & CRTSCTS) {
--		if (priv->type == HX)
-+		if (spriv->type == HX)
- 			pl2303_vendor_write(0x0, 0x61, serial);
- 		else
- 			pl2303_vendor_write(0x0, 0x41, serial);
-@@ -470,10 +497,10 @@ static int pl2303_open(struct tty_struct
- {
- 	struct ktermios tmp_termios;
- 	struct usb_serial *serial = port->serial;
--	struct pl2303_private *priv = usb_get_serial_port_data(port);
-+	struct pl2303_serial_private *spriv = usb_get_serial_data(serial);
- 	int result;
- 
--	if (priv->type != HX) {
-+	if (spriv->type != HX) {
- 		usb_clear_halt(serial->dev, port->write_urb->pipe);
- 		usb_clear_halt(serial->dev, port->read_urb->pipe);
- 	} else {
-@@ -657,17 +684,6 @@ static void pl2303_break_ctl(struct tty_
- 		dev_err(&port->dev, "error sending break = %d\n", result);
- }
- 
--static void pl2303_release(struct usb_serial *serial)
--{
--	int i;
--	struct pl2303_private *priv;
--
--	for (i = 0; i < serial->num_ports; ++i) {
--		priv = usb_get_serial_port_data(serial->port[i]);
--		kfree(priv);
--	}
--}
--
- static void pl2303_update_line_status(struct usb_serial_port *port,
- 				      unsigned char *data,
- 				      unsigned int actual_length)
-@@ -829,6 +845,8 @@ static struct usb_serial_driver pl2303_d
- 	.read_int_callback =	pl2303_read_int_callback,
- 	.attach =		pl2303_startup,
- 	.release =		pl2303_release,
-+	.port_probe =		pl2303_port_probe,
-+	.port_remove =		pl2303_port_remove,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
+ static void ark3116_init_termios(struct tty_struct *tty)
+@@ -725,7 +726,8 @@ static struct usb_serial_driver ark3116_
+ 	.id_table =		id_table,
+ 	.num_ports =		1,
+ 	.attach =		ark3116_attach,
+-	.release =		ark3116_release,
++	.port_probe =		ark3116_port_probe,
++	.port_remove =		ark3116_port_remove,
+ 	.set_termios =		ark3116_set_termios,
+ 	.init_termios =		ark3116_init_termios,
+ 	.ioctl =		ark3116_ioctl,
 
 
