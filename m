@@ -1,178 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab2JZAv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:51:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52283 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab2JZAFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=2013/31=5D=20USB=3A=20option=3A=20blacklist=20net=20interface=20on=20ZTE=20devices?=
-Date: Thu, 25 Oct 2012 17:04:20 -0700
-Message-Id: <20121026000216.309731281@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
-References: <20121026000214.941721299@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1752642Ab2JZAxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:53:25 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63244 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab2JZAxX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:53:23 -0400
+X-AuditID: 9c930197-b7c4aae000004160-3b-5089deff9205
+Date: Fri, 26 Oct 2012 09:58:51 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] Support volatile range for anon vma
+Message-ID: <20121026005851.GD15767@bbox>
+References: <1351133820-14096-1-git-send-email-minchan@kernel.org>
+ <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Hi Christoph,
 
-------------------
+On Thu, Oct 25, 2012 at 03:19:27PM +0000, Christoph Lameter wrote:
+> On Thu, 25 Oct 2012, Minchan Kim wrote:
+> 
+> >  #endif
+> > +	/*
+> > +	 * True if page in this vma is reclaimed.
+> 
+> What does that mean? All pages in the vma have been cleared out?
 
-From: Bjørn Mork <bjorn@mork.no>
+It means at least, more than one is reclaimed.
+Comment should have been cleared.
 
-commit 1452df6f1b7e396d89c2a1fdbdc0e0e839f97671 upstream.
+> 
+> > +	TTU_IGNORE_VOLATILE = (1 << 11),/* ignore volatile */
+> >  };
+> >  #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
+> >
+> >  int try_to_unmap(struct page *, enum ttu_flags flags);
+> >  int try_to_unmap_one(struct page *, struct vm_area_struct *,
+> > -			unsigned long address, enum ttu_flags flags);
+> > +			unsigned long address, enum ttu_flags flags,
+> > +			bool *is_volatile);
+> 
+> You already pass a vma pointer in. Why do you need to pass a
+> volatile flag in? Looks like unecessary churn.
 
-Based on information from the ZTE Windows drivers.
+You mean we can use vma->purged instead of is_volatile passing?
+The is_volatile is just checking for that all of vmas share the page
+are volatile ones. Then, vma->purged is just checking for that the page
+is zapped in the vma. If one of vma share the page isn't volatile, we can't zap.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+BTW, Christoph, what do you think about the goal of the patch which changes
+munmap(2) to madvise(2) when user calls free(3) in user allocator like glibc?
+I guess it would improve system performance very well.
+But as I wrote down in description, downside of the patch is that we have to
+age anon lru although we don't have swap. But gain via the patch is bigger than
+loss via aging of anon lru when memory pressure happens. I don't see other downside
+other than it. What do you think about it?
+(I didn't implement anon lru aging in case of no-swap but it's trivial
+once we decide)
 
----
- drivers/usb/serial/option.c |   74 ++++++++++++++++++++++++++++++--------------
- 1 file changed, 52 insertions(+), 22 deletions(-)
+Thanks for the review, Christoph
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -503,11 +503,19 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(5),
- };
- 
-+static const struct option_blacklist_info net_intf6_blacklist = {
-+	.reserved = BIT(6),
-+};
-+
- static const struct option_blacklist_info zte_mf626_blacklist = {
- 	.sendsetup = BIT(0) | BIT(1),
- 	.reserved = BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_1255_blacklist = {
-+	.reserved = BIT(3) | BIT(4),
-+};
-+
- static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -853,13 +861,19 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0117, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0118, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0121, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0118, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0121, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0122, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0123, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0124, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0125, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0123, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0124, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0125, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf6_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0126, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0128, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0142, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0143, 0xff, 0xff, 0xff) },
-@@ -872,7 +886,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0156, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0157, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf5_blacklist },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0158, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0159, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0161, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0162, 0xff, 0xff, 0xff) },
-@@ -880,9 +895,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1010, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff, 0xff) },
-@@ -998,18 +1016,24 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1169, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1170, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1244, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1245, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1245, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1246, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1247, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1247, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1248, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1249, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1250, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1251, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1252, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1252, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1253, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1254, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1255, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1256, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1254, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1255, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&zte_1255_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1256, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1257, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1258, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1259, 0xff, 0xff, 0xff) },
-@@ -1067,15 +1091,21 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0070, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0073, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0094, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0133, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0133, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0147, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0152, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0168, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0168, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0170, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0176, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0176, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0178, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-
+-- 
+Kind regards,
+Minchan Kim
