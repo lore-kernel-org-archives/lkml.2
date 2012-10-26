@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965657Ab2JZRxK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:53:10 -0400
-Received: from fieldses.org ([174.143.236.118]:41542 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965580Ab2JZRxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:53:07 -0400
-Date: Fri, 26 Oct 2012 13:52:54 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
- connecting local transports
-Message-ID: <20121026175254.GA13094@fieldses.org>
-References: <20121008105437.18668.99905.stgit@localhost.localdomain>
- <20121009193506.GA19680@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
- <87txu3bdnj.fsf@xmission.com>
- <20121009223139.GA25826@fieldses.org>
- <87bogb1cvl.fsf@xmission.com>
- <20121010012336.GA2935@fieldses.org>
- <50754EBC.5020608@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50754EBC.5020608@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934035Ab2JZRzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:55:53 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53663 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932894Ab2JZRzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 13:55:51 -0400
+From: Yan Hong <clouds.yan@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] debugfs: pass NULL as the last parameter of debugfs_print_regs32()
+Date: Sat, 27 Oct 2012 01:55:42 +0800
+Message-Id: <1351274144-31591-1-git-send-email-clouds.yan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 10, 2012 at 02:32:28PM +0400, Stanislav Kinsbursky wrote:
-> 10.10.2012 05:23, J. Bruce Fields пишет:
-> >On Tue, Oct 09, 2012 at 03:47:42PM -0700, Eric W. Biederman wrote:
-> >>"J. Bruce Fields" <bfields@fieldses.org> writes:
-> >>
-> >>>On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
-> >>>>"Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
-> >>>>
-> >>>>>On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
-> >>>>>>Cc'ing Eric since I seem to recall he suggested doing it this way?
-> >>>>
-> >>>>Yes.  On second look setting fs->root won't work. We need to change fs.
-> >>>>The problem is that by default all kernel threads share fs so changing
-> >>>>fs->root will have non-local consequences.
-> >>>
-> >>>Oh, huh.  And we can't "unshare" it somehow?
-> >>
-> >>I don't fully understand how nfs uses kernel threads and work queues.
-> >>My general understanding is work queues reuse their kernel threads
-> >>between different users.  So it is mostly a don't pollute your
-> >>environment thing.  If there was a dedicated kernel thread for each
-> >>environment this would be trivial.
-> >>
-> >>What I was suggesting here is changing task->fs instead of
-> >>task->fs.root.  That should just require task_lock().
-> >
-> >Oh, OK, got it--if that works, great.
-> >
-> 
-> The main problem with swapping fs struct is actually the same as in
-> root swapping. I.e. routines for copy fs_struct are not exported.
-> It could be done on place, but I don't think, that Al Viro would
-> support such implementation.
-> Trond?
+Pass NULL instead of empty string to debugfs_print_regs32() when
+prefix is not used, according to the intention of the code.
 
-It seems like we got stalled here....  Could you go ahead and try a
-patch, and see what people think?
+Signed-off-by: Yan Hong <clouds.yan@gmail.com>
+---
+ drivers/usb/dwc3/debugfs.c |    2 +-
+ fs/debugfs/file.c          |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---b.
+diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
+index d4a30f1..6557272 100644
+--- a/drivers/usb/dwc3/debugfs.c
++++ b/drivers/usb/dwc3/debugfs.c
+@@ -382,7 +382,7 @@ static int dwc3_regdump_show(struct seq_file *s, void *unused)
+ 
+ 	seq_printf(s, "DesignWare USB3 Core Register Dump\n");
+ 	debugfs_print_regs32(s, dwc3_regs, ARRAY_SIZE(dwc3_regs),
+-			     dwc->regs, "");
++			     dwc->regs, NULL);
+ 	return 0;
+ }
+ 
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..3915cc9 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -668,7 +668,8 @@ static int debugfs_show_regset32(struct seq_file *s, void *data)
+ {
+ 	struct debugfs_regset32 *regset = s->private;
+ 
+-	debugfs_print_regs32(s, regset->regs, regset->nregs, regset->base, "");
++	debugfs_print_regs32(s, regset->regs, regset->nregs,
++					regset->base, NULL);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
