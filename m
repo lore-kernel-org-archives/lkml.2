@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2JZAnA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:43:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52720 "EHLO mail.kernel.org"
+	id S1753704Ab2JZAnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:43:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52706 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753363Ab2JZAG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:26 -0400
+	id S1753348Ab2JZAGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andreas Krebbel <Andreas.Krebbel@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 07/42] s390: fix linker script for 31 bit builds
-Date: Thu, 25 Oct 2012 17:05:15 -0700
-Message-Id: <20121026000125.528217147@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [ 06/42] oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
+Date: Thu, 25 Oct 2012 17:05:14 -0700
+Message-Id: <20121026000125.435950403@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -27,54 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit c985cb37f1b39c2c8035af741a2a0b79f1fbaca7 upstream.
+commit 44009105081b51417f311f4c3be0061870b6b8ed upstream.
 
-Because of a change in the s390 arch backend of binutils (commit 23ecd77
-"Pick the default arch depending on the target size" in binutils repo)
-31 bit builds will fail since the linker would now try to create 64 bit
-binary output.
-Fix this by setting OUTPUT_ARCH to s390:31-bit instead of s390.
-Thanks to Andreas Krebbel for figuring out the issue.
+The "event" variable is a u16 so the shift will always wrap to zero
+making the line a no-op.
 
-Fixes this build error:
-
-  LD      init/built-in.o
-s390x-4.7.2-ld: s390:31-bit architecture of input file
- `arch/s390/kernel/head.o' is incompatible with s390:64-bit output
-
-Cc: Andreas Krebbel <Andreas.Krebbel@de.ibm.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/boot/compressed/vmlinux.lds.S |    2 +-
- arch/s390/kernel/vmlinux.lds.S          |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/oprofile/nmi_int.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/boot/compressed/vmlinux.lds.S
-+++ b/arch/s390/boot/compressed/vmlinux.lds.S
-@@ -5,7 +5,7 @@ OUTPUT_FORMAT("elf64-s390", "elf64-s390"
- OUTPUT_ARCH(s390:64-bit)
- #else
- OUTPUT_FORMAT("elf32-s390", "elf32-s390", "elf32-s390")
--OUTPUT_ARCH(s390)
-+OUTPUT_ARCH(s390:31-bit)
- #endif
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -55,7 +55,7 @@ u64 op_x86_get_ctrl(struct op_x86_model_
+ 	val |= counter_config->extra;
+ 	event &= model->event_mask ? model->event_mask : 0xFF;
+ 	val |= event & 0xFF;
+-	val |= (event & 0x0F00) << 24;
++	val |= (u64)(event & 0x0F00) << 24;
  
- ENTRY(startup)
---- a/arch/s390/kernel/vmlinux.lds.S
-+++ b/arch/s390/kernel/vmlinux.lds.S
-@@ -8,7 +8,7 @@
- 
- #ifndef CONFIG_64BIT
- OUTPUT_FORMAT("elf32-s390", "elf32-s390", "elf32-s390")
--OUTPUT_ARCH(s390)
-+OUTPUT_ARCH(s390:31-bit)
- ENTRY(startup)
- jiffies = jiffies_64 + 4;
- #else
+ 	return val;
+ }
 
 
