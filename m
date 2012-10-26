@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab2JZJec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:34:32 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59471 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752149Ab2JZJe2 (ORCPT
+	id S1758030Ab2JZJfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:35:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:10959 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab2JZJfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:34:28 -0400
-Date: Fri, 26 Oct 2012 10:34:08 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ni zhan Chen <nizhan.chen@gmail.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on
- access fault.
-Message-ID: <20121026093407.GD20914@mudshark.cambridge.arm.com>
-References: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
- <508A2B8B.7020608@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508A2B8B.7020608@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Oct 2012 05:35:45 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-89-508a596f2661
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-mm-sig@lists.linaro.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] Urgent DMA-mapping fix for v3.7-rc3
+Date: Fri, 26 Oct 2012 11:35:35 +0200
+Message-id: <1351244135-12703-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFJMWRmVeSWpSXmKPExsVy+t9jAd38yK4Ag5OLhSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG8rftjAX9nBWHO16xNTDeYO9i5OSQEDCR+PZ5EguELSZx4d56
+	ti5GLg4hgUWMEt1XTrNDOCuYJL7MWcIEUsUmYCjR9baLDcQWETCS+PziCitIEbPAVEaJr62z
+	wBLCAuYS56f8YgaxWQRUJVpuvQaL8wp4SPRPuMDYxcgBtE5BYs4kmwmM3AsYGVYxiqYWJBcU
+	J6XnGukVJ+YWl+al6yXn525iBPvwmfQOxlUNFocYBTgYlXh4N6R1BgixJpYVV+YeYpTgYFYS
+	4d09FSjEm5JYWZValB9fVJqTWnyIUZqDRUmct9kjJUBIID2xJDU7NbUgtQgmy8TBKdXAGNV+
+	P6XyQenxtMPGbdY9pgdeS74JPHtwxvwZa/ZJxriJrVgsMPX/vs4r7DNEnZ2Nmn2mbozYv6Lg
+	I0u2vYNE2AH/5jXPLEyOMd/5uyZE7vSfbJfA7b/43Tf7ZbzmKPiXblV2eNHHaZorX/dIBq+I
+	bl7sYjwl83nsi1bFr45X5Wzn+Vw2mCzfqcRSnJFoqMVcVJwIAFP36gXdAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 07:19:55AM +0100, Ni zhan Chen wrote:
-> On 10/26/2012 12:44 AM, Will Deacon wrote:
-> > On x86 memory accesses to pages without the ACCESSED flag set result in the
-> > ACCESSED flag being set automatically. With the ARM architecture a page access
-> > fault is raised instead (and it will continue to be raised until the ACCESSED
-> > flag is set for the appropriate PTE/PMD).
-> >
-> > For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> > setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> > be called for a write fault.
-> >
-> > This patch ensures that faults on transparent hugepages which do not result
-> > in a CoW update the access flags for the faulting pmd.
-> 
-> Could you write changlog?
+Hi Linus,
 
->From v2? I included something below my SoB. The code should do exactly the
-same as before, it's just rebased onto next so that I can play nicely with
-Peter's patches.
+I would like to ask for pulling an urgent fix for ARM DMA-mapping
+framework for v3.7-rc3. Due to my mistake, my previous pull request
+(merged as cff7b8ba60e332377568c3d55c8036e9b1de32e6) contained a patch
+which is aimed for v3.8 and lacks its dependences. This pull request
+reverts it and fixes build break of ARM architecture.
 
-> >
-> > Cc: Chris Metcalf <cmetcalf@tilera.com>
-> > Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> > Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
-> > ---
-> >
-> > Ok chaps, I rebased this thing onto today's next (which basically
-> > necessitated a rewrite) so I've reluctantly dropped my acks and kindly
-> > ask if you could eyeball the new code, especially where the locking is
-> > concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
-> > that the page is not splitting, but I can't see why that is required.
-> >
-> > Cheers,
-> >
-> > Will
-> 
-> Could you explain why you not call pmd_trans_huge_lock to confirm the 
-> pmd is splitting or stable as Andrea point out?
+Thanks!
 
-The way handle_mm_fault is now structured after the numa changes means that
-we only enter the huge pmd page aging code if the entry wasn't splitting
-before taking the lock, so it seemed a bit gratuitous to jump through those
-hoops again in pmd_trans_huge_lock.
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
 
-Will
+----------------------------------------------------------------
+
+The following changes since commit 2ab3f29dddfb444c9fcc0a2f3a56ed4bdba41969:
+
+  Merge branch 'akpm' (Andrew's fixes) (2012-10-25 16:05:57 -0700)
+
+are available in the git repository at:
+
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git fixes_for_linus
+
+for you to fetch changes up to 697575896670ba9e76760ce8bbc1f5a3001967d6:
+
+  Revert "ARM: dma-mapping: support debug_dma_mapping_error" (2012-10-26 07:39:13 +0200)
+
+----------------------------------------------------------------
+Marek Szyprowski (1):
+      Revert "ARM: dma-mapping: support debug_dma_mapping_error"
+
+ arch/arm/include/asm/dma-mapping.h |    1 -
+ 1 file changed, 1 deletion(-)
