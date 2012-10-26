@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2JZHdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:33:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3528 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756554Ab2JZHdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:33:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,653,1344236400"; 
-   d="scan'208";a="232815257"
-Date: Fri, 26 Oct 2012 15:33:17 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Yuanhan Liu <yliu.null@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] kfifo: remove unnecessary type check
-Message-ID: <20121026073317.GC2778@yliu-dev.sh.intel.com>
-References: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
- <1351229911.12511.1.camel@wall-e>
- <20121026061145.GA2778@yliu-dev.sh.intel.com>
- <1351234266.12511.23.camel@wall-e>
- <20121026071757.GB2778@yliu-dev.sh.intel.com>
+	id S1756796Ab2JZHeS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:34:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40011 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756554Ab2JZHeQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 03:34:16 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <508A3CDD.20506@jp.fujitsu.com>
+Date: Fri, 26 Oct 2012 16:33:49 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026071757.GB2778@yliu-dev.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <toshi.kani@hp.com>, <lenb@kernel.org>,
+        <wency@cn.fujitsu.com>, <vasilis.liaskovitis@profitbricks.com>
+Subject: Re: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when
+ failing to remove the device
+References: <50769B8C.2060901@jp.fujitsu.com> <1846185.MSykHDcMmb@vostro.rjw.lan> <20121019175941.GB3375@kroah.com>
+In-Reply-To: <20121019175941.GB3375@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 03:17:57PM +0800, Yuanhan Liu wrote:
-> On Fri, Oct 26, 2012 at 08:51:06AM +0200, Stefani Seibold wrote:
-> > Am Freitag, den 26.10.2012, 14:11 +0800 schrieb Yuanhan Liu:
-> > > On Fri, Oct 26, 2012 at 07:38:31AM +0200, Stefani Seibold wrote:
-> > > > Am Freitag, den 26.10.2012, 09:46 +0800 schrieb Yuanhan Liu:
-> > > > > From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> > > > > 
-> > > > > Firstly, this kind of type check doesn't work. It does something similay
-> > > > > like following:
-> > > > > 	void * __dummy = NULL;
-> > > > > 	__buf = __dummy;
-> > > > > 
-> > > > > __dummy is defined as void *. Thus it will not trigger warnings as
-> > > > > expected.
-> > > > > 
-> > > > > Second, we don't need that kind of check. Since the prototype
-> > > > > of __kfifo_out is:
-> > > > > 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
-> > > > > 
-> > > > > buf is defined as void *, so we don't need do the type check. Remove it.
-> > > > > 
-> > > > > LINK: https://lkml.org/lkml/2012/10/25/386
-> > > > > LINK: https://lkml.org/lkml/2012/10/25/584
-> > > > > 
-> > > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > > Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
-> > > > > Cc: Stefani Seibold <stefani@seibold.net>
-> > > > > Cc: Fengguang Wu <fengguang.wu@intel.com>
-> > > > > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> > > > > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> > > > > ---
-> > 
-> > > > 
-> > > > Did you tried to compile the whole kernel including all the drivers with
-> > > > your patch?
-> > > 
-> > > Hi Stefani,
-> > > 
-> > > I did a build test, it did't introduce any new compile errors and
-> > > warnings. While, I haven't tried make allmodconfig then. Does this patch
-> > > seems wrong to you?
-> > > 
-> > > Thanks,
-> > > Yuanhan Liu
-> > 
-> > Hi Liu,
-> > 
-> > no the patch seems not wrong to me. But as you see with the previous
-> > patch it is not easy to predict the side effects.
-> > 
-> > An allmodconfig together with C=2 is necessary to check if there is no
-> > side effects which current users of the kfifo API.
-> 
-> Hi Stefani,
-> 
-> Make with C=2 will produce tons of warnings, hard to tell it introduces
-> new warnings or not. I build some drivers used kfifo and samples as you
-> suggested with C=2, find no new warnings. I will build all drivers that
-> used kfifo with C=2 later, and will post the result here.
+Hi Greg,
 
-Hi Stefani,
+Sorry for late reply.
 
-Done build all drivers used kfifo and kfifo samples with C=2, none new
-warnigs and erros found :D
+2012/10/20 2:59, Greg Kroah-Hartman wrote:
+> On Fri, Oct 19, 2012 at 06:29:52AM +0200, Rafael J. Wysocki wrote:
+>> On Thursday 11 of October 2012 19:12:28 Yasuaki Ishimatsu wrote:
+>>> acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
+>>> number. But acpi_bus_remove() cannot return error number correctly.
+>>> acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
+>>> device cannot be removed correctly, acpi_bus_trim() ignores and continues to
+>>> remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
+>>> devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
+>>> even if the device is running on the system. In this case, the system cannot
+>>> work well.
+>>>
+>>> Vasilis hit the bug at memory hotplug and reported it as follow:
+>>> https://lkml.org/lkml/2012/9/26/318
+>>>
+>>> So acpi_bus_trim() should check whether device was removed or not correctly.
+>>> The patch adds error check into some functions to remove the device.
+>>>
+>>> Applying the patch, acpi_bus_trim() stops removing devices when failing
+>>> to remove the device. But I think there is no impact with the
+>>> exceptionof CPU and Memory hotplug path. Because other device also fails
+>>> but the fail is an irregular case like device is NULL.
+>>>
+>>> v1->v2
+>>> - add a rollback for reinstalling a notify handler.
+>>>
+>>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>>
+>> Greg, do you think there may be any problems with the changes in dd.c?
+>
+> Yes, I don't like it.
+>
+> remove should always work, just like the exit call in a module.  It
+> means that the core wants to remove the driver, so it is going to
+> happen, a driver can't refuse it.
+>
+> Which brings me to the larger question, why would this solve anything?
+
+Now we are developing physical memory hot plug.
+
+https://lkml.org/lkml/2012/10/23/213
+
+So if we aplly the patch-set, we can hot remove a physical memory
+by the following way.
+
+"echo 1 > /sys/bus/acpi/devices/PNP/eject"
+
+In this case, acpi_bus_hot_remove_device() tries to remove memory
+device by acpi_bus_trim(). But if the memory has irremovable memory,
+memory hot remove fails. And the memory remains in kernel.
+However acpi_bus_trim() cannot notice that memory hot remove fails and
+retruns 0. So acpi_bus_hot_remove_device() continues to remove memory
+devices and sends _EJ0 method to firmware. Thus the memory device cannot
+be used. But the memory remains in kernel yet. So if someone access the
+memory, kernel panic occurs.
 
 Thanks,
-Yuanhan Liu
-> 
-> > That is exactly what
-> > i did again and again as i developed the kfifo API.
-> > 
-> > Also you have to build the kfifo samples, since this example code use
-> > all features of the kfifo API.
-> > 
-> > And again: The kfifo is designed to do the many things at compile time,
-> > not at runtime. If you modify the code, you have to check the compiler
-> > assembler output for no degradation, especially in kfifo_put, kfifo_get,
-> > kfifo_in, kfifo_out, __kfifo_in and __kfifo_out. Prevent runtime checks
-> > if you can do it at compile time. This is the basic reasons to do it in
-> > macros.
-> 
-> Is it enought to check kernel/kfifo.o only? I build that file with
-> and without this patch. And then  dump it by objdump -D kernel/fifo.o to
-> /tmp/kfifo.dump.with and /tmp/kfifo.dump.without, respectively. And the
-> two dump file are exactly same.
-> 
-> Thanks,
-> Yuanhan Liu
+Yasuaki Ishimatsu
+
+> If the kernel wants to unbind a device, why would we ever not want that
+> to happen?
+>
+> So, NAK on this patch, sorry.  Fix up the ACPI core to handle this
+> properly, don't mess with the driver core here.
+>
+> greg k-h
+>
+
+
