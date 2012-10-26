@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966567Ab2JZVKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:10:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57867 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934123Ab2JZVKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:10:41 -0400
-Date: Fri, 26 Oct 2012 17:10:33 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Martin <marogge@onlinehome.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
-        stable@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121026211033.GD8614@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Martin <marogge@onlinehome.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
-	stable@vger.kernel.org, gregkh@linuxfoundation.org
-References: <jXNl8-5m5-13@gated-at.bofh.it>
- <jXNOa-5MR-23@gated-at.bofh.it>
- <jXPGh-87s-5@gated-at.bofh.it>
- <jXTJW-4CH-55@gated-at.bofh.it>
- <jXUZj-6mo-13@gated-at.bofh.it>
- <jXVLH-7kO-5@gated-at.bofh.it>
- <jXW53-7CC-5@gated-at.bofh.it>
- <jXWeJ-7Lk-1@gated-at.bofh.it>
- <50882787.3030504@onlinehome.de>
- <508AEEF7.8060301@onlinehome.de>
+	id S966573Ab2JZVML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:12:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:56059 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966544Ab2JZVMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 17:12:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Chris Brand" <chris.brand@broadcom.com>
+Subject: Re: [PATCH v4] pwm: vt8500: Update vt8500 PWM driver support
+Date: Fri, 26 Oct 2012 21:11:56 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "Tony Prisk" <linux@prisktech.co.nz>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1351100330-26072-1-git-send-email-linux@prisktech.co.nz> <4EE5B48738DDED408878C97C8E050A8B1BD17DD2@SJEXCHMB05.corp.ad.broadcom.com>
+In-Reply-To: <4EE5B48738DDED408878C97C8E050A8B1BD17DD2@SJEXCHMB05.corp.ad.broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508AEEF7.8060301@onlinehome.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210262111.56608.arnd@arndb.de>
+X-Provags-ID: V02:K0:hQrfhctLXDaik7WtyBv8t96vibQhAKI4HIrJMPBjnxZ
+ F0he1b1XVcJHvBXg5a9kLnPuyfDRDJuZMiRic8judl3WrXCkIl
+ 8JNhN0P/Pecx848eiCypOzErpu+OZIPc2DSCq/Zxxk2COR39el
+ J/e9aRkfc+wa+zN54gXmLPHev4KbtXO7mPtgM2JrB4dPCoM+fr
+ d66MVmSvblEFX5K4+u3685xMWSWadB3tnm3t8EOoaQM6fC09E+
+ NiT3x/pis/8n+M8EhD/i1w71i1xE3jIayUHP9kkcxpTRR9crKB
+ C/UT3aiIZq/KSqCuEa3ZzFxJeQK8pTNAg9yWfLDI+y+NFjwiBo
+ t+ZKlnqayljcuCnLhhnc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks very different.  The symptoms are quite different, and it's
-most likely that an unclean shutdown is involved.  In your case,
-you're doing clean shutdowns, with some suspend/resume cycles thrown
-in.  Also, kernel version 3.5.5 doesn't have the commits that were
-added between 3.6.1 and 3.6.3.
+On Friday 26 October 2012, Chris Brand wrote:
+> > @@ -124,6 +156,12 @@ static int __devinit pwm_probe(struct
+> > platform_device *pdev)
+> >       chip->chip.base = -1;
+> >       chip->chip.npwm = VT8500_NR_PWMS;
+> > 
+> > +     chip->clk = devm_clk_get(&pdev->dev, NULL);
+> > +     if (IS_ERR_OR_NULL(chip->clk)) {
+> > +             dev_err(&pdev->dev, "clock source not specified\n");
+> > +             return PTR_ERR(chip->clk);
+> > +     }
+> > +
+> 
+> Do you want IS_ERR() rather than IS_ERR_OR_NULL() here ?
+> Otherwise you may return PTR_ERR(NULL).
+> 
 
-Are you running e2fsck to fix the file system consistency problems;
-what is e2fsck reporting?
+Right. devm_clk_get() never returns NULL, but as Russell pointed out
+recently, this usage of IS_ERR_OR_NULL() is completely bogus.
 
-Do you need to have a suspend/resume in order to trigger the problem?
-
-This could very be some kind of hardware problem or kernel bug related
-to suspend/resume.  Unfortunately, many different problems get noticed
-by the file system, but the root cause is can often be something else;
-a hardware problem, or a bug somewhere else in the kernel.
-
-Regards,
-
-						- Ted
-
-P.S.  Can you do us a favor and start a separate mail thread with the
-information reposted?  It's can get hard to track different cases when
-a lot of people assume that their random failure (some of which are
-hardware problems) are related to the issue we are trying to track
-down in this mail thread and then they all pile onto the same mail
-thread or the same web forum --- one of the reasons why I detest
-Ubuntu Launchpad.  Thanks!!
+	Arnd
