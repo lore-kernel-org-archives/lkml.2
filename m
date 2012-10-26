@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab2JZAJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:09:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54194 "EHLO mail.kernel.org"
+	id S1754978Ab2JZAJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:09:40 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:38062 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848Ab2JZAIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Pedersen <thomas@cozybit.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 85/85] mac80211: call drv_get_tsf() in sleepable context
-Date: Thu, 25 Oct 2012 17:06:43 -0700
-Message-Id: <20121026000039.646690756@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1754869Ab2JZAJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:09:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, arvind.chauhan@arm.com
+Subject: Re: [PATCH 2/2] cpufreq: governors: remove redundant code
+Date: Fri, 26 Oct 2012 02:13:20 +0200
+Message-ID: <1707056.POnhGSP0pg@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAKohpo=Nv6DfXqyv=v-1Eo=pvx25qyrQ2qs+pGqJvbJu2bwWaw@mail.gmail.com>
+References: <32e5bed743cc6cc4e614291a7080299f5f0d0933.1350677395.git.viresh.kumar@linaro.org> <3245066.cWfgP9Ikey@vostro.rjw.lan> <CAKohpo=Nv6DfXqyv=v-1Eo=pvx25qyrQ2qs+pGqJvbJu2bwWaw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Thursday, October 25, 2012 08:59:11 AM Viresh Kumar wrote:
+> On 25 October 2012 02:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday 24 of October 2012 21:43:46 Rafael J. Wysocki wrote:
+> >> On Wednesday 24 of October 2012 11:37:13 Viresh Kumar wrote:
+> >> > On 22 October 2012 14:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> >> > > On 20 October 2012 01:42, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> >> > >> Initially ondemand governor was written and then using its code conservative
+> >> > >> governor is written. It used a lot of code from ondemand governor, but copy of
+> >> > >> code was created instead of using the same routines from both governors. Which
+> >> > >> increased code redundancy, which is difficult to manage.
+> >> > >>
+> >> > >> This patch is an attempt to move common part of both the governors to
+> >> > >> cpufreq_governor.c file to come over above mentioned issues.
+> >> > >>
+> >> > >> This shouldn't change anything from functionality point of view.
+> >> > >>
+> >> > >> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> >> >
+> >> > For everybody else, this patch is already pushed by Rafael in his linux-next
+> >> > branch.
+> >>
+> >> Well, not yet, although I'm going to do that.
+> >
+> > Or I would if it still applied.  Unfortunately, though, it doesn't apply any
+> > more to my linux-next branch due to some previous changes in it.
+> >
+> > Care to rebase?
+> 
+> Ahh.. I got confused by the following patch:
+> 
+> commit 83a73f712f2275033b2dc7f5c664988a1823ebc7
+> Author: viresh kumar <viresh.kumar@linaro.org>
+> Date:   Tue Oct 23 01:28:05 2012 +0200
+> 
+>     cpufreq: Move common part from governors to separate file, v2
+> 
+>     Multiple cpufreq governers have defined similar get_cpu_idle_time_***()
+>     routines. These routines must be moved to some common place, so that all
+>     governors can use them.
+> 
+>     So moving them to cpufreq_governor.c, which seems to be a better place for
+>     keeping these routines.
+> 
+>     Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>     Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> 
+> Actually, i should i have replied on this patch (and i forgot). I
+> wanted you to skip
+> this patch, as the latest patch already had this change.
+> 
+> But now i see commits from others on cpufreq_governor.c file.
+> 
+> Hmm... So you can keep your tree as it is and apply the attached
+> patch. It is the
+> same patch getting discussed in this thread. Just rebased over your latest next.
 
-------------------
+I have applied this patch only because of the fixes on top of it.  It broke
+kernel compliation due to some missing EXPORT_SYMBOL_GPLs in cpufreq_governor.c,
+so I woulnd't have applied it otherwise.
 
-From: Thomas Pedersen <thomas@cozybit.com>
-
-commit 55fabefe3695241e6ccfa0cd4974f3fa497693dc upstream.
-
-The call to drv_get/set_tsf() was put on the workqueue to perform tsf
-adjustments since that function might sleep. However it ended up inside
-a spinlock, whose critical section must be atomic. Do tsf adjustment
-outside the spinlock instead, and get rid of a warning.
-
-Signed-off-by: Thomas Pedersen <thomas@cozybit.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/mac80211/mesh_sync.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
---- a/net/mac80211/mesh_sync.c
-+++ b/net/mac80211/mesh_sync.c
-@@ -56,7 +56,6 @@ void mesh_sync_adjust_tbtt(struct ieee80
- 	u64 tsfdelta;
- 
- 	spin_lock_bh(&ifmsh->sync_offset_lock);
--
- 	if (ifmsh->sync_offset_clockdrift_max < beacon_int_fraction) {
- 		msync_dbg(sdata, "TBTT : max clockdrift=%lld; adjusting\n",
- 			  (long long) ifmsh->sync_offset_clockdrift_max);
-@@ -69,11 +68,11 @@ void mesh_sync_adjust_tbtt(struct ieee80
- 		tsfdelta = -beacon_int_fraction;
- 		ifmsh->sync_offset_clockdrift_max -= beacon_int_fraction;
- 	}
-+	spin_unlock_bh(&ifmsh->sync_offset_lock);
- 
- 	tsf = drv_get_tsf(local, sdata);
- 	if (tsf != -1ULL)
- 		drv_set_tsf(local, sdata, tsf + tsfdelta);
--	spin_unlock_bh(&ifmsh->sync_offset_lock);
- }
- 
- static void mesh_sync_offset_rx_bcn_presp(struct ieee80211_sub_if_data *sdata,
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
