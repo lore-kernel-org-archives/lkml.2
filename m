@@ -1,56 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2JZCcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 22:32:24 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55116 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab2JZCcX (ORCPT
+	id S1754696Ab2JZCfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 22:35:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:33839 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab2JZCfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 22:32:23 -0400
+	Thu, 25 Oct 2012 22:35:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
-References: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 25 Oct 2012 19:32:01 -0700
-X-Google-Sender-Auth: eHbReix4oi2HgVt9yR-YtbMcPPE
-Message-ID: <CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
-Subject: Re: [PATCH v1] firmware loader: introduce module parameter to
- customize fw search path
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
+References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
+Date: Fri, 26 Oct 2012 08:05:36 +0530
+Message-ID: <CAM4v1pP2V9Rc9jQkEmsb5D-Mvq73naBj6BJq5Y+eWQNt1v08OA@mail.gmail.com>
+Subject: Re: [RFC PATCH 00/13] sched: Integrating Per-entity-load-tracking
+ with the core scheduler
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 5:46 PM, Ming Lei <ming.lei@canonical.com> wrote:
->                 struct file *file;
-> -               snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
-> +
-> +               if (i < 0) {
-> +                       if (!fw_path_para[0])   /* No customized path */
-> +                               continue;
-> +                       snprintf(path, PATH_MAX, "%s/%s", fw_path_para,
-> +                                buf->fw_id);
-> +               } else {
-> +                       snprintf(path, PATH_MAX, "%s/%s", fw_path[i],
-> +                                buf->fw_id);
-> +               }
+The benchmark:
 
-Ugh. This is just disgusting.
+/*
+ * test.c - Simulate workloads that load the CPU differently
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ */
 
-Please just make "fw_path[0]" just be the pointer to fw_path_para[]
-(which sounds like the cleanest fix) and get rid of the negative 'i'
-and conditional entirely.
+/*
+ * This workload spawns threads which request for allocation of a
+ * memory chunk,write to it and free it.The duty cycle of these threads
+ * can be varied.The idea is to simulate tasks which load the cpu
+ * to different extents.
+ */
 
-Or if there is some odd reason you don't want to do that, at least
-make the conditional much smaller, without the snprintf() in both arms
-(ie make the if-statement just set a "const char *dir" variable to
-either fw_path[i] or fw_path_para or whatever).
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <pthread.h>
+#include <string.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include "malloc.h"
 
-Sure, the compiler *may* merge them (gcc does, but I've seen it miss
-them too), but even if the compiler might fix up ugly code, that's not
-a reason for it to be ugly in the source code anyway.
+/* Variable entities */
+static unsigned int seconds;
+static unsigned int threads;
+static unsigned int mem_chunk_size;
+static unsigned int sleep_at;
+static unsigned int sleep_interval;
 
-          Linus
+typedef size_t mem_slot_t;/* 8 bytes */
+static unsigned int slot_size = sizeof(mem_slot_t);
+
+/* Other parameters */
+static volatile int start;
+static time_t start_time;
+static unsigned int records_read;
+pthread_mutex_t records_count_lock = PTHREAD_MUTEX_INITIALIZER;
+
+
+static unsigned int write_to_mem(void)
+{
+    int i, j;
+    mem_slot_t *scratch_pad, *temp;
+    mem_chunk_size = slot_size * 256;
+    mem_slot_t *end;
+
+    /* The below two parameters ensure that it is 10% workload
+     * with a duty cycle of 10ms.The number of records read in
+     * 1s without sleep was observed and appropriately calculated
+     * for 1ms.This number turned out to be 1228.
+     */
+    sleep_at = 1228; /* sleep for every 1228 records */
+    sleep_interval = 9000; /* sleep for 9 ms */
+
+    for (i=0; start == 1; i++)
+    {
+        scratch_pad = (mem_slot_t *)malloc(mem_chunk_size);
+        if (scratch_pad == NULL) {
+            fprintf(stderr,"Could not allocate memory\n");
+            exit(1);
+        }
+        end = scratch_pad + (mem_chunk_size / slot_size);
+        for (temp = scratch_pad, j=0; temp < end; temp++, j++)
+            *temp = (mem_slot_t)j;
+
+        free(scratch_pad);
+
+        if (sleep_at && !(i % sleep_at))
+            usleep(sleep_interval);
+    }
+    return (i);
+}
+
+static void *
+thread_run(void *arg)
+{
+
+    unsigned int records_local;
+
+    /* Wait for the start signal */
+
+    while (start == 0);
+
+    records_local = write_to_mem();
+
+    pthread_mutex_lock(&records_count_lock);
+    records_read += records_local;
+    pthread_mutex_unlock(&records_count_lock);
+
+    return NULL;
+}
+
+static void start_threads()
+{
+    double diff_time;
+    unsigned int i;
+    int err;
+    threads = 8;
+    seconds = 10;
+
+    pthread_t thread_array[threads];
+    for (i = 0; i < threads; i++) {
+        err = pthread_create(&thread_array[i], NULL, thread_run, NULL);
+        if (err) {
+            fprintf(stderr, "Error creating thread %d\n", i);
+            exit(1);
+        }
+    }
+    start_time = time(NULL);
+    start = 1;
+    sleep(seconds);
+    start = 0;
+    diff_time = difftime(time(NULL), start_time);
+
+    for (i = 0; i < threads; i++) {
+        err = pthread_join(thread_array[i], NULL);
+        if (err) {
+            fprintf(stderr, "Error joining thread %d\n", i);
+            exit(1);
+        }
+    }
+     printf("%u records/s\n",
+        (unsigned int) (((double) records_read)/diff_time));
+
+}
+int main()
+{
+    start_threads();
+    return 0;
+}
+
+Regards
+Preeti U Murthy
