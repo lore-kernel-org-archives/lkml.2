@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab2JZRGf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:06:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10348 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754518Ab2JZRGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:06:32 -0400
-Date: Fri, 26 Oct 2012 13:06:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: Kdump with signed images
-Message-ID: <20121026170609.GB24687@redhat.com>
-References: <20121023131854.GA16496@redhat.com>
- <20121023145920.GD16496@redhat.com>
- <87fw552mb4.fsf_-_@xmission.com>
- <20121024173651.GE1821@redhat.com>
- <1351145401.18115.78.camel@falcor>
- <20121025141048.GD9377@redhat.com>
- <1351190421.18115.92.camel@falcor>
- <20121025185520.GA17995@redhat.com>
- <1351214158.18115.186.camel@falcor>
- <20121026023916.GA16762@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026023916.GA16762@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755957Ab2JZRGt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:06:49 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:8528 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708Ab2JZRGr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 13:06:47 -0400
+Message-ID: <1351271198.4013.35.camel@lorien2>
+Subject: Re: [PATCH RFT RESEND linux-next] mips: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: ralf@linux-mips.org, kyungmin.park@samsung.com, arnd@arndb.de,
+        andrzej.p@samsung.com, m.szyprowski@samsung.com,
+        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 11:06:38 -0600
+In-Reply-To: <508ABE1D.5010106@gmail.com>
+References: <1351208193.6851.17.camel@lorien2>
+	 <1351267298.4013.12.camel@lorien2> <508ABE1D.5010106@gmail.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 03:39:16AM +0100, Matthew Garrett wrote:
-> On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
+On Fri, 2012-10-26 at 09:45 -0700, David Daney wrote:
+> On 10/26/2012 09:01 AM, Shuah Khan wrote:
+> > Add support for debug_dma_mapping_error() call to avoid warning from
+> > debug_dma_unmap() interface when it checks for mapping error checked
+> > status. Without this patch, device driver failed to check map error
+> > warning is generated.
+> >
+> > Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> > ---
+> >   arch/mips/include/asm/dma-mapping.h |    2 ++
+> >   1 file changed, 2 insertions(+)
+> >
+> > diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
+> > index be39a12..006b43e 100644
+> > --- a/arch/mips/include/asm/dma-mapping.h
+> > +++ b/arch/mips/include/asm/dma-mapping.h
+> > @@ -40,6 +40,8 @@ static inline int dma_supported(struct device *dev, u64 mask)
+> >   static inline int dma_mapping_error(struct device *dev, u64 mask)
+> >   {
+> >   	struct dma_map_ops *ops = get_dma_ops(dev);
+> > +
+> > +	debug_dma_mapping_error(dev, mask);
+> >   	return ops->mapping_error(dev, mask);
+> >   }
+> >
+> >
 > 
-> > On a running system, the package installer, after verifying the package
-> > integrity, would install each file with the associated 'security.ima'
-> > extended attribute.  The 'security.evm' digital signature would be
-> > installed with an HMAC, calculated using a system unique key. 
+> Although this is a start, I don't think it is sufficient.
 > 
-> The idea isn't to prevent /sbin/kexec from being modified after 
-> installation - it's to prevent it from being possible to install a 
-> system that has a modified /sbin/kexec. Leaving any part of this up to 
-> the package installer means that it doesn't solve the problem we're 
-> trying to solve here. It must be impossible for the kernel to launch any 
-> /sbin/kexec that hasn't been signed by a trusted key that's been built 
-> into the kernel, and it must be impossible for anything other than 
-> /sbin/kexec to make the kexec system call.
+> As far as I can tell, there are many missing calls to debug_dma_*() in 
+> the various MIPS commone and sub-architecture DMA code.
+> 
+> Really you (or someone) needs to look at *all* the functions in 
+> arch/mips/asm/dma-mapping.h, and arch/mips/mm/dma-default.c and find 
+> places missing a debug_dma_*().
 
-I am kind of lost now so just trying to summarize whatever I have
-learned so far from this thread.
+Is it correct to assume that this patch is not needed on MIPS until
+debug_dma interfaces get added to MIPS common and sub-architecture DMA
+code. 
 
-- So say we can sign /sbin/kexec at build time and distros can do that.
-- Verify the signature at exec time using kernel keyring and if
-  verification happens successfully, say process gains extra capability.
-- Use this new capability to determine whether kexec_load() will be
-  successful or not.
+When I didn't see dma_map_page() in arch/mips/include/asm/dma-mapping.h
+defined, and just an extern, I incorrectly assumed, it is getting picked
+up from <asm-generic/dma-mapping-common.h>, hence the need for this
+patch in the first place.
 
-Even if we can do all this, it still has the issue of being able to
-stop the process in user space and replace the code at run time
-and be able to launch unsigned kernel.
+-- Shuah
 
-So until and unless we have a good solution to verify application's
-integrity/authneticity at the time of kexec_load() system call we
-still have the problem. And I don't think we have come up with a
-solution for that yet (until and unless I missed something).
-  
-Thanks
-Vivek
