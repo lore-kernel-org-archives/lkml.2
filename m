@@ -1,73 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2JZI3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:29:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62316 "EHLO
+	id S1757356Ab2JZIbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:31:00 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60913 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab2JZI3K (ORCPT
+	with ESMTP id S1757052Ab2JZIa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:29:10 -0400
-Message-ID: <508A49D3.2080303@monstr.eu>
-Date: Fri, 26 Oct 2012 10:29:07 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	Fri, 26 Oct 2012 04:30:56 -0400
 MIME-Version: 1.0
-To: shuah.khan@hp.com
-CC: kyungmin.park@samsung.com, m.szyprowski@samsung.com, arnd@arndb.de,
-        andrzej.p@samsung.com, microblaze-uclinux@itee.uq.edu.au,
-        LKML <linux-kernel@vger.kernel.org>, shuahkhan@gmail.com
-Subject: Re: [PATCH RFT] microblaze: dma-mapping: support debug_dma_mapping_error
-References: <1351207747.6851.15.camel@lorien2>
-In-Reply-To: <1351207747.6851.15.camel@lorien2>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1351200081-19349-2-git-send-email-bleung@chromium.org>
+References: <1341961393-17728-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-1-git-send-email-bleung@chromium.org>
+	<1351200081-19349-2-git-send-email-bleung@chromium.org>
+Date: Fri, 26 Oct 2012 09:30:54 +0100
+Message-ID: <CAHR064jAfmmpf-p5Yh=SZWW31kr0JxcA3VNQrCTV=T9U48HQtw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] Platform: x86: Add Chrome OS Laptop driver
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Benson Leung <bleung@chromium.org>
+Cc: mjg@redhat.com, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, olofj@chromium.org, olof@lixom.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 01:29 AM, Shuah Khan wrote:
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
+On Thu, Oct 25, 2012 at 10:21 PM, Benson Leung <bleung@chromium.org> wrote:
+> This adds the chromeos_laptop driver. It supports
+> the Cypress APA SMBUS touchpad as well as the isl29018 i2c ambient
+> light sensor on the Samsung Series 5 550 Chromebook.
 >
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> Signed-off-by: Benson Leung <bleung@chromium.org>
+> Reviewed-by: Olof Johansson <olof@lixom.net>
 > ---
->   arch/microblaze/include/asm/dma-mapping.h |    1 +
->   1 file changed, 1 insertion(+)
+> Version history :
+> v2 : * Added MODULE_DEVICE_TABLE for the dmi table.
+>      * Made __init and __initdata position consistent across this file.
+>      * Made prefix static const char *
+>      * Made strncmp expressions more explicit
+>      * Added an additional match for DMI_SYS_VENDOR for Samsung Lumpy.
+> v1 : Initial
+> ---
+>  drivers/platform/x86/Kconfig           |   11 ++
+>  drivers/platform/x86/Makefile          |    1 +
+>  drivers/platform/x86/chromeos_laptop.c |  205 ++++++++++++++++++++++++++++++++
+>  3 files changed, 217 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/platform/x86/chromeos_laptop.c
 >
-> diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-> index 01d2282..4451c7a 100644
-> --- a/arch/microblaze/include/asm/dma-mapping.h
-> +++ b/arch/microblaze/include/asm/dma-mapping.h
-> @@ -114,6 +114,7 @@ static inline void __dma_sync(unsigned long paddr,
->   static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
->   {
->   	struct dma_map_ops *ops = get_dma_ops(dev);
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index c86bae8..12b8594 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -79,6 +79,17 @@ config ASUS_LAPTOP
+>
+>           If you have an ACPI-compatible ASUS laptop, say Y or M here.
+>
+> +config CHROMEOS_LAPTOP
+> +       tristate "Chrome OS Laptop"
+> +       depends on I2C
+> +       depends on DMI
+> +       ---help---
+> +         This driver instantiates i2c and smbus devices such as
+> +         light sensors and touchpads.
+> +
+> +         If you have a supported Chromebook, choose Y or M here.
+> +         The module will be called chromeos_laptop.
+> +
+>  config DELL_LAPTOP
+>         tristate "Dell Laptop Extras (EXPERIMENTAL)"
+>         depends on X86
+> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+> index bf7e4f9..ace2b38 100644
+> --- a/drivers/platform/x86/Makefile
+> +++ b/drivers/platform/x86/Makefile
+> @@ -50,3 +50,4 @@ obj-$(CONFIG_INTEL_MID_POWER_BUTTON)  += intel_mid_powerbtn.o
+>  obj-$(CONFIG_INTEL_OAKTRAIL)   += intel_oaktrail.o
+>  obj-$(CONFIG_SAMSUNG_Q10)      += samsung-q10.o
+>  obj-$(CONFIG_APPLE_GMUX)       += apple-gmux.o
+> +obj-$(CONFIG_CHROMEOS_LAPTOP)  += chromeos_laptop.o
+> diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+> new file mode 100644
+> index 0000000..a8329c3
+> --- /dev/null
+> +++ b/drivers/platform/x86/chromeos_laptop.c
+> @@ -0,0 +1,205 @@
+> +/*
+> + *  chromeos_laptop.c - Driver to instantiate Chromebook i2c/smbus devices.
+> + *
+> + *  Author : Benson Leung <bleung@chromium.org>
+> + *
+> + *  Copyright (C) 2012 Google, Inc.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include <linux/dmi.h>
+> +#include <linux/i2c.h>
+> +#include <linux/module.h>
+> +
+> +#define CYAPA_TP_I2C_ADDR      0x67
+> +#define ISL_ALS_I2C_ADDR       0x44
+> +
+> +static struct i2c_client *als;
+> +static struct i2c_client *tp;
+> +
+> +const char *i2c_adapter_names[] = {
+> +       "SMBus I801 adapter",
+> +};
+> +
+> +/* Keep this enum consistent with i2c_adapter_names */
+> +enum i2c_adapter_type {
+> +       I2C_ADAPTER_SMBUS = 0,
+> +};
+> +
+> +static struct i2c_board_info __initdata cyapa_device = {
+> +       I2C_BOARD_INFO("cyapa", CYAPA_TP_I2C_ADDR),
+> +       .flags          = I2C_CLIENT_WAKE,
+> +};
+> +
+> +static struct i2c_board_info __initdata isl_als_device = {
+> +       I2C_BOARD_INFO("isl29018", ISL_ALS_I2C_ADDR),
+> +};
+> +
+> +static struct i2c_client __init *__add_probed_i2c_device(
+> +               const char *name,
+> +               int bus,
+> +               struct i2c_board_info *info,
+> +               const unsigned short *addrs)
+> +{
+> +       const struct dmi_device *dmi_dev;
+> +       const struct dmi_dev_onboard *dev_data;
+> +       struct i2c_adapter *adapter;
+> +       struct i2c_client *client;
+> +
+> +       if (bus < 0)
+> +               return NULL;
+> +       /*
+> +        * If a name is specified, look for irq platform information stashed
+> +        * in DMI_DEV_TYPE_DEV_ONBOARD by the Chrome OS custom system firmware.
+> +        */
+> +       if (name) {
+> +               dmi_dev = dmi_find_device(DMI_DEV_TYPE_DEV_ONBOARD, name, NULL);
+> +               if (!dmi_dev) {
+> +                       pr_err("%s failed to dmi find device %s.\n",
+> +                              __func__,
+> +                              name);
+> +                       return NULL;
+> +               }
+> +               dev_data = (struct dmi_dev_onboard *)dmi_dev->device_data;
+> +               if (!dev_data) {
+> +                       pr_err("%s failed to get data from dmi for %s.\n",
+> +                              __func__, name);
+> +                       return NULL;
+> +               }
+> +               info->irq = dev_data->instance;
+> +       }
+> +
+> +       adapter = i2c_get_adapter(bus);
+> +       if (!adapter) {
+> +               pr_err("%s failed to get i2c adapter %d.\n", __func__, bus);
+> +               return NULL;
+> +       }
+> +
+> +       /* add the i2c device */
+> +       client = i2c_new_probed_device(adapter, info, addrs, NULL);
+> +       if (!client)
+> +               pr_err("%s failed to register device %d-%02x\n",
+> +                      __func__, bus, info->addr);
+> +       else
+> +               pr_debug("%s added i2c device %d-%02x\n",
+> +                        __func__, bus, info->addr);
+> +
+> +       i2c_put_adapter(adapter);
+> +       return client;
+> +}
+> +
+> +static int __init __find_i2c_adap(struct device *dev, void *data)
+> +{
+> +       const char *name = data;
+> +       static const char *prefix = "i2c-";
+> +       struct i2c_adapter *adapter;
+> +       if (strncmp(dev_name(dev), prefix, strlen(prefix)) != 0)
+> +               return 0;
+> +       adapter = to_i2c_adapter(dev);
+> +       return (strncmp(adapter->name, name, strlen(name)) == 0);
+> +}
+> +
+> +static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
+> +{
+> +       struct device *dev = NULL;
+> +       struct i2c_adapter *adapter;
+> +       const char *name = i2c_adapter_names[type];
+> +       /* find the adapter by name */
+> +       dev = bus_find_device(&i2c_bus_type, NULL, (void *)name,
+> +                             __find_i2c_adap);
+> +       if (!dev) {
+> +               pr_err("%s: i2c adapter %s not found on system.\n", __func__,
+> +                      name);
+> +               return -ENODEV;
+> +       }
+> +       adapter = to_i2c_adapter(dev);
+> +       return adapter->nr;
+> +}
+> +
+> +/*
+> + * Probes for a device at a single address, the one provided by
+> + * info->addr.
+> + * Returns NULL if no device found.
+> + */
+> +static struct i2c_client __init *add_smbus_device(const char *name,
+> +                                                 struct i2c_board_info *info)
+> +{
+> +       const unsigned short addr_list[] = { info->addr, I2C_CLIENT_END };
+> +       return __add_probed_i2c_device(name,
+> +                                      find_i2c_adapter_num(I2C_ADAPTER_SMBUS),
+> +                                      info,
+> +                                      addr_list);
+> +}
+> +
+> +static int __init setup_lumpy_tp(const struct dmi_system_id *id)
+> +{
+> +       /* add cyapa touchpad on smbus */
+> +       tp = add_smbus_device("trackpad", &cyapa_device);
+> +       return 0;
+> +}
+> +
+> +static int __init setup_isl29018_als(const struct dmi_system_id *id)
+> +{
+> +       /* add isl29018 light sensor */
+> +       als = add_smbus_device("lightsensor", &isl_als_device);
+> +       return 0;
+> +}
+> +
+> +static struct dmi_system_id __initdata chromeos_laptop_dmi_table[] = {
+> +       {
+> +               .ident = "Samsung Series 5 550 - Touchpad",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG"),
+> +                       DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
+> +               },
+> +               .callback = setup_lumpy_tp,
+> +       },
+> +       {
+> +               .ident = "Samsung Series 5 550 - Light Sensor",
+> +               .matches = {
+> +                       DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG"),
+> +                       DMI_MATCH(DMI_PRODUCT_NAME, "Lumpy"),
+> +               },
+> +               .callback = setup_isl29018_als,
+> +       },
+> +       { }
+> +};
+> +MODULE_DEVICE_TABLE(dmi, chromeos_laptop_dmi_table);
+> +
+> +static int __init chromeos_laptop_init(void)
+> +{
+> +       if (!dmi_check_system(chromeos_laptop_dmi_table)) {
+> +               pr_debug("%s unsupported system.\n", __func__);
+> +               return -ENODEV;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void __exit chromeos_laptop_exit(void)
+> +{
+> +       if (als)
+> +               i2c_unregister_device(als);
+> +       if (tp)
+> +               i2c_unregister_device(tp);
+> +}
+> +
+> +module_init(chromeos_laptop_init);
+> +module_exit(chromeos_laptop_exit);
+> +
+> +MODULE_DESCRIPTION("Chrome OS Laptop driver");
+> +MODULE_AUTHOR("Benson Leung <bleung@chromium.org>");
+> +MODULE_LICENSE("GPL");
+> --
+> 1.7.7.3
 
-here should be empty line.
+Looks better, but I'm curious, what is the final purpose of this driver ?
+What ABI will be exposed, who will use it ?
 
-> +	debug_dma_mapping_error(dev, dma_addr);
->   	if (ops->mapping_error)
->   		return ops->mapping_error(dev, dma_addr);
-
-Patch looks good to me. I was greping the latest mainline tree and I can't see
-reference to debug_dma_mapping_error. Can you tell me where this function
-is implemented.
-I have also seen that you have sent several similar patches like this.
-
-If you want to add it through any other tree here is my ACK:
-
-Acked-by: Michal Simek <monstr@monstr.eu>
-
-I will definitely keep my eyes on it.
+If it is going to be bigger, it may be a good idea to convert it to a
+real platform driver (platform_drivers/platform_device stuff).
 
 Thanks,
-Michal
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Corentin Chary
+http://xf.iksaif.net
