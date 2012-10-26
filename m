@@ -1,145 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab2JZNz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:55:58 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59030 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab2JZNz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:55:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351187283-20715-4-git-send-email-fweisbec@gmail.com>
-References: <1351187283-20715-1-git-send-email-fweisbec@gmail.com>
-	<1351187283-20715-4-git-send-email-fweisbec@gmail.com>
-Date: Fri, 26 Oct 2012 15:55:55 +0200
-Message-ID: <CAFTL4hyA6sO9TREDLBeh3vbm6+if37Qv3Ex=hKcB07pb1ckf7w@mail.gmail.com>
-Subject: Re: [PATCH 3/5] kvm: Directly account vtime to system on guest switch
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933093Ab2JZN4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:56:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab2JZN4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:56:50 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: [PATCH] x86, add hypervisor name to dump_stack() [v2]
+Date: Fri, 26 Oct 2012 09:56:47 -0400
+Message-Id: <1351259807-13739-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding  Christian Borntraeger in Cc)
+Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
+bare-metal boots can get difficult very quickly.  While there are ways to
+decipher the output and determine if the output is from a virtual guest,
+the in-kernel hypervisors now have a single registration point
+and set x86_hyper.  We can use this to output additional debug
+information during a panic/oops/stack trace.
 
-2012/10/25 Frederic Weisbecker <fweisbec@gmail.com>:
-> Switching to or from guest context is done on ioctl context.
-> So by the time we call kvm_guest_enter() or kvm_guest_exit()
-> we know we are not running the idle task.
->
-> As a result, we can directly account the cputime using
-> vtime_account_system().
->
-> There are two good reasons to do this:
->
-> * We avoid some useless checks on guest switch. It optimizes
-> a bit this fast path.
->
-> * In the case of CONFIG_IRQ_TIME_ACCOUNTING, calling vtime_account()
-> checks for irq time to account. This is pointless since we know
-> we are not in an irq on guest switch. This is wasting cpu cycles
-> for no good reason. vtime_account_system() OTOH is a no-op in
-> this config option.
->
-> * We can remove the irq disable/enable around kvm guest switch in s390.
->
-> A further optimization may consist in introducing a vtime_account_guest()
-> that directly calls account_guest_time().
->
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Joerg Roedel <joerg.roedel@amd.com>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Xiantao Zhang <xiantao.zhang@intel.com>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  arch/s390/kvm/kvm-s390.c |    4 ----
->  include/linux/kvm_host.h |   12 ++++++++++--
->  2 files changed, 10 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-> index ecced9d..d91a955 100644
-> --- a/arch/s390/kvm/kvm-s390.c
-> +++ b/arch/s390/kvm/kvm-s390.c
-> @@ -608,9 +608,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
->                 kvm_s390_deliver_pending_interrupts(vcpu);
->
->         vcpu->arch.sie_block->icptcode = 0;
-> -       local_irq_disable();
->         kvm_guest_enter();
-> -       local_irq_enable();
->         VCPU_EVENT(vcpu, 6, "entering sie flags %x",
->                    atomic_read(&vcpu->arch.sie_block->cpuflags));
->         trace_kvm_s390_sie_enter(vcpu,
-> @@ -629,9 +627,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
->         VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
->                    vcpu->arch.sie_block->icptcode);
->         trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
-> -       local_irq_disable();
->         kvm_guest_exit();
-> -       local_irq_enable();
->
->         memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
->         return rc;
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 93bfc9f..0e2212f 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -737,7 +737,11 @@ static inline int kvm_deassign_device(struct kvm *kvm,
->  static inline void kvm_guest_enter(void)
->  {
->         BUG_ON(preemptible());
-> -       vtime_account(current);
-> +       /*
-> +        * This is running in ioctl context so we can avoid
-> +        * the call to vtime_account() with its unnecessary idle check.
-> +        */
-> +       vtime_account_system(current);
->         current->flags |= PF_VCPU;
->         /* KVM does not hold any references to rcu protected data when it
->          * switches CPU into a guest mode. In fact switching to a guest mode
-> @@ -751,7 +755,11 @@ static inline void kvm_guest_enter(void)
->
->  static inline void kvm_guest_exit(void)
->  {
-> -       vtime_account(current);
-> +       /*
-> +        * This is running in ioctl context so we can avoid
-> +        * the call to vtime_account() with its unnecessary idle check.
-> +        */
-> +       vtime_account_system(current);
->         current->flags &= ~PF_VCPU;
->  }
->
-> --
-> 1.7.5.4
->
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>
+Cc: Marcelo Tostatti <mtosatti@redhat.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: kvm@vger.kernel.org
+Cc: x86@kernel.org
+
+[v2]: Modifications suggested by Ingo and added changes for similar output
+      from process.c
+---
+ arch/x86/kernel/dumpstack.c |   11 ++++++++++-
+ arch/x86/kernel/process.c   |   12 +++++++++++-
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index ae42418b..5dd680f 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -16,6 +16,7 @@
+ #include <linux/nmi.h>
+ #include <linux/sysfs.h>
+ 
++#include <asm/hypervisor.h>
+ #include <asm/stacktrace.h>
+ 
+ 
+@@ -186,9 +187,17 @@ void dump_stack(void)
+ {
+ 	unsigned long bp;
+ 	unsigned long stack;
++	const char *machine_name = "x86";
++	const char *kernel_type = "native";
++
++	if (x86_hyper) {
++		machine_name = x86_hyper->name;
++		kernel_type = "guest";
++	}
+ 
+ 	bp = stack_frame(current, NULL);
+-	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
++	printk("[%s %s kernel] Pid: %d, comm: %.20s %s %s %.*s\n",
++		machine_name, kernel_type,
+ 		current->pid, current->comm, print_tainted(),
+ 		init_utsname()->release,
+ 		(int)strcspn(init_utsname()->version, " "),
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index b644e1c..14bd064 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -28,6 +28,7 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/debugreg.h>
+ #include <asm/nmi.h>
++#include <asm/hypervisor.h>
+ 
+ /*
+  * per-CPU TSS segments. Threads are completely 'soft' on Linux,
+@@ -124,6 +125,13 @@ void exit_thread(void)
+ void show_regs_common(void)
+ {
+ 	const char *vendor, *product, *board;
++	const char *machine_name = "x86";
++	const char *kernel_type = "native";
++
++	if (x86_hyper) {
++		machine_name = x86_hyper->name;
++		kernel_type = "guest";
++	}
+ 
+ 	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+ 	if (!vendor)
+@@ -135,7 +143,9 @@ void show_regs_common(void)
+ 	/* Board Name is optional */
+ 	board = dmi_get_system_info(DMI_BOARD_NAME);
+ 
+-	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
++	printk(KERN_DEFAULT
++	       "[%s %s kernel] Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
++	       machine_name, kernel_type,
+ 	       current->pid, current->comm, print_tainted(),
+ 	       init_utsname()->release,
+ 	       (int)strcspn(init_utsname()->version, " "),
+-- 
+1.7.9.3
+
