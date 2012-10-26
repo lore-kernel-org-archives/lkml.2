@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2JZLOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:14:10 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39090 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754136Ab2JZLOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:14:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: PCI/PM: Add comments for PME poll support for PCIe
-Date: Fri, 26 Oct 2012 13:18:04 +0200
-Message-ID: <3515628.KRd0S4T47k@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <1351228071-15161-1-git-send-email-ying.huang@intel.com>
-References: <1351228071-15161-1-git-send-email-ying.huang@intel.com>
+	id S1758476Ab2JZLQp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:16:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52683 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758424Ab2JZLQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:16:43 -0400
+Date: Fri, 26 Oct 2012 04:16:30 -0700
+From: tip-bot for Kees Cook <keescook@chromium.org>
+Message-ID: <tip-c6039f4a00901259517b7c027007697105209968@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, tglx@linutronix.de, rob@landley.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, tglx@linutronix.de, rob@landley.net
+In-Reply-To: <20121026031702.GA23828@www.outflux.net>
+References: <20121026031702.GA23828@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/boot] x86/boot/doc: Fix grammar and typo in boot.txt
+Git-Commit-ID: c6039f4a00901259517b7c027007697105209968
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 26 Oct 2012 04:16:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 26, 2012 01:07:51 PM Huang Ying wrote:
-> There are comments on why PME poll support is necessary for PCI
-> devices, but not for PCIe devices.  That may lead to misunderstanding
-> that PME poll is only necessary for PCI devices.  So add comments
-> related to PCIe PME poll to make it more clear.
-> 
-> The content of comments comes from the changelog of commit:
-> 
-> 379021d5c0899fcf9410cae4ca7a59a5a94ca769
-> 
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
+Commit-ID:  c6039f4a00901259517b7c027007697105209968
+Gitweb:     http://git.kernel.org/tip/c6039f4a00901259517b7c027007697105209968
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Thu, 25 Oct 2012 20:17:02 -0700
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 26 Oct 2012 12:18:38 +0200
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+x86/boot/doc: Fix grammar and typo in boot.txt
 
-> ---
->  drivers/pci/pci.c |   28 +++++++++++++++++++---------
->  1 file changed, 19 insertions(+), 9 deletions(-)
-> 
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1578,15 +1578,25 @@ void pci_pme_active(struct pci_dev *dev,
->  
->  	pci_write_config_word(dev, dev->pm_cap + PCI_PM_CTRL, pmcsr);
->  
-> -	/* PCI (as opposed to PCIe) PME requires that the device have
-> -	   its PME# line hooked up correctly. Not all hardware vendors
-> -	   do this, so the PME never gets delivered and the device
-> -	   remains asleep. The easiest way around this is to
-> -	   periodically walk the list of suspended devices and check
-> -	   whether any have their PME flag set. The assumption is that
-> -	   we'll wake up often enough anyway that this won't be a huge
-> -	   hit, and the power savings from the devices will still be a
-> -	   win. */
-> +	/*
-> +	 * PCI (as opposed to PCIe) PME requires that the device have
-> +	 * its PME# line hooked up correctly. Not all hardware vendors
-> +	 * do this, so the PME never gets delivered and the device
-> +	 * remains asleep. The easiest way around this is to
-> +	 * periodically walk the list of suspended devices and check
-> +	 * whether any have their PME flag set. The assumption is that
-> +	 * we'll wake up often enough anyway that this won't be a huge
-> +	 * hit, and the power savings from the devices will still be a
-> +	 * win.
-> +	 *
-> +	 * Although PCIe uses in-band PME message instead of PME# line
-> +	 * to report PME, PME does not work for some PCIe devices in
-> +	 * reality.  For example, there are devices that set their PME
-> +	 * status bits, but don't really bother to send a PME message;
-> +	 * there are PCI Express Root Ports that don't bother to
-> +	 * trigger interrupts when they receive PME messages from the
-> +	 * devices below.  So PME poll is used for PCIe devices too.
-> +	 */
->  
->  	if (dev->pme_poll) {
->  		struct pci_pme_device *pme_dev;
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Fixes some minor issues in the x86 boot documentation.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Rob Landley <rob@landley.net>
+Link: http://lkml.kernel.org/r/20121026031702.GA23828@www.outflux.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ Documentation/x86/boot.txt |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/x86/boot.txt b/Documentation/x86/boot.txt
+index 9efceff..f15cb74 100644
+--- a/Documentation/x86/boot.txt
++++ b/Documentation/x86/boot.txt
+@@ -1013,7 +1013,7 @@ boot_params as that of 16-bit boot protocol, the boot loader should
+ also fill the additional fields of the struct boot_params as that
+ described in zero-page.txt.
+ 
+-After setupping the struct boot_params, the boot loader can load the
++After setting up the struct boot_params, the boot loader can load the
+ 32/64-bit kernel in the same way as that of 16-bit boot protocol.
+ 
+ In 32-bit boot protocol, the kernel is started by jumping to the
+@@ -1023,7 +1023,7 @@ In 32-bit boot protocol, the kernel is started by jumping to the
+ At entry, the CPU must be in 32-bit protected mode with paging
+ disabled; a GDT must be loaded with the descriptors for selectors
+ __BOOT_CS(0x10) and __BOOT_DS(0x18); both descriptors must be 4G flat
+-segment; __BOOS_CS must have execute/read permission, and __BOOT_DS
++segment; __BOOT_CS must have execute/read permission, and __BOOT_DS
+ must have read/write permission; CS must be __BOOT_CS and DS, ES, SS
+ must be __BOOT_DS; interrupt must be disabled; %esi must hold the base
+ address of the struct boot_params; %ebp, %edi and %ebx must be zero.
