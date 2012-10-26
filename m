@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab2JZAHR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53231 "EHLO mail.kernel.org"
+	id S1755186Ab2JZAb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:31:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53290 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab2JZAHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:11 -0400
+	id S1753955Ab2JZAHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 03/85] ext4: Avoid underflow in ext4_trim_fs()
-Date: Thu, 25 Oct 2012 17:05:21 -0700
-Message-Id: <20121026000031.475967873@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/85] use clamp_t in UNAME26 fix
+Date: Thu, 25 Oct 2012 17:05:34 -0700
+Message-Id: <20121026000032.757987970@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,37 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 5de35e8d5c02d271c20e18337e01bc20e6ef472e upstream.
+commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
 
-Currently if len argument in ext4_trim_fs() is smaller than one block,
-the 'end' variable underflow. Avoid that by returning EINVAL if len is
-smaller than file system block.
+The min/max call needed to have explicit types on some architectures
+(e.g. mn10300). Use clamp_t instead to avoid the warning:
 
-Also remove useless unlikely().
+  kernel/sys.c: In function 'override_release':
+  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/mballoc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -4987,8 +4987,9 @@ int ext4_trim_fs(struct super_block *sb,
- 	end = start + (range->len >> sb->s_blocksize_bits) - 1;
- 	minlen = range->minlen >> sb->s_blocksize_bits;
- 
--	if (unlikely(minlen > EXT4_CLUSTERS_PER_GROUP(sb)) ||
--	    unlikely(start >= max_blks))
-+	if (minlen > EXT4_CLUSTERS_PER_GROUP(sb) ||
-+	    start >= max_blks ||
-+	    range->len < sb->s_blocksize)
- 		return -EINVAL;
- 	if (end >= max_blks)
- 		end = max_blks - 1;
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1284,7 +1284,7 @@ static int override_release(char __user
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		copy = min(sizeof(buf), max_t(size_t, 1, len));
++		copy = clamp_t(size_t, len, 1, sizeof(buf));
+ 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
+ 		ret = copy_to_user(release, buf, copy + 1);
+ 	}
 
 
