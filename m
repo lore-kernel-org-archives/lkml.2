@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab2JZAdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:33:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53157 "EHLO mail.kernel.org"
+	id S1755297Ab2JZAdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:33:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53186 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752995Ab2JZAHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:01 -0400
+	id S1753834Ab2JZAHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Florian Zumbiehl <florz@florz.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/42] vlan: dont deliver frames for unknown vlans to protocols
-Date: Thu, 25 Oct 2012 17:05:41 -0700
-Message-Id: <20121026000128.134952677@linuxfoundation.org>
+        Denis Kirjanov <kirjanov@gmail.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 26/42] amd64_edac:__amd64_set_scrub_rate(): avoid overindexing scrubrates[]
+Date: Thu, 25 Oct 2012 17:05:34 -0700
+Message-Id: <20121026000127.418962629@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -26,133 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Andrew Morton <akpm@linux-foundation.org>
 
-From: Florian Zumbiehl <florz@florz.de>
+commit 168bfeef7bba3f9784f7540b053e4ac72b769ce9 upstream.
 
-[ Upstream commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e ]
+If none of the elements in scrubrates[] matches, this loop will cause
+__amd64_set_scrub_rate() to incorrectly use the n+1th element.
 
-6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
-vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
-there was an rx_handler, as the rx_handler could cause the frame to be received
-on a different (virtual) vlan-capable interface where that vlan might be
-configured.
+As the function is designed to use the final scrubrates[] element in the
+case of no match, we can fix this bug by simply terminating the array
+search at the n-1th element.
 
-As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
-frames for unknown vlans to be delivered to the protocol stack as if they had
-been received untagged.
+Boris: this code is fragile anyway, see here why:
+http://marc.info/?l=linux-kernel&m=135102834131236&w=2
 
-For example, if an ipv6 router advertisement that's tagged for a locally not
-configured vlan is received on an interface with macvlan interfaces attached,
-macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
-macvlan interfaces, which caused it to be passed to the protocol stack, leading
-to ipv6 addresses for the announced prefix being configured even though those
-are completely unusable on the underlying interface.
+It will be rewritten more robustly soonish.
 
-The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
-rx_handler, if there is one, sees the frame unchanged, but afterwards,
-before the frame is delivered to the protocol stack, it gets marked whether
-there is an rx_handler or not.
-
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/if_vlan.h |    8 ++++----
- net/8021q/vlan_core.c   |   10 ++--------
- net/core/dev.c          |    7 +++++--
- 3 files changed, 11 insertions(+), 14 deletions(-)
 
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net
- }
+---
+ drivers/edac/amd64_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -170,8 +170,11 @@ static int __amd64_set_scrub_rate(struct
+ 	 * memory controller and apply to register. Search for the first
+ 	 * bandwidth entry that is greater or equal than the setting requested
+ 	 * and program that. If at last entry, turn off DRAM scrubbing.
++	 *
++	 * If no suitable bandwidth is found, turn off DRAM scrubbing entirely
++	 * by falling back to the last element in scrubrates[].
+ 	 */
+-	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
++	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
+ 		/*
+ 		 * skip scrub rates which aren't recommended
+ 		 * (see F10 BKDG, F3x58)
+@@ -181,12 +184,6 @@ static int __amd64_set_scrub_rate(struct
  
- #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
-+#define vlan_tx_nonzero_tag_present(__skb) \
-+	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
- #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
- 
- #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
-@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_de
- extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
- extern u16 vlan_dev_vlan_id(const struct net_device *dev);
- 
--extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
-+extern bool vlan_do_receive(struct sk_buff **skb);
- extern struct sk_buff *vlan_untag(struct sk_buff *skb);
- 
- extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
-@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const
- 	return 0;
- }
- 
--static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
-+static inline bool vlan_do_receive(struct sk_buff **skb)
- {
--	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
--		(*skb)->pkt_type = PACKET_OTHERHOST;
- 	return false;
- }
- 
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -5,7 +5,7 @@
- #include <linux/export.h>
- #include "vlan.h"
- 
--bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
-+bool vlan_do_receive(struct sk_buff **skbp)
- {
- 	struct sk_buff *skb = *skbp;
- 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **sk
- 	struct vlan_pcpu_stats *rx_stats;
- 
- 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
--	if (!vlan_dev) {
--		/* Only the last call to vlan_do_receive() should change
--		 * pkt_type to PACKET_OTHERHOST
+ 		if (scrubrates[i].bandwidth <= new_bw)
+ 			break;
+-
+-		/*
+-		 * if no suitable bandwidth found, turn off DRAM scrubbing
+-		 * entirely by falling back to the last element in the
+-		 * scrubrates array.
 -		 */
--		if (vlan_id && last_handler)
--			skb->pkt_type = PACKET_OTHERHOST;
-+	if (!vlan_dev)
- 		return false;
--	}
- 
- 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
- 	if (unlikely(!skb))
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3209,18 +3209,18 @@ another_round:
- ncls:
- #endif
- 
--	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		if (vlan_do_receive(&skb, !rx_handler))
-+		if (vlan_do_receive(&skb))
- 			goto another_round;
- 		else if (unlikely(!skb))
- 			goto out;
  	}
  
-+	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
-@@ -3240,6 +3240,9 @@ ncls:
- 		}
- 	}
- 
-+	if (vlan_tx_nonzero_tag_present(skb))
-+		skb->pkt_type = PACKET_OTHERHOST;
-+
- 	/* deliver only exact match when indicated */
- 	null_or_dev = deliver_exact ? skb->dev : NULL;
- 
+ 	scrubval = scrubrates[i].scrubval;
 
 
