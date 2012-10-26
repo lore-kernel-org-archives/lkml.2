@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab2JZEoX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:44:23 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34036 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab2JZEoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:44:22 -0400
-Message-ID: <508A1505.6010809@gmail.com>
-Date: Thu, 25 Oct 2012 21:43:49 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1756158Ab2JZEp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:45:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48993 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755377Ab2JZEp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 00:45:26 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <508A122F.3090304@gmail.com>
+References: <201210240847.52417.linux@rainbow-software.org> <450396555.xT2D53NWjT@vostro.rjw.lan> <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com> <20121024210941.3c7d2cfb@pyramind.ukuu.org.uk> <508A122F.3090304@gmail.com>
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: Daniel Vetter <daniel@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed...
- GPU hung
-References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com> <5088CC9B.6010009@gmail.com> <CAKMK7uFMaf=ohEKyWKNsd-mSQkW__0BUww_iYLNFo347mEYAMg@mail.gmail.com> <84c8a8$68qvdl@orsmga001.jf.intel.com>
-In-Reply-To: <84c8a8$68qvdl@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 25 Oct 2012 21:44:59 -0700
+To: Robert Hancock <hancockrwd@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <e3c7bcc1-5562-4fb9-ab34-a8f1b391c34d@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 01:47 AM, Chris Wilson wrote:
-> On Thu, 25 Oct 2012 10:16:08 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
->> On Thu, Oct 25, 2012 at 7:22 AM, Justin P. Mattock
->> <justinmattock@gmail.com> wrote:
->>>
->>> here is a link to the file..: intel_error_decode
->>> http://www.filefactory.com/file/22bypyjhs4mx
+My guess is that Windows explicitly enables A20 on resume.  We should do that too, really... with the current heavily unified realmode code it should be easy - let me hack up a patch in the morning.
+
+Robert Hancock <hancockrwd@gmail.com> wrote:
+
+>On 10/24/2012 02:09 PM, Alan Cox wrote:
+>> On Wed, 24 Oct 2012 12:36:04 -0700
+>> "H. Peter Anvin" <hpa@zytor.com> wrote:
 >>
->> I haven't figured out how to access this thing. Can you please file a
->> bug report on bugs.freedesktop.org and attach it there?
-
-Oops.. I filed with the kernel. maybe can just add a cc's
-https://bugzilla.kernel.org/show_bug.cgi?id=49571
-
+>>> Minor concern: it should do the wait for ready before sending each
+>command.
+>>
+>> Can we get a command line to do this quirk too - it strikes me that
+>if
+>> the MSIs rely upon it then it may be something Windows always does so
+>> will be useful to try on other problem machines as an experiment.
 >
-> No worries, it is another ILK hang similar to the ones reported earlier
-> - it just seems the ring stops advancing. Hopefully it is a missing w/a
-> from http://cgit.freedesktop.org/~danvet/drm/log/?h=ilk-wa-pile
-> -Chris
+>I agree, one has to keep in mind the age-old question "how does Windows
 >
+>work?" since it surely has no such quirk. I'd say we're sometimes too 
+>quick to add these DMI quirks when a more general solution would be 
+>somehow figure out how the Linux behavior differs from what Windows is 
+>doing.
 
-well if this means building libdrm etc.. then thats not a problem, more 
-time consuming if anything. perhaps an *.rpm that I can test to see?
-
-
-Justin P. Mattock
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
