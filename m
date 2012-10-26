@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946014Ab2JZUg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:36:56 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35829 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759059Ab2JZUa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:30:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="238932611"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
-        eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 18/33] perf, x86: Support for printing PMU state on spurious PMIs v3
-Date: Fri, 26 Oct 2012 13:30:00 -0700
-Message-Id: <1351283415-13170-19-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
-References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+	id S1422707Ab2JZUhY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:37:24 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:43092 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422673Ab2JZUhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:37:20 -0400
+From: Nix <nix@esperi.org.uk>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com>
+Emacs: it's not slow --- it's stately.
+Date: Fri, 26 Oct 2012 21:37:08 +0100
+In-Reply-To: <508AF3FA.4020506@redhat.com> (Eric Sandeen's message of "Fri, 26
+	Oct 2012 15:35:06 -0500")
+Message-ID: <87wqydx957.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On 26 Oct 2012, Eric Sandeen outgrape:
 
-I had some problems with spurious PMIs, so print the PMU state
-on a spurious one. This will not interact well with other NMI users.
-Disabled by default, has to be explicitely enabled through sysfs.
+> On 10/23/12 3:57 PM, Nix wrote:
+>> The only unusual thing about the filesystems on this machine are that
+>> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
+>> 'nobarrier': the full set of options for all my ext4 filesystems are:
+>> 
+>> rw,nosuid,nodev,relatime,journal_checksum,journal_async_commit,nobarrier,quota,
+>> usrquota,grpquota,commit=30,stripe=16,data=ordered,usrquota,grpquota
+>
+> Out of curiosity, when I test log replay with the journal_checksum option, I
+> almost always get something like:
+>
+> [  999.917805] JBD2: journal transaction 84121 on dm-1-8 is corrupt.
+> [  999.923904] EXT4-fs (dm-1): error loading journal
+>
+> after a simulated crash & log replay.
+>
+> Do you see anything like that in your logs?
 
-Optional, but useful for debugging.
+I'm not seeing any corrupt journals or abort messages at all. The
+journal claims to be fine, but plainly isn't.
 
-v2: Move to /sys/devices/cpu
-v3: Print in more cases
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- arch/x86/kernel/cpu/perf_event.c       |    3 +++
- arch/x86/kernel/cpu/perf_event.h       |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c |   11 ++++++-----
- 3 files changed, 11 insertions(+), 5 deletions(-)
+I can reproduce this on a small filesystem and stick the image somewhere
+if that would be of any use to anyone. (If I'm very lucky, merely making
+this offer will make the problem go away. :} )
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 81b5e65..4a35eef 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -38,6 +38,7 @@
- #include "perf_event.h"
- 
- struct x86_pmu x86_pmu __read_mostly;
-+int	       print_spurious_pmi __read_mostly;
- 
- DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events) = {
- 	.enabled = 1,
-@@ -1636,9 +1637,11 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- }
- 
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_INT_ATTR(print_spurious_pmi, 0644, print_spurious_pmi);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_print_spurious_pmi.attr.attr,
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 89394e1..7b43503 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -659,3 +659,5 @@ static inline struct intel_shared_regs *allocate_shared_regs(int cpu)
- }
- 
- #endif /* CONFIG_CPU_SUP_INTEL */
-+
-+extern int print_spurious_pmi;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 3a7b962..bb1a539 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1146,11 +1146,8 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	intel_pmu_disable_all();
- 	handled = intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
--	if (!status) {
--		intel_pmu_enable_all(0);
--		return handled;
--	}
--
-+	if (!status)
-+		goto done;
- 	loops = 0;
- again:
- 	intel_pmu_ack_status(status);
-@@ -1210,6 +1207,10 @@ again:
- 		goto again;
- 
- done:
-+	if (!handled && print_spurious_pmi) {
-+		pr_debug("Spurious PMI\n");
-+		perf_event_print_debug();
-+	}
- 	intel_pmu_enable_all(0);
- 	return handled;
- }
 -- 
-1.7.7.6
-
+NULL && (void)
