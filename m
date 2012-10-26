@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab2JZMJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:09:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33990 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab2JZMJg (ORCPT
+	id S932565Ab2JZMMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:12:16 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:38500 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932469Ab2JZMMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:09:36 -0400
-Date: Fri, 26 Oct 2012 14:09:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Zhang, Yanmin" <yanmin.zhang@intel.com>
-cc: "He, Bo" <bo.he@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>
-Subject: RE: [PATCH] hrtimer:__run_hrtimer races with enqueue_hrtimer
-In-Reply-To: <144086DDB7BB6D429C79280EB1C804D41687C9@SHSMSX101.ccr.corp.intel.com>
-Message-ID: <alpine.LFD.2.02.1210261359210.2756@ionos>
-References: <1351219917.28400.6.camel@hebo> <alpine.LFD.2.02.1210261147000.2756@ionos> <144086DDB7BB6D429C79280EB1C804D41687C9@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 26 Oct 2012 08:12:14 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Ric Wheeler <ricwheeler@gmail.com>, Eric Sandeen <sandeen@redhat.com>,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
+	<87txtkld4h.fsf@spindle.srvr.nix> <5089D520.6020106@gmail.com>
+	<20121026004326.GB10509@thunk.org>
+Emacs: because Hell was full.
+Date: Fri, 26 Oct 2012 13:12:01 +0100
+In-Reply-To: <20121026004326.GB10509@thunk.org> (Theodore Ts'o's message of
+	"Thu, 25 Oct 2012 20:43:26 -0400")
+Message-ID: <87liet1lgu.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
+X-DCC-URT-Metrics: spindle 1060; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, Zhang, Yanmin wrote:
-> >From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> >Your code is returning HRTIMER_RESTART from the timer callback and at
-> >the same time it starts the timer from some other context. That's what
-> >needs to be fixed.
-> 
-> The timer user should fix it. But could we also change hrtimer to
-> make it more stable?  At least, instead of panic, could we print
-> some information and go ahead to let kernel continue?
+On 26 Oct 2012, Theodore Ts'o spake thusly:
 
-That's unfortunately not possible. At this point the timer might be
-already corrupted.
+> On Thu, Oct 25, 2012 at 08:11:12PM -0400, Ric Wheeler wrote:
+>> 
+>> Sending this just to you two to avoid embarrassing myself if I
+>> misread the thread, but....
+>> 
+>> Can we reproduce this with any other hardware RAID card? Or with MD?
+>
+> There was another user who reported very similar corruption using
+> 3.6.2 using USB thumb drive.  I can't be certain that it's the same
+> bug that's being triggered, but the symptoms were identical.
 
-CPU0				CPU 1
+I now suspect it's the same bug, triggered in a different way, but also
+by a block-layer problem -- instead of the block device driver not
+blocking while the umount finishes (or throwing some of the data umount
+writes away, whichever it is, not yet known), the block device goes away
+because someone pulled it out of the USB socket. In any case, it appears
+that an ext4 umount being interrupted while data is being written does
+bad, bad things to the filesystem.
 
-timer expires
-  callback runs		
-                                hrtimer_start()
-				   expiry value is set
-				   hrtimer_enqueue()
+>> If we cannot reproduce this in other machines, why assume this is an
+>> ext4 issue and not a hardware firmware bug?
 
-   hrtimer_forward()
-      expiry value is set
+A tad unlikely. Why would a firmware bug show up only at the instant of
+reboot? Why would it show up as a lack of blocking on the kernel side? I
+assure you that if you write lots of data to this controller normally,
+you will end up blocking :) I can completely believe that it's an arcmsr
+driver bug though. If it was an ext4 bug, it would surely be
+reproducible in virtualization, or on different hardware, or something
+like that.
 
-  return HRTIMER_RESTART				
-
-So while we can prevent the double enqueue, we have no way to deal
-with the corrupted expiry value and the inconsistent RB tree. We can
-give better debugging information, but we can't pretend that
-everything is nice and cool.
-
-If we really want to do something about it which keeps the machine
-alive, then we need to 
-
-       1) dequeue the timer
-       2) run a consistency check over the rbtree
-       3) enqueue the timer
-
-Not sure if that's worth the trouble.
-
-Thanks,
-
-	tglx
+-- 
+NULL && (void)
