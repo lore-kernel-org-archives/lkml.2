@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab2JZAGz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53047 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614Ab2JZAGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753720Ab2JZAGv (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Oct 2012 20:06:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53017 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614Ab2JZAGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Mihai Maruseac <mihai.maruseac@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/42] sparc64: Fix bit twiddling in sparc_pmu_enable_event().
-Date: Thu, 25 Oct 2012 17:05:47 -0700
-Message-Id: <20121026000128.725101189@linuxfoundation.org>
+Subject: [ 36/42] ipv6: addrconf: fix /proc/net/if_inet6
+Date: Thu, 25 Oct 2012 17:05:44 -0700
+Message-Id: <20121026000128.435398093@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -26,48 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e793d8c6740f8fe704fa216e95685f4d92c4c4b9 ]
+[ Upstream commit 9f0d3c2781baa1102108e16efbe640dd74564a7c ]
 
-There was a serious disconnect in the logic happening in
-sparc_pmu_disable_event() vs. sparc_pmu_enable_event().
+Commit 1d5783030a1 (ipv6/addrconf: speedup /proc/net/if_inet6 filling)
+added bugs hiding some devices from if_inet6 and breaking applications.
 
-Event disable is implemented by programming a NOP event into the PCR.
+"ip -6 addr" could still display all IPv6 addresses, while "ifconfig -a"
+couldnt.
 
-However, event enable was not reversing this operation.  Instead, it
-was setting the User/Priv/Hypervisor trace enable bits.
+One way to reproduce the bug is by starting in a shell :
 
-That's not sparc_pmu_enable_event()'s job, that's what
-sparc_pmu_enable() and sparc_pmu_disable() do .
+unshare -n /bin/bash
+ifconfig lo up
 
-The intent of sparc_pmu_enable_event() is clear, since it first clear
-out the event type encoding field.  So fix this by OR'ing in the event
-encoding rather than the trace enable bits.
+And in original net namespace, lo device disappeared from if_inet6
 
+Reported-by: Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>
+Tested-by: Jan Hinnerk Stosch <janhinnerk.stosch@gmail.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Mihai Maruseac <mihai.maruseac@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/perf_event.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/ipv6/addrconf.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -557,11 +557,13 @@ static u64 nop_for_index(int idx)
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -3095,14 +3095,15 @@ static struct inet6_ifaddr *if6_get_firs
+ 		struct hlist_node *n;
+ 		hlist_for_each_entry_rcu_bh(ifa, n, &inet6_addr_lst[state->bucket],
+ 					 addr_lst) {
++			if (!net_eq(dev_net(ifa->idev->dev), net))
++				continue;
+ 			/* sync with offset */
+ 			if (p < state->offset) {
+ 				p++;
+ 				continue;
+ 			}
+ 			state->offset++;
+-			if (net_eq(dev_net(ifa->idev->dev), net))
+-				return ifa;
++			return ifa;
+ 		}
  
- static inline void sparc_pmu_enable_event(struct cpu_hw_events *cpuc, struct hw_perf_event *hwc, int idx)
- {
--	u64 val, mask = mask_for_index(idx);
-+	u64 enc, val, mask = mask_for_index(idx);
-+
-+	enc = perf_event_get_enc(cpuc->events[idx]);
+ 		/* prepare for next bucket */
+@@ -3120,18 +3121,20 @@ static struct inet6_ifaddr *if6_get_next
+ 	struct hlist_node *n = &ifa->addr_lst;
  
- 	val = cpuc->pcr;
- 	val &= ~mask;
--	val |= hwc->config;
-+	val |= event_encoding(enc, idx);
- 	cpuc->pcr = val;
+ 	hlist_for_each_entry_continue_rcu_bh(ifa, n, addr_lst) {
++		if (!net_eq(dev_net(ifa->idev->dev), net))
++			continue;
+ 		state->offset++;
+-		if (net_eq(dev_net(ifa->idev->dev), net))
+-			return ifa;
++		return ifa;
+ 	}
  
- 	pcr_ops->write(cpuc->pcr);
+ 	while (++state->bucket < IN6_ADDR_HSIZE) {
+ 		state->offset = 0;
+ 		hlist_for_each_entry_rcu_bh(ifa, n,
+ 				     &inet6_addr_lst[state->bucket], addr_lst) {
++			if (!net_eq(dev_net(ifa->idev->dev), net))
++				continue;
+ 			state->offset++;
+-			if (net_eq(dev_net(ifa->idev->dev), net))
+-				return ifa;
++			return ifa;
+ 		}
+ 	}
+ 
 
 
