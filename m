@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966265Ab2JZTrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:47:17 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40302 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966243Ab2JZTrP (ORCPT
+	id S966282Ab2JZTvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:51:46 -0400
+Received: from mail.agmk.net ([91.192.224.71]:57048 "EHLO mail.agmk.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966247Ab2JZTvp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:47:15 -0400
+	Fri, 26 Oct 2012 15:51:45 -0400
+From: =?utf-8?B?UGF3ZcWC?= Sikora <pawel.sikora@agmk.net>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Martin Peres <martin.peres@labri.fr>, Heinz Diehl <htd@fancy-poultry.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org, Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Lekensteyn <lekensteyn@gmail.com>
+Subject: Re: Linux 3.7-rc1 (nouveau_bios_score oops).
+Date: Fri, 26 Oct 2012 21:51:37 +0200
+Message-ID: <4392132.ui6koSANok@localhost>
+User-Agent: KMail/4.9.1 (Linux/3.7.0-rc2-00191-g2ab3f29; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121025180654.GA28920@fritha.org>
+References: <1724445.dN2yMEzN6d@localhost> <2097113.JL2tUTAZjM@localhost> <20121025180654.GA28920@fritha.org>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
-References: <20121026185021.GA1960@www.outflux.net>
-	<CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
-Date: Fri, 26 Oct 2012 12:46:56 -0700
-X-Google-Sender-Auth: Xk_4_XRpZdrS6EUMXTiOVvDmTmU
-Message-ID: <CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com>
-Subject: Re: [PATCH] VFS: add config options to enable link restrictions
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 12:21 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Oct 26, 2012 at 11:50 AM, Kees Cook <keescook@chromium.org> wrote:
->> There are situations where devices running without initrds may need
->> very early protection from link vulnerabilities
->
-> I really don't see what this argument is all about.
->
-> If you don't have initrd, you still have early bootup scripts etc.
->
-> If your early bootup has security problems, you have security
-> problems. It has nothing to do with initrd, or with restricted links,
-> or anything else.
+On Thursday 25 of October 2012 20:06:54 Heinz Diehl wrote:
+> On 25.10.2012, Paweł Sikora wrote: 
+> 
+> > what is the reason of loading nouveau driver for laptops 
+> > with nvidia optimus and enabling vga switcheroo
+> > which doesn't work in such (optimus) cases.
+> 
+> You can safely compile a kernel without nouveau, your Nvidia 
+> card will not be used at all since neither Linux nor the 
+> proprietary nvidia driver does support optimus at this time
+> (and frankly, I won't buy any further machines with opticrap).
+> So having nouveau compiled and loaded seems like a waste of ressources
+> in this case.
 
-I think there's value in being able to enable these protections at
-build-time so there's no need for a distro to have to ship extra
-files/lines, spend time setting it, etc. This isn't like other
-tunables, IMO.
+i've bought this asus laptop mostly for a developer's workstation replacement
+(quad-core-i7-avx cpu with integrated gpu, with 12GB ram and 2x500GB hdd).
+nvidia's addon is an optional crap :)
 
-> I also refuse to add these kinds of micro-management config options
-> and ask any kind of normal person these kinds of "do you want this
-> random crazy feature". A config option would need to be way more sane,
-> not this kind of micro-management.
+> For me it's important to have nouveau working, because I try/use
+> Bumblebee and optirun: 
+> 
+> http://bumblebee-project.org/
+> https://fedoraproject.org/wiki/Bumblebee
 
-Would a single config item be acceptable? What would be an agreeable
-way to enable this at build-time?
+i'll try to use transformers too :-)
 
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
