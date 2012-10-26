@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab2JZAIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:08:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53685 "EHLO mail.kernel.org"
+	id S1754530Ab2JZAIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53814 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754038Ab2JZAH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:57 -0400
+	id S1754461Ab2JZAIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 39/85] USB: ti_usb_3410_5052: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:57 -0700
-Message-Id: <20121026000035.055477377@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 62/85] drm/i915: Use cpu relocations if the object is in the GTT but not mappable
+Date: Thu, 25 Oct 2012 17:06:20 -0700
+Message-Id: <20121026000037.352119166@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,168 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 51ef847df74632e7cfdf952afc3887de105b8b35 upstream.
+commit 504c7267a1e84b157cbd7e9c1b805e1bc0c2c846 upstream.
 
-Fix port-data memory leak by moving port data allocation and
-deallocation to port_probe and port_remove.
+This prevents the case of unbinding the object in order to process the
+relocations through the GTT and then rebinding it only to then proceed
+to use cpu relocations as the object is now in the CPU write domain. By
+choosing to use cpu relocations up front, we can therefore avoid the
+rebind penalty.
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |   88 ++++++++++++++++------------------
- 1 file changed, 43 insertions(+), 45 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -98,6 +98,8 @@ struct ti_device {
- 
- static int ti_startup(struct usb_serial *serial);
- static void ti_release(struct usb_serial *serial);
-+static int ti_port_probe(struct usb_serial_port *port);
-+static int ti_port_remove(struct usb_serial_port *port);
- static int ti_open(struct tty_struct *tty, struct usb_serial_port *port);
- static void ti_close(struct usb_serial_port *port);
- static int ti_write(struct tty_struct *tty, struct usb_serial_port *port,
-@@ -223,6 +225,8 @@ static struct usb_serial_driver ti_1port
- 	.num_ports		= 1,
- 	.attach			= ti_startup,
- 	.release		= ti_release,
-+	.port_probe		= ti_port_probe,
-+	.port_remove		= ti_port_remove,
- 	.open			= ti_open,
- 	.close			= ti_close,
- 	.write			= ti_write,
-@@ -251,6 +255,8 @@ static struct usb_serial_driver ti_2port
- 	.num_ports		= 2,
- 	.attach			= ti_startup,
- 	.release		= ti_release,
-+	.port_probe		= ti_port_probe,
-+	.port_remove		= ti_port_remove,
- 	.open			= ti_open,
- 	.close			= ti_close,
- 	.write			= ti_write,
-@@ -358,11 +364,8 @@ module_exit(ti_exit);
- static int ti_startup(struct usb_serial *serial)
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -269,6 +269,7 @@ eb_destroy(struct eb_objects *eb)
+ static inline int use_cpu_reloc(struct drm_i915_gem_object *obj)
  {
- 	struct ti_device *tdev;
--	struct ti_port *tport;
- 	struct usb_device *dev = serial->dev;
- 	int status;
--	int i;
--
- 
- 	dbg("%s - product 0x%4X, num configurations %d, configuration value %d",
- 	    __func__, le16_to_cpu(dev->descriptor.idProduct),
-@@ -409,42 +412,8 @@ static int ti_startup(struct usb_serial
- 		goto free_tdev;
- 	}
- 
--	/* set up port structures */
--	for (i = 0; i < serial->num_ports; ++i) {
--		tport = kzalloc(sizeof(struct ti_port), GFP_KERNEL);
--		if (tport == NULL) {
--			dev_err(&dev->dev, "%s - out of memory\n", __func__);
--			status = -ENOMEM;
--			goto free_tports;
--		}
--		spin_lock_init(&tport->tp_lock);
--		tport->tp_uart_base_addr = (i == 0 ?
--				TI_UART1_BASE_ADDR : TI_UART2_BASE_ADDR);
--		tport->tp_closing_wait = closing_wait;
--		init_waitqueue_head(&tport->tp_msr_wait);
--		init_waitqueue_head(&tport->tp_write_wait);
--		if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE,
--								GFP_KERNEL)) {
--			dev_err(&dev->dev, "%s - out of memory\n", __func__);
--			kfree(tport);
--			status = -ENOMEM;
--			goto free_tports;
--		}
--		tport->tp_port = serial->port[i];
--		tport->tp_tdev = tdev;
--		usb_set_serial_port_data(serial->port[i], tport);
--		tport->tp_uart_mode = 0;	/* default is RS232 */
--	}
--
- 	return 0;
- 
--free_tports:
--	for (--i; i >= 0; --i) {
--		tport = usb_get_serial_port_data(serial->port[i]);
--		kfifo_free(&tport->write_fifo);
--		kfree(tport);
--		usb_set_serial_port_data(serial->port[i], NULL);
--	}
- free_tdev:
- 	kfree(tdev);
- 	usb_set_serial_data(serial, NULL);
-@@ -454,21 +423,50 @@ free_tdev:
- 
- static void ti_release(struct usb_serial *serial)
- {
--	int i;
- 	struct ti_device *tdev = usb_get_serial_data(serial);
-+
-+	kfree(tdev);
-+}
-+
-+static int ti_port_probe(struct usb_serial_port *port)
-+{
- 	struct ti_port *tport;
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		tport = usb_get_serial_port_data(serial->port[i]);
--		if (tport) {
--			kfifo_free(&tport->write_fifo);
--			kfree(tport);
--		}
-+	tport = kzalloc(sizeof(*tport), GFP_KERNEL);
-+	if (!tport)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&tport->tp_lock);
-+	if (port == port->serial->port[0])
-+		tport->tp_uart_base_addr = TI_UART1_BASE_ADDR;
-+	else
-+		tport->tp_uart_base_addr = TI_UART2_BASE_ADDR;
-+	tport->tp_closing_wait = closing_wait;
-+	init_waitqueue_head(&tport->tp_msr_wait);
-+	init_waitqueue_head(&tport->tp_write_wait);
-+	if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE, GFP_KERNEL)) {
-+		kfree(tport);
-+		return -ENOMEM;
- 	}
-+	tport->tp_port = port;
-+	tport->tp_tdev = usb_get_serial_data(port->serial);
-+	tport->tp_uart_mode = 0;	/* default is RS232 */
- 
--	kfree(tdev);
-+	usb_set_serial_port_data(port, tport);
-+
-+	return 0;
+ 	return (obj->base.write_domain == I915_GEM_DOMAIN_CPU ||
++		!obj->map_and_fenceable ||
+ 		obj->cache_level != I915_CACHE_NONE);
  }
  
-+static int ti_port_remove(struct usb_serial_port *port)
-+{
-+	struct ti_port *tport;
-+
-+	tport = usb_get_serial_port_data(port);
-+	kfifo_free(&tport->write_fifo);
-+	kfree(tport);
-+
-+	return 0;
-+}
- 
- static int ti_open(struct tty_struct *tty, struct usb_serial_port *port)
- {
 
 
