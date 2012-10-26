@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2JZAni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:43:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57650 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab2JZAng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:43:36 -0400
-Date: Thu, 25 Oct 2012 20:43:26 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ric Wheeler <ricwheeler@gmail.com>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121026004326.GB10509@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Ric Wheeler <ricwheeler@gmail.com>,
-	Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Bryan Schumaker <bjschuma@netapp.com>
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <508740B2.2030401@redhat.com>
- <87txtkld4h.fsf@spindle.srvr.nix>
- <5089D520.6020106@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5089D520.6020106@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1755606Ab2JZAn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:43:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52661 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331Ab2JZAGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 02/42] ext4: Avoid underflow in ext4_trim_fs()
+Date: Thu, 25 Oct 2012 17:05:10 -0700
+Message-Id: <20121026000125.040986206@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
+References: <20121026000124.790781113@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 08:11:12PM -0400, Ric Wheeler wrote:
-> 
-> Sending this just to you two to avoid embarrassing myself if I
-> misread the thread, but....
-> 
-> Can we reproduce this with any other hardware RAID card? Or with MD?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-There was another user who reported very similar corruption using
-3.6.2 using USB thumb drive.  I can't be certain that it's the same
-bug that's being triggered, but the symptoms were identical.
+------------------
 
-> If we cannot reproduce this in other machines, why assume this is an
-> ext4 issue and not a hardware firmware bug?
-> 
-> As an ex-storage guy, this really smells like the hardware raid card
-> might be misleading us....
+From: Lukas Czerner <lczerner@redhat.com>
 
-It's possible.  The main reason why I took this so seriously was
-because of the 2nd, apparently confirming report, with very different
-hardware.  That was what was so scary to me, at least at first.
+commit 5de35e8d5c02d271c20e18337e01bc20e6ef472e upstream.
 
-	   	    	     	      - Ted
+Currently if len argument in ext4_trim_fs() is smaller than one block,
+the 'end' variable underflow. Avoid that by returning EINVAL if len is
+smaller than file system block.
+
+Also remove useless unlikely().
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/ext4/mballoc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4984,8 +4984,9 @@ int ext4_trim_fs(struct super_block *sb,
+ 	end = start + (range->len >> sb->s_blocksize_bits) - 1;
+ 	minlen = range->minlen >> sb->s_blocksize_bits;
+ 
+-	if (unlikely(minlen > EXT4_CLUSTERS_PER_GROUP(sb)) ||
+-	    unlikely(start >= max_blks))
++	if (minlen > EXT4_CLUSTERS_PER_GROUP(sb) ||
++	    start >= max_blks ||
++	    range->len < sb->s_blocksize)
+ 		return -EINVAL;
+ 	if (end >= max_blks)
+ 		end = max_blks - 1;
+
+
