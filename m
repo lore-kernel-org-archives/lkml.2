@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab2JZAmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:42:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52782 "EHLO mail.kernel.org"
+	id S1753398Ab2JZAG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52683 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab2JZAGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:30 -0400
+	id S1753345Ab2JZAGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@suse.cz>, Jochen Friedrich <jochen@scram.de>,
-        linux-pcmcia@lists.infradead.org
-Subject: [ 10/42] pcmcia: sharpsl: dont discard sharpsl_pcmcia_ops
-Date: Thu, 25 Oct 2012 17:05:18 -0700
-Message-Id: <20121026000125.823995499@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 04/42] arch/tile: avoid generating .eh_frame information in modules
+Date: Thu, 25 Oct 2012 17:05:12 -0700
+Message-Id: <20121026000125.242313236@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -29,49 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit fdc858a466b738d35d3492bc7cf77b1dac98bf7c upstream.
+commit 627072b06c362bbe7dc256f618aaa63351f0cfe6 upstream.
 
-The sharpsl_pcmcia_ops structure gets passed into
-sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
-unlike all other pcmcia drivers that pass their structures
-into platform_device_add_data, which makes a copy.
+The tile tool chain uses the .eh_frame information for backtracing.
+The vmlinux build drops any .eh_frame sections at link time, but when
+present in kernel modules, it causes a module load failure due to the
+presence of unsupported pc-relative relocations.  When compiling to
+use compiler feedback support, the compiler by default omits .eh_frame
+information, so we don't see this problem.  But when not using feedback,
+we need to explicitly suppress the .eh_frame.
 
-This means the gcc warning is valid and the structure
-must not be marked as __initdata.
-
-Without this patch, building collie_defconfig results in:
-
-drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
-compilation terminated.
-make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
-make[2]: *** [drivers/pcmcia] Error 2
-make[1]: *** [drivers] Error 2
-make: *** [sub-make] Error 2
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Pavel Machek <pavel@suse.cz>
-Cc: linux-pcmcia@lists.infradead.org
-Cc: Jochen Friedrich <jochen@scram.de>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/tile/Makefile |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/pcmcia/pxa2xx_sharpsl.c
-+++ b/drivers/pcmcia/pxa2xx_sharpsl.c
-@@ -194,7 +194,7 @@ static void sharpsl_pcmcia_socket_suspen
- 	sharpsl_pcmcia_init_reset(skt);
- }
+--- a/arch/tile/Makefile
++++ b/arch/tile/Makefile
+@@ -26,6 +26,10 @@ $(error Set TILERA_ROOT or CROSS_COMPILE
+   endif
+ endif
  
--static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
-+static struct pcmcia_low_level sharpsl_pcmcia_ops = {
- 	.owner                  = THIS_MODULE,
- 	.hw_init                = sharpsl_pcmcia_hw_init,
- 	.socket_state           = sharpsl_pcmcia_socket_state,
++# The tile compiler may emit .eh_frame information for backtracing.
++# In kernel modules, this causes load failures due to unsupported relocations.
++KBUILD_CFLAGS   += -fno-asynchronous-unwind-tables
++
+ ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
+ KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
+ endif
 
 
