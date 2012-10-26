@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab2JZJPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:15:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39661 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785Ab2JZJPH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:15:07 -0400
-Message-ID: <1351242885.16863.0.camel@twins>
-Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read
- support
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 26 Oct 2012 11:14:45 +0200
-In-Reply-To: <87txti81i2.fsf@sejong.aot.lge.com>
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>
-	 <87txti81i2.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1753300Ab2JZJP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:15:58 -0400
+Received: from smtp2.goneo.de ([212.90.139.82]:39772 "EHLO smtp2.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785Ab2JZJPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 05:15:55 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -2.898
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v2 2/4] gpio: add viperboard gpio driver
+Date: Fri, 26 Oct 2012 11:16:01 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Lars Poeschel <larsi@wh2.tu-dresden.de>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, jic23@cam.ac.uk, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca
+References: <20120925085559.GL28670@sortiz-mobl> <201210251802.42349.poeschel@lemonage.de> <20121025160651.GO18814@opensource.wolfsonmicro.com>
+In-Reply-To: <20121025160651.GO18814@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210261116.01507.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 10:29 +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> On Sat, 20 Oct 2012 16:33:08 +0200, Jiri Olsa wrote:
-> > hi,
-> > adding support to read sample values through the PERF_SAMPLE_READ
-> > sample type. It's now possible to specify 'S' modifier for an event
-> > and get its sample value by PERF_SAMPLE_READ.
-> 
-> I have a question.  What's an actual impact of specifying 'S' modifiere
-> to a non-group event or even only a (non-leader) member of a group?  For
-> instance, 'cycles:S' or '{branches,branch-misses:S}'.
+On Thursday 25 October 2012 at 18:06:51, Mark Brown wrote:
+> Are you saying that whoever designed this USB device has done it so that
+> it takes a byte stream with something like RRVV where RR is the register
+> and VV is the value?  That's the marshalling, as you'll have seen that's
+> done before the buses see the data.
 
-I would hope a syntax error from the parser ;-)
+Aaah, I understand! Now your hint that the marshalling should be made 
+pluggable makes sense to me.
+The device is more complicated and worse. For the first 16 gpio pins it is 
+something like 01RR0000FD00VV for setting the value and 03RR00FF00FEVV00 for 
+setting the direction. For the second 16 gpio pins it is completly different. 
+And yes, for this I completely remarshal what I get marshalled from regmap in 
+my bus implementation. This is bad. Thank you for your clarification. This 
+was not that clear to me as I began to use regmap and I think it also was not 
+to Linus Walleji, as he asked me to change the driver to use regmap. This is 
+why he brought you into our discussion.
 
-I haven't actually looked at the implementation, but I understood it to
-be a group modifier, not an event modifier.
+I am a bit unsure what to do now. Since Linus said he would take my driver 
+without regmap, this will be my way for the driver.
+I had a look at the regmap code in sense of making the marshalling pluggable. 
+It seems that the current assumption is that the register is always the first 
+value in the buffer after the marshalling happend which would not fit for my 
+device. Changing that is a bit hard. This marshalling is not the only issue. 
+For reading values I would need a split buffer or two seperate buffers. 
+Reading the device means doing a usb write using the first buffer telling the 
+device which register I am interested in and then doing a usb read into the 
+second buffer which then contains the actual value of the register. (Both 
+transfers marshalled different of course.)
+
+> Is the I/O selection per GPIO or per device?
+
+The I/O selection is per GPIO.
+ 
+> > > So just invalidate the cache and it'll get restored next time we look
+> > > at the register.
+> > 
+> > Yes, this is exactly what I gave as an alternative in my second to last
+> > mail. But this invalidates the whole register map although I just want
+> > to update one register value.
+> 
+> So add that functionality to the core if it's not there.
+
+If I reach the limitations of some api/framework/something it is not my first 
+idea to change that api but if I did something wrong. But this word from a 
+maintainer is clear!
