@@ -1,88 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab2JZDay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:30:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:60322 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab2JZDaw (ORCPT
+	id S1756067Ab2JZDbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:31:19 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:58980 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017Ab2JZDbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:30:52 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
-        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Roberto Sassu <roberto.sassu@polito.it>,
-        Kees Cook <keescook@chromium.org>
-References: <871ugqb4gj.fsf@xmission.com> <20121023131854.GA16496@redhat.com>
-	<20121023145920.GD16496@redhat.com> <87fw552mb4.fsf_-_@xmission.com>
-	<20121024173651.GE1821@redhat.com> <1351145401.18115.78.camel@falcor>
-	<20121025141048.GD9377@redhat.com> <1351190421.18115.92.camel@falcor>
-	<20121025185520.GA17995@redhat.com>
-	<1351214158.18115.186.camel@falcor>
-	<20121026023916.GA16762@srcf.ucam.org>
-Date: Thu, 25 Oct 2012 20:30:37 -0700
-In-Reply-To: <20121026023916.GA16762@srcf.ucam.org> (Matthew Garrett's message
-	of "Fri, 26 Oct 2012 03:39:16 +0100")
-Message-ID: <87625xq59e.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+P0bm+UnF0kPjNz767FDnbF4ODxuSjizs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.1745]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Matthew Garrett <mjg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: Kdump with signed images
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Thu, 25 Oct 2012 23:31:16 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-9c-508a0402821f
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+To: "'Vyacheslav Dubeyko'" <slava@dubeyko.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+ <001201cdb0c5$bdf728f0$39e57ad0$%kim@samsung.com>
+ <1351077945.2097.9.camel@slavad-ubuntu>
+In-reply-to: <1351077945.2097.9.camel@slavad-ubuntu>
+Subject: RE: [PATCH 02/16 v2] f2fs: add on-disk layout
+Date: Fri, 26 Oct 2012 12:31:14 +0900
+Message-id: <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac2x2lfwNy8RW3n1SqS1QwOJjZfvuwBI/NQA
+Content-language: en-us
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zA10mlq4Ag+udmhZ79p5ksbi8aw6b
+	A5PH501yAYxRXDYpqTmZZalF+nYJXBmzju5lK/ilXDHh5T72BsYlMl2MnBwSAiYS+w6uZ4Ow
+	xSQu3IOwhQSWMUqsvRAKU9P05Q5zFyMXUHw6o8TG3UcYIZx/jBI3r/8FynBwsAloS2zebwDS
+	ICKgI/Fj5Qp2kBpmgYeMEnNunmCHaJjNKHFv23MmkCpOoLH/mqezgtjCAmYSfW8fsoMMYhFQ
+	lVi8MxEkzCtgK3F4+0w2CFtQ4sfkeywgNrOAusSkeYuYIWx5ic1r3oLdIAEUf/RXF+IGI4mN
+	p6+yQpSIS0x6ADKdE2i6gMS3yYdYIMplJTYdAPtLQmAVu8SfVUtYIB6WlDi44gbLBEaJWUg2
+	z0KyeRaSzbOQrFjAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIyTGpHcwrmqwOMQowMGo
+	xMO7Ia0zQIg1say4MvcQowQHs5II7+6pQCHelMTKqtSi/Pii0pzU4kOMPkCXT2SWEk3OB8Z/
+	Xkm8obGxiZmJqYm5pam5KQ5hJXHeZo+UACGB9MSS1OzU1ILUIphxTBycUg2MkjdsE5IP9T/2
+	dlPdu0Z5peOZxCYR/x2bhWabWDjKiFi4ar4w2iRSyXhtIaOWUvRxwZiniYWLRcprrnu8Kud6
+	tcClYOYkFoOUVaek4lVO1orI2JWpz1xXWLvzTa3Yvfbb/8NsH8odsue33vHTQuudSoPmiZW5
+	9lyvHnHHyGzJWnTm7o2ZH/mVWIozEg21mIuKEwH+Fveo3gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jQV0mlq4Ag6VNKhZ79p5ksbi8aw6b
+	A5PH501yAYxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4B
+	um6ZOUCjlRTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZs47uZSv4pVwx
+	4eU+9gbGJTJdjJwcEgImEk1f7jBD2GISF+6tZ+ti5OIQEpjOKLFx9xFGCOcfo8TN63+Bqjg4
+	2AS0JTbvNwBpEBHQkfixcgU7SA2zwENGiTk3T7BDNMxmlLi37TkTSBUn0Ip/zdNZQWxhATOJ
+	vrcP2UEGsQioSizemQgS5hWwlTi8fSYbhC0o8WPyPRYQm1lAXWLSvEXMELa8xOY1b8FukACK
+	P/qrC3GDkcTG01dZIUrEJSY9eMg+gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGukV
+	J+YWl+al6yXn525iBMfwM+kdjKsaLA4xCnAwKvHwbkjrDBBiTSwrrsw9xCjBwawkwrt7KlCI
+	NyWxsiq1KD++qDQntfgQow/QnxOZpUST84HpJa8k3tDYxMzI0sjMwsjE3ByHsJI4b7NHSoCQ
+	QHpiSWp2ampBahHMOCYOTqkGxpImAV853o+m7I9OiGmfatzVFZ5yWHdWuc9K7oKArEo7vRSW
+	u25fn3e9nKvSsuJPJ8uf0zbMGS3MT/w278reOzeA1SdEONP1gB6bxIvUVUerayYfDK39uMW1
+	uvR/X/2MyqyKL/4XG7sPSRcs4eHNkJx0VtAt0GmZ7UGr5k93TyV27ktOOhGixFKckWioxVxU
+	nAgAqOfg1w4DAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg@redhat.com> writes:
+[snip]
+> > +#define F2FS_SUPER_MAGIC	0xF2F52010
+> > +#define F2FS_SUPER_OFFSET	0		/* start sector # for sb */
+> 
+> Does f2fs superblock really haven't any offset from the volume begin?
 
-> On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
->
->> On a running system, the package installer, after verifying the package
->> integrity, would install each file with the associated 'security.ima'
->> extended attribute.  The 'security.evm' digital signature would be
->> installed with an HMAC, calculated using a system unique key. 
->
-> The idea isn't to prevent /sbin/kexec from being modified after 
-> installation - it's to prevent it from being possible to install a 
-> system that has a modified /sbin/kexec. Leaving any part of this up to 
-> the package installer means that it doesn't solve the problem we're 
-> trying to solve here. It must be impossible for the kernel to launch any 
-> /sbin/kexec that hasn't been signed by a trusted key that's been built 
-> into the kernel, and it must be impossible for anything other than 
-> /sbin/kexec to make the kexec system call.
+The reason that I changed this from 1 to 0 is due to the failure during android
+recovery. I don't know why the recovery is failed when the offset is 1, but it
+works fine after the offset is changed to 0.
+I suspect that mount procedure inspects the 0'th offset to figure out what file
+system is installed by checking some kind of magic numbers.
+Sometimes, we've seen that the mount program tries to load previously installed
+file system even though mkfs.f2fs was conducted.
+Would you recommend something?
 
-The 'security.capability' attribute modulo weirdness with the security
-bounding set gives us the necessary tools to allow /sbin/kexec to make
-the system call.
+> 
+> > +#define F2FS_BLKSIZE		4096
+> > +#define F2FS_MAX_EXTENSION	64
+> > +
+> > +#define NULL_ADDR		0x0U
+> > +#define NEW_ADDR		-1U
+> 
+> Does NULL_ADDR and NEW_ADDR declarations really need? Does kernel
+> haven't any analogous?
 
-The primary trick with this is to limit the installer in such as way
-that we can trust the installer even on a system on which root has been
-compromised.
+These are used for F2FS-specific block allocation, so for readability,
+I don't want to change this.
 
-Trusting the installer is the same class of problem as trusting
-/sbin/kexec, and to me a much more interesting problem as it keeps
-critical system files from being tampered with.
+> 
+> > +
+> > +#define F2FS_ROOT_INO(sbi)	(sbi->root_ino_num)
+> > +#define F2FS_NODE_INO(sbi)	(sbi->node_ino_num)
+> > +#define F2FS_META_INO(sbi)	(sbi->meta_ino_num)
+> > +
+> > +#define GFP_F2FS_MOVABLE	(__GFP_WAIT | __GFP_IO | __GFP_ZERO)
+> > +
+> > +#define MAX_ACTIVE_LOGS	16
+> > +#define MAX_ACTIVE_NODE_LOGS	8
+> > +#define MAX_ACTIVE_DATA_LOGS	8
+> 
+> I think that it makes sense to comment the reasons of such limitations
+> in MAX_ACTIVE_LOGS, MAX_ACTIVE_NODE_LOGS, MAX_ACTIVE_DATA_LOGS.
 
-It sounds like there are some tricky details to work through but this
-direction of system integrity looks like it is worth pursuing,
-regardless of how we handle a signed /sbin/kexec.
+The maximum number of logs is suggested by arnd before.
+As I understood, why he suggested such a quite large number is for further
+optimization of multiple logs without any on-disk layout changes.
+And, I think it is quite enough.
 
-Eric
+> 
+> > +
+> > +/*
+> > + * For superblock
+> > + */
+> > +struct f2fs_super_block {
+> > +	__le32 magic;		/* Magic Number */
+> > +	__le16 major_ver;	/* Major Version */
+> > +	__le16 minor_ver;	/* Minor Version */
+> > +	__le32 log_sectorsize;	/* log2 (Sector size in bytes) */
+> > +	__le32 log_sectors_per_block;	/* log2 (Number of sectors per block */
+> > +	__le32 log_blocksize;	/* log2 (Block size in bytes) */
+> > +	__le32 log_blocks_per_seg; /* log2 (Number of blocks per segment) */
+> 
+> From my point of view, __le32 is big data type for log2 (<value>). What
+> do you think?
+> 
+
+Right, but it is superblock. Should we have to consider space overhead?
+
+> > +	__le32 segs_per_sec;	/* Number of segments per section */
+> > +	__le32 secs_per_zone;	/* Number of sections per zone */
+> > +	__le32 checksum_offset;	/* Checksum position in this super block */
+> > +	__le64 block_count;	/* Total number of blocks */
+> > +	__le32 section_count;	/* Total number of sections */
+> > +	__le32 segment_count;	/* Total number of segments */
+> > +	__le32 segment_count_ckpt; /* Total number of segments
+> > +				      in Checkpoint area */
+> > +	__le32 segment_count_sit; /* Total number of segments
+> > +				     in Segment information table */
+> > +	__le32 segment_count_nat; /* Total number of segments
+> > +				     in Node address table */
+> > +	/*Total number of segments in Segment summary area */
+> > +	__le32 segment_count_ssa;
+> > +	/* Total number of segments in Main area */
+> > +	__le32 segment_count_main;
+> > +	__le32 failure_safe_block_distance;
+> > +	__le32 segment0_blkaddr;	/* Start block address of Segment 0 */
+> > +	__le32 start_segment_checkpoint; /* Start block address of ckpt */
+> > +	__le32 sit_blkaddr;	/* Start block address of SIT */
+> > +	__le32 nat_blkaddr;	/* Start block address of NAT */
+> > +	__le32 ssa_blkaddr;     /* Start block address of SSA */
+> > +	__le32 main_blkaddr;	/* Start block address of Main area */
+> > +	__le32 root_ino;	/* Root directory inode number */
+> > +	__le32 node_ino;	/* node inode number */
+> > +	__le32 meta_ino;	/* meta inode number */
+> > +	__le32 volume_serial_number;	/* VSN is optional field */
+> 
+> Usually, it is used 128-bits UUID for serial number. Why do you use
+> __le32 as volume_serial_number?
+
+Ok, I'll change.
+
+[snip]
+> > +/*
+> > + * For directory operations
+> > + */
+> > +#define F2FS_DOT_HASH		0
+> > +#define F2FS_DDOT_HASH		F2FS_DOT_HASH
+> > +#define F2FS_MAX_HASH		(~((0x3ULL) << 62))
+> > +#define F2FS_HASH_COL_BIT	((0x1ULL) << 63)
+> > +
+> > +typedef __le32	f2fs_hash_t;
+> > +
+> > +#define F2FS_NAME_LEN		8
+> 
+> It exists F2FS_MAX_NAME_LEN. I think that it makes sense to comment here
+> purpose of F2FS_NAME_LEN declaration.
+
+Ok, thanks.
+
+---
+Jaegeuk Kim
+Samsung
+
+
