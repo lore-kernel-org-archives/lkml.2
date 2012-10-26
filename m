@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934132Ab2JZU5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:57:47 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34947 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2JZU5q (ORCPT
+	id S966532Ab2JZU7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:59:19 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:43176 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966481Ab2JZU7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:57:46 -0400
-Message-ID: <508AF938.9090004@gmail.com>
-Date: Fri, 26 Oct 2012 13:57:28 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 26 Oct 2012 16:59:18 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com>
+	<87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org>
+Emacs: it's all fun and games, until somebody tries to edit a file.
+Date: Fri, 26 Oct 2012 21:59:07 +0100
+In-Reply-To: <20121026205618.GC8614@thunk.org> (Theodore Ts'o's message of
+	"Fri, 26 Oct 2012 16:56:18 -0400")
+Message-ID: <87objpx84k.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: Daniel Vetter <daniel@ffwll.ch>
-CC: Chris Wilson <chris@chris-wilson.co.uk>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed...
- GPU hung
-References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com> <5088CC9B.6010009@gmail.com> <CAKMK7uFMaf=ohEKyWKNsd-mSQkW__0BUww_iYLNFo347mEYAMg@mail.gmail.com> <84c8a8$68qvdl@orsmga001.jf.intel.com> <508A1505.6010809@gmail.com> <CAKMK7uHm8OXPGmYa3zgn64mmufgGMmqiAE=+5ugBBKQ+i6PTag@mail.gmail.com>
-In-Reply-To: <CAKMK7uHm8OXPGmYa3zgn64mmufgGMmqiAE=+5ugBBKQ+i6PTag@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 01:05 AM, Daniel Vetter wrote:
-> On Fri, Oct 26, 2012 at 6:43 AM, Justin P. Mattock
-> <justinmattock@gmail.com> wrote:
->>>
->>> No worries, it is another ILK hang similar to the ones reported earlier
->>> - it just seems the ring stops advancing. Hopefully it is a missing w/a
->>> from http://cgit.freedesktop.org/~danvet/drm/log/?h=ilk-wa-pile
->>> -Chris
->>>
->>
->> well if this means building libdrm etc.. then thats not a problem, more time
->> consuming if anything. perhaps an *.rpm that I can test to see?
+On 26 Oct 2012, Theodore Ts'o stated:
+
+> On Fri, Oct 26, 2012 at 09:37:08PM +0100, Nix wrote:
+>> 
+>> I can reproduce this on a small filesystem and stick the image somewhere
+>> if that would be of any use to anyone. (If I'm very lucky, merely making
+>> this offer will make the problem go away. :} )
 >
-> It's not libdrm, the above is just a kernel git tree with a bunch of
-> ironlake workarounds.
-> -Daniel
+> I'm not sure the image is going to be that useful.  What we really
+> need to do is to get a reliable reproduction of what _you_ are seeing.
 >
+> It's clear from Eric's experiments that journal_checksum is dangerous.
+> 
+> That's why one of the things I asked you to do when you had time was
+> to see if you could reproduce the problem you are seeing w/o
+> nobarrier,journal_checksum,journal_async_commit.
 
+OK. Will do tomorrow.
 
-nice..
+> The other experiment that would be really useful if you could do is to
+> try to apply these two patches which I sent earlier this week:
+>
+> [PATCH 1/2] ext4: revert "jbd2: don't write superblock when if its empty
+> [PATCH 2/2] ext4: fix I/O error when unmounting an ro file system
+>
+> ... and see if they make a difference.
 
-:~/drm> git clone git://people.freedesktop.org/~danvet/drm
-Cloning into 'drm'...
-remote: Counting objects: 2728390, done.
-remote: Compressing objects: 100% (418606/418606), done.
-remote: Total 2728390 (delta 2293727), reused 2717443 (delta 2282880)
-Receiving objects: 100% (2728390/2728390), 637.95 MiB | 599 KiB/s, done.
-Resolving deltas: 100% (2293727/2293727), done.
-warning: remote HEAD refers to nonexistent ref, unable to checkout.
+As of tomorrow I'll be able to reboot without causing a riot: I'll test
+it then. (Sorry for the delay :( )
 
+>                                               So I really don't want
+> to push these patches to Linus until I get confirmation that they make
+> a difference to *somebody*.
 
-so now I have to go on a witch hunt for 600MB's in my system.
+Agreed.
 
-Justin P. Mattock
+This isn't the first time that journal_checksum has proven problematic.
+It's a shame that we're stuck between two error-inducing stools here...
+
+-- 
+NULL && (void)
