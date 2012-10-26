@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab2JZAFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:05:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52270 "EHLO mail.kernel.org"
+	id S1752849Ab2JZAFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:05:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52429 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752598Ab2JZAF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:29 -0400
+	id S1752784Ab2JZAFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 02/31] NLM: nlm_lookup_file() may return NLMv4-specific error codes
-Date: Thu, 25 Oct 2012 17:04:09 -0700
-Message-Id: <20121026000215.191461554@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 08/31] use clamp_t in UNAME26 fix
+Date: Thu, 25 Oct 2012 17:04:15 -0700
+Message-Id: <20121026000215.817875317@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -26,50 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
+commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
 
-If the filehandle is stale, or open access is denied for some reason,
-nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
-or nlm4_failed. These get passed right through nlm_lookup_file(),
-and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
-the result through the cast_status() machinery.
+The min/max call needed to have explicit types on some architectures
+(e.g. mn10300). Use clamp_t instead to avoid the warning:
 
-Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
+  kernel/sys.c: In function 'override_release':
+  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reported-by: Larry McVoy <lm@bitmover.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntxdr.c |    2 +-
- fs/lockd/svcproc.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_s
- {
- 	__be32 *p;
- 
--	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
-+	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
- 	p = xdr_reserve_space(xdr, 4);
- 	*p = stat;
- }
---- a/fs/lockd/svcproc.c
-+++ b/fs/lockd/svcproc.c
-@@ -67,7 +67,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rq
- 
- 	/* Obtain file pointer. Not used by FREE_ALL call. */
- 	if (filp != NULL) {
--		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
-+		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
-+		if (error != 0)
- 			goto no_locks;
- 		*filp = file;
- 
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1152,7 +1152,7 @@ static int override_release(char __user
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		copy = min(sizeof(buf), max_t(size_t, 1, len));
++		copy = clamp_t(size_t, len, 1, sizeof(buf));
+ 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
+ 		ret = copy_to_user(release, buf, copy + 1);
+ 	}
 
 
