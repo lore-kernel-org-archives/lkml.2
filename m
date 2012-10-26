@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab2JZAF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:05:28 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52259 "EHLO mail.kernel.org"
+	id S1752657Ab2JZAFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:05:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52270 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab2JZAFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:25 -0400
+	id S1752598Ab2JZAF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 01/31] arch/tile: avoid generating .eh_frame information in modules
-Date: Thu, 25 Oct 2012 17:04:08 -0700
-Message-Id: <20121026000215.094713375@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 02/31] NLM: nlm_lookup_file() may return NLMv4-specific error codes
+Date: Thu, 25 Oct 2012 17:04:09 -0700
+Message-Id: <20121026000215.191461554@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -25,37 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 627072b06c362bbe7dc256f618aaa63351f0cfe6 upstream.
+commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
 
-The tile tool chain uses the .eh_frame information for backtracing.
-The vmlinux build drops any .eh_frame sections at link time, but when
-present in kernel modules, it causes a module load failure due to the
-presence of unsupported pc-relative relocations.  When compiling to
-use compiler feedback support, the compiler by default omits .eh_frame
-information, so we don't see this problem.  But when not using feedback,
-we need to explicitly suppress the .eh_frame.
+If the filehandle is stale, or open access is denied for some reason,
+nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
+or nlm4_failed. These get passed right through nlm_lookup_file(),
+and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
+the result through the cast_status() machinery.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Larry McVoy <lm@bitmover.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/Makefile |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/lockd/clntxdr.c |    2 +-
+ fs/lockd/svcproc.c |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/tile/Makefile
-+++ b/arch/tile/Makefile
-@@ -26,6 +26,10 @@ $(error Set TILERA_ROOT or CROSS_COMPILE
-   endif
- endif
+--- a/fs/lockd/clntxdr.c
++++ b/fs/lockd/clntxdr.c
+@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_s
+ {
+ 	__be32 *p;
  
-+# The tile compiler may emit .eh_frame information for backtracing.
-+# In kernel modules, this causes load failures due to unsupported relocations.
-+KBUILD_CFLAGS   += -fno-asynchronous-unwind-tables
-+
- ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
- KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
- endif
+-	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
++	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
+ 	p = xdr_reserve_space(xdr, 4);
+ 	*p = stat;
+ }
+--- a/fs/lockd/svcproc.c
++++ b/fs/lockd/svcproc.c
+@@ -67,7 +67,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rq
+ 
+ 	/* Obtain file pointer. Not used by FREE_ALL call. */
+ 	if (filp != NULL) {
+-		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
++		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
++		if (error != 0)
+ 			goto no_locks;
+ 		*filp = file;
+ 
 
 
