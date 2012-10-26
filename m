@@ -1,38 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965222Ab2JZQMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:12:36 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47025 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964981Ab2JZQMe (ORCPT
+	id S965233Ab2JZQNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:13:16 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:13738 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933818Ab2JZQNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:12:34 -0400
-Date: Fri, 26 Oct 2012 09:13:15 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] debugfs: add get/set for atomic types
-Message-ID: <20121026161315.GA13134@kroah.com>
-References: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Oct 2012 12:13:15 -0400
+Message-ID: <1351267989.4013.20.camel@lorien2>
+Subject: [PATCH RFT RESEND linux-next] sparc: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: davem@davemloft.net, kyungmin.park@samsung.com, arnd@arndb.de,
+        m.szyprowski@samsung.com, sam@ravnborg.org
+Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 10:13:09 -0600
+In-Reply-To: <1351211909.6851.26.camel@lorien2>
+References: <1351211773.6851.24.camel@lorien2>
+	 <1351211909.6851.26.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:49:01AM -0500, Seth Jennings wrote:
-> debugfs currently lacks the ability to create attributes
-> that set/get atomic_t values.
-> 
-> This patch adds support for this through a new
-> debugfs_create_atomic_t() function.
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-Why would you want to set an atomic variable type from userspace?  What
-in-kernel code needs this?
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/sparc/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-thanks,
+diff --git a/arch/sparc/include/asm/dma-mapping.h b/arch/sparc/include/asm/dma-mapping.h
+index 8493fd3..05fe53f 100644
+--- a/arch/sparc/include/asm/dma-mapping.h
++++ b/arch/sparc/include/asm/dma-mapping.h
+@@ -59,6 +59,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
+ 
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
++	debug_dma_mapping_error(dev, dma_addr);
+ 	return (dma_addr == DMA_ERROR_CODE);
+ }
+ 
+-- 
+1.7.9.5
 
-greg k-h
+
+
