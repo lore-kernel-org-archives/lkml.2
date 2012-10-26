@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab2JZLcT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:32:19 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:32850 "EHLO zmc.proxad.net"
+	id S1758636Ab2JZLcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:32:42 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:32880 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758505Ab2JZLcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:32:18 -0400
+	id S1758537Ab2JZLcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:32:19 -0400
 From: Florian Fainelli <ffainelli@freebox.fr>
 To: tglx@linutronix.de
 Cc: mingo@redhat.com, x86@kernel.org, rui.zhang@intel.com,
         alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Florian Fainelli <ffainelli@freebox.fr>
-Subject: [PATCH 0/3 v2] x86: ce4100 fixes and improvements
-Date: Fri, 26 Oct 2012 13:30:51 +0200
-Message-Id: <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
+Subject: [PATCH 2/3 v2] x86: ce4100: force reboot method to be KBD
+Date: Fri, 26 Oct 2012 13:30:53 +0200
+Message-Id: <1351251054-19892-3-git-send-email-ffainelli@freebox.fr>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1351242325-23724-1-git-send-email-ffainelli@freebox.fr>
+In-Reply-To: <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
 References: <1351242325-23724-1-git-send-email-ffainelli@freebox.fr>
+ <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Maxime Bizon <mbizon@freebox.fr>
 
-This patch serie contains shutdown/reboot fixes for the CE4100 platform as
-well as a PCI controller fix for devices without an interrupt line.
+The default reboot is via ACPI for this platform, and the CEFDK bootloader
+actually supports this, but will issue a system power off instead of a real
+reboot. Setting the reboot method to be KBD instead of ACPI ensures proper
+system reboot.
 
+Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+---
 Changes since v1:
-- added more comment to the pm_poweroff and reboot method fixup
+- added comment to explain why KBD reboot method is to be used
 
-Florian Fainelli (3):
-  x86: ce4100: implement pm_poweroff
-  x86: ce4100: force reboot method to be KBD
-  x86: ce4100: fixup PCI configuration register access for devices
-    without interrupts
+ arch/x86/platform/ce4100/ce4100.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
- arch/x86/pci/ce4100.c             |   13 +++++++++++++
- arch/x86/platform/ce4100/ce4100.c |   24 ++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
-
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index 5de16e3..92525cb 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -21,6 +21,7 @@
+ #include <asm/i8259.h>
+ #include <asm/io.h>
+ #include <asm/io_apic.h>
++#include <asm/emergency-restart.h>
+ 
+ static int ce4100_i8042_detect(void)
+ {
+@@ -151,6 +152,15 @@ void __init x86_ce4100_early_setup(void)
+ 	x86_init.mpparse.find_smp_config = x86_init_noop;
+ 	x86_init.pci.init = ce4100_pci_init;
+ 
++	/*
++	 * By default, the reboot method is ACPI which is supported by the
++	 * CE4100 bootloader CEFDK using FADT.ResetReg Address and ResetValue
++	 * the bootloader will however issue a system power off instead of
++	 * reboot. By using BOOT_KBD we ensure proper system reboot as
++	 * expected.
++	 */
++	reboot_type = BOOT_KBD;
++
+ #ifdef CONFIG_X86_IO_APIC
+ 	x86_init.pci.init_irq = sdv_pci_init;
+ 	x86_init.mpparse.setup_ioapic_ids = setup_ioapic_ids_from_mpc_nocheck;
 -- 
 1.7.10.4
 
