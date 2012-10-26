@@ -1,95 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab2JZRSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:18:01 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59948 "EHLO mail.kernel.org"
+	id S1758392Ab2JZRSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:18:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59964 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756874Ab2JZRR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:17:58 -0400
-Date: Fri, 26 Oct 2012 10:15:00 -0700
+	id S1757804Ab2JZRSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 13:18:01 -0400
+Date: Fri, 26 Oct 2012 10:16:15 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] char/misc changes for 3.7-rc3
-Message-ID: <20121026171500.GA11293@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
+Subject: [GIT PATCH] Staging driver fixes for 3.7-rc3
+Message-ID: <20121026171615.GA11384@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
 
-  Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.7-rc3
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.7-rc2
 
-for you to fetch changes up to 2cb55a2f47a3c695a0105b7fc04a3b70c3bc4e4f:
+for you to fetch changes up to 4d3f120ae7473b96f114b187856e89e08571fc83:
 
-  sonypi: suspend/resume callbacks should be conditionally compiled on CONFIG_PM_SLEEP (2012-10-25 12:05:50 -0700)
+  staging: tidspbridge: delete unused mmu functions (2012-10-24 16:31:32 -0700)
 
 ----------------------------------------------------------------
-Char/misc driver fixes for 3.7-rc3
+Staging driver fixes for 3.7-rc3
 
-Here are some driver fixes for 3.7.  They include extcon driver fixes, a
-hyper-v bugfix, and two other minor driver fixes.
+Here are some staging driver fixes for your 3.7-rc tree.
 
-All of these have been in the linux-next releases for a while.
+Nothing major here, a number of iio driver fixups that were causing problems,
+some comedi driver bugfixes, and a bunch of tidspbridge warning squashing and
+other regressions fixed from the 3.6 release.
+
+All have been in the linux-next releases for a bit.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Axel Lin (4):
-      extcon: adc-jack: Fix checking return value of request_any_context_irq
-      extcon: adc-jack: Add missing MODULE_LICENSE
-      extcon: Fix kerneldoc for extcon_set_cable_state and extcon_set_cable_state_
-      extcon: max77693: Use max77693_update_reg for rmw operations
+Andreas Larsson (1):
+      iio: Remove duplicates for light/ in Kconfig and Makefile
 
-Chanwoo Choi (1):
-      extcon: MAX77693: Add platform data for MUIC device to initialize registers
+Arve Hjønnevåg (2):
+      Staging: android: binder: Fix memory leak on thread/process exit
+      Staging: android: binder: Allow using highmem for binder buffers
 
-Devendra Naga (1):
-      extcon-max8997: remove usage of ret in max8997_muic_handle_charger_type_detach
+Fred Brooks (1):
+      staging: comedi: ni_daq_700: fix dio subdevice regression
 
 Greg Kroah-Hartman (1):
-      Merge tag 'fixes-for-3.7' of git://git.kernel.org/.../mzx/extcon into char-misc-linus
+      Merge tag 'iio-fixes-for-3.7a' of git://git.kernel.org/.../jic23/iio into staging-linus
 
-Jenny TC (1):
-      extcon : register for cable interest by cable name
+Ian Abbott (7):
+      staging: comedi: 8255_pci: fix possible NULL deref during detach
+      staging: comedi: amplc_dio200: fix possible NULL deref during detach
+      staging: comedi: amplc_pc236: fix invalid register access during detach
+      staging: comedi: amplc_pc236: fix possible NULL deref during detach
+      staging: comedi: amplc_pc263: fix possible NULL deref during detach
+      staging: comedi: das08: fix possible NULL deref during detach
+      staging: comedi: ni_labpc: fix possible NULL deref during detach
 
-K. Y. Srinivasan (1):
-      Drivers: hv: Cleanup error handling in vmbus_open()
+Lars-Peter Clausen (11):
+      iio: Add some helper macros for unit conversion
+      staging:iio: Fix adis16201 channel offsets and scales
+      staging:iio: Fix adis16203 channel offsets and scales
+      staging:iio: Fix adis16204 channel offsets and scales
+      staging:iio: Fix adis16209 channel offsets and scales
+      staging:iio: Fix adis16220 channel offsets and scales
+      staging:iio: Fix adis16240 channel offsets and scales
+      staging:iio: Fix adis16260 channel offsets and scales
+      staging:iio: Fix adis16400 channel offsets and scales
+      staging:iio:adis16400: Report correct temperature scale and offset
+      staging:iio:adis16400: Fixup adis16336 temp channel attributes
 
-Peter Huewe (2):
-      extcon: Unregister compat class at module unload to fix oops
-      extcon: unregister compat link on cleanup
+Nitin Gupta (1):
+      staging: zram: Fix handling of incompressible pages
 
-Sachin Kamat (2):
-      extcon: Remove duplicate inclusion of extcon.h header file
-      extcon: Fix return value in extcon_register_interest()
+Omar Ramirez Luna (6):
+      staging: tidspbridge: request the right irq for mmu
+      staging: tidspbridge: drop const from custom mmu implementation
+      staging: tidspbridge: change type to __iomem for per and core addresses
+      staging: tidspbridge: ioremap dsp sync addr
+      staging: tidspbridge: ioremap physical address of the stack segment in shm
+      staging: tidspbridge: delete unused mmu functions
 
-Yuanhan Liu (1):
-      sonypi: suspend/resume callbacks should be conditionally compiled on CONFIG_PM_SLEEP
+Randy Dunlap (1):
+      staging: ramster: depends on NET
 
-anish kumar (4):
-      extcon: standard cable names definition and declaration changed
-      extcon: optimising the check_mutually_exclusive function
-      extcon: driver model release call not needed
-      extcon: trivial: kfree missed from remove path
+Sergei Trofimovich (1):
+      staging: ipack: add missing include (implicit declaration of function 'kfree')
 
- drivers/char/sonypi.c            |   2 +-
- drivers/extcon/extcon-adc-jack.c |  10 +++++--
- drivers/extcon/extcon-class.c    | 142 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------
- drivers/extcon/extcon-gpio.c     |   1 -
- drivers/extcon/extcon-max77693.c |  46 +++++++++++++++++++++++--------
- drivers/extcon/extcon-max8997.c  |   6 ++--
- drivers/hv/channel.c             |  24 ++++++++--------
- include/linux/extcon.h           |   2 +-
- include/linux/mfd/max77693.h     |  13 +++++++++
- 9 files changed, 152 insertions(+), 94 deletions(-)
+Vincent Penquerc'h (1):
+      staging: omapdrm: fix allocation size for page addresses array
+
+ drivers/iio/Kconfig                                     |   1 -
+ drivers/iio/Makefile                                    |   1 -
+ drivers/staging/android/binder.c                        |  30 +++++++++++++++++--
+ drivers/staging/comedi/drivers/8255_pci.c               |   2 ++
+ drivers/staging/comedi/drivers/amplc_dio200.c           |   2 ++
+ drivers/staging/comedi/drivers/amplc_pc236.c            |   5 ++--
+ drivers/staging/comedi/drivers/amplc_pc263.c            |   2 ++
+ drivers/staging/comedi/drivers/das08.c                  |   2 ++
+ drivers/staging/comedi/drivers/ni_daq_700.c             |   2 +-
+ drivers/staging/comedi/drivers/ni_labpc.c               |   2 ++
+ drivers/staging/iio/accel/adis16201_core.c              |  24 +++++++++-------
+ drivers/staging/iio/accel/adis16203_core.c              |  20 +++++++------
+ drivers/staging/iio/accel/adis16204_core.c              |  22 +++++++-------
+ drivers/staging/iio/accel/adis16209_core.c              |  18 ++++++------
+ drivers/staging/iio/accel/adis16220_core.c              |  19 ++++++------
+ drivers/staging/iio/accel/adis16240_core.c              |  23 ++++++++-------
+ drivers/staging/iio/gyro/adis16260_core.c               |  29 +++++++++++--------
+ drivers/staging/iio/imu/adis16400.h                     |   2 ++
+ drivers/staging/iio/imu/adis16400_core.c                |  70 +++++++++++++++++++++++++++-----------------
+ drivers/staging/ipack/bridges/tpci200.c                 |   1 +
+ drivers/staging/omapdrm/omap_gem.c                      |   4 +--
+ drivers/staging/ramster/Kconfig                         |   1 +
+ drivers/staging/tidspbridge/core/tiomap3430.c           |  37 +++++++++++++++++-------
+ drivers/staging/tidspbridge/hw/hw_mmu.c                 | 115 +++++++++++++------------------------------------------------------------
+ drivers/staging/tidspbridge/hw/hw_mmu.h                 |  31 +++++++++-----------
+ drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h |   4 +--
+ drivers/staging/tidspbridge/include/dspbridge/host_os.h |   4 +--
+ drivers/staging/tidspbridge/rmgr/drv.c                  |   8 +++---
+ drivers/staging/tidspbridge/rmgr/node.c                 |  21 ++++++++++----
+ drivers/staging/zram/zram_drv.c                         |  12 ++++++--
+ include/linux/iio/iio.h                                 |  16 +++++++++++
+ 31 files changed, 287 insertions(+), 243 deletions(-)
