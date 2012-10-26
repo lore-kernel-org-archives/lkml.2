@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab2JZNUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:20:06 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1262 "EHLO mms2.broadcom.com"
+	id S1758708Ab2JZNWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:22:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29178 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980Ab2JZNUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:20:05 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <508A8DF9.4080607@broadcom.com>
-Date: Fri, 26 Oct 2012 15:19:53 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
- Thunderbird/16.0.1
+	id S1753984Ab2JZNWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:22:49 -0400
+Date: Fri, 26 Oct 2012 09:22:23 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
+In-Reply-To: <20121026120605.GA23545@redhat.com>
+Message-ID: <Pine.LNX.4.64.1210260900170.24474@file.rdu.redhat.com>
+References: <20121018163833.GK2518@linux.vnet.ibm.com> <20121018175747.GA30691@redhat.com>
+ <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com> <1350650286.30157.28.camel@twins>
+ <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com> <1350668451.2768.60.camel@twins>
+ <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com> <20121024030845.GT4291@dastard>
+ <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com> <20121025234048.GH29378@dastard>
+ <20121026120605.GA23545@redhat.com>
 MIME-Version: 1.0
-To: "Peter Zijlstra" <peterz@infradead.org>
-cc: "Ingo Molnar" <mingo@redhat.com>, "Tejun Heo" <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lockdep info message
-References: <508A62DC.50805@broadcom.com>
- <1351250734.16863.26.camel@twins>
-In-Reply-To: <1351250734.16863.26.camel@twins>
-X-WSS-ID: 7C94521A3OW10681275-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 01:25 PM, Peter Zijlstra wrote:
-> On Fri, 2012-10-26 at 12:15 +0200, Arend van Spriel wrote:
->> Hi Peter and/or Ingo,
->>
->> I am working on a driver (brcmfmac) and when unloading it or unplugging
->> the device I get this info message (see below) upon calling
->> cancel_work_sync(). Just wondering if there is something I need to do in
->> the driver or should it be done in workqueue code.
->
-> Your driver, as that's the one allocating the struct work_struct thingy.
->
-> You've either failed to use INIT_WORK() or need to use
-> INIT_WORK_ONSTACK() if that's appropriate. It looks like you could have
-> used DECLARE*_WORK inside a function or something similar.
->
-> Anyway, without the driver code present I can't really say much more.
->
 
-I assume INIT_WORK_ONSTACK() can only be used when scheduling process 
-waits for the work to complete. The work_struct is located inside a 
-driver structure that is allocated upon device probe.
 
-struct brcmf_fweh_info {
-	struct work_struct event_work;
-};
+On Fri, 26 Oct 2012, Oleg Nesterov wrote:
 
-and it is initialized in that context using:
+> On 10/26, Dave Chinner wrote:
+> >
+> > On Thu, Oct 25, 2012 at 10:09:31AM -0400, Mikulas Patocka wrote:
+> > >
+> > > Yes, mnt_want_write()/mnt_make_readonly() do the same thing as percpu rw
+> > > semaphores. I think you can convert mnt_want_write()/mnt_make_readonly()
+> > > to use percpu rw semaphores and remove the duplicated code.
+> >
+> > I think you misunderstood my point - that rather than re-inventing
+> > the wheel, why didn't you just copy something that is known to
+> > work?
 
-	INIT_WORK(&fweh->event_work, brcmf_fweh_event_worker);
+I didn't know about. The code is not reusable, and it doesn't really do 
+locking. And it has two barriers on the read path, while percpu rw 
+semaphores have none.
 
-and used in another context:
+> I don't understand why do you both think that __mnt_want_write()
+> and mnt_make_readonly() provides the same functionality. I looked
+> at this code before I started this patch, and unless I completely
+> misread it this does very different things. It is not "lock" at all.
+> 
+> Oleg.
 
-	schedule_work(&fweh->event_work);
+mnt_want_write uses percpu array of counters, just like percpu semaphores.
 
-When cleaning up I do:
+The code is different, but it can be changed to use percpu rw semaphores 
+(if we add percpu_down_write_trylock).
 
-	cancel_work_sync(&fweh->event_work);
+__mnt_want_write could call percpu_down_read and check if it is readonly 
+(if it is, drop the lock and return -EROFS)
+__mnt_drop_write could call percpu_up_read
+mnt_make_readonly and sb_prepare_remount_readonly could call 
+percpu_down_write_trylock instead of mnt_get_writers (if they get the 
+write lock, set it to readonly and drop the write lock)
 
-I can also submit the patch with the entire code as RFC if you do not 
-object digging through a couple of hundred lines.
+... and that's it, then, you can remove MNT_WRITE_HOLD, the barriers, 
+spinning and other complexity from fs/namespace.c
 
-Gr. AvS
-
+Mikulas
