@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965272Ab2JZQPt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:15:49 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36732 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965038Ab2JZQPr (ORCPT
+	id S965260Ab2JZQRr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:17:47 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57806 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965137Ab2JZQRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:15:47 -0400
+	Fri, 26 Oct 2012 12:17:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351053164.6537.95.camel@edumazet-glaptop>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	<1350925299.8609.978.camel@edumazet-glaptop>
-	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
-	<CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
-	<1351053164.6537.95.camel@edumazet-glaptop>
-Date: Fri, 26 Oct 2012 09:15:46 -0700
-X-Google-Sender-Auth: sqww5x4z8rC_gIw1EXdmFZmYVRE
-Message-ID: <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Peter LaDow <petela@gocougs.wsu.edu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1350570453-24546-4-git-send-email-p.zabel@pengutronix.de>
+References: <1350570453-24546-1-git-send-email-p.zabel@pengutronix.de> <1350570453-24546-4-git-send-email-p.zabel@pengutronix.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Fri, 26 Oct 2012 12:17:15 -0400
+X-Google-Sender-Auth: iTchb6TGFGcw6Gbgd52qkRsKtX8
+Message-ID: <CAP=VYLpwahaxVssP1bXmp+ttM_eArF9B2DX1auiOmterdHHUGw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] misc: sram: Add optional clock
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        kernel@pengutronix.de, devicetree-discuss@lists.ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 23, 2012 at 9:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Could you try following patch ?
+On Thu, Oct 18, 2012 at 10:27 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> On some platforms the SRAM needs a clock to be enabled explicitly.
+>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/misc/sram.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> index 7a363f2..0cc2e75 100644
+> --- a/drivers/misc/sram.c
+> +++ b/drivers/misc/sram.c
+> @@ -21,6 +21,8 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+>  #include <linux/io.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+> @@ -29,6 +31,7 @@
+>
+>  struct sram_dev {
+>         struct gen_pool *pool;
+> +       struct clk *clk;
+>  };
 
-So, I applied your patch.  And so far, it seems to have fixed the
-issue.  I've had my systems running for 48 hours, and no lockup in
-iptables.  Usually, I could get a lockup to occur within 12 to 24
-hours, and running this long tells me this patch may have things
-fixed.
+I see another field gets added to the struct here.  (yet another
+reason to have it folded into the original)   But you still
+really don't need to create a sram_dev for this, because...
 
-Now, I have a couple of questions.
+>
+>  static int __devinit sram_probe(struct platform_device *pdev)
+> @@ -53,6 +56,10 @@ static int __devinit sram_probe(struct platform_device *pdev)
+>         if (!sram)
+>                 return -ENOMEM;
+>
+> +       sram->clk = devm_clk_get(&pdev->dev, NULL);
+> +       if (!IS_ERR(sram->clk))
+> +               clk_prepare_enable(sram->clk);
+> +
+>         sram->pool = gen_pool_create(PAGE_SHIFT, -1);
+>         if (!sram->pool)
+>                 return -ENOMEM;
+> @@ -80,6 +87,9 @@ static int __devexit sram_remove(struct platform_device *pdev)
+>
+>         gen_pool_destroy(sram->pool);
+>
+> +       if (!IS_ERR(sram->clk))
+> +               clk_disable_unprepare(sram->clk);
+> +
 
-First, I'm not sure how this actually fixes things.  It does seem
-there was a race before.  But it isn't clear to me how this patch
-eliminates the race.  I fear that this patch only reduces the window
-in which a race could occur, but doesn't eliminate it completely.
+...here, this looks confusing with the use of IS_ERR on
+an entity that was not recently assigned to.  Instead, just
+put a "struct clk *clk;" on the stack and do the
 
-Second, perhaps use seqlock_t instead of a seqcount_t for xt_recseq?
-This eliminates the problem.  But given that it has been using
-seqcount_t for a long time, and is still using it, and nobody else has
-had this issue appear, makes me wonder if this problem isn't something
-unique to the RT patches.  Perhaps only use seqlock_t in built for
-PREEMPT_RT_FULL?
+   clk = devm_clk_get(&pdev->dev, NULL);
 
-Third, recent RT patches (such as 3.6.2-rt4) have added
-preempt_disable_rt() and preempt_enable_rt() calls inside of
-read_seqcount_begin() and write_seqcount_end() respectively.  The call
-to local_bh_disable/local_bh_enable doesn't do anything to
-disable/enable preemption (in 3.6.2-rt4), but it does in 3.03.36-rt58.
- But in 3.0.36-rt58 it only did so if not in an atomic context.  And
-it doesn't appear to be an atomic context since local_bh_disable
-increments preempt_count by SOFTIRQ_OFFSET.  And it appeared that
-building with SMP enabled, even though it did call
-preempt_disable_rt(), indirectly, through local_bh_disable(), but the
-lockup still occurred.
+in both the init and the teardown.  Then the code will be
+more readable.
 
-Finally, after more testing, if this patch proves a solution to the
-problem, we could apply it locally.  But what kind of testing would be
-required as part of a submission back to the general kernel/RT folk?
-The patch is easy enough to generate, but if it can't be proven that
-this patch actually fixes anything, I fail to see how it would be
-useful.
+P.
+--
 
-Thanks,
-Pete LaDow
+>         return 0;
+>  }
+>
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
