@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2JZAtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:49:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52416 "EHLO mail.kernel.org"
+	id S1752710Ab2JZAFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:05:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52316 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab2JZAFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:42 -0400
+	id S1752598Ab2JZAFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        PaX Team <pageexec@freemail.hu>, Kees Cook <keescook@chromium.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Brad Spengler <spender@grsecurity.net>,
+        Denis Kirjanov <kirjanov@gmail.com>,
+        Doug Thompson <dougthompson@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/31] kernel/sys.c: fix stack memory content leak via UNAME26
-Date: Thu, 25 Oct 2012 17:04:14 -0700
-Message-Id: <20121026000215.707218452@linuxfoundation.org>
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 16/31] amd64_edac:__amd64_set_scrub_rate(): avoid overindexing scrubrates[]
+Date: Thu, 25 Oct 2012 17:04:23 -0700
+Message-Id: <20121026000216.604656055@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -29,63 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 2702b1526c7278c4d65d78de209a465d4de2885e upstream.
+commit 168bfeef7bba3f9784f7540b053e4ac72b769ce9 upstream.
 
-Calling uname() with the UNAME26 personality set allows a leak of kernel
-stack contents.  This fixes it by defensively calculating the length of
-copy_to_user() call, making the len argument unsigned, and initializing
-the stack buffer to zero (now technically unneeded, but hey, overkill).
+If none of the elements in scrubrates[] matches, this loop will cause
+__amd64_set_scrub_rate() to incorrectly use the n+1th element.
 
-CVE-2012-0957
+As the function is designed to use the final scrubrates[] element in the
+case of no match, we can fix this bug by simply terminating the array
+search at the n-1th element.
 
-Reported-by: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Brad Spengler <spender@grsecurity.net>
+Boris: this code is fragile anyway, see here why:
+http://marc.info/?l=linux-kernel&m=135102834131236&w=2
+
+It will be rewritten more robustly soonish.
+
+Reported-by: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/edac/amd64_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1133,15 +1133,16 @@ DECLARE_RWSEM(uts_sem);
-  * Work around broken programs that cannot handle "Linux 3.0".
-  * Instead we map 3.x to 2.6.40+x, so e.g. 3.0 would be 2.6.40
-  */
--static int override_release(char __user *release, int len)
-+static int override_release(char __user *release, size_t len)
- {
- 	int ret = 0;
--	char buf[65];
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -161,8 +161,11 @@ static int __amd64_set_scrub_rate(struct
+ 	 * memory controller and apply to register. Search for the first
+ 	 * bandwidth entry that is greater or equal than the setting requested
+ 	 * and program that. If at last entry, turn off DRAM scrubbing.
++	 *
++	 * If no suitable bandwidth is found, turn off DRAM scrubbing entirely
++	 * by falling back to the last element in scrubrates[].
+ 	 */
+-	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
++	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
+ 		/*
+ 		 * skip scrub rates which aren't recommended
+ 		 * (see F10 BKDG, F3x58)
+@@ -172,12 +175,6 @@ static int __amd64_set_scrub_rate(struct
  
- 	if (current->personality & UNAME26) {
--		char *rest = UTS_RELEASE;
-+		const char *rest = UTS_RELEASE;
-+		char buf[65] = { 0 };
- 		int ndots = 0;
- 		unsigned v;
-+		size_t copy;
- 
- 		while (*rest) {
- 			if (*rest == '.' && ++ndots >= 3)
-@@ -1151,8 +1152,9 @@ static int override_release(char __user
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		snprintf(buf, len, "2.6.%u%s", v, rest);
--		ret = copy_to_user(release, buf, len);
-+		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
-+		ret = copy_to_user(release, buf, copy + 1);
+ 		if (scrubrates[i].bandwidth <= new_bw)
+ 			break;
+-
+-		/*
+-		 * if no suitable bandwidth found, turn off DRAM scrubbing
+-		 * entirely by falling back to the last element in the
+-		 * scrubrates array.
+-		 */
  	}
- 	return ret;
- }
+ 
+ 	scrubval = scrubrates[i].scrubval;
 
 
