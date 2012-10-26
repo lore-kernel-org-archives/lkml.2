@@ -1,231 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758693Ab2JZNNQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:13:16 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53899 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758550Ab2JZNNN convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 26 Oct 2012 09:13:13 -0400
-Message-Id: <5089676602000078000A4928@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 25 Oct 2012 15:23:02 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Jinsong Liu" <jinsong.liu@intel.com>
-Cc: "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+	id S1758744Ab2JZNNb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:13:31 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34022 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758550Ab2JZNN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:13:28 -0400
+Message-ID: <1351257192.2132.3.camel@kjgkr>
+Subject: RE: [PATCH 02/16 v2] f2fs: add on-disk layout
+From: Jaegeuk Kim <jaegeuk.kim@gmail.com>
+To: Vyacheslav Dubeyko <slava@dubeyko.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        viro@zeniv.linux.org.uk, arnd@arndb.de, tytso@mit.edu,
+        chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Date: Fri, 26 Oct 2012 22:13:12 +0900
+In-Reply-To: <1351255718.2605.28.camel@slavad-ubuntu>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com>
+	 <001201cdb0c5$bdf728f0$39e57ad0$%kim@samsung.com>
+	 <1351077945.2097.9.camel@slavad-ubuntu>
+	 <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
+	 <1351255718.2605.28.camel@slavad-ubuntu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.10.12 at 14:19, "Liu, Jinsong" <jinsong.liu@intel.com> wrote:
-> --- /dev/null
-> +++ b/drivers/xen/xen_acpi_pad.c
-> @@ -0,0 +1,173 @@
-> +/*
-> + * xen_acpi_pad.c - Xen pad interface
-> + *
-> + * Copyright (c) 2012, Intel Corporation.
-> + *    Author: Liu, Jinsong <jinsong.liu@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/types.h>
-> +#include <acpi/acpi_bus.h>
-> +#include <acpi/acpi_drivers.h>
-> +#include <asm/xen/hypercall.h>
-> +
-> +#if defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) || \
-> +		defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
-> +
-> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
-> +#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
-> +#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
-> +
-> +static int xen_acpi_pad_idle_cpus(int *num_cpus)
-> +{
-> +	int ret;
-> +
+2012-10-26 (금), 16:48 +0400, Vyacheslav Dubeyko:
+> On Fri, 2012-10-26 at 12:31 +0900, Jaegeuk Kim wrote:
+> > [snip]
+> > > > +#define F2FS_SUPER_MAGIC	0xF2F52010
+> > > > +#define F2FS_SUPER_OFFSET	0		/* start sector # for sb */
+> > > 
+> > > Does f2fs superblock really haven't any offset from the volume begin?
+> > 
+> > The reason that I changed this from 1 to 0 is due to the failure during android
+> > recovery. I don't know why the recovery is failed when the offset is 1, but it
+> > works fine after the offset is changed to 0.
+> > I suspect that mount procedure inspects the 0'th offset to figure out what file
+> > system is installed by checking some kind of magic numbers.
+> > Sometimes, we've seen that the mount program tries to load previously installed
+> > file system even though mkfs.f2fs was conducted.
+> > Would you recommend something?
+> > 
+> 
+> I thought that superblock's placement is defined always from design
+> point of view. :-)
+> 
+> As I understand, usually many filesystems places first superblock on
+> 1024 bytes distance from a volume beginning. It reserves some place for
+> possibility to have volume boot record.
+> 
+> I am afraid that Android recovery failure takes place because of
+> in-proper configuration or, maybe, some special Android recovery code's
+> modification. Does it means that it is not possible to use, for example,
+> ext4 or nilfs2 under Android?
+> 
+> Yes, you are right, the mount procedure try to detect a filesystem type.
+> But superblock can place in different locations. For example, FAT's
+> superblock hasn't any offset from the volume begin; hfs+ superblock is
+> located on 1024 bytes from volume begin; reiserfs superblock is located
+> on 64 KB from volume begin. The situation when mount utility tries to
+> load another filesystem instead of f2fs is a symptom of mkfs.f2fs bug,
+> from my point of view.
+> 
+> I think that it makes sense to have as minimum 1024 bytes superblock's
+> offset from a volume begin.
 
-Stray blank line.
+Thank you.
+I'll try 1024 bytes offset, also in Android.
 
-> +	struct xen_platform_op op = {
-> +		.cmd = XENPF_core_parking,
-> +		.interface_version = XENPF_INTERFACE_VERSION,
+> 
+> [snip]
+> > > > +
+> > > > +/*
+> > > > + * For superblock
+> > > > + */
+> > > > +struct f2fs_super_block {
+> > > > +	__le32 magic;		/* Magic Number */
+> > > > +	__le16 major_ver;	/* Major Version */
+> > > > +	__le16 minor_ver;	/* Minor Version */
+> > > > +	__le32 log_sectorsize;	/* log2 (Sector size in bytes) */
+> > > > +	__le32 log_sectors_per_block;	/* log2 (Number of sectors per block */
+> > > > +	__le32 log_blocksize;	/* log2 (Block size in bytes) */
+> > > > +	__le32 log_blocks_per_seg; /* log2 (Number of blocks per segment) */
+> > > 
+> > > From my point of view, __le32 is big data type for log2 (<value>). What
+> > > do you think?
+> > > 
+> > 
+> > Right, but it is superblock. Should we have to consider space overhead?
+> > 
+> 
+> I simply think that __le16 can be enough. So, all four fields
+> (log_sectorsize, log_sectors_per_block, log_blocksize,
+> log_blocks_per_seg) will occupy 8 bytes instead of 16. And this place (8
+> bytes) can be used for volume serial number field.
+> 
 
-This is redundant with HYPERVISOR_dom0_op().
+As your previous opinion, I added already uuid in superblock.
+At this moment, we can change on-disk layout freely. :)
+Thanks,
 
-> +	};
-> +
-> +	/* set cpu nums expected to be idled */
-> +	op.u.core_parking.type = XEN_CORE_PARKING_SET;
-> +	op.u.core_parking.idle_nums = (uint32_t)*num_cpus;
+> With the best regards,
+> Vyacheslav Dubeyko.
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-It is quite a bit more efficient in terms of generated code to
-initialize all fields using assignments (the use of an initializer
-setting only a subset of fields will cause all other fields to get
-zero initialized). In any case I think it is bad style to mix both
-approaches.
+-- 
+Jaegeuk Kim
+Samsung
 
-> +	ret = HYPERVISOR_dom0_op(&op);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/*
-> +	 * get cpu nums actually be idled
-> +	 * cannot get it by using hypercall once (shared with _SET)
-> +	 * because of the characteristic of Xen continue_hypercall_on_cpu
-> +	 */
-> +	op.u.core_parking.type = XEN_CORE_PARKING_GET;
-> +	ret = HYPERVISOR_dom0_op(&op);
-> +	if (ret)
-> +		return ret;
-> +
-> +	*num_cpus = op.u.core_parking.idle_nums;
-
-"num_cpus" doesn't need to be a pointer, and you don't need to
-call _GET here either - callers that care for the count in effect
-after the call can invoke the corresponding _GET on their own.
-
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Query firmware how many CPUs should be idle
-> + * return -1 on failure
-> + */
-> +static int xen_acpi_pad_pur(acpi_handle handle)
-> +{
-> +	struct acpi_buffer buffer = {ACPI_ALLOCATE_BUFFER, NULL};
-> +	union acpi_object *package;
-> +	int num = -1;
-> +
-> +	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL, &buffer)))
-> +		return num;
-> +
-> +	if (!buffer.length || !buffer.pointer)
-> +		return num;
-> +
-> +	package = buffer.pointer;
-> +
-> +	if (package->type == ACPI_TYPE_PACKAGE &&
-> +		package->package.count == 2 &&
-> +		package->package.elements[0].integer.value == 1) /* rev 1 */
-> +
-> +		num = package->package.elements[1].integer.value;
-> +
-> +	kfree(buffer.pointer);
-> +	return num;
-> +}
-> +
-> +/* Notify firmware how many CPUs are idle */
-> +static void xen_acpi_pad_ost(acpi_handle handle, int stat,
-> +	uint32_t idle_cpus)
-> +{
-> +	union acpi_object params[3] = {
-> +		{.type = ACPI_TYPE_INTEGER,},
-> +		{.type = ACPI_TYPE_INTEGER,},
-> +		{.type = ACPI_TYPE_BUFFER,},
-> +	};
-> +	struct acpi_object_list arg_list = {3, params};
-> +
-> +	params[0].integer.value = ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
-> +	params[1].integer.value =  stat;
-> +	params[2].buffer.length = 4;
-> +	params[2].buffer.pointer = (void *)&idle_cpus;
-> +	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
-> +}
-> +
-> +static void xen_acpi_pad_handle_notify(acpi_handle handle)
-> +{
-> +	int ret, num_cpus;
-> +
-> +	num_cpus = xen_acpi_pad_pur(handle);
-> +	if (num_cpus < 0)
-> +		return;
-> +
-> +	ret = xen_acpi_pad_idle_cpus(&num_cpus);
-> +	if (ret)
-> +		return;
-> +
-> +	xen_acpi_pad_ost(handle, 0, num_cpus);
-> +}
-> +
-> +static void xen_acpi_pad_notify(acpi_handle handle, u32 event,
-> +	void *data)
-> +{
-> +	switch (event) {
-> +	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
-> +		xen_acpi_pad_handle_notify(handle);
-> +		break;
-> +	default:
-> +		pr_warn("Unsupported event [0x%x]\n", event);
-> +		break;
-> +	}
-> +}
-> +
-> +static int xen_acpi_pad_add(struct acpi_device *device)
-> +{
-> +	acpi_status status;
-> +
-> +	strcpy(acpi_device_name(device), ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
-> +	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
-> +
-> +	status = acpi_install_notify_handler(device->handle,
-> +		 ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify, device);
-> +	if (ACPI_FAILURE(status))
-> +		return -ENODEV;
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct acpi_device_id pad_device_ids[] = {
-> +	{"ACPI000C", 0},
-> +	{"", 0},
-> +};
-> +
-> +static struct acpi_driver xen_acpi_pad_driver = {
-> +	.name = "processor_aggregator",
-> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
-> +	.ids = pad_device_ids,
-> +	.ops = {
-> +		.add = xen_acpi_pad_add,
-
-.remove?
-
-> +	},
-> +};
-> +
-> +static int __init xen_acpi_pad_init(void)
-> +{
-> +	/* Only DOM0 is responsible for Xen acpi pad */
-> +	if (xen_initial_domain())
-> +		return acpi_bus_register_driver(&xen_acpi_pad_driver);
-> +
-> +	return -ENODEV;
-> +}
-> +subsys_initcall(xen_acpi_pad_init);
-> +
-> +#endif
-
-Overall I'd recommend taking a look at the cleaned up driver in
-our kernels.
-
-Jan
