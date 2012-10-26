@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933593Ab2JZPFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:05:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54820 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2JZPFR (ORCPT
+	id S933624Ab2JZPGz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:06:55 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:48236 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2JZPGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:05:17 -0400
-Date: Fri, 26 Oct 2012 08:04:24 -0700
-From: tip-bot for Namhyung Kim <namhyung@kernel.org>
-Message-ID: <tip-b6f4f804108bd563070ab95199cbddcf7650cbf4@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl, bp@amd64.org,
-        namhyung@kernel.org, rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@kernel.org, bp@amd64.org, rostedt@goodmis.org,
-        tglx@linutronix.de
-In-Reply-To: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
-References: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools lib traceevent:
-  Do not generate dependency for system header files
-Git-Commit-ID: b6f4f804108bd563070ab95199cbddcf7650cbf4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 26 Oct 2012 11:06:54 -0400
+Message-ID: <508AA6F5.7050806@free-electrons.com>
+Date: Fri, 26 Oct 2012 17:06:29 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 26 Oct 2012 08:04:30 -0700 (PDT)
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
+ Armada 370/XP
+References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com> <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com> <20121026133154.GN18811@titan.lakedaemon.net> <20121026133446.GM21046@lunn.ch> <508A945C.4010006@free-electrons.com> <20121026135225.GO21046@lunn.ch> <20121026165759.01df4489@skate> <20121026150206.GQ18811@titan.lakedaemon.net>
+In-Reply-To: <20121026150206.GQ18811@titan.lakedaemon.net>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b6f4f804108bd563070ab95199cbddcf7650cbf4
-Gitweb:     http://git.kernel.org/tip/b6f4f804108bd563070ab95199cbddcf7650cbf4
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Fri, 26 Oct 2012 17:55:48 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 26 Oct 2012 11:22:23 -0200
+On 10/26/2012 05:02 PM, Jason Cooper wrote:
+> On Fri, Oct 26, 2012 at 04:57:59PM +0200, Thomas Petazzoni wrote:
+>>
+>> On Fri, 26 Oct 2012 15:52:25 +0200, Andrew Lunn wrote:
+>>>> Now, about white spaces vs tab, I don't know what is the rule
+>>>> for .dts file.
+>>>
+>>> I personally use tabs, but i don't see anything in the
+>>> Documentation/CodingStyle.
+>>>
+>>> Maybe ask on the device tree mailing list?
+>>
+>> Yes, it would be good to know and document what is the rule for .dts
+>> files, and possibly extend checkpatch to cover those special rules
+>> for .dts files.
+> 
+> until that is resolved, can we make this patch conform to what is in the
+> file currently?  Once the dt folks clarify, we can run through all the
+> dts's and submit one cleanup series.
+> 
+> If there are no other comments on this series, I'm fine taking it as is
+> and doing the fixup on my end.  No need to do a version bump just for
+> this.
 
-tools lib traceevent: Do not generate dependency for system header files
+OK then you will just have to replace my tabs by whitespace.
 
-Ingo reported (again!) that 'make clean' on perf/traceevent does not
-work due to some reason with system header file. Quotes Ingo:
+Thanks,
 
- "Note that the old dependency related build failure thought to be
-  fixed in commit 860df5833e46 is back:
-
-   make[1]: *** No rule to make target
-   `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', needed by `.trace-seq.d'.  Stop.
-
-  'make clean' itself does not work in libtraceevent:
-
-   comet:~/tip/tools/lib/traceevent> make clean
-   make: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', needed by `.trace-seq.d'.  Stop.
-
-  So I had to clean it out manually:
-
-   comet:~/tip/tools/lib/traceevent> git ls-files --others | xargs rm
-   comet:~/tip/tools/lib/traceevent>
-
-  and then things build fine."
-
-Try to fix it by excluding system headers from dependency generation.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1351241752-2919-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
-index 04d959f..a20e320 100644
---- a/tools/lib/traceevent/Makefile
-+++ b/tools/lib/traceevent/Makefile
-@@ -253,7 +253,7 @@ all_deps := $(all_objs:%.o=.%.d)
- # let .d file also depends on the source and header files
- define check_deps
- 		@set -e; $(RM) $@; \
--		$(CC) -M $(CFLAGS) $< > $@.$$$$; \
-+		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
- 		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
- 		$(RM) $@.$$$$
- endef
+Gregory
