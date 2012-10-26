@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab2JZO4a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:56:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57358 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932853Ab2JZO42 (ORCPT
+	id S933567Ab2JZO6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:58:14 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:48146 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2JZO6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:56:28 -0400
-Date: Fri, 26 Oct 2012 16:56:23 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andre Przywara <andre.przywara@amd.com>
-Cc: hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, andreas.herrmann3@amd.com
-Subject: Re: [PATCH] x86/amd: disable way access filter on affected CPUs
-Message-ID: <20121026145623.GA15912@gmail.com>
-References: <1351065377-1989-1-git-send-email-andre.przywara@amd.com>
- <20121024104609.GA13010@gmail.com>
- <50880AD7.2030806@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50880AD7.2030806@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Oct 2012 10:58:12 -0400
+Date: Fri, 26 Oct 2012 16:57:59 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
+ Armada 370/XP
+Message-ID: <20121026165759.01df4489@skate>
+In-Reply-To: <20121026135225.GO21046@lunn.ch>
+References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
+	<1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
+	<20121026133154.GN18811@titan.lakedaemon.net>
+	<20121026133446.GM21046@lunn.ch>
+	<508A945C.4010006@free-electrons.com>
+	<20121026135225.GO21046@lunn.ch>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andre Przywara <andre.przywara@amd.com> wrote:
+On Fri, 26 Oct 2012 15:52:25 +0200, Andrew Lunn wrote:
+> > Now, about white spaces vs tab, I don't know what is the rule
+> > for .dts file.
+> 
+> I personally use tabs, but i don't see anything in the
+> Documentation/CodingStyle.
+> 
+> Maybe ask on the device tree mailing list?
 
-> On 10/24/2012 12:46 PM, Ingo Molnar wrote:
-> >
-> >* Andre Przywara <andre.przywara@amd.com> wrote:
-> >
-> >>The WAF may hurt the performance of some workloads, caused by
-> >>aliasing issues in the L1 cache.
-> >>Disable it on the affected CPUs.
-> >>
-> >>Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> >>---
-> >>  arch/x86/kernel/cpu/amd.c | 14 ++++++++++++++
-> >>  1 file changed, 14 insertions(+)
-> >>
-> >>diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> >>index f7e98a2..1b7d165 100644
-> >>--- a/arch/x86/kernel/cpu/amd.c
-> >>+++ b/arch/x86/kernel/cpu/amd.c
-> >>@@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-> >>  		}
-> >>  	}
-> >>
-> >>+	/*
-> >>+	 * The way access filter has a performance penalty on some workloads.
-> >>+	 * Disable it on the affected CPUs.
-> >>+	 */
-> >>+	if ((c->x86 == 0x15) &&
-> >>+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-> >>+		u64 val;
-> >>+
-> >>+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-> >>+			val |= 0x1E;
-> >>+			wrmsrl_safe(0xc0011021, val);
-> >>+		}
-> >>+	}
-> >
-> >Would be nice to hear more about the background of this change,
-> >about the amount of 'penalty' and the nature of the workloads.
-> 
-> The issue is similar to that one of last year:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-> That new patch does not replace the old one, we just need another
-> quirk for newer CPUs.
-> 
-> The penalty depends on the circumstances, if you need a number, I
-> can only tell you the 3% from last year.
-> 
-> The workloads would be those that access code from the same physical
-> page under different virtual addresses, so different processes using
-> the same libraries with ASLR or multiple instances of PIE-binaries.
-> The code needs to be accessed simultaneously from both cores of the
-> same compute unit.
-> 
-> More details here:
-> http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
-> 
-> >Also, it would be useful to know how the [0x02..0x1f] model
-> >range was chosen.
-> 
-> That is everything that has the core known as Piledriver.
-> That includes the AMD A-Series (aka Trinity) and the just released
-> new CPUs of the FX-Series (aka Vishera).
-> The model numbering is a bit odd here: FX CPUs have model 2,
-> A-Series has model 10h, with possible extensions to 1Fh. Hence the
-> range of model ids.
-> Model 2 CPUs should have the fix in BIOS, but I guess there are
-> quite some boxes out there which will not be updated. Better safe
-> than sorry.
+Yes, it would be good to know and document what is the rule for .dts
+files, and possibly extend checkpatch to cover those special rules
+for .dts files.
 
-Most of this info makes a perfect changelog entry - mind sending 
-an updated v2 patch with this information included?
+Best regards,
 
-Thanks,
-
-	Ingo
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
