@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399Ab2JZBCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 21:02:04 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50782 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874Ab2JZBCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 21:02:02 -0400
-Date: Fri, 26 Oct 2012 02:01:59 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm radeon fixes.
-Message-ID: <alpine.DEB.2.00.1210260200200.5647@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752653Ab2JZBDM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:03:12 -0400
+Received: from mailserver6.natinst.com ([130.164.80.6]:41598 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab2JZBDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 21:03:11 -0400
+Date: Thu, 25 Oct 2012 20:03:03 -0500
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        John Linn <john.linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH v4 5/5] zynq: move static peripheral mappings
+Message-ID: <20121026010303.GA13669@beefymiracle.amer.corp.natinst.com>
+References: <20121024200222.GA6713@beefymiracle.amer.corp.natinst.com>
+ <20121024200451.GF6713@beefymiracle.amer.corp.natinst.com>
+ <20121025201701.GA18217@elliptictech.com>
+ <20121025212902.GX20593@beefymiracle.amer.corp.natinst.com>
+ <20121025224108.GA30705@elliptictech.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-178829210-1351213319=:5647"
+In-Reply-To: <20121025224108.GA30705@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/25/2012 08:02:55 PM,
+	Serialize by Router on MailServ58-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/25/2012 08:02:55 PM,
+	Serialize complete at 10/25/2012 08:02:55 PM
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-25_06:2012-10-25,2012-10-25,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---29444707-178829210-1351213319=:5647
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Thu, Oct 25, 2012 at 06:41:08PM -0400, Nick Bowler wrote:
+> On 2012-10-25 16:29 -0500, Josh Cartwright wrote:
+> > On Thu, Oct 25, 2012 at 04:17:01PM -0400, Nick Bowler wrote:
+> > > Did you test this on any real hardware?  I can't get the ZC702 to work
+> > > with the UART mapped at this address (this ends up being mapped at
+> > > 0xFEFFF000), although I can't for the life of me figure out why the
+> > > virtual address even matters.  Note that for the ZC702, the physical
+> > > address of the "main" UART is 0xE0001000.
 
-Hi Linus,
+Good news is you're not crazy; I was able to duplicate the problem here.
 
-Just radeon fixes in this one,
-some new PCI IDs,
-ATPX regression fix,
-async VM regression fixes
-some module options fixes.
+> If I were to guess, I would guess that, except for when it "Works",
+> the really really early printk stuff isn't actually hitting the uart
+> at all.  The "Fails" case would then be due to the stray writes
+> crashing the board, and the "Truncated" case due to the stray writes
+> being (ostensibly) benign.
 
-Dave.
+If I'm not mistaken, this hypothesis is predicated on the early bootup
+code establishing a (linear?) mapping for addresses > VMALLOC_START;
+before the mdesc->map_io() is even handled.  That seems odd to me.
 
-The following changes since commit b8e902f24fdd16c4373ddc37a4e150c4afe9c6db:
+> But I really have no way right now to test this hypothesis, since I
+> can't print anything in the failing case.
 
-  drm/ttm: Fix a theoretical race in ttm_bo_cleanup_refs() (2012-10-23 10:15:21 +1000)
+Not sure if I'll be able to get anything meaningful out of it yet (I've
+not historically had good luck with Xilinx's debugging tools), but I did
+finally get a JTAG debugger hooked up to the zc702.  I'll see if I can
+get any useful information tomorrow.
 
-are available in the git repository at:
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+Thanks,
 
-Alex Deucher (6):
-      drm/radeon: add some new SI PCI ids
-      drm/radeon: fix sparse warning
-      drm/radeon: give each backlight a unique id
-      drm/radeon: add error output if VM CS fails on cayman
-      drm/radeon: fix ATPX function documentation
-      drm/radeon: fix ATPX regression in acpi rework
+  Josh
 
-Christian König (9):
-      drm/radeon: fix PFP sync in vm_flush
-      drm/radeon: fix cayman_vm_set_page v2
-      drm/radeon: fix si_set_page v2
-      drm/radeon: remove set_page check from VM code
-      drm/radeon: fix header size estimation in VM code
-      drm/radeon: fix and simplify pot argument checks v3
-      drm/radeon: use vzalloc for gart pages
-      drm/radeon: move size limits to gem_object_create.
-      drm/radeon: move the retry to gem_object_create
+--GvXjxJ+pjyke8COw
+Content-Type: application/pgp-signature
 
-Dave Airlie (1):
-      Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
- drivers/gpu/drm/radeon/atombios_encoders.c      |    5 ++-
- drivers/gpu/drm/radeon/evergreen_cs.c           |    1 +
- drivers/gpu/drm/radeon/ni.c                     |   45 ++++++++++-------
- drivers/gpu/drm/radeon/nid.h                    |    1 +
- drivers/gpu/drm/radeon/radeon_atpx_handler.c    |    6 +-
- drivers/gpu/drm/radeon/radeon_device.c          |   60 +++++++++--------------
- drivers/gpu/drm/radeon/radeon_gart.c            |   22 ++++-----
- drivers/gpu/drm/radeon/radeon_gem.c             |   18 ++++++-
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    5 ++-
- drivers/gpu/drm/radeon/radeon_object.c          |   19 -------
- drivers/gpu/drm/radeon/si.c                     |   47 +++++++++++-------
- include/drm/drm_pciids.h                        |    3 +
- 12 files changed, 122 insertions(+), 110 deletions(-)
---29444707-178829210-1351213319=:5647--
+iQIcBAEBAgAGBQJQieFHAAoJEEef0niEbw+lvuQQAIEDtdWvZwZyR7RQjnN58mXE
+lzS74jhYbSNx4phcTOdoYz7uTNqSXP11/MBlnRHVJRS01FOG+zMhL54sUH2qyrSl
+dgC1EC2sWzbwJ5pDSSKSHpLxX5VBjKXzXNhYLO8fv6wrk+sx6SVCTQb/Hb/k1sij
+OGKCywjIHk8j+FxDf36uIdPpgqtJWYyxXgDEFqy+XJnYcVwl2wP6SFBV24MDFNqg
+M2vrUh2/Xgb2WYSm9PNmEUpD1fXMgNTOj/u1id/sgnxtU4IgvmXtq/d5GpmiPpn1
+XeVMfh90O3foUcdowfNbh8441zwJ97bPaXBGHBVrnqLgt0TSL1G+YsaCL/L3iaJV
+0dN+U7l7vYPWLxSCqJRg1wT7YMuAvjTp+yYzWxHGVGg9QrhI5pQrivRtWR1f/r3a
+IGw/28oS49Hv2r4rPG/6Hl3qEmSHSHu6iFWzHXHDMnWPbfWaA08GuGLHapzziNZ0
+2PKpFTHAf3yr8GasART11p5DcKnD/oFWVlsH6FgXZwlbpURnLyqfFqezW9DpwsAa
+8DjjzyMqMI8+hEiyT/wpH09NH0gg1gaMb5ZVGRkZS8K3m9kTEQMJelE9ymKuTtTg
+YpWI+Qf6OngzI7sYXnrvb91WgI7lyf+xUFqob+ySFyxvemyeDv3fZySWatT/M71L
+mQhLan9xJ0vXg8Bdah/R
+=M1HW
+-----END PGP SIGNATURE-----
+
+--GvXjxJ+pjyke8COw--
