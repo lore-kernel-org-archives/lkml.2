@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab2JZAWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:22:42 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:36872 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab2JZAWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:22:39 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        nick.cheng@areca.com.tw
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6 (when rebooting during umount) (possibly blockdev / arcmsr at fault??)
-References: <20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com>
-	<87txtkld4h.fsf@spindle.srvr.nix> <50876E1D.3040501@redhat.com>
-	<20121024052351.GB21714@thunk.org> <878vavveee.fsf@spindle.srvr.nix>
-	<20121024210819.GA5484@thunk.org> <87y5iv78op.fsf_-_@spindle.srvr.nix>
-	<20121025011056.GC4559@thunk.org>
-Emacs: the Swiss Army of Editors.
-Date: Fri, 26 Oct 2012 01:22:22 +0100
-In-Reply-To: <20121025011056.GC4559@thunk.org> (Theodore Ts'o's message of
-	"Wed, 24 Oct 2012 21:10:56 -0400")
-Message-ID: <871ugm2ibl.fsf_-_@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=11 Fuz1=11 Fuz2=11
+	id S1755315Ab2JZAXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:23:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53637 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754282Ab2JZAHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:52 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Markus Schauler <mschauler@gmail.com>
+Subject: [ 49/85] USB: fix port probing and removal in garmin_gps
+Date: Thu, 25 Oct 2012 17:06:07 -0700
+Message-Id: <20121026000036.053920537@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 Oct 2012, Theodore Ts'o told this:
-> If that does make the problem go away, that will be a very interesting
-> data point....
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-I'll be looking at this tomorrow, but as sod's law would have it I have
-another user on this machine who didn't want it mega-rebooted tonight,
-so I was reduced to trying to reproduce the problem in virtualization
-under qemu.
+------------------
 
-I failed, for one very simple reason: on 3.6.3, even with a umount -l
-still in the process of unmounting the fs and flushing changes, even on
-an fs mounted nobarrier,journal_async_commit, even when mounted atop
-LVM, reboot(2) will block until umount's writeout is complete (and lvm
-vgchange refuses to deactivate the volume group while that is happening,
-but I don't bother deactivating volume groups on the afflicted machine
-so I know that can't be related). Obviously, this suffices to ensure
-that a reboot is not possible while umounts are underway -- though a
-power cut is still possible, I suppose.
+From: Alan Stern <stern@rowland.harvard.edu>
 
-On the afflicted machine (with a block device stack running LVM, then
-libata/arcmsr), as far as I can tell reboot(8) is *not* blocking if a
-unmount is underway: it shoots down everything and restarts at once. I
-have no direct proof of this yet, but during the last week I've
-routinely seen it reboot with lots of writes underway and umount -l log
-messages streaming up the screen: it certainly doesn't wait for all the
-umount -l's to be done the way it is in virtualization. I have no idea
-how this can be possible: I thought fses on a block device had to be
-quiesced (thus, in the case of an ongoing umount, unmounted and flushed)
-before any attempt at all was made to shut the underlying block device
-down, and I'd be fairly surprised if a flush wasn't done even if
-nobarrier was active (it certainly seems to be for virtio-blk, but that
-may well be a special case). But arcmsr (or libata? I should test with a
-simulated libata rather than virtio-blk next) appears to be getting
-around that somehow. This would probably explain all sorts of horrible
-corruption if umounting during a reboot, right?
+commit db5c8b524444d4fc6b1f32d368a50a3729e50002 upstream.
 
-So maybe it's the stack of block devices that's at fault, and not the
-filesystem at all! I'll admit I don't really understand what happens at
-system halt time well enough to be sure, and getting log info from a
-machine in the middle of reboot(8) appears likely to be a complete sod
-(maybe halt(8) would be better: at least I could take a photo of the
-screen then). If that's true, it would *certainly* explain why nobody
-else can see this problem: only arcmsr users who also do umount -l's
-would have a chance, and that population probably has a size of one.
+This patch (as1615) fixes a bug in the Garmin USB serial driver.  It
+uses attach, disconnect, and release routines to carry out actions
+that should be handled by port_probe and port_remove routines, because
+they access port-specific data.
+
+The bug causes an oops when the device in unplugged, because the
+private data for each port structure now gets erased when the port is
+unbound from the driver, resulting in a null-pointer dereference.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported--by: Markus Schauler <mschauler@gmail.com>
+Tested-by: Markus Schauler <mschauler@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/garmin_gps.c |   24 +++++++-----------------
+ 1 file changed, 7 insertions(+), 17 deletions(-)
+
+--- a/drivers/usb/serial/garmin_gps.c
++++ b/drivers/usb/serial/garmin_gps.c
+@@ -1414,11 +1414,10 @@ static void timeout_handler(unsigned lon
+ 
+ 
+ 
+-static int garmin_attach(struct usb_serial *serial)
++static int garmin_port_probe(struct usb_serial_port *port)
+ {
+-	int status = 0;
+-	struct usb_serial_port *port = serial->port[0];
+-	struct garmin_data *garmin_data_p = NULL;
++	int status;
++	struct garmin_data *garmin_data_p;
+ 
+ 	garmin_data_p = kzalloc(sizeof(struct garmin_data), GFP_KERNEL);
+ 	if (garmin_data_p == NULL) {
+@@ -1443,22 +1442,14 @@ static int garmin_attach(struct usb_seri
+ }
+ 
+ 
+-static void garmin_disconnect(struct usb_serial *serial)
++static int garmin_port_remove(struct usb_serial_port *port)
+ {
+-	struct usb_serial_port *port = serial->port[0];
+ 	struct garmin_data *garmin_data_p = usb_get_serial_port_data(port);
+ 
+ 	usb_kill_urb(port->interrupt_in_urb);
+ 	del_timer_sync(&garmin_data_p->timer);
+-}
+-
+-
+-static void garmin_release(struct usb_serial *serial)
+-{
+-	struct usb_serial_port *port = serial->port[0];
+-	struct garmin_data *garmin_data_p = usb_get_serial_port_data(port);
+-
+ 	kfree(garmin_data_p);
++	return 0;
+ }
+ 
+ 
+@@ -1475,9 +1466,8 @@ static struct usb_serial_driver garmin_d
+ 	.close               = garmin_close,
+ 	.throttle            = garmin_throttle,
+ 	.unthrottle          = garmin_unthrottle,
+-	.attach              = garmin_attach,
+-	.disconnect          = garmin_disconnect,
+-	.release             = garmin_release,
++	.port_probe		= garmin_port_probe,
++	.port_remove		= garmin_port_remove,
+ 	.write               = garmin_write,
+ 	.write_room          = garmin_write_room,
+ 	.write_bulk_callback = garmin_write_bulk_callback,
 
 
-I'll try to prove this tomorrow by writing a few gigs of junk to a temp
-filesytem held open by a temporary cat /dev/null, umount -l'ing it and
-killing off the cat the instant before the reboot -f call. If I don't
-see the reboot call blocking, the hypothesis is proved. (This is much
-what I did in virtualization, where I observe reboot blocking.)
-
-(Another blockdev-related possibility, if reboot *is* observed to block,
-is that arcmsr may be throwing away very-recently-written data when the
-adapter is shut down right before reboot.)
-
-
-Argh. How can rebooting a system be so damn complicated. Bring back the
-C64 or BBC Master where I could just pull the power lead out and stick
-it back in. :)
