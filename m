@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966306Ab2JZTzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:55:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966277Ab2JZTy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:54:58 -0400
-Date: Fri, 26 Oct 2012 15:33:10 -0400
-From: Rik van Riel <riel@redhat.com>
+	id S966319Ab2JZTzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:55:16 -0400
+Received: from na3sys010aog112.obsmtp.com ([74.125.245.92]:40234 "HELO
+	na3sys010aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S966294Ab2JZTzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 15:55:08 -0400
+From: Roland Dreier <roland@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH -v2 3/3] mm,generic: only flush the local TLB in
- ptep_set_access_flags
-Message-ID: <20121026153310.51ecdb7f@dull>
-In-Reply-To: <CA+55aFxo5jHREHS_ftmM6Vy5+rei2KzzCbrsYJwqSB2TfvA=7w@mail.gmail.com>
-References: <20121025121617.617683848@chello.nl>
-	<20121025124832.840241082@chello.nl>
-	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-	<5089F5B5.1050206@redhat.com>
-	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
-	<508A0A0D.4090001@redhat.com>
-	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-	<m2pq45qu0s.fsf@firstfloor.org>
-	<508A8D31.9000106@redhat.com>
-	<20121026132601.GC9886@gmail.com>
-	<20121026144615.2276cd59@dull>
-	<CA+55aFyS_iJcKz=-zSDK+bjYiNeEzy4T5FrrGL8HBsxTOSwpJQ@mail.gmail.com>
-	<508ADD2F.6030805@redhat.com>
-	<CA+55aFxo5jHREHS_ftmM6Vy5+rei2KzzCbrsYJwqSB2TfvA=7w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Fri, 26 Oct 2012 12:55:00 -0700
+Message-Id: <1351281300-27825-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function ptep_set_access_flags is only ever used to upgrade
-access permissions to a page. That means the only negative side
-effect of not flushing remote TLBs is that other CPUs may incur
-spurious page faults, if they happen to access the same address,
-and still have a PTE with the old permissions cached in their
-TLB.
+Hi Linus,
 
-Having another CPU maybe incur a spurious page fault is faster
-than always incurring the cost of a remote TLB flush, so replace
-the remote TLB flush with a purely local one.
+Please pull from
 
-This should be safe on every architecture that correctly
-implements flush_tlb_fix_spurious_fault() to actually invalidate
-the local TLB entry that caused a page fault, as well as on
-architectures where the hardware invalidates TLB entries that
-cause page faults.
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
 
-In the unlikely event that you are hitting what appears to be
-an infinite loop of page faults, and 'git bisect' took you to
-this changeset, your architecture needs to implement
-flush_tlb_fix_spurious_fault to actually flush the TLB entry.
+----------------------------------------------------------------
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>
----
- mm/pgtable-generic.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Small batch of fixes for 3.7:
+ - Fix crash in error path in cxgb4
+ - Fix build error on 32 bits in mlx4
+ - Fix SR-IOV bugs in mlx4
 
-diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
-index e642627..d8397da 100644
---- a/mm/pgtable-generic.c
-+++ b/mm/pgtable-generic.c
-@@ -12,8 +12,8 @@
- 
- #ifndef __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
- /*
-- * Only sets the access flags (dirty, accessed, and
-- * writable). Furthermore, we know it always gets set to a "more
-+ * Only sets the access flags (dirty, accessed), as well as write 
-+ * permission. Furthermore, we know it always gets set to a "more
-  * permissive" setting, which allows most architectures to optimize
-  * this. We return whether the PTE actually changed, which in turn
-  * instructs the caller to do things like update__mmu_cache.  This
-@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
- 	int changed = !pte_same(*ptep, entry);
- 	if (changed) {
- 		set_pte_at(vma->vm_mm, address, ptep, entry);
--		flush_tlb_page(vma, address);
-+		flush_tlb_fix_spurious_fault(vma, address);
- 	}
- 	return changed;
- }
+----------------------------------------------------------------
+Dotan Barak (1):
+      mlx4_core: Perform correct resource cleanup if mlx4_QUERY_ADAPTER() fails
 
+Doug Ledford (1):
+      IB/mlx4: Fix build error on platforms where UL is not 64 bits
 
+Eli Cohen (1):
+      IB/mlx4: Synchronize cleanup of MCGs in MCG paravirtualization
+
+Jack Morgenstein (1):
+      IB/mlx4: Fix QP1 P_Key processing in the Primary Physical Function (PPF)
+
+Or Gerlitz (1):
+      mlx4_core: Remove annoying debug messages from SR-IOV flow
+
+Roland Dreier (1):
+      Merge branches 'cxgb4' and 'mlx4' into for-next
+
+Thadeu Lima de Souza Cascardo (1):
+      RDMA/cxgb4: Don't free chunk that we have failed to allocate
+
+ drivers/infiniband/hw/cxgb4/mem.c                  |    2 +-
+ drivers/infiniband/hw/mlx4/alias_GUID.c            |    2 +-
+ drivers/infiniband/hw/mlx4/mad.c                   |   85 +++++++++-----------
+ drivers/infiniband/hw/mlx4/mcg.c                   |   18 +++--
+ drivers/net/ethernet/mellanox/mlx4/eq.c            |    6 --
+ drivers/net/ethernet/mellanox/mlx4/main.c          |    5 +-
+ .../net/ethernet/mellanox/mlx4/resource_tracker.c  |    6 --
+ 7 files changed, 56 insertions(+), 68 deletions(-)
