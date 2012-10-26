@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab2JZAI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:08:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53951 "EHLO mail.kernel.org"
+	id S1754793Ab2JZAIk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54092 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab2JZAIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:21 -0400
+	id S1754657Ab2JZAIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Denis Kirjanov <kirjanov@gmail.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [ 59/85] amd64_edac:__amd64_set_scrub_rate(): avoid overindexing scrubrates[]
-Date: Thu, 25 Oct 2012 17:06:17 -0700
-Message-Id: <20121026000037.055206671@linuxfoundation.org>
+        Graham Gower <graham.gower@gmail.com>,
+        Jan Ceuleers <jan.ceuleers@computer.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 71/85] skge: Add DMA mask quirk for Marvell 88E8001 on ASUS P5NSLI motherboard
+Date: Thu, 25 Oct 2012 17:06:29 -0700
+Message-Id: <20121026000038.253534714@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -28,59 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 168bfeef7bba3f9784f7540b053e4ac72b769ce9 upstream.
+From: Graham Gower <graham.gower@gmail.com>
 
-If none of the elements in scrubrates[] matches, this loop will cause
-__amd64_set_scrub_rate() to incorrectly use the n+1th element.
+[ Upstream commit a2af139ff1cd85df586690ff626619ab1ee88b0a ]
 
-As the function is designed to use the final scrubrates[] element in the
-case of no match, we can fix this bug by simply terminating the array
-search at the n-1th element.
+Marvell 88E8001 on an ASUS P5NSLI motherboard is unable to send/receive
+packets on a system with >4gb ram unless a 32bit DMA mask is used.
 
-Boris: this code is fragile anyway, see here why:
-http://marc.info/?l=linux-kernel&m=135102834131236&w=2
+This issue has been around for years and a fix was sent 3.5 years ago, but
+there was some debate as to whether it should instead be fixed as a PCI quirk.
+http://www.spinics.net/lists/netdev/msg88670.html
 
-It will be rewritten more robustly soonish.
+However, 18 months later a similar workaround was introduced for another
+chipset exhibiting the same problem.
+http://www.spinics.net/lists/netdev/msg142287.html
 
-Reported-by: Denis Kirjanov <kirjanov@gmail.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+Signed-off-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/edac/amd64_edac.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/marvell/skge.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -170,8 +170,11 @@ static int __amd64_set_scrub_rate(struct
- 	 * memory controller and apply to register. Search for the first
- 	 * bandwidth entry that is greater or equal than the setting requested
- 	 * and program that. If at last entry, turn off DRAM scrubbing.
-+	 *
-+	 * If no suitable bandwidth is found, turn off DRAM scrubbing entirely
-+	 * by falling back to the last element in scrubrates[].
- 	 */
--	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
-+	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
- 		/*
- 		 * skip scrub rates which aren't recommended
- 		 * (see F10 BKDG, F3x58)
-@@ -181,12 +184,6 @@ static int __amd64_set_scrub_rate(struct
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -4153,6 +4153,13 @@ static struct dmi_system_id skge_32bit_d
+ 			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
+ 		},
+ 	},
++	{
++		.ident = "ASUS P5NSLI",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++			DMI_MATCH(DMI_BOARD_NAME, "P5NSLI")
++		},
++	},
+ 	{}
+ };
  
- 		if (scrubrates[i].bandwidth <= new_bw)
- 			break;
--
--		/*
--		 * if no suitable bandwidth found, turn off DRAM scrubbing
--		 * entirely by falling back to the last element in the
--		 * scrubrates array.
--		 */
- 	}
- 
- 	scrubval = scrubrates[i].scrubval;
 
 
