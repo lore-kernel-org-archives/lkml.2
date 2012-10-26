@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab2JZOOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:14:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55383 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933043Ab2JZOOA (ORCPT
+	id S933244Ab2JZOOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:14:38 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:44128 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab2JZOOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:14:00 -0400
-Date: Fri, 26 Oct 2012 15:19:02 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Min Zhang <mzhang@mvista.com>
-Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: 8250 check iir rdi in interrupt
-Message-ID: <20121026151902.0a382d16@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJ0e-Fofs48N9VnYr1_8Kch6+yHjGx9iCWBRtRsqpD-B_rWutQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1210221633450.28146@nightowl>
-	<20121023110133.62bed522@pyramind.ukuu.org.uk>
-	<CAJ0e-Fofs48N9VnYr1_8Kch6+yHjGx9iCWBRtRsqpD-B_rWutQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Oct 2012 10:14:36 -0400
+Date: Fri, 26 Oct 2012 16:14:30 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 26/31] sched, numa, mm: Add fault driven placement and
+ migration policy
+Message-ID: <20121026141430.GA12158@gmail.com>
+References: <20121025121617.617683848@chello.nl>
+ <20121025124834.467791319@chello.nl>
+ <CA+55aFwJdn8Kz9UByuRfGNtf9Hkv-=8xB+WRd47uHZU1YMagZw@mail.gmail.com>
+ <20121026071532.GC8141@gmail.com>
+ <20121026135024.GA11640@gmail.com>
+ <1351260672.16863.81.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351260672.16863.81.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is racing. For "too much work for irq", here is sequence events
-> analyzed by a Motorola engineer:
 
-Thanks - this is enormously helpful in understanding the report.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
->         5) The LSR indicates that the transmitter needs data,
-> but also indicates the presence of data in the FIFO (0x61 in the LSR)
->         6) The processing function receives the characters, and
-> outputs data to the FIFO
->         7) At the exact time (very very small window) that the
-> character is read from the FIFO, the FIFO timeout occurs locking in an
-> interrupt cause
->         8) The next loop through the interrupt code begins
->         9) The IIR now indicates the data timeout interrupt
-> (0xCC in the IIR)
->         10) The processing function is called and it reads the
-> LSR
->         11) The LSR is 0 indicating nothing to do
+> On Fri, 2012-10-26 at 15:50 +0200, Ingo Molnar wrote:
+> > 
+> > Oh, just found the reason:
+> > 
+> > the ptep_modify_prot_start()/modify()/commit() sequence is 
+> > SMP-unsafe - it has to be done under the mmap_sem 
+> > write-locked.
+> > 
+> > It is safe against *hardware* updates to the PTE, but not 
+> > safe against itself.
+> 
+> Shouldn't the pte_lock serialize all that still? All sites 
+> that modify PTE contents should hold the pte_lock (and do 
+> afaict).
 
->         12) The interrupt loop continues (the IIR won't clear
-> until a character is pulled) until it reaches its max count and
-> displays the error.
+Hm, indeed.
 
-So we only need to check this in serial8250_handle_irq when IIR indicates
-a data timeout interrupt ? 
+Is there no code under down_read() (in the page fault path) that 
+modifies the pte via just pure atomics?
 
-Can we do
+Thanks,
 
-	if ((iir & 0x0F) == 0x0C) {
-		/* Expensive RDI check */
-	}
-
-
-
-Alan
+	Ingo
