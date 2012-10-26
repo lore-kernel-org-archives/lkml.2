@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab2JZLKR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:10:17 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:5639 "EHLO relay.sw.ru"
+	id S1758346Ab2JZLKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:10:24 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45219 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753593Ab2JZLKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:10:12 -0400
-Subject: [PATCH 2/5] ipc: remove redundant MSG_COPY check
+	id S1758280Ab2JZLKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:10:18 -0400
+Subject: [PATCH 1/5] ipc: wrap new sysctls for CRIU inside
+	CONFIG_CHECKPOINT_RESTORE
 To: akpm@linux-foundation.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: Larry.Finger@lwfinger.net, mitsuo.hayasaka.hu@hitachi.com,
@@ -16,8 +17,8 @@ Cc: Larry.Finger@lwfinger.net, mitsuo.hayasaka.hu@hitachi.com,
         ebiederm@xmission.com, rob@landley.net, dan@mindstab.net,
         tglx@linutronix.de, paulmck@linux.vnet.ibm.com, devel@openvz.org,
         mtk.manpages@gmail.com
-Date: Fri, 26 Oct 2012 15:06:02 +0400
-Message-ID: <20121026110602.17494.86455.stgit@localhost.localdomain>
+Date: Fri, 26 Oct 2012 15:05:57 +0400
+Message-ID: <20121026110557.17494.92212.stgit@localhost.localdomain>
 In-Reply-To: <20121026110103.17494.28182.stgit@localhost.localdomain>
 References: <20121026110103.17494.28182.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -28,29 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Small cleanup patch.
+This patch set wraps "msg_next_id", "sem_next_id" and "shm_next_id" inside
+CONFIG_CHECKPOINT_RESTORE macro.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- ipc/msg.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ ipc/ipc_sysctl.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 28320ab..f9774ff 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -786,11 +786,8 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
- 		return -EINVAL;
- 	if (msgflg & MSG_COPY) {
- #ifdef CONFIG_CHECKPOINT_RESTORE
--
--		if (msgflg & MSG_COPY) {
--			copy_number = msgtyp;
--			msgtyp = 0;
--		}
-+		copy_number = msgtyp;
-+		msgtyp = 0;
+diff --git a/ipc/ipc_sysctl.c b/ipc/ipc_sysctl.c
+index d06d77a..130dfec 100644
+--- a/ipc/ipc_sysctl.c
++++ b/ipc/ipc_sysctl.c
+@@ -158,7 +158,9 @@ static int proc_ipcauto_dointvec_minmax(ctl_table *table, int write,
  
- 		/*
- 		 * Create dummy message to copy real message to.
+ static int zero;
+ static int one = 1;
++#ifdef CONFIG_CHECKPOINT_RESTORE
+ static int int_max = INT_MAX;
++#endif
+ 
+ static struct ctl_table ipc_kern_table[] = {
+ 	{
+@@ -228,6 +230,7 @@ static struct ctl_table ipc_kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
++#ifdef CONFIG_CHECKPOINT_RESTORE
+ 	{
+ 		.procname	= "sem_next_id",
+ 		.data		= &init_ipc_ns.ids[IPC_SEM_IDS].next_id,
+@@ -255,6 +258,7 @@ static struct ctl_table ipc_kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &int_max,
+ 	},
++#endif
+ 	{}
+ };
+ 
 
