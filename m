@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318Ab2JZLLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:11:36 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54554 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758424Ab2JZLLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:11:15 -0400
-Date: Fri, 26 Oct 2012 13:11:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-Message-ID: <20121026111109.GA8195@gmail.com>
-References: <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
- <1351172849.12171.10.camel@twins>
- <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
- <1351241389.12171.45.camel@twins>
- <20121026092421.GB628@gmail.com>
- <1351244130.16863.7.camel@twins>
- <20121026094207.GA2179@gmail.com>
- <1351245264.16863.12.camel@twins>
- <alpine.LFD.2.02.1210261208170.2756@ionos>
- <1351248244.16863.13.camel@twins>
+	id S1758285Ab2JZLNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:13:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:39080 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754136Ab2JZLNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:13:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com
+Subject: Re: [PATCH] cpufreq: Avoid calling cpufreq driver's target() routine if target_freq == policy->cur
+Date: Fri, 26 Oct 2012 13:17:12 +0200
+Message-ID: <5056958.0bPciFrxt5@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1d7b6e421a335255da956804b43ce3517538409c.1351244153.git.viresh.kumar@linaro.org>
+References: <1d7b6e421a335255da956804b43ce3517538409c.1351244153.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351248244.16863.13.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, October 26, 2012 03:06:26 PM Viresh Kumar wrote:
+> Avoid calling cpufreq driver's target() routine if new frequency is same as
+> policies current frequency.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Looks reasonable.
 
-> I had hoped the u128 stuff might be elsewise useful, but if we 
-> don't want to go there, that's fine.
+Any objection from anyone?
 
-I think it needs a clearer usecase - and even then the 32-bit 
-behavior still looks rather horrible ...
+Rafael
 
-So if we can escape all that with reasonable restrictions then 
-that's far better than taking on this kind of overhead for 
-32-bit systems. 32-bit still matters, we do the ktime_t 
-complications for 32-bit systems and that's for a far smaller 
-effect.
 
-[ Would be nice to also stick in a WARN_ONCE() in the key 
-  place(s) just in case, to make sure the overflow cannot happen 
-  silently in the future. ]
-
-Thanks,
-
-	Ingo
+> ---
+>  drivers/cpufreq/cpufreq.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 261ef65..28dc134 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1476,6 +1476,10 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+>  
+>  	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
+>  		target_freq, relation);
+> +
+> +	if (target_freq == policy->cur)
+> +		return 0;
+> +
+>  	if (cpu_online(policy->cpu) && cpufreq_driver->target)
+>  		retval = cpufreq_driver->target(policy, target_freq, relation);
+>  
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
