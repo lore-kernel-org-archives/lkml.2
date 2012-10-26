@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab2JZFIQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 01:08:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:18107 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756165Ab2JZFIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 01:08:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,652,1344236400"; 
-   d="scan'208";a="209530386"
-From: Huang Ying <ying.huang@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: PCI/PM: Add comments for PME poll support for PCIe
-Date: Fri, 26 Oct 2012 13:07:51 +0800
-Message-Id: <1351228071-15161-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1756085Ab2JZF3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:29:09 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34240 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab2JZF3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 01:29:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121026042832.GB20205@linux-sh.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-28-git-send-email-keescook@chromium.org>
+	<20121026042832.GB20205@linux-sh.org>
+Date: Thu, 25 Oct 2012 22:29:05 -0700
+X-Google-Sender-Auth: 90nANeMHolEYTCCZavSu4tO2x2E
+Message-ID: <CAGXu5jJpN4dt96A04RHU_9Z8rU0L_4b11aP_wN7qATDHs9r=kw@mail.gmail.com>
+Subject: Re: [PATCH 027/193] arch/sh: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are comments on why PME poll support is necessary for PCI
-devices, but not for PCIe devices.  That may lead to misunderstanding
-that PME poll is only necessary for PCI devices.  So add comments
-related to PCIe PME poll to make it more clear.
+On Thu, Oct 25, 2012 at 9:28 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> On Tue, Oct 23, 2012 at 01:01:40PM -0700, Kees Cook wrote:
+>> This config item has not carried much meaning for a while now and is
+>> almost always enabled by default. As agreed during the Linux kernel
+>> summit, remove it.
+>>
+>> CC: Paul Mundt <lethal@linux-sh.org>
+>> CC: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> While there are cases where it is largely superfluous, we also have
+> plenty of cases in here that are genuinely experimental features and
+> generally shouldn't be enabled unless someone is prepared for some
+> hacking. We can of course replace this with an arch-specific option if
+> needed, but I disagree with suddenly making experimental features
+> suddenly appear to be anything other than what they are.
 
-The content of comments comes from the changelog of commit:
+Yeah, things that really are experimental need something, but it
+hasn't been meaningful to put them behind CONFIG_EXPERIMENTAL. Here's
+the text from the first patch, which details possible approaches:
 
-379021d5c0899fcf9410cae4ca7a59a5a94ca769
+https://lkml.org/lkml/2012/10/23/878
+This config item has not carried much meaning for a while now and is
+almost always enabled by default (especially in distro builds). As agreed
+during the Linux kernel summit, it should be removed. As a first step,
+remove it from being listed, and default it to on. Once it has been
+removed from all subsystem Kconfigs, it will be dropped entirely.
 
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/pci/pci.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+For items that really are experimental, maintainers should use "default
+n", optionally include "(EXPERIMENTAL)" in the title, and add language to
+the help text indicating why the item should be considered experimental.
 
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1578,15 +1578,25 @@ void pci_pme_active(struct pci_dev *dev,
- 
- 	pci_write_config_word(dev, dev->pm_cap + PCI_PM_CTRL, pmcsr);
- 
--	/* PCI (as opposed to PCIe) PME requires that the device have
--	   its PME# line hooked up correctly. Not all hardware vendors
--	   do this, so the PME never gets delivered and the device
--	   remains asleep. The easiest way around this is to
--	   periodically walk the list of suspended devices and check
--	   whether any have their PME flag set. The assumption is that
--	   we'll wake up often enough anyway that this won't be a huge
--	   hit, and the power savings from the devices will still be a
--	   win. */
-+	/*
-+	 * PCI (as opposed to PCIe) PME requires that the device have
-+	 * its PME# line hooked up correctly. Not all hardware vendors
-+	 * do this, so the PME never gets delivered and the device
-+	 * remains asleep. The easiest way around this is to
-+	 * periodically walk the list of suspended devices and check
-+	 * whether any have their PME flag set. The assumption is that
-+	 * we'll wake up often enough anyway that this won't be a huge
-+	 * hit, and the power savings from the devices will still be a
-+	 * win.
-+	 *
-+	 * Although PCIe uses in-band PME message instead of PME# line
-+	 * to report PME, PME does not work for some PCIe devices in
-+	 * reality.  For example, there are devices that set their PME
-+	 * status bits, but don't really bother to send a PME message;
-+	 * there are PCI Express Root Ports that don't bother to
-+	 * trigger interrupts when they receive PME messages from the
-+	 * devices below.  So PME poll is used for PCIe devices too.
-+	 */
- 
- 	if (dev->pme_poll) {
- 		struct pci_pme_device *pme_dev;
+For items that are dangerously experimental, the maintainer is encouraged
+to follow the above title recommendation, add stronger language to the
+help text, and optionally use (depending on the extent of the danger,
+from least to most dangerous): printk(), add_taint(TAINT_WARN),
+add_taint(TAINT_CRAP), WARN_ON(1), and CONFIG_BROKEN.
+
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
