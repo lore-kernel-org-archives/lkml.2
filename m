@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab2JZEp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:45:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48993 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755377Ab2JZEp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:45:26 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <508A122F.3090304@gmail.com>
-References: <201210240847.52417.linux@rainbow-software.org> <450396555.xT2D53NWjT@vostro.rjw.lan> <5e64035c-9ee0-4e76-a348-d4f9f6c7b198@email.android.com> <20121024210941.3c7d2cfb@pyramind.ukuu.org.uk> <508A122F.3090304@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] Enable A20 using KBC for some MSI laptops to fix S3 resume
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 25 Oct 2012 21:44:59 -0700
-To: Robert Hancock <hancockrwd@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Ondrej Zary <linux@rainbow-software.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <e3c7bcc1-5562-4fb9-ab34-a8f1b391c34d@email.android.com>
+	id S1756171Ab2JZEsA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:48:00 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53313 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab2JZEr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 00:47:59 -0400
+From: Robin Dong <robin.k.dong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Robin Dong <sanbai@taobao.com>
+Subject: [PATCH 1/2 v4] block/throttle: remove redundant type transition
+Date: Fri, 26 Oct 2012 12:47:47 +0800
+Message-Id: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My guess is that Windows explicitly enables A20 on resume.  We should do that too, really... with the current heavily unified realmode code it should be easy - let me hack up a patch in the morning.
+From: Robin Dong <sanbai@taobao.com>
 
-Robert Hancock <hancockrwd@gmail.com> wrote:
+We don't need to convert tg to blkg and then convert it back in
+throtl_update_dispatch_stats().
 
->On 10/24/2012 02:09 PM, Alan Cox wrote:
->> On Wed, 24 Oct 2012 12:36:04 -0700
->> "H. Peter Anvin" <hpa@zytor.com> wrote:
->>
->>> Minor concern: it should do the wait for ready before sending each
->command.
->>
->> Can we get a command line to do this quirk too - it strikes me that
->if
->> the MSIs rely upon it then it may be something Windows always does so
->> will be useful to try on other problem machines as an experiment.
->
->I agree, one has to keep in mind the age-old question "how does Windows
->
->work?" since it surely has no such quirk. I'd say we're sometimes too 
->quick to add these DMI quirks when a more general solution would be 
->somehow figure out how the Linux behavior differs from what Windows is 
->doing.
+Signed-off-by: Robin Dong <sanbai@taobao.com>
+---
+ block/blk-throttle.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index a9664fa..46ddeff 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -674,10 +674,9 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 	return 0;
+ }
+ 
+-static void throtl_update_dispatch_stats(struct blkcg_gq *blkg, u64 bytes,
++static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
+ 					 int rw)
+ {
+-	struct throtl_grp *tg = blkg_to_tg(blkg);
+ 	struct tg_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
+@@ -708,7 +707,7 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+ 	tg->bytes_disp[rw] += bio->bi_size;
+ 	tg->io_disp[rw]++;
+ 
+-	throtl_update_dispatch_stats(tg_to_blkg(tg), bio->bi_size, bio->bi_rw);
++	throtl_update_dispatch_stats(tg, bio->bi_size, bio->bi_rw);
+ }
+ 
+ static void throtl_add_bio_tg(struct throtl_data *td, struct throtl_grp *tg,
+@@ -1127,7 +1126,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	tg = throtl_lookup_tg(td, blkcg);
+ 	if (tg) {
+ 		if (tg_no_rule_group(tg, rw)) {
+-			throtl_update_dispatch_stats(tg_to_blkg(tg),
++			throtl_update_dispatch_stats(tg,
+ 						     bio->bi_size, bio->bi_rw);
+ 			goto out_unlock_rcu;
+ 		}
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+1.7.1
+
