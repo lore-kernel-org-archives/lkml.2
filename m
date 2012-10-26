@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966063Ab2JZSlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:41:45 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:60368 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966020Ab2JZSlm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:41:42 -0400
-Message-ID: <508AD963.9090103@gmail.com>
-Date: Fri, 26 Oct 2012 11:41:39 -0700
-From: Juri Lelli <juri.lelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>   <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>   <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>   <1351172849.12171.10.camel@twins>   <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>   <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>   <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com>   <1351245264.16863.12.camel@twins>   <alpine.LFD.2.02.1210261208170.2756@ionos>   <1351248244.16863.13.camel@twins> <1351256204.16863.56.camel@twins>  <508AD291.1010803@gmail.com> <1351276134.8467.62.camel@gandalf.local.home>
-In-Reply-To: <1351276134.8467.62.camel@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S966036Ab2JZSqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab2JZSqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:46:17 -0400
+Date: Fri, 26 Oct 2012 14:46:15 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 3/3] mm,generic: only flush the local TLB in
+ ptep_set_access_flags
+Message-ID: <20121026144615.2276cd59@dull>
+In-Reply-To: <20121026132601.GC9886@gmail.com>
+References: <20121025121617.617683848@chello.nl>
+	<20121025124832.840241082@chello.nl>
+	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
+	<5089F5B5.1050206@redhat.com>
+	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+	<508A0A0D.4090001@redhat.com>
+	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
+	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
+	<m2pq45qu0s.fsf@firstfloor.org>
+	<508A8D31.9000106@redhat.com>
+	<20121026132601.GC9886@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 11:28 AM, Steven Rostedt wrote:
-> On Fri, 2012-10-26 at 11:12 -0700, Juri Lelli wrote:
->
->> - scale down (right by 10) incoming parameters as to do internal
->>     math with ~1us resolution (and scale up outgoing params)
->
-> Would scaling down by 9 be sufficient? That way the resolution is still
-> just less than 1us.
->
+The function ptep_set_access_flags is only ever used to upgrade
+access permissions to a page. That means the only negative side
+effect of not flushing remote TLBs is that other CPUs may incur
+spurious page faults, if they happen to access the same address,
+and still have a PTE with the old permissions cached in their
+TLB.
 
-I don't see any practical issue. Anyway, if, - as Thomas said - "It's
-really pointless to even think about anything below microseconds
-resolution", having an internal resolution just above a microsecond
-sounds to me easier to justify to users. But I'm pretty open about
-this :).
+Having another CPU maybe incur a spurious page fault is faster
+than always incurring the cost of a remote TLB flush, so replace
+the remote TLB flush with a purely local one.
 
-Thanks and Regards,
+This should be safe on every architecture that correctly
+implements flush_tlb_fix_spurious_fault() to actually invalidate
+the local TLB entry that caused a page fault, as well as on
+architectures where the hardware invalidates TLB entries that
+cause page faults.
 
-- Juri
+In the unlikely event that you are hitting what appears to be
+an infinite loop of page faults, and 'git bisect' took you to
+this changeset, your architecture needs to implement
+flush_tlb_fix_spurious_fault to actually flush the TLB entry.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ mm/pgtable-generic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index e642627..0361369 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -27,7 +27,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 	int changed = !pte_same(*ptep, entry);
+ 	if (changed) {
+ 		set_pte_at(vma->vm_mm, address, ptep, entry);
+-		flush_tlb_page(vma, address);
++		flush_tlb_fix_spurious_fault(vma, address);
+ 	}
+ 	return changed;
+ }
