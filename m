@@ -1,192 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2JZAHG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53107 "EHLO mail.kernel.org"
+	id S1754056Ab2JZAct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:32:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53211 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab2JZAG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:57 -0400
+	id S1753724Ab2JZAHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 29/42] netlink: add reference of module in netlink_dump_start
-Date: Thu, 25 Oct 2012 17:05:37 -0700
-Message-Id: <20121026000127.713288502@linuxfoundation.org>
+        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
+Subject: [ 01/85] ext4: race-condition protection for ext4_convert_unwritten_extents_endio
+Date: Thu, 25 Oct 2012 17:05:19 -0700
+Message-Id: <20121026000031.274212867@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
-References: <20121026000124.790781113@linuxfoundation.org>
+In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Dmitry Monakhov <dmonakhov@openvz.org>
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+commit dee1f973ca341c266229faa5a1a5bb268bed3531 upstream.
 
-[ Upstream commit 6dc878a8ca39e93f70c42f3dd7260bde10c1e0f1 ]
+We assumed that at the time we call ext4_convert_unwritten_extents_endio()
+extent in question is fully inside [map.m_lblk, map->m_len] because
+it was already split during submission.  But this may not be true due to
+a race between writeback vs fallocate.
 
-I get a panic when I use ss -a and rmmod inet_diag at the
-same time.
+If extent in question is larger than requested we will split it again.
+Special precautions should being done if zeroout required because
+[map.m_lblk, map->m_len] already contains valid data.
 
-It's because netlink_dump uses inet_diag_dump which belongs to module
-inet_diag.
-
-I search the codes and find many modules have the same problem.  We
-need to add a reference to the module which the cb->dump belongs to.
-
-Thanks for all help from Stephen,Jan,Eric,Steffen and Pablo.
-
-Change From v3:
-change netlink_dump_start to inline,suggestion from Pablo and
-Eric.
-
-Change From v2:
-delete netlink_dump_done,and call module_put in netlink_dump
-and netlink_sock_destruct.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/netlink.h  |   21 +++++++++++++++++----
- net/netlink/af_netlink.c |   29 +++++++++++++++++++++--------
- 2 files changed, 38 insertions(+), 12 deletions(-)
 
---- a/include/linux/netlink.h
-+++ b/include/linux/netlink.h
-@@ -153,6 +153,7 @@ struct nlattr {
+---
+ fs/ext4/extents.c |   57 +++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 46 insertions(+), 11 deletions(-)
+
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -52,6 +52,9 @@
+ #define EXT4_EXT_MARK_UNINIT1	0x2  /* mark first half uninitialized */
+ #define EXT4_EXT_MARK_UNINIT2	0x4  /* mark second half uninitialized */
  
- #include <linux/capability.h>
- #include <linux/skbuff.h>
-+#include <linux/export.h>
- 
- struct net;
- 
-@@ -226,6 +227,8 @@ struct netlink_callback {
- 					struct netlink_callback *cb);
- 	int			(*done)(struct netlink_callback *cb);
- 	void			*data;
-+	/* the module that dump function belong to */
-+	struct module		*module;
- 	u16			family;
- 	u16			min_dump_alloc;
- 	unsigned int		prev_seq, seq;
-@@ -251,14 +254,24 @@ __nlmsg_put(struct sk_buff *skb, u32 pid
- 
- struct netlink_dump_control {
- 	int (*dump)(struct sk_buff *skb, struct netlink_callback *);
--	int (*done)(struct netlink_callback*);
-+	int (*done)(struct netlink_callback *);
- 	void *data;
-+	struct module *module;
- 	u16 min_dump_alloc;
- };
- 
--extern int netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
--			      const struct nlmsghdr *nlh,
--			      struct netlink_dump_control *control);
-+extern int __netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
-+				const struct nlmsghdr *nlh,
-+				struct netlink_dump_control *control);
-+static inline int netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
-+				     const struct nlmsghdr *nlh,
-+				     struct netlink_dump_control *control)
-+{
-+	if (!control->module)
-+		control->module = THIS_MODULE;
++#define EXT4_EXT_DATA_VALID1	0x8  /* first half contains valid data */
++#define EXT4_EXT_DATA_VALID2	0x10 /* second half contains valid data */
 +
-+	return __netlink_dump_start(ssk, skb, nlh, control);
-+}
- 
- 
- #define NL_NONROOT_RECV 0x1
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -156,6 +156,8 @@ static void netlink_sock_destruct(struct
- 	if (nlk->cb) {
- 		if (nlk->cb->done)
- 			nlk->cb->done(nlk->cb);
-+
-+		module_put(nlk->cb->module);
- 		netlink_destroy_callback(nlk->cb);
- 	}
- 
-@@ -1728,6 +1730,7 @@ static int netlink_dump(struct sock *sk)
- 	nlk->cb = NULL;
- 	mutex_unlock(nlk->cb_mutex);
- 
-+	module_put(cb->module);
- 	netlink_destroy_callback(cb);
- 	return 0;
- 
-@@ -1737,9 +1740,9 @@ errout_skb:
- 	return err;
- }
- 
--int netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
--		       const struct nlmsghdr *nlh,
--		       struct netlink_dump_control *control)
-+int __netlink_dump_start(struct sock *ssk, struct sk_buff *skb,
-+			 const struct nlmsghdr *nlh,
-+			 struct netlink_dump_control *control)
+ static __le32 ext4_extent_block_csum(struct inode *inode,
+ 				     struct ext4_extent_header *eh)
  {
- 	struct netlink_callback *cb;
- 	struct sock *sk;
-@@ -1754,6 +1757,7 @@ int netlink_dump_start(struct sock *ssk,
- 	cb->done = control->done;
- 	cb->nlh = nlh;
- 	cb->data = control->data;
-+	cb->module = control->module;
- 	cb->min_dump_alloc = control->min_dump_alloc;
- 	atomic_inc(&skb->users);
- 	cb->skb = skb;
-@@ -1764,19 +1768,28 @@ int netlink_dump_start(struct sock *ssk,
- 		return -ECONNREFUSED;
- 	}
- 	nlk = nlk_sk(sk);
--	/* A dump is in progress... */
-+
- 	mutex_lock(nlk->cb_mutex);
-+	/* A dump is in progress... */
- 	if (nlk->cb) {
- 		mutex_unlock(nlk->cb_mutex);
- 		netlink_destroy_callback(cb);
--		sock_put(sk);
--		return -EBUSY;
-+		ret = -EBUSY;
-+		goto out;
- 	}
-+	/* add reference of module which cb->dump belongs to */
-+	if (!try_module_get(cb->module)) {
-+		mutex_unlock(nlk->cb_mutex);
-+		netlink_destroy_callback(cb);
-+		ret = -EPROTONOSUPPORT;
-+		goto out;
-+	}
-+
- 	nlk->cb = cb;
- 	mutex_unlock(nlk->cb_mutex);
+@@ -2895,6 +2898,9 @@ static int ext4_split_extent_at(handle_t
+ 	unsigned int ee_len, depth;
+ 	int err = 0;
  
- 	ret = netlink_dump(sk);
++	BUG_ON((split_flag & (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2)) ==
++	       (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2));
++
+ 	ext_debug("ext4_split_extents_at: inode %lu, logical"
+ 		"block %llu\n", inode->i_ino, (unsigned long long)split);
+ 
+@@ -2953,7 +2959,14 @@ static int ext4_split_extent_at(handle_t
+ 
+ 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
+ 	if (err == -ENOSPC && (EXT4_EXT_MAY_ZEROOUT & split_flag)) {
+-		err = ext4_ext_zeroout(inode, &orig_ex);
++		if (split_flag & (EXT4_EXT_DATA_VALID1|EXT4_EXT_DATA_VALID2)) {
++			if (split_flag & EXT4_EXT_DATA_VALID1)
++				err = ext4_ext_zeroout(inode, ex2);
++			else
++				err = ext4_ext_zeroout(inode, ex);
++		} else
++			err = ext4_ext_zeroout(inode, &orig_ex);
++
+ 		if (err)
+ 			goto fix_extent_len;
+ 		/* update the extent length and mark as initialized */
+@@ -3006,12 +3019,13 @@ static int ext4_split_extent(handle_t *h
+ 	uninitialized = ext4_ext_is_uninitialized(ex);
+ 
+ 	if (map->m_lblk + map->m_len < ee_block + ee_len) {
+-		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
+-			      EXT4_EXT_MAY_ZEROOUT : 0;
++		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT;
+ 		flags1 = flags | EXT4_GET_BLOCKS_PRE_IO;
+ 		if (uninitialized)
+ 			split_flag1 |= EXT4_EXT_MARK_UNINIT1 |
+ 				       EXT4_EXT_MARK_UNINIT2;
++		if (split_flag & EXT4_EXT_DATA_VALID2)
++			split_flag1 |= EXT4_EXT_DATA_VALID1;
+ 		err = ext4_split_extent_at(handle, inode, path,
+ 				map->m_lblk + map->m_len, split_flag1, flags1);
+ 		if (err)
+@@ -3024,8 +3038,8 @@ static int ext4_split_extent(handle_t *h
+ 		return PTR_ERR(path);
+ 
+ 	if (map->m_lblk >= ee_block) {
+-		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
+-			      EXT4_EXT_MAY_ZEROOUT : 0;
++		split_flag1 = split_flag & (EXT4_EXT_MAY_ZEROOUT |
++					    EXT4_EXT_DATA_VALID2);
+ 		if (uninitialized)
+ 			split_flag1 |= EXT4_EXT_MARK_UNINIT1;
+ 		if (split_flag & EXT4_EXT_MARK_UNINIT2)
+@@ -3303,26 +3317,47 @@ static int ext4_split_unwritten_extents(
+ 
+ 	split_flag |= ee_block + ee_len <= eof_block ? EXT4_EXT_MAY_ZEROOUT : 0;
+ 	split_flag |= EXT4_EXT_MARK_UNINIT2;
 -
-+out:
- 	sock_put(sk);
- 
- 	if (ret)
-@@ -1787,7 +1800,7 @@ int netlink_dump_start(struct sock *ssk,
- 	 */
- 	return -EINTR;
++	if (flags & EXT4_GET_BLOCKS_CONVERT)
++		split_flag |= EXT4_EXT_DATA_VALID2;
+ 	flags |= EXT4_GET_BLOCKS_PRE_IO;
+ 	return ext4_split_extent(handle, inode, path, map, split_flag, flags);
  }
--EXPORT_SYMBOL(netlink_dump_start);
-+EXPORT_SYMBOL(__netlink_dump_start);
  
- void netlink_ack(struct sk_buff *in_skb, struct nlmsghdr *nlh, int err)
+ static int ext4_convert_unwritten_extents_endio(handle_t *handle,
+-					      struct inode *inode,
+-					      struct ext4_ext_path *path)
++						struct inode *inode,
++						struct ext4_map_blocks *map,
++						struct ext4_ext_path *path)
  {
+ 	struct ext4_extent *ex;
++	ext4_lblk_t ee_block;
++	unsigned int ee_len;
+ 	int depth;
+ 	int err = 0;
+ 
+ 	depth = ext_depth(inode);
+ 	ex = path[depth].p_ext;
++	ee_block = le32_to_cpu(ex->ee_block);
++	ee_len = ext4_ext_get_actual_len(ex);
+ 
+ 	ext_debug("ext4_convert_unwritten_extents_endio: inode %lu, logical"
+ 		"block %llu, max_blocks %u\n", inode->i_ino,
+-		(unsigned long long)le32_to_cpu(ex->ee_block),
+-		ext4_ext_get_actual_len(ex));
++		  (unsigned long long)ee_block, ee_len);
++
++	/* If extent is larger than requested then split is required */
++	if (ee_block != map->m_lblk || ee_len > map->m_len) {
++		err = ext4_split_unwritten_extents(handle, inode, map, path,
++						   EXT4_GET_BLOCKS_CONVERT);
++		if (err < 0)
++			goto out;
++		ext4_ext_drop_refs(path);
++		path = ext4_ext_find_extent(inode, map->m_lblk, path);
++		if (IS_ERR(path)) {
++			err = PTR_ERR(path);
++			goto out;
++		}
++		depth = ext_depth(inode);
++		ex = path[depth].p_ext;
++	}
+ 
+ 	err = ext4_ext_get_access(handle, inode, path + depth);
+ 	if (err)
+@@ -3630,7 +3665,7 @@ ext4_ext_handle_uninitialized_extents(ha
+ 	}
+ 	/* IO end_io complete, convert the filled extent to written */
+ 	if ((flags & EXT4_GET_BLOCKS_CONVERT)) {
+-		ret = ext4_convert_unwritten_extents_endio(handle, inode,
++		ret = ext4_convert_unwritten_extents_endio(handle, inode, map,
+ 							path);
+ 		if (ret >= 0) {
+ 			ext4_update_inode_fsync_trans(handle, inode, 1);
 
 
