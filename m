@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2JZA2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:28:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53435 "EHLO mail.kernel.org"
+	id S1755413Ab2JZA22 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:28:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53413 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab2JZAHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:31 -0400
+	id S1754062Ab2JZAH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 29/85] USB: ark3116: fix NULL-pointer dereference
-Date: Thu, 25 Oct 2012 17:05:47 -0700
-Message-Id: <20121026000034.045371363@linuxfoundation.org>
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 13/85] ring-buffer: Check for uninitialized cpu buffer before resizing
+Date: Thu, 25 Oct 2012 17:05:31 -0700
+Message-Id: <20121026000032.459789873@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,86 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Vaibhav Nagarnaik <vnagarnaik@google.com>
 
-commit 7bdce71822f471433dd3014692e9096996c7b5f0 upstream.
+commit 8e49f418c9632790bf456634742d34d97120a784 upstream.
 
-Fix NULL-pointer dereference at release by replacing attach and release
-with port_probe and port_remove.
+With a system where, num_present_cpus < num_possible_cpus, even if all
+CPUs are online, non-present CPUs don't have per_cpu buffers allocated.
+If per_cpu/<cpu>/buffer_size_kb is modified for such a CPU, it can cause
+a panic due to NULL dereference in ring_buffer_resize().
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is NULL when release is called.
+To fix this, resize operation is allowed only if the per-cpu buffer has
+been initialized.
 
-Compile-only tested.
+Link: http://lkml.kernel.org/r/1349912427-6486-1-git-send-email-vnagarnaik@google.com
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ark3116.c |   26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ kernel/trace/ring_buffer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/ark3116.c
-+++ b/drivers/usb/serial/ark3116.c
-@@ -126,9 +126,6 @@ static inline int calc_divisor(int bps)
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1567,6 +1567,10 @@ int ring_buffer_resize(struct ring_buffe
  
- static int ark3116_attach(struct usb_serial *serial)
- {
--	struct usb_serial_port *port = serial->port[0];
--	struct ark3116_private *priv;
--
- 	/* make sure we have our end-points */
- 	if ((serial->num_bulk_in == 0) ||
- 	    (serial->num_bulk_out == 0) ||
-@@ -143,8 +140,15 @@ static int ark3116_attach(struct usb_ser
- 		return -EINVAL;
- 	}
- 
--	priv = kzalloc(sizeof(struct ark3116_private),
--		       GFP_KERNEL);
-+	return 0;
-+}
+ 		put_online_cpus();
+ 	} else {
++		/* Make sure this CPU has been intitialized */
++		if (!cpumask_test_cpu(cpu_id, buffer->cpumask))
++			goto out;
 +
-+static int ark3116_port_probe(struct usb_serial_port *port)
-+{
-+	struct usb_serial *serial = port->serial;
-+	struct ark3116_private *priv;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
- 	if (!priv)
- 		return -ENOMEM;
+ 		cpu_buffer = buffer->buffers[cpu_id];
  
-@@ -199,18 +203,15 @@ static int ark3116_attach(struct usb_ser
- 	return 0;
- }
- 
--static void ark3116_release(struct usb_serial *serial)
-+static int ark3116_port_remove(struct usb_serial_port *port)
- {
--	struct usb_serial_port *port = serial->port[0];
- 	struct ark3116_private *priv = usb_get_serial_port_data(port);
- 
- 	/* device is closed, so URBs and DMA should be down */
--
--	usb_set_serial_port_data(port, NULL);
--
- 	mutex_destroy(&priv->hw_lock);
--
- 	kfree(priv);
-+
-+	return 0;
- }
- 
- static void ark3116_init_termios(struct tty_struct *tty)
-@@ -725,7 +726,8 @@ static struct usb_serial_driver ark3116_
- 	.id_table =		id_table,
- 	.num_ports =		1,
- 	.attach =		ark3116_attach,
--	.release =		ark3116_release,
-+	.port_probe =		ark3116_port_probe,
-+	.port_remove =		ark3116_port_remove,
- 	.set_termios =		ark3116_set_termios,
- 	.init_termios =		ark3116_init_termios,
- 	.ioctl =		ark3116_ioctl,
+ 		if (nr_pages == cpu_buffer->nr_pages)
 
 
