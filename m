@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab2JZFAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 01:00:45 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60223 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab2JZFAo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 01:00:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20121026035550.GA8894@localhost>
-References: <20121023224706.GR4291@dastard>
-	<CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
-	<20121024201921.GX4291@dastard>
-	<CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
-	<20121025015014.GC29378@dastard>
-	<CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
-	<50889FF1.9030107@gmail.com>
-	<20121025025826.GB23462@localhost>
-	<20121026002544.GI29378@dastard>
-	<CAA9v8mG4Sck=S4SGrorndzAgZzgDs1h9vWa1DhmC-2-FVF=Upg@mail.gmail.com>
-	<20121026035550.GA8894@localhost>
-Date: Fri, 26 Oct 2012 13:00:43 +0800
-Message-ID: <CAA9v8mFV13rey4O3MW4122k163+UgcSLCsp1CkrFVDf-0iWzVw@mail.gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-From: YingHang Zhu <casualfisher@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>,
-        Ni zhan Chen <nizhan.chen@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756210Ab2JZFIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:08:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18107 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756165Ab2JZFIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 01:08:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,652,1344236400"; 
+   d="scan'208";a="209530386"
+From: Huang Ying <ying.huang@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: PCI/PM: Add comments for PME poll support for PCIe
+Date: Fri, 26 Oct 2012 13:07:51 +0800
+Message-Id: <1351228071-15161-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:55 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> On Fri, Oct 26, 2012 at 11:38:11AM +0800, YingHang Zhu wrote:
->> On Fri, Oct 26, 2012 at 8:25 AM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Thu, Oct 25, 2012 at 10:58:26AM +0800, Fengguang Wu wrote:
->> >> Hi Chen,
->> >>
->> >> > But how can bdi related ra_pages reflect different files' readahead
->> >> > window? Maybe these different files are sequential read, random read
->> >> > and so on.
->> >>
->> >> It's simple: sequential reads will get ra_pages readahead size while
->> >> random reads will not get readahead at all.
->> >>
->> >> Talking about the below chunk, it might hurt someone that explicitly
->> >> takes advantage of the behavior, however the ra_pages*2 seems more
->> >> like a hack than general solution to me: if the user will need
->> >> POSIX_FADV_SEQUENTIAL to double the max readahead window size for
->> >> improving IO performance, then why not just increase bdi->ra_pages and
->> >> benefit all reads? One may argue that it offers some differential
->> >> behavior to specific applications, however it may also present as a
->> >> counter-optimization: if the root already tuned bdi->ra_pages to the
->> >> optimal size, the doubled readahead size will only cost more memory
->> >> and perhaps IO latency.
->> >>
->> >> --- a/mm/fadvise.c
->> >> +++ b/mm/fadvise.c
->> >> @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
->> >>                 spin_unlock(&file->f_lock);
->> >>                 break;
->> >>         case POSIX_FADV_SEQUENTIAL:
->> >> -               file->f_ra.ra_pages = bdi->ra_pages * 2;
->> >
->> > I think we really have to reset file->f_ra.ra_pages here as it is
->> > not a set-and-forget value. e.g.  shrink_readahead_size_eio() can
->> > reduce ra_pages as a result of IO errors. Hence if you have had io
->> > errors, telling the kernel that you are now going to do  sequential
->> > IO should reset the readahead to the maximum ra_pages value
->> > supported....
->> If we unify file->f_ra.ra_pages and its' bdi->ra_pages, then the error-prone
->> device's readahead can be directly tuned or turned off with blockdev
->> thus affect all files
->> using the device and without bring more complexity...
->
-> It's not really feasible/convenient for the end users to hand tune
-> blockdev readahead size on IO errors. Even many administrators are
-> totally unaware of the readahead size parameter.
-You are right, so the problem comes in this way:
-    If one file's read failure will affect other files? I mean for
-rotating disks and discs,
-a file's read failure may be due to the bad sectors which tend to be consecutive
-and won't affect other files' reading status. However for tape drive
-the read failure
-usually indicates data corruption and other file's reading may also fail.
-    In other words, should we consider how many files failed to read data and
-where they failed as a factor to indicate the status of the backing device,
-or treat these files independently?
-    If we choose the previous one we can accumulate the statistics and
-change bdi.ra_pages,
-otherwise we may do some check for FMODE_RANDOM before we change the readahead
-window.
-     I may missed something, please point it out.
-Thanks,
-      Ying Zhu
->
-> Thanks,
-> Fengguang
+There are comments on why PME poll support is necessary for PCI
+devices, but not for PCIe devices.  That may lead to misunderstanding
+that PME poll is only necessary for PCI devices.  So add comments
+related to PCIe PME poll to make it more clear.
+
+The content of comments comes from the changelog of commit:
+
+379021d5c0899fcf9410cae4ca7a59a5a94ca769
+
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/pci/pci.c |   28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1578,15 +1578,25 @@ void pci_pme_active(struct pci_dev *dev,
+ 
+ 	pci_write_config_word(dev, dev->pm_cap + PCI_PM_CTRL, pmcsr);
+ 
+-	/* PCI (as opposed to PCIe) PME requires that the device have
+-	   its PME# line hooked up correctly. Not all hardware vendors
+-	   do this, so the PME never gets delivered and the device
+-	   remains asleep. The easiest way around this is to
+-	   periodically walk the list of suspended devices and check
+-	   whether any have their PME flag set. The assumption is that
+-	   we'll wake up often enough anyway that this won't be a huge
+-	   hit, and the power savings from the devices will still be a
+-	   win. */
++	/*
++	 * PCI (as opposed to PCIe) PME requires that the device have
++	 * its PME# line hooked up correctly. Not all hardware vendors
++	 * do this, so the PME never gets delivered and the device
++	 * remains asleep. The easiest way around this is to
++	 * periodically walk the list of suspended devices and check
++	 * whether any have their PME flag set. The assumption is that
++	 * we'll wake up often enough anyway that this won't be a huge
++	 * hit, and the power savings from the devices will still be a
++	 * win.
++	 *
++	 * Although PCIe uses in-band PME message instead of PME# line
++	 * to report PME, PME does not work for some PCIe devices in
++	 * reality.  For example, there are devices that set their PME
++	 * status bits, but don't really bother to send a PME message;
++	 * there are PCI Express Root Ports that don't bother to
++	 * trigger interrupts when they receive PME messages from the
++	 * devices below.  So PME poll is used for PCIe devices too.
++	 */
+ 
+ 	if (dev->pme_poll) {
+ 		struct pci_pme_device *pme_dev;
