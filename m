@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966857Ab2JZWr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 18:47:58 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:12076 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966838Ab2JZWrz (ORCPT
+	id S1946078Ab2JZXPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 19:15:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:54022 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934204Ab2JZXPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 18:47:55 -0400
-Message-ID: <1351291667.6504.13.camel@MikesLinux.fc.hp.com>
-Subject: [PATCH v2] mm: memmap_init_zone() performance improvement
-From: Mike Yoknis <mike.yoknis@hp.com>
-Reply-To: mike.yoknis@hp.com
-To: Mel Gorman <mgorman@suse.de>
-Cc: mingo@redhat.com, akpm@linux-foundation.org, linux-arch@vger.kernel.org,
-        mmarek@suse.cz, tglx@linutronix.de, hpa@zytor.com, arnd@arndb.de,
-        sam@ravnborg.org, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Fri, 26 Oct 2012 16:47:47 -0600
-In-Reply-To: <20121025094410.GA2558@suse.de>
-References: <1349276174-8398-1-git-send-email-mike.yoknis@hp.com>
-	 <20121008151656.GM29125@suse.de>
-	 <1349794597.29752.10.camel@MikesLinux.fc.hp.com>
-	 <1350676398.1169.6.camel@MikesLinux.fc.hp.com>
-	 <20121020082858.GA2698@suse.de>
-	 <1351093667.1205.11.camel@MikesLinux.fc.hp.com>
-	 <20121025094410.GA2558@suse.de>
-Organization: Hewlett-Packard
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Fri, 26 Oct 2012 19:15:48 -0400
+Message-ID: <508B199A.8050108@onlinehome.de>
+Date: Sat, 27 Oct 2012 01:15:38 +0200
+From: Martin <marogge@onlinehome.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
+        stable@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <jXNl8-5m5-13@gated-at.bofh.it> <jXNOa-5MR-23@gated-at.bofh.it> <jXPGh-87s-5@gated-at.bofh.it> <jXTJW-4CH-55@gated-at.bofh.it> <jXUZj-6mo-13@gated-at.bofh.it> <jXVLH-7kO-5@gated-at.bofh.it> <jXW53-7CC-5@gated-at.bofh.it> <jXWeJ-7Lk-1@gated-at.bofh.it> <50882787.3030504@onlinehome.de> <508AEEF7.8060301@onlinehome.de> <20121026211033.GD8614@thunk.org>
+In-Reply-To: <20121026211033.GD8614@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:lpqFU4O4eBjwTYrCkNsFTqzlViLL8mTo2HCI9r8KPCo
+ WxV18tMdhu083U/asqnwvScG1vOwuK8aT3+Yzc1TB14q7vL+Zd
+ iWVoTAreyYAoreW8hXngOJE15gCC4vkzOpWRf8cCd80+W5hpUP
+ fz867Lw4CwjylclLovZikTEntWghLLPYze37o8oOO946Eariwq
+ +oFrQq3A5DdNONlexkOUsyJI3K+ZQVi5pm4awxoS4UySuVia/m
+ zG7rowTysBnnbgvV3k1Ee9mIOdDHi95Oatq1LTqzPRz9AVOvKV
+ 8QPEHO0bjx6GRuzQH94XG0TS1JAAjDptRK5SKiCmnwgvkCO4zd
+ s0Q8aaEl2lqVJ0hhpl6k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memmap_init_zone() loops through every Page Frame Number (pfn),
-including pfn values that are within the gaps between existing
-memory sections.  The unneeded looping will become a boot
-performance issue when machines configure larger memory ranges
-that will contain larger and more numerous gaps.
+On 10/26/2012 11:10 PM, Theodore Ts'o wrote:
+> This looks very different.  The symptoms are quite different, and it's
+> most likely that an unclean shutdown is involved.  In your case,
+> you're doing clean shutdowns, with some suspend/resume cycles thrown
+> in.
 
-The code will skip across invalid pfn values to reduce the
-number of loops executed.
+No no, the case I reported was triggered by an unclean shutdown: my son 
+hitting the power button after a system crash, or more likely when the 
+graphics subsystem became unresponsive.
 
-Signed-off-by: Mike Yoknis <mike.yoknis@hp.com>
----
- mm/page_alloc.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+> Are you running e2fsck to fix the file system consistency problems;
+> what is e2fsck reporting?
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 45c916b..9f9c1a6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3857,8 +3857,11 @@ void __meminit memmap_init_zone(unsigned long
-size, int nid, unsigned long zone,
- 		 * exist on hotplugged memory.
- 		 */
- 		if (context == MEMMAP_EARLY) {
--			if (!early_pfn_valid(pfn))
-+			if (!early_pfn_valid(pfn)) {
-+				pfn = ALIGN(pfn + MAX_ORDER_NR_PAGES,
-+						MAX_ORDER_NR_PAGES) - 1;
- 				continue;
-+			}
- 			if (!early_pfn_in_nid(pfn, nid))
- 				continue;
- 		}
--- 
-1.7.11.3
+by now it attests a bill of clean health. at first it reported issues 
+the precise nature of which escaping my memory, fixed them, and after 
+the next reboot reported some more issues which again were fixed. Had I 
+known this will look similar to a prominent issue I would have paid more 
+attention.
 
+> Do you need to have a suspend/resume in order to trigger the problem?
+
+no, I just mentioned the suspend/resume cycles to explain what is going 
+on in the syslog, which I didn't attach in the end. During the period of 
+the problem building up there was no suspend/resume event.
+
+> This could very be some kind of hardware problem or kernel bug related
+> to suspend/resume.  Unfortunately, many different problems get noticed
+> by the file system, but the root cause is can often be something else;
+> a hardware problem, or a bug somewhere else in the kernel.
+
+I hear what you are saying. I just want to add that the hardware has 
+survived the past two or three years despite suspend/resume and the odd 
+abusive treatment (like unclean shutdown by non-techie users). I tend to 
+keep the kernel, patches, modules and user land up to date.
+
+>
+> Regards,
+>
+> 						- Ted
+>
+> P.S.  Can you do us a favor and start a separate mail thread with the
+> information reposted?  It's can get hard to track different cases when
+> a lot of people assume that their random failure (some of which are
+> hardware problems) are related to the issue we are trying to track
+> down in this mail thread and then they all pile onto the same mail
+> thread or the same web forum --- one of the reasons why I detest
+> Ubuntu Launchpad.  Thanks!!
+
+Shall do.
+
+cu Martin
 
