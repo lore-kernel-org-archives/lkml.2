@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932870Ab2JZNcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:32:21 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43052 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756337Ab2JZNcU (ORCPT
+	id S932886Ab2JZNdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:33:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55328 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932123Ab2JZNdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:32:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+RexfipWZ8Bowd1mx++ZRAk/EeQp/KOu0=
-Date: Fri, 26 Oct 2012 09:31:54 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
- Armada 370/XP
-Message-ID: <20121026133154.GN18811@titan.lakedaemon.net>
-References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
- <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 26 Oct 2012 09:33:04 -0400
+Date: Fri, 26 Oct 2012 14:37:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, linux-fbdev@vger.kernel.org,
+        florianSchandinat@gmx.de
+Subject: Re: tty, vt: lockdep warnings
+Message-ID: <20121026143754.50277bd8@pyramind.ukuu.org.uk>
+In-Reply-To: <50899507.1040900@oracle.com>
+References: <50899507.1040900@oracle.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 02:30:47PM +0200, Gregory CLEMENT wrote:
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Signed-off-by: Lior Amsalem <alior@marvell.com>
-> ---
->  arch/arm/boot/dts/armada-370-xp.dtsi |    9 +++++++++
->  1 file changed, 9 insertions(+)
+On Thu, 25 Oct 2012 15:37:43 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
+
+> Hi all,
 > 
-> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-> index 94b4b9e..a911f7a 100644
-> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
-> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-> @@ -69,6 +69,15 @@
->  			compatible = "marvell,armada-addr-decoding-controller";
->  			reg = <0xd0020000 0x258>;
->  		};
-> +
-> +		sata@d00a0000 {
-> +                        compatible = "marvell,orion-sata";
-> +                        reg = <0xd00a0000 0x2400>;
-> +                        interrupts = <55>;
-> +			clocks = <&coreclk 0>;
+> While fuzzing with trinity inside a KVM tools (lkvm) guest running latest -next kernel,
+> I've stumbled on the following spew:
 
-nit. whitespace?
+Looks real enough but its not a tty/vt layer spew. This is all coming out
+of the core framebuffer code which doesn't seem to be able to decide what
+the locking rules at the invocation of fb_notifier_call_chain are.
 
-thx,
+It might need some console layer tweaking to provide 'register console
+and I already hold the locks' or similar but that notifier needs some
+kind of sanity applying as well.
 
-Jason.
+Cc'ing the fbdev folks
 
-> +                        status = "disabled";
-> +		};
-> +
->  	};
->  };
->  
-> -- 
-> 1.7.9.5
-> 
+Alan
