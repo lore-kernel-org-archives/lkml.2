@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966188Ab2JZTa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:30:27 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:38884 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966172Ab2JZTaJ (ORCPT
+	id S966185Ab2JZTft (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:35:49 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35170 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966127Ab2JZTfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:30:09 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V4 REPOST 2/2] kbuild: run the pre-processor on *.dts files
-Date: Fri, 26 Oct 2012 13:29:57 -0600
-Message-Id: <1351279797-16450-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1351279797-16450-1-git-send-email-swarren@wwwdotorg.org>
-References: <1351279797-16450-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Fri, 26 Oct 2012 15:35:48 -0400
+Message-ID: <508AE611.3020504@mvista.com>
+Date: Fri, 26 Oct 2012 14:35:45 -0500
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: minyard@acm.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 4/5] IPMI: Fix some uninitialized warning
+References: <1350420820-7156-1-git-send-email-minyard@acm.org> <1350420820-7156-5-git-send-email-minyard@acm.org> <20121022164902.9b204646.akpm@linux-foundation.org>
+In-Reply-To: <20121022164902.9b204646.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On 10/22/2012 06:49 PM, Andrew Morton wrote:
+> On Tue, 16 Oct 2012 15:53:39 -0500
+> minyard@acm.org wrote:
+>
+>> From: Corey Minyard <cminyard@mvista.com>
+>>
+>> There was a spot where the compiler couldn't tell some variables
+>> would be set.  So initialize them to make the warning go away.
+>>
+>> Signed-off-by: Corey Minyard <cminyard@mvista.com>
+>> ---
+>>   drivers/char/ipmi/ipmi_msghandler.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+>> index 2c29942..a0c84bb 100644
+>> --- a/drivers/char/ipmi/ipmi_msghandler.c
+>> +++ b/drivers/char/ipmi/ipmi_msghandler.c
+>> @@ -1880,7 +1880,7 @@ int ipmi_request_supply_msgs(ipmi_user_t          user,
+>>   			     struct ipmi_recv_msg *supplied_recv,
+>>   			     int                  priority)
+>>   {
+>> -	unsigned char saddr, lun;
+>> +	unsigned char saddr = 0, lun = 0;
+>>   	int           rv;
+>>   
+>>   	if (!user)
+> The kernel build actually generates quite a lot of "bar uninitialised"
+> warnings for foo(&bar) expressions.  I just ignore them, because later
+> versions of gcc stopped doing that.
+>
+> The fix is OK, I suppose.  But it will cause additional code to be
+> emitted.  Using uninitialized_var() avoids that, and makes things
+> clearer to the reader.
+Well, warnings annoy me, especially when I get the emails about them.  
+But I suppose that's the point of the emails :).
 
-Modify cmd_dtc to run the C pre-processor on the input .dts file before
-passing it to dtc for final compilation. This allows the use of #define
-and #include within the .dts file.
+I'll do a patch to switch it to uninitialized_var() for the next set of 
+things I send.  Thanks.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v4:
-* Use -x assembler-with-cpp so pre-defined macros are set up so that
-  #included header files know to only use cpp syntax, not C syntax.
-* Define __DTS__ for similar reasons.
-* use $(CPP) not $(CC) -E, and use $(cpp_flags).
-* Save the pre-processed results so they can be easily inspected when
-  debugging build issues.
-* The use of -x assembler-with-cpp causes cpp to recognize directives in
-  column 1 only. Hence, there's no need to escape property names that
-  begin with #. Hence, there's no need for separate skeleton.dtsi and
-  skeleton.dtsip. Maintain a separate file extension and build rule so that
-  CPP-usage is opt-in. In particular, when using CPP, #include must be used
-  rather than /include/ so that dependencies work.
-v3: Pass "-x c" not "-xc" to cpp.
-v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
----
- scripts/Makefile.lib |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 425578e..33432f4 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
- $(obj)/%.dtb: $(src)/dts/%.dts FORCE
- 	$(call if_changed_dep,dtc)
- 
-+dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
-+
-+quiet_cmd_dtc_cpp = DTC+CPP $@
-+cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
-+	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
-+
-+$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
-+	$(call if_changed_dep,dtc_cpp)
-+
- # Bzip2
- # ---------------------------------------------------------------------------
- 
--- 
-1.7.0.4
+-corey
 
