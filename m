@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810Ab2JZAFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:05:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52400 "EHLO mail.kernel.org"
+	id S1752761Ab2JZAFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:05:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52366 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752729Ab2JZAFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:41 -0400
+	id S1752729Ab2JZAFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@suse.cz>, Jochen Friedrich <jochen@scram.de>,
-        linux-pcmcia@lists.infradead.org
-Subject: [ 06/31] pcmcia: sharpsl: dont discard sharpsl_pcmcia_ops
-Date: Thu, 25 Oct 2012 17:04:13 -0700
-Message-Id: <20121026000215.603594417@linuxfoundation.org>
+        Sasha Levin <levinsasha928@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 04/31] SUNRPC: Prevent kernel stack corruption on long values of flush
+Date: Thu, 25 Oct 2012 17:04:11 -0700
+Message-Id: <20121026000215.405106921@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -29,49 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit fdc858a466b738d35d3492bc7cf77b1dac98bf7c upstream.
+commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
 
-The sharpsl_pcmcia_ops structure gets passed into
-sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
-unlike all other pcmcia drivers that pass their structures
-into platform_device_add_data, which makes a copy.
+The buffer size in read_flush() is too small for the longest possible values
+for it. This can lead to a kernel stack corruption:
 
-This means the gcc warning is valid and the structure
-must not be marked as __initdata.
+[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
+[   43.047329]
+[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
+[   43.050038] Call Trace:
+[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
+[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
+[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
+[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
+[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
+[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
+[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
+[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
+[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
+[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
+[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
+[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
+[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
 
-Without this patch, building collie_defconfig results in:
-
-drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
-compilation terminated.
-make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
-make[2]: *** [drivers/pcmcia] Error 2
-make[1]: *** [drivers] Error 2
-make: *** [sub-make] Error 2
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Pavel Machek <pavel@suse.cz>
-Cc: linux-pcmcia@lists.infradead.org
-Cc: Jochen Friedrich <jochen@scram.de>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/cache.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pcmcia/pxa2xx_sharpsl.c
-+++ b/drivers/pcmcia/pxa2xx_sharpsl.c
-@@ -222,7 +222,7 @@ static void sharpsl_pcmcia_socket_suspen
- 	sharpsl_pcmcia_init_reset(skt);
- }
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1404,11 +1404,11 @@ static ssize_t read_flush(struct file *f
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[22];
+ 	unsigned long p = *ppos;
+ 	size_t len;
  
--static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
-+static struct pcmcia_low_level sharpsl_pcmcia_ops = {
- 	.owner                  = THIS_MODULE,
- 	.hw_init                = sharpsl_pcmcia_hw_init,
- 	.hw_shutdown            = sharpsl_pcmcia_hw_shutdown,
+-	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
++	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
+ 	len = strlen(tbuf);
+ 	if (p >= len)
+ 		return 0;
 
 
