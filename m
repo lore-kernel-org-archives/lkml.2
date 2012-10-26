@@ -1,46 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab2JZSuG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:50:06 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59490 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab2JZSuE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:50:04 -0400
+	id S965944Ab2JZSu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:50:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:39176 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753974Ab2JZSuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:50:23 -0400
+Date: Fri, 26 Oct 2012 11:50:21 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] VFS: add config options to enable link restrictions
+Message-ID: <20121026185021.GA1960@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20121026144419.7e666023@dull>
-References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl>
- <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
- <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
- <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
- <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
- <m2pq45qu0s.fsf@firstfloor.org> <508A8D31.9000106@redhat.com>
- <20121026132601.GC9886@gmail.com> <20121026144419.7e666023@dull>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 26 Oct 2012 11:49:42 -0700
-X-Google-Sender-Auth: s9vccQxju57GYF5lRncvojVHA-A
-Message-ID: <CA+55aFwdcMzMQ2ns6-p97GXuNhxiDO-nFa0h1A-tjN363mJniQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] x86/mm: only do a local TLB flush in ptep_set_access_flags()
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:44 AM, Rik van Riel <riel@redhat.com> wrote:
->
-> The function ptep_set_access_flags() is only ever invoked to upgrade
-> access permissions on a PTE
+There are situations where devices running without initrds may need
+very early protection from link vulnerabilities, so make these sysctls
+configurable at build time, since 561ec64ae67e ("VFS: don't do protected
+{sym,hard}links by default") has disabled the protections by default.
 
-Same deal. Please don't call these "access permissions". That confuses
-the issue.
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: stable@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ fs/Kconfig |   39 +++++++++++++++++++++++++++++++++++++++
+ fs/namei.c |    6 ++++--
+ 2 files changed, 43 insertions(+), 2 deletions(-)
 
-           Linus
+diff --git a/fs/Kconfig b/fs/Kconfig
+index f95ae3a..46ae2dc 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -276,4 +276,43 @@ endif # NETWORK_FILESYSTEMS
+ source "fs/nls/Kconfig"
+ source "fs/dlm/Kconfig"
+ 
++config PROTECTED_SYMLINKS
++	bool "Protect symlink following in sticky world-writable dirs"
++	default n
++	help
++	  Solve the class of ToCToU symlink race vulnerabilities by
++	  permitting symlinks to be followed only when outside a sticky
++	  world-writable directory, or when the uid of the symlink and
++	  follower match, or when the directory and symlink owners match.
++
++	  When PROC_SYSCTL is enabled, this setting can also be controlled
++	  via /proc/sys/kernel/protected_symlinks.
++
++	  See Documentation/sysctl/fs.txt for details.
++
++config PROTECTED_SYMLINKS_SYSCTL
++	int
++	default "1" if PROTECTED_SYMLINKS
++	default "0"
++
++config PROTECTED_HARDLINKS
++	bool "Protect hardlink creation to non-accessible files"
++	default n
++	help
++	  Solve the class of ToCToU hardlink race vulnerabilities by
++	  permitting hardlinks to be created only when to a regular file
++	  that is owned by the user, or is readable and writable by the
++	  user. Also blocks users from "pinning" vulnerable setuid/setgid
++	  programs from being upgraded by the administrator.
++
++	  When PROC_SYSCTL is enabled, this setting can also be controlled
++	  via /proc/sys/kernel/protected_hardlinks.
++
++	  See Documentation/sysctl/fs.txt for details.
++
++config PROTECTED_HARDLINKS_SYSCTL
++	int
++	default "1" if PROTECTED_HARDLINKS
++	default "0"
++
+ endmenu
+diff --git a/fs/namei.c b/fs/namei.c
+index 937f9d5..21854df 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -705,8 +705,10 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
+ 	path_put(link);
+ }
+ 
+-int sysctl_protected_symlinks __read_mostly = 0;
+-int sysctl_protected_hardlinks __read_mostly = 0;
++int sysctl_protected_symlinks __read_mostly =
++	CONFIG_PROTECTED_SYMLINKS_SYSCTL;
++int sysctl_protected_hardlinks __read_mostly =
++	CONFIG_PROTECTED_HARDLINKS_SYSCTL;
+ 
+ /**
+  * may_follow_link - Check symlink following for unsafe situations
+-- 
+1.7.9.5
+
+
+-- 
+Kees Cook
+Chrome OS Security
