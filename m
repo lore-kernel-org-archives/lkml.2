@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab2JZLTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:19:33 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:39125 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753575Ab2JZLTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:19:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, arvind.chauhan@arm.com
-Subject: Re: [RFC] cpufreq: Make sure target freq is within limits
-Date: Fri, 26 Oct 2012 13:23:28 +0200
-Message-ID: <2173527.XVCDQtU61N@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
-References: <f0099171c1c4f3048d0f29b7deb42144f26ac5d5.1351146515.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932322Ab2JZL0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:26:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41554 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab2JZL0U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:26:20 -0400
+Message-ID: <1351250734.16863.26.camel@twins>
+Subject: Re: lockdep info message
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Oct 2012 13:25:34 +0200
+In-Reply-To: <508A62DC.50805@broadcom.com>
+References: <508A62DC.50805@broadcom.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 25, 2012 12:03:34 PM Viresh Kumar wrote:
-> Hi Rafael,
+On Fri, 2012-10-26 at 12:15 +0200, Arend van Spriel wrote:
+> Hi Peter and/or Ingo,
 > 
-> __cpufreq_driver_target() must not pass target frequency beyond the limits of
-> current policy.
-> 
-> Today most of cpufreq platform drivers are doing this check in their target
-> routines. Why not move it to __cpufreq_driver_target().
-> 
-> I wanted to get your opinion on this before making changes in all driver files.
-> That's why this is an RFC.
+> I am working on a driver (brcmfmac) and when unloading it or unplugging 
+> the device I get this info message (see below) upon calling 
+> cancel_work_sync(). Just wondering if there is something I need to do in 
+> the driver or should it be done in workqueue code.
 
-I'd prefer to apply the patch below before changing the drviers.
+Your driver, as that's the one allocating the struct work_struct thingy.
 
-Thanks,
-Rafael
+You've either failed to use INIT_WORK() or need to use
+INIT_WORK_ONSTACK() if that's appropriate. It looks like you could have
+used DECLARE*_WORK inside a function or something similar.
 
-
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 11 +++++++++--
->  1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f552d5f..59264f1 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1470,12 +1470,19 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
->  			    unsigned int relation)
->  {
->  	int retval = -EINVAL;
-> +	unsigned int old_target_freq = target_freq;
->  
->  	if (cpufreq_disabled())
->  		return -ENODEV;
->  
-> -	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
-> -		target_freq, relation);
-> +	/* Make sure that target_freq is within supported range */
-> +	if (target_freq > policy->max)
-> +		target_freq = policy->max;
-> +	if (target_freq < policy->min)
-> +		target_freq = policy->min;
-> +
-> +	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
-> +			policy->cpu, target_freq, relation, old_target_freq);
->  	if (cpu_online(policy->cpu) && cpufreq_driver->target)
->  		retval = cpufreq_driver->target(policy, target_freq, relation);
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Anyway, without the driver code present I can't really say much more.
