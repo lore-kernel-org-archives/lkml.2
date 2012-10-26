@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2JZAH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53340 "EHLO mail.kernel.org"
+	id S1755371Ab2JZA32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:29:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53393 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753551Ab2JZAHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:22 -0400
+	id S1753551Ab2JZAH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, deepthi@linux.vnet.ibm.com
-Subject: [ 06/85] nohz: Fix idle ticks in cpu summary line of /proc/stat
-Date: Thu, 25 Oct 2012 17:05:24 -0700
-Message-Id: <20121026000031.769531169@linuxfoundation.org>
+        Sasha Levin <levinsasha928@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 11/85] SUNRPC: Prevent kernel stack corruption on long values of flush
+Date: Thu, 25 Oct 2012 17:05:29 -0700
+Message-Id: <20121026000032.264719777@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -28,75 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f upstream.
+commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
 
-Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
-conditional" introduced a bug in regard to cpu hotplug. The effect is
-that the number of idle ticks in the cpu summary line in /proc/stat is
-still counting ticks for offline cpus.
+The buffer size in read_flush() is too small for the longest possible values
+for it. This can lead to a kernel stack corruption:
 
-Reproduction is easy, just start a workload that keeps all cpus busy,
-switch off one or more cpus and then watch the idle field in top.
-On a dual-core with one cpu 100% busy and one offline cpu you will get
-something like this:
+[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
+[   43.047329]
+[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
+[   43.050038] Call Trace:
+[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
+[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
+[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
+[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
+[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
+[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
+[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
+[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
+[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
+[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
+[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
+[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
+[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
 
-%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
-%0.0 st
-
-The problem is that an offline cpu still has ts->idle_active == 1.
-To fix this we should make sure that the cpu is online when calling
-get_cpu_idle_time_us and get_cpu_iowait_time_us.
-
-[Srivatsa: Rebased to current mainline]
-
-Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com
-Cc: deepthi@linux.vnet.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/stat.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ net/sunrpc/cache.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/proc/stat.c
-+++ b/fs/proc/stat.c
-@@ -45,10 +45,13 @@ static cputime64_t get_iowait_time(int c
- 
- static u64 get_idle_time(int cpu)
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *f
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
  {
--	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
-+	u64 idle, idle_time = -1ULL;
-+
-+	if (cpu_online(cpu))
-+		idle_time = get_cpu_idle_time_us(cpu, NULL);
+-	char tbuf[20];
++	char tbuf[22];
+ 	unsigned long p = *ppos;
+ 	size_t len;
  
- 	if (idle_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.idle */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
- 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
- 	else
- 		idle = usecs_to_cputime64(idle_time);
-@@ -58,10 +61,13 @@ static u64 get_idle_time(int cpu)
- 
- static u64 get_iowait_time(int cpu)
- {
--	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-+	u64 iowait, iowait_time = -1ULL;
-+
-+	if (cpu_online(cpu))
-+		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
- 
- 	if (iowait_time == -1ULL)
--		/* !NO_HZ so we can rely on cpustat.iowait */
-+		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
- 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
- 	else
- 		iowait = usecs_to_cputime64(iowait_time);
+-	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
++	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
+ 	len = strlen(tbuf);
+ 	if (p >= len)
+ 		return 0;
 
 
