@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754969Ab2JZAKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:10:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54163 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754657Ab2JZAIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 82/85] sparc64: fix ptrace interaction with force_successful_syscall_return()
-Date: Thu, 25 Oct 2012 17:06:40 -0700
-Message-Id: <20121026000039.349928656@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755001Ab2JZALT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:11:19 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:39609 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811Ab2JZALQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:11:16 -0400
+Message-ID: <5089D520.6020106@gmail.com>
+Date: Thu, 25 Oct 2012 20:11:12 -0400
+From: Ric Wheeler <ricwheeler@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Eric Sandeen <sandeen@redhat.com>, "Ted Ts'o" <tytso@mit.edu>
+CC: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com> <87txtkld4h.fsf@spindle.srvr.nix>
+In-Reply-To: <87txtkld4h.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 10/24/2012 12:15 AM, Nix wrote:
+> On 24 Oct 2012, Eric Sandeen uttered the following:
+>
+>> On 10/23/12 3:57 PM, Nix wrote:
+>>> The only unusual thing about the filesystems on this machine are that
+>>> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
+>>> 'nobarrier':
+>> I should have read more.  :(  More questions follow:
+>>
+>> * Does the Areca have a battery backed write cache?
+> Yes (though I'm not powering off, just rebooting). Battery at 100% and
+> happy, though the lack of power-off means it's not actually getting
+> used, since the cache is obviously mains-backed as well.
 
-------------------
+Sending this just to you two to avoid embarrassing myself if I misread the 
+thread, but....
 
+Can we reproduce this with any other hardware RAID card? Or with MD?
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+If we cannot reproduce this in other machines, why assume this is an ext4 issue 
+and not a hardware firmware bug?
 
-[ Upstream commit 55c2770e413e96871147b9406a9c41fe9bc5209c ]
+As an ex-storage guy, this really smells like the hardware raid card might be 
+misleading us....
 
-we want syscall_trace_leave() called on exit from any syscall;
-skipping its call in case we'd done force_successful_syscall_return()
-is broken...
+ric
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/syscalls.S |   32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
-
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -212,24 +212,20 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
--	/* Check if force_successful_syscall_return()
--	 * was invoked.
--	 */
--	ldub	[%g6 + TI_SYS_NOERROR], %l2
--	brnz,a,pn %l2, 80f
--	 stb	%g0, [%g6 + TI_SYS_NOERROR]
--
- 	cmp	%o0, -ERESTART_RESTARTBLOCK
- 	bgeu,pn	%xcc, 1f
--	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
--80:
-+	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
-+	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
-+
-+2:
-+	stb	%g0, [%g6 + TI_SYS_NOERROR]
- 	/* System call success, clear Carry condition code. */
- 	andn	%g3, %g2, %g3
-+3:
- 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
- 	bne,pn	%icc, linux_syscall_trace2
- 	 add	%l1, 0x4, %l2			! npc = npc+4
-@@ -238,20 +234,20 @@ ret_sys_call:
- 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- 
- 1:
-+	/* Check if force_successful_syscall_return()
-+	 * was invoked.
-+	 */
-+	ldub	[%g6 + TI_SYS_NOERROR], %l2
-+	brnz,pn %l2, 2b
-+	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	/* System call failure, set Carry condition code.
- 	 * Also, get abs(errno) to return to the process.
- 	 */
--	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
- 	sub	%g0, %o0, %o0
--	or	%g3, %g2, %g3
- 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
--	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
--	bne,pn	%icc, linux_syscall_trace2
--	 add	%l1, 0x4, %l2			! npc = npc+4
--	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
-+	ba,pt	%xcc, 3b
-+	 or	%g3, %g2, %g3
- 
--	b,pt	%xcc, rtrap
--	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- linux_syscall_trace2:
- 	call	syscall_trace_leave
- 	 add	%sp, PTREGS_OFF, %o0
 
 
