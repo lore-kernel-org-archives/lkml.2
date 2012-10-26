@@ -1,82 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab2JZIcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:32:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:41710 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283Ab2JZIcn (ORCPT
+	id S1757399Ab2JZIdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:33:05 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:65114 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757374Ab2JZIcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:32:43 -0400
-Date: Fri, 26 Oct 2012 10:32:38 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/3] perf/core trace improvements
-Message-ID: <20121026083238.GB27378@gmail.com>
-References: <1351194465-29083-1-git-send-email-acme@infradead.org>
+	Fri, 26 Oct 2012 04:32:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351194465-29083-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1350566815-409-1-git-send-email-mporter@ti.com>
+References: <1350566815-409-1-git-send-email-mporter@ti.com>
+Date: Fri, 26 Oct 2012 01:32:53 -0700
+Message-ID: <CA+Bv8XZhrFR2krMS=psL96uaiVxnQ12s3ORN6F+yfXw40T1_uw@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 00/16] DMA Engine support for AM33XX
+From: Russ Dill <russ.dill@gmail.com>
+To: Matt Porter <mporter@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 18, 2012 at 6:26 AM, Matt Porter <mporter@ti.com> wrote:
+> Changes since v2:
+>         - Rebased on 3.7-rc1
+>         - Fixed bug in DT/pdata parsing first found by Gururaja
+>           that turned out to be masked by some toolchains
+>         - Dropped unused mach-omap2/devices.c hsmmc patch
+>         - Added AM33XX crossbar DMA event mux support
+>         - Added am335x-evm support
+>
+> Changes since v1:
+>         - Rebased on top of mainline from 12250d8
+>         - Dropped the feature removal schedule patch
+>         - Implemented dma_request_slave_channel_compat() and
+>           converted the mmc and spi drivers to use it
+>         - Dropped unneeded #address-cells and #size-cells from
+>           EDMA DT support
+>         - Moved private EDMA header to linux/platform_data/ and
+>           removed some unneeded definitions
+>         - Fixed parsing of optional properties
+>
+> TODO:
+>         - Add dmaengine support for per-channel caps so the
+>           hack to set the maximum segments can be replaced with
+>           a query to the dmaengine driver
+>
+> This series adds DMA Engine support for AM33xx, which uses
+> an EDMA DMAC. The EDMA DMAC has been previously supported by only
+> a private API implementation (much like the situation with OMAP
+> DMA) found on the DaVinci family of SoCs.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+This pretty far along and looks great.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling, got sidetracked today with some other stuff,
-> but made progress on reviewing the group patches from Namhyung that Jiri uses
-> for that PERF_SAMPLE_READ patchset.
-> 
-> - Arnaldo
-> 
-> The following changes since commit 6ca2a9c6543dd1a307c0250991d4de93550209ce:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-10-25 09:42:03 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 1302d88e66f12a7b46a5598e641d93f0713007e0:
-> 
->   perf trace: Use sched:sched_stat_runtime to provide a thread summary (2012-10-25 10:57:43 -0200)
-> 
-> ----------------------------------------------------------------
-> perf/core trace improvements:
-> 
-> . Don't stop synthesizing threads when one vanishes, this is for
->   the existing threads when we start a tool like trace.
-> 
-> . Use sched:sched_stat_runtime to provide a thread summary, this
->   produces the same output as the 'trace summary' subcommand of
->   tglx's original "trace" tool.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (3):
->       perf tools: Don't stop synthesizing threads when one vanishes
->       perf trace: Count number of events for each thread and globally
->       perf trace: Use sched:sched_stat_runtime to provide a thread summary
-> 
->  tools/perf/Documentation/perf-trace.txt |    3 +
->  tools/perf/builtin-trace.c              |  108 +++++++++++++++++++++++++++++--
->  tools/perf/util/event.c                 |   13 ++--
->  3 files changed, 110 insertions(+), 14 deletions(-)
+Reviewed-by: Russ.Dill@ti.com
 
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
+> The series applies on top of 3.7-rc1 and the following patches:
+>
+>         - GPMC fails to reserve memory fix:
+>           http://www.spinics.net/lists/linux-omap/msg79675.html
+>         - TPS65910 regulator fix:
+>           https://patchwork.kernel.org/patch/1593651/
+>         - dmaengine DT support from Vinod's dmaengine_dt branch in
+>           git://git.infradead.org/users/vkoul/slave-dma.git since
+>           027478851791df751176398be02a3b1c5f6aa824
+>
+> The approach taken is similar to how OMAP DMA is being converted to
+> DMA Engine support. With the functional EDMA private API already
+> existing in mach-davinci/dma.c, we first move that to an ARM common
+> area so it can be shared. Adding DT and runtime PM support to the
+> private EDMA API implementation allows it to run on AM33xx. AM33xx
+> *only* boots using DT so we leverage Jon's generic DT DMA helpers to
+> register EDMA DMAC with the of_dma framework and then add support
+> for calling the dma_request_slave_channel() API to both the mmc
+> and spi drivers.
+>
+> With this series both BeagleBone and the AM335x EVM have working
+> MMC and SPI support.
+>
+> This is tested on BeagleBone with a SPI framebuffer driver and MMC
+> rootfs. A trivial gpio DMA event misc driver was used to test the
+> crossbar DMA event support. It is also tested on the AM335x EVM
+> with the onboard SPI flash and MMC rootfs. The branch at
+> https://github.com/ohporter/linux/tree/edma-dmaengine-v3 has the
+> complete series, dependencies, and some test drivers/defconfigs.
+>
+> Regression testing was done on AM180x-EVM (which also makes use
+> of the EDMA dmaengine driver and the EDMA private API) using SD,
+> SPI flash, and the onboard audio supported by the ASoC Davinci
+> driver.
+>
+> After this series, the plan is to convert the last in-tree user
+> of the private EDMA API (davinci-pcm/mcasp) and then eliminate
+> the private EDMA API by folding its functionality into
+> drivers/dma/edma.c.
+>
+> Matt Porter (16):
+>   dmaengine: edma: fix slave config dependency on direction
+>   ARM: davinci: move private EDMA API to arm/common
+>   ARM: edma: remove unused transfer controller handlers
+>   ARM: edma: add DT and runtime PM support for AM33XX
+>   ARM: edma: add AM33XX crossbar event support
+>   dmaengine: edma: enable build for AM33XX
+>   dmaengine: edma: Add TI EDMA device tree binding
+>   ARM: dts: add AM33XX EDMA support
+>   dmaengine: add dma_request_slave_channel_compat()
+>   mmc: omap_hsmmc: convert to dma_request_slave_channel_compat()
+>   mmc: omap_hsmmc: limit max_segs with the EDMA DMAC
+>   mmc: omap_hsmmc: add generic DMA request support to the DT binding
+>   ARM: dts: add AM33XX MMC support
+>   spi: omap2-mcspi: convert to dma_request_slave_channel_compat()
+>   spi: omap2-mcspi: add generic DMA request support to the DT binding
+>   ARM: dts: add AM33XX SPI support
+>
+>  Documentation/devicetree/bindings/dma/ti-edma.txt  |   51 +
+>  .../devicetree/bindings/mmc/ti-omap-hsmmc.txt      |   25 +-
+>  Documentation/devicetree/bindings/spi/omap-spi.txt |   27 +-
+>  arch/arm/Kconfig                                   |    1 +
+>  arch/arm/boot/dts/am335x-bone.dts                  |   23 +
+>  arch/arm/boot/dts/am335x-evm.dts                   |   15 +
+>  arch/arm/boot/dts/am33xx.dtsi                      |  101 ++
+>  arch/arm/common/Kconfig                            |    3 +
+>  arch/arm/common/Makefile                           |    1 +
+>  arch/arm/common/edma.c                             | 1841 ++++++++++++++++++++
+>  arch/arm/mach-davinci/Makefile                     |    2 +-
+>  arch/arm/mach-davinci/board-da830-evm.c            |    4 +-
+>  arch/arm/mach-davinci/board-da850-evm.c            |    8 +-
+>  arch/arm/mach-davinci/board-dm646x-evm.c           |    4 +-
+>  arch/arm/mach-davinci/board-omapl138-hawk.c        |    8 +-
+>  arch/arm/mach-davinci/board-tnetv107x-evm.c        |    2 +-
+>  arch/arm/mach-davinci/davinci.h                    |    2 +-
+>  arch/arm/mach-davinci/devices-da8xx.c              |    8 +-
+>  arch/arm/mach-davinci/devices-tnetv107x.c          |    6 +-
+>  arch/arm/mach-davinci/devices.c                    |    7 +-
+>  arch/arm/mach-davinci/dm355.c                      |    6 +-
+>  arch/arm/mach-davinci/dm365.c                      |    6 +-
+>  arch/arm/mach-davinci/dm644x.c                     |    6 +-
+>  arch/arm/mach-davinci/dm646x.c                     |    6 +-
+>  arch/arm/mach-davinci/dma.c                        | 1588 -----------------
+>  arch/arm/mach-davinci/include/mach/da8xx.h         |    2 +-
+>  arch/arm/mach-davinci/include/mach/edma.h          |  267 ---
+>  arch/arm/plat-omap/Kconfig                         |    1 +
+>  drivers/dma/Kconfig                                |    2 +-
+>  drivers/dma/edma.c                                 |   57 +-
+>  drivers/mmc/host/davinci_mmc.c                     |    1 +
+>  drivers/mmc/host/omap_hsmmc.c                      |   20 +-
+>  drivers/spi/spi-omap2-mcspi.c                      |   65 +-
+>  include/linux/dmaengine.h                          |   10 +
+>  include/linux/mfd/davinci_voicecodec.h             |    3 +-
+>  include/linux/platform_data/edma.h                 |  199 +++
+>  include/linux/platform_data/spi-davinci.h          |    2 +-
+>  sound/soc/davinci/davinci-evm.c                    |    1 +
+>  sound/soc/davinci/davinci-pcm.c                    |    1 +
+>  sound/soc/davinci/davinci-pcm.h                    |    2 +-
+>  sound/soc/davinci/davinci-sffsdr.c                 |    6 +-
+>  41 files changed, 2436 insertions(+), 1954 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/dma/ti-edma.txt
+>  create mode 100644 arch/arm/common/edma.c
+>  delete mode 100644 arch/arm/mach-davinci/dma.c
+>  delete mode 100644 arch/arm/mach-davinci/include/mach/edma.h
+>  create mode 100644 include/linux/platform_data/edma.h
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
