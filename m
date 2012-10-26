@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab2JZOVq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:21:46 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37686 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933043Ab2JZOVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:21:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
-   d="asc'?scan'208";a="209695273"
-Message-ID: <1351261326.1823.24.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] mtd: use the NAND_STATUS_FAIL to replace the hardcode
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Huang Shijie <shijie8@gmail.com>
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Oct 2012 17:22:06 +0300
-In-Reply-To: <1350272844-21866-1-git-send-email-shijie8@gmail.com>
-References: <1350272844-21866-1-git-send-email-shijie8@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-sjwSloIewUGlOOkaYi6V"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S933301Ab2JZOWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:22:14 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:56221 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab2JZOWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:22:11 -0400
+Date: Fri, 26 Oct 2012 16:22:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Marcelo Tostatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        kvm@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86, add hypervisor name to dump_stack() [v2]
+Message-ID: <20121026142205.GB12158@gmail.com>
+References: <1351259807-13739-1-git-send-email-prarit@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351259807-13739-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-sjwSloIewUGlOOkaYi6V
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+* Prarit Bhargava <prarit@redhat.com> wrote:
 
-On Sun, 2012-10-14 at 23:47 -0400, Huang Shijie wrote:
-> Use the NAND_STATUS_FAIL to replace the hardcode "0x01",
-> which make the code more readable.
->=20
-> Signed-off-by: Huang Shijie <shijie8@gmail.com>
+> Debugging crash, panics, stack trace WARN_ONs, etc., from both virtual and
+> bare-metal boots can get difficult very quickly.  While there are ways to
+> decipher the output and determine if the output is from a virtual guest,
+> the in-kernel hypervisors now have a single registration point
+> and set x86_hyper.  We can use this to output additional debug
+> information during a panic/oops/stack trace.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Alex Williamson <alex.williamson@redhat.com>
+> Cc: Marcelo Tostatti <mtosatti@redhat.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: x86@kernel.org
+> 
+> [v2]: Modifications suggested by Ingo and added changes for similar output
+>       from process.c
+> ---
+>  arch/x86/kernel/dumpstack.c |   11 ++++++++++-
+>  arch/x86/kernel/process.c   |   12 +++++++++++-
+>  2 files changed, 21 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+> index ae42418b..5dd680f 100644
+> --- a/arch/x86/kernel/dumpstack.c
+> +++ b/arch/x86/kernel/dumpstack.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/nmi.h>
+>  #include <linux/sysfs.h>
+>  
+> +#include <asm/hypervisor.h>
+>  #include <asm/stacktrace.h>
+>  
+>  
+> @@ -186,9 +187,17 @@ void dump_stack(void)
+>  {
+>  	unsigned long bp;
+>  	unsigned long stack;
+> +	const char *machine_name = "x86";
+> +	const char *kernel_type = "native";
+> +
+> +	if (x86_hyper) {
+> +		machine_name = x86_hyper->name;
+> +		kernel_type = "guest";
+> +	}
+>  
+>  	bp = stack_frame(current, NULL);
+> -	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
+> +	printk("[%s %s kernel] Pid: %d, comm: %.20s %s %s %.*s\n",
+> +		machine_name, kernel_type,
 
-Pushed to l2-mtd.git, thanks!
+I'd put the kernel info at the end of the line.
 
---=20
-Best Regards,
-Artem Bityutskiy
+It's all very exciting I know, because we are working on this 
+printout right now and all that - but to users and developers 
+the PID/comm output plus the backtrace is far more important.
 
---=-sjwSloIewUGlOOkaYi6V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+>  		current->pid, current->comm, print_tainted(),
+>  		init_utsname()->release,
+>  		(int)strcspn(init_utsname()->version, " "),
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index b644e1c..14bd064 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -28,6 +28,7 @@
+>  #include <asm/fpu-internal.h>
+>  #include <asm/debugreg.h>
+>  #include <asm/nmi.h>
+> +#include <asm/hypervisor.h>
+>  
+>  /*
+>   * per-CPU TSS segments. Threads are completely 'soft' on Linux,
+> @@ -124,6 +125,13 @@ void exit_thread(void)
+>  void show_regs_common(void)
+>  {
+>  	const char *vendor, *product, *board;
+> +	const char *machine_name = "x86";
+> +	const char *kernel_type = "native";
+> +
+> +	if (x86_hyper) {
+> +		machine_name = x86_hyper->name;
+> +		kernel_type = "guest";
+> +	}
+>  
+>  	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+>  	if (!vendor)
+> @@ -135,7 +143,9 @@ void show_regs_common(void)
+>  	/* Board Name is optional */
+>  	board = dmi_get_system_info(DMI_BOARD_NAME);
+>  
+> -	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
+> +	printk(KERN_DEFAULT
+> +	       "[%s %s kernel] Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
+> +	       machine_name, kernel_type,
+>  	       current->pid, current->comm, print_tainted(),
+>  	       init_utsname()->release,
+>  	       (int)strcspn(init_utsname()->version, " "),
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Ha, duplicate code doing almost the same thing!
 
-iQIcBAABAgAGBQJQipyOAAoJECmIfjd9wqK0Q5sP/jKrGUHgtQeURDmkaYm+wOUF
-OH/+TcqsoLojSXPdVydXbsw5XIGH0xKFMNarcmSZBGkM0DzAjWGXjdGj77I7V4PN
-yQSpUJHNE8abrZhrrjVPyfjxko4JltkKzIVphmx9tmklry6pH+XwovqX4xeZ8/8/
-HWEHfumbBE6hJGEkjsMKVaB8eKvjtwv8OCoqns99sXNU1c1foI0qZMns8QFBgRo2
-gJZ7jZ22yhpncXfFEE9FsPtcOsq5vhxqJMPnzrIla/UrQBS0mqe8EfRJbyvAS5sg
-JkBB8OA/7dkvDwEzS7ljD4lXzZyyT7X0hJ0yXSiDJ0vU5wQ7Ax6Raug+J0+RJYpU
-PS3Aer//9HxnbpRiUs6Sht2lhCG6+No9UQJmigdabK2YsrK2SzBNCJt2ob0BQN+O
-6UBw3U3P64NwgG7zWDk31DoVpSBUT848XCXTe2qy2QxDsG9N9LevnjpXZT/5GqKl
-KNZdKVyu09isml65UWOIJ5XdmYiifPLzqf+Q7PLJG7Tkz/eWduixcOO4sq5F/rwm
-79o6b4y7YSqvoairA2Fx+vVTASF4OekLDXcnWX21OZ8b9f7uKlSPuEiig2gASjdY
-Y5AJx9RqosX8KBlLsgK/f0aueDxuYSA/229k8ZMqvekL6Lga9652/0HhEWG+Bikj
-FeIQ57SEx1z1AMJbV7jV
-=8sLp
------END PGP SIGNATURE-----
+I suspect you know what my next suggestion would be? :-)
 
---=-sjwSloIewUGlOOkaYi6V--
+Thanks,
 
+	Ingo
