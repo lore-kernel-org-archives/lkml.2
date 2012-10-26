@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab2JZOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:50:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47887 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078Ab2JZOuz (ORCPT
+	id S933548Ab2JZOvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:51:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58068 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2JZOvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:50:55 -0400
-MIME-Version: 1.0
-Date: Fri, 26 Oct 2012 22:50:54 +0800
-Message-ID: <CAPgLHd8V+pcvfhCnkjmc=oteRaav4p97Jiyd7NRJPQ1DCF+QhQ@mail.gmail.com>
-Subject: [PATCH -next] ARM: at91: using for_each_set_bit to simplify the code
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: linus.walleij@linaro.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Oct 2012 10:51:43 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH v2] firmware loader: introduce module parameter to customize fw search path
+Date: Fri, 26 Oct 2012 22:51:19 +0800
+Message-Id: <1351263079-28391-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+This patch introduces one module parameter of 'path' in firmware_class
+to support customizing firmware image search path, so that people can
+use its own firmware path if the default built-in paths can't meet their
+demand[1], and the typical usage is passing the below from kernel command
+parameter when 'firmware_class' is built in kernel:
 
-Using for_each_set_bit() to simplify the code.
+	firmware_class.path=$CUSTOMIZED_PATH
 
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
+[1], https://lkml.org/lkml/2012/10/11/337
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/pinctrl/pinctrl-at91.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+v2
+	- take a cleaner approach suggested by Linus
+	- mark the path array as const because it needn't be changed
+	- fix one error in Document about the module name
 
-diff --git a/drivers/pinctrl/pinctrl-at91.c b/drivers/pinctrl/pinctrl-at91.c
-index 01bf924..cccac23 100644
---- a/drivers/pinctrl/pinctrl-at91.c
-+++ b/drivers/pinctrl/pinctrl-at91.c
-@@ -1220,10 +1220,8 @@ static void gpio_irq_handler(unsigned irq, struct irq_desc *desc)
- 			continue;
- 		}
+v1:
+	- remove kernel boot parameter and only support the feature by
+        module parameter as suggested by Greg
+---
+ Documentation/firmware_class/README |    5 +++++
+ drivers/base/firmware_class.c       |   17 ++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
+index 815b711..e9fce78 100644
+--- a/Documentation/firmware_class/README
++++ b/Documentation/firmware_class/README
+@@ -22,12 +22,17 @@
+ 	- calls request_firmware(&fw_entry, $FIRMWARE, device)
+ 	- kernel searchs the fimware image with name $FIRMWARE directly
+ 	in the below search path of root filesystem:
++		User customized search path by module parameter 'path'[1]
+ 		"/lib/firmware/updates/" UTS_RELEASE,
+ 		"/lib/firmware/updates",
+ 		"/lib/firmware/" UTS_RELEASE,
+ 		"/lib/firmware"
+ 	- If found, goto 7), else goto 2)
  
--		n = find_first_bit(&isr, BITS_PER_LONG);
--		while (n < BITS_PER_LONG) {
-+		for_each_set_bit(n, &isr, BITS_PER_LONG) {
- 			generic_handle_irq(irq_find_mapping(at91_gpio->domain, n));
--			n = find_next_bit(&isr, BITS_PER_LONG, n + 1);
- 		}
- 	}
- 	chained_irq_exit(chip, desc);
-
++	[1], the 'path' is a string parameter which length should be less
++	than 256, user should pass 'firmware_class.path=$CUSTOMIZED_PATH'
++	if firmware_class is built in kernel(the general situation)
++
+  2), userspace:
+  	- /sys/class/firmware/xxx/{loading,data} appear.
+ 	- hotplug gets called with a firmware identifier in $FIRMWARE
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8945f4e..f5a2c40 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -267,13 +267,23 @@ static void fw_free_buf(struct firmware_buf *buf)
+ }
+ 
+ /* direct firmware loading support */
+-static const char *fw_path[] = {
++static char fw_path_para[256];
++static const char * const fw_path[] = {
++	fw_path_para,
+ 	"/lib/firmware/updates/" UTS_RELEASE,
+ 	"/lib/firmware/updates",
+ 	"/lib/firmware/" UTS_RELEASE,
+ 	"/lib/firmware"
+ };
+ 
++/*
++ * Typical usage is that passing 'firmware_class.path=$CUSTOMIZED_PATH'
++ * from kernel command because firmware_class is generally built in
++ * kernel instead of module.
++ */
++module_param_string(path, fw_path_para, sizeof(fw_path_para), 0644);
++MODULE_PARM_DESC(path, "customized firmware image search path with a higher priority than default path");
++
+ /* Don't inline this: 'struct kstat' is biggish */
+ static noinline long fw_file_size(struct file *file)
+ {
+@@ -315,6 +325,11 @@ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+ 		struct file *file;
++
++		/* skip the unset customized path */
++		if (!fw_path[0])
++			continue;
++
+ 		snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
+ 
+ 		file = filp_open(path, O_RDONLY, 0);
+-- 
+1.7.9.5
 
