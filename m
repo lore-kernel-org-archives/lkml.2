@@ -1,65 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2JZESU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:18:20 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51211 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965Ab2JZESR (ORCPT
+	id S1752543Ab2JZEVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:21:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37511 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab2JZEVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:18:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6876"; a="1923137"
-From: Hemant Kumar <hemantk@codeaurora.org>
-To: oneukum@suse.de
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Hemant Kumar <hemantk@codeaurora.org>
-Subject: [PATCH] net: usb: Fix memory leak on Tx data path
-Date: Thu, 25 Oct 2012 21:17:54 -0700
-Message-Id: <1351225074-2078-1-git-send-email-hemantk@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Fri, 26 Oct 2012 00:21:08 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rob.herring@calxeda.com, grant.likely@secretlab.ca
+Cc: spear-devel@list.st.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, andriy.shevchenko@intel.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH Resend V2] dt: add helper function to read u8 & u16 variables & arrays
+Date: Fri, 26 Oct 2012 09:50:56 +0530
+Message-Id: <64c5278ebdec503f83e9b7002bf13affb7f3260f.1351225085.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+X-OriginalArrivalTime: 26 Oct 2012 04:21:03.0887 (UTC) FILETIME=[4FE639F0:01CDB331]
+X-MC-Unique: 112102605210500601
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id q9Q4LCdd022844
 
-Driver anchors the tx urbs and defers the urb submission if
-a transmit request comes when the interface is suspended.
-Anchoring urb increments the urb reference count. These
-deferred urbs are later accessed by calling usb_get_from_anchor()
-for submission during interface resume. usb_get_from_anchor()
-unanchors the urb but urb reference count remains same.
-This causes the urb reference count to remain non-zero
-after usb_free_urb() gets called and urb never gets freed.
-Hence call usb_put_urb() after anchoring the urb to properly
-balance the reference count for these deferred urbs. Also,
-unanchor these deferred urbs during disconnect, to free them
-up.
+This adds following helper routines:
+- of_property_read_u8_array()
+- of_property_read_u16_array()
+- of_property_read_u8()
+- of_property_read_u16()
 
-Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
+First two actually share most of the code with of_property_read_u32_array(), so
+the common part is taken out into a macro, which can be used by all three
+*_array() routines.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/net/usb/usbnet.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+V1->V2:
+-----
+- Use typeof() in of_property_read_array() macro instead of passing type to it
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index 1867fe2..00b7598 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -1168,6 +1168,7 @@ netdev_tx_t usbnet_start_xmit (struct sk_buff *skb,
- 		usb_anchor_urb(urb, &dev->deferred);
- 		/* no use to process more packets */
- 		netif_stop_queue(net);
-+		usb_put_urb(urb);
- 		spin_unlock_irqrestore(&dev->txq.lock, flags);
- 		netdev_dbg(dev->net, "Delaying transmission for resumption\n");
- 		goto deferred;
-@@ -1317,6 +1318,8 @@ void usbnet_disconnect (struct usb_interface *intf)
+ drivers/of/base.c  | 73 +++++++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/of.h | 30 ++++++++++++++++++++++
+ 2 files changed, 89 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index af3b22a..039e178 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -670,6 +670,64 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+ }
+ EXPORT_SYMBOL(of_find_node_by_phandle);
  
- 	cancel_work_sync(&dev->kevent);
- 
-+	usb_scuttle_anchored_urbs(&dev->deferred);
++#define of_property_read_array(_np, _pname, _out, _sz)			\
++	struct property *_prop = of_find_property(_np, _pname, NULL);	\
++	const __be32 *_val;						\
++									\
++	if (!_prop)							\
++		return -EINVAL;						\
++	if (!_prop->value)						\
++		return -ENODATA;					\
++	if ((_sz * sizeof(*_out)) > _prop->length)			\
++		return -EOVERFLOW;					\
++									\
++	_val = _prop->value;						\
++	while (_sz--)							\
++		*_out++ = (typeof(*_out))be32_to_cpup(_val++);		\
++	return 0;
 +
- 	if (dev->driver_info->unbind)
- 		dev->driver_info->unbind (dev, intf);
++/**
++ * of_property_read_u8_array - Find and read an array of u8 from a property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_value:	pointer to return value, modified only if return value is 0.
++ *
++ * Search for a property in a device node and read 8-bit value(s) from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_value is modified only if a valid u8 value can be decoded.
++ */
++int of_property_read_u8_array(const struct device_node *np,
++			const char *propname, u8 *out_values, size_t sz)
++{
++	of_property_read_array(np, propname, out_values, sz);
++}
++EXPORT_SYMBOL_GPL(of_property_read_u8_array);
++
++/**
++ * of_property_read_u16_array - Find and read an array of u16 from a property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @out_value:	pointer to return value, modified only if return value is 0.
++ *
++ * Search for a property in a device node and read 16-bit value(s) from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_value is modified only if a valid u16 value can be decoded.
++ */
++int of_property_read_u16_array(const struct device_node *np,
++			const char *propname, u16 *out_values, size_t sz)
++{
++	of_property_read_array(np, propname, out_values, sz);
++}
++EXPORT_SYMBOL_GPL(of_property_read_u16_array);
++
+ /**
+  * of_property_read_u32_array - Find and read an array of 32 bit integers
+  * from a property.
+@@ -689,20 +747,7 @@ int of_property_read_u32_array(const struct device_node *np,
+ 			       const char *propname, u32 *out_values,
+ 			       size_t sz)
+ {
+-	struct property *prop = of_find_property(np, propname, NULL);
+-	const __be32 *val;
+-
+-	if (!prop)
+-		return -EINVAL;
+-	if (!prop->value)
+-		return -ENODATA;
+-	if ((sz * sizeof(*out_values)) > prop->length)
+-		return -EOVERFLOW;
+-
+-	val = prop->value;
+-	while (sz--)
+-		*out_values++ = be32_to_cpup(val++);
+-	return 0;
++	of_property_read_array(np, propname, out_values, sz);
+ }
+ EXPORT_SYMBOL_GPL(of_property_read_u32_array);
  
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 72843b7..e2d9b40 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -223,6 +223,10 @@ extern struct device_node *of_find_node_with_property(
+ extern struct property *of_find_property(const struct device_node *np,
+ 					 const char *name,
+ 					 int *lenp);
++extern int of_property_read_u8_array(const struct device_node *np,
++			const char *propname, u8 *out_values, size_t sz);
++extern int of_property_read_u16_array(const struct device_node *np,
++			const char *propname, u16 *out_values, size_t sz);
+ extern int of_property_read_u32_array(const struct device_node *np,
+ 				      const char *propname,
+ 				      u32 *out_values,
+@@ -357,6 +361,18 @@ static inline struct device_node *of_find_compatible_node(
+ 	return NULL;
+ }
+ 
++static inline int of_property_read_u8_array(const struct device_node *np,
++			const char *propname, u8 *out_values, size_t sz)
++{
++	return -ENOSYS;
++}
++
++static inline int of_property_read_u16_array(const struct device_node *np,
++			const char *propname, u16 *out_values, size_t sz)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_property_read_u32_array(const struct device_node *np,
+ 					     const char *propname,
+ 					     u32 *out_values, size_t sz)
+@@ -463,6 +479,20 @@ static inline bool of_property_read_bool(const struct device_node *np,
+ 	return prop ? true : false;
+ }
+ 
++static inline int of_property_read_u8(const struct device_node *np,
++				       const char *propname,
++				       u8 *out_value)
++{
++	return of_property_read_u8_array(np, propname, out_value, 1);
++}
++
++static inline int of_property_read_u16(const struct device_node *np,
++				       const char *propname,
++				       u16 *out_value)
++{
++	return of_property_read_u16_array(np, propname, out_value, 1);
++}
++
+ static inline int of_property_read_u32(const struct device_node *np,
+ 				       const char *propname,
+ 				       u32 *out_value)
 -- 
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+1.7.12.rc2.18.g61b472e
+
 
