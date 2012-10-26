@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab2JZItq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:49:46 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36011 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab2JZIoi (ORCPT
+	id S1757446Ab2JZIuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:50:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39242 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492Ab2JZIuc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:44:38 -0400
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 01/11] HID: hid-input: export hidinput_calc_abs_res
-Date: Fri, 26 Oct 2012 10:44:17 +0200
-Message-Id: <1351241067-9521-2-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+	Fri, 26 Oct 2012 04:50:32 -0400
+Message-ID: <1351241389.12171.45.camel@twins>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
+        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
+        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
+        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
+        michael@amarulasolutions.com, fchecconi@gmail.com,
+        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
+        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
+        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
+        liming.wang@windriver.com, jkacur@redhat.com,
+        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 26 Oct 2012 10:49:49 +0200
+In-Reply-To: <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+	 <1351172849.12171.10.camel@twins>
+	 <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exporting this function allows us to calculate the resolution in third
-party drivers like hid-multitouch.
-This patch also complete the function with additional valid axes.
+On Thu, 2012-10-25 at 15:26 -0700, Linus Torvalds wrote:
+> it's the *rest* of the "u128" math I really object to. I also wonder
+> about the u64xu64 math case for SCHED_DEADLINE, because I assume that
+> it doesn't actually end up using the 128-bit result in that form, but
+> scales it down again some way? 
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+No, it does a compare on two u128, so it doesn't loose any precision.
+If it were to scale down again and loose precision I'd agree with you
+that introducing the u128 stuff is pointless.
+
+The point is (as mentioned in the comments below) overflowing an actual
+u64 is rare, however since some of this (specifically the
+dl_{runtime,deadline} parameters) is user specified, we have to assume
+we will overflow.
+
 ---
- drivers/hid/hid-input.c      | 11 +++++++++--
- drivers/hid/hid-multitouch.c |  1 +
- include/linux/hid.h          |  1 +
- 3 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-index d917c0d..1b0adc3 100644
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
-  * Only exponent 1 length units are processed. Centimeters and inches are
-  * converted to millimeters. Degrees are converted to radians.
-  */
--static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
-+__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- {
- 	__s32 unit_exponent = field->unit_exponent;
- 	__s32 logical_extents = field->logical_maximum -
-@@ -229,6 +229,12 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	case ABS_X:
- 	case ABS_Y:
- 	case ABS_Z:
-+	case ABS_MT_POSITION_X:
-+	case ABS_MT_POSITION_Y:
-+	case ABS_MT_TOOL_X:
-+	case ABS_MT_TOOL_Y:
-+	case ABS_MT_TOUCH_MAJOR:
-+	case ABS_MT_TOUCH_MINOR:
- 		if (field->unit == 0x11) {		/* If centimeters */
- 			/* Convert to millimeters */
- 			unit_exponent += 1;
-@@ -281,8 +287,9 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
- 	}
- 
- 	/* Calculate resolution */
--	return logical_extents / physical_extents;
-+	return DIV_ROUND_CLOSEST(logical_extents, physical_extents);
- }
-+EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
- 
- #ifdef CONFIG_HID_BATTERY_STRENGTH
- static enum power_supply_property hidinput_battery_props[] = {
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index c97011c..375a38d 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -298,6 +298,7 @@ static void set_abs(struct input_dev *input, unsigned int code,
- 	int fmax = field->logical_maximum;
- 	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
- 	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
-+	input_abs_set_res(input, code, hidinput_calc_abs_res(field, code));
- }
- 
- static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 7e1f37d..9edb06c 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -743,6 +743,7 @@ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
- int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
- struct hid_field *hidinput_get_led_field(struct hid_device *hid);
- unsigned int hidinput_count_leds(struct hid_device *hid);
-+__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
- void hid_output_report(struct hid_report *report, __u8 *data);
- struct hid_device *hid_allocate_device(void);
- struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
--- 
-1.7.11.7
-
++/*
++ * Here we check if --at time t-- an entity (which is probably being
++ * [re]activated or, in general, enqueued) can use its remaining runtime
++ * and its current deadline _without_ exceeding the bandwidth it is
++ * assigned (function returns true if it can't). We are in fact applying
++ * one of the CBS rules: when a task wakes up, if the residual runtime
++ * over residual deadline fits within the allocated bandwidth, then we
++ * can keep the current (absolute) deadline and residual budget without
++ * disrupting the schedulability of the system. Otherwise, we should
++ * refill the runtime and set the deadline a period in the future,
++ * because keeping the current (absolute) deadline of the task would
++ * result in breaking guarantees promised to other tasks.
++ *
++ * This function returns true if:
++ *
++ *   runtime / (deadline - t) > dl_runtime / dl_deadline ,
++ *
++ * IOW we can't recycle current parameters.
++ */
++static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
++{
++       u128 left, right;
++
++       /*
++        * left and right are the two sides of the equation above,
++        * after a bit of shuffling to use multiplications instead
++        * of divisions.
++        *
++        * Note that none of the time values involved in the two
++        * multiplications are absolute: dl_deadline and dl_runtime
++        * are the relative deadline and the maximum runtime of each
++        * instance, runtime is the runtime left for the last instance
++        * and (deadline - t), since t is rq->clock, is the time left
++        * to the (absolute) deadline. Therefore, overflowing the u64
++        * type is very unlikely to occur in both cases.
++        */
++       left = mul_u64_u64(dl_se->dl_deadline, dl_se->runtime);
++       right = mul_u64_u64((dl_se->deadline - t), dl_se->dl_runtime);
++
++       if (cmp_u128(left, right) > 0)
++               return true;
++
++       return false;
++}
