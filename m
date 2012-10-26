@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab2JZMhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:37:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56159 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932607Ab2JZMhw convert rfc822-to-8bit (ORCPT
+	id S932673Ab2JZMjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:39:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33340 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932607Ab2JZMjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:37:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
-   d="scan'208";a="232899605"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Jan Beulich <jbeulich@suse.com>
-CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
-Thread-Index: AQHNs3G2Ti91BiFLfUibRvXA4zlK85fLgkyg
-Date: Fri, 26 Oct 2012 12:37:36 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
-	<5089676602000078000A4928@nat28.tlf.novell.com>
-	<DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
- <508A89CB020000780008E6ED@nat28.tlf.novell.com>
-In-Reply-To: <508A89CB020000780008E6ED@nat28.tlf.novell.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 26 Oct 2012 08:39:20 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=rDHpwsyNOsUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=HXw8KzeH-oIA:10 a=i2TgY9j9Z3Rknev0DCwA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351255155.8467.55.camel@gandalf.local.home>
+Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com, oleg@redhat.com,
+        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
+        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
+        claudio@evidence.eu.com, michael@amarulasolutions.com,
+        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
+        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
+        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
+        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
+        jkacur@redhat.com, harald.gustafsson@ericsson.com,
+        vincent.guittot@linaro.org, Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 26 Oct 2012 08:39:15 -0400
+In-Reply-To: <alpine.LFD.2.02.1210261208170.2756@ionos>
+References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
+	  <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
+	  <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
+	  <1351172849.12171.10.camel@twins>
+	  <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
+	  <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>
+	  <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com>
+	 <1351245264.16863.12.camel@twins>
+	 <alpine.LFD.2.02.1210261208170.2756@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Fri, 2012-10-26 at 12:36 +0200, Thomas Gleixner wrote:
 
------Original Message-----
-From: xen-devel-bounces@lists.xen.org [mailto:xen-devel-bounces@lists.xen.org] On Behalf Of Jan Beulich
-Sent: Friday, October 26, 2012 8:02 PM
-To: Liu, Jinsong
-Cc: konrad.wilk@oracle.com; linux-kernel@vger.kernel.org; xen-devel@lists.xen.org
-Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+> By all means. nsec precision is a completly academic thought
+> exercise. It's really pointless to even think about anything below
+> microseconds resolution.
+> 
+> We can still have the user space interface handing in the information
+> in nsec resolution, but it's reasonable to scale it down to something
+> useful. Just shift the incoming information right by 10, so you're in
+> the 1us resolution for all the internal math and all your limitation
+> problems are gone. A shift by ten for converting back and forth to
+> nsecs is not a real performance issue.
 
->>> "Liu, Jinsong" <jinsong.liu@intel.com> 10/26/12 8:18 AM >>>
->> +static struct acpi_driver xen_acpi_pad_driver = {
->> +    .name = "processor_aggregator",
->> +    .class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
->> +    .ids = pad_device_ids,
->> +    .ops = {
->> +        .add = xen_acpi_pad_add,
->
->.remove?
->
->[Jinsong] .remove method not used by any logic now (any possible point use it?), so we remove it from our former patch.
+Just make sure this is well documented in the man pages, and that should
+eliminate any "surprises". This is a new interface, we can just make
+this part of the ABI. "The units are in nanoseconds, but all
+calculations are performed to the nearest microsecond. Take this into
+account for error analysis". People should be fine with this.
 
-Unless there is technical difficulty implementing it, I wouldn't defer adding that code until the point where something doesn't work anymore.
+-- Steve
 
-[Jinsong] No technical difficulty at all, in fact at last version it has .remove method. I will re-add it.
 
->Overall I'd recommend taking a look at the cleaned up driver in
->our kernels.
->
->[Jinsong] What's your point here?
 
-There's quite a bit of cleanup/simplification potential here, and rather than pointing the pieces out individually I would think comparing with what we have in production use might be worthwhile. But that's up to you of course.
-
-[Jinsong] I know your concern now -- we can cleanup/simplify xen pad logic by piggyback on native acpi pad code -- technically it's true. However, we intentionally do so in order to keep xen pad logic self-contained, just like what xen mcelog logic did before.
-
-Thanks,
-Jinsong
