@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965427Ab2JZQjc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:39:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16842 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965386Ab2JZQja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:39:30 -0400
-Date: Fri, 26 Oct 2012 18:39:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 6/9] uprobes: flush cache after xol write
-Message-ID: <20121026163951.GA17742@redhat.com>
-References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-6-git-send-email-rabin@rab.in> <20121015165756.GA11737@redhat.com> <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com> <20121025145839.GB26929@redhat.com> <20121026055239.GA4862@in.ibm.com>
+	id S1752219Ab2JZQp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:45:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48093 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab2JZQp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 12:45:26 -0400
+Message-ID: <508ABE1D.5010106@gmail.com>
+Date: Fri, 26 Oct 2012 09:45:17 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026055239.GA4862@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: shuah.khan@hp.com
+CC: ralf@linux-mips.org, kyungmin.park@samsung.com, arnd@arndb.de,
+        andrzej.p@samsung.com, m.szyprowski@samsung.com,
+        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH RFT RESEND linux-next] mips: dma-mapping: support debug_dma_mapping_error
+References: <1351208193.6851.17.camel@lorien2> <1351267298.4013.12.camel@lorien2>
+In-Reply-To: <1351267298.4013.12.camel@lorien2>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26, Ananth N Mavinakayanahalli wrote:
+On 10/26/2012 09:01 AM, Shuah Khan wrote:
+> Add support for debug_dma_mapping_error() call to avoid warning from
+> debug_dma_unmap() interface when it checks for mapping error checked
+> status. Without this patch, device driver failed to check map error
+> warning is generated.
 >
-> On Thu, Oct 25, 2012 at 04:58:39PM +0200, Oleg Nesterov wrote:
-> > On 10/16, Rabin Vincent wrote:
-> > >
-> > > >> --- a/kernel/events/uprobes.c
-> > > >> +++ b/kernel/events/uprobes.c
-> > > >> @@ -1246,6 +1246,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
-> > > >>       offset = current->utask->xol_vaddr & ~PAGE_MASK;
-> > > >>       vaddr = kmap_atomic(area->page);
-> > > >>       arch_uprobe_xol_copy(&uprobe->arch, vaddr + offset);
-> > > >> +     flush_dcache_page(area->page);
-> > > >>       kunmap_atomic(vaddr);
-> > > >
-> > > > I agree... but why under kmap_atomic?
-> > >
-> > > No real reason; I'll move it to after the unmap.
-> >
-> > OK. I assume you will send v2.
-> >
-> > But this patch looks like a bugfix, flush_dcache_page() is not a nop
-> > on powerpc. So perhaps we should apply this fix right now?
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>   arch/mips/include/asm/dma-mapping.h |    2 ++
+>   1 file changed, 2 insertions(+)
 >
-> Starting Power5, all Power processers have coherent caches.
+> diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
+> index be39a12..006b43e 100644
+> --- a/arch/mips/include/asm/dma-mapping.h
+> +++ b/arch/mips/include/asm/dma-mapping.h
+> @@ -40,6 +40,8 @@ static inline int dma_supported(struct device *dev, u64 mask)
+>   static inline int dma_mapping_error(struct device *dev, u64 mask)
+>   {
+>   	struct dma_map_ops *ops = get_dma_ops(dev);
+> +
+> +	debug_dma_mapping_error(dev, mask);
+>   	return ops->mapping_error(dev, mask);
+>   }
 >
-> > OTOH, I do not understand this stuff, everything is nop on x86. And
-> > when I look into Documentation/cachetlb.txt I am starting to think
-> > that may be this needs flush_icache_user_range instead?
-> >
-> > Rabin, Ananth could you clarify this?
 >
-> Yes. We need flush_icache_user_range(). Though for x86 its always been a
-> nop, one never knows if there is some Power4 or older machine out there
-> that is still being used. We are fine for Power5 and later.
 
-This is bad...
+Although this is a start, I don't think it is sufficient.
 
-flush_icache_user needs vma. perhaps just to check VM_EXEC...
+As far as I can tell, there are many missing calls to debug_dma_*() in 
+the various MIPS commone and sub-architecture DMA code.
 
-So let me repeat to be sure I really understand, do you confirm that
-_in general_ flush_dcache_page() is not enough?
+Really you (or someone) needs to look at *all* the functions in 
+arch/mips/asm/dma-mapping.h, and arch/mips/mm/dma-default.c and find 
+places missing a debug_dma_*().
 
-Oleg.
-
+Thanks,
+David Daney
