@@ -1,62 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab2JZKoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 06:44:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41063 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755483Ab2JZKoa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 06:44:30 -0400
-Message-ID: <1351248244.16863.13.camel@twins>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 26 Oct 2012 12:44:04 +0200
-In-Reply-To: <alpine.LFD.2.02.1210261208170.2756@ionos>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-	  <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
-	  <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-	  <1351172849.12171.10.camel@twins>
-	  <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
-	  <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>
-	  <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com>
-	 <1351245264.16863.12.camel@twins>
-	 <alpine.LFD.2.02.1210261208170.2756@ionos>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932281Ab2JZKsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 06:48:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32178 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758269Ab2JZKsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 06:48:11 -0400
+X-IronPort-AV: E=Sophos;i="4.80,654,1344182400"; 
+   d="scan'208";a="6078656"
+From: wency@cn.fujitsu.com
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Cc: liuj97@gmail.com, len.brown@intel.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        rjw@sisk.pl, laijs@cn.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: [PATCH v3 2/3] acpi,memory-hotplug: introduce a mutex lock to protect the list in acpi_memory_device
+Date: Fri, 26 Oct 2012 18:31:02 +0800
+Message-Id: <1351247463-5653-3-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
+References: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/26 18:24:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/26 18:24:53,
+	Serialize complete at 2012/10/26 18:24:53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 12:36 +0200, Thomas Gleixner wrote:
-> By all means. nsec precision is a completly academic thought
-> exercise. It's really pointless to even think about anything below
-> microseconds resolution.
-> 
-> We can still have the user space interface handing in the information
-> in nsec resolution, but it's reasonable to scale it down to something
-> useful. Just shift the incoming information right by 10, so you're in
-> the 1us resolution for all the internal math and all your limitation
-> problems are gone. A shift by ten for converting back and forth to
-> nsecs is not a real performance issue.
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-I'm fine with that.. all I wanted was to not have the undefined overflow
-we initially had.
+The memory device can be removed by 2 ways:
+1. send eject request by SCI
+2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
 
-I had hoped the u128 stuff might be elsewise useful, but if we don't
-want to go there, that's fine.
+This 2 events may happen at the same time, so we may touch
+acpi_memory_device.res_list at the same time. This patch
+introduce a lock to protect this list.
+
+CC: David Rientjes <rientjes@google.com>
+CC: Jiang Liu <liuj97@gmail.com>
+CC: Len Brown <len.brown@intel.com>
+CC: Christoph Lameter <cl@linux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ drivers/acpi/acpi_memhotplug.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+index 1e90e8f..666dac6 100644
+--- a/drivers/acpi/acpi_memhotplug.c
++++ b/drivers/acpi/acpi_memhotplug.c
+@@ -83,7 +83,8 @@ struct acpi_memory_info {
+ struct acpi_memory_device {
+ 	struct acpi_device * device;
+ 	unsigned int state;	/* State of the memory device */
+-	struct list_head res_list;
++	struct mutex list_lock;
++	struct list_head res_list;	/* protected by list_lock */
+ };
+ 
+ static int acpi_hotmem_initialized;
+@@ -101,19 +102,23 @@ acpi_memory_get_resource(struct acpi_resource *resource, void *context)
+ 	    (address64.resource_type != ACPI_MEMORY_RANGE))
+ 		return AE_OK;
+ 
++	mutex_lock(&mem_device->list_lock);
+ 	list_for_each_entry(info, &mem_device->res_list, list) {
+ 		/* Can we combine the resource range information? */
+ 		if ((info->caching == address64.info.mem.caching) &&
+ 		    (info->write_protect == address64.info.mem.write_protect) &&
+ 		    (info->start_addr + info->length == address64.minimum)) {
+ 			info->length += address64.address_length;
++			mutex_unlock(&mem_device->list_lock);
+ 			return AE_OK;
+ 		}
+ 	}
+ 
+ 	new = kzalloc(sizeof(struct acpi_memory_info), GFP_KERNEL);
+-	if (!new)
++	if (!new) {
++		mutex_unlock(&mem_device->list_lock);
+ 		return AE_ERROR;
++	}
+ 
+ 	INIT_LIST_HEAD(&new->list);
+ 	new->caching = address64.info.mem.caching;
+@@ -121,6 +126,7 @@ acpi_memory_get_resource(struct acpi_resource *resource, void *context)
+ 	new->start_addr = address64.minimum;
+ 	new->length = address64.address_length;
+ 	list_add_tail(&new->list, &mem_device->res_list);
++	mutex_unlock(&mem_device->list_lock);
+ 
+ 	return AE_OK;
+ }
+@@ -138,9 +144,11 @@ acpi_memory_get_device_resources(struct acpi_memory_device *mem_device)
+ 	status = acpi_walk_resources(mem_device->device->handle, METHOD_NAME__CRS,
+ 				     acpi_memory_get_resource, mem_device);
+ 	if (ACPI_FAILURE(status)) {
++		mutex_lock(&mem_device->list_lock);
+ 		list_for_each_entry_safe(info, n, &mem_device->res_list, list)
+ 			kfree(info);
+ 		INIT_LIST_HEAD(&mem_device->res_list);
++		mutex_unlock(&mem_device->list_lock);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -236,6 +244,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ 	 * We don't have memory-hot-add rollback function,now.
+ 	 * (i.e. memory-hot-remove function)
+ 	 */
++	mutex_lock(&mem_device->list_lock);
+ 	list_for_each_entry(info, &mem_device->res_list, list) {
+ 		if (info->enabled) { /* just sanity check...*/
+ 			num_enabled++;
+@@ -256,6 +265,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+ 		info->enabled = 1;
+ 		num_enabled++;
+ 	}
++	mutex_unlock(&mem_device->list_lock);
+ 	if (!num_enabled) {
+ 		printk(KERN_ERR PREFIX "add_memory failed\n");
+ 		mem_device->state = MEMORY_INVALID_STATE;
+@@ -316,6 +326,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 	 * Ask the VM to offline this memory range.
+ 	 * Note: Assume that this function returns zero on success
+ 	 */
++	mutex_lock(&mem_device->list_lock);
+ 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+ 		if (info->enabled) {
+ 			result = remove_memory(info->start_addr, info->length);
+@@ -324,6 +335,7 @@ static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
+ 		}
+ 		kfree(info);
+ 	}
++	mutex_unlock(&mem_device->list_lock);
+ 
+ 	/* Power-off and eject the device */
+ 	result = acpi_memory_powerdown_device(mem_device);
+@@ -438,6 +450,7 @@ static int acpi_memory_device_add(struct acpi_device *device)
+ 	mem_device->device = device;
+ 	sprintf(acpi_device_name(device), "%s", ACPI_MEMORY_DEVICE_NAME);
+ 	sprintf(acpi_device_class(device), "%s", ACPI_MEMORY_DEVICE_CLASS);
++	mutex_init(&mem_device->list_lock);
+ 	device->driver_data = mem_device;
+ 
+ 	/* Get the range from the _CRS */
+-- 
+1.8.0
+
