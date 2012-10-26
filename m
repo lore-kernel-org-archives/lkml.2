@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab2JZDzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:55:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42702 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755799Ab2JZDzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:55:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,652,1344236400"; 
-   d="scan'208";a="211033321"
-Date: Fri, 26 Oct 2012 11:55:50 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: YingHang Zhu <casualfisher@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ni zhan Chen <nizhan.chen@gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-Message-ID: <20121026035550.GA8894@localhost>
-References: <20121023224706.GR4291@dastard>
- <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
- <20121024201921.GX4291@dastard>
- <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
- <20121025015014.GC29378@dastard>
- <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
- <50889FF1.9030107@gmail.com>
- <20121025025826.GB23462@localhost>
- <20121026002544.GI29378@dastard>
- <CAA9v8mG4Sck=S4SGrorndzAgZzgDs1h9vWa1DhmC-2-FVF=Upg@mail.gmail.com>
+	id S1750881Ab2JZECf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:02:35 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59937 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750718Ab2JZECd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 00:02:33 -0400
+Date: Thu, 25 Oct 2012 23:02:18 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH]Documentation:Chinese translation of
+ Documentation/arm64/booting.txt
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Tekkaman Ninja <tekkamanninja@gmail.com>, Harry Wei <harryxiyou@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel@vger.linux-kernel.cn
+References: <20121024155647.GA6567@Super-MAGI>
+	<CAHkRjk7_KC4OceuRw5TEoKYNv9BNVrJ6MY5nYw1qpDtW+cG8_A@mail.gmail.com>
+In-Reply-To: <CAHkRjk7_KC4OceuRw5TEoKYNv9BNVrJ6MY5nYw1qpDtW+cG8_A@mail.gmail.com>
+	(from catalin.marinas@arm.com on Wed Oct 24 11:11:36 2012)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1351224138.20232.1@driftwood>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAA9v8mG4Sck=S4SGrorndzAgZzgDs1h9vWa1DhmC-2-FVF=Upg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:38:11AM +0800, YingHang Zhu wrote:
-> On Fri, Oct 26, 2012 at 8:25 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > On Thu, Oct 25, 2012 at 10:58:26AM +0800, Fengguang Wu wrote:
-> >> Hi Chen,
-> >>
-> >> > But how can bdi related ra_pages reflect different files' readahead
-> >> > window? Maybe these different files are sequential read, random read
-> >> > and so on.
-> >>
-> >> It's simple: sequential reads will get ra_pages readahead size while
-> >> random reads will not get readahead at all.
-> >>
-> >> Talking about the below chunk, it might hurt someone that explicitly
-> >> takes advantage of the behavior, however the ra_pages*2 seems more
-> >> like a hack than general solution to me: if the user will need
-> >> POSIX_FADV_SEQUENTIAL to double the max readahead window size for
-> >> improving IO performance, then why not just increase bdi->ra_pages and
-> >> benefit all reads? One may argue that it offers some differential
-> >> behavior to specific applications, however it may also present as a
-> >> counter-optimization: if the root already tuned bdi->ra_pages to the
-> >> optimal size, the doubled readahead size will only cost more memory
-> >> and perhaps IO latency.
-> >>
-> >> --- a/mm/fadvise.c
-> >> +++ b/mm/fadvise.c
-> >> @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
-> >>                 spin_unlock(&file->f_lock);
-> >>                 break;
-> >>         case POSIX_FADV_SEQUENTIAL:
-> >> -               file->f_ra.ra_pages = bdi->ra_pages * 2;
+On 10/24/2012 11:11:36 AM, Catalin Marinas wrote:
+> 2012/10/24 Tekkaman Ninja <tekkamanninja@gmail.com>:
+> > This is a Chinese translated version of
+> > Documentation/arm64/booting.txt
 > >
-> > I think we really have to reset file->f_ra.ra_pages here as it is
-> > not a set-and-forget value. e.g.  shrink_readahead_size_eio() can
-> > reduce ra_pages as a result of IO errors. Hence if you have had io
-> > errors, telling the kernel that you are now going to do  sequential
-> > IO should reset the readahead to the maximum ra_pages value
-> > supported....
-> If we unify file->f_ra.ra_pages and its' bdi->ra_pages, then the error-prone
-> device's readahead can be directly tuned or turned off with blockdev
-> thus affect all files
-> using the device and without bring more complexity...
+> > Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+> 
+> Same as my comment on the memory.txt patch, I don't understand what 
+> it
+> says, so you need to keep it up to date.
+> 
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-It's not really feasible/convenient for the end users to hand tune
-blockdev readahead size on IO errors. Even many administrators are
-totally unaware of the readahead size parameter.
+I have a similar problem: I can't read translations to languages I 
+don't speak. I argued for putting them on the web way back when, but 
+Greg Kroah-Hartman incorporated stuff he can't read either into the 
+Documentation directory.
 
-Thanks,
-Fengguang
+Last I pinged him he was willing to maintain non-english translations, 
+try sending them to him?
+
+Rob
+
+
