@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965149Ab2JZQEU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:04:20 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:48321 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933941Ab2JZQES (ORCPT
+	id S965172Ab2JZQGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:06:00 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:6420 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964985Ab2JZQF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:04:18 -0400
-Date: Fri, 26 Oct 2012 09:04:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: wwang <wei_wang@realsil.com.cn>
-Cc: Phil Turmel <philip@turmel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Ball <cjb@laptop.org>,
-        "oakad@yahoo.com" <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
-Message-ID: <20121026160459.GA16813@kroah.com>
-References: <50664814.30407@turmel.org>
- <20120929110730.GA27797@liondog.tnic>
- <87d315osjm.fsf@octavius.laptop.org>
- <20120929152942.GA11412@liondog.tnic>
- <506FDC8C.3030707@realsil.com.cn>
- <20121020034615.GT5685@mwanda>
- <20121025185041.GB22114@kroah.com>
- <5089E315.1010708@realsil.com.cn>
- <20121026024556.GA9545@kroah.com>
- <5089FAAB.500@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5089FAAB.500@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Oct 2012 12:05:59 -0400
+Message-ID: <1351267555.4013.15.camel@lorien2>
+Subject: [PATCH RFT RESEND linux-next] openrisc: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: jonas@southpole.se
+Cc: linux@openrisc.net, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 10:05:55 -0600
+In-Reply-To: <1351208548.6851.19.camel@lorien2>
+References: <1351208548.6851.19.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:51:23AM +0800, wwang wrote:
-> 于 2012年10月26日 10:45, Greg KH 写道:
-> >On Fri, Oct 26, 2012 at 09:10:45AM +0800, wwang wrote:
-> >>于 2012年10月26日 02:50, Greg KH 写道:
-> >>>On Sat, Oct 20, 2012 at 06:46:15AM +0300, Dan Carpenter wrote:
-> >>>>On Sat, Oct 06, 2012 at 03:23:56PM +0800, wwang wrote:
-> >>>>>We are still maintaining the SCSI driver for Realtek card reader,
-> >>>>>and will release the latest source code in the Github in the future.
-> >>>>>But maybe we won't push it to the staging tree any more.
-> >>>>Maybe we should just remove the staging code if it won't be fixed.
-> >>>>That's sort of the point of staging.
-> >>>I agree.  wwang, want me to delet the staging driver now?  I don't want
-> >>>"dead" code in the tree, especially as you don't want to maintain it
-> >>>anymore.
-> >>>
-> >>>thanks,
-> >>>
-> >>>greg k-h
-> >>Hi Greg:
-> >>
-> >>OK. You can delete it now, please.
-> >>And I will push my new driver to MFD and MMC subsystem.
-> >Ok, just to confirm, you want me to delete the
-> >drivers/staging/rts_pstor/* code, right?
-> >
-> >thanks,
-> >
-> >greg k-h
-> Hi Greg:
-> 
-> Yes, you can delete drivers/staging/rts_pstor
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-Thanks, now done.
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+---
+ arch/openrisc/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-greg k-h
+diff --git a/arch/openrisc/include/asm/dma-mapping.h b/arch/openrisc/include/asm/dma-mapping.h
+index fab8628..f12de49 100644
+--- a/arch/openrisc/include/asm/dma-mapping.h
++++ b/arch/openrisc/include/asm/dma-mapping.h
+@@ -95,6 +95,7 @@ static inline int dma_supported(struct device *dev, u64 dma_mask)
+ 
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
++	debug_dma_mapping_error(dev, dma_addr);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
+
+
