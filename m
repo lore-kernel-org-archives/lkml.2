@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab2JZAHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:47 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53534 "EHLO mail.kernel.org"
+	id S1754303Ab2JZAHx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53600 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab2JZAHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:42 -0400
+	id S1754175Ab2JZAHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 24/85] USB: cyberjack: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:42 -0700
-Message-Id: <20121026000033.538266086@linuxfoundation.org>
+        Moiz Sonasath <m-sonasath@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 45/85] usb: dwc3: gadget: fix endpoint always busy bug
+Date: Thu, 25 Oct 2012 17:06:03 -0700
+Message-Id: <20121026000035.661888335@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,124 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit a9556040119a63d06fd5238d47f5b683fba4178b upstream.
+commit 041d81f493d90c940ec41f0ec98bc7c4f2fba431 upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+If a USB transfer has already been started, meaning
+we have already issued StartTransfer command to that
+particular endpoint, DWC3_EP_BUSY flag has also
+already been set.
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
+When we try to cancel this transfer which is already
+in controller's cache, we will not receive XferComplete
+event and we must clear DWC3_EP_BUSY in order to allow
+subsequent requests to be properly started.
 
-Note that the write waitqueue was initialised but never used.
+The best place to clear that flag is right after issuing
+DWC3_DEPCMD_ENDTRANSFER.
 
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Reported-by: Moiz Sonasath <m-sonasath@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cyberjack.c |   48 ++++++++++++++++-------------------------
- 1 file changed, 19 insertions(+), 29 deletions(-)
+ drivers/usb/dwc3/gadget.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cyberjack.c
-+++ b/drivers/usb/serial/cyberjack.c
-@@ -57,9 +57,9 @@ static bool debug;
- #define CYBERJACK_PRODUCT_ID	0x0100
- 
- /* Function prototypes */
--static int cyberjack_startup(struct usb_serial *serial);
- static void cyberjack_disconnect(struct usb_serial *serial);
--static void cyberjack_release(struct usb_serial *serial);
-+static int cyberjack_port_probe(struct usb_serial_port *port);
-+static int cyberjack_port_remove(struct usb_serial_port *port);
- static int  cyberjack_open(struct tty_struct *tty,
- 	struct usb_serial_port *port);
- static void cyberjack_close(struct usb_serial_port *port);
-@@ -85,9 +85,9 @@ static struct usb_serial_driver cyberjac
- 	.description =		"Reiner SCT Cyberjack USB card reader",
- 	.id_table =		id_table,
- 	.num_ports =		1,
--	.attach =		cyberjack_startup,
- 	.disconnect =		cyberjack_disconnect,
--	.release =		cyberjack_release,
-+	.port_probe =		cyberjack_port_probe,
-+	.port_remove =		cyberjack_port_remove,
- 	.open =			cyberjack_open,
- 	.close =		cyberjack_close,
- 	.write =		cyberjack_write,
-@@ -109,55 +109,45 @@ struct cyberjack_private {
- 	short		wrsent;		/* Data already sent */
- };
- 
--/* do some startup allocations not currently performed by usb_serial_probe() */
--static int cyberjack_startup(struct usb_serial *serial)
-+static int cyberjack_port_probe(struct usb_serial_port *port)
- {
- 	struct cyberjack_private *priv;
--	int i;
-+	int result;
- 
--	/* allocate the private data structure */
- 	priv = kmalloc(sizeof(struct cyberjack_private), GFP_KERNEL);
- 	if (!priv)
- 		return -ENOMEM;
- 
--	/* set initial values */
- 	spin_lock_init(&priv->lock);
- 	priv->rdtodo = 0;
- 	priv->wrfilled = 0;
- 	priv->wrsent = 0;
--	usb_set_serial_port_data(serial->port[0], priv);
- 
--	init_waitqueue_head(&serial->port[0]->write_wait);
-+	usb_set_serial_port_data(port, priv);
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		int result;
--		result = usb_submit_urb(serial->port[i]->interrupt_in_urb,
--					GFP_KERNEL);
--		if (result)
--			dev_err(&serial->dev->dev,
--				"usb_submit_urb(read int) failed\n");
--		dbg("%s - usb_submit_urb(int urb)", __func__);
--	}
-+	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
-+	if (result)
-+		dev_err(&port->dev, "usb_submit_urb(read int) failed\n");
- 
- 	return 0;
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1899,6 +1899,7 @@ static void dwc3_stop_active_transfer(st
+ 	ret = dwc3_send_gadget_ep_cmd(dwc, dep->number, cmd, &params);
+ 	WARN_ON_ONCE(ret);
+ 	dep->resource_index = 0;
++	dep->flags &= ~DWC3_EP_BUSY;
  }
  
--static void cyberjack_disconnect(struct usb_serial *serial)
-+static int cyberjack_port_remove(struct usb_serial_port *port)
- {
--	int i;
-+	struct cyberjack_private *priv;
- 
--	for (i = 0; i < serial->num_ports; ++i)
--		usb_kill_urb(serial->port[i]->interrupt_in_urb);
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
-+
-+	return 0;
- }
- 
--static void cyberjack_release(struct usb_serial *serial)
-+static void cyberjack_disconnect(struct usb_serial *serial)
- {
- 	int i;
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		/* My special items, the standard routines free my urbs */
--		kfree(usb_get_serial_port_data(serial->port[i]));
--	}
-+	for (i = 0; i < serial->num_ports; ++i)
-+		usb_kill_urb(serial->port[i]->interrupt_in_urb);
- }
- 
- static int  cyberjack_open(struct tty_struct *tty,
+ static void dwc3_stop_active_transfers(struct dwc3 *dwc)
 
 
