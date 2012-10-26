@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965944Ab2JZSu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:50:27 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:39176 "EHLO smtp.outflux.net"
+	id S932894Ab2JZSuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:50:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33945 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753974Ab2JZSuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:50:23 -0400
-Date: Fri, 26 Oct 2012 11:50:21 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] VFS: add config options to enable link restrictions
-Message-ID: <20121026185021.GA1960@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+	id S965309Ab2JZSu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:50:26 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+Date: Fri, 26 Oct 2012 14:50:04 -0400
+Message-Id: <1351277405-9072-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20121026061206.GA31139@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are situations where devices running without initrds may need
-very early protection from link vulnerabilities, so make these sysctls
-configurable at build time, since 561ec64ae67e ("VFS: don't do protected
-{sym,hard}links by default") has disabled the protections by default.
+On Fri, Oct 26, 2012 at 02:12:06AM -0400, Theodore Ts'o wrote:
+> On Thu, Oct 25, 2012 at 11:12:48AM -0400, Naoya Horiguchi wrote:
+> > +	/* Lost data. Handle as critical fs error. */
+> > +	bh = head = page_buffers(page);
+> > +	do {
+> > +		if (buffer_dirty(bh) && !buffer_delay(bh)) {
+> > +			block = bh->b_blocknr;
+> > +			EXT4_ERROR_INODE_BLOCK(inode, block,
+> > +						"Removing dirty pagecache page");
+> > +		} else
+> > +			EXT4_ERROR_INODE(inode,
+> > +					"Removing dirty pagecache page");
+> 
+> One of the side effects of calling EXT4_ERROR_INODE (or ext3_error in
+> your ext3 patch), it sets the "file system is corrupt" bit which
+> forces the file system to be fsck'ed at the next boot.
+> 
+> If this is just a memory error, it's not clear that this is the right
+> thing to have happen.  It's also not clear what the benefit would be
+> is of forcing a reboot in the errors=panic case.  If the file system
+> is corrupt, forcing a panic and reboot is useful because it allows a
+> file system to get checked instead of allowing the system to continue
+> on and perhaps cause more data loss.
 
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- fs/Kconfig |   39 +++++++++++++++++++++++++++++++++++++++
- fs/namei.c |    6 ++++--
- 2 files changed, 43 insertions(+), 2 deletions(-)
+Let me explain what I'm worry about.
+Once memory error hits a dirty pagecache page, the page itself is
+removed from pagecache tree and will never be accessed later.
+But the problem is that after memory error handling is done,
+not all processes can know about that error event.
+As a result, a process which is not aware of the error tries to read
+the old data for disk, and data corruption spreads by using wrong data.
+I think that forcing rebooting is effective to prevent such spread of
+data corruption.
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index f95ae3a..46ae2dc 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -276,4 +276,43 @@ endif # NETWORK_FILESYSTEMS
- source "fs/nls/Kconfig"
- source "fs/dlm/Kconfig"
- 
-+config PROTECTED_SYMLINKS
-+	bool "Protect symlink following in sticky world-writable dirs"
-+	default n
-+	help
-+	  Solve the class of ToCToU symlink race vulnerabilities by
-+	  permitting symlinks to be followed only when outside a sticky
-+	  world-writable directory, or when the uid of the symlink and
-+	  follower match, or when the directory and symlink owners match.
-+
-+	  When PROC_SYSCTL is enabled, this setting can also be controlled
-+	  via /proc/sys/kernel/protected_symlinks.
-+
-+	  See Documentation/sysctl/fs.txt for details.
-+
-+config PROTECTED_SYMLINKS_SYSCTL
-+	int
-+	default "1" if PROTECTED_SYMLINKS
-+	default "0"
-+
-+config PROTECTED_HARDLINKS
-+	bool "Protect hardlink creation to non-accessible files"
-+	default n
-+	help
-+	  Solve the class of ToCToU hardlink race vulnerabilities by
-+	  permitting hardlinks to be created only when to a regular file
-+	  that is owned by the user, or is readable and writable by the
-+	  user. Also blocks users from "pinning" vulnerable setuid/setgid
-+	  programs from being upgraded by the administrator.
-+
-+	  When PROC_SYSCTL is enabled, this setting can also be controlled
-+	  via /proc/sys/kernel/protected_hardlinks.
-+
-+	  See Documentation/sysctl/fs.txt for details.
-+
-+config PROTECTED_HARDLINKS_SYSCTL
-+	int
-+	default "1" if PROTECTED_HARDLINKS
-+	default "0"
-+
- endmenu
-diff --git a/fs/namei.c b/fs/namei.c
-index 937f9d5..21854df 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -705,8 +705,10 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
- 	path_put(link);
- }
- 
--int sysctl_protected_symlinks __read_mostly = 0;
--int sysctl_protected_hardlinks __read_mostly = 0;
-+int sysctl_protected_symlinks __read_mostly =
-+	CONFIG_PROTECTED_SYMLINKS_SYSCTL;
-+int sysctl_protected_hardlinks __read_mostly =
-+	CONFIG_PROTECTED_HARDLINKS_SYSCTL;
- 
- /**
-  * may_follow_link - Check symlink following for unsafe situations
--- 
-1.7.9.5
+> 
+> But if what happened is that there was a hard ECC error on a page,
+> we've already lost data.  Forcing a reboot isn't going to make things
+> better; and if you force an e2fsck, it will just increase the system's
+> downtime.  It's also not entirely clear that throwing away the page is
+> the right thing to do, either, by the way.  If you have a hard ECC
+> error, then there has might be a two or three bits that have gotten
+> flipped on that page.  But by throwing the dirty page entirely, we're
+> throwing away 4k worth of data.
+> 
+> If we go back to first principles, what do we want to do?  We want the
+> system administrator to know that a file might be potentially
+> corrupted.  And perhaps, if a program tries to read from that file, it
+> should get an error.  If we have a program that has that file mmap'ed
+> at the time of the error, perhaps we should kill the program with some
+> kind of signal.  But to force a reboot of the entire system?  Or to
+> remounte the file system read-only?  That seems to be completely
+> disproportionate for what might be 2 or 3 bits getting flipped in a
+> page cache for a file.
 
+In order to completely solve this problem, I'm thinking about another
+approach without rebooting. Roughly saying, it introduces additional
+tag in pagecache tree to keep error-affected address of the error-affected
+file untouchable until we 'recover' the address range (This is based
+on the provious discussion in https://lkml.org/lkml/2012/9/2/194.)
+But I should be careful for many details for the patch and will take
+some time, so I want to start with a simpler approach.
 
--- 
-Kees Cook
-Chrome OS Security
+Thanks,
+Naoya
