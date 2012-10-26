@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab2JZA0y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:26:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53484 "EHLO mail.kernel.org"
+	id S1755384Ab2JZA1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:27:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53444 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754140Ab2JZAHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:36 -0400
+	id S1754095Ab2JZAHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 34/85] USB: ssu100: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:52 -0700
-Message-Id: <20121026000034.543990681@linuxfoundation.org>
+Subject: [ 30/85] USB: f81232: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:48 -0700
+Message-Id: <20121026000034.146564648@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,7 +27,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 638b9e15233c9570bce65301aa9877235316b9f0 upstream.
+commit 3124d1d71d3df59d40b913b5481df58099e811d1 upstream.
 
 Fix port-data memory leak by replacing attach and release with
 port_probe and port_remove.
@@ -42,74 +42,76 @@ Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ssu100.c |   34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+ drivers/usb/serial/f81232.c |   43 +++++++++++++++++--------------------------
+ 1 file changed, 17 insertions(+), 26 deletions(-)
 
---- a/drivers/usb/serial/ssu100.c
-+++ b/drivers/usb/serial/ssu100.c
-@@ -69,13 +69,6 @@ struct ssu100_port_private {
- 	struct async_icount icount;
- };
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -319,39 +319,30 @@ static int f81232_ioctl(struct tty_struc
+ 	return -ENOIOCTLCMD;
+ }
  
--static void ssu100_release(struct usb_serial *serial)
--{
--	struct ssu100_port_private *priv = usb_get_serial_port_data(*serial->port);
--
--	kfree(priv);
--}
--
- static inline int ssu100_control_msg(struct usb_device *dev,
- 				     u8 request, u16 data, u16 index)
+-static int f81232_startup(struct usb_serial *serial)
++static int f81232_port_probe(struct usb_serial_port *port)
  {
-@@ -444,21 +437,33 @@ static int ssu100_ioctl(struct tty_struc
+ 	struct f81232_private *priv;
+-	int i;
  
- static int ssu100_attach(struct usb_serial *serial)
- {
-+	return ssu100_initdevice(serial->dev);
-+}
-+
-+static int ssu100_port_probe(struct usb_serial_port *port)
-+{
- 	struct ssu100_port_private *priv;
--	struct usb_serial_port *port = *serial->port;
- 
- 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (!priv) {
--		dev_err(&port->dev, "%s- kmalloc(%Zd) failed.\n", __func__,
--			sizeof(*priv));
-+	if (!priv)
- 		return -ENOMEM;
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		priv = kzalloc(sizeof(struct f81232_private), GFP_KERNEL);
+-		if (!priv)
+-			goto cleanup;
+-		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->delta_msr_wait);
+-		usb_set_serial_port_data(serial->port[i], priv);
 -	}
- 
- 	spin_lock_init(&priv->status_lock);
- 	init_waitqueue_head(&priv->delta_msr_wait);
+-	return 0;
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
 +
- 	usb_set_serial_port_data(port, priv);
++	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->delta_msr_wait);
++
++	usb_set_serial_port_data(port, priv);
  
--	return ssu100_initdevice(serial->dev);
+-cleanup:
+-	for (--i; i >= 0; --i) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
+-	return -ENOMEM;
 +	return 0;
-+}
-+
-+static int ssu100_port_remove(struct usb_serial_port *port)
-+{
-+	struct ssu100_port_private *priv;
-+
+ }
+ 
+-static void f81232_release(struct usb_serial *serial)
++static int f81232_port_remove(struct usb_serial_port *port)
+ {
+-	int i;
+ 	struct f81232_private *priv;
+ 
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-	}
 +	priv = usb_get_serial_port_data(port);
 +	kfree(priv);
 +
 +	return 0;
  }
  
- static int ssu100_tiocmget(struct tty_struct *tty)
-@@ -649,7 +654,8 @@ static struct usb_serial_driver ssu100_d
- 	.open		     = ssu100_open,
- 	.close		     = ssu100_close,
- 	.attach              = ssu100_attach,
--	.release             = ssu100_release,
-+	.port_probe          = ssu100_port_probe,
-+	.port_remove         = ssu100_port_remove,
- 	.dtr_rts             = ssu100_dtr_rts,
- 	.process_read_urb    = ssu100_process_read_urb,
- 	.tiocmget            = ssu100_tiocmget,
+ static struct usb_serial_driver f81232_device = {
+@@ -374,8 +365,8 @@ static struct usb_serial_driver f81232_d
+ 	.tiocmset =		f81232_tiocmset,
+ 	.process_read_urb =	f81232_process_read_urb,
+ 	.read_int_callback =	f81232_read_int_callback,
+-	.attach =		f81232_startup,
+-	.release =		f81232_release,
++	.port_probe =		f81232_port_probe,
++	.port_remove =		f81232_port_remove,
+ };
+ 
+ static struct usb_serial_driver * const serial_drivers[] = {
 
 
