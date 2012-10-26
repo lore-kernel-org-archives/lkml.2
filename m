@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab2JZC4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 22:56:32 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55170 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab2JZC4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 22:56:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,650,1344236400"; 
-   d="scan'208";a="160778073"
-Subject: [PATCH] hrtimer:__run_hrtimer races with enqueue_hrtimer
-From: "he, bo" <bo.he@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        yanmin_zhang@linux.intel.com
-Cc: yanmin.zhang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Oct 2012 10:51:57 +0800
-Message-ID: <1351219917.28400.6.camel@hebo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755828Ab2JZC5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 22:57:11 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49371 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab2JZC5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 22:57:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <5089F5B5.1050206@redhat.com>
+References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl>
+ <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com> <5089F5B5.1050206@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 25 Oct 2012 19:56:48 -0700
+X-Google-Sender-Auth: 5jw1QlJutuMed-TLlwJGUFerke8
+Message-ID: <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanmin Zhang <yanmin.zhang@intel.com>
+On Thu, Oct 25, 2012 at 7:30 PM, Rik van Riel <riel@redhat.com> wrote:
+>>
+>> LOOK at the code, for chrissake. Just look at it. And if you don't see
+>> why the above is stupid and retarded, you damn well shouldn't be
+>> touching VM code.
+>
+> I agree it is pretty ugly.  However, the above patch
+> did get rid of a gigantic performance regression with
+> Peter's code.
 
-We hit a kernel panic at __run_hrtimer=>BUG_ON(timer->state != HRTIMER_STATE_CALLBACK).
-<2>[   10.226053, 3] kernel BUG at /home/android/xiaobing/ymz/r4/hardware/intel/linux-2.6/kernel/hrtimer.c:1228!
-<0>[   10.235682, 3] invalid opcode: 0000 [#1] PREEMPT SMP
-<4>[   10.240716, 3] Modules linked in: wl12xx_sdio wl12xx mac80211 cfg80211 compat btwilink rmi4(C) fmdrv_chr st_drv matrix(C)
-<4>[   10.251651, 3]
-<4>[   10.253391, 3] Pid: 68, comm: kworker/3:4 Tainted: G        WC  3.0.34-140430-g2af538d #45 Intel Corporation CloverTrail/FFRD
-<4>[   10.264674, 3] EIP: 0060:[<c126c7ed>] EFLAGS: 00010002 CPU: 3
-<4>[   10.270411, 3] EIP is at __run_hrtimer+0xbd/0x240
-<4>[   10.275091, 3] EAX: 00000001 EBX: f67fb6b8 ECX: f57b4000 EDX: 00007301
-<4>[   10.281602, 3] ESI: c1d614c0 EDI: f67fb680 EBP: f57b5dd8 ESP: f57b5da8
-<4>[   10.288113, 3]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-<0>[   10.293754, 3] Process kworker/3:4 (pid: 68, ti=f57b4000 task=f57aa730 task.ti=f57b4000)
-<0>[   10.301827, 3] Stack:
-<4>[   10.304083, 3]  00000000 c1afef40 f57b5dd8 c167a6e0 f67fb680 20b366e3 f67fb6b8 f57b5e14
-<4>[   10.312069, 3]  00000001 f67fb6b8 00000001 f67fb680 f57b5e28 c126d1e5 f57b5e08 c126f325
-<4>[   10.320055, 3]  00000000 86b9868d 00000001 86b9868d 00000001 00000003 ffffffff 7fffffff
-<0>[   10.328041, 3] Call Trace:
-<4>[   10.330742, 3]  [<c167a6e0>] ? gburst_thread_stop.isra.25+0x40/0x40
-<4>[   10.336988, 3]  [<c126d1e5>] hrtimer_interrupt+0xd5/0x250
-<4>[   10.342368, 3]  [<c126f325>] ? sched_clock_cpu+0xe5/0x150
-<4>[   10.347753, 3]  [<c1871d44>] smp_apic_timer_interrupt+0x54/0x88
-<4>[   10.353654, 3]  [<c1496558>] ? trace_hardirqs_off_thunk+0xc/0x14
-<4>[   10.359643, 3]  [<c186be9f>] apic_timer_interrupt+0x2f/0x34
-<4>[   10.365199, 3]  [<c186e60f>] ? sub_preempt_count+0x1f/0x50
-<4>[   10.370669, 3]  [<c149558a>] delay_tsc+0x3a/0xc0
-<6>[   10.371589, 0] android_work: did not send uevent (0 0   (null))
-<4>[   10.381171, 3]  [<c14954e3>] __const_udelay+0x23/0x30
-<4>[   10.386207, 3]  [<c16d043a>] mdfld_dsi_send_dcs+0x12a/0x5d0
-<4>[   10.391760, 3]  [<c186b6c6>] ? _raw_spin_unlock_irqrestore+0x26/0x50
-<4>[   10.398101, 3]  [<c16af431>] ? ospm_power_using_hw_begin+0xa1/0x350
-<4>[   10.399053, 3]  [<c186a49f>] ? __mutex_lock_slowpath+0x1ff/0x2f0
-<4>[   10.399069, 3]  [<c16bd59e>] mdfld_dbi_update_panel+0x21e/0x2d0
-<4>[   10.399085, 3]  [<c16b1ae1>] mdfld_te_handler_work+0x71/0x80
-<4>[   10.399099, 3]  [<c12642be>] process_one_work+0xfe/0x3f0
-<4>[   10.399114, 3]  [<c16b1a70>] ? mdfld_async_flip_te_handler+0xf0/0xf0
+Rik, *LOOK* at the code like I asked you to, instead of making excuses for it.
 
-Basically, __run_hrtimer has a race with enqueue_hrtimer. When __run_hrtimer calls
-the timer callback fn, another thread might call enqueue_hrtimer or hrtimer_start
-to requeue it, and the timer->state is equal to HRTIMER_STATE_CALLBACK|HRTIMER_STATE_ENQUEUED,
-which causes the BUG_ON(timer->state != HRTIMER_STATE_CALLBACK) checking fails.
+I'm not necessarily arguing with what the code tries to do. I'm
+arguing with the fact that the code is pure and utter *garbage*.
 
-The patch fixes it by checking only bit HRTIMER_STATE_CALLBACK.
+It has two major (and I mean *MAJOR*) problems, both of which
+individually should make you ashamed for ever posting that piece of
+shit:
 
-Signed-off-by: Yanmin Zhang <yanmin.zhang@intel.com>
-Reviewed-by: He, Bo <bo.he@intel.com>
----
- kernel/hrtimer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The obvious-without-even-understanding-semantics problem:
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6db7a5e..6280184 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1235,7 +1235,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- 	 * hrtimer_start_range_ns() or in hrtimer_interrupt()
- 	 */
- 	if (restart != HRTIMER_NORESTART) {
--		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
-+		BUG_ON(!(timer->state & HRTIMER_STATE_CALLBACK));
- 		enqueue_hrtimer(timer, base);
- 	}
- 
--- 
-1.7.6
+ - it's humongously stupidly written. It calculates that
+'flush_remote' flag WHETHER IT GETS USED OR NOT.
 
+   Christ. I can kind of expect stuff like that in driver code etc,
+but in VM routines?
 
+   Yes, the compiler may be smart enough to actually fix up the
+idiocy. That doesn't make it less stupid.
 
+The more-subtle-but-fundamental-problem:
+
+ - regardless of how stupidly written it is on a very superficial
+level, it's even more stupid in a much more fundamental way.
+
+   That whole routine is explicitly written to be opportunistic. It is
+*documented* to only set the access flags, so comparing anything else
+is stupid, wouldn't you say?
+
+Documented where? It's actually explicitly documented in the
+pgtable-generic.c file which has the generic implementation of that
+thing. But it's implicitly documented both in the name of the function
+(do take another look) *and* in the actual implementation of the
+function.
+
+Look at the code: it doesn't even always update the page tables AT ALL
+(and no, the return value does *not* reflect whether it updated it or
+not!)
+
+Also, notice how we update the pte entry with a simple
+
+    *ptep = entry;
+
+statement, not with the usual expensive page table updates? The only
+thing that makes this safe is that we *only* do it with the exact same
+page frame number (anything else would be disastrously buggy on 32-bit
+PAE, for example). And we only ever do it with the dirty bit always
+set, because otherwise we might be silently dropping a concurrent
+hardware update of the dirty bit of the previous pte value on another
+CPU.
+
+The latter requirement is why the x86 code does
+
+    if (changed && dirty) {
+
+while the generic code checks just "If (changed)" (and then uses the
+much more expensive set_pte_at() that has the proper dirty-bit
+guarantees, and generates atomic accesses, not to mention various
+virtualization crap).
+
+In other words, everything that was added by that patch is PURE AND
+UTTER SHIT. And THAT is what I'm objecting to.
+
+Guess what? If you want to optimize the function to not do remote TLB
+flushes, then just do that! None of the garbage. Just change the
+
+    flush_tlb_page(vma, address);
+
+line to
+
+    __flush_tlb_one(address);
+
+and it should damn well work. Because everything I see about
+"flush_remote" looks just wrong, wrong, wrong.
+
+And if there really is some reason for that whole flush_remote
+braindamage, then we have much bigger problems, namely the fact that
+we've broken the documented semantics of that function, and we're
+doing various other things that are completely and utterly invalid
+unless the above semantics hold.
+
+So that patch should be burned, and possibly used as an example of
+horribly crappy code for later generations. At no point should it be
+applied.
+
+                 Linus
