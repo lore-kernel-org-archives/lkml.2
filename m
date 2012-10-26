@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966277Ab2JZUeZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:34:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50702 "EHLO mga02.intel.com"
+	id S966431Ab2JZUe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:34:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50688 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759109Ab2JZUa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759105Ab2JZUa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 16:30:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="211355415"
+   d="scan'208";a="211355414"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 14/33] perf, core: Add a concept of a weightened sample
-Date: Fri, 26 Oct 2012 13:29:56 -0700
-Message-Id: <1351283415-13170-15-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 13/33] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
+Date: Fri, 26 Oct 2012 13:29:55 -0700
+Message-Id: <1351283415-13170-14-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,110 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-For some events it's useful to weight sample with a hardware
-provided number. This expresses how expensive the action the
-sample represent was.  This allows the profiler to scale
-the samples to be more informative to the programmer.
+With checkpointed counters there can be a situation where the counter
+is overflowing, aborts the transaction, is set back to a non overflowing
+checkpoint, causes interupt. The interrupt doesn't see the overflow
+because it has been checkpointed.  This is then a spurious PMI, typically with a
+ugly NMI message.  It can also lead to excessive aborts.
 
-There is already the period which is used similarly, but it means
-something different, so I chose to not overload it. Instead
-a new sample type for WEIGHT is added.
+Avoid this problem by:
+- Using the full counter width for counting counters (previous patch)
+- Forbid sampling for checkpointed counters. It's not too useful anyways,
+checkpointing is mainly for counting.
+- On a PMI always set back checkpointed counters to zero.
 
-Can be used for multiple things. Initially it is used for TSX abort costs
-and profiling by memory latencies (so to make expensive load appear higher
-up in the histograms)  The concept is quite generic and can be extended
-to many other kinds of events or architectures, as long as the hardware
-provides suitable auxillary values. In principle it could be also
-used for software tracpoints.
-
-This adds the generic glue. A new optional sample format for a 64bit
-weight value.
-
+v2: Add unlikely. Add comment
+v3: Allow large sampling periods with CP for KVM
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |    8 ++++++--
- kernel/events/core.c            |    6 ++++++
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   33 ++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 0e528fc..f4ded17 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -588,6 +588,7 @@ struct perf_sample_data {
- 	struct perf_branch_stack	*br_stack;
- 	struct perf_regs_user		regs_user;
- 	u64				stack_user_size;
-+	u64				weight;
- };
- 
- static inline void perf_sample_data_init(struct perf_sample_data *data,
-@@ -601,6 +602,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.abi = PERF_SAMPLE_REGS_ABI_NONE;
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
-+	data->weight = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9bff694..bbd00cc 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ int intel_pmu_save_and_restart(struct perf_event *event)
+ {
+ 	x86_perf_event_update(event);
++	/*
++	 * For a checkpointed counter always reset back to 0.  This
++	 * avoids a situation where the counter overflows, aborts the
++	 * transaction and is then set back to shortly before the
++	 * overflow, and overflows and aborts again.
++	 */
++	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
++		/* No race with NMIs because the counter should not be armed */
++		wrmsrl(event->hw.event_base, 0);
++		local64_set(&event->hw.prev_count, 0);
++	}
+ 	return x86_perf_event_set_period(event);
  }
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 8e38823..809a5fd 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -132,8 +132,10 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
-+	PERF_SAMPLE_WEIGHT			= 1U << 14,
+@@ -1162,6 +1173,15 @@ again:
+ 		x86_pmu.drain_pebs(regs);
+ 	}
+ 
++	/*
++ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
++ 	 * counters.
++ 	 *
++	 * XXX move somewhere else.
++	 */
++	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
++		status |= (1ULL << 2);
 +
-+	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
+ 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+ 		struct perf_event *event = cpuc->events[bit];
  
--	PERF_SAMPLE_MAX = 1U << 14,		/* non-ABI */
- };
- 
- /*
-@@ -201,8 +203,9 @@ enum perf_event_read_format {
- 	PERF_FORMAT_TOTAL_TIME_RUNNING		= 1U << 1,
- 	PERF_FORMAT_ID				= 1U << 2,
- 	PERF_FORMAT_GROUP			= 1U << 3,
-+	PERF_FORMAT_WEIGHT			= 1U << 4,
- 
--	PERF_FORMAT_MAX = 1U << 4,		/* non-ABI */
-+	PERF_FORMAT_MAX = 1U << 5,		/* non-ABI */
- };
- 
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
-@@ -562,6 +565,7 @@ enum perf_event_type {
- 	 *	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
- 	 *	{ u32			cpu, res; } && PERF_SAMPLE_CPU
- 	 *	{ u64			period;   } && PERF_SAMPLE_PERIOD
-+	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
- 	 *
- 	 *	{ struct read_format	values;	  } && PERF_SAMPLE_READ
- 	 *
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index dbccf83..d633581 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -952,6 +952,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		size += sizeof(data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		size += sizeof(data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		size += event->read_size;
- 
-@@ -4080,6 +4083,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 	if (sample_type & PERF_SAMPLE_PERIOD)
- 		perf_output_put(handle, data->period);
- 
-+	if (sample_type & PERF_SAMPLE_WEIGHT)
-+		perf_output_put(handle, data->weight);
-+
- 	if (sample_type & PERF_SAMPLE_READ)
- 		perf_output_read(handle, event);
+@@ -1635,6 +1655,19 @@ static int hsw_hw_config(struct perf_event *event)
+ 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
+ 	      event->attr.precise_ip > 0))
+ 		return -EIO;
++	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
++		/*
++		 * Sampling of checkpointed events can cause situations where
++		 * the CPU constantly aborts because of a overflow, which is
++		 * then checkpointed back and ignored. Forbid checkpointing
++		 * for sampling.
++		 *
++		 * But still allow a long sampling period, so that perf stat
++		 * from KVM works.
++		 */
++		if (event->attr.sample_period < 0x7fffffff)
++			return -EIO;
++	}
+ 	return 0;
+ }
  
 -- 
 1.7.7.6
