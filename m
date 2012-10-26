@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2JZAXj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:23:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53629 "EHLO mail.kernel.org"
+	id S1755316Ab2JZAX6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:23:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53575 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751559Ab2JZAHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:51 -0400
+	id S1754220Ab2JZAHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 48/85] usb: Send Set SEL before enabling parent U1/U2 timeout.
-Date: Thu, 25 Oct 2012 17:06:06 -0700
-Message-Id: <20121026000035.944012966@linuxfoundation.org>
+        Yuanhan Liu <yuanhan.liu@intel.com>, Johan Hovold <jhovold@gmail.com>
+Subject: [ 28/85] USB: iuu_phoenix: fix sysfs-attribute creation
+Date: Thu, 25 Oct 2012 17:05:46 -0700
+Message-Id: <20121026000033.948329983@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,72 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 65a95b75bc5afa7bbb844e222481044c1c4767eb upstream.
+commit 0978c9499944d0670338fd048a3bdb1624dc66dc upstream.
 
-The Set SEL control transfer tells a device the exit latencies
-associated with a device-initated U1 or U2 exit.  Since a parent hub may
-initiate a transition to U1 soon after a downstream port's U1 timeout is
-set, we need to make sure the device receives the Set SEL transfer
-before the parent hub timeout is set.
+Make sure sysfs attributes are created at port probe.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
-enable/disable USB3 link states."
+A recent patch ("USB: iuu_phoenix: fix port-data memory leak") removed
+the sysfs-attribute creation by mistake.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Yuanhan Liu <yuanhan.liu@intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ drivers/usb/serial/iuu_phoenix.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3258,16 +3258,6 @@ static int usb_set_device_initiated_lpm(
+--- a/drivers/usb/serial/iuu_phoenix.c
++++ b/drivers/usb/serial/iuu_phoenix.c
+@@ -60,6 +60,8 @@ static int iuu_cardout;
+ static bool xmas;
+ static int vcc_default = 5;
  
- 	if (enable) {
- 		/*
--		 * First, let the device know about the exit latencies
--		 * associated with the link state we're about to enable.
--		 */
--		ret = usb_req_set_sel(udev, state);
--		if (ret < 0) {
--			dev_warn(&udev->dev, "Set SEL for device-initiated "
--					"%s failed.\n", usb3_lpm_names[state]);
--			return -EBUSY;
--		}
--		/*
- 		 * Now send the control transfer to enable device-initiated LPM
- 		 * for either U1 or U2.
- 		 */
-@@ -3352,7 +3342,7 @@ static int usb_set_lpm_timeout(struct us
- static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
- 		enum usb3_link_state state)
++static int iuu_create_sysfs_attrs(struct usb_serial_port *port);
++static int iuu_remove_sysfs_attrs(struct usb_serial_port *port);
+ static void read_rxcmd_callback(struct urb *urb);
+ 
+ struct iuu_private {
+@@ -83,6 +85,7 @@ struct iuu_private {
+ static int iuu_port_probe(struct usb_serial_port *port)
  {
--	int timeout;
-+	int timeout, ret;
- 	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
- 	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
+ 	struct iuu_private *priv;
++	int ret;
  
-@@ -3364,6 +3354,17 @@ static void usb_enable_link_state(struct
- 			(state == USB3_LPM_U2 && u2_mel == 0))
- 		return;
+ 	priv = kzalloc(sizeof(struct iuu_private), GFP_KERNEL);
+ 	if (!priv)
+@@ -115,6 +118,14 @@ static int iuu_port_probe(struct usb_ser
  
-+	/*
-+	 * First, let the device know about the exit latencies
-+	 * associated with the link state we're about to enable.
-+	 */
-+	ret = usb_req_set_sel(udev, state);
-+	if (ret < 0) {
-+		dev_warn(&udev->dev, "Set SEL for device-initiated %s failed.\n",
-+				usb3_lpm_names[state]);
-+		return;
+ 	usb_set_serial_port_data(port, priv);
+ 
++	ret = iuu_create_sysfs_attrs(port);
++	if (ret) {
++		kfree(priv->writebuf);
++		kfree(priv->buf);
++		kfree(priv);
++		return ret;
 +	}
 +
- 	/* We allow the host controller to set the U1/U2 timeout internally
- 	 * first, so that it can change its schedule to account for the
- 	 * additional latency to send data to a device in a lower power
+ 	return 0;
+ }
+ 
+@@ -122,6 +133,7 @@ static int iuu_port_remove(struct usb_se
+ {
+ 	struct iuu_private *priv = usb_get_serial_port_data(port);
+ 
++	iuu_remove_sysfs_attrs(port);
+ 	kfree(priv->dbgbuf);
+ 	kfree(priv->writebuf);
+ 	kfree(priv->buf);
+@@ -1221,8 +1233,6 @@ static struct usb_serial_driver iuu_devi
+ 	.num_ports = 1,
+ 	.bulk_in_size = 512,
+ 	.bulk_out_size = 512,
+-	.port_probe = iuu_create_sysfs_attrs,
+-	.port_remove = iuu_remove_sysfs_attrs,
+ 	.open = iuu_open,
+ 	.close = iuu_close,
+ 	.write = iuu_uart_write,
 
 
