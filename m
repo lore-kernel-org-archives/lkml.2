@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab2JZNlO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:41:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:61340 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921Ab2JZNlL (ORCPT
+	id S932953Ab2JZNnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:43:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43413 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932884Ab2JZNne convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:41:11 -0400
-Message-ID: <508A92DF.6000003@gmail.com>
-Date: Fri, 26 Oct 2012 19:10:47 +0530
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [RESEND PATCH] fs/super.c set_anon_super calling optimization
-References: <CA+kxV1F5VxBGawhkV=02LcgHNWiKF-H_k6N-d1TEYNeFAScezg@mail.gmail.com> <508924AB.4060902@gmail.com> <20121026131441.GA22256@andromeda.usersys.redhat.com>
-In-Reply-To: <20121026131441.GA22256@andromeda.usersys.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Oct 2012 09:43:34 -0400
+Message-ID: <1351258992.16863.77.camel@twins>
+Subject: Re: [PATCH 1/2] numa, mm: drop redundant check in
+ do_huge_pmd_numa_page()
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Will Deacon <will.deacon@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Date: Fri, 26 Oct 2012 15:43:12 +0200
+In-Reply-To: <20121026134129.GA31306@otc-wbsnb-06>
+References: <1351256077-1594-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1351256885.16863.62.camel@twins> <20121026134129.GA31306@otc-wbsnb-06>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 06:44 PM, Carlos Maiolino wrote:
-> Hi,
->
-> On Thu, Oct 25, 2012 at 05:08:19PM +0530, Abhijit Pawar wrote:
->> Hi,
->> set_anon_super is called by many filesystems. Some call directly and
->> some call through the wrapper. Many of them in the wrapper's call to
->> this function are passing the second argument to this function which
->> is not used anywhere.
->>
->> This patch replaces the second variable with NULL.
->>
->
-> If the variable isn't used anymore, why don't just get rid of it, instead of
-> call the function passing a NULL pointer on it?
-At the moment its a callback function with two params so that 
-filesystems are free to override it while mounting. This is to support 
-filesystem specific information at mount time.
+On Fri, 2012-10-26 at 16:41 +0300, Kirill A. Shutemov wrote:
+> On Fri, Oct 26, 2012 at 03:08:05PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-10-26 at 15:54 +0300, Kirill A. Shutemov wrote:
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > 
+> > > We check if the pmd entry is the same as on pmd_trans_huge() in
+> > > handle_mm_fault(). That's enough.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > 
+> > Ah indeed, Will mentioned something like this on IRC as well, I hadn't
+> > gotten around to looking at it -- now have, thanks!
+> > 
+> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > 
+> > That said, where in handle_mm_fault() do we wait for a split to
+> > complete? We have a pmd_trans_huge() && !pmd_trans_splitting(), so a
+> > fault on a currently splitting pmd will fall through.
+> > 
+> > Is it the return from the fault on unlikely(pmd_trans_huge()) ?
+> 
+> Yes, this code will catch it:
+> 
+> 	/* if an huge pmd materialized from under us just retry later */
+> 	if (unlikely(pmd_trans_huge(*pmd)))
+> 		return 0;
+> 
+> If the pmd is under splitting it's still a pmd_trans_huge().
 
-nfs uses it to get its server specific information. btrfs uses it to 
-populate its filesystem information. So the signature can not be changed 
-without affecting these filesystems.
-
-sysfs, ceph, 9p will also be affected if we are to change the signature.
-
->
-
-
--- 
--
-Abhijit
+OK, so then we simply keep taking the same fault until the split is
+complete? Wouldn't it be better to wait for it instead of spin on
+faults?
