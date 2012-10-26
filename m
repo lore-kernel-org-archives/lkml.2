@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2JZINi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:13:38 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:47415 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab2JZINd (ORCPT
+	id S932152Ab2JZISf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:18:35 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:58228 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757275Ab2JZIS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:13:33 -0400
+	Fri, 26 Oct 2012 04:18:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Subject: Re: [PATCH 02/16 v2] f2fs: add on-disk layout
+Date: Fri, 26 Oct 2012 08:18:17 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        viro@zeniv.linux.org.uk, tytso@mit.edu, chur.lee@samsung.com,
+        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com> <1351077945.2097.9.camel@slavad-ubuntu> <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
+In-Reply-To: <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20121026080240.GA13662@localhost>
-References: <20121025025826.GB23462@localhost>
-	<20121026002544.GI29378@dastard>
-	<20121026012758.GA6282@localhost>
-	<5089F5AD.5040708@gmail.com>
-	<20121026065855.GA9179@localhost>
-	<508A35B0.30106@gmail.com>
-	<20121026070936.GA12282@localhost>
-	<508A399D.6000506@gmail.com>
-	<20121026073630.GA12886@localhost>
-	<508A4007.5080906@gmail.com>
-	<20121026080240.GA13662@localhost>
-Date: Fri, 26 Oct 2012 16:13:32 +0800
-Message-ID: <CAA9v8mF+D=bdn9QSNcMv81BSog1okkK=wCLHKGi6NBWoQzyC-w@mail.gmail.com>
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-From: YingHang Zhu <casualfisher@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        linux-mm@kvack.org, Ni zhan Chen <nizhan.chen@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210260818.18155.arnd@arndb.de>
+X-Provags-ID: V02:K0:I14LHdh+DVP1WZi9PpCgq6wIGuk3vS0Xl9jqjxvl9Uu
+ OVODKOlNwVPXUKVhD3slS2yxDD3kyloEeuJu2GLezCN482I5Uq
+ wns/T7gYqx43J3OnqVnZeNpumTWKo+sDk/OAoXVZAUS1GuTN22
+ JD1gYnDGkkOhHFqSOHTaLANNK8f2xvAx1lutKfU+zGxdv2si7N
+ kOUlThHgNcdQbVU8sz25MHSybHtFIj8e1ccIBG39QatTzNvYHd
+ 4sLy3O+2h8fOO7r21kD2lRb+phH+SV/T/kuq9S2+jQon+WJWY1
+ zcszxFm0lGIDrCrMHsGfKy9llIAgoE6xyhqRtp2y6LKc3otwIr
+ OCAlZFg2ZcY3q8F9GlsY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
+On Friday 26 October 2012, Jaegeuk Kim wrote:
 
-On Fri, Oct 26, 2012 at 4:02 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> On Fri, Oct 26, 2012 at 03:47:19PM +0800, Ni zhan Chen wrote:
->> On 10/26/2012 03:36 PM, Fengguang Wu wrote:
->> >On Fri, Oct 26, 2012 at 03:19:57PM +0800, Ni zhan Chen wrote:
->> >>On 10/26/2012 03:09 PM, Fengguang Wu wrote:
->> >>>On Fri, Oct 26, 2012 at 03:03:12PM +0800, Ni zhan Chen wrote:
->> >>>>On 10/26/2012 02:58 PM, Fengguang Wu wrote:
->> >>>>>>  static void shrink_readahead_size_eio(struct file *filp,
->> >>>>>>                                         struct file_ra_state *ra)
->> >>>>>>  {
->> >>>>>>-       ra->ra_pages /= 4;
->> >>>>>>+       spin_lock(&filp->f_lock);
->> >>>>>>+       filp->f_mode |= FMODE_RANDOM;
->> >>>>>>+       spin_unlock(&filp->f_lock);
->> >>>>>>
->> >>>>>>As the example in comment above this function, the read maybe still
->> >>>>>>sequential, and it will waste IO bandwith if modify to FMODE_RANDOM
->> >>>>>>directly.
->> >>>>>Yes immediately disabling readahead may hurt IO performance, the
->> >>>>>original '/ 4' may perform better when there are only 1-3 IO errors
->> >>>>>encountered.
->> >>>>Hi Fengguang,
->> >>>>
->> >>>>Why the number should be 1-3?
->> >>>The original behavior is '/= 4' on each error.
->> >>>
->> >>>After 1 errors, readahead size will be shrinked by 1/4
->> >>>After 2 errors, readahead size will be shrinked by 1/16
->> >>>After 3 errors, readahead size will be shrinked by 1/64
->> >>>After 4 errors, readahead size will be effectively 0 (disabled)
->> >>But from function shrink_readahead_size_eio and its caller
->> >>filemap_fault I can't find the behavior you mentioned. How you
->> >>figure out it?
->> >It's this line in shrink_readahead_size_eio():
->> >
->> >         ra->ra_pages /= 4;
->>
->> Yeah, I mean why the 4th readahead size will be 0(disabled)? What's
->> the original value of ra->ra_pages? How can guarantee the 4th shrink
->> readahead size can be 0?
->
-> Ah OK, I'm talking about the typical case. The default readahead size
-> is 128k, which will become 0 after / 256. The reasonable good ra size
-> for hard disks is 1MB=256pages, which also becomes 1page after 4 errors.
+> > > +
+> > > +#define F2FS_ROOT_INO(sbi)	(sbi->root_ino_num)
+> > > +#define F2FS_NODE_INO(sbi)	(sbi->node_ino_num)
+> > > +#define F2FS_META_INO(sbi)	(sbi->meta_ino_num)
+> > > +
+> > > +#define GFP_F2FS_MOVABLE	(__GFP_WAIT | __GFP_IO | __GFP_ZERO)
+> > > +
+> > > +#define MAX_ACTIVE_LOGS	16
+> > > +#define MAX_ACTIVE_NODE_LOGS	8
+> > > +#define MAX_ACTIVE_DATA_LOGS	8
+> > 
+> > I think that it makes sense to comment the reasons of such limitations
+> > in MAX_ACTIVE_LOGS, MAX_ACTIVE_NODE_LOGS, MAX_ACTIVE_DATA_LOGS.
+> 
+> The maximum number of logs is suggested by arnd before.
+> As I understood, why he suggested such a quite large number is for further
+> optimization of multiple logs without any on-disk layout changes.
+> And, I think it is quite enough.
 
-How do you feel about my previous mail of error statistics, in fact I
-prefer treating these files independently,  so do some check for FMODE_RANDOM
-before we change the readahead window to avoid trashing the read ahead window,
-If the user applications call fadvise but the media turn out to be
-error-prone, after one
-read we know the situation and set the file in FMODE_RANDOM, this should solve
-the issue Dave raised.
-Do I miss something? Thanks in advance.
+I agree. I think Vyacheslav was just asking you to add a comment
+explaining how we got to these numbers, like
 
->
-> Thanks,
-> Fengguang
+/*
+ * The file format supports up to 16 active logs, which should be
+ * more than enough for future optimizations. The implementation
+ * currently uses no more than 6 logs.
+ * Half the logs are used for nodes, the other half are used for data.
+ */
 
 
-
--- 
-Thanks,
-     Ying Zhu
+	Arnd
