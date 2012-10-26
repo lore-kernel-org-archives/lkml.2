@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab2JZAHo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53484 "EHLO mail.kernel.org"
+	id S1754286Ab2JZAYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:24:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53555 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab2JZAHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:38 -0400
+	id S1754189Ab2JZAHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>
-Subject: [ 21/85] usb: acm: fix the computation of the number of data bits
-Date: Thu, 25 Oct 2012 17:05:39 -0700
-Message-Id: <20121026000033.246145177@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 26/85] usb: host: xhci: New system added for Compliance Mode Patch on SN65LVPE502CP
+Date: Thu, 25 Oct 2012 17:05:44 -0700
+Message-Id: <20121026000033.747087636@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,56 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Boullis <nboullis@debian.org>
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
 
-commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
+commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
 
-The current code assumes that CSIZE is 0000060, which appears to be
-wrong on some arches (such as powerpc).
+This minor change adds a new system to which the "Fix Compliance Mode
+on SN65LVPE502CP Hardware" patch has to be applied also.
 
-Signed-off-by: Nicolas Boullis <nboullis@debian.org>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+System added:
+Vendor: Hewlett-Packard. System Model: Z1
+
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -818,10 +818,6 @@ static const __u32 acm_tty_speed[] = {
- 	2500000, 3000000, 3500000, 4000000
- };
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -479,7 +479,8 @@ static bool compliance_mode_recovery_tim
  
--static const __u8 acm_tty_size[] = {
--	5, 6, 7, 8
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
-@@ -835,7 +831,21 @@ static void acm_tty_set_termios(struct t
- 	newline.bParityType = termios->c_cflag & PARENB ?
- 				(termios->c_cflag & PARODD ? 1 : 2) +
- 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+ 	if (strstr(dmi_product_name, "Z420") ||
+ 			strstr(dmi_product_name, "Z620") ||
+-			strstr(dmi_product_name, "Z820"))
++			strstr(dmi_product_name, "Z820") ||
++			strstr(dmi_product_name, "Z1"))
+ 		return true;
  
+ 	return false;
 
 
