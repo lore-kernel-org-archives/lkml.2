@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2JZAH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53610 "EHLO mail.kernel.org"
+	id S1755308Ab2JZAVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:21:36 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53676 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab2JZAHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:49 -0400
+	id S1754336Ab2JZAH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Don Zickus <dzickus@redhat.com>
-Subject: [ 46/85] usb: Dont enable LPM if the exit latency is zero.
-Date: Thu, 25 Oct 2012 17:06:04 -0700
-Message-Id: <20121026000035.754622824@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 38/85] USB: spcp8x5: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:56 -0700
+Message-Id: <20121026000034.936361533@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,70 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit ae8963adb4ad8c5f2a89ca1d99fb7bb721e7599f upstream.
+commit bf90ff5f3b8f67e5b42df4ea4fd543f8010a2676 upstream.
 
-Some USB 3.0 devices signal that they don't implement Link PM by having
-all zeroes in the U1/U2 exit latencies in their SuperSpeed BOS
-descriptor.  Don found that a Western Digital device he has experiences
-transfer errors when LPM is enabled.  The lsusb shows the U1/U2 exit
-latencies are set to zero:
+Fix port-data memory leak by replacing attach and release with
+port_probe and port_remove.
 
-Binary Object Store Descriptor:
-  bLength                 5
-  bDescriptorType        15
-  wTotalLength           22
-  bNumDeviceCaps          2
-  SuperSpeed USB Device Capability:
-    bLength                10
-    bDescriptorType        16
-    bDevCapabilityType      3
-    bmAttributes         0x00
-      Latency Tolerance Messages (LTM) Supported
-    wSpeedsSupported   0x000e
-      Device can operate at Full Speed (12Mbps)
-      Device can operate at High Speed (480Mbps)
-      Device can operate at SuperSpeed (5Gbps)
-    bFunctionalitySupport   1
-      Lowest fully-functional device speed is Full Speed (12Mbps)
-    bU1DevExitLat           0 micro seconds
-    bU2DevExitLat           0 micro seconds
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
 
-The fix is to not enable LPM for a particular link state if we find its
-corresponding exit latency is zero.
+Compile-only tested.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
-enable/disable USB3 link states."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/serial/spcp8x5.c |   48 +++++++++++++++++--------------------------
+ 1 file changed, 19 insertions(+), 29 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -3353,6 +3353,16 @@ static void usb_enable_link_state(struct
- 		enum usb3_link_state state)
- {
- 	int timeout;
-+	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
-+	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
-+
-+	/* If the device says it doesn't have *any* exit latency to come out of
-+	 * U1 or U2, it's probably lying.  Assume it doesn't implement that link
-+	 * state.
-+	 */
-+	if ((state == USB3_LPM_U1 && u1_mel == 0) ||
-+			(state == USB3_LPM_U2 && u2_mel == 0))
-+		return;
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -159,13 +159,10 @@ struct spcp8x5_private {
+ 	u8 			line_status;
+ };
  
- 	/* We allow the host controller to set the U1/U2 timeout internally
- 	 * first, so that it can change its schedule to account for the
+-/* desc : when device plug in,this function would be called.
+- * thanks to usb_serial subsystem,then do almost every things for us. And what
+- * we should do just alloc the buffer */
+-static int spcp8x5_startup(struct usb_serial *serial)
++static int spcp8x5_port_probe(struct usb_serial_port *port)
+ {
++	struct usb_serial *serial = port->serial;
+ 	struct spcp8x5_private *priv;
+-	int i;
+ 	enum spcp8x5_type type = SPCP825_007_TYPE;
+ 	u16 product = le16_to_cpu(serial->dev->descriptor.idProduct);
+ 
+@@ -182,34 +179,27 @@ static int spcp8x5_startup(struct usb_se
+ 		type = SPCP825_PHILIP_TYPE;
+ 	dev_dbg(&serial->dev->dev, "device type = %d\n", (int)type);
+ 
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		priv = kzalloc(sizeof(struct spcp8x5_private), GFP_KERNEL);
+-		if (!priv)
+-			goto cleanup;
+-
+-		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->delta_msr_wait);
+-		priv->type = type;
+-		usb_set_serial_port_data(serial->port[i] , priv);
+-	}
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->delta_msr_wait);
++	priv->type = type;
++
++	usb_set_serial_port_data(port , priv);
+ 
+ 	return 0;
+-cleanup:
+-	for (--i; i >= 0; --i) {
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
+-		usb_set_serial_port_data(serial->port[i] , NULL);
+-	}
+-	return -ENOMEM;
+ }
+ 
+-/* call when the device plug out. free all the memory alloced by probe */
+-static void spcp8x5_release(struct usb_serial *serial)
++static int spcp8x5_port_remove(struct usb_serial_port *port)
+ {
+-	int i;
++	struct spcp8x5_private *priv;
+ 
+-	for (i = 0; i < serial->num_ports; i++)
+-		kfree(usb_get_serial_port_data(serial->port[i]));
++	priv = usb_get_serial_port_data(port);
++	kfree(priv);
++
++	return 0;
+ }
+ 
+ /* set the modem control line of the device.
+@@ -651,8 +641,8 @@ static struct usb_serial_driver spcp8x5_
+ 	.ioctl 			= spcp8x5_ioctl,
+ 	.tiocmget 		= spcp8x5_tiocmget,
+ 	.tiocmset 		= spcp8x5_tiocmset,
+-	.attach 		= spcp8x5_startup,
+-	.release 		= spcp8x5_release,
++	.port_probe		= spcp8x5_port_probe,
++	.port_remove		= spcp8x5_port_remove,
+ 	.process_read_urb	= spcp8x5_process_read_urb,
+ };
+ 
 
 
