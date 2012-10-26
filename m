@@ -1,169 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934088Ab2JZR4O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 13:56:14 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:53663 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934045Ab2JZRz5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:55:57 -0400
-From: Yan Hong <clouds.yan@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] debugfs: break long lines
-Date: Sat, 27 Oct 2012 01:55:44 +0800
-Message-Id: <1351274144-31591-3-git-send-email-clouds.yan@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351274144-31591-1-git-send-email-clouds.yan@gmail.com>
-References: <1351274144-31591-1-git-send-email-clouds.yan@gmail.com>
+	id S965610Ab2JZSAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:00:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44968 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932894Ab2JZSAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:00:43 -0400
+Date: Fri, 26 Oct 2012 20:00:37 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Sasha Levin <levinsasha928@gmail.com>,
+        Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
+In-Reply-To: <507EBF6C.90506@kernel.dk>
+Message-ID: <alpine.LNX.2.00.1210261959430.19184@pobox.suse.cz>
+References: <505E2108.2060108@gmail.com>  <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>  <20121008172207.GB14767@quack.suse.cz>  <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>  <507424F7.60801@gmail.com> <50742600.10606@gmail.com>
+  <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>  <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com> <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk> <alpine.LNX.2.00.1210171610220.17129@pobox.suse.cz>
+ <507EBF6C.90506@kernel.dk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Oct 2012, Jens Axboe wrote:
 
-Signed-off-by: Yan Hong <clouds.yan@gmail.com>
----
- fs/debugfs/file.c  |   42 ++++++++++++++++++++++++++++--------------
- fs/debugfs/inode.c |   10 ++++++----
- 2 files changed, 34 insertions(+), 18 deletions(-)
+> >>>> 1. redo_fd_request() races with tear-down of the disks, but because
+> >>>> set_next_request() checks disk->queue before doing anything this was
+> >>>> usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
+> >>>> the race condition is much easier to hit.  This may fix that problem in
+> >>>> do_floppy_init(), though there appear to be worse bugs in tear-down
+> >>>> order in floppy_module_exit():
+> >> [...]
+> >>>> 2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
+> >>>> cleared by del_gendisk().  Incremental patch below, but it should be
+> >>>> squashed into the previous patch if that branch is still rebase-able.
+> >> [...]
+> >>> I'm now seeing these instead:
+> >> [...]
+> >>
+> >> Sorry, I'm not going to spend more time in the quagmire of the floppy
+> >> driver.  Whoever has this commit in their tree, please revert or drop it
+> >> as appropriate.
+> > 
+> > As far as I can tell, Jens has pulled it from me, but it hasn't made it 
+> > into Linus' tree as of today.
+> > 
+> > I will do it in my tree and send a new pull request to Jens.
+> 
+> I did not add the patch from Ben, as it was reported as not working. My
+> driver pull is late this time due to travel, but it'll go out start of
+> next week. So if you have pending floppy updates that are tested at that
+> time, then please do send them my way.
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 3915cc9..b37eee1 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -95,10 +95,12 @@ struct dentry *debugfs_create_u8(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u8_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								&fops_u8_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u8_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								&fops_u8_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_u8);
- }
-@@ -147,10 +149,12 @@ struct dentry *debugfs_create_u16(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u16_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								&fops_u16_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u16_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								&fops_u16_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_u16);
- }
-@@ -199,10 +203,12 @@ struct dentry *debugfs_create_u32(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u32_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_u32_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u32_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_u32_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_u32);
- }
-@@ -252,10 +258,12 @@ struct dentry *debugfs_create_u64(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u64_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_u64_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_u64_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_u64_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_u64);
- }
-@@ -298,10 +306,12 @@ struct dentry *debugfs_create_x8(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x8_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x8_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x8_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x8_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_x8);
- }
-@@ -322,10 +332,12 @@ struct dentry *debugfs_create_x16(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x16_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x16_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x16_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x16_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_x16);
- }
-@@ -346,10 +358,12 @@ struct dentry *debugfs_create_x32(const char *name, umode_t mode,
- {
- 	/* if there are no write bits set, make read only */
- 	if (!(mode & S_IWUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x32_ro);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x32_ro);
- 	/* if there are no read bits set, make write only */
- 	if (!(mode & S_IRUGO))
--		return debugfs_create_file(name, mode, parent, value, &fops_x32_wo);
-+		return debugfs_create_file(name, mode, parent, value,
-+								 &fops_x32_wo);
- 
- 	return debugfs_create_file(name, mode, parent, value, &fops_x32);
- }
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 58eadc1..edbaf37 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -34,8 +34,9 @@ static struct vfsmount *debugfs_mount;
- static int debugfs_mount_count;
- static bool debugfs_registered;
- 
--static struct inode *debugfs_get_inode(struct super_block *sb, umode_t mode, dev_t dev,
--				       void *data, const struct file_operations *fops)
-+static struct inode *debugfs_get_inode(struct super_block *sb, umode_t mode,
-+				dev_t dev,  void *data,
-+				const struct file_operations *fops)
- 
- {
- 	struct inode *inode = new_inode(sb);
-@@ -110,8 +111,9 @@ static int debugfs_link(struct inode *dir, struct dentry *dentry, umode_t mode,
- 	return debugfs_mknod(dir, dentry, mode, 0, data, NULL);
- }
- 
--static int debugfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
--			  void *data, const struct file_operations *fops)
-+static int debugfs_create(struct inode *dir, struct dentry *dentry,
-+					umode_t mode, void *data,
-+					const struct file_operations *fops)
- {
- 	int res;
- 
+Sorry for the delay on my side as well. I am now working on reverting 
+Ben's original patch and doing some testing. Will be sending you a pull 
+request still tonight.
+
+Thanks,
+
 -- 
-1.7.9.5
-
+Jiri Kosina
+SUSE Labs
