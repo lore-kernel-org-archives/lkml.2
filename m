@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201Ab2JZOGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:06:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9215 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933095Ab2JZOGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:06:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
-   d="scan'208";a="240559301"
-Date: Fri, 26 Oct 2012 22:06:07 +0800
-From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
-Message-ID: <20121026140607.GB1324@yliu-dev.sh.intel.com>
-References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1351243827.8719.5.camel@wall-e>
- <20121026123321.GG2778@yliu-dev.sh.intel.com>
- <1351258786.10060.5.camel@wall-e>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351258786.10060.5.camel@wall-e>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933158Ab2JZOIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:08:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43827 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab2JZOIH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:08:07 -0400
+Message-ID: <1351260464.16863.80.camel@twins>
+Subject: Re: [PATCH 1/2] numa, mm: drop redundant check in
+ do_huge_pmd_numa_page()
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-mm@kvack.org, Will Deacon <will.deacon@arm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Date: Fri, 26 Oct 2012 16:07:44 +0200
+In-Reply-To: <20121026135750.GA16598@otc-wbsnb-06>
+References: <1351256077-1594-1-git-send-email-kirill.shutemov@linux.intel.com>
+	 <1351256885.16863.62.camel@twins> <20121026134129.GA31306@otc-wbsnb-06>
+	 <1351258992.16863.77.camel@twins> <20121026135750.GA16598@otc-wbsnb-06>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 03:39:46PM +0200, Stefani Seibold wrote:
-> Am Freitag, den 26.10.2012, 20:33 +0800 schrieb Yuanhan Liu:
-> > On Fri, Oct 26, 2012 at 11:30:27AM +0200, Stefani Seibold wrote:
-> > > Am Freitag, den 26.10.2012, 15:56 +0800 schrieb Yuanhan Liu:
-> > > > Say, if we want to allocate a filo with size of 6 bytes, it would be safer
-> > > > to allocate 8 bytes instead of 4 bytes.
-> > > > ----
-> > > > I know it works with rounddown_pow_of_two as well, since size is maintained
-> > > > in the kfifo internal part. But, I'm quite curious why Stefani chose
-> > > > rounddown_pow_of_two. To reduce memory?
-> > > > 
+On Fri, 2012-10-26 at 16:57 +0300, Kirill A. Shutemov wrote:
+> > > Yes, this code will catch it:
 > > > 
-> > > Yes, exactly, if a user do the wrong thing, than the user will get also
-> > > a wrong result, and did not waste memory.
-> > 
-> > But, isn't it better to 'correct' it? ;-)
-> 
-> Both is wrong. This depends on the view. For me it is better to get less
-> and don't wast space. For example: requesting 1025 will yield in your
-> case to a fifo which 2048 elements, which requires double of the memory
-> as expected.
-> 
-> > 
+> > >     /* if an huge pmd materialized from under us just retry later */
+> > >     if (unlikely(pmd_trans_huge(*pmd)))
+> > >             return 0;
 > > > 
-> > > But anyway, if the majority like this patch it is okay for me.
+> > > If the pmd is under splitting it's still a pmd_trans_huge().
 > > 
-> > Sorry, do you mean you are OK with this patch?
-> > 
+> > OK, so then we simply keep taking the same fault until the split is
+> > complete? Wouldn't it be better to wait for it instead of spin on
+> > faults?
 > 
-> I depends not on me, ask for a democratic decisions.
+> IIUC, on next fault we will wait split the page in fallow_page(). 
 
-Since you are the original athour, your comments matter :D
+What follow_page()?, a regular hardware page-fault will not call
+follow_page() afaict, we do a down_read(), find_vma() and call
+handle_mm_fault() -- with a lot of error and corner case checking in
+between.
 
-Thanks,
-Yuanhan Liu
 
