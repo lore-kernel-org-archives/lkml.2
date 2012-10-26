@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966556Ab2JZVIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:08:35 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55875 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966503Ab2JZVId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:08:33 -0400
-Date: Fri, 26 Oct 2012 22:12:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
-Message-ID: <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
-In-Reply-To: <20121026144502.6e94643e@dull>
-References: <20121025121617.617683848@chello.nl>
-	<20121025124832.840241082@chello.nl>
-	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-	<5089F5B5.1050206@redhat.com>
-	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
-	<508A0A0D.4090001@redhat.com>
-	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-	<CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-	<m2pq45qu0s.fsf@firstfloor.org>
-	<508A8D31.9000106@redhat.com>
-	<20121026132601.GC9886@gmail.com>
-	<20121026144502.6e94643e@dull>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934151Ab2JZVKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:10:21 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:40167 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966544Ab2JZVKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 17:10:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to use freezable_schedule()
+Date: Fri, 26 Oct 2012 23:14:17 +0200
+Message-ID: <2566006.UzAQbpOjNQ@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121026180149.GA22421@redhat.com>
+References: <20121023153919.GA16201@redhat.com> <20121026175258.GV11442@htj.dyndns.org> <20121026180149.GA22421@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012 14:45:02 -0400
-Rik van Riel <riel@redhat.com> wrote:
-
-> Intel has an architectural guarantee that the TLB entry causing
-> a page fault gets invalidated automatically. This means
-> we should be able to drop the local TLB invalidation.
+On Friday, October 26, 2012 08:01:49 PM Oleg Nesterov wrote:
+> On 10/26, Tejun Heo wrote:
+> >
+> >  Acked-by: Tejun Heo <tj@kernel.org>
 > 
-> Because of the way other areas of the page fault code work,
-> chances are good that all x86 CPUs do this.  However, if
-> someone somewhere has an x86 CPU that does not invalidate
-> the TLB entry causing a page fault, this one-liner should
-> be easy to revert.
+> Thanks!
+> 
+> > Rafael, sorry that this one doesn't have pm cc'd
+> 
+> Ah, sorry Rafael. Yes, I have read you email, and I was going to
+> add linux-pm but forgot.
+> 
+> > but can you please
+> > pick up this one too?
+> 
+> Please, and thanks.
 
-This does not strike me as a good standard of validation for such a change
+OK, but that will go to Linus in the next batch.
 
-At the very least we should have an ACK from AMD and from VIA, and
-preferably ping RDC and some of the other embedded folks. Given an AMD
-and VIA ACK I'd be fine. I doubt anyone knows any more what Cyrix CPUs
-did or cared about and I imagine H Peter or Linus can answer for
-Transmeta ;-)
-
-Alan
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
