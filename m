@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab2JZAQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:16:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53905 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab2JZAIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 55/85] pinctrl: tegra: set low power mode bank width to 2
-Date: Thu, 25 Oct 2012 17:06:13 -0700
-Message-Id: <20121026000036.645939738@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755195Ab2JZAQh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:16:37 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:9040 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754700Ab2JZAQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:16:33 -0400
+Message-ID: <1351210584.6851.21.camel@lorien2>
+Subject: [PATCH RFT] powerpc: dma-mapping: support debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: benh@kernel.crashing.org, paulus@samba.org, kyungmin.park@samsung.com,
+        m.szyprowski@samsung.com, david@gibson.dropbear.id.au, arnd@arndb.de,
+        andrzej.p@samsung.com
+Cc: linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Thu, 25 Oct 2012 18:16:24 -0600
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-------------------
-
-From: Pritesh Raithatha <praithatha@nvidia.com>
-
-commit 154f3ebf53edcfbe28728452b4ab37a118581125 upstream.
-
-Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 ---
- drivers/pinctrl/pinctrl-tegra.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pinctrl/pinctrl-tegra.c
-+++ b/drivers/pinctrl/pinctrl-tegra.c
-@@ -466,7 +466,7 @@ static int tegra_pinconf_reg(struct tegr
- 		*bank = g->drv_bank;
- 		*reg = g->drv_reg;
- 		*bit = g->lpmd_bit;
--		*width = 1;
-+		*width = 2;
- 		break;
- 	case TEGRA_PINCONF_PARAM_DRIVE_DOWN_STRENGTH:
- 		*bank = g->drv_bank;
+diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+index 7816087..e27e9ad 100644
+--- a/arch/powerpc/include/asm/dma-mapping.h
++++ b/arch/powerpc/include/asm/dma-mapping.h
+@@ -172,6 +172,7 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
+ 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+ 
++	debug_dma_mapping_error(dev, dma_addr);
+ 	if (dma_ops->mapping_error)
+ 		return dma_ops->mapping_error(dev, dma_addr);
+ 
+-- 
+1.7.9.5
+
 
 
