@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab2JZAq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:46:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52561 "EHLO mail.kernel.org"
+	id S1755530Ab2JZAr3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:47:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52521 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab2JZAF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:05:58 -0400
+	id S1752821Ab2JZAFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:05:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>,
-        Jie Liu <jeff.liu@oracle.com>
-Subject: [ 21/31] RDS: fix rds-ping spinlock recursion
-Date: Thu, 25 Oct 2012 17:04:28 -0700
-Message-Id: <20121026000217.117544027@linuxfoundation.org>
+        Elric Fu <elricfu1@gmail.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Miroslav Sabljic <miroslav.sabljic@avl.com>
+Subject: [ 30/31] xHCI: cancel command after command timeout
+Date: Thu, 25 Oct 2012 17:04:37 -0700
+Message-Id: <20121026000218.025251222@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -29,46 +27,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Elric Fu <elricfu1@gmail.com>
 
-From: "jeff.liu" <jeff.liu@oracle.com>
+commit 6e4468b9a0793dfb53eb80d9fe52c739b13b27fd upstream.
 
-[ Upstream commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 ]
+The patch is used to cancel command when the command isn't
+acknowledged and a timeout occurs.
 
-This is the revised patch for fixing rds-ping spinlock recursion
-according to Venkat's suggestions.
+This patch should be backported to kernels as old as 3.0, that contain
+the commit 7ed603ecf8b68ab81f4c83097d3063d43ec73bb8 "xhci: Add an
+assertion to check for virt_dev=0 bug." That commit papers over a NULL
+pointer dereference, and this patch fixes the underlying issue that
+caused the NULL pointer dereference.
 
-RDS ping/pong over TCP feature has been broken for years(2.6.39 to
-3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
-ping/pong which both need to lock "struct sock *sk". However, this
-lock has already been hold before rds_tcp_data_ready() callback is
-triggerred. As a result, we always facing spinlock resursion which
-would resulting in system panic.
-
-Given that RDS ping is only used to test the connectivity and not for
-serious performance measurements, we can queue the pong transmit to
-rds_wq as a delayed response.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Elric Fu <elricfu1@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Miroslav Sabljic <miroslav.sabljic@avl.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/rds/send.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/rds/send.c
-+++ b/net/rds/send.c
-@@ -1121,7 +1121,7 @@ rds_send_pong(struct rds_connection *con
- 	rds_stats_inc(s_send_pong);
+---
+ drivers/usb/host/xhci.c |   26 +++++++++++++++++++-------
+ drivers/usb/host/xhci.h |    3 +++
+ 2 files changed, 22 insertions(+), 7 deletions(-)
+
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1778,6 +1778,7 @@ static int xhci_configure_endpoint(struc
+ 	struct completion *cmd_completion;
+ 	u32 *cmd_status;
+ 	struct xhci_virt_device *virt_dev;
++	union xhci_trb *cmd_trb;
  
- 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
--		rds_send_xmit(conn);
-+		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 	virt_dev = xhci->devs[udev->slot_id];
+@@ -1820,6 +1821,7 @@ static int xhci_configure_endpoint(struc
+ 	}
+ 	init_completion(cmd_completion);
  
- 	rds_message_put(rm);
- 	return 0;
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+@@ -1841,14 +1843,17 @@ static int xhci_configure_endpoint(struc
+ 	/* Wait for the configure endpoint command to complete */
+ 	timeleft = wait_for_completion_interruptible_timeout(
+ 			cmd_completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for %s command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal",
+ 				ctx_change == 0 ?
+ 					"configure endpoint" :
+ 					"evaluate context");
+-		/* FIXME cancel the configure endpoint command */
++		/* cancel the configure endpoint command */
++		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+@@ -2781,8 +2786,10 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 	unsigned long flags;
+ 	int timeleft;
+ 	int ret;
++	union xhci_trb *cmd_trb;
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_slot_control(xhci, TRB_ENABLE_SLOT, 0);
+ 	if (ret) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -2794,12 +2801,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd,
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the enable slot request */
+-		return 0;
++		/* cancel the enable slot request */
++		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 	}
+ 
+ 	if (!xhci->slot_id) {
+@@ -2860,6 +2867,7 @@ int xhci_address_device(struct usb_hcd *
+ 	struct xhci_slot_ctx *slot_ctx;
+ 	struct xhci_input_control_ctx *ctrl_ctx;
+ 	u64 temp_64;
++	union xhci_trb *cmd_trb;
+ 
+ 	if (!udev->slot_id) {
+ 		xhci_dbg(xhci, "Bad Slot ID %d\n", udev->slot_id);
+@@ -2898,6 +2906,7 @@ int xhci_address_device(struct usb_hcd *
+ 	xhci_dbg_ctx(xhci, virt_dev->in_ctx, 2);
+ 
+ 	spin_lock_irqsave(&xhci->lock, flags);
++	cmd_trb = xhci->cmd_ring->dequeue;
+ 	ret = xhci_queue_address_device(xhci, virt_dev->in_ctx->dma,
+ 					udev->slot_id);
+ 	if (ret) {
+@@ -2910,7 +2919,7 @@ int xhci_address_device(struct usb_hcd *
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
+@@ -2918,7 +2927,10 @@ int xhci_address_device(struct usb_hcd *
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the address device command */
++		/* cancel the address device command */
++		ret = xhci_cancel_cmd(xhci, NULL, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1111,6 +1111,9 @@ struct xhci_td {
+ 	union xhci_trb		*last_trb;
+ };
+ 
++/* xHCI command default timeout value */
++#define XHCI_CMD_DEFAULT_TIMEOUT       (5 * HZ)
++
+ /* command descriptor */
+ struct xhci_cd {
+ 	struct list_head	cancel_cmd_list;
 
 
