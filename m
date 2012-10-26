@@ -1,173 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab2JZCfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 22:35:39 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:33839 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab2JZCfi (ORCPT
+	id S1754861Ab2JZCkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 22:40:07 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:46156 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2JZCkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 22:35:38 -0400
+	Thu, 25 Oct 2012 22:40:06 -0400
+Date: Fri, 26 Oct 2012 03:39:16 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: Kdump with signed images
+Message-ID: <20121026023916.GA16762@srcf.ucam.org>
+References: <871ugqb4gj.fsf@xmission.com>
+ <20121023131854.GA16496@redhat.com>
+ <20121023145920.GD16496@redhat.com>
+ <87fw552mb4.fsf_-_@xmission.com>
+ <20121024173651.GE1821@redhat.com>
+ <1351145401.18115.78.camel@falcor>
+ <20121025141048.GD9377@redhat.com>
+ <1351190421.18115.92.camel@falcor>
+ <20121025185520.GA17995@redhat.com>
+ <1351214158.18115.186.camel@falcor>
 MIME-Version: 1.0
-In-Reply-To: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
-References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
-Date: Fri, 26 Oct 2012 08:05:36 +0530
-Message-ID: <CAM4v1pP2V9Rc9jQkEmsb5D-Mvq73naBj6BJq5Y+eWQNt1v08OA@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/13] sched: Integrating Per-entity-load-tracking
- with the core scheduler
-From: Preeti Murthy <preeti.lkml@gmail.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351214158.18115.186.camel@falcor>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The benchmark:
+On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
 
-/*
- * test.c - Simulate workloads that load the CPU differently
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; version 2 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
- * USA
- */
+> On a running system, the package installer, after verifying the package
+> integrity, would install each file with the associated 'security.ima'
+> extended attribute.  The 'security.evm' digital signature would be
+> installed with an HMAC, calculated using a system unique key. 
 
-/*
- * This workload spawns threads which request for allocation of a
- * memory chunk,write to it and free it.The duty cycle of these threads
- * can be varied.The idea is to simulate tasks which load the cpu
- * to different extents.
- */
+The idea isn't to prevent /sbin/kexec from being modified after 
+installation - it's to prevent it from being possible to install a 
+system that has a modified /sbin/kexec. Leaving any part of this up to 
+the package installer means that it doesn't solve the problem we're 
+trying to solve here. It must be impossible for the kernel to launch any 
+/sbin/kexec that hasn't been signed by a trusted key that's been built 
+into the kernel, and it must be impossible for anything other than 
+/sbin/kexec to make the kexec system call.
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <pthread.h>
-#include <string.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include "malloc.h"
-
-/* Variable entities */
-static unsigned int seconds;
-static unsigned int threads;
-static unsigned int mem_chunk_size;
-static unsigned int sleep_at;
-static unsigned int sleep_interval;
-
-typedef size_t mem_slot_t;/* 8 bytes */
-static unsigned int slot_size = sizeof(mem_slot_t);
-
-/* Other parameters */
-static volatile int start;
-static time_t start_time;
-static unsigned int records_read;
-pthread_mutex_t records_count_lock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static unsigned int write_to_mem(void)
-{
-    int i, j;
-    mem_slot_t *scratch_pad, *temp;
-    mem_chunk_size = slot_size * 256;
-    mem_slot_t *end;
-
-    /* The below two parameters ensure that it is 10% workload
-     * with a duty cycle of 10ms.The number of records read in
-     * 1s without sleep was observed and appropriately calculated
-     * for 1ms.This number turned out to be 1228.
-     */
-    sleep_at = 1228; /* sleep for every 1228 records */
-    sleep_interval = 9000; /* sleep for 9 ms */
-
-    for (i=0; start == 1; i++)
-    {
-        scratch_pad = (mem_slot_t *)malloc(mem_chunk_size);
-        if (scratch_pad == NULL) {
-            fprintf(stderr,"Could not allocate memory\n");
-            exit(1);
-        }
-        end = scratch_pad + (mem_chunk_size / slot_size);
-        for (temp = scratch_pad, j=0; temp < end; temp++, j++)
-            *temp = (mem_slot_t)j;
-
-        free(scratch_pad);
-
-        if (sleep_at && !(i % sleep_at))
-            usleep(sleep_interval);
-    }
-    return (i);
-}
-
-static void *
-thread_run(void *arg)
-{
-
-    unsigned int records_local;
-
-    /* Wait for the start signal */
-
-    while (start == 0);
-
-    records_local = write_to_mem();
-
-    pthread_mutex_lock(&records_count_lock);
-    records_read += records_local;
-    pthread_mutex_unlock(&records_count_lock);
-
-    return NULL;
-}
-
-static void start_threads()
-{
-    double diff_time;
-    unsigned int i;
-    int err;
-    threads = 8;
-    seconds = 10;
-
-    pthread_t thread_array[threads];
-    for (i = 0; i < threads; i++) {
-        err = pthread_create(&thread_array[i], NULL, thread_run, NULL);
-        if (err) {
-            fprintf(stderr, "Error creating thread %d\n", i);
-            exit(1);
-        }
-    }
-    start_time = time(NULL);
-    start = 1;
-    sleep(seconds);
-    start = 0;
-    diff_time = difftime(time(NULL), start_time);
-
-    for (i = 0; i < threads; i++) {
-        err = pthread_join(thread_array[i], NULL);
-        if (err) {
-            fprintf(stderr, "Error joining thread %d\n", i);
-            exit(1);
-        }
-    }
-     printf("%u records/s\n",
-        (unsigned int) (((double) records_read)/diff_time));
-
-}
-int main()
-{
-    start_threads();
-    return 0;
-}
-
-Regards
-Preeti U Murthy
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
