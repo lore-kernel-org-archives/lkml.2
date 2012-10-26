@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966431Ab2JZUe2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:34:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50688 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759105Ab2JZUa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759107Ab2JZUa2 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 26 Oct 2012 16:30:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51999 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966414Ab2JZUaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:30:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="211355414"
+   d="scan'208";a="233093563"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 13/33] perf, x86: Avoid checkpointed counters causing excessive TSX aborts v3
-Date: Fri, 26 Oct 2012 13:29:55 -0700
-Message-Id: <1351283415-13170-14-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/33] perf, x86: Support the TSX intx/intx_cp qualifiers v2
+Date: Fri, 26 Oct 2012 13:29:46 -0700
+Message-Id: <1351283415-13170-5-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,82 +25,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-With checkpointed counters there can be a situation where the counter
-is overflowing, aborts the transaction, is set back to a non overflowing
-checkpoint, causes interupt. The interrupt doesn't see the overflow
-because it has been checkpointed.  This is then a spurious PMI, typically with a
-ugly NMI message.  It can also lead to excessive aborts.
+Implement the TSX transaction and checkpointed transaction qualifiers for
+Haswell. This allows e.g. to profile the number of cycles in transactions.
 
-Avoid this problem by:
-- Using the full counter width for counting counters (previous patch)
-- Forbid sampling for checkpointed counters. It's not too useful anyways,
-checkpointing is mainly for counting.
-- On a PMI always set back checkpointed counters to zero.
+The checkpointed qualifier requires forcing the event to
+counter 2, implement this with a custom constraint for Haswell.
 
-v2: Add unlikely. Add comment
-v3: Allow large sampling periods with CP for KVM
+Also add sysfs format attributes for intx/intx_cp
+
+[Updated from earlier version that used generic attributes, now does
+raw + sysfs formats]
+v2: Moved bad hunk. Forbid some bad combinations.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   33 ++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
+ 1 files changed, 61 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 9bff694..bbd00cc 100644
+index 1770fb0..9502c19 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1079,6 +1079,17 @@ static void intel_pmu_enable_event(struct perf_event *event)
- int intel_pmu_save_and_restart(struct perf_event *event)
- {
- 	x86_perf_event_update(event);
-+	/*
-+	 * For a checkpointed counter always reset back to 0.  This
-+	 * avoids a situation where the counter overflows, aborts the
-+	 * transaction and is then set back to shortly before the
-+	 * overflow, and overflows and aborts again.
-+	 */
-+	if (unlikely(event->hw.config & HSW_INTX_CHECKPOINTED)) {
-+		/* No race with NMIs because the counter should not be armed */
-+		wrmsrl(event->hw.event_base, 0);
-+		local64_set(&event->hw.prev_count, 0);
-+	}
- 	return x86_perf_event_set_period(event);
- }
+@@ -13,6 +13,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
  
-@@ -1162,6 +1173,15 @@ again:
- 		x86_pmu.drain_pebs(regs);
- 	}
++#include <asm/cpufeature.h>
+ #include <asm/hardirq.h>
+ #include <asm/apic.h>
  
-+	/*
-+ 	 * To avoid spurious interrupts with perf stat always reset checkpointed
-+ 	 * counters.
-+ 	 *
-+	 * XXX move somewhere else.
-+	 */
-+	if (cpuc->events[2] && (cpuc->events[2]->hw.config & HSW_INTX_CHECKPOINTED))
-+		status |= (1ULL << 2);
+@@ -1604,6 +1605,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
+ PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
+ PMU_FORMAT_ATTR(inv,	"config:23"	);
+ PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
++PMU_FORMAT_ATTR(intx,	"config:32"	);
++PMU_FORMAT_ATTR(intx_cp,"config:33"	);
+ 
+ static struct attribute *intel_arch_formats_attr[] = {
+ 	&format_attr_event.attr,
+@@ -1615,6 +1618,44 @@ static struct attribute *intel_arch_formats_attr[] = {
+ 	NULL,
+ };
+ 
++static int hsw_hw_config(struct perf_event *event)
++{
++	int ret = intel_pmu_hw_config(event);
 +
- 	for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
- 		struct perf_event *event = cpuc->events[bit];
- 
-@@ -1635,6 +1655,19 @@ static int hsw_hw_config(struct perf_event *event)
- 	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
- 	      event->attr.precise_ip > 0))
- 		return -EIO;
++	if (ret)
++		return ret;
++	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
++		return 0;
++	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
++
++	/* 
++ 	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
++ 	 */
++	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
++	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
++	      event->attr.precise_ip > 0))
++		return -EIO;
++	return 0;
++}
++
++static struct event_constraint counter2_constraint = 
++			EVENT_CONSTRAINT(0, 0x4, 0);
++
++static struct event_constraint *
++hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
++{
++	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
++
++	/* Handle special quirk on intx_checkpointed only in counter 2 */
 +	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		/*
-+		 * Sampling of checkpointed events can cause situations where
-+		 * the CPU constantly aborts because of a overflow, which is
-+		 * then checkpointed back and ignored. Forbid checkpointing
-+		 * for sampling.
-+		 *
-+		 * But still allow a long sampling period, so that perf stat
-+		 * from KVM works.
-+		 */
-+		if (event->attr.sample_period < 0x7fffffff)
-+			return -EIO;
++		if (c->idxmsk64 & (1U << 2))
++			return &counter2_constraint;
++		return &emptyconstraint;
 +	}
- 	return 0;
- }
++
++	return c;
++}
++
+ static __initconst const struct x86_pmu core_pmu = {
+ 	.name			= "core",
+ 	.handle_irq		= x86_pmu_handle_irq,
+@@ -1753,6 +1794,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
+ 	NULL,
+ };
+ 
++/* Arch3 + TSX support */
++static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
++	&format_attr_event.attr,
++	&format_attr_umask.attr,
++	&format_attr_edge.attr,
++	&format_attr_pc.attr,
++	&format_attr_any.attr,
++	&format_attr_inv.attr,
++	&format_attr_cmask.attr,
++	&format_attr_intx.attr,
++	&format_attr_intx_cp.attr,
++
++	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
++	NULL,
++};
++
++
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -2126,6 +2184,9 @@ __init int intel_pmu_init(void)
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
+ 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
+ 
++		x86_pmu.hw_config = hsw_hw_config;
++		x86_pmu.get_event_constraints = hsw_get_event_constraints;
++		x86_pmu.format_attrs = intel_hsw_formats_attr;
+ 		pr_cont("Haswell events, ");
+ 		break;
  
 -- 
 1.7.7.6
