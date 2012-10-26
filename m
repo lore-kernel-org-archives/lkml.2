@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab2JZALT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:11:19 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:39609 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab2JZALQ (ORCPT
+	id S1755043Ab2JZALa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:11:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59897 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab2JZAL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:11:16 -0400
-Message-ID: <5089D520.6020106@gmail.com>
-Date: Thu, 25 Oct 2012 20:11:12 -0400
-From: Ric Wheeler <ricwheeler@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Thu, 25 Oct 2012 20:11:26 -0400
+Date: Thu, 25 Oct 2012 17:11:19 -0700
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Fengguang Wu <fengguang.wu@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ 08/31] use clamp_t in UNAME26 fix
+Message-ID: <20121026001119.GA3028@elie.Belkin>
+References: <20121026000214.941721299@linuxfoundation.org>
+ <20121026000215.817875317@linuxfoundation.org>
 MIME-Version: 1.0
-To: Eric Sandeen <sandeen@redhat.com>, "Ted Ts'o" <tytso@mit.edu>
-CC: linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508740B2.2030401@redhat.com> <87txtkld4h.fsf@spindle.srvr.nix>
-In-Reply-To: <87txtkld4h.fsf@spindle.srvr.nix>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121026000215.817875317@linuxfoundation.org>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 12:15 AM, Nix wrote:
-> On 24 Oct 2012, Eric Sandeen uttered the following:
+Hi,
+
+Greg Kroah-Hartman wrote:
+
+> commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
 >
->> On 10/23/12 3:57 PM, Nix wrote:
->>> The only unusual thing about the filesystems on this machine are that
->>> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
->>> 'nobarrier':
->> I should have read more.  :(  More questions follow:
->>
->> * Does the Areca have a battery backed write cache?
-> Yes (though I'm not powering off, just rebooting). Battery at 100% and
-> happy, though the lack of power-off means it's not actually getting
-> used, since the cache is obviously mains-backed as well.
+> The min/max call needed to have explicit types on some architectures
+> (e.g. mn10300). Use clamp_t instead to avoid the warning:
+>
+>   kernel/sys.c: In function 'override_release':
+>   kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[...]
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -1152,7 +1152,7 @@ static int override_release(char __user
+>  			rest++;
+>  		}
+>  		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+> -		copy = min(sizeof(buf), max_t(size_t, 1, len));
+> +		copy = clamp_t(size_t, len, 1, sizeof(buf));
+>  		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
 
-Sending this just to you two to avoid embarrassing myself if I misread the 
-thread, but....
-
-Can we reproduce this with any other hardware RAID card? Or with MD?
-
-If we cannot reproduce this in other machines, why assume this is an ext4 issue 
-and not a hardware firmware bug?
-
-As an ex-storage guy, this really smells like the hardware raid card might be 
-misleading us....
-
-ric
-
-
-
+Does this have any effect at runtime?  If not, why is it needed for
+stable kernels?
