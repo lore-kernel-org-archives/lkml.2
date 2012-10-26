@@ -1,122 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2JZFfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 01:35:05 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45016 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab2JZFfC (ORCPT
+	id S1756236Ab2JZFj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:39:28 -0400
+Received: from www84.your-server.de ([213.133.104.84]:60245 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab2JZFj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 01:35:02 -0400
-X-AuditID: 9c930197-b7c4aae000004160-4c-508a21031580
-From: Namhyung Kim <namhyung@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: mingo@kernel.org, tglx@linutronix.de, acme@ghostprotocols.net,
-        davem@davemloft.net, torvalds@linux-foundation.org, paulus@samba.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 2/5] tools: Honour the O= flag when tool build called from a higher Makefile
-References: <20121019165558.23037.40181.stgit@warthog.procyon.org.uk>
-	<20121019165616.23037.35557.stgit@warthog.procyon.org.uk>
-Date: Fri, 26 Oct 2012 14:34:59 +0900
-In-Reply-To: <20121019165616.23037.35557.stgit@warthog.procyon.org.uk> (David
-	Howells's message of "Fri, 19 Oct 2012 17:56:16 +0100")
-Message-ID: <87haph94os.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 26 Oct 2012 01:39:27 -0400
+Message-ID: <1351229911.12511.1.camel@wall-e>
+Subject: Re: [PATCH] kfifo: remove unnecessary type check
+From: Stefani Seibold <stefani@seibold.net>
+To: Yuanhan Liu <yliu.null@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 26 Oct 2012 07:38:31 +0200
+In-Reply-To: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
+References: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Oct 2012 17:56:16 +0100, David Howells wrote:
-> Honour the O= flag that was passed to a higher level Makefile and then passed
-> down as part of a tool build.
->
-> To make this work, the top-level Makefile passes the original O= flag and
-> subdir=tools to the tools/Makefile, and that in turn passes
-> subdir=$(O)/$(subdir)/foodir when building tool foo in directory
-> $(O)/$(subdir)/foodir (where the intervening slashes aren't added if an
-> element is missing).
->
-> For example, take perf.  This is found in tools/perf/.  Assume we're building
-> into directory ~/zebra/, so we pass O=~/zebra to make.  Dependening on where
-> we run the build from, we see:
->
-> 	make run in dir		$(OUTPUT) dir
-> 	=======================	==================
-> 	linux			~/zebra/tools/perf/
-> 	linux/tools		~/zebra/perf/
-> 	linux/tools/perf	~/zebra/
->
-> and if O= is not set, we get:
->
-> 	make run in dir		$(OUTPUT) dir
-> 	=======================	==================
-> 	linux			linux/tools/perf/
-> 	linux/tools		linux/tools/perf/
-> 	linux/tools/perf	linux/tools/perf/
->
-> The output directories are created by the descend function if they don't
-> already exist.
+Am Freitag, den 26.10.2012, 09:46 +0800 schrieb Yuanhan Liu:
+> From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> 
+> Firstly, this kind of type check doesn't work. It does something similay
+> like following:
+> 	void * __dummy = NULL;
+> 	__buf = __dummy;
+> 
+> __dummy is defined as void *. Thus it will not trigger warnings as
+> expected.
+> 
+> Second, we don't need that kind of check. Since the prototype
+> of __kfifo_out is:
+> 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
+> 
+> buf is defined as void *, so we don't need do the type check. Remove it.
+> 
+> LINK: https://lkml.org/lkml/2012/10/25/386
+> LINK: https://lkml.org/lkml/2012/10/25/584
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
+> Cc: Stefani Seibold <stefani@seibold.net>
+> Cc: Fengguang Wu <fengguang.wu@intel.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> ---
+>  include/linux/kfifo.h | 20 --------------------
+>  1 file changed, 20 deletions(-)
+> 
+> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> index 10308c6..b8c1d03 100644
+> --- a/include/linux/kfifo.h
+> +++ b/include/linux/kfifo.h
+> @@ -390,10 +390,6 @@ __kfifo_int_must_check_helper( \
+>  	unsigned int __ret; \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) { \
+> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> -		__dummy = (typeof(__val))NULL; \
+> -	} \
+>  	if (__recsize) \
+>  		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
+>  			__recsize); \
+> @@ -432,8 +428,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned int __ret; \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) \
+> -		__val = (typeof(__tmp->ptr))0; \
+>  	if (__recsize) \
+>  		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
+>  			__recsize); \
+> @@ -473,8 +467,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned int __ret; \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) \
+> -		__val = (typeof(__tmp->ptr))NULL; \
+>  	if (__recsize) \
+>  		__ret = __kfifo_out_peek_r(__kfifo, __val, sizeof(*__val), \
+>  			__recsize); \
+> @@ -512,10 +504,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned long __n = (n); \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) { \
+> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> -		__dummy = (typeof(__buf))NULL; \
+> -	} \
+>  	(__recsize) ?\
+>  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+>  	__kfifo_in(__kfifo, __buf, __n); \
+> @@ -565,10 +553,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned long __n = (n); \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) { \
+> -		typeof(__tmp->ptr) __dummy = NULL; \
+> -		__buf = __dummy; \
+> -	} \
+>  	(__recsize) ?\
+>  	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
+>  	__kfifo_out(__kfifo, __buf, __n); \
+> @@ -777,10 +761,6 @@ __kfifo_uint_must_check_helper( \
+>  	unsigned long __n = (n); \
+>  	const size_t __recsize = sizeof(*__tmp->rectype); \
+>  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> -	if (0) { \
+> -		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
+> -		__buf = __dummy; \
+> -	} \
+>  	(__recsize) ? \
+>  	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
+>  	__kfifo_out_peek(__kfifo, __buf, __n); \
 
-This is my test:
-
-  namhyung@sejong:~$ cd project/linux
-  namhyung@sejong:linux$ make O=~/build/zebra tools/perf
-  /bin/sh: line 0: cd: /home/namhyung/build/zebra: No such file or directory
-  Makefile:121: *** output directory "/home/namhyung/build/zebra" does not exist.  Stop.
-  
-  namhyung@sejong:tools$ mkdir ~/build/zebra
-  namhyung@sejong:linux$ make O=~/build/zebra tools/perf
-    HOSTCC  scripts/basic/fixdep
-    GEN     /home/namhyung/build/zebra/Makefile
-    HOSTCC  scripts/kconfig/conf.o
-    HOSTCC  scripts/kconfig/zconf.tab.o
-    HOSTLD  scripts/kconfig/conf
-  scripts/kconfig/conf --silentoldconfig Kconfig
-  ***
-  *** Configuration file ".config" not found!
-  ***
-  *** Please run some configurator (e.g. "make oldconfig" or
-  *** "make menuconfig" or "make xconfig").
-  ***
-  make[3]: *** [silentoldconfig] Error 1
-  make[2]: *** [silentoldconfig] Error 2
-      DESCEND perf
-      MKDIR /home/namhyung/build/zebra/tools/perf/arch/
-      MKDIR /home/namhyung/build/zebra/tools/perf/arch/x86/util/
-      MKDIR /home/namhyung/build/zebra/tools/perf/bench/
-      MKDIR /home/namhyung/build/zebra/tools/perf/scripts/perl/Perf-Trace-Util/
-      MKDIR /home/namhyung/build/zebra/tools/perf/scripts/python/Perf-Trace-Util/
-      MKDIR /home/namhyung/build/zebra/tools/perf/ui/
-      MKDIR /home/namhyung/build/zebra/tools/perf/ui/browsers/
-      MKDIR /home/namhyung/build/zebra/tools/perf/ui/gtk/
-      MKDIR /home/namhyung/build/zebra/tools/perf/ui/stdio/
-      MKDIR /home/namhyung/build/zebra/tools/perf/ui/tui/
-      MKDIR /home/namhyung/build/zebra/tools/perf/util/
-      MKDIR /home/namhyung/build/zebra/tools/perf/util/scripting-engines/
-  PERF_VERSION = 3.7.rc2.1655.g54fa2b.dirty
-      GEN /home/namhyung/build/zebra/tools/perf/common-cmds.h
-      * new build flags or prefix
-      CC /home/namhyung/build/zebra/tools/perf/perf.o
-      ...
-
-This looks ok but it'd be better if we can skip the config check when
-building tools IMHO.
+Did you tried to compile the whole kernel including all the drivers with
+your patch?
 
 
-  namhyung@sejong:linux cd tools
-  
-  namhyung@sejong:tools$ make O=~/build/zebra perf
-      DESCEND perf
-      ...
-      * new build flags or prefix
-      CC /home/namhyung/build/zebra/perf.o
-      ...
-
-This looks not good as it doesn't build perf into
-~/build/zebra/perf/perf.o.
-
-Thanks,
-Namhyung
