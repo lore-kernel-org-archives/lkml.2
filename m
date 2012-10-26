@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965326Ab2JZQ3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:29:05 -0400
+	id S965355Ab2JZQ3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:29:16 -0400
 Received: from mail-wi0-f170.google.com ([209.85.212.170]:58927 "EHLO
 	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965274Ab2JZQ3D (ORCPT
+	with ESMTP id S965257Ab2JZQ3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:29:03 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Jovi Zhang <bookjovi@gmail.com>, K Prasad <prasad@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] powerpc/perf: hw breakpoints return ENOSPC
-Date: Fri, 26 Oct 2012 18:28:56 +0200
-Message-Id: <1351268936-2956-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 26 Oct 2012 12:29:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <508A9974.2090403@tilera.com>
+References: <CADCVGbTDD-4WOVJWwaGBvay5=of=3VKBCVacrrW-z12BYZ1xbQ@mail.gmail.com>
+ <CAErSpo7mcDkWUhUBvnZ6P+5TOYsE=j6zB7MHqfY1wvqyyE1CBQ@mail.gmail.com> <508A9974.2090403@tilera.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 26 Oct 2012 10:28:52 -0600
+Message-ID: <CAErSpo6ozXuJcca0piSuoQwHJ3LfxTw8nsy+8oa=QmJ98_Ofug@mail.gmail.com>
+Subject: Re: PCIe IO space support on Tilera GX: Is there any one who can
+ confirm my modification to fix it is OK?
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Cyberman Wu <cypher.w@gmail.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Neuling <mikey@neuling.org>
+On Fri, Oct 26, 2012 at 8:08 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-I've been trying to get hardware breakpoints with perf to work on POWER7
-but I'm getting the following:
+> Cyberman: it seems like your bias hack is working for you.  But, as Bjorn
+> says, this sounds like a driver bug.  What happens if you just revert your
+> changes, but then in mvsas.c change the "if (!res_start || !res_len)" to
+> just say "if (!res_len)"?  That seems like the true error test.  If that
+> works, you should submit that change to the community.
 
-  % perf record -e mem:0x10000000 true
+I don't *think* that is going to be enough, even with the kernel that
+has some I/O space support, because both devices are assigned
+identical resources:
 
-    Error: sys_perf_event_open() syscall returned with 28 (No space left on device).  /bin/dmesg may provide additional information.
+  pci 0000:01:00.0: BAR 2: assigned [io  0x0000-0x007f]
+  pci 0001:01:00.0: BAR 2: assigned [io  0x0000-0x007f]
 
-    Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+The I/O space support that's there is broken because we think the same
+I/O range is available on both root buses, which is probably not the
+case:
 
-  true: Terminated
+  pci_bus 0000:00: resource 0 [io  0x0000-0xffffffff]
+  pci_bus 0001:00: resource 0 [io  0x0000-0xffffffff]
 
-(FWIW adding -a and it works fine)
+If mvsas really doesn't need the I/O BAR, I think it's likely that
+making it use pci_enable_device_mem() will make both devices work even
+without I/O space support in the kernel.
 
-Debugging it seems that __reserve_bp_slot() is returning ENOSPC because
-it thinks there are no free breakpoint slots on this CPU.
+> Bjorn et al: does it seem reasonable to add a bias to the mappings so that
+> we never report a zero value as valid?  This may be sufficiently defensive
+> programming that it's just the right thing to do regardless of whether
+> drivers are technically at fault or not.  If so, what's a good bias?  (I'm
+> inclined to think 64K rather than 4K.)
 
-I have a 2 CPUs, so perf userspace is doing two perf_event_open syscalls
-to add a counter to each CPU [1].  The first syscall succeeds but the
-second is failing.
+I/O space is very limited to begin with (many architectures only
+*have* 64K), so I hesitate to add a bias in the PCI core.  But we do
+something similar in arch_remove_reservations(), and I think you could
+implement it that way if you wanted to.
 
-On this second syscall, fetch_bp_busy_slots() sets slots.pinned to be 1,
-despite there being no breakpoint on this CPU.  This is because the call
-the task_bp_pinned, checks all CPUs, rather than just the current CPU.
-POWER7 only has one hardware breakpoint per CPU (ie. HBP_NUM=1), so we
-return ENOSPC.
-
-The following patch fixes this by checking the associated CPU for each
-breakpoint in task_bp_pinned.  I'm not familiar with this code, so it's
-provided as a reference to the above issue.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Ellerman <michael@ellerman.id.au>
-Cc: Jovi Zhang <bookjovi@gmail.com>
-Cc: K Prasad <prasad@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/28857.1345091034@neuling.org
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/events/hw_breakpoint.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 9a7b487..fe8a916 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -111,14 +111,16 @@ static unsigned int max_task_bp_pinned(int cpu, enum bp_type_idx type)
-  * Count the number of breakpoints of the same type and same task.
-  * The given event must be not on the list.
-  */
--static int task_bp_pinned(struct perf_event *bp, enum bp_type_idx type)
-+static int task_bp_pinned(int cpu, struct perf_event *bp, enum bp_type_idx type)
- {
- 	struct task_struct *tsk = bp->hw.bp_target;
- 	struct perf_event *iter;
- 	int count = 0;
- 
- 	list_for_each_entry(iter, &bp_task_head, hw.bp_list) {
--		if (iter->hw.bp_target == tsk && find_slot_idx(iter) == type)
-+		if (iter->hw.bp_target == tsk &&
-+		    find_slot_idx(iter) == type &&
-+		    cpu == iter->cpu)
- 			count += hw_breakpoint_weight(iter);
- 	}
- 
-@@ -141,7 +143,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		if (!tsk)
- 			slots->pinned += max_task_bp_pinned(cpu, type);
- 		else
--			slots->pinned += task_bp_pinned(bp, type);
-+			slots->pinned += task_bp_pinned(cpu, bp, type);
- 		slots->flexible = per_cpu(nr_bp_flexible[type], cpu);
- 
- 		return;
-@@ -154,7 +156,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		if (!tsk)
- 			nr += max_task_bp_pinned(cpu, type);
- 		else
--			nr += task_bp_pinned(bp, type);
-+			nr += task_bp_pinned(cpu, bp, type);
- 
- 		if (nr > slots->pinned)
- 			slots->pinned = nr;
-@@ -188,7 +190,7 @@ static void toggle_bp_task_slot(struct perf_event *bp, int cpu, bool enable,
- 	int old_idx = 0;
- 	int idx = 0;
- 
--	old_count = task_bp_pinned(bp, type);
-+	old_count = task_bp_pinned(cpu, bp, type);
- 	old_idx = old_count - 1;
- 	idx = old_idx + weight;
- 
--- 
-1.7.5.4
-
+Bjorn
