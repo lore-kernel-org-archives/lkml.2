@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750881Ab2JZECf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:02:35 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59937 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab2JZECd convert rfc822-to-8bit (ORCPT
+	id S1751118Ab2JZENp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:13:45 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:37589 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab2JZENo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:02:33 -0400
-Date: Thu, 25 Oct 2012 23:02:18 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH]Documentation:Chinese translation of
- Documentation/arm64/booting.txt
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Tekkaman Ninja <tekkamanninja@gmail.com>, Harry Wei <harryxiyou@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel@vger.linux-kernel.cn
-References: <20121024155647.GA6567@Super-MAGI>
-	<CAHkRjk7_KC4OceuRw5TEoKYNv9BNVrJ6MY5nYw1qpDtW+cG8_A@mail.gmail.com>
-In-Reply-To: <CAHkRjk7_KC4OceuRw5TEoKYNv9BNVrJ6MY5nYw1qpDtW+cG8_A@mail.gmail.com>
-	(from catalin.marinas@arm.com on Wed Oct 24 11:11:36 2012)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1351224138.20232.1@driftwood>
+	Fri, 26 Oct 2012 00:13:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: hpa@zytor.com, len.brown@intel.com, fenghua.yu@intel.com, x86@kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca, tglx@linutronix.de,
+        mingo@elte.hu, vgoyal@redhat.com
+References: <5085B0D0.9020508@zytor.com> <87mwze8abu.fsf@xmission.com>
+	<5085E663.6040307@zytor.com>
+	<20121026.122406.13396329.d.hatayama@jp.fujitsu.com>
+Date: Thu, 25 Oct 2012 21:13:25 -0700
+In-Reply-To: <20121026.122406.13396329.d.hatayama@jp.fujitsu.com> (HATAYAMA
+	Daisuke's message of "Fri, 26 Oct 2012 12:24:06 +0900 (JST)")
+Message-ID: <87r4oloopm.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19zO37pogBdHqFyuBUzv0SzFLWdzNKy/hM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2012 11:11:36 AM, Catalin Marinas wrote:
-> 2012/10/24 Tekkaman Ninja <tekkamanninja@gmail.com>:
-> > This is a Chinese translated version of
-> > Documentation/arm64/booting.txt
-> >
-> > Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
-> 
-> Same as my comment on the memory.txt patch, I don't understand what 
-> it
-> says, so you need to keep it up to date.
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
 
-I have a similar problem: I can't read translations to languages I 
-don't speak. I argued for putting them on the web way back when, but 
-Greg Kroah-Hartman incorporated stuff he can't read either into the 
-Documentation directory.
+> From: "H. Peter Anvin" <hpa@zytor.com>
+> Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
+> Date: Mon, 22 Oct 2012 17:35:47 -0700
+>
+>> On 10/22/2012 02:29 PM, Eric W. Biederman wrote:
+>>>>
+>>>> As I said, I thought Fenghua tried that but it didn't work,
+>>>> experimentally.
+>>>
+>>> Fair enough.  You described the problem with clearing bit 8 in a weird
+>>> way.
+>>>
+>>> If the best we can muster are fuzzy memories it may be worth
+>>> revisiting.
+>>> Perhaps it works on enough cpu models to be interesting.
+>>>
+>> 
+>> It isn't fuzzy memories... this was done as late as 1-2 months ago.  I
+>> just don't know the details.
+>> 
+>> Fenghua, could you help fill us in?
+>> 
+>
+> I overlooked completely the fact that BSP flag is rewritable.
+>
+> I tried Eric's suggestion using attached test programs and saw it
+> worked fine at least on the three cpus around me below:
+>
+> - Intel(R) Xeon(R) CPU E7- 4820  @ 2.00GHz
+> - Intel(R) Xeon(R) CPU E7- 8870  @ 2.40GHz
+> - Intel(R) Xeon(TM) CPU 1.80GHz
+>   - 32 bits CPU
+>
+> Next I found the description about this in 8.4.2, IASDM Vol.3:
+>
+>   The MP initialization protocol imposes the following requirements
+>   and restrictions on the system:
+>
+>   * The MP protocol is executed only after a power-up or RESET. If the
+>     MP protocol has completed and a BSP is chosen, subsequent INITs
+>     (either to a specific processor or system wide) do not cause the
+>     MP protocol to be repeated. Instead, each logical processor
+>     examines its BSP flag (in the IA32_APIC_BASE MSR) to determine
+>     whether it should execute the BIOS boot-strap code (if it is the
+>     BSP) or enter a wait-for-SIPI state (if it is an AP).
+>
+> So this is no longer undocumented behaviour for recent cpus, I think.
 
-Last I pinged him he was willing to maintain non-english translations, 
-try sending them to him?
+The underdocumented bit is the ability to clear the flag.
+And of course these are processor specific registers.
 
-Rob
+> Considering these, I'll make a patch to clear BSP flag at appropreate
+> position in kernel boot-up code. OTOH, according to the discussion, it
+> was reported that clearing BSP flag affected some BIOSes. To deal with
+> this, I'll prepare a kernel option to decide whether to clear BSP flag
+> or not.
+>
+> Does anyone have any comments now? Or please comment after I submit a
+> new patch.
 
+I think you are on right track with preparing some patches, and this
+certainly looks like worth experimenting with.
 
+At least for i386 the code need to verify you have a cpu new enough to
+have an APIC_BASE_MSR, but I don't think that is going to be hard.
+
+Eric
