@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070Ab2JZNxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:53:06 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:53826 "EHLO londo.lunn.ch"
+	id S933049Ab2JZNzB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:55:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab2JZNxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:53:02 -0400
-Date: Fri, 26 Oct 2012 15:52:25 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
- Armada 370/XP
-Message-ID: <20121026135225.GO21046@lunn.ch>
-References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
- <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
- <20121026133154.GN18811@titan.lakedaemon.net>
- <20121026133446.GM21046@lunn.ch>
- <508A945C.4010006@free-electrons.com>
+	id S1750710Ab2JZNy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:54:59 -0400
+Date: Fri, 26 Oct 2012 15:00:07 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH 4/5] perf tools: Always show CHK message when doing try-cc
+Message-ID: <20121026130007.GB1067@krava.brq.redhat.com>
+References: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
+ <1351241752-2919-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508A945C.4010006@free-electrons.com>
+In-Reply-To: <1351241752-2919-4-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now, about white spaces vs tab, I don't know what is the rule for .dts
-> file.
+On Fri, Oct 26, 2012 at 05:55:51PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> It might be useful to see what's happening behind us rather than just
+> waiting few seconds during the config checking.
 
-I personally use tabs, but i don't see anything in the
-Documentation/CodingStyle.
+Do we want to see all that within just simple 'make'
+also in case nothing gets rebuilt? It seems noisy..
 
-Maybe ask on the device tree mailing list?
 
-      Andrew
+[jolsa@krava perf]$ make
+    CHK -fstack-protector-all
+    CHK -Wstack-protector
+    CHK -Wvolatile-register-var
+    CHK bionic
+    CHK libelf
+    CHK libdw
+    CHK libunwind
+    CHK -DLIBELF_MMAP
+    CHK libaudit
+    CHK libnewt
+    CHK gtk2
+Makefile:608: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+    CHK perl
+    CHK python
+    CHK python version
+    CHK libbfd
+    CHK -DHAVE_STRLCPY
+    CHK -DHAVE_ON_EXIT
+    CHK -DBACKTRACE_SUPPORT
+    SUBDIR ../lib/traceevent/
+    LINK perf
+
+hum, also not sure why's there ^^^ the final LINK for no change rebuild..
+
+jirka
