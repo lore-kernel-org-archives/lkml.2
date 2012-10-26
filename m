@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab2JZAH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:29 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53349 "EHLO mail.kernel.org"
+	id S1754465Ab2JZA3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:29:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53404 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753569Ab2JZAHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:23 -0400
+	id S1754040Ab2JZAH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 07/85] arch/tile: avoid generating .eh_frame information in modules
-Date: Thu, 25 Oct 2012 17:05:25 -0700
-Message-Id: <20121026000031.868347603@linuxfoundation.org>
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 12/85] SUNRPC: Set alloc_slot for backchannel tcp ops
+Date: Thu, 25 Oct 2012 17:05:30 -0700
+Message-Id: <20121026000032.364650882@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,37 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit 627072b06c362bbe7dc256f618aaa63351f0cfe6 upstream.
+commit 84e28a307e376f271505af65a7b7e212dd6f61f4 upstream.
 
-The tile tool chain uses the .eh_frame information for backtracing.
-The vmlinux build drops any .eh_frame sections at link time, but when
-present in kernel modules, it causes a module load failure due to the
-presence of unsupported pc-relative relocations.  When compiling to
-use compiler feedback support, the compiler by default omits .eh_frame
-information, so we don't see this problem.  But when not using feedback,
-we need to explicitly suppress the .eh_frame.
+f39c1bfb5a03e2d255451bff05be0d7255298fa4 (SUNRPC: Fix a UDP transport
+regression) introduced the "alloc_slot" function for xprt operations,
+but never created one for the backchannel operations.  This patch fixes
+a null pointer dereference when mounting NFS over v4.1.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Call Trace:
+ [<ffffffffa0207957>] ? xprt_reserve+0x47/0x50 [sunrpc]
+ [<ffffffffa02023a4>] call_reserve+0x34/0x60 [sunrpc]
+ [<ffffffffa020e280>] __rpc_execute+0x90/0x400 [sunrpc]
+ [<ffffffffa020e61a>] rpc_async_schedule+0x2a/0x40 [sunrpc]
+ [<ffffffff81073589>] process_one_work+0x139/0x500
+ [<ffffffff81070e70>] ? alloc_worker+0x70/0x70
+ [<ffffffffa020e5f0>] ? __rpc_execute+0x400/0x400 [sunrpc]
+ [<ffffffff81073d1e>] worker_thread+0x15e/0x460
+ [<ffffffff8145c839>] ? preempt_schedule+0x49/0x70
+ [<ffffffff81073bc0>] ? rescuer_thread+0x230/0x230
+ [<ffffffff81079603>] kthread+0x93/0xa0
+ [<ffffffff81465d04>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81079570>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81465d00>] ? gs_change+0x13/0x13
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/Makefile |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/sunrpc/xprtsock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/tile/Makefile
-+++ b/arch/tile/Makefile
-@@ -26,6 +26,10 @@ $(error Set TILERA_ROOT or CROSS_COMPILE
-   endif
- endif
- 
-+# The tile compiler may emit .eh_frame information for backtracing.
-+# In kernel modules, this causes load failures due to unsupported relocations.
-+KBUILD_CFLAGS   += -fno-asynchronous-unwind-tables
-+
- ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
- KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
- endif
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2539,6 +2539,7 @@ static struct rpc_xprt_ops xs_tcp_ops =
+ static struct rpc_xprt_ops bc_tcp_ops = {
+ 	.reserve_xprt		= xprt_reserve_xprt,
+ 	.release_xprt		= xprt_release_xprt,
++	.alloc_slot		= xprt_alloc_slot,
+ 	.rpcbind		= xs_local_rpcbind,
+ 	.buf_alloc		= bc_malloc,
+ 	.buf_free		= bc_free,
 
 
