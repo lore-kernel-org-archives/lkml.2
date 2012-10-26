@@ -1,102 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750Ab2JZPRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:17:45 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37045 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078Ab2JZPRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:17:43 -0400
+	id S933758Ab2JZPSO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:18:14 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55501 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932078Ab2JZPSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 11:18:12 -0400
+Message-ID: <508AA965.7080003@linux.vnet.ibm.com>
+Date: Fri, 26 Oct 2012 08:16:53 -0700
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351241389.12171.45.camel@twins>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
- <1351115634-8420-2-git-send-email-juri.lelli@gmail.com> <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
- <1351172849.12171.10.camel@twins> <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
- <1351241389.12171.45.camel@twins>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 26 Oct 2012 08:17:22 -0700
-X-Google-Sender-Auth: w49TQh3lyn-RRkPB-e_EFb2M1EE
-Message-ID: <CA+55aFwur9=1gFbcdD862rn-Vw0A_+oSr1iX+-=iHMBC_2L+Ng@mail.gmail.com>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org
+Subject: Re: [PATCH] page_alloc: fix the incorrect adjustment to zone->present_pages
+References: <1351245581-16652-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1351245581-16652-1-git-send-email-laijs@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102615-1976-0000-0000-000012BB3B8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 1:49 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> No, it does a compare on two u128
+On 10/26/2012 02:59 AM, Lai Jiangshan wrote:
+> Current free_area_init_core() has incorrect adjustment code to adjust
+> ->present_pages. It will cause ->present_pages overflow, make the
+> system unusable(can't create any process/thread in our test) and cause further problem.
+> 
+> Details:
+> 1) Some/many ZONEs don't have memory which is used by memmap.
+>    { Or all the actual memory used for memmap is much less than the "memmap_pages"
+>    (memmap_pages = PAGE_ALIGN(span_size * sizeof(struct page)) >> PAGE_SHIFT)
+>    CONFIG_SPARSEMEM is an example. }
 
-Actually, it apparently compares two multiplications.
+Reading this code, the use of 'size' (which you correctly note is better
+titled 'span_size') looks potentially wrong in the sparsemem cases
+because the mem_map[] can have holes.  But, if we just replaced
+'span_size' with 'realsize' it would probably be wrong in the sparsemem
+case.
 
-That might be optimizable in itself.
+> 2) incorrect adjustment in free_area_init_core(): zone->present_pages -= memmap_pages
+> 3) but the zone has big hole, it causes the result of zone->present_pages become much smaller
+> 4) when we offline a/several memory section of the zone: zone->present_pages -= offline_size
+> 5) Now, zone->present_pages will/may be *OVERFLOW*.
+> 
+> So the adjustment is dangerous and incorrect.
+> 
+> Addition 1:
+> And in current kernel, the memmaps have nothing related/bound to any ZONE:
+> 	FLATMEM: global memmap
+> 	CONFIG_DISCONTIGMEM: node-specific memmap
+> 	CONFIG_SPARSEMEM: memorysection-specific memmap
+> None of them is ZONE-specific memmap, and the memory used for memmap is not bound to any ZONE.
+> So the adjustment "zone->present_pages -= memmap_pages" subtracts unrelated value
+> and makes no sense.
 
-> The point is (as mentioned in the comments below) overflowing an actual
-> u64 is rare, however since some of this (specifically the
-> dl_{runtime,deadline} parameters) is user specified, we have to assume
-> we will overflow.
+You're right, mem_map[]s are not really _part_ of a zone.  But, we don't
+keep track of watermarks on the basis of nodes or sections, we only keep
+them on zones.  So, if we want to adjust those watermarks to make up for
+the memory that the mem_map[] eats, we don't have a choice to do it
+other than in the zone.
 
-Any chance we could just limit them?
+> Addition 2:
+> We introduced this adjustment and tried to make page-reclaim/watermark happier,
+> but the adjustment is wrong in current kernel, and even makes page-reclaim/watermark
+> worse. It is against its original purpose/reason.
+> 
+> This adjustment is incorrect/buggy, subtracts unrelated value and violates its original
+> purpose, so we simply remove the adjustment.
 
-> +       u128 left, right;
-> +
-> +       /*
-> +        * left and right are the two sides of the equation above,
-> +        * after a bit of shuffling to use multiplications instead
-> +        * of divisions.
-> +        *
-> +        * Note that none of the time values involved in the two
-> +        * multiplications are absolute: dl_deadline and dl_runtime
-> +        * are the relative deadline and the maximum runtime of each
-> +        * instance, runtime is the runtime left for the last instance
-> +        * and (deadline - t), since t is rq->clock, is the time left
-> +        * to the (absolute) deadline. Therefore, overflowing the u64
-> +        * type is very unlikely to occur in both cases.
-> +        */
-> +       left = mul_u64_u64(dl_se->dl_deadline, dl_se->runtime);
-> +       right = mul_u64_u64((dl_se->deadline - t), dl_se->dl_runtime);
-> +
-> +       if (cmp_u128(left, right) > 0)
-> +               return true;
-> +
-> +       return false;
+I don't think you can just remove it.  I agree that it needs to get
+fixed, but nuking it isn't the answer.
 
-So how often could we do this without doing the multiplication at all?
+I there a reason this would not work if we did this (I mean logically...
+please don't do #ifdef monstrosities in code like this):
 
-It's trivial to see that 'right > left' if the individual
-multiplicands are both bigger, for example. Maybe that is common?
+	spanned_size = zone_spanned_pages_in_node(nid, j,
+						zones_size);
+	realsize = size - zone_absent_pages_in_node(nid, j,
+						zholes_size);
 
-And even if it overflows in 64-bit does it overflow in 92? For 32-bit
-machines, the difference there is quite noticeable.
+#ifdef CONFIG_HOLES_IN_ZONE
+	zone_size_for_memmap = realsize;
+#else
+	zone_size_for_memmap = spanned_size;
+#endif
 
-So the above might actually be better written as a
-"compare_64bit_multiply(a,b,c,d)". At the same time, are we
-*seriously* ever talking about multi-second runtimes or deadlines?
-Because even in nanoseconds, I assume that the common case *by*far* in
-scheduling would be about values smaller than four seconds, in which
-case all of the above values are 32-bit, making the compares *much*
-cheaper.
+The other option for the sparsemem cases would be to go back at this
+point and try to figure out in exactly which zones the bootmem-allocated
+mem_map[]s now lie.
 
-So on a 32-bit machine (say, x86-32), you might just have:
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index bb90971..6bf72e3 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4455,30 +4455,12 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+> 
+>  	for (j = 0; j < MAX_NR_ZONES; j++) {
+>  		struct zone *zone = pgdat->node_zones + j;
+> -		unsigned long size, realsize, memmap_pages;
+> +		unsigned long size, realsize;
+> 
+>  		size = zone_spanned_pages_in_node(nid, j, zones_size);
+>  		realsize = size - zone_absent_pages_in_node(nid, j,
+>  								zholes_size);
+> 
+> -		/*
+> -		 * Adjust realsize so that it accounts for how much memory
+> -		 * is used by this zone for memmap. This affects the watermark
+> -		 * and per-cpu initialisations
+> -		 */
+> -		memmap_pages =
+> -			PAGE_ALIGN(size * sizeof(struct page)) >> PAGE_SHIFT;
+> -		if (realsize >= memmap_pages) {
+> -			realsize -= memmap_pages;
+> -			if (memmap_pages)
+> -				printk(KERN_DEBUG
+> -				       "  %s zone: %lu pages used for memmap\n",
+> -				       zone_names[j], memmap_pages);
 
- - or all the high words together, jump to slow case if the result is non-zero
- - otherwise, do just two 32x32 multiplies and check which of the two is bigger.
+I was actually kind of fond of that printk, despite it being imprecise.
 
-That's a *huge* reduction in expensive multiplications.
-
-And *THAT* is why generic 128-bit math is stupid. Don't do it.
-
-           Linus
