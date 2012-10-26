@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab2JZJbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:31:17 -0400
-Received: from www84.your-server.de ([213.133.104.84]:53402 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab2JZJbO (ORCPT
+	id S1758023Ab2JZJcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:32:18 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40019 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755980Ab2JZJcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:31:14 -0400
-Message-ID: <1351243827.8719.5.camel@wall-e>
-Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
-From: Stefani Seibold <stefani@seibold.net>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 26 Oct 2012 11:30:27 +0200
-In-Reply-To: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
-References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Fri, 26 Oct 2012 05:32:16 -0400
+Date: Fri, 26 Oct 2012 11:32:11 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: tglx@linutronix.de, mingo@redhat.com, x86@kernel.org, rui.zhang@intel.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] x86: ce4100: force reboot method to be KBD
+Message-ID: <20121026093211.GB1106@gmail.com>
+References: <1351242325-23724-1-git-send-email-ffainelli@freebox.fr>
+ <1351242325-23724-3-git-send-email-ffainelli@freebox.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351242325-23724-3-git-send-email-ffainelli@freebox.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 26.10.2012, 15:56 +0800 schrieb Yuanhan Liu:
-> Say, if we want to allocate a filo with size of 6 bytes, it would be safer
-> to allocate 8 bytes instead of 4 bytes.
-> ----
-> I know it works with rounddown_pow_of_two as well, since size is maintained
-> in the kfifo internal part. But, I'm quite curious why Stefani chose
-> rounddown_pow_of_two. To reduce memory?
+
+* Florian Fainelli <ffainelli@freebox.fr> wrote:
+
+> From: Maxime Bizon <mbizon@freebox.fr>
 > 
-
-Yes, exactly, if a user do the wrong thing, than the user will get also
-a wrong result, and did not waste memory.
-
-But anyway, if the majority like this patch it is okay for me.
-
-> Thanks,
-> Yuanhan Liu
-> -----
+> The default reboot is via ACPI for this platform, and the CEFDK bootloader
+> actually supports this, but will issue a system power off instead of a real
+> reboot. Setting the reboot method to be KBD instead of ACPI ensures proper
+> system reboot.
 > 
-> Cc: Stefani Seibold <stefani@seibold.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
 > ---
->  kernel/kfifo.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  arch/x86/platform/ce4100/ce4100.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> diff --git a/kernel/kfifo.c b/kernel/kfifo.c
-> index 59dcf5b..0f78378 100644
-> --- a/kernel/kfifo.c
-> +++ b/kernel/kfifo.c
-> @@ -39,11 +39,11 @@ int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
->  		size_t esize, gfp_t gfp_mask)
+> diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+> index 74f8774..8c9ed9a 100644
+> --- a/arch/x86/platform/ce4100/ce4100.c
+> +++ b/arch/x86/platform/ce4100/ce4100.c
+> @@ -21,6 +21,7 @@
+>  #include <asm/i8259.h>
+>  #include <asm/io.h>
+>  #include <asm/io_apic.h>
+> +#include <asm/emergency-restart.h>
+>  
+>  static int ce4100_i8042_detect(void)
 >  {
->  	/*
-> -	 * round down to the next power of 2, since our 'let the indices
-> +	 * round up to the next power of 2, since our 'let the indices
->  	 * wrap' technique works only in this case.
->  	 */
->  	if (!is_power_of_2(size))
-> -		size = rounddown_pow_of_two(size);
-> +		size = roundup_pow_of_two(size);
+> @@ -144,6 +145,8 @@ void __init x86_ce4100_early_setup(void)
+>  	x86_init.mpparse.find_smp_config = x86_init_noop;
+>  	x86_init.pci.init = ce4100_pci_init;
 >  
->  	fifo->in = 0;
->  	fifo->out = 0;
-> @@ -84,7 +84,7 @@ int __kfifo_init(struct __kfifo *fifo, void *buffer,
->  	size /= esize;
->  
->  	if (!is_power_of_2(size))
-> -		size = rounddown_pow_of_two(size);
-> +		size = roundup_pow_of_two(size);
->  
->  	fifo->in = 0;
->  	fifo->out = 0;
+> +	reboot_type = BOOT_KBD;
 
+Here too put a minimal comment into the code:
 
+	/*
+	 * The system default is ACPI reboot, but that powers 
+	 * off on CE4100 so the use KBD reset instead:
+	 */
+	reboot_type = BOOT_KBD;
+
+Thanks,
+
+	Ingo
