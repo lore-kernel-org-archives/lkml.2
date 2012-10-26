@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933801Ab2JZPXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:23:03 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:39736 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933630Ab2JZPXA (ORCPT
+	id S933835Ab2JZPXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:23:14 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:40972 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933738Ab2JZPXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:23:00 -0400
-MIME-Version: 1.0
-Date: Fri, 26 Oct 2012 23:23:00 +0800
-Message-ID: <CAPgLHd-u=6wB7br+AVoHaADLkDQRK5055eGQnVQNSBNn5H1yYw@mail.gmail.com>
-Subject: [PATCH -next] staging: comedi: use module_comedi_driver to simplify
- the code
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Oct 2012 11:23:08 -0400
+Message-ID: <1351264983.2712.14.camel@lorien2>
+Subject: [PATCH linux-next] ARM64: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: tony@atomide.com, olof@lixom.net, santosh.shilimkar@ti.com,
+        nico@linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 09:23:03 -0600
+In-Reply-To: <CAHkRjk6jDKsFMa1_Wapwr7y5n8Ut8xfNBKWniSfHN_01z7qWFQ@mail.gmail.com>
+References: <1351205220.6851.3.camel@lorien2>
+	 <CAHkRjk6jDKsFMa1_Wapwr7y5n8Ut8xfNBKWniSfHN_01z7qWFQ@mail.gmail.com>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated. 
 
-Use the module_comedi_driver() macro to make the code simpler
-by eliminating module_init and module_exit calls.
-
-dpatch engine is used to auto generate this patch.
-(https://github.com/weiyj/dpatch)
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- drivers/staging/comedi/drivers/das800.c | 17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+ arch/arm64/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/comedi/drivers/das800.c b/drivers/staging/comedi/drivers/das800.c
-index 1ba26b4..85ab24c 100644
---- a/drivers/staging/comedi/drivers/das800.c
-+++ b/drivers/staging/comedi/drivers/das800.c
-@@ -342,22 +342,7 @@ static int das800_probe(struct comedi_device *dev)
- 	return -1;
+diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+index 538f4b4..9947768 100644
+--- a/arch/arm64/include/asm/dma-mapping.h
++++ b/arch/arm64/include/asm/dma-mapping.h
+@@ -50,6 +50,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dev_addr)
+ {
+ 	struct dma_map_ops *ops = get_dma_ops(dev);
++	debug_dma_mapping_error(dev, dev_addr);
+ 	return ops->mapping_error(dev, dev_addr);
  }
  
--/*
-- * A convenient macro that defines init_module() and cleanup_module(),
-- * as necessary.
-- */
--static int __init driver_das800_init_module(void)
--{
--	return comedi_driver_register(&driver_das800);
--}
--
--static void __exit driver_das800_cleanup_module(void)
--{
--	comedi_driver_unregister(&driver_das800);
--}
--
--module_init(driver_das800_init_module);
--module_exit(driver_das800_cleanup_module);
-+module_comedi_driver(driver_das800);
- 
- /* interrupt service routine */
- static irqreturn_t das800_interrupt(int irq, void *d)
+-- 
+1.7.9.5
+
+
 
