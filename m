@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab2JZAGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52867 "EHLO mail.kernel.org"
+	id S1753607Ab2JZAGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52954 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab2JZAGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:36 -0400
+	id S1753566Ab2JZAGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>
-Subject: [ 16/42] usb: acm: fix the computation of the number of data bits
-Date: Thu, 25 Oct 2012 17:05:24 -0700
-Message-Id: <20121026000126.410743125@linuxfoundation.org>
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 24/42] pinctrl: tegra: set low power mode bank width to 2
+Date: Thu, 25 Oct 2012 17:05:32 -0700
+Message-Id: <20121026000127.211319689@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -25,56 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Boullis <nboullis@debian.org>
+From: Pritesh Raithatha <praithatha@nvidia.com>
 
-commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
+commit 154f3ebf53edcfbe28728452b4ab37a118581125 upstream.
 
-The current code assumes that CSIZE is 0000060, which appears to be
-wrong on some arches (such as powerpc).
-
-Signed-off-by: Nicolas Boullis <nboullis@debian.org>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/pinctrl/pinctrl-tegra.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -818,10 +818,6 @@ static const __u32 acm_tty_speed[] = {
- 	2500000, 3000000, 3500000, 4000000
- };
- 
--static const __u8 acm_tty_size[] = {
--	5, 6, 7, 8
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
-@@ -835,7 +831,21 @@ static void acm_tty_set_termios(struct t
- 	newline.bParityType = termios->c_cflag & PARENB ?
- 				(termios->c_cflag & PARODD ? 1 : 2) +
- 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
- 
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -259,7 +259,7 @@ static int tegra_pinconf_reg(struct tegr
+ 		*bank = g->drv_bank;
+ 		*reg = g->drv_reg;
+ 		*bit = g->lpmd_bit;
+-		*width = 1;
++		*width = 2;
+ 		break;
+ 	case TEGRA_PINCONF_PARAM_DRIVE_DOWN_STRENGTH:
+ 		*bank = g->drv_bank;
 
 
