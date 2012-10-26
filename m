@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab2JZFj2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 01:39:28 -0400
-Received: from www84.your-server.de ([213.133.104.84]:60245 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab2JZFj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 01:39:27 -0400
-Message-ID: <1351229911.12511.1.camel@wall-e>
-Subject: Re: [PATCH] kfifo: remove unnecessary type check
-From: Stefani Seibold <stefani@seibold.net>
-To: Yuanhan Liu <yliu.null@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 26 Oct 2012 07:38:31 +0200
-In-Reply-To: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
-References: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
+	id S1756246Ab2JZFoc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:44:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19121 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753804Ab2JZFoa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 01:44:30 -0400
+X-IronPort-AV: E=Sophos;i="4.80,652,1344182400"; 
+   d="scan'208";a="6074891"
+Message-ID: <508A22EE.1000607@cn.fujitsu.com>
+Date: Fri, 26 Oct 2012 13:43:10 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, yinghai@kernel.org, bhelgaas@google.com,
+        lenb@kernel.org, izumi.taku@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, mihailm@parallels.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] Improve container_notify_cb() to support container
+ hot-remove.
+References: <1351058750-4275-1-git-send-email-tangchen@cn.fujitsu.com>   <1351058750-4275-3-git-send-email-tangchen@cn.fujitsu.com>  <1351098875.19172.21.camel@misato.fc.hp.com>  <5088967E.3060204@cn.fujitsu.com> <50889A14.9030607@huawei.com> <1351185648.19172.51.camel@misato.fc.hp.com>
+In-Reply-To: <1351185648.19172.51.camel@misato.fc.hp.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/26 13:43:46,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/26 13:43:47,
+	Serialize complete at 2012/10/26 13:43:47
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 26.10.2012, 09:46 +0800 schrieb Yuanhan Liu:
-> From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> 
-> Firstly, this kind of type check doesn't work. It does something similay
-> like following:
-> 	void * __dummy = NULL;
-> 	__buf = __dummy;
-> 
-> __dummy is defined as void *. Thus it will not trigger warnings as
-> expected.
-> 
-> Second, we don't need that kind of check. Since the prototype
-> of __kfifo_out is:
-> 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
-> 
-> buf is defined as void *, so we don't need do the type check. Remove it.
-> 
-> LINK: https://lkml.org/lkml/2012/10/25/386
-> LINK: https://lkml.org/lkml/2012/10/25/584
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
-> Cc: Stefani Seibold <stefani@seibold.net>
-> Cc: Fengguang Wu <fengguang.wu@intel.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-> ---
->  include/linux/kfifo.h | 20 --------------------
->  1 file changed, 20 deletions(-)
-> 
-> diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-> index 10308c6..b8c1d03 100644
-> --- a/include/linux/kfifo.h
-> +++ b/include/linux/kfifo.h
-> @@ -390,10 +390,6 @@ __kfifo_int_must_check_helper( \
->  	unsigned int __ret; \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> -		__dummy = (typeof(__val))NULL; \
-> -	} \
->  	if (__recsize) \
->  		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
->  			__recsize); \
-> @@ -432,8 +428,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned int __ret; \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) \
-> -		__val = (typeof(__tmp->ptr))0; \
->  	if (__recsize) \
->  		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
->  			__recsize); \
-> @@ -473,8 +467,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned int __ret; \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) \
-> -		__val = (typeof(__tmp->ptr))NULL; \
->  	if (__recsize) \
->  		__ret = __kfifo_out_peek_r(__kfifo, __val, sizeof(*__val), \
->  			__recsize); \
-> @@ -512,10 +504,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
-> -		__dummy = (typeof(__buf))NULL; \
-> -	} \
->  	(__recsize) ?\
->  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_in(__kfifo, __buf, __n); \
-> @@ -565,10 +553,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr) __dummy = NULL; \
-> -		__buf = __dummy; \
-> -	} \
->  	(__recsize) ?\
->  	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_out(__kfifo, __buf, __n); \
-> @@ -777,10 +761,6 @@ __kfifo_uint_must_check_helper( \
->  	unsigned long __n = (n); \
->  	const size_t __recsize = sizeof(*__tmp->rectype); \
->  	struct __kfifo *__kfifo = &__tmp->kfifo; \
-> -	if (0) { \
-> -		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
-> -		__buf = __dummy; \
-> -	} \
->  	(__recsize) ? \
->  	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
->  	__kfifo_out_peek(__kfifo, __buf, __n); \
+Hi Toshi,
 
-Did you tried to compile the whole kernel including all the drivers with
-your patch?
+On 10/26/2012 01:20 AM, Toshi Kani wrote:
+...
+>>>> Why do you need to call acpi_bus_trim(device,0) to stop the container
+>>>> device first?
+>>>
+>>> This issue was introduced by Lu Yinghai, I think he could give a better
+>>> answer than me. :)
+>>> Please refer to the following url:
+>>>
+>>> http://www.spinics.net/lists/linux-pci/msg17667.html
+>>>
+>>> However, this is not applied into the pci tree yet.
+>> We have worked out a patch set to clean up the logic for PCI/ACPI binding
+>> relationship. It updates PCI/ACPI binding relationship by registering bus
+>> notification onto pci_bus_type instead of hooking into the ACPI/glue.c.
+>
+> Thanks for the info and pointer.  Tang, I'd suggest you add such info to
+> the comment so that others know that this step is needed for removing
+> PCI bridges.  It helps us to know where to look at...
 
+OK, I'll add it in the next version. :)
+
+>
+>> To accommodate that patch set, the ACPI device destroy process has been
+>> split into two steps:
+>> 1) acpi_bus_trim(device,0) to unbind ACPI drivers
+>
+> Does this step also detach PCI drivers from PCI cards as well?
+
+Yes, it calls device_release_driver() to release the device driver.
+
+     device_release_driver()
+       |->__device_release_driver()
+            |->dev->driver = NULL;
+
+Thanks. :)
+
+>
+> Thanks,
+> -Toshi
+>
+>
 
