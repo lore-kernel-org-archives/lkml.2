@@ -1,150 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab2JZGUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 02:20:11 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45902 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756321Ab2JZGUH (ORCPT
+	id S1756488Ab2JZGUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 02:20:23 -0400
+Received: from hermes.synopsys.com ([198.182.44.81]:57470 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756455Ab2JZGUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 02:20:07 -0400
-Message-ID: <508A2B8B.7020608@gmail.com>
-Date: Fri, 26 Oct 2012 14:19:55 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
+	Fri, 26 Oct 2012 02:20:19 -0400
+Message-ID: <508A2AC8.9000304@synopsys.com>
+Date: Fri, 26 Oct 2012 11:46:40 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mhocko@suse.cz, peterz@infradead.org,
-        akpm@linux-foundation.org, Chris Metcalf <cmetcalf@tilera.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v3] mm: thp: Set the accessed flag for old pages on access
- fault.
-References: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1351183471-14710-1-git-send-email-will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <alan@linux.intel.com>, <arc-linux-dev@synopsys.com>,
+        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] serial/arc-uart: Add New Driver
+References: <1351146608-21044-1-git-send-email-vgupta@synopsys.com> <20121025183643.GA22504@kroah.com>
+In-Reply-To: <20121025183643.GA22504@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.56]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 12:44 AM, Will Deacon wrote:
-> On x86 memory accesses to pages without the ACCESSED flag set result in the
-> ACCESSED flag being set automatically. With the ARM architecture a page access
-> fault is raised instead (and it will continue to be raised until the ACCESSED
-> flag is set for the appropriate PTE/PMD).
->
-> For normal memory pages, handle_pte_fault will call pte_mkyoung (effectively
-> setting the ACCESSED flag). For transparent huge pages, pmd_mkyoung will only
-> be called for a write fault.
->
-> This patch ensures that faults on transparent hugepages which do not result
-> in a CoW update the access flags for the faulting pmd.
+On Friday 26 October 2012 12:06 AM, Greg KH wrote:
+> On Thu, Oct 25, 2012 at 12:00:07PM +0530, Vineet.Gupta1@synopsys.com wrote:
+>> From: Vineet Gupta <vgupta@synopsys.com>
+>>
+>> Hi Greg,
+>>
+>> Rebased off of tty-next and verfied that it builds fine.
+> Did you run it?
 
-Could you write changlog?
-
->
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Kirill A. Shutemov <kirill@shutemov.name>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->
-> Ok chaps, I rebased this thing onto today's next (which basically
-> necessitated a rewrite) so I've reluctantly dropped my acks and kindly
-> ask if you could eyeball the new code, especially where the locking is
-> concerned. In the numa code (do_huge_pmd_prot_none), Peter checks again
-> that the page is not splitting, but I can't see why that is required.
->
-> Cheers,
->
-> Will
-
-Could you explain why you not call pmd_trans_huge_lock to confirm the 
-pmd is splitting or stable as Andrea point out?
+Absolutely ! What I meant was, this specific version (rebased off of
+tty-next) can't be run for ARC platform yet (for which this driver is
+originally meant). The preceding version based off of 3.6 (including all
+of Alan's review comments) already runs for our 3.6 kernel.
 
 >
->   include/linux/huge_mm.h |    4 ++++
->   mm/huge_memory.c        |   22 ++++++++++++++++++++++
->   mm/memory.c             |    7 ++++++-
->   3 files changed, 32 insertions(+), 1 deletions(-)
+>> Please consider applying.
+> I can't, see my review comments.
+
+Updated revision to follow
+
+Thx,
+-Vineet
 >
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index 4f0f948..766fb27 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -8,6 +8,10 @@ extern int do_huge_pmd_anonymous_page(struct mm_struct *mm,
->   extern int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->   			 pmd_t *dst_pmd, pmd_t *src_pmd, unsigned long addr,
->   			 struct vm_area_struct *vma);
-> +extern void huge_pmd_set_accessed(struct mm_struct *mm,
-> +				  struct vm_area_struct *vma,
-> +				  unsigned long address, pmd_t *pmd,
-> +				  pmd_t orig_pmd, int dirty);
->   extern int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   			       unsigned long address, pmd_t *pmd,
->   			       pmd_t orig_pmd);
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 3c14a96..f024d98 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -932,6 +932,28 @@ out:
->   	return ret;
->   }
->   
-> +void huge_pmd_set_accessed(struct mm_struct *mm,
-> +			   struct vm_area_struct *vma,
-> +			   unsigned long address,
-> +			   pmd_t *pmd, pmd_t orig_pmd,
-> +			   int dirty)
-> +{
-> +	pmd_t entry;
-> +	unsigned long haddr;
-> +
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(*pmd, orig_pmd)))
-> +		goto unlock;
-> +
-> +	entry = pmd_mkyoung(orig_pmd);
-> +	haddr = address & HPAGE_PMD_MASK;
-> +	if (pmdp_set_access_flags(vma, haddr, pmd, entry, dirty))
-> +		update_mmu_cache_pmd(vma, address, pmd);
-> +
-> +unlock:
-> +	spin_unlock(&mm->page_table_lock);
-> +}
-> +
->   static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
->   					struct vm_area_struct *vma,
->   					unsigned long address,
-> diff --git a/mm/memory.c b/mm/memory.c
-> index f21ac1c..bcbc084 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3650,12 +3650,14 @@ retry:
->   
->   		barrier();
->   		if (pmd_trans_huge(orig_pmd) && !pmd_trans_splitting(orig_pmd)) {
-> +			unsigned int dirty = flags & FAULT_FLAG_WRITE;
-> +
->   			if (pmd_numa(vma, orig_pmd)) {
->   				do_huge_pmd_numa_page(mm, vma, address, pmd,
->   						      flags, orig_pmd);
->   			}
->   
-> -			if ((flags & FAULT_FLAG_WRITE) && !pmd_write(orig_pmd)) {
-> +			if (dirty && !pmd_write(orig_pmd)) {
->   				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
->   							  orig_pmd);
->   				/*
-> @@ -3665,6 +3667,9 @@ retry:
->   				 */
->   				if (unlikely(ret & VM_FAULT_OOM))
->   					goto retry;
-> +			} else {
-> +				huge_pmd_set_accessed(mm, vma, address, pmd,
-> +						      orig_pmd, dirty);
->   			}
->   
->   			return ret;
+> thanks,
+>
+> greg k-h
 
