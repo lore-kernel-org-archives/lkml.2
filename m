@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2JZHsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:48:55 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46778 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756882Ab2JZHsx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:48:53 -0400
-Message-ID: <508A4060.4060800@gmail.com>
-Date: Fri, 26 Oct 2012 15:48:48 +0800
-From: Ni zhan Chen <nizhan.chen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757085Ab2JZH4B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:56:01 -0400
+Received: from smtp30.kymp.net ([80.248.96.181]:33929 "EHLO smtp.kymp.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757053Ab2JZH4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 03:56:00 -0400
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Oct 2012 03:56:00 EDT
+Date: Fri, 26 Oct 2012 10:45:47 +0300
+From: Mika =?utf-8?Q?Bostr=C3=B6m?= <bostik@bostik.iki.fi>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+Message-ID: <20121026074547.GA25935@bostik.iki.fi>
+Reply-To: Mika =?utf-8?Q?Bostr=C3=B6m?= <bostik@bostik.iki.fi>
+References: <20121012125708.GJ10110@dhcp22.suse.cz>
+ <20121023164546.747e90f6.akpm@linux-foundation.org>
+ <20121024062938.GA6119@dhcp22.suse.cz>
+ <20121024125439.c17a510e.akpm@linux-foundation.org>
+ <50884F63.8030606@linux.vnet.ibm.com>
+ <20121024134836.a28d223a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: MMTests 0.06
-References: <20121012145114.GZ29125@suse.de>
-In-Reply-To: <20121012145114.GZ29125@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121024134836.a28d223a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2012 10:51 PM, Mel Gorman wrote:
-> MMTests 0.06 is a configurable test suite that runs a number of common
-> workloads of interest to MM developers. There are multiple additions
-> all but in many respects the most useful will be automatic package
-> installation. The package names are based on openSUSE but it's easy to
-> create mappings in bin/install-depends where the package names differ. The
-> very basics of monitoring NUMA efficiency is there as well and the autonuma
-> benchmark has a test. The stats it reports for NUMA need significant
-> improvement but for the most part that should be straight forward.
->
-> Changelog since v0.05
-> o Automatically install packages (need name mappings for other distros)
-> o Add benchmark for autonumabench
-> o Add support for benchmarking NAS with MPI
-> o Add pgbench for autonumabench (may need a bit more work)
-> o Upgrade postgres version to 9.2.1
-> o Upgrade kernel verion used for kernbench to 3.0 for newer toolchains
-> o Alter mailserver config to finish in a reasonable time
-> o Add monitor for perf sched
-> o Add moinitor that gathers ftrace information with trace-cmd
-> o Add preliminary monitors for NUMA stats (very basic)
-> o Specify ftrace events to monitor from config file
-> o Remove the bulk of whats left of VMRegress
-> o Convert shellpacks to a template format to auto-generate boilerplate code
-> o Collect lock_stat information if enabled
-> o Run multiple iterations of aim9
-> o Add basic regression tests for Cross Memory Attach
-> o Copy with preempt being enabled in highalloc stres tests
-> o Have largedd cope with a missing large file to work with
-> o Add a monitor-only mode to just capture logs
-> o Report receive-side throughput in netperf for results
->
-> At LSF/MM at some point a request was made that a series of tests
-> be identified that were of interest to MM developers and that could be
-> used for testing the Linux memory management subsystem. There is renewed
-> interest in some sort of general testing framework during discussions for
-> Kernel Summit 2012 so here is what I use.
->
-> http://www.csn.ul.ie/~mel/projects/mmtests/
-> http://www.csn.ul.ie/~mel/projects/mmtests/mmtests-0.06-mmtests-0.01.tar.gz
->
-> There are a number of stock configurations stored in configs/.  For example
-> config-global-dhp__pagealloc-performance runs a number of tests that
-> may be able to identify performance regressions or gains in the page
-> allocator. Similarly there network and scheduler configs. There are also
-> more complex options. config-global-dhp__parallelio-memcachetest will run
-> memcachetest in the foreground while doing IO of different sizes in the
-> background to measure how much unrelated IO affects the throughput of an
-> in-memory database.
->
-> This release is also a little rough and the extraction scripts could
-> have been tidier but they were mostly written in an airport and for the
-> most part they work as advertised. I'll fix bugs as according as they are
-> brought to my attention.
->
-> The stats reporting still needs work because while some tests know how
-> to make a better estimate of mean by filtering outliers it is not being
-> handled consistently and the methodology needs work. I know filtering
-> statistics like this is a major flaw in the methodology but the decision
-> was made in this case in the interest of the benchmarks with unstable
-> results completing in a reasonable time.
+On Wed, Oct 24, 2012 at 01:48:36PM -0700, Andrew Morton wrote:
+> Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+> > What kind of interface _is_ it in the first place?  Is it really a
+> > production-level thing that we expect users to be poking at?  Or, is it
+> > a rarely-used debugging and benchmarking knob which is fair game for us
+> > to tweak like this?
+> 
+> It was a rarely-used mainly-developer-only thing which, apparently, real
+> people found useful at some point in the past.  Perhaps we should never
+> have offered it.
 
-Hi Gorman,
+I've found it useful on occasion when generating large public keys.
+When key generation hangs due to not-enough-entropy, dropping all
+caches (followed by an intensive read) has allowed the system to
+collect enough entropy to let the key generation finish.
 
-Could MMTests 0.07 auto download related packages for different 
-distributions?
+Usefulness of the trick is probably going the way of the dodo, thanks to
+SSD's becoming more common.
 
-Regards,
-Chen
-
-
+-- 
+ Mika Boström                       Individualisti, eksistentialisti,
+ www.iki.fi/bostik                  rationalisti ja mulkvisti
+ GPG: 0x2AED22CC; 6FC9 8375 31B7 3BA2 B5DC  484E F19F 8AD6 2AED 22CC
