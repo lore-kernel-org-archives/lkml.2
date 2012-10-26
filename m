@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934020Ab2JZVjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:39:44 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:39911 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933882Ab2JZVjm convert rfc822-to-8bit (ORCPT
+	id S934072Ab2JZVkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:40:23 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:54491 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964816Ab2JZVkV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:39:42 -0400
+	Fri, 26 Oct 2012 17:40:21 -0400
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
@@ -18,11 +18,13 @@ To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
 CC: "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Subject: [PATCH v3 0/7] efi_pstore: multiple event logging support
-Thread-Topic: [PATCH v3 0/7] efi_pstore: multiple event logging support
-Thread-Index: Ac2zwLsF+ldjmfCXRLqFfpoSRg/vFw==
-Date: Fri, 26 Oct 2012 21:39:22 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388EFB6@USINDEM103.corp.hds.com>
+Subject: [PATCH v3 1/7] efi_pstore: Check remaining space with
+ QueryVariableInfo() before writing data
+Thread-Topic: [PATCH v3 1/7] efi_pstore: Check remaining space with
+ QueryVariableInfo() before writing data
+Thread-Index: Ac2zwnA/6IhIG3Q4Rr6wz7Ui3lCO8A==
+Date: Fri, 26 Oct 2012 21:40:04 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41388EFD0@USINDEM103.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,68 +43,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog
-
-v2 -> v3
-   - Create patches 6/7 and 7/7 to work with an existing format of variable name
-
-v1 -> v2
-   - Separate into 5 patches in accordance with Mike's comment
-   - Erase an extra line of comment in patch 1/5
-
 [Issue]
 
-    Currently, efi_pstore driver simply overwrites existing panic messages in NVRAM.
-    So, in the following scenario, we will lose 1st panic messages.
+As discussed in a thread below, Running out of space in EFI isn't a well-tested scenario.
+And we wouldn't expect all firmware to handle it gracefully.
+http://marc.info/?l=linux-kernel&m=134305325801789&w=2
 
-    1. kernel panics.
-    2. efi_pstore is kicked and writes panic messages to NVRAM.
-    3. system reboots.
-    4. kernel panics again before a user checks the 1st panic messages in NVRAM.
-
-[Solution]
-
-   Solutions of this problem has been discussed among Tony, Matthew, Don, Mike and me.
-
-   http://marc.info/?l=linux-kernel&m=134273270704586&w=2
-
-   And there are two possible solutions right now.
-     - First one is introducing some policy overwriting existing logs.
-     - Second one is simply holding multiple log without overwriting any entries.
-
-   We haven't decided the overwriting policy which is reasonable to all users yet.
-   But I believe we agree that just holding multiple logs is a reasonable way.
-
-   We may need further discussions to find the possibility of introducing overwriting
-   policy, especially getting critical messages in multiple oops case.
-   But I would like to begin with a simple and reasonable way to everyone.
-   So, this patch takes an approach just holding multiple logs.
+On the other hand, current efi_pstore doesn't check a remaining space of storage at writing time.
+Therefore, efi_pstore may not work if it tries to write a large amount of data.
 
 [Patch Description]
 
-(1/7) efi_pstore: Check remaining space with QueryVariableInfo() before writing data
+To avoid handling the situation above, this patch checks if there is a space enough to log with
+QueryVariableInfo() before writing data. 
 
-(2/7) efi_pstore: Add a logic erasing entries to an erase callback
-
-(3/7) efi_pstore: Remove a logic erasing entries from a write callback to hold multiple logs
-
-(4/7) efi_pstore: Add ctime to argument of erase callback
-
-(5/7) efi_pstore: Change a format of a variable name by adding a sequence counter
-
-(6/7) efi_pstore: Add a format check for an existing variable name at reading time
-
-(7/7) efi_pstore: Add a format check for an existing variable name at erasing time
-
-Detailed explanations are written in each patch.
-
- drivers/acpi/apei/erst.c   |   16 +++---
- drivers/firmware/efivars.c |  150 ++++++++++++++++++++++++++++++-------------
- fs/pstore/inode.c          |    7 ++-
- fs/pstore/internal.h       |    2 +-
- fs/pstore/platform.c       |   11 ++--
- fs/pstore/ram.c            |    9 +--
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Mike Waychison <mikew@google.com>
+---
+ drivers/firmware/efivars.c |   18 ++++++++++++++++++
  include/linux/efi.h        |    1 +
- include/linux/pstore.h     |    6 +-
- 8 files changed, 133 insertions(+), 69 deletions(-)
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index d10c987..37ac21a 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -707,12 +707,29 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
++	u64 storage_space, remaining_space, max_variable_size;
++	efi_status_t status = EFI_NOT_FOUND;
+ 
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
+ 
+ 	spin_lock(&efivars->lock);
+ 
++	/*
++	 * Check if there is a space enough to log.
++	 * size: a size of logging data
++	 * DUMP_NAME_LEN * 2: a maximum size of variable name
++	 */
++	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
++						   &storage_space,
++						   &remaining_space,
++						   &max_variable_size);
++	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++		spin_unlock(&efivars->lock);
++		*id = part;
++		return -ENOSPC;
++	}
++
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = stub_name[i];
+ 
+@@ -1237,6 +1254,7 @@ efivars_init(void)
+ 	ops.get_variable = efi.get_variable;
+ 	ops.set_variable = efi.set_variable;
+ 	ops.get_next_variable = efi.get_next_variable;
++	ops.query_variable_info = efi.query_variable_info;
+ 	error = register_efivars(&__efivars, &ops, efi_kobj);
+ 	if (error)
+ 		goto err_put;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 8670eb1..c47ec36 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -643,6 +643,7 @@ struct efivar_operations {
+ 	efi_get_variable_t *get_variable;
+ 	efi_get_next_variable_t *get_next_variable;
+ 	efi_set_variable_t *set_variable;
++	efi_query_variable_info_t *query_variable_info;
+ };
+ 
+ struct efivars {
+-- 1.7.1
