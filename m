@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965207Ab2JZQK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:10:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964981Ab2JZQK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:10:56 -0400
-Date: Fri, 26 Oct 2012 12:09:41 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-In-Reply-To: <20121026141238.GA28443@redhat.com>
-Message-ID: <Pine.LNX.4.64.1210261208010.5413@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com>
- <1350650286.30157.28.camel@twins> <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com>
- <1350668451.2768.60.camel@twins> <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com>
- <20121024030845.GT4291@dastard> <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com>
- <20121025234048.GH29378@dastard> <20121026120605.GA23545@redhat.com>
- <Pine.LNX.4.64.1210260900170.24474@file.rdu.redhat.com> <20121026141238.GA28443@redhat.com>
+	id S965222Ab2JZQMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:12:36 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47025 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964981Ab2JZQMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 12:12:34 -0400
+Date: Fri, 26 Oct 2012 09:13:15 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] debugfs: add get/set for atomic types
+Message-ID: <20121026161315.GA13134@kroah.com>
+References: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 26 Oct 2012, Oleg Nesterov wrote:
-
-> > The code is different, but it can be changed to use percpu rw semaphores
-> > (if we add percpu_down_write_trylock).
+On Fri, Oct 26, 2012 at 10:49:01AM -0500, Seth Jennings wrote:
+> debugfs currently lacks the ability to create attributes
+> that set/get atomic_t values.
 > 
-> I don't really understand how you can make percpu_down_write_trylock()
-> atomic so that it can be called under br_write_lock(vfsmount_lock) in
-> sb_prepare_remount_readonly(). So I guess you also need to replace
-> vfsmount_lock at least. Or _trylock needs the barriers in _down_read.
-> Or I missed something.
-> 
-> Oleg.
+> This patch adds support for this through a new
+> debugfs_create_atomic_t() function.
 
-That's true - that code is under spinlock and you can't implement 
-non-blocking percpu_down_write_trylock.
+Why would you want to set an atomic variable type from userspace?  What
+in-kernel code needs this?
 
-Mikulas
+thanks,
+
+greg k-h
