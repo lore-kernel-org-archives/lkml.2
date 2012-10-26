@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2JZJU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:20:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51836 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab2JZJUx (ORCPT
+	id S1755287Ab2JZJWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:22:35 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56326 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab2JZJWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:20:53 -0400
-Date: Fri, 26 Oct 2012 11:20:48 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Zhouping Liu <zliu@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 00/31] numa/core patches
-Message-ID: <20121026092048.GA628@gmail.com>
-References: <20121025121617.617683848@chello.nl>
- <508A52E1.8020203@redhat.com>
- <1351242480.12171.48.camel@twins>
+	Fri, 26 Oct 2012 05:22:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351242480.12171.48.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADCVGbTQTH05TtoGUm-oNYnM8NR9OKr0GVgK0sETnW6H29b+6A@mail.gmail.com>
+References: <CADCVGbTDD-4WOVJWwaGBvay5=of=3VKBCVacrrW-z12BYZ1xbQ@mail.gmail.com>
+ <CAErSpo7mcDkWUhUBvnZ6P+5TOYsE=j6zB7MHqfY1wvqyyE1CBQ@mail.gmail.com> <CADCVGbTQTH05TtoGUm-oNYnM8NR9OKr0GVgK0sETnW6H29b+6A@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 26 Oct 2012 03:22:08 -0600
+Message-ID: <CAErSpo5QG4O_ENko8AFazq9WCf9vkX9_JzrKUdhCWnOPJhaSBA@mail.gmail.com>
+Subject: Re: PCIe IO space support on Tilera GX: Is there any one who can
+ confirm my modification to fix it is OK?
+To: Cyberman Wu <cypher.w@gmail.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 26, 2012 at 3:01 AM, Cyberman Wu <cypher.w@gmail.com> wrote:
+> We're not using 3.6.x, we're using is from MDE-4.1.0 from Tilera and
+> it patch 3.0.38.
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+That's fine, but you sent the email to the linux-pci and linux-kernel
+lists, and on those lists, we're only concerned with the upstream
+Linux kernels, e.g., 3.6.  If you need support for MDE-4.1.0, you need
+to talk to whoever supplies that, because we have no idea what it is.
 
-> On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
-> > [  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
-> 
-> > [  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
-> > [  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
-> > [  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
-> > [  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
-> > [  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
-> > [  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
-> > [  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
-> > [  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30 
-> 
-> Johannes, this looks like the thp migration memcg hookery gone bad,
-> could you have a look at this?
+> For mvsas, it seems do think 0 I/O address invalied.
 
-Meanwhile, Zhouping Liu, could you please not apply the last 
-patch:
+That's a driver bug.  Zero is a perfectly valid I/O address.  On many
+systems it's not usable because of platform restrictions, but the
+driver has no way to know about those restrictions, and the driver
+should still work on the platforms where zero *is* usable.
 
-  [PATCH] sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
+> When we using MDE-4.0.0 it don't support I/O space, I just bypass
+> these check since after
+> investigate all code of mvsas it seems that I/O space map to BAR 2 is
+> not really used.
 
-and see whether it boots/works without that?
+If the driver doesn't need I/O space, it'd be a lot simpler to just
+change it to use pci_enable_device_mem(), which indicates that we
+don't need to enable I/O BARs, and strip out the code that checks
+whether the I/O BARs are valid.  Then you wouldn't need to mess with
+adding I/O space support in your platform.
 
-Thanks,
-
-	Ingo
+Bjorn
