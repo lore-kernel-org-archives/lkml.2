@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab2JZIuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:50:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39242 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492Ab2JZIuc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:50:32 -0400
-Message-ID: <1351241389.12171.45.camel@twins>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 26 Oct 2012 10:49:49 +0200
-In-Reply-To: <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
-	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-	 <1351172849.12171.10.camel@twins>
-	 <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1757496Ab2JZIvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:51:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50995 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755492Ab2JZIvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 04:51:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,653,1344236400"; 
+   d="scan'208";a="232835934"
+Message-ID: <1351241467.2207.13.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH] hrtimer:__run_hrtimer races with enqueue_hrtimer
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: "he, bo" <bo.he@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        yanmin.zhang@intel.com
+Date: Fri, 26 Oct 2012 16:51:07 +0800
+In-Reply-To: <1351219917.28400.6.camel@hebo>
+References: <1351219917.28400.6.camel@hebo>
+Organization: Intel.
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-10-25 at 15:26 -0700, Linus Torvalds wrote:
-> it's the *rest* of the "u128" math I really object to. I also wonder
-> about the u64xu64 math case for SCHED_DEADLINE, because I assume that
-> it doesn't actually end up using the 128-bit result in that form, but
-> scales it down again some way? 
+On Fri, 2012-10-26 at 10:51 +0800, he, bo wrote:
+> From: Yanmin Zhang <yanmin.zhang@intel.com>
+> 
+> We hit a kernel panic at __run_hrtimer=>BUG_ON(timer->state != HRTIMER_STATE_CALLBACK).
+> <2>[   10.226053, 3] kernel BUG at /home/android/xiaobing/ymz/r4/hardware/intel/linux-2.6/kernel/hrtimer.c:1228!
+> <0>[   10.235682, 3] invalid opcode: 0000 [#1] PREEMPT SMP
+> <4>[   10.240716, 3] Modules linked in: wl12xx_sdio wl12xx mac80211 cfg80211 compat btwilink rmi4(C) fmdrv_chr st_drv matrix(C)
+> <4>[   10.251651, 3]
+> <4>[   10.253391, 3] Pid: 68, comm: kworker/3:4 Tainted: G        WC  3.0.34-140430-g2af538d #45 Intel Corporation CloverTrail/FFRD
+> <4>[   10.264674, 3] EIP: 0060:[<c126c7ed>] EFLAGS: 00010002 CPU: 3
+> <4>[   10.270411, 3] EIP is at __run_hrtimer+0xbd/0x240
+> <4>[   10.275091, 3] EAX: 00000001 EBX: f67fb6b8 ECX: f57b4000 EDX: 00007301
+> <4>[   10.281602, 3] ESI: c1d614c0 EDI: f67fb680 EBP: f57b5dd8 ESP: f57b5da8
+> <4>[   10.288113, 3]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> <0>[   10.293754, 3] Process kworker/3:4 (pid: 68, ti=f57b4000 task=f57aa730 task.ti=f57b4000)
+> <0>[   10.301827, 3] Stack:
+> <4>[   10.304083, 3]  00000000 c1afef40 f57b5dd8 c167a6e0 f67fb680 20b366e3 f67fb6b8 f57b5e14
+> <4>[   10.312069, 3]  00000001 f67fb6b8 00000001 f67fb680 f57b5e28 c126d1e5 f57b5e08 c126f325
+> <4>[   10.320055, 3]  00000000 86b9868d 00000001 86b9868d 00000001 00000003 ffffffff 7fffffff
+> <0>[   10.328041, 3] Call Trace:
+> <4>[   10.330742, 3]  [<c167a6e0>] ? gburst_thread_stop.isra.25+0x40/0x40
+> <4>[   10.336988, 3]  [<c126d1e5>] hrtimer_interrupt+0xd5/0x250
+> <4>[   10.342368, 3]  [<c126f325>] ? sched_clock_cpu+0xe5/0x150
+> <4>[   10.347753, 3]  [<c1871d44>] smp_apic_timer_interrupt+0x54/0x88
+> <4>[   10.353654, 3]  [<c1496558>] ? trace_hardirqs_off_thunk+0xc/0x14
+> <4>[   10.359643, 3]  [<c186be9f>] apic_timer_interrupt+0x2f/0x34
+> <4>[   10.365199, 3]  [<c186e60f>] ? sub_preempt_count+0x1f/0x50
+> <4>[   10.370669, 3]  [<c149558a>] delay_tsc+0x3a/0xc0
+> <6>[   10.371589, 0] android_work: did not send uevent (0 0   (null))
+> <4>[   10.381171, 3]  [<c14954e3>] __const_udelay+0x23/0x30
+> <4>[   10.386207, 3]  [<c16d043a>] mdfld_dsi_send_dcs+0x12a/0x5d0
+> <4>[   10.391760, 3]  [<c186b6c6>] ? _raw_spin_unlock_irqrestore+0x26/0x50
+> <4>[   10.398101, 3]  [<c16af431>] ? ospm_power_using_hw_begin+0xa1/0x350
+> <4>[   10.399053, 3]  [<c186a49f>] ? __mutex_lock_slowpath+0x1ff/0x2f0
+> <4>[   10.399069, 3]  [<c16bd59e>] mdfld_dbi_update_panel+0x21e/0x2d0
+> <4>[   10.399085, 3]  [<c16b1ae1>] mdfld_te_handler_work+0x71/0x80
+> <4>[   10.399099, 3]  [<c12642be>] process_one_work+0xfe/0x3f0
+> <4>[   10.399114, 3]  [<c16b1a70>] ? mdfld_async_flip_te_handler+0xf0/0xf0
+> 
+> Basically, __run_hrtimer has a race with enqueue_hrtimer. When __run_hrtimer calls
+> the timer callback fn, another thread might call enqueue_hrtimer or hrtimer_start
+> to requeue it, and the timer->state is equal to HRTIMER_STATE_CALLBACK|HRTIMER_STATE_ENQUEUED,
+> which causes the BUG_ON(timer->state != HRTIMER_STATE_CALLBACK) checking fails.
+> 
+> The patch fixes it by checking only bit HRTIMER_STATE_CALLBACK.
+The patch has an issue that enqueue_hrtimer doesn't check if the timer is queued.
+I will send a new patch.
 
-No, it does a compare on two u128, so it doesn't loose any precision.
-If it were to scale down again and loose precision I'd agree with you
-that introducing the u128 stuff is pointless.
 
-The point is (as mentioned in the comments below) overflowing an actual
-u64 is rare, however since some of this (specifically the
-dl_{runtime,deadline} parameters) is user specified, we have to assume
-we will overflow.
-
----
-
-+/*
-+ * Here we check if --at time t-- an entity (which is probably being
-+ * [re]activated or, in general, enqueued) can use its remaining runtime
-+ * and its current deadline _without_ exceeding the bandwidth it is
-+ * assigned (function returns true if it can't). We are in fact applying
-+ * one of the CBS rules: when a task wakes up, if the residual runtime
-+ * over residual deadline fits within the allocated bandwidth, then we
-+ * can keep the current (absolute) deadline and residual budget without
-+ * disrupting the schedulability of the system. Otherwise, we should
-+ * refill the runtime and set the deadline a period in the future,
-+ * because keeping the current (absolute) deadline of the task would
-+ * result in breaking guarantees promised to other tasks.
-+ *
-+ * This function returns true if:
-+ *
-+ *   runtime / (deadline - t) > dl_runtime / dl_deadline ,
-+ *
-+ * IOW we can't recycle current parameters.
-+ */
-+static bool dl_entity_overflow(struct sched_dl_entity *dl_se, u64 t)
-+{
-+       u128 left, right;
-+
-+       /*
-+        * left and right are the two sides of the equation above,
-+        * after a bit of shuffling to use multiplications instead
-+        * of divisions.
-+        *
-+        * Note that none of the time values involved in the two
-+        * multiplications are absolute: dl_deadline and dl_runtime
-+        * are the relative deadline and the maximum runtime of each
-+        * instance, runtime is the runtime left for the last instance
-+        * and (deadline - t), since t is rq->clock, is the time left
-+        * to the (absolute) deadline. Therefore, overflowing the u64
-+        * type is very unlikely to occur in both cases.
-+        */
-+       left = mul_u64_u64(dl_se->dl_deadline, dl_se->runtime);
-+       right = mul_u64_u64((dl_se->deadline - t), dl_se->dl_runtime);
-+
-+       if (cmp_u128(left, right) > 0)
-+               return true;
-+
-+       return false;
-+}
