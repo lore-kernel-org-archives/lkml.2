@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966390Ab2JZUQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:16:40 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40736 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S966344Ab2JZUQj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:16:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Qkmy6fXIgOsk8Sv72Freb
-Date: Fri, 26 Oct 2012 13:16:31 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Kishon Vijay Abraham I <kishon@ti.com>,
-        linux@arm.linux.org.uk, b-cousson@ti.com, olof@lixom.net,
-        rdunlap@xenotime.net, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] ARM: OMAP: ocp2scp: create omap device for
- ocp2scp
-Message-ID: <20121026201631.GR11908@atomide.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
- <1349675983-23803-4-git-send-email-kishon@ti.com>
- <20121026065012.GC22206@arwen.pp.htv.fi>
- <201210260747.11848.arnd@arndb.de>
- <20121026172140.GJ11908@atomide.com>
- <20121026195958.GB29548@arwen.pp.htv.fi>
+	id S966404Ab2JZUVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:21:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29699 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966367Ab2JZUVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:21:17 -0400
+Date: Fri, 26 Oct 2012 16:21:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH 2/2] dm: stay in blk_queue_bypass until queue becomes
+ initialized
+Message-ID: <20121026202105.GF24687@redhat.com>
+References: <50890937.7010809@ce.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121026195958.GB29548@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <50890937.7010809@ce.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [121026 13:07]:
-> On Fri, Oct 26, 2012 at 10:21:41AM -0700, Tony Lindgren wrote:
-> > * Arnd Bergmann <arnd@arndb.de> [121026 00:48]:
-> > > On Friday 26 October 2012, Felipe Balbi wrote:
-> > > > > +static void omap_init_ocp2scp(void)
-> > > > > +{
-> > > > > +     struct omap_hwmod       *oh;
-> > > > > +     struct platform_device  *pdev;
-> > > > > +     int                     bus_id = -1, dev_cnt = 0, i;
-> > > > > +     struct omap_ocp2scp_dev *ocp2scp_dev;
-> > > > > +     const char              *oh_name, *name;
-> > > > > +     struct omap_ocp2scp_platform_data *pdata;
-> > > > > +
-> > > > > +     oh_name = "ocp2scp_usb_phy";
-> > > > > +     name    = "omap-ocp2scp";
-> > > > 
-> > > > how about adding checks here to return early case we're not running on
-> > > > OMAP4 or OMAP5 ??
-> > > > 
-> > > 
-> > > I suppose even OMAP4-only, since OMAP5 always has DT enabled.
-> > 
-> > Hmm yes, currently omap_hwmod_lookup(oh_name) produces
-> > bogus errors for other omaps as the hwmod data is only
-> > there for omap4.
+On Thu, Oct 25, 2012 at 06:41:11PM +0900, Jun'ichi Nomura wrote:
+> [PATCH] dm: stay in blk_queue_bypass until queue becomes initialized
 > 
-> shouldn't that be fixed too ? I mean, if data isn't just return -ENODEV
-> or something similar.
+> With 749fefe677 ("block: lift the initial queue bypass mode on
+> blk_register_queue() instead of blk_init_allocated_queue()"),
+> add_disk() eventually calls blk_queue_bypass_end().
+> This change invokes the following warning when multipath is used.
+> 
+>   BUG: scheduling while atomic: multipath/2460/0x00000002
+>   1 lock held by multipath/2460:
+>    #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+>   Modules linked in: ...
+>   Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+>   Call Trace:
+>    [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+>    [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+>    [<ffffffff814291e6>] schedule+0x64/0x66
+>    [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+>    [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+>    [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+>    [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+>    [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+>    [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+>    [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+>    [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+>    [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+>    [<ffffffff8106fb18>] ? complete+0x21/0x53
+>    [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+>    [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+>    [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+>    [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+>    [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+>    [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+>    [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+>    [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+>    [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+>    [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+>    [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+>    [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+>    [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+>    [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+>    [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+>    [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+>    [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+>    [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>    [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
+> 
+> The warning means during queue initialization blk_queue_bypass_start()
+> calls sleeping function (synchronize_rcu) while dm holds md->type_lock.
 
-Yes some kind of checking is needed here.
+md->type_lock is a mutex, isn't it? I thought we are allowed to block
+and schedule out under mutex?
 
-Regards,
+add_disk() also calls disk_alloc_events() which does kzalloc(GFP_KERNEL).
+So we already have code which can block/wait under md->type_lock. I am
+not sure why should we get this warning under a mutex.
 
-Tony
+Thanks
+Vivek
