@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966520Ab2JZUjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:39:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:35823 "EHLO mga01.intel.com"
+	id S966509Ab2JZUjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:39:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35829 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754336Ab2JZUaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753911Ab2JZUaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 16:30:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="240686954"
+   d="scan'208";a="238932607"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 10/33] perf, tools: Add abort,notx,intx branch filter options to perf report -j v2
-Date: Fri, 26 Oct 2012 13:29:52 -0700
-Message-Id: <1351283415-13170-11-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/33] perf, x86: Support Haswell v4 LBR format
+Date: Fri, 26 Oct 2012 13:29:49 -0700
+Message-Id: <1351283415-13170-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,43 +25,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Make perf report -j aware of the new intx,notx,abort branch qualifiers.
+Haswell has two additional LBR from flags for TSX: intx and abort, implemented
+as a new v4 version of the LBR format.
 
-v2: ABORT -> ABORTTX
+Handle those in and adjust the sign extension code to still correctly extend.
+The flags are exported similarly in the LBR record to the existing misprediction
+flag
+
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Documentation/perf-record.txt |    3 +++
- tools/perf/builtin-record.c              |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++++++++---
+ include/linux/perf_event.h                 |    7 ++++++-
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index b38a1f9..4b9f477 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -172,6 +172,9 @@ following filters are defined:
-         - u:  only when the branch target is at the user level
-         - k: only when the branch target is in the kernel
-         - hv: only when the target is at the hypervisor level
-+	- intx: only when the target is in a hardware transaction
-+	- notx: only when the target is not in a hardware transaction
-+	- aborttx: only when the target is a hardware transaction abort
- 
- +
- The option requires at least one branch type among any, any_call, any_ret, ind_call.
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e9231659..88ecbbd 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -725,6 +725,9 @@ static const struct branch_mode branch_modes[] = {
- 	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
- 	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
- 	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
-+	BRANCH_OPT("aborttx", PERF_SAMPLE_BRANCH_ABORTTX),
-+	BRANCH_OPT("intx", PERF_SAMPLE_BRANCH_INTX),
-+	BRANCH_OPT("notx", PERF_SAMPLE_BRANCH_NOTX),
- 	BRANCH_END
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index da02e9c..2af6695b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -12,6 +12,7 @@ enum {
+ 	LBR_FORMAT_LIP		= 0x01,
+ 	LBR_FORMAT_EIP		= 0x02,
+ 	LBR_FORMAT_EIP_FLAGS	= 0x03,
++	LBR_FORMAT_EIP_FLAGS2	= 0x04,
  };
  
+ /*
+@@ -56,6 +57,8 @@ enum {
+ 	 LBR_FAR)
+ 
+ #define LBR_FROM_FLAG_MISPRED  (1ULL << 63)
++#define LBR_FROM_FLAG_INTX     (1ULL << 62)
++#define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 
+ #define for_each_branch_sample_type(x) \
+ 	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+@@ -270,21 +273,30 @@ static void intel_pmu_lbr_read_64(struct cpu_hw_events *cpuc)
+ 
+ 	for (i = 0; i < x86_pmu.lbr_nr; i++) {
+ 		unsigned long lbr_idx = (tos - i) & mask;
+-		u64 from, to, mis = 0, pred = 0;
++		u64 from, to, mis = 0, pred = 0, intx = 0, abort = 0;
+ 
+ 		rdmsrl(x86_pmu.lbr_from + lbr_idx, from);
+ 		rdmsrl(x86_pmu.lbr_to   + lbr_idx, to);
+ 
+-		if (lbr_format == LBR_FORMAT_EIP_FLAGS) {
++		if (lbr_format == LBR_FORMAT_EIP_FLAGS ||
++		    lbr_format == LBR_FORMAT_EIP_FLAGS2) {
+ 			mis = !!(from & LBR_FROM_FLAG_MISPRED);
+ 			pred = !mis;
+-			from = (u64)((((s64)from) << 1) >> 1);
++			if (lbr_format == LBR_FORMAT_EIP_FLAGS)
++				from = (u64)((((s64)from) << 1) >> 1);
++			else if (lbr_format == LBR_FORMAT_EIP_FLAGS2) {
++				intx = !!(from & LBR_FROM_FLAG_INTX);
++				abort = !!(from & LBR_FROM_FLAG_ABORT);
++				from = (u64)((((s64)from) << 3) >> 3);
++			}
+ 		}
+ 
+ 		cpuc->lbr_entries[i].from	= from;
+ 		cpuc->lbr_entries[i].to		= to;
+ 		cpuc->lbr_entries[i].mispred	= mis;
+ 		cpuc->lbr_entries[i].predicted	= pred;
++		cpuc->lbr_entries[i].intx	= intx;
++		cpuc->lbr_entries[i].abort	= abort;
+ 		cpuc->lbr_entries[i].reserved	= 0;
+ 	}
+ 	cpuc->lbr_stack.nr = i;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 2e90235..0e528fc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -74,13 +74,18 @@ struct perf_raw_record {
+  *
+  * support for mispred, predicted is optional. In case it
+  * is not supported mispred = predicted = 0.
++ *
++ *     intx: running in a hardware transaction
++ *     abort: aborting a hardware transaction
+  */
+ struct perf_branch_entry {
+ 	__u64	from;
+ 	__u64	to;
+ 	__u64	mispred:1,  /* target mispredicted */
+ 		predicted:1,/* target predicted */
+-		reserved:62;
++		intx:1,	    /* in transaction */
++		abort:1,    /* transaction abort */
++		reserved:60;
+ };
+ 
+ /*
 -- 
 1.7.7.6
 
