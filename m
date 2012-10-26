@@ -1,32 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2JZJIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:08:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38772 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab2JZJH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:07:56 -0400
-Date: Fri, 26 Oct 2012 02:07:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: linux-kernel@vger.kernel.org
-Subject: Re: where is trace_kmalloc_node?
-In-Reply-To: <20121026084648.GA32761@gentoo.L3L6.loongson.cn>
-Message-ID: <alpine.DEB.2.00.1210260207210.9101@chino.kir.corp.google.com>
-References: <20121026084648.GA32761@gentoo.L3L6.loongson.cn>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757926Ab2JZJG6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:06:58 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:36235 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757813Ab2JZJGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 05:06:54 -0400
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, x86@kernel.org, rui.zhang@intel.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Florian Fainelli <ffainelli@freebox.fr>
+Subject: [PATCH 0/3] x86: ce4100 fixes and improvements
+Date: Fri, 26 Oct 2012 11:05:22 +0200
+Message-Id: <1351242325-23724-1-git-send-email-ffainelli@freebox.fr>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, yili0568@gmail.com wrote:
+Hi all,
 
-> hello:
-> 	everyone, I can't find the definition of trace_kmalloc_node,
-> 	where is it?
+This patch serie contains shutdown/reboot fixes for the CE4100 platform as
+well as a PCI controller fix for devices without an interrupt line.
 
-Look for DEFINE_EVENT(..., kmalloc_node, ...) in 
-include/trace/events/kmem.h.
+Florian Fainelli (3):
+  x86: ce4100: implement pm_poweroff
+  x86: ce4100: force reboot method to be KBD
+  x86: ce4100: fixup PCI configuration register access for devices
+    without interrupts
+
+ arch/x86/pci/ce4100.c             |   13 +++++++++++++
+ arch/x86/platform/ce4100/ce4100.c |   10 ++++++++++
+ 2 files changed, 23 insertions(+)
+
+-- 
+1.7.10.4
+
