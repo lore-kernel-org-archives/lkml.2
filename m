@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965631Ab2JZRxH (ORCPT <rfc822;w@1wt.eu>);
+	id S965657Ab2JZRxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 13:53:10 -0400
+Received: from fieldses.org ([174.143.236.118]:41542 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965580Ab2JZRxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 13:53:07 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:57229 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965593Ab2JZRxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 13:53:04 -0400
-Date: Fri, 26 Oct 2012 10:52:58 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to use
- freezable_schedule()
-Message-ID: <20121026175258.GV11442@htj.dyndns.org>
-References: <20121022211317.GD5951@atj.dyndns.org>
- <20121023153919.GA16201@redhat.com>
- <20121024185710.GA12182@atj.dyndns.org>
- <20121025163941.GA3801@redhat.com>
- <20121025163959.GB3801@redhat.com>
- <20121025171812.GE11442@htj.dyndns.org>
- <20121025173433.GA7650@redhat.com>
- <20121025173632.GI11442@htj.dyndns.org>
- <20121026174545.GA21639@redhat.com>
- <20121026174606.GB21639@redhat.com>
+Date: Fri, 26 Oct 2012 13:52:54 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3] SUNRPC: set desired file system root before
+ connecting local transports
+Message-ID: <20121026175254.GA13094@fieldses.org>
+References: <20121008105437.18668.99905.stgit@localhost.localdomain>
+ <20121009193506.GA19680@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA90901A143@SACEXCMBX04-PRD.hq.netapp.com>
+ <87txu3bdnj.fsf@xmission.com>
+ <20121009223139.GA25826@fieldses.org>
+ <87bogb1cvl.fsf@xmission.com>
+ <20121010012336.GA2935@fieldses.org>
+ <50754EBC.5020608@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121026174606.GB21639@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50754EBC.5020608@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 07:46:06PM +0200, Oleg Nesterov wrote:
-> try_to_freeze_tasks() and cgroup_freezer rely on scheduler locks
-> to ensure that a task doing STOPPED/TRACED -> RUNNING transition
-> can't escape freezing. This mostly works, but ptrace_stop() does
-> not necessarily call schedule(), it can change task->state back to
-> RUNNING and check freezing() without any lock/barrier in between.
+On Wed, Oct 10, 2012 at 02:32:28PM +0400, Stanislav Kinsbursky wrote:
+> 10.10.2012 05:23, J. Bruce Fields пишет:
+> >On Tue, Oct 09, 2012 at 03:47:42PM -0700, Eric W. Biederman wrote:
+> >>"J. Bruce Fields" <bfields@fieldses.org> writes:
+> >>
+> >>>On Tue, Oct 09, 2012 at 01:20:48PM -0700, Eric W. Biederman wrote:
+> >>>>"Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
+> >>>>
+> >>>>>On Tue, 2012-10-09 at 15:35 -0400, J. Bruce Fields wrote:
+> >>>>>>Cc'ing Eric since I seem to recall he suggested doing it this way?
+> >>>>
+> >>>>Yes.  On second look setting fs->root won't work. We need to change fs.
+> >>>>The problem is that by default all kernel threads share fs so changing
+> >>>>fs->root will have non-local consequences.
+> >>>
+> >>>Oh, huh.  And we can't "unshare" it somehow?
+> >>
+> >>I don't fully understand how nfs uses kernel threads and work queues.
+> >>My general understanding is work queues reuse their kernel threads
+> >>between different users.  So it is mostly a don't pollute your
+> >>environment thing.  If there was a dedicated kernel thread for each
+> >>environment this would be trivial.
+> >>
+> >>What I was suggesting here is changing task->fs instead of
+> >>task->fs.root.  That should just require task_lock().
+> >
+> >Oh, OK, got it--if that works, great.
+> >
 > 
-> We could add the necessary barrier, but this patch changes
-> ptrace_stop() and do_signal_stop() to use freezable_schedule().
-> This fixes the race, freezer_count() and freezer_should_skip()
-> carefully avoid the race.
-> 
-> And this simplifies the code, try_to_freeze_tasks/update_if_frozen
-> no longer need to use task_is_stopped_or_traced() checks with the
-> non trivial assumptions. We can rely on the mechanism which was
-> specially designed to mark the sleeping task as "frozen enough".
-> 
-> v2: As Tejun pointed out, we can also change get_signal_to_deliver()
-> and move try_to_freeze() up before 'relock' label.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> The main problem with swapping fs struct is actually the same as in
+> root swapping. I.e. routines for copy fs_struct are not exported.
+> It could be done on place, but I don't think, that Al Viro would
+> support such implementation.
+> Trond?
 
-Looks good to me. :)
+It seems like we got stalled here....  Could you go ahead and try a
+patch, and see what people think?
 
- Acked-by: Tejun Heo <tj@kernel.org>
-
-Rafael, sorry that this one doesn't have pm cc'd but can you please
-pick up this one too?
-
-Thanks a lot.
-
--- 
-tejun
+--b.
