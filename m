@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355Ab2JZKsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 06:48:30 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:21852 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758250Ab2JZKsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 06:48:12 -0400
-X-IronPort-AV: E=Sophos;i="4.80,654,1344182400"; 
-   d="scan'208";a="6078657"
-From: wency@cn.fujitsu.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Cc: liuj97@gmail.com, len.brown@intel.com, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        rjw@sisk.pl, laijs@cn.fujitsu.com, Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: [PATCH v3 1/3] acpi,memory-hotplug: call acpi_bus_trim() to remove memory device
-Date: Fri, 26 Oct 2012 18:31:01 +0800
-Message-Id: <1351247463-5653-2-git-send-email-wency@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
-References: <1351247463-5653-1-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/26 18:24:49,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/26 18:24:54,
-	Serialize complete at 2012/10/26 18:24:54
+	id S1753412Ab2JZK7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 06:59:42 -0400
+Received: from mail.renton.name ([90.155.165.44]:40260 "EHLO
+	beaver.old-horrors.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab2JZK7l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 06:59:41 -0400
+Date: Fri, 26 Oct 2012 14:58:15 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        Giuliano Pochini <pochini@shiny.it>
+Subject: Re: Instead of IP addresses the kernel started to show zero's
+Message-ID: <20121026105815.GA16074@beaver>
+References: <20120921182703.GH16609@beaver>
+ <20121009123601.GA21710@mwanda>
+ <1349787010.21172.4265.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1349787010.21172.4265.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On Tue, Oct 09, 2012 at 02:50:10PM +0200, Eric Dumazet wrote:
+> 
+> Reporter was (kindly) requested to try 3.6-rc7 +, and we got no answer.
 
-The memory device has been ejected and powoffed, so we can call
-acpi_bus_trim() to remove the memory device from acpi bus.
+Now I don't have any free servers where I could test a new kernel.
+But in 1-2 months we'll be placing a new server fo a shared-hosting and
+then I will be able to test new kernels.
+Unfortunatelly I don't think it is reasonable to test kernels on production servers.
 
-CC: David Rientjes <rientjes@google.com>
-CC: Jiang Liu <liuj97@gmail.com>
-CC: Len Brown <len.brown@intel.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- drivers/acpi/acpi_memhotplug.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index 24c807f..1e90e8f 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -401,8 +401,9 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
- 		}
- 
- 		/*
--		 * TBD: Invoke acpi_bus_remove to cleanup data structures
-+		 * Invoke acpi_bus_trim() to remove memory device
- 		 */
-+		acpi_bus_trim(device, 1);
- 
- 		/* _EJ0 succeeded; _OST is not necessary */
- 		return;
 -- 
-1.8.0
-
+BRGDS. Alexey Vlasov.
