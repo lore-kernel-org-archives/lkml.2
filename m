@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab2JZAhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:37:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53030 "EHLO mail.kernel.org"
+	id S1755554Ab2JZAht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:37:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53004 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab2JZAGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:49 -0400
+	id S1753636Ab2JZAGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 37/42] sparc64: fix ptrace interaction with force_successful_syscall_return()
-Date: Thu, 25 Oct 2012 17:05:45 -0700
-Message-Id: <20121026000128.532830026@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, Ben Blum <bblum@andrew.cmu.edu>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 20/42] cgroup: notify_on_release may not be triggered in some cases
+Date: Thu, 25 Oct 2012 17:05:28 -0700
+Message-Id: <20121026000126.815380533@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -26,83 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+commit 1f5320d5972aa50d3e8d2b227b636b370e608359 upstream.
 
-[ Upstream commit 55c2770e413e96871147b9406a9c41fe9bc5209c ]
+notify_on_release must be triggered when the last process in a cgroup is
+move to another. But if the first(and only) process in a cgroup is moved to
+another, notify_on_release is not triggered.
 
-we want syscall_trace_leave() called on exit from any syscall;
-skipping its call in case we'd done force_successful_syscall_return()
-is broken...
+	# mkdir /cgroup/cpu/SRC
+	# mkdir /cgroup/cpu/DST
+	#
+	# echo 1 >/cgroup/cpu/SRC/notify_on_release
+	# echo 1 >/cgroup/cpu/DST/notify_on_release
+	#
+	# sleep 300 &
+	[1] 8629
+	#
+	# echo 8629 >/cgroup/cpu/SRC/tasks
+	# echo 8629 >/cgroup/cpu/DST/tasks
+	-> notify_on_release for /SRC must be triggered at this point,
+	   but it isn't.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This is because put_css_set() is called before setting CGRP_RELEASABLE
+in cgroup_task_migrate(), and is a regression introduce by the
+commit:74a1166d(cgroups: make procs file writable), which was merged
+into v3.0.
+
+Acked-by: Li Zefan <lizefan@huawei.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/syscalls.S |   32 ++++++++++++++------------------
- 1 file changed, 14 insertions(+), 18 deletions(-)
 
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -212,24 +212,20 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
--	/* Check if force_successful_syscall_return()
--	 * was invoked.
--	 */
--	ldub	[%g6 + TI_SYS_NOERROR], %l2
--	brnz,a,pn %l2, 80f
--	 stb	%g0, [%g6 + TI_SYS_NOERROR]
--
- 	cmp	%o0, -ERESTART_RESTARTBLOCK
- 	bgeu,pn	%xcc, 1f
--	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
--80:
-+	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
-+	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
-+
-+2:
-+	stb	%g0, [%g6 + TI_SYS_NOERROR]
- 	/* System call success, clear Carry condition code. */
- 	andn	%g3, %g2, %g3
-+3:
- 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
- 	bne,pn	%icc, linux_syscall_trace2
- 	 add	%l1, 0x4, %l2			! npc = npc+4
-@@ -238,20 +234,20 @@ ret_sys_call:
- 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- 
- 1:
-+	/* Check if force_successful_syscall_return()
-+	 * was invoked.
-+	 */
-+	ldub	[%g6 + TI_SYS_NOERROR], %l2
-+	brnz,pn %l2, 2b
-+	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
- 	/* System call failure, set Carry condition code.
- 	 * Also, get abs(errno) to return to the process.
+---
+ kernel/cgroup.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1868,9 +1868,8 @@ static void cgroup_task_migrate(struct c
+ 	 * trading it for newcg is protected by cgroup_mutex, we're safe to drop
+ 	 * it here; it will be freed under RCU.
  	 */
--	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
- 	sub	%g0, %o0, %o0
--	or	%g3, %g2, %g3
- 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
--	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
--	bne,pn	%icc, linux_syscall_trace2
--	 add	%l1, 0x4, %l2			! npc = npc+4
--	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
-+	ba,pt	%xcc, 3b
-+	 or	%g3, %g2, %g3
+-	put_css_set(oldcg);
+-
+ 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
++	put_css_set(oldcg);
+ }
  
--	b,pt	%xcc, rtrap
--	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
- linux_syscall_trace2:
- 	call	syscall_trace_leave
- 	 add	%sp, PTREGS_OFF, %o0
+ /**
 
 
