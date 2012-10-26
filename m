@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab2JZJYa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:24:30 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38404 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab2JZJY1 (ORCPT
+	id S932202Ab2JZJ0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:26:22 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48018 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914Ab2JZJ0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:24:27 -0400
-Date: Fri, 26 Oct 2012 11:24:21 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de,
-        mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-Message-ID: <20121026092421.GB628@gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
- <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
- <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
- <1351172849.12171.10.camel@twins>
- <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
- <1351241389.12171.45.camel@twins>
+	Fri, 26 Oct 2012 05:26:19 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <508A5716.1090509@jp.fujitsu.com>
+Date: Fri, 26 Oct 2012 18:25:42 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351241389.12171.45.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <srivatsa.bhat@linux.vnet.ibm.com>, <toshi.kani@hp.com>, <lenb@kernel.org>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/2] acpi : cpu hot-remove returns error when cpu_down()
+ fails
+References: <50657D92.3010106@jp.fujitsu.com> <4180255.BSUqs0l2F5@vostro.rjw.lan> <5080D9AA.8070801@jp.fujitsu.com>
+In-Reply-To: <5080D9AA.8070801@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+v1 -> v2
+- update Rafael's comment.
 
-> On Thu, 2012-10-25 at 15:26 -0700, Linus Torvalds wrote:
-> > it's the *rest* of the "u128" math I really object to. I also wonder
-> > about the u64xu64 math case for SCHED_DEADLINE, because I assume that
-> > it doesn't actually end up using the 128-bit result in that form, but
-> > scales it down again some way? 
-> 
-> No, it does a compare on two u128, so it doesn't loose any 
-> precision. If it were to scale down again and loose precision 
-> I'd agree with you that introducing the u128 stuff is 
-> pointless.
-> 
-> The point is (as mentioned in the comments below) overflowing 
-> an actual u64 is rare, however since some of this 
-> (specifically the dl_{runtime,deadline} parameters) is user 
-> specified, we have to assume we will overflow.
+>>   static int acpi_processor_handle_eject(struct acpi_processor *pr)
+>>   {
+>> -    if (cpu_online(pr->id))
+>> -        cpu_down(pr->id);
+>> +    int ret = 0;
+>> +
+>> +    if (cpu_online(pr->id)) {
+>> +        ret = cpu_down(pr->id);
+>
+> If you defined ret here ...
+>
+>> +        if (ret)
+>> +            return ret;
+>> +    }
+>>
 
-So can we control this by restricting the users and avoiding the 
-overflow?
+>>       arch_unregister_cpu(pr->id);
+>>       acpi_unmap_lsapic(pr->id);
+>> -    return (0);
+>> +    return ret;
+>
+> ... this line wouldn't need to be changed.
 
-A 2^64 result should be a *huge* amount of space already for 
-just about anything.
+---
+Even if cpu_down() fails, acpi_processor_remove() continues to remove the cpu.
+But in this case, it should return error number since some process may run on
+the cpu. If the cpu has a running process and the cpu is turned the power off,
+the system may not work well.
 
-Thanks,
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-	Ingo
+---
+  drivers/acpi/processor_driver.c |   16 +++++++++++-----
+  1 file changed, 11 insertions(+), 5 deletions(-)
+
+Index: linux-3.7-rc2/drivers/acpi/processor_driver.c
+===================================================================
+--- linux-3.7-rc2.orig/drivers/acpi/processor_driver.c	2012-10-21 04:11:32.000000000 +0900
++++ linux-3.7-rc2/drivers/acpi/processor_driver.c	2012-10-26 18:15:43.721665836 +0900
+@@ -605,7 +605,7 @@ err_free_pr:
+  static int acpi_processor_remove(struct acpi_device *device, int type)
+  {
+  	struct acpi_processor *pr = NULL;
+-
++	int ret;
+  
+  	if (!device || !acpi_driver_data(device))
+  		return -EINVAL;
+@@ -616,8 +616,9 @@ static int acpi_processor_remove(struct
+  		goto free;
+  
+  	if (type == ACPI_BUS_REMOVAL_EJECT) {
+-		if (acpi_processor_handle_eject(pr))
+-			return -EINVAL;
++		ret = acpi_processor_handle_eject(pr);
++		if (ret)
++			return ret;
+  	}
+  
+  	acpi_processor_power_exit(pr);
+@@ -848,8 +849,13 @@ static acpi_status acpi_processor_hotadd
+  
+  static int acpi_processor_handle_eject(struct acpi_processor *pr)
+  {
+-	if (cpu_online(pr->id))
+-		cpu_down(pr->id);
++	int ret = 0;
++
++	if (cpu_online(pr->id)) {
++		ret = cpu_down(pr->id);
++		if (ret)
++			return ret;
++	}
+  
+  	arch_unregister_cpu(pr->id);
+  	acpi_unmap_lsapic(pr->id);
+
