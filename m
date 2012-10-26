@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab2JZI44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:56:56 -0400
+	id S1757571Ab2JZI4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:56:38 -0400
 Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:61903 "EHLO
 	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757568Ab2JZI4i (ORCPT
+	with ESMTP id S1757268Ab2JZI4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:56:38 -0400
-X-AuditID: 9c930179-b7c8bae000003559-59-508a503f15ee
+	Fri, 26 Oct 2012 04:56:32 -0400
+X-AuditID: 9c930179-b7c8bae000003559-4f-508a503e4d6f
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Borislav Petkov <bp@amd64.org>
-Subject: [PATCH 5/5] perf tools: Fix LIBELF_MMAP checking
-Date: Fri, 26 Oct 2012 17:55:52 +0900
-Message-Id: <1351241752-2919-5-git-send-email-namhyung@kernel.org>
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@amd64.org>
+Subject: [PATCH RESEND 1/5] tools lib traceevent: Do not generate dependency for system header files
+Date: Fri, 26 Oct 2012 17:55:48 +0900
+Message-Id: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
-References: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Ingo reported (again!) that 'make clean' on perf/traceevent does not
+work due to some reason with system header file. Quotes Ingo:
 
-Currently checking mmap support in libelf failed due to wrong flags.
+ "Note that the old dependency related build failure thought to be
+  fixed in commit 860df5833e46 is back:
 
-    CHK libelf
-    CHK libdw
-    CHK libunwind
-    CHK -DLIBELF_MMAP
-/tmp/ccYJwdR0.o: In function `main':
-:(.text+0x18): undefined reference to `elf_begin'
-collect2: error: ld returned 1 exit status
+   make[1]: *** No rule to make target
+   `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', needed by `.trace-seq.d'.  Stop.
 
-This cannot happen since we checked the elf_begin() when checking
-libelf and it succeeded.
+  'make clean' itself does not work in libtraceevent:
 
-Fix it by using a same flag with libelf checking.
+   comet:~/tip/tools/lib/traceevent> make clean
+   make: *** No rule to make target `/usr/lib/gcc/x86_64-redhat-linux/4.7.0/include/stddef.h', needed by `.trace-seq.d'.  Stop.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
+  So I had to clean it out manually:
+
+   comet:~/tip/tools/lib/traceevent> git ls-files --others | xargs rm
+   comet:~/tip/tools/lib/traceevent>
+
+  and then things build fine."
+
+Try to fix it by excluding system headers from dependency generation.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Borislav Petkov <bp@amd64.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Makefile | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/lib/traceevent/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2d0c09ab58b8..629fc6a4b0df 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -541,7 +541,8 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
- else # NO_LIBELF
- BASIC_CFLAGS += -DLIBELF_SUPPORT
- 
--ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON),-DLIBELF_MMAP),y)
-+FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
- 	BASIC_CFLAGS += -DLIBELF_MMAP
- endif
- 
+diff --git a/tools/lib/traceevent/Makefile b/tools/lib/traceevent/Makefile
+index 04d959fa0226..a20e32033431 100644
+--- a/tools/lib/traceevent/Makefile
++++ b/tools/lib/traceevent/Makefile
+@@ -253,7 +253,7 @@ all_deps := $(all_objs:%.o=.%.d)
+ # let .d file also depends on the source and header files
+ define check_deps
+ 		@set -e; $(RM) $@; \
+-		$(CC) -M $(CFLAGS) $< > $@.$$$$; \
++		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
+ 		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
+ 		$(RM) $@.$$$$
+ endef
 -- 
 1.7.11.7
 
