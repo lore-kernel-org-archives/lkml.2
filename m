@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab2JZOMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:12:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933043Ab2JZOL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:11:57 -0400
-Date: Fri, 26 Oct 2012 16:12:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] brw_mutex: big read-write mutex
-Message-ID: <20121026141238.GA28443@redhat.com>
-References: <Pine.LNX.4.64.1210181525010.32376@file.rdu.redhat.com> <1350650286.30157.28.camel@twins> <Pine.LNX.4.64.1210191058060.13298@file.rdu.redhat.com> <1350668451.2768.60.camel@twins> <Pine.LNX.4.64.1210191758570.12753@file.rdu.redhat.com> <20121024030845.GT4291@dastard> <Pine.LNX.4.64.1210251008330.1849@file.rdu.redhat.com> <20121025234048.GH29378@dastard> <20121026120605.GA23545@redhat.com> <Pine.LNX.4.64.1210260900170.24474@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1210260900170.24474@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933225Ab2JZOOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:14:03 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55383 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933043Ab2JZOOA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:14:00 -0400
+Date: Fri, 26 Oct 2012 15:19:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Min Zhang <mzhang@mvista.com>
+Cc: gregkh@linuxfoundation.org, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: 8250 check iir rdi in interrupt
+Message-ID: <20121026151902.0a382d16@pyramind.ukuu.org.uk>
+In-Reply-To: <CAJ0e-Fofs48N9VnYr1_8Kch6+yHjGx9iCWBRtRsqpD-B_rWutQ@mail.gmail.com>
+References: <alpine.LFD.2.02.1210221633450.28146@nightowl>
+	<20121023110133.62bed522@pyramind.ukuu.org.uk>
+	<CAJ0e-Fofs48N9VnYr1_8Kch6+yHjGx9iCWBRtRsqpD-B_rWutQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26, Mikulas Patocka wrote:
->
-> On Fri, 26 Oct 2012, Oleg Nesterov wrote:
->
-> I didn't know about. The code is not reusable, and it doesn't really do
-> locking.
+> It is racing. For "too much work for irq", here is sequence events
+> analyzed by a Motorola engineer:
 
-That was my main point.
+Thanks - this is enormously helpful in understanding the report.
 
-As for the changing fs/namespace.c to use percpu_rwsem, I am not sure
-it is that simple and even worthwhile but I won't argue, I do not
-pretend I understand this code.
+>         5) The LSR indicates that the transmitter needs data,
+> but also indicates the presence of data in the FIFO (0x61 in the LSR)
+>         6) The processing function receives the characters, and
+> outputs data to the FIFO
+>         7) At the exact time (very very small window) that the
+> character is read from the FIFO, the FIFO timeout occurs locking in an
+> interrupt cause
+>         8) The next loop through the interrupt code begins
+>         9) The IIR now indicates the data timeout interrupt
+> (0xCC in the IIR)
+>         10) The processing function is called and it reads the
+> LSR
+>         11) The LSR is 0 indicating nothing to do
 
-> > I don't understand why do you both think that __mnt_want_write()
-> > and mnt_make_readonly() provides the same functionality. I looked
-> > at this code before I started this patch, and unless I completely
-> > misread it this does very different things. It is not "lock" at all.
-> >
-> > Oleg.
->
-> mnt_want_write uses percpu array of counters, just like percpu semaphores.
+>         12) The interrupt loop continues (the IIR won't clear
+> until a character is pulled) until it reaches its max count and
+> displays the error.
 
-and this is all imo ;)
+So we only need to check this in serial8250_handle_irq when IIR indicates
+a data timeout interrupt ? 
 
-> The code is different, but it can be changed to use percpu rw semaphores
-> (if we add percpu_down_write_trylock).
+Can we do
 
-I don't really understand how you can make percpu_down_write_trylock()
-atomic so that it can be called under br_write_lock(vfsmount_lock) in
-sb_prepare_remount_readonly(). So I guess you also need to replace
-vfsmount_lock at least. Or _trylock needs the barriers in _down_read.
-Or I missed something.
+	if ((iir & 0x0F) == 0x0C) {
+		/* Expensive RDI check */
+	}
 
-Oleg.
 
+
+Alan
