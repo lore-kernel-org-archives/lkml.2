@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966799Ab2JZWbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 18:31:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57281 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966776Ab2JZWbl (ORCPT
+	id S966827Ab2JZWe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 18:34:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8085 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966778Ab2JZWe2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 18:31:41 -0400
-Message-ID: <508B0F4B.80601@gmail.com>
-Date: Fri, 26 Oct 2012 15:31:39 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Fri, 26 Oct 2012 18:34:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,657,1344236400"; 
+   d="scan'208";a="240717181"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: RE: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+Thread-Topic: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+Thread-Index: AQHNssNn60IFoxEWWkW+xJzYf95sNpfLkXcAgAA0tFCAAJ4qgP//weDA
+Date: Fri, 26 Oct 2012 22:24:23 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com>
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20121026061206.GA31139@thunk.org>
+ <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
+ <20121026184649.GA8614@thunk.org>
+In-Reply-To: <20121026184649.GA8614@thunk.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: shuah.khan@hp.com
-CC: ralf@linux-mips.org, kyungmin.park@samsung.com, arnd@arndb.de,
-        andrzej.p@samsung.com, m.szyprowski@samsung.com,
-        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH RFT RESEND linux-next] mips: dma-mapping: support debug_dma_mapping_error
-References: <1351208193.6851.17.camel@lorien2>  <1351267298.4013.12.camel@lorien2> <508ABE1D.5010106@gmail.com>  <1351271198.4013.35.camel@lorien2> <508AED66.3040808@gmail.com> <1351288264.6885.11.camel@lorien2>
-In-Reply-To: <1351288264.6885.11.camel@lorien2>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 02:51 PM, Shuah Khan wrote:
+> Well, we could set a new attribute bit on the file which indicates
+> that the file has been corrupted, and this could cause any attempts to
+> open the file to return some error until the bit has been cleared.
 
->>>> On 10/26/2012 09:01 AM, Shuah Khan wrote:
->>>>> Add support for debug_dma_mapping_error() call to avoid warning from
->>>>> debug_dma_unmap() interface when it checks for mapping error checked
->>>>> status. Without this patch, device driver failed to check map error
->>>>> warning is generated.
+That sounds a lot better than renaming/moving the file.
 
-I'm confused.
+> This would persist across reboots.  The only problem is that system
+> administrators might get very confused (at least at first, when they
+> first run a kernel or a distribution which has this feature enabled).
 
-Your claim that a 'warning is generated' seems to be in conflict with...
+Yes. This would require some education. But new attributes have been
+added in the past (e.g. immutable) that caused confusion to users and
+tools that didn't know about them.
 
+> Application programs could also get very confused when any attempt to
+> open or read from a file suddenly returned some new error code (EIO,
+> or should we designate a new errno code for this purpose, so there is
+> a better indication of what the heck was going on?)
 
-[...]
-> Got it. Thanks. I would volunteer to look at fixing all the problems,
-> but unfortunately I don't have a MIPS box handy
+EIO sounds wrong ... but it is perhaps the best of the existing codes. Adding
+a new one is also challenging too.
 
-This statement that you don't have hardware that exhibits the problem.
+> Also, if we just log the message in dmesg, if the system administrator
+> doesn't find the "this file is corrupted" bit right away
 
-How was the patch tested?  How do you even know there is a problem?
+This is pretty much a given. Nobody will see the message in the console log
+until it is far too late.
 
-David Daney
+> I'm not sure it's worth it to go to these extents, but I could imagine
+> some customers wanting to have this sort of information.  Do we know
+> what their "nice to have" / "must have" requirements might be?
 
+18 years ago Intel rather famously attempted to sell users on the idea that a
+rare divide error that sometimes gave the wrong answer could be ignored. Before
+my time at Intel, but it is still burned into the corporate psyche that customers
+really don't like to get the wrong answers from their computers.
 
+Whether it is worth it may depend on the relative frequency of data being
+corrupted this way, compared to all the other ways that it might get messed
+up. If it were a thousand times more likely that data got silently corrupted
+on its path to media, sitting spinning on the media, and then back off the
+drive again - then all this fancy stuff wouldn't make any real difference.
+I have no data on the relative error rates of memory and i/o - so I can't
+answer this.
+
+-Tony
