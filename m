@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab2JZLc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:32:57 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:32865 "EHLO zmc.proxad.net"
+	id S932341Ab2JZLiB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:38:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57392 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758513Ab2JZLcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:32:18 -0400
-From: Florian Fainelli <ffainelli@freebox.fr>
-To: tglx@linutronix.de
-Cc: mingo@redhat.com, x86@kernel.org, rui.zhang@intel.com,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Florian Fainelli <ffainelli@freebox.fr>
-Subject: [PATCH 3/3] x86: ce4100: fixup PCI configuration register access for devices without interrupts
-Date: Fri, 26 Oct 2012 13:30:54 +0200
-Message-Id: <1351251054-19892-4-git-send-email-ffainelli@freebox.fr>
+	id S1758513Ab2JZLh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:37:59 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: memcg/cgroup: do not fail fail on pre_destroy callbacks
+Date: Fri, 26 Oct 2012 13:37:27 +0200
+Message-Id: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
-References: <1351242325-23724-1-git-send-email-ffainelli@freebox.fr>
- <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxime Bizon <mbizon@freebox.fr>
+Hi,
+memcg is the only controller which might fail in its pre_destroy
+callback which makes the cgroup core more complicated for no good
+reason. This is an attempt to change this unfortunate state.
 
-Some CE4100 devices such as the:
-- DFX module (01:0b.7)
-- entertainment encryption device (01:10.0)
-- multimedia controller (01:12.0)
+I have previously posted this as an RFC https://lkml.org/lkml/2012/10/17/246
+and the feedback was mostly positive. Nobody seem to see any issues with
+the approach so let's move on from the RFC. The patchset still needs
+good portion of testing and I am working on it. I would also like to see some
+Acks ;)
+The patchset is posted as v3 because some of the patches went trough 2
+revisions during RFC.
 
-do not have a device interrupt at all. This patch fixes the PCI controller
-code to declare the missing PCI configuration register space, as well as a
-fixup method for forcing the interrupt pin to be 0 for these devices. This is
-required to ensure that pci drivers matching on these devices will be able to
-honor the various PCI subsystem calls touching the configuration space.
+The first two patches are just clean ups. They could be merged even
+without the rest.
 
-Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
----
- arch/x86/pci/ce4100.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+The real change, although the code is not changed that much, is the 3rd
+patch. It changes the way how we handle mem_cgroup_move_parent failures.
+We have to realize that all those failures are *temporal*. Because we
+are either racing with the page removal or the page is temporarily off
+the LRU because of migration resp. global reclaim. As a result we do
+not fail mem_cgroup_force_empty_list if the page cannot be moved to the
+parent and rather retry until the LRU is empty.
 
-diff --git a/arch/x86/pci/ce4100.c b/arch/x86/pci/ce4100.c
-index 41bd2a2..b914e20 100644
---- a/arch/x86/pci/ce4100.c
-+++ b/arch/x86/pci/ce4100.c
-@@ -115,6 +115,16 @@ static void sata_revid_read(struct sim_dev_reg *reg, u32 *value)
- 	reg_read(reg, value);
- }
- 
-+static void reg_noirq_read(struct sim_dev_reg *reg, u32 *value)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&pci_config_lock, flags);
-+	/* force interrupt pin value to 0 */
-+	*value = reg->sim_reg.value & 0xfff00ff;
-+	raw_spin_unlock_irqrestore(&pci_config_lock, flags);
-+}
-+
- static struct sim_dev_reg bus1_fixups[] = {
- 	DEFINE_REG(2, 0, 0x10, (16*MB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(2, 0, 0x14, (256), reg_init, reg_read, reg_write)
-@@ -144,6 +154,7 @@ static struct sim_dev_reg bus1_fixups[] = {
- 	DEFINE_REG(11, 5, 0x10, (64*KB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(11, 6, 0x10, (256), reg_init, reg_read, reg_write)
- 	DEFINE_REG(11, 7, 0x10, (64*KB), reg_init, reg_read, reg_write)
-+	DEFINE_REG(11, 7, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
- 	DEFINE_REG(12, 0, 0x10, (128*KB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(12, 0, 0x14, (256), reg_init, reg_read, reg_write)
- 	DEFINE_REG(12, 1, 0x10, (1024), reg_init, reg_read, reg_write)
-@@ -161,8 +172,10 @@ static struct sim_dev_reg bus1_fixups[] = {
- 	DEFINE_REG(16, 0, 0x10, (64*KB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(16, 0, 0x14, (64*MB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(16, 0, 0x18, (64*MB), reg_init, reg_read, reg_write)
-+	DEFINE_REG(16, 0, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
- 	DEFINE_REG(17, 0, 0x10, (128*KB), reg_init, reg_read, reg_write)
- 	DEFINE_REG(18, 0, 0x10, (1*KB), reg_init, reg_read, reg_write)
-+	DEFINE_REG(18, 0, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
- };
- 
- static void __init init_sim_regs(void)
--- 
-1.7.10.4
+The 4th patch is for cgroup core. I have moved cgroup_call_pre_destroy
+after css are frozen and the group is marked as removed which means
+that all css_tryget will fail as well as no new task can attach the group
+resp. no new child group can be added.
 
+Tejun is planning to build on top of that and make some more cleanups
+in the cgroup core (namely get rid of of the whole retry code in
+cgroup_rmdir).
+This makes unfortunate inter-tree dependency between Andrew's and
+Tejun's tree therefore I have based all the work on 3.6 kernel so that
+it can be merged into Tejun's cgroup tree as well into -mm git tree
+(Andrew will see all the changes from linux-next). I do not like to
+push memcg changes through other than Andrew's tree but this seems to
+be easier as other cgroup changes will probably depend on the Tejun's
+cleanups. Is everybody OK with this?
+
+The last two patches are trivial follow ups for the cgroups core change
+because now we know that nobody will interfere with us so we can drop
+those empty && no child condition.
+
+See the specific patches for the changelogs.
+
+Michal Hocko (6):
+      memcg: split mem_cgroup_force_empty into reclaiming and reparenting parts
+      memcg: root_cgroup cannot reach mem_cgroup_move_parent
+      memcg: Simplify mem_cgroup_force_empty_list error handling
+      cgroups: forbid pre_destroy callback to fail
+      memcg: make mem_cgroup_reparent_charges non failing
+      hugetlb: do not fail in hugetlb_cgroup_pre_destroy
+
+Cumulative diffstat:
+ kernel/cgroup.c     |   30 ++++-------
+ mm/hugetlb_cgroup.c |   11 ++--
+ mm/memcontrol.c     |  148 ++++++++++++++++++++++++++++++---------------------
+ 3 files changed, 99 insertions(+), 90 deletions(-)
