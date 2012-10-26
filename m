@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965610Ab2JZSAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:00:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44968 "EHLO mx2.suse.de"
+	id S965667Ab2JZSBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:01:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13456 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932894Ab2JZSAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:00:43 -0400
-Date: Fri, 26 Oct 2012 20:00:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Sasha Levin <levinsasha928@gmail.com>,
-        Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: blk: NULL ptr deref in blk_dequeue_request()
-In-Reply-To: <507EBF6C.90506@kernel.dk>
-Message-ID: <alpine.LNX.2.00.1210261959430.19184@pobox.suse.cz>
-References: <505E2108.2060108@gmail.com>  <CA+1xoqc1Bc1rPgH+9Xs9-BV7qp3N7mDpNLj1mPwZHdF=H4mHTg@mail.gmail.com>  <20121008172207.GB14767@quack.suse.cz>  <alpine.LNX.2.00.1210082340501.19980@pobox.suse.cz>  <507424F7.60801@gmail.com> <50742600.10606@gmail.com>
-  <1349884374.6336.67.camel@deadeye.wl.decadent.org.uk>  <CA+1xoqcGN1xYP5-N17eZQ=F_JTG-8gr43DAxREa-Wf+n8=P7Og@mail.gmail.com> <1350437371.26833.71.camel@deadeye.wl.decadent.org.uk> <alpine.LNX.2.00.1210171610220.17129@pobox.suse.cz>
- <507EBF6C.90506@kernel.dk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S965545Ab2JZSBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:01:14 -0400
+Date: Fri, 26 Oct 2012 20:01:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to
+	use freezable_schedule()
+Message-ID: <20121026180149.GA22421@redhat.com>
+References: <20121023153919.GA16201@redhat.com> <20121024185710.GA12182@atj.dyndns.org> <20121025163941.GA3801@redhat.com> <20121025163959.GB3801@redhat.com> <20121025171812.GE11442@htj.dyndns.org> <20121025173433.GA7650@redhat.com> <20121025173632.GI11442@htj.dyndns.org> <20121026174545.GA21639@redhat.com> <20121026174606.GB21639@redhat.com> <20121026175258.GV11442@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121026175258.GV11442@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Oct 2012, Jens Axboe wrote:
+On 10/26, Tejun Heo wrote:
+>
+>  Acked-by: Tejun Heo <tj@kernel.org>
 
-> >>>> 1. redo_fd_request() races with tear-down of the disks, but because
-> >>>> set_next_request() checks disk->queue before doing anything this was
-> >>>> usually harmless.  Now that do_floppy_init() doesn't clear disk->queue,
-> >>>> the race condition is much easier to hit.  This may fix that problem in
-> >>>> do_floppy_init(), though there appear to be worse bugs in tear-down
-> >>>> order in floppy_module_exit():
-> >> [...]
-> >>>> 2. I made a big mistake in using the existing GENHD_FL_UP flag, as it is
-> >>>> cleared by del_gendisk().  Incremental patch below, but it should be
-> >>>> squashed into the previous patch if that branch is still rebase-able.
-> >> [...]
-> >>> I'm now seeing these instead:
-> >> [...]
-> >>
-> >> Sorry, I'm not going to spend more time in the quagmire of the floppy
-> >> driver.  Whoever has this commit in their tree, please revert or drop it
-> >> as appropriate.
-> > 
-> > As far as I can tell, Jens has pulled it from me, but it hasn't made it 
-> > into Linus' tree as of today.
-> > 
-> > I will do it in my tree and send a new pull request to Jens.
-> 
-> I did not add the patch from Ben, as it was reported as not working. My
-> driver pull is late this time due to travel, but it'll go out start of
-> next week. So if you have pending floppy updates that are tested at that
-> time, then please do send them my way.
+Thanks!
 
-Sorry for the delay on my side as well. I am now working on reverting 
-Ben's original patch and doing some testing. Will be sending you a pull 
-request still tonight.
+> Rafael, sorry that this one doesn't have pm cc'd
 
-Thanks,
+Ah, sorry Rafael. Yes, I have read you email, and I was going to
+add linux-pm but forgot.
 
--- 
-Jiri Kosina
-SUSE Labs
+> but can you please
+> pick up this one too?
+
+Please, and thanks.
+
+Oleg.
+
