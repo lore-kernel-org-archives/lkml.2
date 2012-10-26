@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2JZAiG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:38:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52995 "EHLO mail.kernel.org"
+	id S1755584Ab2JZAi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:38:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52974 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623Ab2JZAGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:46 -0400
+	id S1753591Ab2JZAGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: =?UTF-8?q?=5B=2019/42=5D=20USB=3A=20option=3A=20add=20more=20ZTE=20devices?=
-Date: Thu, 25 Oct 2012 17:05:27 -0700
-Message-Id: <20121026000126.712739084@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 17/42] usb: host: xhci: New system added for Compliance Mode Patch on SN65LVPE502CP
+Date: Thu, 25 Oct 2012 17:05:25 -0700
+Message-Id: <20121026000126.509614687@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,57 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
 
-commit 4b35f1c52943851b310afb09047bfe991ac8f5ae upstream.
+commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+This minor change adds a new system to which the "Fix Compliance Mode
+on SN65LVPE502CP Hardware" patch has to be applied also.
+
+System added:
+Vendor: Hewlett-Packard. System Model: Z1
+
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/usb/host/xhci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -895,6 +895,12 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0165, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0167, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0191, 0xff, 0xff, 0xff), /* ZTE EuFi890 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0199, 0xff, 0xff, 0xff), /* ZTE MF820S */
-+	  .driver_info = (kernel_ulong_t)&net_intf1_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0257, 0xff, 0xff, 0xff), /* ZTE MF821 */
-+	  .driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0326, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1008, 0xff, 0xff, 0xff),
-@@ -903,6 +909,8 @@ static const struct usb_device_id option
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1012, 0xff, 0xff, 0xff),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1021, 0xff, 0xff, 0xff),
-+	  .driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1057, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1058, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1059, 0xff, 0xff, 0xff) },
-@@ -1080,8 +1088,16 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1298, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1299, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1300, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1401, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1402, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1424, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1425, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x1426, 0xff, 0xff, 0xff),  /* ZTE MF91 */
-+		.driver_info = (kernel_ulong_t)&net_intf2_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff,
- 	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_k3765_z_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -479,7 +479,8 @@ static bool compliance_mode_recovery_tim
+ 
+ 	if (strstr(dmi_product_name, "Z420") ||
+ 			strstr(dmi_product_name, "Z620") ||
+-			strstr(dmi_product_name, "Z820"))
++			strstr(dmi_product_name, "Z820") ||
++			strstr(dmi_product_name, "Z1"))
+ 		return true;
+ 
+ 	return false;
 
 
