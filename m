@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab2JZAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:38:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52974 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2JZAGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Alexis R. Cortes" <alexis.cortes@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 17/42] usb: host: xhci: New system added for Compliance Mode Patch on SN65LVPE502CP
-Date: Thu, 25 Oct 2012 17:05:25 -0700
-Message-Id: <20121026000126.509614687@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
-References: <20121026000124.790781113@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755622Ab2JZAif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:38:35 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:22506 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab2JZAid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:38:33 -0400
+Message-ID: <1351211909.6851.26.camel@lorien2>
+Subject: [PATCH RFT RESEND] sparc: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah@fc.hp.com>
+Reply-To: shuah@fc.hp.com
+To: davem@davemloft.net, kyungmin.park@samsung.com, sam@ravnborg.org,
+        arnd@arndb.de, m.szyprowski@samsung.com
+Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Thu, 25 Oct 2012 18:38:29 -0600
+In-Reply-To: <1351211773.6851.24.camel@lorien2>
+References: <1351211773.6851.24.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-------------------
-
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
-
-commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
-
-This minor change adds a new system to which the "Fix Compliance Mode
-on SN65LVPE502CP Hardware" patch has to be applied also.
-
-System added:
-Vendor: Hewlett-Packard. System Model: Z1
-
-Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
-Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 ---
- drivers/usb/host/xhci.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/sparc/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -479,7 +479,8 @@ static bool compliance_mode_recovery_tim
+diff --git a/arch/sparc/include/asm/dma-mapping.h b/arch/sparc/include/asm/dma-mapping.h
+index 8493fd3..05fe53f 100644
+--- a/arch/sparc/include/asm/dma-mapping.h
++++ b/arch/sparc/include/asm/dma-mapping.h
+@@ -59,6 +59,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
  
- 	if (strstr(dmi_product_name, "Z420") ||
- 			strstr(dmi_product_name, "Z620") ||
--			strstr(dmi_product_name, "Z820"))
-+			strstr(dmi_product_name, "Z820") ||
-+			strstr(dmi_product_name, "Z1"))
- 		return true;
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
+ {
++	debug_dma_mapping_error(dev, dma_addr);
+ 	return (dma_addr == DMA_ERROR_CODE);
+ }
  
- 	return false;
+-- 
+1.7.9.5
+
 
 
