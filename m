@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab2JZAMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:12:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54115 "EHLO mail.kernel.org"
+	id S1754928Ab2JZAMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:12:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54104 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab2JZAIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:36 -0400
+	id S1754718Ab2JZAIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 73/85] ipv4: fix sending of redirects
-Date: Thu, 25 Oct 2012 17:06:31 -0700
-Message-Id: <20121026000038.457627729@linuxfoundation.org>
+        Florian Zumbiehl <florz@florz.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 72/85] vlan: dont deliver frames for unknown vlans to protocols
+Date: Thu, 25 Oct 2012 17:06:30 -0700
+Message-Id: <20121026000038.354845200@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,118 +27,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Florian Zumbiehl <florz@florz.de>
 
-[ Upstream commit e81da0e113a1b7fc7449ae6213f65f89ccac6d06 ]
+[ Upstream commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e ]
 
-After "Cache input routes in fib_info nexthops" (commit
-d2d68ba9fe) and "Elide fib_validate_source() completely when possible"
-(commit 7a9bc9b81a) we can not send ICMP redirects. It seems we
-should not cache the RTCF_DOREDIRECT flag in nh_rth_input because
-the same fib_info can be used for traffic that is not redirected,
-eg. from other input devices or from sources that are not in same subnet.
+6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
+vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
+there was an rx_handler, as the rx_handler could cause the frame to be received
+on a different (virtual) vlan-capable interface where that vlan might be
+configured.
 
-	As result, we have to disable the caching of RTCF_DOREDIRECT
-flag and to force source validation for the case when forwarding
-traffic to the input device. If traffic comes from directly connected
-source we allow redirection as it was done before both changes.
+As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
+frames for unknown vlans to be delivered to the protocol stack as if they had
+been received untagged.
 
-	Avoid setting RTCF_DOREDIRECT if IN_DEV_TX_REDIRECTS
-is disabled, this can avoid source address validation and to
-help caching the routes.
+For example, if an ipv6 router advertisement that's tagged for a locally not
+configured vlan is received on an interface with macvlan interfaces attached,
+macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
+macvlan interfaces, which caused it to be passed to the protocol stack, leading
+to ipv6 addresses for the announced prefix being configured even though those
+are completely unusable on the underlying interface.
 
-	After the change "Adjust semantics of rt->rt_gateway"
-(commit f8126f1d51) we should make sure our ICMP_REDIR_HOST messages
-contain daddr instead of 0.0.0.0 when target is directly connected.
+The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
+rx_handler, if there is one, sees the frame unchanged, but afterwards,
+before the frame is delivered to the protocol stack, it gets marked whether
+there is an rx_handler or not.
 
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Florian Zumbiehl <florz@florz.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/fib_frontend.c |    3 ++-
- net/ipv4/route.c        |   30 ++++++++++++++++--------------
- 2 files changed, 18 insertions(+), 15 deletions(-)
+ include/linux/if_vlan.h |    8 ++++----
+ net/8021q/vlan_core.c   |   10 ++--------
+ net/core/dev.c          |    7 +++++--
+ 3 files changed, 11 insertions(+), 14 deletions(-)
 
---- a/net/ipv4/fib_frontend.c
-+++ b/net/ipv4/fib_frontend.c
-@@ -322,7 +322,8 @@ int fib_validate_source(struct sk_buff *
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net
+ }
+ 
+ #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
++#define vlan_tx_nonzero_tag_present(__skb) \
++	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
+ #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
+ 
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_de
+ extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
+ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+ 
+-extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
++extern bool vlan_do_receive(struct sk_buff **skb);
+ extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+ 
+ extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
+@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const
+ 	return 0;
+ }
+ 
+-static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
++static inline bool vlan_do_receive(struct sk_buff **skb)
  {
- 	int r = secpath_exists(skb) ? 0 : IN_DEV_RPFILTER(idev);
+-	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
+-		(*skb)->pkt_type = PACKET_OTHERHOST;
+ 	return false;
+ }
  
--	if (!r && !fib_num_tclassid_users(dev_net(dev))) {
-+	if (!r && !fib_num_tclassid_users(dev_net(dev)) &&
-+	    (dev->ifindex != oif || !IN_DEV_TX_REDIRECTS(idev))) {
- 		*itag = 0;
- 		return 0;
- 	}
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -802,7 +802,8 @@ void ip_rt_send_redirect(struct sk_buff
- 	net = dev_net(rt->dst.dev);
- 	peer = inet_getpeer_v4(net->ipv4.peers, ip_hdr(skb)->saddr, 1);
- 	if (!peer) {
--		icmp_send(skb, ICMP_REDIRECT, ICMP_REDIR_HOST, rt->rt_gateway);
-+		icmp_send(skb, ICMP_REDIRECT, ICMP_REDIR_HOST,
-+			  rt_nexthop(rt, ip_hdr(skb)->daddr));
- 		return;
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -5,7 +5,7 @@
+ #include <linux/export.h>
+ #include "vlan.h"
+ 
+-bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
++bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+ 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
+@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **sk
+ 	struct vlan_pcpu_stats *rx_stats;
+ 
+ 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
+-	if (!vlan_dev) {
+-		/* Only the last call to vlan_do_receive() should change
+-		 * pkt_type to PACKET_OTHERHOST
+-		 */
+-		if (vlan_id && last_handler)
+-			skb->pkt_type = PACKET_OTHERHOST;
++	if (!vlan_dev)
+ 		return false;
+-	}
+ 
+ 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
+ 	if (unlikely(!skb))
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3275,18 +3275,18 @@ ncls:
+ 				&& !skb_pfmemalloc_protocol(skb))
+ 		goto drop;
+ 
+-	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (vlan_tx_tag_present(skb)) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+ 			pt_prev = NULL;
+ 		}
+-		if (vlan_do_receive(&skb, !rx_handler))
++		if (vlan_do_receive(&skb))
+ 			goto another_round;
+ 		else if (unlikely(!skb))
+ 			goto unlock;
  	}
  
-@@ -827,7 +828,9 @@ void ip_rt_send_redirect(struct sk_buff
- 	    time_after(jiffies,
- 		       (peer->rate_last +
- 			(ip_rt_redirect_load << peer->rate_tokens)))) {
--		icmp_send(skb, ICMP_REDIRECT, ICMP_REDIR_HOST, rt->rt_gateway);
-+		__be32 gw = rt_nexthop(rt, ip_hdr(skb)->daddr);
++	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+@@ -3306,6 +3306,9 @@ ncls:
+ 		}
+ 	}
+ 
++	if (vlan_tx_nonzero_tag_present(skb))
++		skb->pkt_type = PACKET_OTHERHOST;
 +
-+		icmp_send(skb, ICMP_REDIRECT, ICMP_REDIR_HOST, gw);
- 		peer->rate_last = jiffies;
- 		++peer->rate_tokens;
- #ifdef CONFIG_IP_ROUTE_VERBOSE
-@@ -835,7 +838,7 @@ void ip_rt_send_redirect(struct sk_buff
- 		    peer->rate_tokens == ip_rt_redirect_number)
- 			net_warn_ratelimited("host %pI4/if%d ignores redirects for %pI4 to %pI4\n",
- 					     &ip_hdr(skb)->saddr, inet_iif(skb),
--					     &ip_hdr(skb)->daddr, &rt->rt_gateway);
-+					     &ip_hdr(skb)->daddr, &gw);
- #endif
- 	}
- out_put_peer:
-@@ -1445,10 +1448,13 @@ static int __mkroute_input(struct sk_buf
- 		goto cleanup;
- 	}
- 
--	if (out_dev == in_dev && err &&
-+	do_cache = res->fi && !itag;
-+	if (out_dev == in_dev && err && IN_DEV_TX_REDIRECTS(out_dev) &&
- 	    (IN_DEV_SHARED_MEDIA(out_dev) ||
--	     inet_addr_onlink(out_dev, saddr, FIB_RES_GW(*res))))
-+	     inet_addr_onlink(out_dev, saddr, FIB_RES_GW(*res)))) {
- 		flags |= RTCF_DOREDIRECT;
-+		do_cache = false;
-+	}
- 
- 	if (skb->protocol != htons(ETH_P_IP)) {
- 		/* Not IP (i.e. ARP). Do not create route, if it is
-@@ -1465,15 +1471,11 @@ static int __mkroute_input(struct sk_buf
- 		}
- 	}
- 
--	do_cache = false;
--	if (res->fi) {
--		if (!itag) {
--			rth = rcu_dereference(FIB_RES_NH(*res).nh_rth_input);
--			if (rt_cache_valid(rth)) {
--				skb_dst_set_noref(skb, &rth->dst);
--				goto out;
--			}
--			do_cache = true;
-+	if (do_cache) {
-+		rth = rcu_dereference(FIB_RES_NH(*res).nh_rth_input);
-+		if (rt_cache_valid(rth)) {
-+			skb_dst_set_noref(skb, &rth->dst);
-+			goto out;
- 		}
- 	}
+ 	/* deliver only exact match when indicated */
+ 	null_or_dev = deliver_exact ? skb->dev : NULL;
  
 
 
