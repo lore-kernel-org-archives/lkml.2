@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab2JZAG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52683 "EHLO mail.kernel.org"
+	id S1752629Ab2JZAml (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:42:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52732 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab2JZAGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:23 -0400
+	id S1753395Ab2JZAG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 04/42] arch/tile: avoid generating .eh_frame information in modules
-Date: Thu, 25 Oct 2012 17:05:12 -0700
-Message-Id: <20121026000125.242313236@linuxfoundation.org>
+        Sasha Levin <levinsasha928@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 08/42] SUNRPC: Prevent kernel stack corruption on long values of flush
+Date: Thu, 25 Oct 2012 17:05:16 -0700
+Message-Id: <20121026000125.624155904@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -25,37 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit 627072b06c362bbe7dc256f618aaa63351f0cfe6 upstream.
+commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
 
-The tile tool chain uses the .eh_frame information for backtracing.
-The vmlinux build drops any .eh_frame sections at link time, but when
-present in kernel modules, it causes a module load failure due to the
-presence of unsupported pc-relative relocations.  When compiling to
-use compiler feedback support, the compiler by default omits .eh_frame
-information, so we don't see this problem.  But when not using feedback,
-we need to explicitly suppress the .eh_frame.
+The buffer size in read_flush() is too small for the longest possible values
+for it. This can lead to a kernel stack corruption:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
+[   43.047329]
+[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
+[   43.050038] Call Trace:
+[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
+[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
+[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
+[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
+[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
+[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
+[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
+[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
+[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
+[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
+[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
+[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
+[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
+
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/Makefile |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/sunrpc/cache.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/tile/Makefile
-+++ b/arch/tile/Makefile
-@@ -26,6 +26,10 @@ $(error Set TILERA_ROOT or CROSS_COMPILE
-   endif
- endif
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1406,11 +1406,11 @@ static ssize_t read_flush(struct file *f
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[22];
+ 	unsigned long p = *ppos;
+ 	size_t len;
  
-+# The tile compiler may emit .eh_frame information for backtracing.
-+# In kernel modules, this causes load failures due to unsupported relocations.
-+KBUILD_CFLAGS   += -fno-asynchronous-unwind-tables
-+
- ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
- KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
- endif
+-	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
++	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
+ 	len = strlen(tbuf);
+ 	if (p >= len)
+ 		return 0;
 
 
