@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966532Ab2JZU7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:59:19 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:43176 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966481Ab2JZU7S (ORCPT
+	id S966538Ab2JZVGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:06:00 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33398 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934045Ab2JZVF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:59:18 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com>
-	<87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org>
-Emacs: it's all fun and games, until somebody tries to edit a file.
-Date: Fri, 26 Oct 2012 21:59:07 +0100
-In-Reply-To: <20121026205618.GC8614@thunk.org> (Theodore Ts'o's message of
-	"Fri, 26 Oct 2012 16:56:18 -0400")
-Message-ID: <87objpx84k.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
+	Fri, 26 Oct 2012 17:05:58 -0400
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        netfilter@vger.kernel.org
+In-Reply-To: <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	 <1350925299.8609.978.camel@edumazet-glaptop>
+	 <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+	 <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+	 <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
+	 <1351053164.6537.95.camel@edumazet-glaptop>
+	 <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+	 <1351270087.30380.9.camel@edumazet-glaptop>
+	 <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Oct 2012 23:05:52 +0200
+Message-ID: <1351285552.30380.20.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 Oct 2012, Theodore Ts'o stated:
-
-> On Fri, Oct 26, 2012 at 09:37:08PM +0100, Nix wrote:
->> 
->> I can reproduce this on a small filesystem and stick the image somewhere
->> if that would be of any use to anyone. (If I'm very lucky, merely making
->> this offer will make the problem go away. :} )
->
-> I'm not sure the image is going to be that useful.  What we really
-> need to do is to get a reliable reproduction of what _you_ are seeing.
->
-> It's clear from Eric's experiments that journal_checksum is dangerous.
+On Fri, 2012-10-26 at 11:51 -0700, Peter LaDow wrote:
+> (I've added netfilter and linux-rt-users to try to pull in more help).
 > 
-> That's why one of the things I asked you to do when you had time was
-> to see if you could reproduce the problem you are seeing w/o
-> nobarrier,journal_checksum,journal_async_commit.
+> On Fri, Oct 26, 2012 at 9:48 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > Upstream kernel is fine, there is no race, as long as :
+> >
+> > local_bh_disable() disables BH and preemption.
+> 
+> Looking at the unpatched code in net/ipv4/netfilter/ip_tables.c, it
+> doesn't appear that any of the code checks the return value for
+> xt_write_receq_begin to determine if it is safe to write.  And neither
+> does the newly patched code.  How did the mainline code prevent
+> corruption of the tables it is updating?
+> 
 
-OK. Will do tomorrow.
+Do you know what is per cpu data in linux kernel ?
 
-> The other experiment that would be really useful if you could do is to
-> try to apply these two patches which I sent earlier this week:
->
-> [PATCH 1/2] ext4: revert "jbd2: don't write superblock when if its empty
-> [PATCH 2/2] ext4: fix I/O error when unmounting an ro file system
->
-> ... and see if they make a difference.
+> Why isn't there something like
+> 
+>   while ( (addend = xt_write_recseq_begin()) == 0 );
+> 
+> To make sure that only one person has write access to the tables?
+> Better yet, why not use a seqlock_t instead?
+> 
 
-As of tomorrow I'll be able to reboot without causing a riot: I'll test
-it then. (Sorry for the delay :( )
+Because its not needed. Really I dont know why you want that.
 
->                                               So I really don't want
-> to push these patches to Linus until I get confirmation that they make
-> a difference to *somebody*.
+Once you are sure a thread cannot be interrupted by a softirq, and
+cannot migrate to another cpu, access to percpu data doesnt need other
+synchronization at all.
 
-Agreed.
+Following sequence is safe :
 
-This isn't the first time that journal_checksum has proven problematic.
-It's a shame that we're stuck between two error-inducing stools here...
+addend = (__this_cpu_read(xt_recseq.sequence) + 1) & 1;
+/*
+ * This is kind of a write_seqcount_begin(), but addend is 0 or 1
+ * We dont check addend value to avoid a test and conditional jump,
+ * since addend is most likely 1
+ */
+__this_cpu_add(xt_recseq.sequence, addend);
 
--- 
-NULL && (void)
+Because any other thread will use a different percpu data.
+
+
