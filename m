@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933924Ab2JZPk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:40:58 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:14705 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933818Ab2JZPk5 (ORCPT
+	id S964844Ab2JZPmM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:42:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50111 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933818Ab2JZPmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:40:57 -0400
-Message-ID: <1351266055.4013.1.camel@lorien2>
-Subject: [PATCH RFT RESEND linux-next] c6x: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah.khan@hp.com>
-Reply-To: shuah.khan@hp.com
-To: msalter@redhat.com, a-jacquiot@ti.com
-Cc: linux-c6x-dev@linux-c6x.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Fri, 26 Oct 2012 09:40:55 -0600
-In-Reply-To: <1351206082.6851.6.camel@lorien2>
-References: <1351206082.6851.6.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 26 Oct 2012 11:42:10 -0400
+Date: Fri, 26 Oct 2012 19:42:00 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [BUG] lkvm crash on crashkernel boot
+Message-ID: <20121026154200.GM5500@moon>
+References: <20121024152740.GA25303@otc-wbsnb-06>
+ <CAOJsxLFD36jYiyE5sfN+uPT5G9G9ttf=K2UB=abEjBiTFNeehA@mail.gmail.com>
+ <20121025121645.GA28475@otc-wbsnb-06>
+ <CA+1xoqdN0AhLTczH6u1KngiOA61Ej1tL+v-FHAajqYO3tyGSwg@mail.gmail.com>
+ <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for debug_dma_mapping_error() call to avoid warning from
-debug_dma_unmap() interface when it checks for mapping error checked
-status. Without this patch, device driver failed to check map error
-warning is generated.
+On Fri, Oct 26, 2012 at 06:31:00PM +0300, Pekka Enberg wrote:
+> On Thu, 25 Oct 2012, Sasha Levin wrote:
+> > I think we're seeing that because we don't handle VIRTIO_MSI_NO_VECTOR properly.
+> > 
+> > We need to deal with the ability to remove GSI & friends as well. I've
+> > added it to my workqueue (unless someone deals with it first).
+> 
+> Any reason I shouldn't apply Kirill's patch before someone find the time 
+> to do that?
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
----
- arch/c6x/include/asm/dma-mapping.h |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
-index 03579fd..3c69406 100644
---- a/arch/c6x/include/asm/dma-mapping.h
-+++ b/arch/c6x/include/asm/dma-mapping.h
-@@ -32,6 +32,7 @@ static inline int dma_set_mask(struct device *dev, u64 dma_mask)
-  */
- static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- {
-+	debug_dma_mapping_error(dev, dma_addr);
- 	return dma_addr == ~0;
- }
- 
--- 
-1.7.9.5
-
-
-
+I think it's worth to apply until proper fix appear.
