@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422699Ab2JZUcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:32:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50696 "EHLO mga02.intel.com"
+	id S1422681Ab2JZUcb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:32:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50688 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759131Ab2JZUaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:30:30 -0400
+	id S1759145Ab2JZUab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:30:31 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="211355421"
+   d="scan'208";a="211355422"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 26/33] perf, x86: Report the arch perfmon events in sysfs
-Date: Fri, 26 Oct 2012 13:30:08 -0700
-Message-Id: <1351283415-13170-27-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 31/33] perf, tools: Support generic events as pmu event names v2
+Date: Fri, 26 Oct 2012 13:30:13 -0700
+Message-Id: <1351283415-13170-32-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,150 +25,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Report all the supported arch perfmon events as event aliases in
-/sys/devices/cpu/...
+Extend the parser/lexer to allow generic event names like
+"instructions" as a sysfs supplied PMU event name.
 
-This is needed to use the TSX intx,intx_cp attributes with
-symbolic events, at least for these basic events.
+This resolves the problem that cpu/instructions/ gives a parse
+error, even when the kernel supplies a "instructions" event
 
-Currently cpu/instructions/ doesn't work because instructions
-is also a generic event. It works for all events which are not
-the same as generic events though.
+This is useful to add sysfs specified qualifiers to these
+events, for example cpu/instructions,intx=1/ and needed
+for the TSX events
 
-Probably needs to be fixed in the perf events parser.
+Simply extend the grammar to handle this case. The lexer
+needs minor changes to save the original string.
 
+v2: Remove bogus returns in grammar.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    7 ++++
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   56 ++++++++++++++++++++++++++++++++
- 3 files changed, 64 insertions(+), 0 deletions(-)
+ tools/perf/util/parse-events.l |    3 ++-
+ tools/perf/util/parse-events.y |   27 +++++++++++++++++++++++----
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 4a35eef..08e61a6 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1315,6 +1315,11 @@ static struct attribute_group x86_pmu_format_group = {
- 	.attrs = NULL,
- };
- 
-+static struct attribute_group x86_pmu_events_group = {
-+	.name = "events",
-+	.attrs = NULL,
-+};
-+
- static int __init init_hw_perf_events(void)
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index c2e5142..dd3a901 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -55,7 +55,8 @@ static int sym(yyscan_t scanner, int type, int config)
  {
- 	struct x86_pmu_quirk *quirk;
-@@ -1360,6 +1365,7 @@ static int __init init_hw_perf_events(void)
+ 	YYSTYPE *yylval = parse_events_get_lval(scanner);
  
- 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
- 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
-+	x86_pmu_events_group.attrs = x86_pmu.events_attrs;
- 
- 	pr_info("... version:                %d\n",     x86_pmu.version);
- 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
-@@ -1652,6 +1658,7 @@ static struct attribute_group x86_pmu_attr_group = {
- static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	&x86_pmu_attr_group,
- 	&x86_pmu_format_group,
-+	&x86_pmu_events_group,
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 7b43503..d3b3bb7 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -358,6 +358,7 @@ struct x86_pmu {
- 	 */
- 	int		attr_rdpmc;
- 	struct attribute **format_attrs;
-+	struct attribute **events_attrs;
- 
- 	/*
- 	 * CPU Hotplug hooks
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index bb1a539..c3beee1 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -34,6 +34,18 @@ static u64 intel_perfmon_event_map[PERF_COUNT_HW_MAX] __read_mostly =
- 	[PERF_COUNT_HW_REF_CPU_CYCLES]		= 0x0300, /* pseudo-encoding */
- };
- 
-+static const char *intel_perfmon_names[PERF_COUNT_HW_MAX] __read_mostly =
-+{
-+	[PERF_COUNT_HW_CPU_CYCLES]		= "cycles",
-+	[PERF_COUNT_HW_INSTRUCTIONS]		= "instructions",
-+	[PERF_COUNT_HW_CACHE_REFERENCES]	= "cache-references",
-+	[PERF_COUNT_HW_CACHE_MISSES]		= "cache-misses",
-+	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= "branches",
-+	[PERF_COUNT_HW_BRANCH_MISSES]		= "branch-misses",
-+	[PERF_COUNT_HW_BUS_CYCLES]		= "bus-cycles",
-+	[PERF_COUNT_HW_REF_CPU_CYCLES]		= "ref-cycles"
-+};
-+
- static struct event_constraint intel_core_event_constraints[] __read_mostly =
- {
- 	INTEL_EVENT_CONSTRAINT(0x11, 0x2), /* FP_ASSIST */
-@@ -2000,6 +2012,48 @@ static __init void intel_nehalem_quirk(void)
- 	}
+-	yylval->num = (type << 16) + config;
++	yylval->namenum.num = (type << 16) + config;
++	yylval->namenum.name = strdup(parse_events_get_text(scanner));
+ 	return type == PERF_TYPE_HARDWARE ? PE_VALUE_SYM_HW : PE_VALUE_SYM_SW;
  }
  
-+static struct attribute *intel_arch_events[PERF_COUNT_HW_MAX + 1] __read_mostly;
-+
-+struct event_attribute {
-+	struct device_attribute		attr;
-+	u64				config;
-+};
-+
-+static struct event_attribute intel_arch_event_attr[PERF_COUNT_HW_MAX];
-+
-+static ssize_t show_event(struct device *dev,
-+			  struct device_attribute *attr,
-+			  char *page)
-+{
-+	struct event_attribute *e = container_of(attr, struct event_attribute, attr);
-+
-+	return sprintf(page, "event=%#llx,umask=%#llx",
-+		       e->config & 0xff,
-+		       (e->config >> 8) & 0xff);
-+}
-+
-+static __init void intel_gen_arch_events(void)
-+{
-+	int j, i;
-+
-+	j = 0;
-+	for_each_clear_bit(i, x86_pmu.events_mask, ARRAY_SIZE(intel_arch_events_map)) {
-+		struct event_attribute *e = intel_arch_event_attr + j;
-+		struct device_attribute *d = &e->attr;
-+		struct attribute *a = &d->attr;
-+		int id = intel_arch_events_map[i].id;
-+
-+		e->config = intel_perfmon_event_map[id];
-+		intel_arch_events[j] = a;
-+		a->name = intel_perfmon_names[id];
-+		a->mode = 0444;
-+		d->show = show_event;
-+		j++;
-+	}
-+	intel_arch_events[j] = NULL;
-+	x86_pmu.events_attrs = intel_arch_events;
-+}
-+
- __init int intel_pmu_init(void)
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index cd88209..25f0123 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -34,8 +34,8 @@ do { \
+ %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
+ %token PE_ERROR
+ %type <num> PE_VALUE
+-%type <num> PE_VALUE_SYM_HW
+-%type <num> PE_VALUE_SYM_SW
++%type <namenum> PE_VALUE_SYM_HW
++%type <namenum> PE_VALUE_SYM_SW
+ %type <num> PE_RAW
+ %type <num> PE_TERM
+ %type <str> PE_NAME
+@@ -65,6 +65,7 @@ do { \
+ 
+ %union
  {
- 	union cpuid10_edx edx;
-@@ -2045,6 +2099,8 @@ __init int intel_pmu_init(void)
++	struct { char *name; u64 num; } namenum;
+ 	char *str;
+ 	u64 num;
+ 	struct list_head *head;
+@@ -195,9 +196,9 @@ PE_NAME '/' event_config '/'
+ }
  
- 	x86_pmu.max_pebs_events		= min_t(unsigned, MAX_PEBS_EVENTS, x86_pmu.num_counters);
+ value_sym:
+-PE_VALUE_SYM_HW
++PE_VALUE_SYM_HW 	{ free($1.name); $$ = $1.num; }
+ |
+-PE_VALUE_SYM_SW
++PE_VALUE_SYM_SW		{ free($1.name); $$ = $1.num; }
  
-+	intel_gen_arch_events();
+ event_legacy_symbol:
+ value_sym '/' event_config '/'
+@@ -361,6 +362,24 @@ PE_NAME
+ 	$$ = term;
+ }
+ |
++PE_VALUE_SYM_HW
++{
++	struct parse_events__term *term;
 +
- 	/*
- 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
- 	 * assume at least 3 events:
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1.name, 1));
++	$$ = term;
++}
++|
++PE_VALUE_SYM_SW
++{
++	struct parse_events__term *term;
++
++	ABORT_ON(parse_events__term_num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1.name, 1));
++	$$ = term;
++}
++|
+ PE_TERM '=' PE_NAME
+ {
+ 	struct parse_events__term *term;
 -- 
 1.7.7.6
 
