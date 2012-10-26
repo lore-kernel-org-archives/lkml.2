@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab2JZAVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:21:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53695 "EHLO mail.kernel.org"
+	id S1752966Ab2JZAH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53610 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754340Ab2JZAH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:58 -0400
+	id S1754253Ab2JZAHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 40/85] USB: kl5kusb105: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:58 -0700
-Message-Id: <20121026000035.151513573@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [ 46/85] usb: Dont enable LPM if the exit latency is zero.
+Date: Thu, 25 Oct 2012 17:06:04 -0700
+Message-Id: <20121026000035.754622824@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,131 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 99a6f73c495c420df826e5b267fb073fd6766fc3 upstream.
+commit ae8963adb4ad8c5f2a89ca1d99fb7bb721e7599f upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+Some USB 3.0 devices signal that they don't implement Link PM by having
+all zeroes in the U1/U2 exit latencies in their SuperSpeed BOS
+descriptor.  Don found that a Western Digital device he has experiences
+transfer errors when LPM is enabled.  The lsusb shows the U1/U2 exit
+latencies are set to zero:
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
+Binary Object Store Descriptor:
+  bLength                 5
+  bDescriptorType        15
+  wTotalLength           22
+  bNumDeviceCaps          2
+  SuperSpeed USB Device Capability:
+    bLength                10
+    bDescriptorType        16
+    bDevCapabilityType      3
+    bmAttributes         0x00
+      Latency Tolerance Messages (LTM) Supported
+    wSpeedsSupported   0x000e
+      Device can operate at Full Speed (12Mbps)
+      Device can operate at High Speed (480Mbps)
+      Device can operate at SuperSpeed (5Gbps)
+    bFunctionalitySupport   1
+      Lowest fully-functional device speed is Full Speed (12Mbps)
+    bU1DevExitLat           0 micro seconds
+    bU2DevExitLat           0 micro seconds
 
-Note that the write waitqueue was initialised but never used.
+The fix is to not enable LPM for a particular link state if we find its
+corresponding exit latency is zero.
 
-Compile-only tested.
+This patch should be backported to kernels as old as 3.5, that contain
+the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
+enable/disable USB3 link states."
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Tested-by: Don Zickus <dzickus@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/kl5kusb105.c |   68 ++++++++++++++--------------------------
- 1 file changed, 25 insertions(+), 43 deletions(-)
+ drivers/usb/core/hub.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/kl5kusb105.c
-+++ b/drivers/usb/serial/kl5kusb105.c
-@@ -62,8 +62,8 @@ static bool debug;
- /*
-  * Function prototypes
-  */
--static int  klsi_105_startup(struct usb_serial *serial);
--static void klsi_105_release(struct usb_serial *serial);
-+static int klsi_105_port_probe(struct usb_serial_port *port);
-+static int klsi_105_port_remove(struct usb_serial_port *port);
- static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port);
- static void klsi_105_close(struct usb_serial_port *port);
- static void klsi_105_set_termios(struct tty_struct *tty,
-@@ -101,8 +101,8 @@ static struct usb_serial_driver kl5kusb1
- 	/*.break_ctl =		klsi_105_break_ctl,*/
- 	.tiocmget =		klsi_105_tiocmget,
- 	.tiocmset =		klsi_105_tiocmset,
--	.attach =		klsi_105_startup,
--	.release =		klsi_105_release,
-+	.port_probe =		klsi_105_port_probe,
-+	.port_remove =		klsi_105_port_remove,
- 	.throttle =		usb_serial_generic_throttle,
- 	.unthrottle =		usb_serial_generic_unthrottle,
- 	.process_read_urb =	klsi_105_process_read_urb,
-@@ -225,58 +225,40 @@ static int klsi_105_get_line_state(struc
-  * Driver's tty interface functions
-  */
- 
--static int klsi_105_startup(struct usb_serial *serial)
-+static int klsi_105_port_probe(struct usb_serial_port *port)
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3353,6 +3353,16 @@ static void usb_enable_link_state(struct
+ 		enum usb3_link_state state)
  {
- 	struct klsi_105_private *priv;
--	int i;
- 
--	/* check if we support the product id (see keyspan.c)
--	 * FIXME
--	 */
--
--	/* allocate the private data structure */
--	for (i = 0; i < serial->num_ports; i++) {
--		priv = kmalloc(sizeof(struct klsi_105_private),
--						   GFP_KERNEL);
--		if (!priv) {
--			dbg("%skmalloc for klsi_105_private failed.", __func__);
--			i--;
--			goto err_cleanup;
--		}
--		/* set initial values for control structures */
--		priv->cfg.pktlen    = 5;
--		priv->cfg.baudrate  = kl5kusb105a_sio_b9600;
--		priv->cfg.databits  = kl5kusb105a_dtb_8;
--		priv->cfg.unknown1  = 0;
--		priv->cfg.unknown2  = 1;
-+	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
- 
--		priv->line_state    = 0;
-+	/* set initial values for control structures */
-+	priv->cfg.pktlen    = 5;
-+	priv->cfg.baudrate  = kl5kusb105a_sio_b9600;
-+	priv->cfg.databits  = kl5kusb105a_dtb_8;
-+	priv->cfg.unknown1  = 0;
-+	priv->cfg.unknown2  = 1;
- 
--		usb_set_serial_port_data(serial->port[i], priv);
-+	priv->line_state    = 0;
- 
--		spin_lock_init(&priv->lock);
-+	spin_lock_init(&priv->lock);
- 
--		/* priv->termios is left uninitialized until port opening */
--		init_waitqueue_head(&serial->port[i]->write_wait);
--	}
-+	/* priv->termios is left uninitialized until port opening */
- 
--	return 0;
-+	usb_set_serial_port_data(port, priv);
- 
--err_cleanup:
--	for (; i >= 0; i--) {
--		priv = usb_get_serial_port_data(serial->port[i]);
--		kfree(priv);
--		usb_set_serial_port_data(serial->port[i], NULL);
--	}
--	return -ENOMEM;
-+	return 0;
- }
- 
--static void klsi_105_release(struct usb_serial *serial)
-+static int klsi_105_port_remove(struct usb_serial_port *port)
- {
--	int i;
-+	struct klsi_105_private *priv;
- 
--	for (i = 0; i < serial->num_ports; ++i)
--		kfree(usb_get_serial_port_data(serial->port[i]));
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
+ 	int timeout;
++	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
++	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
 +
-+	return 0;
- }
++	/* If the device says it doesn't have *any* exit latency to come out of
++	 * U1 or U2, it's probably lying.  Assume it doesn't implement that link
++	 * state.
++	 */
++	if ((state == USB3_LPM_U1 && u1_mel == 0) ||
++			(state == USB3_LPM_U2 && u2_mel == 0))
++		return;
  
- static int  klsi_105_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	/* We allow the host controller to set the U1/U2 timeout internally
+ 	 * first, so that it can change its schedule to account for the
 
 
