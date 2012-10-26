@@ -1,268 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab2JZDYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:24:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37187 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab2JZDYs (ORCPT
+	id S1755997Ab2JZD1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:27:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59551 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817Ab2JZD1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:24:48 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Date: Fri, 26 Oct 2012 12:24:06 +0900 (JST)
-Message-Id: <20121026.122406.13396329.d.hatayama@jp.fujitsu.com>
-To: hpa@zytor.com, ebiederm@xmission.com
-Cc: len.brown@intel.com, fenghua.yu@intel.com, x86@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca, tglx@linutronix.de,
-        mingo@elte.hu, vgoyal@redhat.com
-Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-In-Reply-To: <5085E663.6040307@zytor.com>
-References: <5085B0D0.9020508@zytor.com>
-	<87mwze8abu.fsf@xmission.com>
-	<5085E663.6040307@zytor.com>
-X-Mailer: Mew version 6.3 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 25 Oct 2012 23:27:10 -0400
+Date: Fri, 26 Oct 2012 14:27:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: linux-next: manual merge of the arm-soc tree with the pinctrl tree
+Message-Id: <20121026142708.394d5ef1e6e3b9ad19243cc6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Multipart/Mixed;
- boundary="--Next_Part(Fri_Oct_26_12_24_06_2012_043)--"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-----Next_Part(Fri_Oct_26_12_24_06_2012_043)--
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+--Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-Date: Mon, 22 Oct 2012 17:35:47 -0700
+Hi all,
 
-> On 10/22/2012 02:29 PM, Eric W. Biederman wrote:
->>>
->>> As I said, I thought Fenghua tried that but it didn't work,
->>> experimentally.
->>
->> Fair enough.  You described the problem with clearing bit 8 in a weird
->> way.
->>
->> If the best we can muster are fuzzy memories it may be worth
->> revisiting.
->> Perhaps it works on enough cpu models to be interesting.
->>
-> 
-> It isn't fuzzy memories... this was done as late as 1-2 months ago.  I
-> just don't know the details.
-> 
-> Fenghua, could you help fill us in?
-> 
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-ux500/cpu-db8500.c between commit 63c53906312f
+("pinctrl/nomadik: move the platform data header") from the pinctrl tree
+and commit 4040d10a3d44 ("ARM: ux500: add DB serial number to entropy
+pool") from the arm-soc tree.
 
-I overlooked completely the fact that BSP flag is rewritable.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-I tried Eric's suggestion using attached test programs and saw it
-worked fine at least on the three cpus around me below:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-- Intel(R) Xeon(R) CPU E7- 4820  @ 2.00GHz
-- Intel(R) Xeon(R) CPU E7- 8870  @ 2.40GHz
-- Intel(R) Xeon(TM) CPU 1.80GHz
-  - 32 bits CPU
+diff --cc arch/arm/mach-ux500/cpu-db8500.c
+index 87a8f9f,50202a1..0000000
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@@ -18,7 -18,7 +18,8 @@@
+  #include <linux/io.h>
+  #include <linux/mfd/abx500/ab8500.h>
+  #include <linux/platform_data/usb-musb-ux500.h>
+ +#include <linux/platform_data/pinctrl-nomadik.h>
++ #include <linux/random.h>
+ =20
+  #include <asm/pmu.h>
+  #include <asm/mach/map.h>
 
-Next I found the description about this in 8.4.2, IASDM Vol.3:
+--Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2
+Content-Type: application/pgp-signature
 
-  The MP initialization protocol imposes the following requirements
-  and restrictions on the system:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-  * The MP protocol is executed only after a power-up or RESET. If the
-    MP protocol has completed and a BSP is chosen, subsequent INITs
-    (either to a specific processor or system wide) do not cause the
-    MP protocol to be repeated. Instead, each logical processor
-    examines its BSP flag (in the IA32_APIC_BASE MSR) to determine
-    whether it should execute the BIOS boot-strap code (if it is the
-    BSP) or enter a wait-for-SIPI state (if it is an AP).
+iQIcBAEBCAAGBQJQigMMAAoJEECxmPOUX5FEe50QAIJtMZQiI4/3R4tAtC49tgjX
+CdzySCZg0gNcA7IZRDy/IuzlEOdYby7xedHq0EKc3+uPyTQZT0PqIHv3829024ac
+3srlgeNo2RR57ANKzCgIWA0pemVf9FC+fl0pKR+9WCIm+GSidcBxOABI7EfygSq6
+cgK/gWtyCO8y2qPCj8hxwopFWVu5JEOx1NGgfjaeT174GMUFlUKfXLnWlSSqLoUB
+BtkiDbpVZEVcyeVFmWBA3P4j8C0iGwJljjLD6hNr5+rD4id2kEon33hGWANd6RQc
+LoXKaxIt71bSzCYOAMi0xjXGEJd3O/FDRZxowF02GPtuSp8HAo7optK5N7s01r+n
+B+E5P6dLoOLIjN4NUxQbj1W40HDlhownhAS09f6HEGT10zQJHvSGVhCptwMwgVWi
+Zhp3mAN9c2eEdNpqO2MrbvN+OlMe/Fr0QFfKn4f26FO8gXR2CezjKzh6Xo8VHb6U
+4gIEzsVdw6NSJQhUgVPlw5uGj3onyWT1ULEm0nO95Nc36TFMO+fjVVJwI9QhxZM3
+6+op5dDU3D0zNhlEciUTLtTkNH6Ieibk/L6cyJ6sy3VmLm6zEPssXkFqtOUh4Ve7
+hOt4avJPaJCsYp/MA2U0gUDAJyItALloR7dBJdCygtb5fCcOSoIc1EgLIy0Ugp9E
+qXWq0aEfSeCSbl0NvlRQ
+=ABmp
+-----END PGP SIGNATURE-----
 
-So this is no longer undocumented behaviour for recent cpus, I think.
-
-Considering these, I'll make a patch to clear BSP flag at appropreate
-position in kernel boot-up code. OTOH, according to the discussion, it
-was reported that clearing BSP flag affected some BIOSes. To deal with
-this, I'll prepare a kernel option to decide whether to clear BSP flag
-or not.
-
-Does anyone have any comments now? Or please comment after I submit a
-new patch.
-
-Thanks.
-HATAYAMA, Daisuke
-
-----Next_Part(Fri_Oct_26_12_24_06_2012_043)--
-Content-Type: Application/Octet-Stream
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="bsp_flag_modules.tar.bz2"
-
-QlpoOTFBWSZTWW9W1IoADOb/////////////////////////////////////////////4CP+8vam
-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
-DerakUA=
-
-----Next_Part(Fri_Oct_26_12_24_06_2012_043)----
-
+--Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2--
