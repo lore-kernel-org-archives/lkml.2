@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab2JZN30 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:29:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61248 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758854Ab2JZN3W (ORCPT
+	id S932870Ab2JZNcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:32:21 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43052 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756337Ab2JZNcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:29:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Will Deacon <will.deacon@arm.com>
-Subject: Re: [RESEND PATCH 1/4] asm-generic: io: remove {read,write} string functions
-Date: Fri, 26 Oct 2012 13:29:03 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Ben Herrenschmidt <benh@kernel.crashing.org>
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com> <1350488704-3711-2-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1350488704-3711-2-git-send-email-will.deacon@arm.com>
+	Fri, 26 Oct 2012 09:32:20 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+RexfipWZ8Bowd1mx++ZRAk/EeQp/KOu0=
+Date: Fri, 26 Oct 2012 09:31:54 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
+ Armada 370/XP
+Message-ID: <20121026133154.GN18811@titan.lakedaemon.net>
+References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
+ <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210261329.03386.arnd@arndb.de>
-X-Provags-ID: V02:K0:vWCTEK2BqsG6BhqBOWjs/3fvfypIW99QDTDKRTsprCl
- Hh32OtOziGMqSbkdlp/3cqT81UzSv/QuRBaDEj6m46blMoikcZ
- S5YTXsJwoafQp4Es5/przkmgahiETG8BF+f3zOS/0Pd+vCkE31
- Tkizp9FIPx/0j4APuabxX40fl8Z9GxMyh3cAsfgR+y0jMVm8KJ
- a9fe3NuHuQNuKQ3KQYtxcR7OS/jiQQcbSbHXYWgCceVEoNRsmZ
- QBTQv2PzG9kinFiCG5ndunncqWQpug4yfn5ARwBVGvXv+i5HL8
- 4UwPz6dWQEgMjsEo4fRf2iOu9TVh4kVoJZBlb88gk53ODShZEu
- PHlUNjFnzJvmThXYJZ+c=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 October 2012, Will Deacon wrote:
-> The {read,write}s{b,w,l} functions are not defined across all
-> architectures and therefore shouldn't be used by portable drivers. We
-> should encourage driver writers to use the io{read,write}{8,16,32}_rep
-> functions instead.
+On Fri, Oct 26, 2012 at 02:30:47PM +0200, Gregory CLEMENT wrote:
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> Signed-off-by: Lior Amsalem <alior@marvell.com>
+> ---
+>  arch/arm/boot/dts/armada-370-xp.dtsi |    9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
-> This patch removes the {read,write} string functions for the generic IO
-> header as they have no place in a new architecture port.
+> diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+> index 94b4b9e..a911f7a 100644
+> --- a/arch/arm/boot/dts/armada-370-xp.dtsi
+> +++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+> @@ -69,6 +69,15 @@
+>  			compatible = "marvell,armada-addr-decoding-controller";
+>  			reg = <0xd0020000 0x258>;
+>  		};
+> +
+> +		sata@d00a0000 {
+> +                        compatible = "marvell,orion-sata";
+> +                        reg = <0xd00a0000 0x2400>;
+> +                        interrupts = <55>;
+> +			clocks = <&coreclk 0>;
+
+nit. whitespace?
+
+thx,
+
+Jason.
+
+> +                        status = "disabled";
+> +		};
+> +
+>  	};
+>  };
+>  
+> -- 
+> 1.7.9.5
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-What should we do with the series? I can take them through the asm-generic
-tree if you like, or we can let Catalin take them through the arm64 tree.
-
-	Arnd
