@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab2JZAHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:01 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53092 "EHLO mail.kernel.org"
+	id S1754134Ab2JZAek (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:34:40 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53143 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab2JZAGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:55 -0400
+	id S1753809Ab2JZAHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <larry.finger@lwfinger.net>,
-        Jay Harbeston <jharbestonus@gmail.com>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 28/42] media: au0828: fix case where STREAMOFF being called on stopped stream causes BUG()
-Date: Thu, 25 Oct 2012 17:05:36 -0700
-Message-Id: <20121026000127.611264551@linuxfoundation.org>
+        Graham Gower <graham.gower@gmail.com>,
+        Jan Ceuleers <jan.ceuleers@computer.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 32/42] skge: Add DMA mask quirk for Marvell 88E8001 on ASUS P5NSLI motherboard
+Date: Thu, 25 Oct 2012 17:05:40 -0700
+Message-Id: <20121026000128.036888536@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -28,47 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
 
-commit a595c1ce4c9d572cf53513570b9f1a263d7867f2 upstream.
+From: Graham Gower <graham.gower@gmail.com>
 
-We weren't checking whether the resource was in use before calling
-res_free(), so applications which called STREAMOFF on a v4l2 device that
-wasn't already streaming would cause a BUG() to be hit (MythTV).
+[ Upstream commit a2af139ff1cd85df586690ff626619ab1ee88b0a ]
 
-Reported-by: Larry Finger <larry.finger@lwfinger.net>
-Reported-by: Jay Harbeston <jharbestonus@gmail.com>
-Signed-off-by: Devin Heitmueller <dheitmueller@kernellabs.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Marvell 88E8001 on an ASUS P5NSLI motherboard is unable to send/receive
+packets on a system with >4gb ram unless a 32bit DMA mask is used.
 
+This issue has been around for years and a fix was sent 3.5 years ago, but
+there was some debate as to whether it should instead be fixed as a PCI quirk.
+http://www.spinics.net/lists/netdev/msg88670.html
+
+However, 18 months later a similar workaround was introduced for another
+chipset exhibiting the same problem.
+http://www.spinics.net/lists/netdev/msg142287.html
+
+Signed-off-by: Graham Gower <graham.gower@gmail.com>
+Signed-off-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Acked-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/media/video/au0828/au0828-video.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/marvell/skge.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/media/video/au0828/au0828-video.c
-+++ b/drivers/media/video/au0828/au0828-video.c
-@@ -1692,14 +1692,18 @@ static int vidioc_streamoff(struct file
- 			(AUVI_INPUT(i).audio_setup)(dev, 0);
- 		}
+--- a/drivers/net/ethernet/marvell/skge.c
++++ b/drivers/net/ethernet/marvell/skge.c
+@@ -4153,6 +4153,13 @@ static struct dmi_system_id skge_32bit_d
+ 			DMI_MATCH(DMI_BOARD_NAME, "nForce"),
+ 		},
+ 	},
++	{
++		.ident = "ASUS P5NSLI",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++			DMI_MATCH(DMI_BOARD_NAME, "P5NSLI")
++		},
++	},
+ 	{}
+ };
  
--		videobuf_streamoff(&fh->vb_vidq);
--		res_free(fh, AU0828_RESOURCE_VIDEO);
-+		if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
-+			videobuf_streamoff(&fh->vb_vidq);
-+			res_free(fh, AU0828_RESOURCE_VIDEO);
-+		}
- 	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
- 		dev->vbi_timeout_running = 0;
- 		del_timer_sync(&dev->vbi_timeout);
- 
--		videobuf_streamoff(&fh->vb_vbiq);
--		res_free(fh, AU0828_RESOURCE_VBI);
-+		if (res_check(fh, AU0828_RESOURCE_VBI)) {
-+			videobuf_streamoff(&fh->vb_vbiq);
-+			res_free(fh, AU0828_RESOURCE_VBI);
-+		}
- 	}
- 
- 	return 0;
 
 
