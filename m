@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab2JZQsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 12:48:05 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:35795 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab2JZQsA (ORCPT
+	id S1754187Ab2JZQsR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 12:48:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45750 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab2JZQsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 12:48:00 -0400
-Message-ID: <508ABEBC.8060403@gmail.com>
-Date: Fri, 26 Oct 2012 10:47:56 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/11] perf tool: Add PERF_SAMPLE_READ sample read support
-References: <1350743599-4805-1-git-send-email-jolsa@redhat.com>  <87txti81i2.fsf@sejong.aot.lge.com> <1351242885.16863.0.camel@twins>  <20121026102336.GA1067@krava.brq.redhat.com>  <1351265946.1619.20.camel@leonhard>  <508AB6FC.3080904@gmail.com> <1351268730.1619.21.camel@leonhard>
-In-Reply-To: <1351268730.1619.21.camel@leonhard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 26 Oct 2012 12:48:11 -0400
+Subject: Re: Process Hang in __read_seqcount_begin
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Peter LaDow <petela@gocougs.wsu.edu>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
+	 <1350925299.8609.978.camel@edumazet-glaptop>
+	 <CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
+	 <CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
+	 <CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
+	 <1351053164.6537.95.camel@edumazet-glaptop>
+	 <CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Oct 2012 18:48:07 +0200
+Message-ID: <1351270087.30380.9.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/12 10:25 AM, Namhyung Kim wrote:
-> 2012-10-26 (금), 10:14 -0600, David Ahern:
->> On 10/26/12 9:39 AM, Namhyung Kim wrote:
->>>> hm, thats the unique sample_type issue again ;) Once we set
->>>> PERF_SAMPLE_READ for event or group, we need to set it for
->>>> all other events in session, otherwise the report fails
->>>
->>> Sorry, I don't understand why we need to set it for all events.  Just
->>> setting it for a group is not sufficient?  Please shed some light on
->>> this.
->>
->> perf does not support multiple sample_types -- all events in the session
->> need to use the same one.
->
-> Can I ask why? :)
+On Fri, 2012-10-26 at 09:15 -0700, Peter LaDow wrote:
+> On Tue, Oct 23, 2012 at 9:32 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > Could you try following patch ?
+> 
+> So, I applied your patch.  And so far, it seems to have fixed the
+> issue.  I've had my systems running for 48 hours, and no lockup in
+> iptables.  Usually, I could get a lockup to occur within 12 to 24
+> hours, and running this long tells me this patch may have things
+> fixed.
+> 
+> Now, I have a couple of questions.
+> 
+> First, I'm not sure how this actually fixes things.  It does seem
+> there was a race before.  But it isn't clear to me how this patch
+> eliminates the race.  I fear that this patch only reduces the window
+> in which a race could occur, but doesn't eliminate it completely.
+>  
 
-Of course:
-https://lkml.org/lkml/2011/8/15/6
-https://lkml.org/lkml/2011/9/29/502
+...
 
-David
+> Second, perhaps use seqlock_t instead of a seqcount_t for xt_recseq?
+> This eliminates the problem.  But given that it has been using
+> seqcount_t for a long time, and is still using it, and nobody else has
+> had this issue appear, makes me wonder if this problem isn't something
+> unique to the RT patches.  Perhaps only use seqlock_t in built for
+> PREEMPT_RT_FULL?
+> 
+> Third, recent RT patches (such as 3.6.2-rt4) have added
+> preempt_disable_rt() and preempt_enable_rt() calls inside of
+> read_seqcount_begin() and write_seqcount_end() respectively.  The call
+> to local_bh_disable/local_bh_enable doesn't do anything to
+> disable/enable preemption (in 3.6.2-rt4), but it does in 3.03.36-rt58.
+>  But in 3.0.36-rt58 it only did so if not in an atomic context.  And
+> it doesn't appear to be an atomic context since local_bh_disable
+> increments preempt_count by SOFTIRQ_OFFSET.  And it appeared that
+> building with SMP enabled, even though it did call
+> preempt_disable_rt(), indirectly, through local_bh_disable(), but the
+> lockup still occurred.
+> 
+> Finally, after more testing, if this patch proves a solution to the
+> problem, we could apply it locally.  But what kind of testing would be
+> required as part of a submission back to the general kernel/RT folk?
+> The patch is easy enough to generate, but if it can't be proven that
+> this patch actually fixes anything, I fail to see how it would be
+> useful.
+> 
+> Thanks,
+> Pete LaDow
+
+
+Upstream kernel is fine, there is no race, as long as :
+
+local_bh_disable() disables BH and preemption.
+
+Apparently RT changes this, so RT needs to change the code.
+
+cmpxchg() has strong guarantees (and is also slower than upstream code),
+and seems a reasonable way to fix RT/iptables
+
+
+
