@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755043Ab2JZALa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:11:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59897 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab2JZAL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:11:26 -0400
-Date: Thu, 25 Oct 2012 17:11:19 -0700
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Fengguang Wu <fengguang.wu@intel.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [ 08/31] use clamp_t in UNAME26 fix
-Message-ID: <20121026001119.GA3028@elie.Belkin>
-References: <20121026000214.941721299@linuxfoundation.org>
- <20121026000215.817875317@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026000215.817875317@linuxfoundation.org>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+	id S1753805Ab2JZAIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54011 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754655Ab2JZAI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 78/85] ipvs: fix ARP resolving for direct routing mode
+Date: Thu, 25 Oct 2012 17:06:36 -0700
+Message-Id: <20121026000038.963616797@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Greg Kroah-Hartman wrote:
+------------------
 
-> commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
->
-> The min/max call needed to have explicit types on some architectures
-> (e.g. mn10300). Use clamp_t instead to avoid the warning:
->
->   kernel/sys.c: In function 'override_release':
->   kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
->
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[...]
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1152,7 +1152,7 @@ static int override_release(char __user
->  			rest++;
->  		}
->  		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
-> -		copy = min(sizeof(buf), max_t(size_t, 1, len));
-> +		copy = clamp_t(size_t, len, 1, sizeof(buf));
->  		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
 
-Does this have any effect at runtime?  If not, why is it needed for
-stable kernels?
+From: Julian Anastasov <ja@ssi.bg>
+
+[ Upstream commit ad4d3ef8b7eb527cca478dc08c02c10936e64115 ]
+
+After the change "Make neigh lookups directly in output packet path"
+(commit a263b30936) IPVS can not reach the real server for DR mode
+because we resolve the destination address from IP header, not from
+route neighbour. Use the new FLOWI_FLAG_KNOWN_NH flag to request
+output routes with known nexthop, so that it has preference
+on resolving.
+
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/netfilter/ipvs/ip_vs_xmit.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/net/netfilter/ipvs/ip_vs_xmit.c
++++ b/net/netfilter/ipvs/ip_vs_xmit.c
+@@ -49,6 +49,7 @@ enum {
+ 	IP_VS_RT_MODE_RDR	= 4, /* Allow redirect from remote daddr to
+ 				      * local
+ 				      */
++	IP_VS_RT_MODE_KNOWN_NH	= 16,/* Route via remote addr */
+ };
+ 
+ /*
+@@ -103,6 +104,8 @@ __ip_vs_get_out_rt(struct sk_buff *skb,
+ 			memset(&fl4, 0, sizeof(fl4));
+ 			fl4.daddr = dest->addr.ip;
+ 			fl4.flowi4_tos = rtos;
++			fl4.flowi4_flags = (rt_mode & IP_VS_RT_MODE_KNOWN_NH) ?
++					   FLOWI_FLAG_KNOWN_NH : 0;
+ 			rt = ip_route_output_key(net, &fl4);
+ 			if (IS_ERR(rt)) {
+ 				spin_unlock(&dest->dst_lock);
+@@ -127,6 +130,8 @@ __ip_vs_get_out_rt(struct sk_buff *skb,
+ 		memset(&fl4, 0, sizeof(fl4));
+ 		fl4.daddr = daddr;
+ 		fl4.flowi4_tos = rtos;
++		fl4.flowi4_flags = (rt_mode & IP_VS_RT_MODE_KNOWN_NH) ?
++				   FLOWI_FLAG_KNOWN_NH : 0;
+ 		rt = ip_route_output_key(net, &fl4);
+ 		if (IS_ERR(rt)) {
+ 			IP_VS_DBG_RL("ip_route_output error, dest: %pI4\n",
+@@ -1014,7 +1019,8 @@ ip_vs_dr_xmit(struct sk_buff *skb, struc
+ 	if (!(rt = __ip_vs_get_out_rt(skb, cp->dest, cp->daddr.ip,
+ 				      RT_TOS(iph->tos),
+ 				      IP_VS_RT_MODE_LOCAL |
+-					IP_VS_RT_MODE_NON_LOCAL, NULL)))
++				      IP_VS_RT_MODE_NON_LOCAL |
++				      IP_VS_RT_MODE_KNOWN_NH, NULL)))
+ 		goto tx_error_icmp;
+ 	if (rt->rt_flags & RTCF_LOCAL) {
+ 		ip_rt_put(rt);
+
+
