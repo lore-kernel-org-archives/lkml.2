@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab2JZTB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:01:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50146 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759037Ab2JZTB5 (ORCPT
+	id S1161022Ab2JZTCb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:02:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15279 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759017Ab2JZTCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:01:57 -0400
-Date: Fri, 26 Oct 2012 15:01:53 -0400 (EDT)
-Message-Id: <20121026.150153.1335892148865957561.davem@davemloft.net>
-To: shuah.khan@hp.com
-Cc: kyungmin.park@samsung.com, arnd@arndb.de, m.szyprowski@samsung.com,
-        sam@ravnborg.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH RFT RESEND linux-next] sparc: dma-mapping: support
- debug_dma_mapping_error
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1351267989.4013.20.camel@lorien2>
-References: <1351211773.6851.24.camel@lorien2>
-	<1351211909.6851.26.camel@lorien2>
-	<1351267989.4013.20.camel@lorien2>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 26 Oct 2012 15:02:30 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=JtyIil58JIg0OFanVo8A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351278148.8467.63.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.0.48-rt71
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Fri, 26 Oct 2012 15:02:28 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shuah Khan <shuah.khan@hp.com>
-Date: Fri, 26 Oct 2012 10:13:09 -0600
 
-> Add support for debug_dma_mapping_error() call to avoid warning from
-> debug_dma_unmap() interface when it checks for mapping error checked
-> status. Without this patch, device driver failed to check map error
-> warning is generated.
-> 
-> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Dear RT Folks,
 
-Why are you resending this?
+I'm pleased to announce the 3.0.48-rt71 stable release.
 
-When you resend patches, you have to give a reason.  Did the patch
-change?  Are you updating the CC: list of the patch posting? Are
-you correcting something else?
+
+This release is just an update to the new stable 3.0.48 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 496f4950da8ab855a826d35c384abe0386d405dd
+
+
+Or to build 3.0.48-rt71 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.48.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.48-rt71.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+
