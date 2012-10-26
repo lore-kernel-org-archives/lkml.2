@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541Ab2JZOsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:48:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56008 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933415Ab2JZOsw (ORCPT
+	id S933554Ab2JZOtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:49:15 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:55949 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab2JZOtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:48:52 -0400
-Date: Fri, 26 Oct 2012 07:48:47 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: insert warn_on_once() into
- wq_worker_waking_up()
-Message-ID: <20121026144847.GU11442@htj.dyndns.org>
-References: <1351260229-2098-1-git-send-email-js1304@gmail.com>
+	Fri, 26 Oct 2012 10:49:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351260229-2098-1-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351205220.6851.3.camel@lorien2>
+References: <1351205220.6851.3.camel@lorien2>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Fri, 26 Oct 2012 15:48:52 +0100
+X-Google-Sender-Auth: 2szWHQbKRmeBDOv2Siblr6d4U2U
+Message-ID: <CAHkRjk6jDKsFMa1_Wapwr7y5n8Ut8xfNBKWniSfHN_01z7qWFQ@mail.gmail.com>
+Subject: Re: [PATCH RFT] ARM64: dma-mapping: support debug_dma_mapping_error
+To: shuah.khan@hp.com
+Cc: tony@atomide.com, olof@lixom.net, santosh.shilimkar@ti.com,
+        nico@linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, shuahkhan@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:03:49PM +0900, Joonsoo Kim wrote:
-> Recently, workqueue code has gone through some changes and we found some bugs
-> related to this. To prevent futher bugs in advance, add WARN_ON_ONCE() in
-> wq_worker_waking_up(). When worker is not WORKER_NOT_RUNNIG state,
-> it should be binded to it's associated cpu and executed in that cpu.
-> Add code for checking this.
-> 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+On 25 October 2012 23:47, Shuah Khan <shuah.khan@hp.com> wrote:
+> Add support for debug_dma_mapping_error() call to avoid warning from
+> debug_dma_unmap() interface when it checks for mapping error checked
+> status. Without this patch, device driver failed to check map error
+> warning is generated.
+>
+> Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+> ---
+>  arch/arm64/include/asm/dma-mapping.h |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+> index 538f4b4..9947768 100644
+> --- a/arch/arm64/include/asm/dma-mapping.h
+> +++ b/arch/arm64/include/asm/dma-mapping.h
+> @@ -50,6 +50,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
+>  static inline int dma_mapping_error(struct device *dev, dma_addr_t dev_addr)
+>  {
+>         struct dma_map_ops *ops = get_dma_ops(dev);
+> +       debug_dma_mapping_error(dev, dev_addr);
+>         return ops->mapping_error(dev, dev_addr);
+>  }
 
-Applied to wq/for-3.8 w/ some commit message updates.
-
-Thanks.
+The patch looks fine but debug_dma_mapping_error() is not in mainline
+yet, so it will have to wait. If you want to add it to your series
+(which I assume adds debug_dma_mapping_error() support), you can add
+my Acked-by on the patch.
 
 -- 
-tejun
+Catalin
