@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab2JZAGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:30 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52694 "EHLO mail.kernel.org"
+	id S1752192Ab2JZAmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:42:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52782 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753346Ab2JZAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:24 -0400
+	id S1753417Ab2JZAGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 05/42] NLM: nlm_lookup_file() may return NLMv4-specific error codes
-Date: Thu, 25 Oct 2012 17:05:13 -0700
-Message-Id: <20121026000125.340785520@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Pavel Machek <pavel@suse.cz>, Jochen Friedrich <jochen@scram.de>,
+        linux-pcmcia@lists.infradead.org
+Subject: [ 10/42] pcmcia: sharpsl: dont discard sharpsl_pcmcia_ops
+Date: Thu, 25 Oct 2012 17:05:18 -0700
+Message-Id: <20121026000125.823995499@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -26,50 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
+commit fdc858a466b738d35d3492bc7cf77b1dac98bf7c upstream.
 
-If the filehandle is stale, or open access is denied for some reason,
-nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
-or nlm4_failed. These get passed right through nlm_lookup_file(),
-and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
-the result through the cast_status() machinery.
+The sharpsl_pcmcia_ops structure gets passed into
+sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
+unlike all other pcmcia drivers that pass their structures
+into platform_device_add_data, which makes a copy.
 
-Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
+This means the gcc warning is valid and the structure
+must not be marked as __initdata.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reported-by: Larry McVoy <lm@bitmover.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Without this patch, building collie_defconfig results in:
+
+drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
+compilation terminated.
+make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
+make[2]: *** [drivers/pcmcia] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Pavel Machek <pavel@suse.cz>
+Cc: linux-pcmcia@lists.infradead.org
+Cc: Jochen Friedrich <jochen@scram.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/clntxdr.c |    2 +-
- fs/lockd/svcproc.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_s
- {
- 	__be32 *p;
- 
--	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
-+	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
- 	p = xdr_reserve_space(xdr, 4);
- 	*p = stat;
+--- a/drivers/pcmcia/pxa2xx_sharpsl.c
++++ b/drivers/pcmcia/pxa2xx_sharpsl.c
+@@ -194,7 +194,7 @@ static void sharpsl_pcmcia_socket_suspen
+ 	sharpsl_pcmcia_init_reset(skt);
  }
---- a/fs/lockd/svcproc.c
-+++ b/fs/lockd/svcproc.c
-@@ -67,7 +67,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rq
  
- 	/* Obtain file pointer. Not used by FREE_ALL call. */
- 	if (filp != NULL) {
--		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
-+		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
-+		if (error != 0)
- 			goto no_locks;
- 		*filp = file;
- 
+-static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
++static struct pcmcia_low_level sharpsl_pcmcia_ops = {
+ 	.owner                  = THIS_MODULE,
+ 	.hw_init                = sharpsl_pcmcia_hw_init,
+ 	.socket_state           = sharpsl_pcmcia_socket_state,
 
 
