@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757126Ab2JZH62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:58:28 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:12631 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757060Ab2JZH61 (ORCPT
+	id S1757173Ab2JZH6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:58:55 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46097 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757065Ab2JZH6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:58:27 -0400
-X-IronPort-AV: E=Sophos;i="4.80,653,1344211200"; 
-   d="scan'208";a="15402717"
-Message-ID: <1351238303.18035.236.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 4/5] xen: arm: implement remap interfaces
- needed for privcmd mappings.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Mukesh Rathor <mukesh.rathor@oracle.com>
-CC: xen-devel <xen-devel@lists.xen.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 26 Oct 2012 08:58:23 +0100
-In-Reply-To: <20121025183958.0a4ae846@mantra.us.oracle.com>
-References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
-	 <1351084777-28898-4-git-send-email-ian.campbell@citrix.com>
-	 <20121024164411.5b000087@mantra.us.oracle.com>
-	 <20121024170746.7c89a790@mantra.us.oracle.com>
-	 <1351151219.18035.94.camel@zakaz.uk.xensource.com>
-	 <20121025183958.0a4ae846@mantra.us.oracle.com>
-Organization: Citrix Systems, Inc.
+	Fri, 26 Oct 2012 03:58:53 -0400
+Message-ID: <1351238331.5303.23.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: [GIT PULL] EFI fixes for v3.7
+From: Matt Fleming <matt@console-pimps.org>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-efi <linux-efi@vger.kernel.org>
+Date: Fri, 26 Oct 2012 08:58:51 +0100
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.3-1 
-MIME-Version: 1.0
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 02:39 +0100, Mukesh Rathor wrote:
-> Yup. I made the change on xen side and added this patch to my tree
-> and got it working after reverting Konrad's setup.c changes. Not sure
-> if you need an ack from x86, but if you do:
-> 
-> Acked-by: Mukesh Rathor <mukesh.rathor@oracle.com>
+Hi guys,
 
-The more ack's the merrier, thanks!
+The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
 
+  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-for-3.7
+
+for you to fetch changes up to 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c:
+
+  x86: efi: Turn off efi_enabled after setup on mixed fw/kernel (2012-10-25 19:09:40 +0100)
+
+----------------------------------------------------------------
+EFI updates for 3.7
+
+Fix oops with EFI variables on mixed 32/64-bit firmware/kernels and
+document EFI git repository location on kernel.org.
+
+----------------------------------------------------------------
+Matt Fleming (1):
+      MAINTAINERS: Add EFI git repository location
+
+Olof Johansson (1):
+      x86: efi: Turn off efi_enabled after setup on mixed fw/kernel
+
+ MAINTAINERS                 |  1 +
+ arch/x86/include/asm/efi.h  |  1 +
+ arch/x86/kernel/setup.c     | 12 ++++++++++++
+ arch/x86/platform/efi/efi.c | 18 ++++++++++--------
+ 4 files changed, 24 insertions(+), 8 deletions(-)
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
 
