@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab2JZMcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:32:14 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:46745 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639Ab2JZMcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:32:08 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V2 3/4] arm: mvebu: adding SATA support: configs update
-Date: Fri, 26 Oct 2012 14:30:48 +0200
-Message-Id: <1351254650-26861-4-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
+	id S932629Ab2JZMdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:33:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49508 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932541Ab2JZMdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 08:33:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
+   d="scan'208";a="160922814"
+Date: Fri, 26 Oct 2012 20:33:21 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] kfifo: round up the fifo size power of 2
+Message-ID: <20121026123321.GG2778@yliu-dev.sh.intel.com>
+References: <1351238218-22648-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1351243827.8719.5.camel@wall-e>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351243827.8719.5.camel@wall-e>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Lior Amsalem <alior@marvell.com>
----
- arch/arm/configs/multi_v7_defconfig |    2 ++
- arch/arm/configs/mvebu_defconfig    |    3 +++
- 2 files changed, 5 insertions(+)
+On Fri, Oct 26, 2012 at 11:30:27AM +0200, Stefani Seibold wrote:
+> Am Freitag, den 26.10.2012, 15:56 +0800 schrieb Yuanhan Liu:
+> > Say, if we want to allocate a filo with size of 6 bytes, it would be safer
+> > to allocate 8 bytes instead of 4 bytes.
+> > ----
+> > I know it works with rounddown_pow_of_two as well, since size is maintained
+> > in the kfifo internal part. But, I'm quite curious why Stefani chose
+> > rounddown_pow_of_two. To reduce memory?
+> > 
+> 
+> Yes, exactly, if a user do the wrong thing, than the user will get also
+> a wrong result, and did not waste memory.
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 159f75f..dbea6f4 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -17,8 +17,10 @@ CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_NEON=y
- CONFIG_NET=y
-+CONFIG_BLK_DEV_SD=y
- CONFIG_ATA=y
- CONFIG_SATA_HIGHBANK=y
-+CONFIG_SATA_MV=y
- CONFIG_NETDEVICES=y
- CONFIG_NET_CALXEDA_XGMAC=y
- CONFIG_SMSC911X=y
-diff --git a/arch/arm/configs/mvebu_defconfig b/arch/arm/configs/mvebu_defconfig
-index 7bcf850..76a60b5 100644
---- a/arch/arm/configs/mvebu_defconfig
-+++ b/arch/arm/configs/mvebu_defconfig
-@@ -18,6 +18,9 @@ CONFIG_ZBOOT_ROM_BSS=0x0
- CONFIG_ARM_APPENDED_DTB=y
- CONFIG_VFP=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_ATA=y
-+CONFIG_SATA_MV=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_OF_PLATFORM=y
--- 
-1.7.9.5
+But, isn't it better to 'correct' it? ;-)
 
+> 
+> But anyway, if the majority like this patch it is okay for me.
+
+Sorry, do you mean you are OK with this patch?
+
+Thanks,
+Yuanhan Liu
+> > 
+> > Cc: Stefani Seibold <stefani@seibold.net>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > ---
+> >  kernel/kfifo.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/kfifo.c b/kernel/kfifo.c
+> > index 59dcf5b..0f78378 100644
+> > --- a/kernel/kfifo.c
+> > +++ b/kernel/kfifo.c
+> > @@ -39,11 +39,11 @@ int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
+> >  		size_t esize, gfp_t gfp_mask)
+> >  {
+> >  	/*
+> > -	 * round down to the next power of 2, since our 'let the indices
+> > +	 * round up to the next power of 2, since our 'let the indices
+> >  	 * wrap' technique works only in this case.
+> >  	 */
+> >  	if (!is_power_of_2(size))
+> > -		size = rounddown_pow_of_two(size);
+> > +		size = roundup_pow_of_two(size);
+> >  
+> >  	fifo->in = 0;
+> >  	fifo->out = 0;
+> > @@ -84,7 +84,7 @@ int __kfifo_init(struct __kfifo *fifo, void *buffer,
+> >  	size /= esize;
+> >  
+> >  	if (!is_power_of_2(size))
+> > -		size = rounddown_pow_of_two(size);
+> > +		size = roundup_pow_of_two(size);
+> >  
+> >  	fifo->in = 0;
+> >  	fifo->out = 0;
+> 
