@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab2JZAat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:30:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53315 "EHLO mail.kernel.org"
+	id S1755423Ab2JZAbI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:31:08 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53303 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753980Ab2JZAHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:20 -0400
+	id S1753960Ab2JZAHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Shin <jacob.shin@amd.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 18/85] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
-Date: Thu, 25 Oct 2012 17:05:36 -0700
-Message-Id: <20121026000032.951798157@linuxfoundation.org>
+Subject: [ 17/85] x86, amd, mce: Avoid NULL pointer reference on CPU northbridge lookup
+Date: Thu, 25 Oct 2012 17:05:35 -0700
+Message-Id: <20121026000032.855552613@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,52 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Shin <jacob.shin@amd.com>
+From: Daniel J Blueman <daniel@numascale-asia.com>
 
-commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
+commit 21c5e50e15b1abd797e62f18fd7f90b9cc004cbd upstream.
 
-On systems with very large memory (1 TB in our case), BIOS may report a
-reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
-these from the direct mapping.
+When booting on a federated multi-server system (NumaScale), the
+processor Northbridge lookup returns NULL; add guards to prevent this
+causing an oops.
 
-[ hpa: this should be done not just for > 4 GB but for everything above the legacy
-  region (1 MB), at the very least.  That, however, turns out to require significant
-  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
+On those systems, the northbridge is accessed through MMIO and the
+"normal" northbridge enumeration in amd_nb.c doesn't work since we're
+generating the northbridge ID from the initial APIC ID and the last
+is not unique on those systems. Long story short, we end up without
+northbridge descriptors.
 
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+Link: http://lkml.kernel.org/r/1349073725-14093-1-git-send-email-daniel@numascale-asia.com
+[ Boris: beef up commit message ]
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/setup.c |   17 +++++++++++++++--
- 1 file changed, 15 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -919,8 +919,21 @@ void __init setup_arch(char **cmdline_p)
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -576,12 +576,10 @@ static __cpuinit int threshold_create_ba
+ 	int err = 0;
  
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
-+		int i;
-+		for (i = 0; i < e820.nr_map; i++) {
-+			struct e820entry *ei = &e820.map[i];
-+
-+			if (ei->addr + ei->size <= 1UL << 32)
-+				continue;
-+
-+			if (ei->type == E820_RESERVED)
-+				continue;
-+
-+			max_pfn_mapped = init_memory_mapping(
-+				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
-+				ei->addr + ei->size);
+ 	if (shared_bank[bank]) {
+-
+ 		nb = node_to_amd_nb(amd_get_nb_id(cpu));
+-		WARN_ON(!nb);
+ 
+ 		/* threshold descriptor already initialized on this node? */
+-		if (nb->bank4) {
++		if (nb && nb->bank4) {
+ 			/* yes, use it */
+ 			b = nb->bank4;
+ 			err = kobject_add(b->kobj, &dev->kobj, name);
+@@ -615,8 +613,10 @@ static __cpuinit int threshold_create_ba
+ 		atomic_set(&b->cpus, 1);
+ 
+ 		/* nb is already initialized, see above */
+-		WARN_ON(nb->bank4);
+-		nb->bank4 = b;
++		if (nb) {
++			WARN_ON(nb->bank4);
++			nb->bank4 = b;
 +		}
-+
- 		/* can we preseve max_low_pfn ?*/
- 		max_low_pfn = max_pfn;
  	}
+ 
+ 	err = allocate_threshold_blocks(cpu, bank, 0,
 
 
