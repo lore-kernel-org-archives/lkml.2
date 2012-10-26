@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965876Ab2JZSRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:17:50 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:20740 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965556Ab2JZSRt (ORCPT
+	id S965897Ab2JZSTn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:19:43 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:36160 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965556Ab2JZSTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:17:49 -0400
-Message-ID: <508AD3CB.8070303@tilera.com>
-Date: Fri, 26 Oct 2012 14:17:47 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 26 Oct 2012 14:19:41 -0400
+Date: Fri, 26 Oct 2012 19:19:05 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: Kdump with signed images
+Message-ID: <20121026181904.GA5770@srcf.ucam.org>
+References: <20121023145920.GD16496@redhat.com>
+ <87fw552mb4.fsf_-_@xmission.com>
+ <20121024173651.GE1821@redhat.com>
+ <1351145401.18115.78.camel@falcor>
+ <20121025141048.GD9377@redhat.com>
+ <1351190421.18115.92.camel@falcor>
+ <20121025185520.GA17995@redhat.com>
+ <1351214158.18115.186.camel@falcor>
+ <20121026023916.GA16762@srcf.ucam.org>
+ <1351274374.18115.205.camel@falcor>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tilegx: fix some issues in the SW TSO support
-References: <201210251737.q9PHbgev032681@farm-0012.internal.tilera.com>  <1351187513.2662.9.camel@bwh-desktop.uk.solarflarecom.com>  <508981E1.4030600@tilera.com>  <1351193806.2662.18.camel@bwh-desktop.uk.solarflarecom.com> <1351194525.2662.21.camel@bwh-desktop.uk.solarflarecom.com>
-In-Reply-To: <1351194525.2662.21.camel@bwh-desktop.uk.solarflarecom.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351274374.18115.205.camel@falcor>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2012 3:48 PM, Ben Hutchings wrote:
-> On Thu, 2012-10-25 at 20:36 +0100, Ben Hutchings wrote:
-> [...]
->> There's a simple way to test this - configure the 'attacker' host and
->> interface like this:
->>
->> # ip link set $IFACE mtu 128
->> # sysctl net.ipv4.route.min_adv_mss=88
->>
->> and then use something like netperf to generate a high bandwidth stream
->> of TCP traffic toward it from the tilegx interface.
-> Also you would need to run some other traffic in parallel (multiple
-> streams to the 'attacker' and some more normal streams) to ensure there
-> is real contention.
+On Fri, Oct 26, 2012 at 01:59:34PM -0400, Mimi Zohar wrote:
+> On Fri, 2012-10-26 at 03:39 +0100, Matthew Garrett wrote:
+> > and it must be impossible for anything other than 
+> > /sbin/kexec to make the kexec system call.
+> 
+> Permission is a MAC issue. :)
 
-Thanks!  I've filed a bugzilla within Tilera to come back and revisit this
-- I think it's not a short-term problem so we'll find some time to look at
-it in the future.  Or, someone reading this could try it themselves and
-submit the patch :-)
+It's a MAC issue that has to be implemented in the kernel. We can't 
+depend on userspace loading any kind of policy.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Matthew Garrett | mjg59@srcf.ucam.org
