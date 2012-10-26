@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab2JZANE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:13:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54079 "EHLO mail.kernel.org"
+	id S1755065Ab2JZAN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:13:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54067 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab2JZAId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:33 -0400
+	id S1754684Ab2JZAIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 70/85] ipv4: Dont report stale pmtu values to userspace
-Date: Thu, 25 Oct 2012 17:06:28 -0700
-Message-Id: <20121026000038.155639517@linuxfoundation.org>
+Subject: [ 69/85] ipv4: Dont create nh exeption when the device mtu is smaller than the reported pmtu
+Date: Thu, 25 Oct 2012 17:06:27 -0700
+Message-Id: <20121026000038.054146021@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -29,55 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit ee9a8f7ab2edf801b8b514c310455c94acc232f6 ]
+[ Upstream commit 7f92d334ba19a0d8e96f8f8f092219553367d921 ]
 
-We report cached pmtu values even if they are already expired.
-Change this to not report these values after they are expired
-and fix a race in the expire time calculation, as suggested by
-Eric Dumazet.
+When a local tool like tracepath tries to send packets bigger than
+the device mtu, we create a nh exeption and set the pmtu to device
+mtu. The device mtu does not expire, so check if the device mtu is
+smaller than the reported pmtu and don't crerate a nh exeption in
+that case.
 
 Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ net/ipv4/route.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/net/ipv4/route.c
 +++ b/net/ipv4/route.c
-@@ -2187,8 +2187,18 @@ static int rt_fill_info(struct net *net,
- 	    nla_put_be32(skb, RTA_GATEWAY, rt->rt_gateway))
- 		goto nla_put_failure;
+@@ -909,6 +909,9 @@ static void __ip_rt_update_pmtu(struct r
+ 	struct dst_entry *dst = &rt->dst;
+ 	struct fib_result res;
  
-+	expires = rt->dst.expires;
-+	if (expires) {
-+		unsigned long now = jiffies;
++	if (dst->dev->mtu < mtu)
++		return;
 +
-+		if (time_before(now, expires))
-+			expires -= now;
-+		else
-+			expires = 0;
-+	}
-+
- 	memcpy(metrics, dst_metrics_ptr(&rt->dst), sizeof(metrics));
--	if (rt->rt_pmtu)
-+	if (rt->rt_pmtu && expires)
- 		metrics[RTAX_MTU - 1] = rt->rt_pmtu;
- 	if (rtnetlink_put_metrics(skb, metrics) < 0)
- 		goto nla_put_failure;
-@@ -2198,13 +2208,6 @@ static int rt_fill_info(struct net *net,
- 		goto nla_put_failure;
+ 	if (mtu < ip_rt_min_pmtu)
+ 		mtu = ip_rt_min_pmtu;
  
- 	error = rt->dst.error;
--	expires = rt->dst.expires;
--	if (expires) {
--		if (time_before(jiffies, expires))
--			expires -= jiffies;
--		else
--			expires = 0;
--	}
- 
- 	if (rt_is_input_route(rt)) {
- 		if (nla_put_u32(skb, RTA_IIF, rt->rt_iif))
 
 
