@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966380Ab2JZUL0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:11:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40589 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966327Ab2JZULZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:11:25 -0400
-Date: Fri, 26 Oct 2012 13:11:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andy King <acking@vmware.com>
-Cc: pv-drivers@vmware.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        George Zhang <georgezhang@vmware.com>
-Subject: Re: [Pv-drivers] [PATCH 04/10] VMCI: device driver implementaton.
-Message-ID: <20121026201123.GA15366@kroah.com>
-References: <723255296.2652440.1351199329247.JavaMail.root@vmware.com>
- <1734741434.3740170.1351281773036.JavaMail.root@vmware.com>
+	id S966385Ab2JZUMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:12:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64836 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965506Ab2JZUMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:12:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1734741434.3740170.1351281773036.JavaMail.root@vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com>
+References: <20121026185021.GA1960@www.outflux.net> <CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
+ <CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 26 Oct 2012 13:12:12 -0700
+X-Google-Sender-Auth: 0nDdDc8hqo3sAModTe7oGizh_yQ
+Message-ID: <CA+55aFzw_p-WJyBBGc5UFDU8yN698REH+Vc1fk=CDeq4JG8AFA@mail.gmail.com>
+Subject: Re: [PATCH] VFS: add config options to enable link restrictions
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 01:02:53PM -0700, Andy King wrote:
-> Hi Greg,
-> 
-> > in the next few days with that change along with any modifications
-> > necessary after a sparse sanity check.
-> 
-> We have a change that fixes things, but I wanted to check if you
-> had any additional comments before we send out more patches.  In
-> all likelihood you'd probably already given up in disgust after
-> the vanilla exports, but I wanted to be sure :)
+On Fri, Oct 26, 2012 at 12:46 PM, Kees Cook <keescook@chromium.org> wrote:
+>
+> I think there's value in being able to enable these protections at
+> build-time so there's no need for a distro to have to ship extra
+> files/lines, spend time setting it, etc.
 
-Yes, I stopped reviewing at this point.
+The "value in not having to change the distro" is valid value. That
+said, two lines to rc.local does that too.
 
-> Also, would you prefer a complete refresh of the series or just
-> diffs?
+But dammit, every single discussion I see, you use some *other*
+argument for it, like "people don't have initrd" or whatever crazy
+crap. That's what I was objecting to.
 
-Complete refresh, with a short summary on the 00/10 patch of what the
-changes are.  That's the usual way to do this type of thing.
+> Would a single config item be acceptable? What would be an agreeable
+> way to enable this at build-time?
 
-thanks,
+I dunno. Maybe a CONFIG_LOCKDOWN thing that sets a few of our other
+default values as well. Or at least hide the config options from
+normal users behind some extra security menu, so that people just
+don't have to care this deeply. Because most people *don't* care.
 
-greg k-h
+I also don't see why it would be a build-time config option at all.
+Why not just expose them as option using module_param_named(), and
+then you can do it in the kernel command flags (and set it in your
+grub.conf etc).
+
+            Linus
