@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966032Ab2JZSgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:36:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53969 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965944Ab2JZSgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:36:03 -0400
-Date: Fri, 26 Oct 2012 19:36:01 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: P J P <ppandit@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-Message-ID: <20121026183601.GR2616@ZenIV.linux.org.uk>
-References: <20121024232032.GA31129@www.outflux.net>
- <20121025041620.GH2616@ZenIV.linux.org.uk>
- <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
- <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
- <20121025120952.GI2616@ZenIV.linux.org.uk>
- <20121025123843.GJ2616@ZenIV.linux.org.uk>
- <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966039Ab2JZSjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:39:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:40541 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966012Ab2JZSjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:39:46 -0400
+Message-ID: <1351276649.18115.217.camel@falcor>
+Subject: Re: Kdump with signed images
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Matthew Garrett <mjg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Khalid Aziz <khalid@gonehiking.org>, kexec@lists.infradead.org,
+        horms@verge.net.au, Dave Young <dyoung@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Kees Cook <keescook@chromium.org>
+Date: Fri, 26 Oct 2012 14:37:29 -0400
+In-Reply-To: <20121026170609.GB24687@redhat.com>
+References: <20121023131854.GA16496@redhat.com>
+	 <20121023145920.GD16496@redhat.com> <87fw552mb4.fsf_-_@xmission.com>
+	 <20121024173651.GE1821@redhat.com> <1351145401.18115.78.camel@falcor>
+	 <20121025141048.GD9377@redhat.com> <1351190421.18115.92.camel@falcor>
+	 <20121025185520.GA17995@redhat.com> <1351214158.18115.186.camel@falcor>
+	 <20121026023916.GA16762@srcf.ucam.org> <20121026170609.GB24687@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102618-7182-0000-0000-000002F61EB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:08:20PM +0530, P J P wrote:
-> +-- On Thu, 25 Oct 2012, Al Viro wrote --+
-> | 	* every bleeding script will have bogus execution of modprobe done
-> | at execve time (and you'd better pray that /sbin/modprobe isn't a shell
-> | script wrapper around the actual binary, or you *will* get loop prevention
-> | kick in)
-> | 	* none of the existing binfmt-<...> aliases is going to be hit
-> | now; IOW, all usecases got broken.  Granted, realistically it just means
-> | broken modular aout support, but then it's the only reason to have that
-> | request_module() there in the first place.
+On Fri, 2012-10-26 at 13:06 -0400, Vivek Goyal wrote:
+> On Fri, Oct 26, 2012 at 03:39:16AM +0100, Matthew Garrett wrote:
+> > On Thu, Oct 25, 2012 at 09:15:58PM -0400, Mimi Zohar wrote:
+> > 
+> > > On a running system, the package installer, after verifying the package
+> > > integrity, would install each file with the associated 'security.ima'
+> > > extended attribute.  The 'security.evm' digital signature would be
+> > > installed with an HMAC, calculated using a system unique key. 
+> > 
+> > The idea isn't to prevent /sbin/kexec from being modified after 
+> > installation - it's to prevent it from being possible to install a 
+> > system that has a modified /sbin/kexec. Leaving any part of this up to 
+> > the package installer means that it doesn't solve the problem we're 
+> > trying to solve here. It must be impossible for the kernel to launch any 
+> > /sbin/kexec that hasn't been signed by a trusted key that's been built 
+> > into the kernel, and it must be impossible for anything other than 
+> > /sbin/kexec to make the kexec system call.
 > 
->   Please have a look at the updated patch below.
-> 
-> It fixes the issue of excessive calls to request_module. find_module() routine 
-> is used before request_module(), to see if the module is already loaded or 
-> not. Module alias could dodge this though, I guess.
+> I am kind of lost now so just trying to summarize whatever I have
+> learned so far from this thread.
 
-"Could"?  Can you show a single module that would have name matching
-binfmt-[0-9a-f]*?  In other words, are they ever loaded _not_ via an
-alias?
+Thanks for summarizing.
+
+> - So say we can sign /sbin/kexec at build time and distros can do that.
+> - Verify the signature at exec time using kernel keyring and if
+>   verification happens successfully, say process gains extra capability.
+> - Use this new capability to determine whether kexec_load() will be
+>   successful or not.
+> 
+> Even if we can do all this, it still has the issue of being able to
+> stop the process in user space and replace the code at run time
+> and be able to launch unsigned kernel.
+> 
+> So until and unless we have a good solution to verify application's
+> integrity/authneticity at the time of kexec_load() system call we
+> still have the problem. And I don't think we have come up with a
+> solution for that yet (until and unless I missed something).
+>   
+> Thanks
+> Vivek
+> 
+
+Agreed, you need a new LSM/integrity hook.
+
+thanks,
+
+Mimi
+
