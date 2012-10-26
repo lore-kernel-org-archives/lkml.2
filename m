@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab2JZSq6 (ORCPT <rfc822;w@1wt.eu>);
+	id S966052Ab2JZSrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:47:01 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57833 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab2JZSq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 14:46:58 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33157 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145Ab2JZSq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:46:57 -0400
-Message-ID: <508ADA8E.9000604@linux.vnet.ibm.com>
-Date: Fri, 26 Oct 2012 13:46:38 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+Date: Fri, 26 Oct 2012 14:46:49 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+Message-ID: <20121026184649.GA8614@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+	"Kleen, Andi" <andi.kleen@intel.com>,
+	"Wu, Fengguang" <fengguang.wu@intel.com>,
+	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+	Jun'ichi Nomura <j-nomura@ce.jp.nec.com>,
+	Akira Fujita <a-fujita@rs.jp.nec.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"linux-mm@kvack.org" <linux-mm@kvack.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20121026061206.GA31139@thunk.org>
+ <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] debugfs: add get/set for atomic types
-References: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com> <20121026161315.GA13134@kroah.com>
-In-Reply-To: <20121026161315.GA13134@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102618-9360-0000-0000-00000C1A7D2E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 11:13 AM, Greg Kroah-Hartman wrote:
-> On Fri, Oct 26, 2012 at 10:49:01AM -0500, Seth Jennings wrote:
->> debugfs currently lacks the ability to create attributes
->> that set/get atomic_t values.
->>
->> This patch adds support for this through a new
->> debugfs_create_atomic_t() function.
+On Fri, Oct 26, 2012 at 04:55:01PM +0000, Luck, Tony wrote:
 > 
-> Why would you want to set an atomic variable type from userspace?
+> I think that we know that the file *is* corrupted, not just "potentially".
+> We probably know the location of the corruption to cache-line granularity.
+> Perhaps better on systems where we have access to ecc syndrome bits,
+> perhaps worse ... we do have some errors where the low bits of the address
+> are not known.
 
-In my particular use case, I'm not setting from userspace, only getting.
+Well, it's at least *possible* that it was only the ECC bits that got
+flipped.  :-) Not likely, I'll grant!  (Or does the motherboard zero
+out the entire cache-line on a hard ECC failure?)
 
-All the other types are symmetric, being both settable and gettable,
-so I was just trying to blend with the other types.
+> I'm in total agreement that forcing a reboot or fsck is unhelpful here.
+> 
+> But what should we do?  We don't want to let the error be propagated. That
+> could cause a cascade of more failures as applications make bad decisions
+> based on the corrupted data.
+> 
+> Perhaps we could ask the filesystem to move the file to a top-level
+> "corrupted" directory (analogous to "lost+found") with some attached
+> metadata to help recovery tools know where the file came from, and the
+> range of corrupted bytes in the file? We'd also need to invalidate existing
+> open file descriptors (or less damaging - flag them to avoid the corrupted
+> area??). Whatever we do, it needs to be persistent across a reboot ... the
+> lost bits are not going to magically heal themselves.
 
-> What in-kernel code needs this?
+Well, we could set a new attribute bit on the file which indicates
+that the file has been corrupted, and this could cause any attempts to
+open the file to return some error until the bit has been cleared.
+This would persist across reboots.  The only problem is that system
+administrators might get very confused (at least at first, when they
+first run a kernel or a distribution which has this feature enabled).
+Application programs could also get very confused when any attempt to
+open or read from a file suddenly returned some new error code (EIO,
+or should we designate a new errno code for this purpose, so there is
+a better indication of what the heck was going on?)
 
-None, yet.  I am working on code that does.
+Also, if we just log the message in dmesg, if the system administrator
+doesn't find the "this file is corrupted" bit right away, they might
+not be able to determine which part of the file was corrupted.  How
+important is this?  If the file system supports extended attributes,
+should we attempt to attach a new extended attribute with information
+about the ECC failure?
 
-If you would rather me send this as part of the patchset for that
-code, I can.  I just wanted to get this in early if I could since it
-is functionality I can see others using.
+I'm not sure it's worth it to go to these extents, but I could imagine
+some customers wanting to have this sort of information.  Do we know
+what their "nice to have" / "must have" requirements might be?
 
-For an example, see drivers/staging/ramster/zcache-main.c:132 where
-both atomic and non-atomic version of stats are being maintained so
-that the non-atomic version can be read by debugfs.
-
-Beside not having an in-kernel user yet, does this approach look good
-to you?
-
-Seth
-
+     	       	       	       	    	 - Ted
