@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932844Ab2JZMyt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:54:49 -0400
-Received: from londo.lunn.ch ([80.238.139.98]:53321 "EHLO londo.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932712Ab2JZMyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:54:47 -0400
-Date: Fri, 26 Oct 2012 14:54:24 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
-        Ian Molton <ian.molton@codethink.co.uk>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Jani Monoses <jani.monoses@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 0/4] Adding SATA support for Armada 370/XP
-Message-ID: <20121026125424.GI21046@lunn.ch>
-References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
- <20121026123908.GH21046@lunn.ch>
- <20121026144804.640eabaf@skate>
+	id S932840Ab2JZMzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:55:06 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63421 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab2JZMzD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 08:55:03 -0400
+Date: Fri, 26 Oct 2012 14:54:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] RAS: MCA config cleanup
+Message-ID: <20121026125457.GA9886@gmail.com>
+References: <20121026124826.GA5762@aftab.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121026144804.640eabaf@skate>
+In-Reply-To: <20121026124826.GA5762@aftab.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 02:48:04PM +0200, Thomas Petazzoni wrote:
+
+* Borislav Petkov <bp@amd64.org> wrote:
+
+> Hi guys,
 > 
-> On Fri, 26 Oct 2012 14:39:08 +0200, Andrew Lunn wrote:
+> this is 5-patch set reworking the config variables in the MCA code.
+> There's an out-of-tree change which Greg and I agreed to push through
+> the RAS tree. These changes are for the next merge window.
 > 
-> > What about the openblocks-ax3?
+> Please pull,
+> thanks.
 > 
-> Gr??gory does not (yet) have an OpenBlocks AX3, but I'm planning to do
-> the work for SATA soon for this platform. However, supporting the
-> OpenBlocks AX3 is not part of our official contract with Marvell, it's
-> just an additional thing I'm happily doing on my spare time.
+> The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
+> 
+>   Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/mca_cfg
+> 
+> for you to fetch changes up to 1462594bf2866c1dc80066ed6f49f4331c551901:
+> 
+>   x86, MCA: Finish mca_config conversion (2012-10-26 14:37:58 +0200)
+> 
+> ----------------------------------------------------------------
+> Rework all config variables used throughout the MCA code and collect
+> them together into a mca_config struct. This keeps them tightly and
+> neatly packed together instead of spilled all over the place.
+> 
+> Then, convert those which are used as booleans into real booleans and
+> save some space.
+> 
+> ----------------------------------------------------------------
+> Borislav Petkov (5):
+>       drivers/base: Add a DEVICE_BOOL_ATTR macro
+>       x86, MCA: Convert dont_log_ce, banks and tolerant
+>       x86, MCA: Convert rip_msr, mce_bootlog, monarch_timeout
+>       x86, MCA: Convert the next three variables batch
+>       x86, MCA: Finish mca_config conversion
+> 
+>  arch/x86/include/asm/mce.h                |  21 ++-
+>  arch/x86/kernel/cpu/mcheck/mce-internal.h |   2 -
+>  arch/x86/kernel/cpu/mcheck/mce-severity.c |   4 +-
+>  arch/x86/kernel/cpu/mcheck/mce.c          | 209 +++++++++++++++---------------
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c    |   8 +-
+>  arch/x86/lguest/boot.c                    |   2 +-
+>  drivers/base/core.c                       |  21 +++
+>  include/linux/device.h                    |   7 +
+>  8 files changed, 159 insertions(+), 115 deletions(-)
 
-Ah, O.K. I did not realize that.
+Pulled, thanks Boris!
 
-> So I'll
-> provide support for SATA, network and SMP on OpenBlocks AX3, but we
-> would like to first see the SATA support for the Marvell evaluation
-> boards being merged, and on my side the basic support for the
-> OpenBlocks AX3. I'll send followup patches to enable SATA/network/SMP
-> on OpenBlocks AX3 later on, if that's ok for you?
-
-Sure, no problem.
-
-Thanks for the clarification,
-
-       Andrew
+	Ingo
