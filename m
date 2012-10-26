@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2JZAxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:53:25 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63244 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2JZAxX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:53:23 -0400
-X-AuditID: 9c930197-b7c4aae000004160-3b-5089deff9205
-Date: Fri, 26 Oct 2012 09:58:51 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] Support volatile range for anon vma
-Message-ID: <20121026005851.GD15767@bbox>
-References: <1351133820-14096-1-git-send-email-minchan@kernel.org>
- <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
+	id S1752399Ab2JZBCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:02:04 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50782 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751874Ab2JZBCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 21:02:02 -0400
+Date: Fri, 26 Oct 2012 02:01:59 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm radeon fixes.
+Message-ID: <alpine.DEB.2.00.1210260200200.5647@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013a9881a86c-c0fb5823-b6e7-4bea-8707-f6b8eddae14d-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-178829210-1351213319=:5647"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Thu, Oct 25, 2012 at 03:19:27PM +0000, Christoph Lameter wrote:
-> On Thu, 25 Oct 2012, Minchan Kim wrote:
-> 
-> >  #endif
-> > +	/*
-> > +	 * True if page in this vma is reclaimed.
-> 
-> What does that mean? All pages in the vma have been cleared out?
+--29444707-178829210-1351213319=:5647
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-It means at least, more than one is reclaimed.
-Comment should have been cleared.
 
-> 
-> > +	TTU_IGNORE_VOLATILE = (1 << 11),/* ignore volatile */
-> >  };
-> >  #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
-> >
-> >  int try_to_unmap(struct page *, enum ttu_flags flags);
-> >  int try_to_unmap_one(struct page *, struct vm_area_struct *,
-> > -			unsigned long address, enum ttu_flags flags);
-> > +			unsigned long address, enum ttu_flags flags,
-> > +			bool *is_volatile);
-> 
-> You already pass a vma pointer in. Why do you need to pass a
-> volatile flag in? Looks like unecessary churn.
+Hi Linus,
 
-You mean we can use vma->purged instead of is_volatile passing?
-The is_volatile is just checking for that all of vmas share the page
-are volatile ones. Then, vma->purged is just checking for that the page
-is zapped in the vma. If one of vma share the page isn't volatile, we can't zap.
+Just radeon fixes in this one,
+some new PCI IDs,
+ATPX regression fix,
+async VM regression fixes
+some module options fixes.
 
-BTW, Christoph, what do you think about the goal of the patch which changes
-munmap(2) to madvise(2) when user calls free(3) in user allocator like glibc?
-I guess it would improve system performance very well.
-But as I wrote down in description, downside of the patch is that we have to
-age anon lru although we don't have swap. But gain via the patch is bigger than
-loss via aging of anon lru when memory pressure happens. I don't see other downside
-other than it. What do you think about it?
-(I didn't implement anon lru aging in case of no-swap but it's trivial
-once we decide)
+Dave.
 
-Thanks for the review, Christoph
+The following changes since commit b8e902f24fdd16c4373ddc37a4e150c4afe9c6db:
 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+  drm/ttm: Fix a theoretical race in ttm_bo_cleanup_refs() (2012-10-23 10:15:21 +1000)
 
--- 
-Kind regards,
-Minchan Kim
+are available in the git repository at:
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alex Deucher (6):
+      drm/radeon: add some new SI PCI ids
+      drm/radeon: fix sparse warning
+      drm/radeon: give each backlight a unique id
+      drm/radeon: add error output if VM CS fails on cayman
+      drm/radeon: fix ATPX function documentation
+      drm/radeon: fix ATPX regression in acpi rework
+
+Christian König (9):
+      drm/radeon: fix PFP sync in vm_flush
+      drm/radeon: fix cayman_vm_set_page v2
+      drm/radeon: fix si_set_page v2
+      drm/radeon: remove set_page check from VM code
+      drm/radeon: fix header size estimation in VM code
+      drm/radeon: fix and simplify pot argument checks v3
+      drm/radeon: use vzalloc for gart pages
+      drm/radeon: move size limits to gem_object_create.
+      drm/radeon: move the retry to gem_object_create
+
+Dave Airlie (1):
+      Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
+
+ drivers/gpu/drm/radeon/atombios_encoders.c      |    5 ++-
+ drivers/gpu/drm/radeon/evergreen_cs.c           |    1 +
+ drivers/gpu/drm/radeon/ni.c                     |   45 ++++++++++-------
+ drivers/gpu/drm/radeon/nid.h                    |    1 +
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c    |    6 +-
+ drivers/gpu/drm/radeon/radeon_device.c          |   60 +++++++++--------------
+ drivers/gpu/drm/radeon/radeon_gart.c            |   22 ++++-----
+ drivers/gpu/drm/radeon/radeon_gem.c             |   18 ++++++-
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    5 ++-
+ drivers/gpu/drm/radeon/radeon_object.c          |   19 -------
+ drivers/gpu/drm/radeon/si.c                     |   47 +++++++++++-------
+ include/drm/drm_pciids.h                        |    3 +
+ 12 files changed, 122 insertions(+), 110 deletions(-)
+--29444707-178829210-1351213319=:5647--
