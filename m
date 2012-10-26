@@ -1,90 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab2JZAHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53176 "EHLO mail.kernel.org"
+	id S1753992Ab2JZAHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:07:20 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53222 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823Ab2JZAHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:03 -0400
+	id S1753909Ab2JZAHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: [ 35/42] tcp: resets are misrouted
-Date: Thu, 25 Oct 2012 17:05:43 -0700
-Message-Id: <20121026000128.343395957@linuxfoundation.org>
+        Tao Ma <boyu.mt@taobao.com>, "Theodore Tso" <tytso@mit.edu>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [ 02/85] ext4: Checksum the block bitmap properly with bigalloc enabled
+Date: Thu, 25 Oct 2012 17:05:20 -0700
+Message-Id: <20121026000031.372997632@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
-References: <20121026000124.790781113@linuxfoundation.org>
+In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Tao Ma <boyu.mt@taobao.com>
 
-From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+commit 79f1ba49569e5aec919b653c55b03274c2331701 upstream.
 
-[ Upstream commit 4c67525849e0b7f4bd4fab2487ec9e43ea52ef29 ]
+In mke2fs, we only checksum the whole bitmap block and it is right.
+While in the kernel, we use EXT4_BLOCKS_PER_GROUP to indicate the
+size of the checksumed bitmap which is wrong when we enable bigalloc.
+The right size should be EXT4_CLUSTERS_PER_GROUP and this patch fixes
+it.
 
-After commit e2446eaa ("tcp_v4_send_reset: binding oif to iif in no
-sock case").. tcp resets are always lost, when routing is asymmetric.
-Yes, backing out that patch will result in misrouting of resets for
-dead connections which used interface binding when were alive, but we
-actually cannot do anything here.  What's died that's died and correct
-handling normal unbound connections is obviously a priority.
+Also as every caller of ext4_block_bitmap_csum_set and
+ext4_block_bitmap_csum_verify pass in EXT4_BLOCKS_PER_GROUP(sb)/8,
+we'd better removes this parameter and sets it in the function itself.
 
-Comment to comment:
-> This has few benefits:
->   1. tcp_v6_send_reset already did that.
-
-It was done to route resets for IPv6 link local addresses. It was a
-mistake to do so for global addresses. The patch fixes this as well.
-
-Actually, the problem appears to be even more serious than guaranteed
-loss of resets.  As reported by Sergey Soloviev <sol@eqv.ru>, those
-misrouted resets create a lot of arp traffic and huge amount of
-unresolved arp entires putting down to knees NAT firewalls which use
-asymmetric routing.
-
-Signed-off-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_ipv4.c |    7 ++++---
- net/ipv6/tcp_ipv6.c |    3 ++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -678,10 +678,11 @@ static void tcp_v4_send_reset(struct soc
- 	arg.csumoffset = offsetof(struct tcphdr, check) / 2;
- 	arg.flags = (sk && inet_sk(sk)->transparent) ? IP_REPLY_ARG_NOSRCCHECK : 0;
- 	/* When socket is gone, all binding information is lost.
--	 * routing might fail in this case. using iif for oif to
--	 * make sure we can deliver it
-+	 * routing might fail in this case. No choice here, if we choose to force
-+	 * input interface, we will misroute in case of asymmetric route.
+---
+ fs/ext4/balloc.c  |    8 +++-----
+ fs/ext4/bitmap.c  |    6 ++++--
+ fs/ext4/ext4.h    |    4 ++--
+ fs/ext4/ialloc.c  |    4 +---
+ fs/ext4/mballoc.c |    9 +++------
+ fs/ext4/resize.c  |    3 +--
+ 6 files changed, 14 insertions(+), 20 deletions(-)
+
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -174,8 +174,7 @@ void ext4_init_block_bitmap(struct super
+ 		ext4_free_inodes_set(sb, gdp, 0);
+ 		ext4_itable_unused_set(sb, gdp, 0);
+ 		memset(bh->b_data, 0xff, sb->s_blocksize);
+-		ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
+-					   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++		ext4_block_bitmap_csum_set(sb, block_group, gdp, bh);
+ 		return;
+ 	}
+ 	memset(bh->b_data, 0, sb->s_blocksize);
+@@ -212,8 +211,7 @@ void ext4_init_block_bitmap(struct super
  	 */
--	arg.bound_dev_if = sk ? sk->sk_bound_dev_if : inet_iif(skb);
-+	if (sk)
-+		arg.bound_dev_if = sk->sk_bound_dev_if;
+ 	ext4_mark_bitmap_end(num_clusters_in_group(sb, block_group),
+ 			     sb->s_blocksize * 8, bh->b_data);
+-	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
+-				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh);
+ 	ext4_group_desc_csum_set(sb, block_group, gdp);
+ }
  
- 	net = dev_net(skb_dst(skb)->dev);
- 	arg.tos = ip_hdr(skb)->tos;
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -896,7 +896,8 @@ static void tcp_v6_send_response(struct
- 	__tcp_v6_send_check(buff, &fl6.saddr, &fl6.daddr);
+@@ -350,7 +348,7 @@ void ext4_validate_block_bitmap(struct s
+ 		return;
+ 	}
+ 	if (unlikely(!ext4_block_bitmap_csum_verify(sb, block_group,
+-			desc, bh, EXT4_BLOCKS_PER_GROUP(sb) / 8))) {
++			desc, bh))) {
+ 		ext4_unlock_group(sb, block_group);
+ 		ext4_error(sb, "bg %u: bad block bitmap checksum", block_group);
+ 		return;
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -58,11 +58,12 @@ void ext4_inode_bitmap_csum_set(struct s
  
- 	fl6.flowi6_proto = IPPROTO_TCP;
--	fl6.flowi6_oif = inet6_iif(skb);
-+	if (ipv6_addr_type(&fl6.daddr) & IPV6_ADDR_LINKLOCAL)
-+		fl6.flowi6_oif = inet6_iif(skb);
- 	fl6.fl6_dport = t1->dest;
- 	fl6.fl6_sport = t1->source;
- 	security_skb_classify_flow(skb, flowi6_to_flowi(&fl6));
+ int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
+ 				  struct ext4_group_desc *gdp,
+-				  struct buffer_head *bh, int sz)
++				  struct buffer_head *bh)
+ {
+ 	__u32 hi;
+ 	__u32 provided, calculated;
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
++	int sz = EXT4_CLUSTERS_PER_GROUP(sb) / 8;
+ 
+ 	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
+ 					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+@@ -84,8 +85,9 @@ int ext4_block_bitmap_csum_verify(struct
+ 
+ void ext4_block_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
+ 				struct ext4_group_desc *gdp,
+-				struct buffer_head *bh, int sz)
++				struct buffer_head *bh)
+ {
++	int sz = EXT4_CLUSTERS_PER_GROUP(sb) / 8;
+ 	__u32 csum;
+ 	struct ext4_sb_info *sbi = EXT4_SB(sb);
+ 
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1867,10 +1867,10 @@ int ext4_inode_bitmap_csum_verify(struct
+ 				  struct buffer_head *bh, int sz);
+ void ext4_block_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
+ 				struct ext4_group_desc *gdp,
+-				struct buffer_head *bh, int sz);
++				struct buffer_head *bh);
+ int ext4_block_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
+ 				  struct ext4_group_desc *gdp,
+-				  struct buffer_head *bh, int sz);
++				  struct buffer_head *bh);
+ 
+ /* balloc.c */
+ extern void ext4_validate_block_bitmap(struct super_block *sb,
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -753,9 +753,7 @@ got:
+ 			ext4_free_group_clusters_set(sb, gdp,
+ 				ext4_free_clusters_after_init(sb, group, gdp));
+ 			ext4_block_bitmap_csum_set(sb, group, gdp,
+-						   block_bitmap_bh,
+-						   EXT4_BLOCKS_PER_GROUP(sb) /
+-						   8);
++						   block_bitmap_bh);
+ 			ext4_group_desc_csum_set(sb, group, gdp);
+ 		}
+ 		ext4_unlock_group(sb, group);
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2804,8 +2804,7 @@ ext4_mb_mark_diskspace_used(struct ext4_
+ 	}
+ 	len = ext4_free_group_clusters(sb, gdp) - ac->ac_b_ex.fe_len;
+ 	ext4_free_group_clusters_set(sb, gdp, len);
+-	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh,
+-				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++	ext4_block_bitmap_csum_set(sb, ac->ac_b_ex.fe_group, gdp, bitmap_bh);
+ 	ext4_group_desc_csum_set(sb, ac->ac_b_ex.fe_group, gdp);
+ 
+ 	ext4_unlock_group(sb, ac->ac_b_ex.fe_group);
+@@ -4664,8 +4663,7 @@ do_more:
+ 
+ 	ret = ext4_free_group_clusters(sb, gdp) + count_clusters;
+ 	ext4_free_group_clusters_set(sb, gdp, ret);
+-	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
+-				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++	ext4_block_bitmap_csum_set(sb, block_group, gdp, bitmap_bh);
+ 	ext4_group_desc_csum_set(sb, block_group, gdp);
+ 	ext4_unlock_group(sb, block_group);
+ 	percpu_counter_add(&sbi->s_freeclusters_counter, count_clusters);
+@@ -4809,8 +4807,7 @@ int ext4_group_add_blocks(handle_t *hand
+ 	mb_free_blocks(NULL, &e4b, bit, count);
+ 	blk_free_count = blocks_freed + ext4_free_group_clusters(sb, desc);
+ 	ext4_free_group_clusters_set(sb, desc, blk_free_count);
+-	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh,
+-				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++	ext4_block_bitmap_csum_set(sb, block_group, desc, bitmap_bh);
+ 	ext4_group_desc_csum_set(sb, block_group, desc);
+ 	ext4_unlock_group(sb, block_group);
+ 	percpu_counter_add(&sbi->s_freeclusters_counter,
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1121,8 +1121,7 @@ static int ext4_set_bitmap_checksums(str
+ 	bh = ext4_get_bitmap(sb, group_data->block_bitmap);
+ 	if (!bh)
+ 		return -EIO;
+-	ext4_block_bitmap_csum_set(sb, group, gdp, bh,
+-				   EXT4_BLOCKS_PER_GROUP(sb) / 8);
++	ext4_block_bitmap_csum_set(sb, group, gdp, bh);
+ 	brelse(bh);
+ 
+ 	return 0;
 
 
