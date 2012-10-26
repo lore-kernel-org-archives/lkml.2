@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2JZAIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:08:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53797 "EHLO mail.kernel.org"
+	id S1754646Ab2JZAI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53951 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab2JZAIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:07 -0400
+	id S1754568Ab2JZAIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <larry.finger@lwfinger.net>,
-        Jay Harbeston <jharbestonus@gmail.com>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 61/85] media: au0828: fix case where STREAMOFF being called on stopped stream causes BUG()
-Date: Thu, 25 Oct 2012 17:06:19 -0700
-Message-Id: <20121026000037.255531187@linuxfoundation.org>
+        Denis Kirjanov <kirjanov@gmail.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [ 59/85] amd64_edac:__amd64_set_scrub_rate(): avoid overindexing scrubrates[]
+Date: Thu, 25 Oct 2012 17:06:17 -0700
+Message-Id: <20121026000037.055206671@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -28,47 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit a595c1ce4c9d572cf53513570b9f1a263d7867f2 upstream.
+commit 168bfeef7bba3f9784f7540b053e4ac72b769ce9 upstream.
 
-We weren't checking whether the resource was in use before calling
-res_free(), so applications which called STREAMOFF on a v4l2 device that
-wasn't already streaming would cause a BUG() to be hit (MythTV).
+If none of the elements in scrubrates[] matches, this loop will cause
+__amd64_set_scrub_rate() to incorrectly use the n+1th element.
 
-Reported-by: Larry Finger <larry.finger@lwfinger.net>
-Reported-by: Jay Harbeston <jharbestonus@gmail.com>
-Signed-off-by: Devin Heitmueller <dheitmueller@kernellabs.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+As the function is designed to use the final scrubrates[] element in the
+case of no match, we can fix this bug by simply terminating the array
+search at the n-1th element.
+
+Boris: this code is fragile anyway, see here why:
+http://marc.info/?l=linux-kernel&m=135102834131236&w=2
+
+It will be rewritten more robustly soonish.
+
+Reported-by: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/au0828/au0828-video.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/edac/amd64_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/media/video/au0828/au0828-video.c
-+++ b/drivers/media/video/au0828/au0828-video.c
-@@ -1692,14 +1692,18 @@ static int vidioc_streamoff(struct file
- 			(AUVI_INPUT(i).audio_setup)(dev, 0);
- 		}
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -170,8 +170,11 @@ static int __amd64_set_scrub_rate(struct
+ 	 * memory controller and apply to register. Search for the first
+ 	 * bandwidth entry that is greater or equal than the setting requested
+ 	 * and program that. If at last entry, turn off DRAM scrubbing.
++	 *
++	 * If no suitable bandwidth is found, turn off DRAM scrubbing entirely
++	 * by falling back to the last element in scrubrates[].
+ 	 */
+-	for (i = 0; i < ARRAY_SIZE(scrubrates); i++) {
++	for (i = 0; i < ARRAY_SIZE(scrubrates) - 1; i++) {
+ 		/*
+ 		 * skip scrub rates which aren't recommended
+ 		 * (see F10 BKDG, F3x58)
+@@ -181,12 +184,6 @@ static int __amd64_set_scrub_rate(struct
  
--		videobuf_streamoff(&fh->vb_vidq);
--		res_free(fh, AU0828_RESOURCE_VIDEO);
-+		if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
-+			videobuf_streamoff(&fh->vb_vidq);
-+			res_free(fh, AU0828_RESOURCE_VIDEO);
-+		}
- 	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
- 		dev->vbi_timeout_running = 0;
- 		del_timer_sync(&dev->vbi_timeout);
- 
--		videobuf_streamoff(&fh->vb_vbiq);
--		res_free(fh, AU0828_RESOURCE_VBI);
-+		if (res_check(fh, AU0828_RESOURCE_VBI)) {
-+			videobuf_streamoff(&fh->vb_vbiq);
-+			res_free(fh, AU0828_RESOURCE_VBI);
-+		}
+ 		if (scrubrates[i].bandwidth <= new_bw)
+ 			break;
+-
+-		/*
+-		 * if no suitable bandwidth found, turn off DRAM scrubbing
+-		 * entirely by falling back to the last element in the
+-		 * scrubrates array.
+-		 */
  	}
  
- 	return 0;
+ 	scrubval = scrubrates[i].scrubval;
 
 
