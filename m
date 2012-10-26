@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2JZAGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:21 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52648 "EHLO mail.kernel.org"
+	id S1753520Ab2JZAGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:36 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52801 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab2JZAGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:16 -0400
+	id S1753346Ab2JZAGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 01/42] ext4: race-condition protection for ext4_convert_unwritten_extents_endio
-Date: Thu, 25 Oct 2012 17:05:09 -0700
-Message-Id: <20121026000124.939750227@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 12/42] use clamp_t in UNAME26 fix
+Date: Thu, 25 Oct 2012 17:05:20 -0700
+Message-Id: <20121026000126.021840027@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -25,153 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit dee1f973ca341c266229faa5a1a5bb268bed3531 upstream.
+commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
 
-We assumed that at the time we call ext4_convert_unwritten_extents_endio()
-extent in question is fully inside [map.m_lblk, map->m_len] because
-it was already split during submission.  But this may not be true due to
-a race between writeback vs fallocate.
+The min/max call needed to have explicit types on some architectures
+(e.g. mn10300). Use clamp_t instead to avoid the warning:
 
-If extent in question is larger than requested we will split it again.
-Special precautions should being done if zeroout required because
-[map.m_lblk, map->m_len] already contains valid data.
+  kernel/sys.c: In function 'override_release':
+  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   57 +++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 46 insertions(+), 11 deletions(-)
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -52,6 +52,9 @@
- #define EXT4_EXT_MARK_UNINIT1	0x2  /* mark first half uninitialized */
- #define EXT4_EXT_MARK_UNINIT2	0x4  /* mark second half uninitialized */
- 
-+#define EXT4_EXT_DATA_VALID1	0x8  /* first half contains valid data */
-+#define EXT4_EXT_DATA_VALID2	0x10 /* second half contains valid data */
-+
- static int ext4_split_extent(handle_t *handle,
- 				struct inode *inode,
- 				struct ext4_ext_path *path,
-@@ -2829,6 +2832,9 @@ static int ext4_split_extent_at(handle_t
- 	unsigned int ee_len, depth;
- 	int err = 0;
- 
-+	BUG_ON((split_flag & (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2)) ==
-+	       (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2));
-+
- 	ext_debug("ext4_split_extents_at: inode %lu, logical"
- 		"block %llu\n", inode->i_ino, (unsigned long long)split);
- 
-@@ -2887,7 +2893,14 @@ static int ext4_split_extent_at(handle_t
- 
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
- 	if (err == -ENOSPC && (EXT4_EXT_MAY_ZEROOUT & split_flag)) {
--		err = ext4_ext_zeroout(inode, &orig_ex);
-+		if (split_flag & (EXT4_EXT_DATA_VALID1|EXT4_EXT_DATA_VALID2)) {
-+			if (split_flag & EXT4_EXT_DATA_VALID1)
-+				err = ext4_ext_zeroout(inode, ex2);
-+			else
-+				err = ext4_ext_zeroout(inode, ex);
-+		} else
-+			err = ext4_ext_zeroout(inode, &orig_ex);
-+
- 		if (err)
- 			goto fix_extent_len;
- 		/* update the extent length and mark as initialized */
-@@ -2940,12 +2953,13 @@ static int ext4_split_extent(handle_t *h
- 	uninitialized = ext4_ext_is_uninitialized(ex);
- 
- 	if (map->m_lblk + map->m_len < ee_block + ee_len) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT;
- 		flags1 = flags | EXT4_GET_BLOCKS_PRE_IO;
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1 |
- 				       EXT4_EXT_MARK_UNINIT2;
-+		if (split_flag & EXT4_EXT_DATA_VALID2)
-+			split_flag1 |= EXT4_EXT_DATA_VALID1;
- 		err = ext4_split_extent_at(handle, inode, path,
- 				map->m_lblk + map->m_len, split_flag1, flags1);
- 		if (err)
-@@ -2958,8 +2972,8 @@ static int ext4_split_extent(handle_t *h
- 		return PTR_ERR(path);
- 
- 	if (map->m_lblk >= ee_block) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & (EXT4_EXT_MAY_ZEROOUT |
-+					    EXT4_EXT_DATA_VALID2);
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1;
- 		if (split_flag & EXT4_EXT_MARK_UNINIT2)
-@@ -3237,26 +3251,47 @@ static int ext4_split_unwritten_extents(
- 
- 	split_flag |= ee_block + ee_len <= eof_block ? EXT4_EXT_MAY_ZEROOUT : 0;
- 	split_flag |= EXT4_EXT_MARK_UNINIT2;
--
-+	if (flags & EXT4_GET_BLOCKS_CONVERT)
-+		split_flag |= EXT4_EXT_DATA_VALID2;
- 	flags |= EXT4_GET_BLOCKS_PRE_IO;
- 	return ext4_split_extent(handle, inode, path, map, split_flag, flags);
- }
- 
- static int ext4_convert_unwritten_extents_endio(handle_t *handle,
--					      struct inode *inode,
--					      struct ext4_ext_path *path)
-+						struct inode *inode,
-+						struct ext4_map_blocks *map,
-+						struct ext4_ext_path *path)
- {
- 	struct ext4_extent *ex;
-+	ext4_lblk_t ee_block;
-+	unsigned int ee_len;
- 	int depth;
- 	int err = 0;
- 
- 	depth = ext_depth(inode);
- 	ex = path[depth].p_ext;
-+	ee_block = le32_to_cpu(ex->ee_block);
-+	ee_len = ext4_ext_get_actual_len(ex);
- 
- 	ext_debug("ext4_convert_unwritten_extents_endio: inode %lu, logical"
- 		"block %llu, max_blocks %u\n", inode->i_ino,
--		(unsigned long long)le32_to_cpu(ex->ee_block),
--		ext4_ext_get_actual_len(ex));
-+		  (unsigned long long)ee_block, ee_len);
-+
-+	/* If extent is larger than requested then split is required */
-+	if (ee_block != map->m_lblk || ee_len > map->m_len) {
-+		err = ext4_split_unwritten_extents(handle, inode, map, path,
-+						   EXT4_GET_BLOCKS_CONVERT);
-+		if (err < 0)
-+			goto out;
-+		ext4_ext_drop_refs(path);
-+		path = ext4_ext_find_extent(inode, map->m_lblk, path);
-+		if (IS_ERR(path)) {
-+			err = PTR_ERR(path);
-+			goto out;
-+		}
-+		depth = ext_depth(inode);
-+		ex = path[depth].p_ext;
-+	}
- 
- 	err = ext4_ext_get_access(handle, inode, path + depth);
- 	if (err)
-@@ -3564,7 +3599,7 @@ ext4_ext_handle_uninitialized_extents(ha
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1199,7 +1199,7 @@ static int override_release(char __user
+ 			rest++;
+ 		}
+ 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
+-		copy = min(sizeof(buf), max_t(size_t, 1, len));
++		copy = clamp_t(size_t, len, 1, sizeof(buf));
+ 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
+ 		ret = copy_to_user(release, buf, copy + 1);
  	}
- 	/* IO end_io complete, convert the filled extent to written */
- 	if ((flags & EXT4_GET_BLOCKS_CONVERT)) {
--		ret = ext4_convert_unwritten_extents_endio(handle, inode,
-+		ret = ext4_convert_unwritten_extents_endio(handle, inode, map,
- 							path);
- 		if (ret >= 0) {
- 			ext4_update_inode_fsync_trans(handle, inode, 1);
 
 
