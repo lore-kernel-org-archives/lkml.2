@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab2JZLDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:03:48 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52152 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab2JZLDq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:03:46 -0400
-Date: Fri, 26 Oct 2012 12:03:44 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: ??????? ???????? <dm.leontiev7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org, dleontie@amd.com
-Subject: Re: procfs does not return error code when file name is already in
- use
-Message-ID: <20121026110344.GP2616@ZenIV.linux.org.uk>
-References: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
+	id S1755484Ab2JZLF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:05:59 -0400
+Received: from antcom.de ([188.40.178.216]:51230 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753336Ab2JZLF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 07:05:57 -0400
+Message-ID: <508A6E92.1000107@antcom.de>
+Date: Fri, 26 Oct 2012 13:05:54 +0200
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "tru@work-microwave.de" <tru@work-microwave.de>
+Subject: Re: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
+References: <1351164400-27940-1-git-send-email-stigge@antcom.de> <1351164400-27940-2-git-send-email-stigge@antcom.de> <20121026085934.GA1641@pengutronix.de> <508A54E4.2060108@antcom.de> <508A665C.80107@pengutronix.de>
+In-Reply-To: <508A665C.80107@pengutronix.de>
+X-Enigmail-Version: 1.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 01:57:43PM +0400, ??????? ???????? wrote:
-> I'm working a kernel module, and one of my tasks is to disallow a
-> process to open my character device(/dev/xxx) more than once. I tried
-> to solve this problem by creating /proc/apu directory, and creating a
-> /proc/xxx/{pid} file for when process opens /dev/xxx. This file will
-> act as per-process mutex, and provide a way to control resource usage.
+On 10/26/2012 12:30 PM, Marc Kleine-Budde wrote:
+>>>> +	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate",
+>>>> "can_sel", MXC_CCM_CCGR4, 6); +	clk[can1_ipg_gate] =
+>>>> imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR4, 8); +
+>>>> clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate",
+>>>> "can_sel", MXC_CCM_CCGR4, 6); +	clk[can2_ipg_gate] =
+>>>> imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
+>>> 
+>>> This doesn't.
+>> 
+>> This may be right, but unfortunately, since the introduction of
+>> your can1 + can2 clocking change, the first block stopped working
+>> for me.
+> 
+> You are effectively using can2's clock for can1. Are you sure you 
+> haven't mixed up can1 and can2?
 
-Whoever had set that "task" upon you deserves to be painfully educated
-until they realize that thus stated the limitation is absolutely worthless -
-file does not have to be opened by the same process that uses it.  IOW,
-limiting opens to one per process does not provide any kind of resource
-control - it's trivially bypassed by creating an AF_UNIX socketpair,
-then forking children in a loop, each doing open + send SCM_RIGHTS
-datagram to parent over that socket with opened fd in it + exit.  And
-receiving those datagrams until you get as many opened descriptors for
-your device as you wanted.
+Just using the above patch and patch 1/2 from this series (missing can
+pinmuxing), doing like this in custom .dts:
+
++                       can1: can@53fc8000 {
++                               pinctrl-names = "default";
++                               pinctrl-0 = <&pinctrl_can1_1>;
++                               clock-frequency = <66500000>;
++                               status = "okay";
++                       };
+
+Then, the can0 interface appears which can be upped as network interface.
+
+Quite straightforward, isn't it?
+
+Roland
