@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965506Ab2JZUXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:23:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58171 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966367Ab2JZUXR (ORCPT
+	id S966434Ab2JZUYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:24:38 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:40094 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966400Ab2JZUYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:23:17 -0400
+	Fri, 26 Oct 2012 16:24:36 -0400
+From: Nix <nix@esperi.org.uk>
+To: Martin <marogge@onlinehome.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, tytso@mit.edu, stable@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <jXsTo-5lW-13@gated-at.bofh.it> <jXBDk-7vn-13@gated-at.bofh.it>
+	<jXNl8-5m5-13@gated-at.bofh.it> <jXNOa-5MR-23@gated-at.bofh.it>
+	<jXPGh-87s-5@gated-at.bofh.it> <jXTJW-4CH-55@gated-at.bofh.it>
+	<jXUZj-6mo-13@gated-at.bofh.it> <jXVLH-7kO-5@gated-at.bofh.it>
+	<jXW53-7CC-5@gated-at.bofh.it> <jXWeJ-7Lk-1@gated-at.bofh.it>
+	<50882787.3030504@onlinehome.de> <508AEEF7.8060301@onlinehome.de>
+Emacs: it's all fun and games, until somebody tries to edit a file.
+Date: Fri, 26 Oct 2012 21:24:30 +0100
+In-Reply-To: <508AEEF7.8060301@onlinehome.de> (Martin's message of "Fri, 26
+	Oct 2012 22:13:43 +0200")
+Message-ID: <871uglyoap.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzw_p-WJyBBGc5UFDU8yN698REH+Vc1fk=CDeq4JG8AFA@mail.gmail.com>
-References: <20121026185021.GA1960@www.outflux.net>
-	<CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
-	<CAGXu5jL4qh5nXBJJQAr-42hZHk7bP0Gn468Sf3i8+W0eo1_LKA@mail.gmail.com>
-	<CA+55aFzw_p-WJyBBGc5UFDU8yN698REH+Vc1fk=CDeq4JG8AFA@mail.gmail.com>
-Date: Fri, 26 Oct 2012 13:23:16 -0700
-X-Google-Sender-Auth: ke3cZ9EmE4iBtrZOj9cBQCU5RmA
-Message-ID: <CAGXu5jKP5XxSkz48PsqbrpBZMU=wjsmq+HExZGKMOeHrB9PHrg@mail.gmail.com>
-Subject: Re: [PATCH] VFS: add config options to enable link restrictions
-From: Kees Cook <keescook@chromium.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 1:12 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Oct 26, 2012 at 12:46 PM, Kees Cook <keescook@chromium.org> wrote:
->> Would a single config item be acceptable? What would be an agreeable
->> way to enable this at build-time?
+On 26 Oct 2012, Martin spake thusly:
+
+> On 10/24/2012 07:38 PM, Martin wrote:
+>> On 10/24/2012 01:40 AM, Nix wrote:
+>>
+>>> It's true that in less than a week
+>>> probably not all that many people have rebooted often enough to trip
+>>> over this.
+>>>
+>>> I hope.
+>>>
+>>
+>> [previous bug report]
 >
-> I dunno. Maybe a CONFIG_LOCKDOWN thing that sets a few of our other
-> default values as well. Or at least hide the config options from
-> normal users behind some extra security menu, so that people just
-> don't have to care this deeply. Because most people *don't* care.
+> First off let me apologize for not having the right follow-up headers,
+> but I am not subscribed and I read the list behind an NNTP gateway.
+>
+> I have studied my corruption problem more closely and can give you a
+> description of what happened below. Would you say this may be the same
+> bug?
 
-My take is that while most people don't care, they also should have it
-enabled. It really is only corner-cases that run into problems. All
-the other situations are actual security vulnerabilities. So I'd
-really like to make this as easy as possible to be "on by default" for
-some extremely early definition of "by default".
+No. You want to keep up with the thread. Ted's first educated guess is
+not always guaranteed to be correct (though this is rare).
 
-> I also don't see why it would be a build-time config option at all.
-> Why not just expose them as option using module_param_named(), and
-> then you can do it in the kernel command flags (and set it in your
-> grub.conf etc).
+> Oct 15 19:56:12
+>
+> Computer is booted again in order to copy a few files to memory stick. Unbeknownst to me, the following entries are logged in the
+> system log:
+>
+> Oct 15 20:00:16 harold kernel: EXT4-fs error (device sda5): add_dirent_to_buf:1587: inode #655361: block 2629945: comm mount: bad
+> entry in directory: rec_len % 4 != 0 - offset=360(360), inode=655682, rec_len=18, name_len=5
+> Oct 15 20:00:16 harold kernel: Aborting journal on device sda5-8.
+> Oct 15 20:00:16 harold kernel: EXT4-fs (sda5): Remounting filesystem read-only
+> Oct 15 20:00:16 harold kernel: EXT4-fs error (device sda5) in ext4_evict_inode:238: Journal has aborted
+> Oct 15 20:00:16 harold kernel: EXT4-fs error (device sda5) in ext4_create:2120: IO failure
 
-I'd like it to be the exception to turn it _off_, rather than the
-exception to turn it on.
+That's an interesting failure, but looks slightly different to what I
+saw. No bad directory entries, no aborted journals: a replayed journal
+and subsequent corruption. Still damaged though, and after a journal
+abort I'm not surprised you had problems!
 
-I'm happy to start collecting things under CONFIG_LOCKDOWN, but I
-worry it'd just turn into the opposite of CONFIG_EXPERIMENTAL where if
-there was some value in it that someone didn't want on, they'd leave
-it off, etc. Most distros have infrastructure for maintaining their
-desired configs, so I didn't think the granularity was very bad as I
-sent it.
+>                           I will try to rename them to their
+> proper name on another machine, and restore them on the target
+> machine. However, due to the sheer number this might take forever.
 
-Every distro will ship with this enabled (except perhaps Damn
-Vulnerable Linux), so why make it harder?
+I relearned this week that backups are good.
 
--Kees
+> Also I am worried the problem might re-surface, as it has neither been
+> identified nor fixed.
+
+I'm seeing it on almost every reboot.
+
+> NB: kernel was v3.5.5
+
+Hm, this provides possible evidence that the problem does indeed extend
+into 3.5.x.
+
+> with CK1 and BFQ patches, tainted by nvidia module.
+
+It's hard to reason about a kernel that's had *that* massive lump of
+binary junk applied to it, alas. This may or may not be the same
+problem: it has some common features with what I see, but not all.
 
 -- 
-Kees Cook
-Chrome OS Security
+NULL && (void)
