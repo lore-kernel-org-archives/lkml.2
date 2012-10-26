@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2JZKQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 06:16:37 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:1971 "EHLO mms2.broadcom.com"
+	id S1755932Ab2JZKSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 06:18:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28209 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755260Ab2JZKQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 06:16:35 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <508A62DC.50805@broadcom.com>
-Date: Fri, 26 Oct 2012 12:15:56 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011
- Thunderbird/16.0.1
+	id S1755381Ab2JZKSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 06:18:20 -0400
+Message-ID: <508A63D7.1000704@redhat.com>
+Date: Fri, 26 Oct 2012 18:20:07 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: "Peter Zijlstra" <peterz@infradead.org>, "Ingo Molnar" <mingo@redhat.com>
-cc: "Tejun Heo" <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: lockdep info message
-X-WSS-ID: 7C94BDFE3OW10641703-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        CAI Qian <caiqian@redhat.com>
+Subject: Re: [PATCH 00/31] numa/core patches
+References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121026092048.GA628@gmail.com>
+In-Reply-To: <20121026092048.GA628@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter and/or Ingo,
+On 10/26/2012 05:20 PM, Ingo Molnar wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+>> On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
+>>> [  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
+>>> [  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
+>>> [  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
+>>> [  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
+>>> [  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
+>>> [  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
+>>> [  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
+>>> [  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
+>>> [  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30
+>> Johannes, this looks like the thp migration memcg hookery gone bad,
+>> could you have a look at this?
+> Meanwhile, Zhouping Liu, could you please not apply the last
+> patch:
+>
+>    [PATCH] sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
+>
+> and see whether it boots/works without that?
 
-I am working on a driver (brcmfmac) and when unloading it or unplugging 
-the device I get this info message (see below) upon calling 
-cancel_work_sync(). Just wondering if there is something I need to do in 
-the driver or should it be done in workqueue code.
+Hi Ingo,
 
-Regards,
-Arend
+your supposed is right, after reverting the 31st patch(sched, numa, mm: 
+Add memcg support to do_huge_pmd_numa_page())
+the issue is gone, thank you.
 
-[  268.167897] INFO: trying to register non-static key.
-[  268.173279] the code is fine but needs lockdep annotation.
-[  268.179188] turning off the locking correctness validator.
-[  268.185093] Pid: 31, comm: khubd Tainted: G           O 
-3.7.0-rc2-testing-lockdep #1
-[  268.193254] Call Trace:
-[  268.196150]  [<c10929c6>] __lock_acquire+0xb36/0x1780
-[  268.201641]  [<c10229fb>] ? lapic_next_event+0x1b/0x20
-[  268.207216]  [<c108c0e2>] ? clockevents_program_event+0xb2/0x170
-[  268.213654]  [<c108d4e9>] ? tick_program_event+0x29/0x30
-[  268.219404]  [<c105f17d>] ? hrtimer_interrupt+0x17d/0x2b0
-[  268.225239]  [<c133b170>] ? vt_console_print+0x280/0x350
-[  268.231000]  [<c1093b14>] lock_acquire+0x84/0x120
-[  268.236152]  [<c1053200>] ? delayed_work_timer_fn+0x30/0x30
-[  268.242172]  [<c10943b4>] ? trace_hardirqs_on_caller+0xf4/0x180
-[  268.248541]  [<c1053248>] flush_work+0x48/0x250
-[  268.253532]  [<c1053200>] ? delayed_work_timer_fn+0x30/0x30
-[  268.259562]  [<c109007b>] ? perf_trace_lock+0xb/0x120
-[  268.265075]  [<c103af9a>] ? vprintk_emit+0x19a/0x500
-[  268.270503]  [<c1054eea>] ? __cancel_work_timer+0x5a/0xb0
-[  268.276365]  [<c10943b4>] ? trace_hardirqs_on_caller+0xf4/0x180
-[  268.282751]  [<c1054efa>] __cancel_work_timer+0x6a/0xb0
-[  268.288426]  [<c1054f6f>] cancel_work_sync+0xf/0x20
-[  268.293743]  [<f843d71b>] brcmf_detach+0x7b/0xe0 [brcmfmac]
+
+Thanks,
+Zhouping
+
+>
+> Thanks,
+>
+> 	Ingo
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
