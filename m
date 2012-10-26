@@ -1,184 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756738Ab2JZHPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:15:40 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59883 "EHLO
+	id S1756750Ab2JZHUB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:20:01 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42589 "EHLO
 	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600Ab2JZHPi (ORCPT
+	with ESMTP id S1756600Ab2JZHUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:15:38 -0400
-Date: Fri, 26 Oct 2012 09:15:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 26/31] sched, numa, mm: Add fault driven placement and
- migration policy
-Message-ID: <20121026071532.GC8141@gmail.com>
-References: <20121025121617.617683848@chello.nl>
- <20121025124834.467791319@chello.nl>
- <CA+55aFwJdn8Kz9UByuRfGNtf9Hkv-=8xB+WRd47uHZU1YMagZw@mail.gmail.com>
+	Fri, 26 Oct 2012 03:20:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwJdn8Kz9UByuRfGNtf9Hkv-=8xB+WRd47uHZU1YMagZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351088727-15257-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1351088727-15257-1-git-send-email-mathias.nyman@linux.intel.com>
+Date: Fri, 26 Oct 2012 09:19:59 +0200
+Message-ID: <CACRpkdbVmjymkcH-Nsy38hKejMt0B=_mFRNHYN1ORsshAJxDog@mail.gmail.com>
+Subject: Re: [RFC PATCH v2] gpiolib: add gpio get direction callback support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+Cc: linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 24, 2012 at 4:25 PM, Mathias Nyman
+<mathias.nyman@linux.intel.com> wrote:
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, Oct 25, 2012 at 5:16 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > +       /*
-> > +        * Using runtime rather than walltime has the dual advantage that
-> > +        * we (mostly) drive the selection from busy threads and that the
-> > +        * task needs to have done some actual work before we bother with
-> > +        * NUMA placement.
-> > +        */
-> 
-> That explanation makes sense..
-> 
-> > +       now = curr->se.sum_exec_runtime;
-> > +       period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
-> > +
-> > +       if (now - curr->node_stamp > period) {
-> > +               curr->node_stamp = now;
-> > +
-> > +               if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-> 
-> .. but then the whole "numa_next_scan" thing ends up being 
-> about real-time anyway?
+> Add .get_direction callback to gpio_chip. This allows gpiolib
+> to check the current direction of a gpio.
+> Used to show the correct gpio direction in sysfs and debug entries.
 >
-> So 'numa_scan_period' in in CPU time (msec, converted to nsec 
-> at runtime rather than when setting it), but 'numa_next_scan' 
-> is in wallclock time (jiffies)?
-> 
-> But *both* of them are based on the same 'numa_scan_period' 
-> thing that the user sets in ms.
-> 
-> So numa_scan_period is interpreted as both wallclock *and* as 
-> runtime?
-> 
-> Maybe this works, but it doesn't really make much sense.
+> If callback is not set then gpiolib will work as previously;
+> e.g. guessing everything is input until a direction is set.
+>
+> Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-So, the relationship between wall clock time and execution 
-runtime is that on the limit they run at the same speed: when 
-there's a single task running. In any other case execution 
-runtime can only run slower than wall time.
+I buy into this concept.
 
-So the bit you found weird:
+Patch applied.
 
-> > +               if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+Unless Grant protests, it stays in.
 
-together with the task_numa_work() frequency limit:
-
-        /*
-         * Enforce maximal scan/migration frequency..
-         */
-        migrate = mm->numa_next_scan;
-        if (time_before(now, migrate))
-                return;
-
-        next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
-        if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
-                return;
-
-puts an upper limit on the per mm scanning frequency.
-
-This filters us from over-sampling if there are many threads: if 
-all threads happen to come in at the same time we don't create a 
-spike in overhead.
-
-We also avoid multiple threads scanning at once in parallel to 
-each other. Faults are nicely parallel, especially with all the 
-preparatory patches in place, so the distributed nature of the 
-faults itself is not a problem.
-
-So we have to conflicting goals here: on one hand we have a 
-quality of sampling goal which asks for per task runtime 
-proportional scanning on all threads, but we also have a 
-performance goal and don't actually want all threads running at 
-the same time. This frequency limit avoids the over-sampling 
-scenario while still fulfilling the per task sampling property, 
-statistically on average.
-
-If you agree that we should do it like that and if the 
-implementation is correct and optimal, I will put a better 
-explanation into the code.
-
-[
-  task_numa_work() performance side note:
-
-  We are also *very* close to be able to use down_read() instead
-  of down_write() in the sampling-unmap code in 
-  task_numa_work(), as it should be safe in theory to call 
-  change_protection(PROT_NONE) in parallel - but there's one 
-  regression that disagrees with this theory so we use 
-  down_write() at the moment.
-
-  Maybe you could help us there: can you see a reason why the
-  change_prot_none()->change_protection() call in
-  task_numa_work() can not occur in parallel to a page fault in
-  another thread on another CPU? It should be safe - yet if we 
-  change it I can see occasional corruption of user-space state: 
-  segfaults and register corruption.
-]
-
-> [...] And what is the impact of this on machines that run lots 
-> of loads with delays (whether due to IO or timers)?
-
-I've done sysbench OLTP measurements which showed no apparent 
-regressions:
-
- #
- # Comparing { res-schednuma-NO_NUMA.txt } to { res-schednuma-+NUMA.txt }:
- #
- #  threads     improvement %       SysBench OLTP transactions/second
- #-------------------------------------------------------------------
-         2:            2.11 %              #    2160.20  vs.  2205.80
-         4:           -5.52 %              #    4202.04  vs.  3969.97
-         8:            0.01 %              #    6894.45  vs.  6895.45
-        16:           -0.31 %              #   11840.77  vs. 11804.30
-        24:           -0.56 %              #   15053.98  vs. 14969.14
-        30:            0.56 %              #   17043.23  vs. 17138.21
-        32:           -1.08 %              #   17797.04  vs. 17604.67
-        34:            1.04 %              #   18158.10  vs. 18347.22
-        36:           -0.16 %              #   18125.42  vs. 18096.68
-        40:            0.45 %              #   18218.73  vs. 18300.59
-        48:           -0.39 %              #   18266.91  vs. 18195.26
-        56:           -0.11 %              #   18285.56  vs. 18265.74
-        64:            0.23 %              #   18304.74  vs. 18347.51
-        96:            0.18 %              #   18268.44  vs. 18302.04
-       128:            0.22 %              #   18058.92  vs. 18099.34
-       256:            1.63 %              #   17068.55  vs. 17347.14
-       512:            6.86 %              #   13452.18  vs. 14375.08
-
-No regression is the best we can hope for I think, given that 
-OLTP typically has huge global caches and global serialization, 
-so any NUMA conscious will at most be a nuisance.
-
-We've also done kbuild measurements - which too is a pretty 
-sleepy workload that is too fast for any migration techniques to 
-help.
-
-But even sysbench isn't doing very long delays, so I will do 
-more IO delay targeted measurements.
-
-So I've been actively looking for and checking the worst-case 
-loads for this feature. The feature obviously helps long-run, 
-CPU-intense workloads, but those aren't the challenging ones 
-really IMO: I spent 70% of the time analyzing workloads that are 
-not expected to be friends with this feature.
-
-We are also keeping CONFIG_SCHED_NUMA off by default for good 
-measure.
-
-Thanks,
-
-	Ingo
+Thanks for working on this!
+Linus Walleij
