@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab2JZAdx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:33:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53131 "EHLO mail.kernel.org"
+	id S1755459Ab2JZAdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:33:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53157 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101Ab2JZAHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752995Ab2JZAHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Oct 2012 20:07:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>,
-        Jie Liu <jeff.liu@oracle.com>
-Subject: [ 34/42] RDS: fix rds-ping spinlock recursion
-Date: Thu, 25 Oct 2012 17:05:42 -0700
-Message-Id: <20121026000128.236926419@linuxfoundation.org>
+        Florian Zumbiehl <florz@florz.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 33/42] vlan: dont deliver frames for unknown vlans to protocols
+Date: Thu, 25 Oct 2012 17:05:41 -0700
+Message-Id: <20121026000128.134952677@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
 References: <20121026000124.790781113@linuxfoundation.org>
@@ -30,45 +27,132 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "jeff.liu" <jeff.liu@oracle.com>
+From: Florian Zumbiehl <florz@florz.de>
 
-[ Upstream commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 ]
+[ Upstream commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e ]
 
-This is the revised patch for fixing rds-ping spinlock recursion
-according to Venkat's suggestions.
+6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
+vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
+there was an rx_handler, as the rx_handler could cause the frame to be received
+on a different (virtual) vlan-capable interface where that vlan might be
+configured.
 
-RDS ping/pong over TCP feature has been broken for years(2.6.39 to
-3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
-ping/pong which both need to lock "struct sock *sk". However, this
-lock has already been hold before rds_tcp_data_ready() callback is
-triggerred. As a result, we always facing spinlock resursion which
-would resulting in system panic.
+As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
+frames for unknown vlans to be delivered to the protocol stack as if they had
+been received untagged.
 
-Given that RDS ping is only used to test the connectivity and not for
-serious performance measurements, we can queue the pong transmit to
-rds_wq as a delayed response.
+For example, if an ipv6 router advertisement that's tagged for a locally not
+configured vlan is received on an interface with macvlan interfaces attached,
+macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
+macvlan interfaces, which caused it to be passed to the protocol stack, leading
+to ipv6 addresses for the announced prefix being configured even though those
+are completely unusable on the underlying interface.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
+The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
+rx_handler, if there is one, sees the frame unchanged, but afterwards,
+before the frame is delivered to the protocol stack, it gets marked whether
+there is an rx_handler or not.
+
+Signed-off-by: Florian Zumbiehl <florz@florz.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/send.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/if_vlan.h |    8 ++++----
+ net/8021q/vlan_core.c   |   10 ++--------
+ net/core/dev.c          |    7 +++++--
+ 3 files changed, 11 insertions(+), 14 deletions(-)
 
---- a/net/rds/send.c
-+++ b/net/rds/send.c
-@@ -1122,7 +1122,7 @@ rds_send_pong(struct rds_connection *con
- 	rds_stats_inc(s_send_pong);
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -82,6 +82,8 @@ static inline int is_vlan_dev(struct net
+ }
  
- 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
--		rds_send_xmit(conn);
-+		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
+ #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
++#define vlan_tx_nonzero_tag_present(__skb) \
++	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
+ #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
  
- 	rds_message_put(rm);
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+@@ -91,7 +93,7 @@ extern struct net_device *__vlan_find_de
+ extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
+ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+ 
+-extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
++extern bool vlan_do_receive(struct sk_buff **skb);
+ extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+ 
+ extern int vlan_vid_add(struct net_device *dev, unsigned short vid);
+@@ -120,10 +122,8 @@ static inline u16 vlan_dev_vlan_id(const
  	return 0;
+ }
+ 
+-static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
++static inline bool vlan_do_receive(struct sk_buff **skb)
+ {
+-	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
+-		(*skb)->pkt_type = PACKET_OTHERHOST;
+ 	return false;
+ }
+ 
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -5,7 +5,7 @@
+ #include <linux/export.h>
+ #include "vlan.h"
+ 
+-bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
++bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+ 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
+@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **sk
+ 	struct vlan_pcpu_stats *rx_stats;
+ 
+ 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
+-	if (!vlan_dev) {
+-		/* Only the last call to vlan_do_receive() should change
+-		 * pkt_type to PACKET_OTHERHOST
+-		 */
+-		if (vlan_id && last_handler)
+-			skb->pkt_type = PACKET_OTHERHOST;
++	if (!vlan_dev)
+ 		return false;
+-	}
+ 
+ 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
+ 	if (unlikely(!skb))
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3209,18 +3209,18 @@ another_round:
+ ncls:
+ #endif
+ 
+-	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (vlan_tx_tag_present(skb)) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+ 			pt_prev = NULL;
+ 		}
+-		if (vlan_do_receive(&skb, !rx_handler))
++		if (vlan_do_receive(&skb))
+ 			goto another_round;
+ 		else if (unlikely(!skb))
+ 			goto out;
+ 	}
+ 
++	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+@@ -3240,6 +3240,9 @@ ncls:
+ 		}
+ 	}
+ 
++	if (vlan_tx_nonzero_tag_present(skb))
++		skb->pkt_type = PACKET_OTHERHOST;
++
+ 	/* deliver only exact match when indicated */
+ 	null_or_dev = deliver_exact ? skb->dev : NULL;
+ 
 
 
