@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab2JZAXQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:23:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53637 "EHLO mail.kernel.org"
+	id S1755217Ab2JZAXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:23:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53629 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab2JZAHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:52 -0400
+	id S1751559Ab2JZAHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Markus Schauler <mschauler@gmail.com>
-Subject: [ 49/85] USB: fix port probing and removal in garmin_gps
-Date: Thu, 25 Oct 2012 17:06:07 -0700
-Message-Id: <20121026000036.053920537@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 48/85] usb: Send Set SEL before enabling parent U1/U2 timeout.
+Date: Thu, 25 Oct 2012 17:06:06 -0700
+Message-Id: <20121026000035.944012966@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,81 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit db5c8b524444d4fc6b1f32d368a50a3729e50002 upstream.
+commit 65a95b75bc5afa7bbb844e222481044c1c4767eb upstream.
 
-This patch (as1615) fixes a bug in the Garmin USB serial driver.  It
-uses attach, disconnect, and release routines to carry out actions
-that should be handled by port_probe and port_remove routines, because
-they access port-specific data.
+The Set SEL control transfer tells a device the exit latencies
+associated with a device-initated U1 or U2 exit.  Since a parent hub may
+initiate a transition to U1 soon after a downstream port's U1 timeout is
+set, we need to make sure the device receives the Set SEL transfer
+before the parent hub timeout is set.
 
-The bug causes an oops when the device in unplugged, because the
-private data for each port structure now gets erased when the port is
-unbound from the driver, resulting in a null-pointer dereference.
+This patch should be backported to kernels as old as 3.5, that contain
+the commit 1ea7e0e8e3d0f50901d335ea4178ab2aa8c88201 "USB: Add support to
+enable/disable USB3 link states."
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported--by: Markus Schauler <mschauler@gmail.com>
-Tested-by: Markus Schauler <mschauler@gmail.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/garmin_gps.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ drivers/usb/core/hub.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/garmin_gps.c
-+++ b/drivers/usb/serial/garmin_gps.c
-@@ -1414,11 +1414,10 @@ static void timeout_handler(unsigned lon
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -3258,16 +3258,6 @@ static int usb_set_device_initiated_lpm(
  
- 
- 
--static int garmin_attach(struct usb_serial *serial)
-+static int garmin_port_probe(struct usb_serial_port *port)
+ 	if (enable) {
+ 		/*
+-		 * First, let the device know about the exit latencies
+-		 * associated with the link state we're about to enable.
+-		 */
+-		ret = usb_req_set_sel(udev, state);
+-		if (ret < 0) {
+-			dev_warn(&udev->dev, "Set SEL for device-initiated "
+-					"%s failed.\n", usb3_lpm_names[state]);
+-			return -EBUSY;
+-		}
+-		/*
+ 		 * Now send the control transfer to enable device-initiated LPM
+ 		 * for either U1 or U2.
+ 		 */
+@@ -3352,7 +3342,7 @@ static int usb_set_lpm_timeout(struct us
+ static void usb_enable_link_state(struct usb_hcd *hcd, struct usb_device *udev,
+ 		enum usb3_link_state state)
  {
--	int status = 0;
--	struct usb_serial_port *port = serial->port[0];
--	struct garmin_data *garmin_data_p = NULL;
-+	int status;
-+	struct garmin_data *garmin_data_p;
+-	int timeout;
++	int timeout, ret;
+ 	__u8 u1_mel = udev->bos->ss_cap->bU1devExitLat;
+ 	__le16 u2_mel = udev->bos->ss_cap->bU2DevExitLat;
  
- 	garmin_data_p = kzalloc(sizeof(struct garmin_data), GFP_KERNEL);
- 	if (garmin_data_p == NULL) {
-@@ -1443,22 +1442,14 @@ static int garmin_attach(struct usb_seri
- }
+@@ -3364,6 +3354,17 @@ static void usb_enable_link_state(struct
+ 			(state == USB3_LPM_U2 && u2_mel == 0))
+ 		return;
  
- 
--static void garmin_disconnect(struct usb_serial *serial)
-+static int garmin_port_remove(struct usb_serial_port *port)
- {
--	struct usb_serial_port *port = serial->port[0];
- 	struct garmin_data *garmin_data_p = usb_get_serial_port_data(port);
- 
- 	usb_kill_urb(port->interrupt_in_urb);
- 	del_timer_sync(&garmin_data_p->timer);
--}
--
--
--static void garmin_release(struct usb_serial *serial)
--{
--	struct usb_serial_port *port = serial->port[0];
--	struct garmin_data *garmin_data_p = usb_get_serial_port_data(port);
--
- 	kfree(garmin_data_p);
-+	return 0;
- }
- 
- 
-@@ -1475,9 +1466,8 @@ static struct usb_serial_driver garmin_d
- 	.close               = garmin_close,
- 	.throttle            = garmin_throttle,
- 	.unthrottle          = garmin_unthrottle,
--	.attach              = garmin_attach,
--	.disconnect          = garmin_disconnect,
--	.release             = garmin_release,
-+	.port_probe		= garmin_port_probe,
-+	.port_remove		= garmin_port_remove,
- 	.write               = garmin_write,
- 	.write_room          = garmin_write_room,
- 	.write_bulk_callback = garmin_write_bulk_callback,
++	/*
++	 * First, let the device know about the exit latencies
++	 * associated with the link state we're about to enable.
++	 */
++	ret = usb_req_set_sel(udev, state);
++	if (ret < 0) {
++		dev_warn(&udev->dev, "Set SEL for device-initiated %s failed.\n",
++				usb3_lpm_names[state]);
++		return;
++	}
++
+ 	/* We allow the host controller to set the U1/U2 timeout internally
+ 	 * first, so that it can change its schedule to account for the
+ 	 * additional latency to send data to a device in a lower power
 
 
