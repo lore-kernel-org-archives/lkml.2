@@ -1,66 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966082Ab2JZSvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:51:47 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58898 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965305Ab2JZSvp (ORCPT
+	id S1758967Ab2JZSww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:52:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35690 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab2JZSwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:51:45 -0400
+	Fri, 26 Oct 2012 14:52:51 -0400
+Date: Fri, 26 Oct 2012 20:52:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: [ANNOUNCE] 3.6.3-rt7
+Message-ID: <alpine.LFD.2.02.1210262036270.2756@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1351270087.30380.9.camel@edumazet-glaptop>
-References: <CAN8Q1EdobyFuAvtajGRSqNsCG+XoPA+FkwN=2j_H126mmfEjTQ@mail.gmail.com>
-	<1350925299.8609.978.camel@edumazet-glaptop>
-	<CAN8Q1EeqmHMHD-VUgr7Wzv0Z_DAD1SrEniftg==L14d+hGwu+Q@mail.gmail.com>
-	<CAN8Q1EcTRsHjCJD90q0bKRJFMvi7Vn8YRsyQTAHNtTFVuuNdWQ@mail.gmail.com>
-	<CAN8Q1EeB2kC6A_YP9zdtp_qYHMG5FF7-Usjx7Rz5pv--bjhqkQ@mail.gmail.com>
-	<1351053164.6537.95.camel@edumazet-glaptop>
-	<CAN8Q1Ef9sCAG8-KNWXEeuRUcmFNcg93mMG=HRQw6i3UuGtJCVg@mail.gmail.com>
-	<1351270087.30380.9.camel@edumazet-glaptop>
-Date: Fri, 26 Oct 2012 11:51:43 -0700
-X-Google-Sender-Auth: xIro7jmuyoGHhFKp6aztoVB0blc
-Message-ID: <CAN8Q1Ed1J-jmO9LppcA=rFXPvxFkk-J9mMb2-NhDYyAQKO2jvQ@mail.gmail.com>
-Subject: Re: Process Hang in __read_seqcount_begin
-From: Peter LaDow <petela@gocougs.wsu.edu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        netfilter@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I've added netfilter and linux-rt-users to try to pull in more help).
+Dear RT Folks,
 
-On Fri, Oct 26, 2012 at 9:48 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Upstream kernel is fine, there is no race, as long as :
->
-> local_bh_disable() disables BH and preemption.
+I'm pleased to announce the 3.6.3-rt7 release.
 
-Looking at the unpatched code in net/ipv4/netfilter/ip_tables.c, it
-doesn't appear that any of the code checks the return value for
-xt_write_receq_begin to determine if it is safe to write.  And neither
-does the newly patched code.  How did the mainline code prevent
-corruption of the tables it is updating?
+Changes since 3.6.3-rt6:
 
-Why isn't there something like:
+   * Enable SLUB for RT
 
-  while ( (addend = xt_write_recseq_begin()) == 0 );
+     Last time I looked at SLUB for RT (some years ago) it was just
+     way more painful than dealing with SLAB, but Christoph Lameter
+     has done major surgery on the SLUB code since then and it turns
+     out that making SLUB usable for RT has become very simple. Thanks
+     Christoph!
 
-To make sure that only one person has write access to the tables?
-Better yet, why not use a seqlock_t instead?
+      slab.c: 172 insertions(+), 58 deletions(-)
+      slub.c:  17 insertions(+), 13 deletions(-)
 
-> Apparently RT changes this, so RT needs to change the code.
+     I did some quick comparisons and even a simple hackbench run
+     shows a significant speedup with SLUB vs. SLAB on RT. I'm not too
+     surprised as SLUBs fastpath does not have the RT induced
+     contention problems which we can observe with SLAB.
 
-The RT patch only touches local_bh_disable/enable, not the code in
-ip_tables.c.  Does the local_bh_disable/enable in the mainline code
-protect against multiple writers?
+     As usual, give it a good testing and report whatever explodes :)
 
-> cmpxchg() has strong guarantees (and is also slower than upstream code),
-> and seems a reasonable way to fix RT/iptables
+The delta patch against 3.6.3-rt6 is appended below and can be found
+here:
 
-I see this now.  And I agree that your patch would prevent corruption
-of the sequence counter.
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/incr/patch-3.6.3-rt6-rt7.patch.xz
 
-Thanks,
-Pete
+The RT patch against 3.6.3 can be found here:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.3-rt7.patch.xz
+
+The split quilt queue is available at:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.3-rt7.tar.xz
+
+Enjoy,
+
+	tglx
+
+---------->
+Index: linux-stable/init/Kconfig
+===================================================================
+--- linux-stable.orig/init/Kconfig
++++ linux-stable/init/Kconfig
+@@ -1442,7 +1442,6 @@ config SLAB
+ 
+ config SLUB
+ 	bool "SLUB (Unqueued Allocator)"
+-	depends on !PREEMPT_RT_FULL
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
+ 	   instead of managing queues of cached objects (SLAB approach).
+Index: linux-stable/localversion-rt
+===================================================================
+--- linux-stable.orig/localversion-rt
++++ linux-stable/localversion-rt
+@@ -1 +1 @@
+--rt6
++-rt7
+Index: linux-stable/mm/slub.c
+===================================================================
+--- linux-stable.orig/mm/slub.c
++++ linux-stable/mm/slub.c
+@@ -31,6 +31,7 @@
+ #include <linux/fault-inject.h>
+ #include <linux/stacktrace.h>
+ #include <linux/prefetch.h>
++#include <linux/locallock.h>
+ 
+ #include <trace/events/kmem.h>
+ 
+@@ -225,6 +226,8 @@ static inline void stat(const struct kme
+ #endif
+ }
+ 
++static DEFINE_LOCAL_IRQ_LOCK(slub_lock);
++
+ /********************************************************************
+  * 			Core slab cache functions
+  *******************************************************************/
+@@ -1278,7 +1281,7 @@ static struct page *allocate_slab(struct
+ 	flags &= gfp_allowed_mask;
+ 
+ 	if (flags & __GFP_WAIT)
+-		local_irq_enable();
++		local_unlock_irq(slub_lock);
+ 
+ 	flags |= s->allocflags;
+ 
+@@ -1318,7 +1321,7 @@ static struct page *allocate_slab(struct
+ 	}
+ 
+ 	if (flags & __GFP_WAIT)
+-		local_irq_disable();
++		local_lock_irq(slub_lock);
+ 	if (!page)
+ 		return NULL;
+ 
+@@ -1959,9 +1962,9 @@ int put_cpu_partial(struct kmem_cache *s
+ 				 * partial array is full. Move the existing
+ 				 * set to the per node partial list.
+ 				 */
+-				local_irq_save(flags);
++				local_lock_irqsave(slub_lock, flags);
+ 				unfreeze_partials(s);
+-				local_irq_restore(flags);
++				local_unlock_irqrestore(slub_lock, flags);
+ 				pobjects = 0;
+ 				pages = 0;
+ 				stat(s, CPU_PARTIAL_DRAIN);
+@@ -2201,7 +2204,7 @@ static void *__slab_alloc(struct kmem_ca
+ 	struct page *page;
+ 	unsigned long flags;
+ 
+-	local_irq_save(flags);
++	local_lock_irqsave(slub_lock, flags);
+ #ifdef CONFIG_PREEMPT
+ 	/*
+ 	 * We may have been preempted and rescheduled on a different
+@@ -2262,7 +2265,7 @@ load_freelist:
+ 	VM_BUG_ON(!c->page->frozen);
+ 	c->freelist = get_freepointer(s, freelist);
+ 	c->tid = next_tid(c->tid);
+-	local_irq_restore(flags);
++	local_unlock_irqrestore(slub_lock, flags);
+ 	return freelist;
+ 
+ new_slab:
+@@ -2281,7 +2284,7 @@ new_slab:
+ 		if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+ 			slab_out_of_memory(s, gfpflags, node);
+ 
+-		local_irq_restore(flags);
++		local_unlock_irqrestore(slub_lock, flags);
+ 		return NULL;
+ 	}
+ 
+@@ -2296,7 +2299,7 @@ new_slab:
+ 	deactivate_slab(s, page, get_freepointer(s, freelist));
+ 	c->page = NULL;
+ 	c->freelist = NULL;
+-	local_irq_restore(flags);
++	local_unlock_irqrestore(slub_lock, flags);
+ 	return freelist;
+ }
+ 
+@@ -2488,7 +2491,8 @@ static void __slab_free(struct kmem_cach
+ 				 * Otherwise the list_lock will synchronize with
+ 				 * other processors updating the list of slabs.
+ 				 */
+-				spin_lock_irqsave(&n->list_lock, flags);
++				local_spin_lock_irqsave(slub_lock,
++							&n->list_lock, flags);
+ 
+ 			}
+ 		}
+@@ -2538,7 +2542,7 @@ static void __slab_free(struct kmem_cach
+ 			stat(s, FREE_ADD_PARTIAL);
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	local_spin_unlock_irqrestore(slub_lock, &n->list_lock, flags);
+ 	return;
+ 
+ slab_empty:
+@@ -2552,7 +2556,7 @@ slab_empty:
+ 		/* Slab must be on the full list */
+ 		remove_full(s, page);
+ 
+-	spin_unlock_irqrestore(&n->list_lock, flags);
++	local_spin_unlock_irqrestore(slub_lock, &n->list_lock, flags);
+ 	stat(s, FREE_SLAB);
+ 	discard_slab(s, page);
+ }
+@@ -4002,9 +4006,9 @@ static int __cpuinit slab_cpuup_callback
+ 	case CPU_DEAD_FROZEN:
+ 		mutex_lock(&slab_mutex);
+ 		list_for_each_entry(s, &slab_caches, list) {
+-			local_irq_save(flags);
++			local_lock_irqsave(slub_lock, flags);
+ 			__flush_cpu_slab(s, cpu);
+-			local_irq_restore(flags);
++			local_unlock_irqrestore(slub_lock, flags);
+ 		}
+ 		mutex_unlock(&slab_mutex);
+ 		break;
