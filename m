@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab2JZAHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:07:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53453 "EHLO mail.kernel.org"
+	id S1754269Ab2JZA0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:26:23 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53496 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab2JZAHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:33 -0400
+	id S1754150Ab2JZAHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 31/85] USB: oti6858: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:49 -0700
-Message-Id: <20121026000034.241602501@linuxfoundation.org>
+        Ming Lei <ming.lei@canonical.com>, Oliver Neukum <oneukum@suse.de>
+Subject: [ 20/85] USB: cdc-acm: fix pipe type of write endpoint
+Date: Thu, 25 Oct 2012 17:05:38 -0700
+Message-Id: <20121026000033.150448218@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -25,126 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 289b076f89c2c3260e914dad18ae12f193ea86d5 upstream.
+commit c5211187f7ff8e8dbff4ebf7c011ac4c0ffe319c upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+If the write endpoint is interrupt type, usb_sndintpipe() should
+be passed to usb_fill_int_urb() instead of usb_sndbulkpipe().
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Cc: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/oti6858.c |   68 +++++++++++++++++--------------------------
- 1 file changed, 28 insertions(+), 40 deletions(-)
+ drivers/usb/class/cdc-acm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/oti6858.c
-+++ b/drivers/usb/serial/oti6858.c
-@@ -139,8 +139,8 @@ static int oti6858_chars_in_buffer(struc
- static int oti6858_tiocmget(struct tty_struct *tty);
- static int oti6858_tiocmset(struct tty_struct *tty,
- 				unsigned int set, unsigned int clear);
--static int oti6858_startup(struct usb_serial *serial);
--static void oti6858_release(struct usb_serial *serial);
-+static int oti6858_port_probe(struct usb_serial_port *port);
-+static int oti6858_port_remove(struct usb_serial_port *port);
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1234,7 +1234,7 @@ made_compressed_probe:
  
- /* device info */
- static struct usb_serial_driver oti6858_device = {
-@@ -163,8 +163,8 @@ static struct usb_serial_driver oti6858_
- 	.write_bulk_callback =	oti6858_write_bulk_callback,
- 	.write_room =		oti6858_write_room,
- 	.chars_in_buffer =	oti6858_chars_in_buffer,
--	.attach =		oti6858_startup,
--	.release =		oti6858_release,
-+	.port_probe =		oti6858_port_probe,
-+	.port_remove =		oti6858_port_remove,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
-@@ -333,36 +333,33 @@ static void send_data(struct work_struct
- 	usb_serial_port_softint(port);
- }
- 
--static int oti6858_startup(struct usb_serial *serial)
-+static int oti6858_port_probe(struct usb_serial_port *port)
- {
--	struct usb_serial_port *port = serial->port[0];
- 	struct oti6858_private *priv;
--	int i;
- 
--	for (i = 0; i < serial->num_ports; ++i) {
--		priv = kzalloc(sizeof(struct oti6858_private), GFP_KERNEL);
--		if (!priv)
--			break;
--
--		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->intr_wait);
--/*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
--/*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
--		priv->port = port;
--		INIT_DELAYED_WORK(&priv->delayed_setup_work, setup_line);
--		INIT_DELAYED_WORK(&priv->delayed_write_work, send_data);
--
--		usb_set_serial_port_data(serial->port[i], priv);
--	}
--	if (i == serial->num_ports)
--		return 0;
--
--	for (--i; i >= 0; --i) {
--		priv = usb_get_serial_port_data(serial->port[i]);
--		kfree(priv);
--		usb_set_serial_port_data(serial->port[i], NULL);
--	}
--	return -ENOMEM;
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&priv->lock);
-+	init_waitqueue_head(&priv->intr_wait);
-+	priv->port = port;
-+	INIT_DELAYED_WORK(&priv->delayed_setup_work, setup_line);
-+	INIT_DELAYED_WORK(&priv->delayed_write_work, send_data);
-+
-+	usb_set_serial_port_data(port, priv);
-+
-+	return 0;
-+}
-+
-+static int oti6858_port_remove(struct usb_serial_port *port)
-+{
-+	struct oti6858_private *priv;
-+
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
-+
-+	return 0;
- }
- 
- static int oti6858_write(struct tty_struct *tty, struct usb_serial_port *port,
-@@ -714,15 +711,6 @@ static int oti6858_ioctl(struct tty_stru
- 	return -ENOIOCTLCMD;
- }
- 
--
--static void oti6858_release(struct usb_serial *serial)
--{
--	int i;
--
--	for (i = 0; i < serial->num_ports; ++i)
--		kfree(usb_get_serial_port_data(serial->port[i]));
--}
--
- static void oti6858_read_int_callback(struct urb *urb)
- {
- 	struct usb_serial_port *port =  urb->context;
+ 		if (usb_endpoint_xfer_int(epwrite))
+ 			usb_fill_int_urb(snd->urb, usb_dev,
+-				usb_sndbulkpipe(usb_dev, epwrite->bEndpointAddress),
++				usb_sndintpipe(usb_dev, epwrite->bEndpointAddress),
+ 				NULL, acm->writesize, acm_write_bulk, snd, epwrite->bInterval);
+ 		else
+ 			usb_fill_bulk_urb(snd->urb, usb_dev,
 
 
