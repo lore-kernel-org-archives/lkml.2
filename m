@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751118Ab2JZENp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:13:45 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:37589 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab2JZENo (ORCPT
+	id S1751561Ab2JZER0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 00:17:26 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62314 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab2JZERZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:13:44 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: hpa@zytor.com, len.brown@intel.com, fenghua.yu@intel.com, x86@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca, tglx@linutronix.de,
-        mingo@elte.hu, vgoyal@redhat.com
-References: <5085B0D0.9020508@zytor.com> <87mwze8abu.fsf@xmission.com>
-	<5085E663.6040307@zytor.com>
-	<20121026.122406.13396329.d.hatayama@jp.fujitsu.com>
-Date: Thu, 25 Oct 2012 21:13:25 -0700
-In-Reply-To: <20121026.122406.13396329.d.hatayama@jp.fujitsu.com> (HATAYAMA
-	Daisuke's message of "Fri, 26 Oct 2012 12:24:06 +0900 (JST)")
-Message-ID: <87r4oloopm.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 26 Oct 2012 00:17:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19zO37pogBdHqFyuBUzv0SzFLWdzNKy/hM=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  3.0 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <CAKohpom5QmO5vbREsMgi4EefLpBxXsk=QWVaZwTwC_Knf72GVA@mail.gmail.com>
+References: <425b4bec021bce9a2de49959121907aeede6a0b9.1350064805.git.viresh.kumar@linaro.org>
+	<CAKohpom42SCMJ+=TdvAjqT0ibRugJi_gXkLy+49N6ExcRZqxLQ@mail.gmail.com>
+	<50893C45.7010109@gmail.com>
+	<CAKohpom5QmO5vbREsMgi4EefLpBxXsk=QWVaZwTwC_Knf72GVA@mail.gmail.com>
+Date: Fri, 26 Oct 2012 09:47:24 +0530
+Message-ID: <CAKohponSbbusMjcsEwKczvxaN54YKJPL05vLELSjW6dnKO_6Dg@mail.gmail.com>
+Subject: Re: [PATCH] dt: add helper function to read u8 & u16 variables & arrays
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: grant.likely@secretlab.ca, spear-devel@list.st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> writes:
+On 25 October 2012 19:48, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> The problem i see here is:
+>
+> The data passed via DT comes as Little Endian in the kernel.
+>
+> For a little endian system, byte zero will contain the data and so
+> (u8) val
+>
+> look to be the correct thing.
+>
+> For a big endian system, byte 3 will contain data as it is swapped by
+> be32_to_cpup.
+> So (u8) val would return value stored by byte 0 instead. ??
 
-> From: "H. Peter Anvin" <hpa@zytor.com>
-> Subject: Re: [PATCH v1 2/2] x86, apic: Disable BSP if boot cpu is AP
-> Date: Mon, 22 Oct 2012 17:35:47 -0700
->
->> On 10/22/2012 02:29 PM, Eric W. Biederman wrote:
->>>>
->>>> As I said, I thought Fenghua tried that but it didn't work,
->>>> experimentally.
->>>
->>> Fair enough.  You described the problem with clearing bit 8 in a weird
->>> way.
->>>
->>> If the best we can muster are fuzzy memories it may be worth
->>> revisiting.
->>> Perhaps it works on enough cpu models to be interesting.
->>>
->> 
->> It isn't fuzzy memories... this was done as late as 1-2 months ago.  I
->> just don't know the details.
->> 
->> Fenghua, could you help fill us in?
->> 
->
-> I overlooked completely the fact that BSP flag is rewritable.
->
-> I tried Eric's suggestion using attached test programs and saw it
-> worked fine at least on the three cpus around me below:
->
-> - Intel(R) Xeon(R) CPU E7- 4820  @ 2.00GHz
-> - Intel(R) Xeon(R) CPU E7- 8870  @ 2.40GHz
-> - Intel(R) Xeon(TM) CPU 1.80GHz
->   - 32 bits CPU
->
-> Next I found the description about this in 8.4.2, IASDM Vol.3:
->
->   The MP initialization protocol imposes the following requirements
->   and restrictions on the system:
->
->   * The MP protocol is executed only after a power-up or RESET. If the
->     MP protocol has completed and a BSP is chosen, subsequent INITs
->     (either to a specific processor or system wide) do not cause the
->     MP protocol to be repeated. Instead, each logical processor
->     examines its BSP flag (in the IA32_APIC_BASE MSR) to determine
->     whether it should execute the BIOS boot-strap code (if it is the
->     BSP) or enter a wait-for-SIPI state (if it is an AP).
->
-> So this is no longer undocumented behaviour for recent cpus, I think.
+I feel above explanation was wrong. I didn't had a big endian system
+to test this but this is what i derived theoretically. Consider following
+sequence of commands:
 
-The underdocumented bit is the ability to clear the flag.
-And of course these are processor specific registers.
+u32 x = 0x01;              //This will store off-0: 1, off-3:0 for LE system
+                                   // and will store off-0: 0, off-3:1
+for BE system
+u8 y = (u8) x;              // For any architecture type, i.e. big or
+little this must store
+                                   // 1 in y. This is ANCI C semantic
+and should be architecture
+                                   // independent.
 
-> Considering these, I'll make a patch to clear BSP flag at appropreate
-> position in kernel boot-up code. OTOH, according to the discussion, it
-> was reported that clearing BSP flag affected some BIOSes. To deal with
-> this, I'll prepare a kernel option to decide whether to clear BSP flag
-> or not.
->
-> Does anyone have any comments now? Or please comment after I submit a
-> new patch.
+Which would mean, type cast will give off-0 on LE and off-3 on BE systems. Don't
+confuse this with getting values using pointers, as we try to get data
+out of specific
+locations in those cases.
 
-I think you are on right track with preparing some patches, and this
-certainly looks like worth experimenting with.
+So, my initial code seems to be doing the right thing. be32_to_cpup()
+will move the
+LSB to off-3 and that is what we will get during the cast.
 
-At least for i386 the code need to verify you have a cpu new enough to
-have an APIC_BASE_MSR, but I don't think that is going to be hard.
+I will resend my original code to you.
 
-Eric
+--
+viresh
