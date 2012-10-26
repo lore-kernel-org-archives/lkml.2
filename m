@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422707Ab2JZUhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:37:24 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:43092 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422673Ab2JZUhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:37:20 -0400
-From: Nix <nix@esperi.org.uk>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com>
-Emacs: it's not slow --- it's stately.
-Date: Fri, 26 Oct 2012 21:37:08 +0100
-In-Reply-To: <508AF3FA.4020506@redhat.com> (Eric Sandeen's message of "Fri, 26
-	Oct 2012 15:35:06 -0500")
-Message-ID: <87wqydx957.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
+	id S1945944Ab2JZUgy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:36:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50688 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759054Ab2JZUa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:30:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
+   d="scan'208";a="211355413"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
+        eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 12/33] perf, x86: Support full width counting
+Date: Fri, 26 Oct 2012 13:29:54 -0700
+Message-Id: <1351283415-13170-13-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 Oct 2012, Eric Sandeen outgrape:
+From: Andi Kleen <ak@linux.intel.com>
 
-> On 10/23/12 3:57 PM, Nix wrote:
->> The only unusual thing about the filesystems on this machine are that
->> they have hardware RAID-5 (using the Areca driver), so I'm mounting with
->> 'nobarrier': the full set of options for all my ext4 filesystems are:
->> 
->> rw,nosuid,nodev,relatime,journal_checksum,journal_async_commit,nobarrier,quota,
->> usrquota,grpquota,commit=30,stripe=16,data=ordered,usrquota,grpquota
->
-> Out of curiosity, when I test log replay with the journal_checksum option, I
-> almost always get something like:
->
-> [  999.917805] JBD2: journal transaction 84121 on dm-1-8 is corrupt.
-> [  999.923904] EXT4-fs (dm-1): error loading journal
->
-> after a simulated crash & log replay.
->
-> Do you see anything like that in your logs?
+Recent Intel CPUs have a new alternative MSR range for perfctrs that allows
+writing the full counter width. Enable this range if the hardware reports it
+using a new capability bit. This lowers overhead of perf stat slightly because
+it has to do less interrupts to accumulate the counter value. On Haswell it
+also avoids some problems with TSX aborting when the end of the counter
+range is reached.
 
-I'm not seeing any corrupt journals or abort messages at all. The
-journal claims to be fine, but plainly isn't.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/include/asm/msr-index.h       |    3 +++
+ arch/x86/kernel/cpu/perf_event.h       |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
+ 3 files changed, 10 insertions(+), 0 deletions(-)
 
-I can reproduce this on a small filesystem and stick the image somewhere
-if that would be of any use to anyone. (If I'm very lucky, merely making
-this offer will make the problem go away. :} )
-
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 7f0edce..2070f46 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -126,6 +126,9 @@
+ #define MSR_KNC_EVNTSEL0               0x00000028
+ #define MSR_KNC_EVNTSEL1               0x00000029
+ 
++/* Alternative perfctr range with full access. */
++#define MSR_IA32_PMC0			0x000004c1
++
+ /* AMD64 MSRs. Not complete. See the architecture manual for a more
+    complete list. */
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index e5da138..17cb08f 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -278,6 +278,7 @@ union perf_capabilities {
+ 		u64	pebs_arch_reg:1;
+ 		u64	pebs_format:4;
+ 		u64	smm_freeze:1;
++		u64	fw_write:1;
+ 	};
+ 	u64	capabilities;
+ };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 9502c19..9bff694 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2238,5 +2238,11 @@ __init int intel_pmu_init(void)
+ 		}
+ 	}
+ 
++	/* Support full width counters using alternative MSR range */
++	if (x86_pmu.intel_cap.fw_write) {
++		x86_pmu.max_period = x86_pmu.cntval_mask;
++		x86_pmu.perfctr = MSR_IA32_PMC0;
++	}
++
+ 	return 0;
+ }
 -- 
-NULL && (void)
+1.7.7.6
+
