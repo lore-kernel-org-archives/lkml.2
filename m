@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab2JZPsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:48:55 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:44173 "EHLO relay.sw.ru"
+	id S964869Ab2JZPtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:49:10 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:17497 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933818Ab2JZPsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:48:53 -0400
-Subject: [PATCH v3 00/12] fuse: optimize scatter-gather direct IO
+	id S933818Ab2JZPtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 11:49:09 -0400
+Subject: [PATCH 01/12] fuse: general infrastructure for pages[] of variable
+ size
 To: miklos@szeredi.hu
 From: Maxim Patlasov <mpatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Fri, 26 Oct 2012 19:47:45 +0400
-Message-ID: <20121026152957.18931.46330.stgit@maximpc.sw.ru>
+Date: Fri, 26 Oct 2012 19:48:07 +0400
+Message-ID: <20121026154753.18931.99838.stgit@maximpc.sw.ru>
+In-Reply-To: <20121026152957.18931.46330.stgit@maximpc.sw.ru>
+References: <20121026152957.18931.46330.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,82 +24,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The patch removes inline array of FUSE_MAX_PAGES_PER_REQ page pointers from
+fuse_req. Instead of that, req->pages may now point either to small inline
+array or to an array allocated dynamically.
 
-Existing fuse implementation processes scatter-gather direct IO in suboptimal
-way: fuse_direct_IO passes iovec[] to fuse_loop_dio and the latter calls
-fuse_direct_read/write for each iovec from iovec[] array. Thus we have as many
-submitted fuse-requests as the number of elements in iovec[] array. This is
-pure waste of resources and affects performance negatively especially for the
-case of many small chunks (e.g. page-size) packed in one iovec[] array.
+This essentially means that all callers of fuse_request_alloc[_nofs] should
+pass the number of pages needed explicitly.
 
-The patch-set amends situation in a natural way: let's simply pack as
-many iovec[] segments to every fuse-request as possible.
+The patch doesn't make any logic changes.
 
-To estimate performance improvement I used slightly modified fusexmp over
-tmpfs (clearing O_DIRECT bit from fi->flags in xmp_open). The test opened
-a file with O_DIRECT, then called readv/writev in a loop. An iovec[] for
-readv/writev consisted of 32 segments of 4K each. The throughput on some
-commodity (rather feeble) server was (in MB/sec):
-
-        original / patched
-writev: ~107     / ~480
-readv:  ~114     / ~569
-
-We're exploring possibility to use fuse for our own distributed storage
-implementation and big iovec[] arrays of many page-size chunks is typical
-use-case for device virtualization thread performing i/o on behalf of
-virtual-machine it serves.
-
-Changed in v2:
- - inline array of page pointers req->pages[] is replaced with dynamically
-   allocated one; the number of elements is calculated a bit more
-   intelligently than being equal to FUSE_MAX_PAGES_PER_REQ; this is done
-   for the sake of memory economy.
- - a dynamically allocated array of so-called 'page descriptors' - an offset
-   in page plus the length of fragment - is added to fuse_req; this is done
-   to simplify processing fuse requests covering several iov-s.
-
-Changed in v3:
- - used iov_iter in fuse_get_user_pages() and __fuse_direct_io()
- - zeroed req->pages[] array on allocation
- - a bunch of minor cleanup changes:
-    - used unsigned for npages
-    - freed req->pages[] and req->page_descs[] together
-    - renamed fuse_get_ua() to fuse_get_user_addr()
-    - renamed fuse_get_fr_sz() to fuse_get_user_size()
-    - simplified loop in fuse_page_descs_length_init()
- - rebased on v3.7-rc2
-
-Thanks,
-Maxim
-
+Signed-off-by: Maxim Patlasov <mpatlasov@parallels.com>
 ---
+ fs/fuse/dev.c    |   47 ++++++++++++++++++++++++++++++++++-------------
+ fs/fuse/file.c   |    4 ++--
+ fs/fuse/fuse_i.h |   15 ++++++++++++---
+ fs/fuse/inode.c  |    4 ++--
+ 4 files changed, 50 insertions(+), 20 deletions(-)
 
-Maxim Patlasov (12):
-      fuse: general infrastructure for pages[] of variable size
-      fuse: categorize fuse_get_req()
-      fuse: rework fuse_retrieve()
-      fuse: rework fuse_readpages()
-      fuse: rework fuse_perform_write()
-      fuse: rework fuse_do_ioctl()
-      fuse: add per-page descriptor <offset, length> to fuse_req
-      fuse: use req->page_descs[] for argpages cases
-      mm: minor cleanup of iov_iter_single_seg_count()
-      fuse: pass iov[] to fuse_get_user_pages()
-      fuse: optimize fuse_get_user_pages()
-      fuse: optimize __fuse_direct_io()
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 8c23fa7..54c2d84 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -34,34 +34,55 @@ static struct fuse_conn *fuse_get_conn(struct file *file)
+ 	return file->private_data;
+ }
+ 
+-static void fuse_request_init(struct fuse_req *req)
++static void fuse_request_init(struct fuse_req *req, struct page **pages,
++			      unsigned npages)
+ {
+ 	memset(req, 0, sizeof(*req));
++	memset(pages, 0, sizeof(*pages) * npages);
+ 	INIT_LIST_HEAD(&req->list);
+ 	INIT_LIST_HEAD(&req->intr_entry);
+ 	init_waitqueue_head(&req->waitq);
+ 	atomic_set(&req->count, 1);
++	req->pages = pages;
++	req->max_pages = npages;
+ }
+ 
+-struct fuse_req *fuse_request_alloc(void)
++static struct fuse_req *__fuse_request_alloc(unsigned npages, gfp_t flags)
+ {
+-	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_KERNEL);
+-	if (req)
+-		fuse_request_init(req);
++	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, flags);
++	if (req) {
++		struct page **pages;
++
++		if (npages <= FUSE_REQ_INLINE_PAGES)
++			pages = req->inline_pages;
++		else
++			pages = kmalloc(sizeof(struct page *) * npages, flags);
++
++		if (!pages) {
++			kmem_cache_free(fuse_req_cachep, req);
++			return NULL;
++		}
++
++		fuse_request_init(req, pages, npages);
++	}
+ 	return req;
+ }
++
++struct fuse_req *fuse_request_alloc(unsigned npages)
++{
++	return __fuse_request_alloc(npages, GFP_KERNEL);
++}
+ EXPORT_SYMBOL_GPL(fuse_request_alloc);
+ 
+-struct fuse_req *fuse_request_alloc_nofs(void)
++struct fuse_req *fuse_request_alloc_nofs(unsigned npages)
+ {
+-	struct fuse_req *req = kmem_cache_alloc(fuse_req_cachep, GFP_NOFS);
+-	if (req)
+-		fuse_request_init(req);
+-	return req;
++	return __fuse_request_alloc(npages, GFP_NOFS);
+ }
+ 
+ void fuse_request_free(struct fuse_req *req)
+ {
++	if (req->pages != req->inline_pages)
++		kfree(req->pages);
+ 	kmem_cache_free(fuse_req_cachep, req);
+ }
+ 
+@@ -116,7 +137,7 @@ struct fuse_req *fuse_get_req(struct fuse_conn *fc)
+ 	if (!fc->connected)
+ 		goto out;
+ 
+-	req = fuse_request_alloc();
++	req = fuse_request_alloc(FUSE_MAX_PAGES_PER_REQ);
+ 	err = -ENOMEM;
+ 	if (!req)
+ 		goto out;
+@@ -165,7 +186,7 @@ static void put_reserved_req(struct fuse_conn *fc, struct fuse_req *req)
+ 	struct fuse_file *ff = file->private_data;
+ 
+ 	spin_lock(&fc->lock);
+-	fuse_request_init(req);
++	fuse_request_init(req, req->pages, req->max_pages);
+ 	BUG_ON(ff->reserved_req);
+ 	ff->reserved_req = req;
+ 	wake_up_all(&fc->reserved_req_waitq);
+@@ -192,7 +213,7 @@ struct fuse_req *fuse_get_req_nofail(struct fuse_conn *fc, struct file *file)
+ 
+ 	atomic_inc(&fc->num_waiting);
+ 	wait_event(fc->blocked_waitq, !fc->blocked);
+-	req = fuse_request_alloc();
++	req = fuse_request_alloc(FUSE_MAX_PAGES_PER_REQ);
+ 	if (!req)
+ 		req = get_reserved_req(fc, file);
+ 
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 78d2837..967e3e6 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -57,7 +57,7 @@ struct fuse_file *fuse_file_alloc(struct fuse_conn *fc)
+ 		return NULL;
+ 
+ 	ff->fc = fc;
+-	ff->reserved_req = fuse_request_alloc();
++	ff->reserved_req = fuse_request_alloc(0);
+ 	if (unlikely(!ff->reserved_req)) {
+ 		kfree(ff);
+ 		return NULL;
+@@ -1272,7 +1272,7 @@ static int fuse_writepage_locked(struct page *page)
+ 
+ 	set_page_writeback(page);
+ 
+-	req = fuse_request_alloc_nofs();
++	req = fuse_request_alloc_nofs(1);
+ 	if (!req)
+ 		goto err;
+ 
+diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+index e24dd74..d52a2fa 100644
+--- a/fs/fuse/fuse_i.h
++++ b/fs/fuse/fuse_i.h
+@@ -44,6 +44,9 @@
+     doing the mount will be allowed to access the filesystem */
+ #define FUSE_ALLOW_OTHER         (1 << 1)
+ 
++/** Number of page pointers embedded in fuse_req */
++#define FUSE_REQ_INLINE_PAGES 1
++
+ /** List of active connections */
+ extern struct list_head fuse_conn_list;
+ 
+@@ -291,7 +294,13 @@ struct fuse_req {
+ 	} misc;
+ 
+ 	/** page vector */
+-	struct page *pages[FUSE_MAX_PAGES_PER_REQ];
++	struct page **pages;
++
++	/** size of the 'pages' array */
++	unsigned max_pages;
++
++	/** inline page vector */
++	struct page *inline_pages[FUSE_REQ_INLINE_PAGES];
+ 
+ 	/** number of pages in vector */
+ 	unsigned num_pages;
+@@ -658,9 +667,9 @@ void fuse_ctl_cleanup(void);
+ /**
+  * Allocate a request
+  */
+-struct fuse_req *fuse_request_alloc(void);
++struct fuse_req *fuse_request_alloc(unsigned npages);
+ 
+-struct fuse_req *fuse_request_alloc_nofs(void);
++struct fuse_req *fuse_request_alloc_nofs(unsigned npages);
+ 
+ /**
+  * Free a request
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index f0eda12..0fda955 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -1029,12 +1029,12 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
+ 	/* only now - we want root dentry with NULL ->d_op */
+ 	sb->s_d_op = &fuse_dentry_operations;
+ 
+-	init_req = fuse_request_alloc();
++	init_req = fuse_request_alloc(0);
+ 	if (!init_req)
+ 		goto err_put_root;
+ 
+ 	if (is_bdev) {
+-		fc->destroy_req = fuse_request_alloc();
++		fc->destroy_req = fuse_request_alloc(0);
+ 		if (!fc->destroy_req)
+ 			goto err_free_init_req;
+ 	}
 
-
- fs/fuse/cuse.c     |    3 -
- fs/fuse/dev.c      |   98 +++++++++++++++------
- fs/fuse/dir.c      |   39 ++++----
- fs/fuse/file.c     |  242 ++++++++++++++++++++++++++++++++++------------------
- fs/fuse/fuse_i.h   |   47 ++++++++--
- fs/fuse/inode.c    |    6 +
- include/linux/fs.h |    2 
- mm/filemap.c       |    2 
- 8 files changed, 292 insertions(+), 147 deletions(-)
-
--- 
-Signature
