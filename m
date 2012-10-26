@@ -1,142 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab2JZEsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 00:48:08 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63282 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755377Ab2JZEsD (ORCPT
+	id S1756186Ab2JZFAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 01:00:45 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60223 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab2JZFAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 00:48:03 -0400
-From: Robin Dong <robin.k.dong@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Robin Dong <sanbai@taobao.com>, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Subject: [PATCH 2/2 v4] block/throttle: Add IO submitted information in blkio.throttle
-Date: Fri, 26 Oct 2012 12:47:48 +0800
-Message-Id: <1351226868-30063-2-git-send-email-robin.k.dong@gmail.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
-References: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
+	Fri, 26 Oct 2012 01:00:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121026035550.GA8894@localhost>
+References: <20121023224706.GR4291@dastard>
+	<CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
+	<20121024201921.GX4291@dastard>
+	<CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
+	<20121025015014.GC29378@dastard>
+	<CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
+	<50889FF1.9030107@gmail.com>
+	<20121025025826.GB23462@localhost>
+	<20121026002544.GI29378@dastard>
+	<CAA9v8mG4Sck=S4SGrorndzAgZzgDs1h9vWa1DhmC-2-FVF=Upg@mail.gmail.com>
+	<20121026035550.GA8894@localhost>
+Date: Fri, 26 Oct 2012 13:00:43 +0800
+Message-ID: <CAA9v8mFV13rey4O3MW4122k163+UgcSLCsp1CkrFVDf-0iWzVw@mail.gmail.com>
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+From: YingHang Zhu <casualfisher@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Ni zhan Chen <nizhan.chen@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robin Dong <sanbai@taobao.com>
-
-Currently, if the IO is throttled by io-throttle, the system admin has no idea
-of the situation and can't report it to the real application user about that
-he/she has to do something.
-
-So this patch adds a new interface named blkio.throttle.io_submitted which
-exposes the number of bios that have been sent into blk-throttle therefore the
-user could calculate the difference from throttle.io_serviced to see how many
-IOs are currently throttled.
-
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: Robin Dong <sanbai@taobao.com>
----
-v3 <-- v2:
- - Use nr-queued[] of struct throtl_grp for stats instaed of adding new blkg_rwstat.
-
-v4 <-- v3:
- - Add two new blkg_rwstat arguments to count total bios be sent into blk_throttle.
-
- block/blk-throttle.c |   43 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 43 insertions(+), 0 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 46ddeff..c6391b5 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -46,6 +46,10 @@ struct tg_stats_cpu {
- 	struct blkg_rwstat		service_bytes;
- 	/* total IOs serviced, post merge */
- 	struct blkg_rwstat		serviced;
-+	/* total bytes submitted into blk-throttle */
-+	struct blkg_rwstat		submit_bytes;
-+	/* total IOs submitted into blk-throttle */
-+	struct blkg_rwstat		submitted;
- };
- 
- struct throtl_grp {
-@@ -266,6 +270,8 @@ static void throtl_pd_reset_stats(struct blkcg_gq *blkg)
- 
- 		blkg_rwstat_reset(&sc->service_bytes);
- 		blkg_rwstat_reset(&sc->serviced);
-+		blkg_rwstat_reset(&sc->submit_bytes);
-+		blkg_rwstat_reset(&sc->submitted);
- 	}
- }
- 
-@@ -699,6 +705,30 @@ static void throtl_update_dispatch_stats(struct throtl_grp *tg, u64 bytes,
- 	local_irq_restore(flags);
- }
- 
-+static void throtl_update_submit_stats(struct throtl_grp *tg, u64 bytes, int rw)
-+{
-+	struct tg_stats_cpu *stats_cpu;
-+	unsigned long flags;
-+
-+	/* If per cpu stats are not allocated yet, don't do any accounting. */
-+	if (tg->stats_cpu == NULL)
-+		return;
-+
-+	/*
-+	 * Disabling interrupts to provide mutual exclusion between two
-+	 * writes on same cpu. It probably is not needed for 64bit. Not
-+	 * optimizing that case yet.
-+	 */
-+	local_irq_save(flags);
-+
-+	stats_cpu = this_cpu_ptr(tg->stats_cpu);
-+
-+	blkg_rwstat_add(&stats_cpu->submitted, rw, 1);
-+	blkg_rwstat_add(&stats_cpu->submit_bytes, rw, bytes);
-+
-+	local_irq_restore(flags);
-+}
-+
- static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
- {
- 	bool rw = bio_data_dir(bio);
-@@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
- 		.private = offsetof(struct tg_stats_cpu, serviced),
- 		.read_seq_string = tg_print_cpu_rwstat,
- 	},
-+	{
-+		.name = "throttle.io_submit_bytes",
-+		.private = offsetof(struct tg_stats_cpu, submit_bytes),
-+		.read_seq_string = tg_print_cpu_rwstat,
-+	},
-+	{
-+		.name = "throttle.io_submitted",
-+		.private = offsetof(struct tg_stats_cpu, submitted),
-+		.read_seq_string = tg_print_cpu_rwstat,
-+	},
- 	{ }	/* terminate */
- };
- 
-@@ -1128,6 +1168,8 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		if (tg_no_rule_group(tg, rw)) {
- 			throtl_update_dispatch_stats(tg,
- 						     bio->bi_size, bio->bi_rw);
-+			throtl_update_submit_stats(tg,
-+					bio->bi_size, bio->bi_rw);
- 			goto out_unlock_rcu;
- 		}
- 	}
-@@ -1141,6 +1183,7 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 	if (unlikely(!tg))
- 		goto out_unlock;
- 
-+	throtl_update_submit_stats(tg, bio->bi_size, bio->bi_rw);
- 	if (tg->nr_queued[rw]) {
- 		/*
- 		 * There is already another bio queued in same dir. No
--- 
-1.7.1
-
+On Fri, Oct 26, 2012 at 11:55 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> On Fri, Oct 26, 2012 at 11:38:11AM +0800, YingHang Zhu wrote:
+>> On Fri, Oct 26, 2012 at 8:25 AM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Thu, Oct 25, 2012 at 10:58:26AM +0800, Fengguang Wu wrote:
+>> >> Hi Chen,
+>> >>
+>> >> > But how can bdi related ra_pages reflect different files' readahead
+>> >> > window? Maybe these different files are sequential read, random read
+>> >> > and so on.
+>> >>
+>> >> It's simple: sequential reads will get ra_pages readahead size while
+>> >> random reads will not get readahead at all.
+>> >>
+>> >> Talking about the below chunk, it might hurt someone that explicitly
+>> >> takes advantage of the behavior, however the ra_pages*2 seems more
+>> >> like a hack than general solution to me: if the user will need
+>> >> POSIX_FADV_SEQUENTIAL to double the max readahead window size for
+>> >> improving IO performance, then why not just increase bdi->ra_pages and
+>> >> benefit all reads? One may argue that it offers some differential
+>> >> behavior to specific applications, however it may also present as a
+>> >> counter-optimization: if the root already tuned bdi->ra_pages to the
+>> >> optimal size, the doubled readahead size will only cost more memory
+>> >> and perhaps IO latency.
+>> >>
+>> >> --- a/mm/fadvise.c
+>> >> +++ b/mm/fadvise.c
+>> >> @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+>> >>                 spin_unlock(&file->f_lock);
+>> >>                 break;
+>> >>         case POSIX_FADV_SEQUENTIAL:
+>> >> -               file->f_ra.ra_pages = bdi->ra_pages * 2;
+>> >
+>> > I think we really have to reset file->f_ra.ra_pages here as it is
+>> > not a set-and-forget value. e.g.  shrink_readahead_size_eio() can
+>> > reduce ra_pages as a result of IO errors. Hence if you have had io
+>> > errors, telling the kernel that you are now going to do  sequential
+>> > IO should reset the readahead to the maximum ra_pages value
+>> > supported....
+>> If we unify file->f_ra.ra_pages and its' bdi->ra_pages, then the error-prone
+>> device's readahead can be directly tuned or turned off with blockdev
+>> thus affect all files
+>> using the device and without bring more complexity...
+>
+> It's not really feasible/convenient for the end users to hand tune
+> blockdev readahead size on IO errors. Even many administrators are
+> totally unaware of the readahead size parameter.
+You are right, so the problem comes in this way:
+    If one file's read failure will affect other files? I mean for
+rotating disks and discs,
+a file's read failure may be due to the bad sectors which tend to be consecutive
+and won't affect other files' reading status. However for tape drive
+the read failure
+usually indicates data corruption and other file's reading may also fail.
+    In other words, should we consider how many files failed to read data and
+where they failed as a factor to indicate the status of the backing device,
+or treat these files independently?
+    If we choose the previous one we can accumulate the statistics and
+change bdi.ra_pages,
+otherwise we may do some check for FMODE_RANDOM before we change the readahead
+window.
+     I may missed something, please point it out.
+Thanks,
+      Ying Zhu
+>
+> Thanks,
+> Fengguang
