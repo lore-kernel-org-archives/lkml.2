@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422667Ab2JZT54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:57:56 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:33906 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966285Ab2JZT5y (ORCPT
+	id S966336Ab2JZUEK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:04:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45332 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S966316Ab2JZUEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:57:54 -0400
-Message-ID: <508AEB3E.6090405@gmail.com>
-Date: Fri, 26 Oct 2012 14:57:50 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Scott Wood <scottwood@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V4 REPOST 2/2] kbuild: run the pre-processor on *.dts
- files
-References: <1351279797-16450-1-git-send-email-swarren@wwwdotorg.org> <1351279797-16450-2-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1351279797-16450-2-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Oct 2012 16:04:07 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/1jtRnI7P1Mhwxxr9L6DEFuU4mWbZyUP9fjV8Ioa
+	vtuvRTyqudVuL8
+Message-ID: <1351281877.16639.98.camel@maggy.simpson.net>
+Subject: Re: process hangs on do_exit when oom happens
+From: Mike Galbraith <efault@gmx.de>
+To: Qiang Gao <gaoqiangscut@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 26 Oct 2012 13:04:37 -0700
+In-Reply-To: <1351270990.16639.92.camel@maggy.simpson.net>
+References: <op.wmbi5kbrn27o5l@gaoqiang-d1.corp.qihoo.net>
+	 <20121019160425.GA10175@dhcp22.suse.cz>
+	 <CAKWKT+ZRMHzgCLJ1quGnw-_T1b9OboYKnQdRc2_Z=rdU_PFVtw@mail.gmail.com>
+	 <CAKTCnzkMQQXRdx=ikydsD9Pm3LuRgf45_=m7ozuFmSZyxazXyA@mail.gmail.com>
+	 <CAKWKT+bYOf0cEDuiibf6eV2raMxe481y-D+nrBgPWR3R+53zvg@mail.gmail.com>
+	 <20121023095028.GD15397@dhcp22.suse.cz>
+	 <CAKWKT+b2s4E7Nne5d0UJwfLGiCXqAUgrCzuuZi6ZPdjszVSmWg@mail.gmail.com>
+	 <20121023101500.GE15397@dhcp22.suse.cz>
+	 <CAKTCnzkiabWK8tAORkhg6oW11VvXS-YqBwDzED_3=J1buhaQnQ@mail.gmail.com>
+	 <CAKWKT+ZahFTnPRJ4FCebxfcrcYEBf+PL9Wa_Foygep_gFst4_g@mail.gmail.com>
+	 <20121025095719.GA11105@dhcp22.suse.cz>
+	 <CAKWKT+ZRTUwer8qhjWGjkra63e10R67UQzezdaCaStz+rvGjxw@mail.gmail.com>
+	 <1351270990.16639.92.camel@maggy.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 02:29 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Modify cmd_dtc to run the C pre-processor on the input .dts file before
-> passing it to dtc for final compilation. This allows the use of #define
-> and #include within the .dts file.
+On Fri, 2012-10-26 at 10:03 -0700, Mike Galbraith wrote:
 
-While this change is small the implications are not. I don't think no
-comments reflects agreement on this.
+> The bug is in the patch that used sched_setscheduler_nocheck().  Plain
+> sched_setscheduler() would have replied -EGOAWAY.
 
-Like I said previously, I think we first need guidelines on what is and
-isn't acceptable use of C preprocessor in dts files.
+sched_setscheduler_nocheck() should say go away too methinks.  This
+isn't about permissions, it's about not being stupid in general.
 
-Rob
+sched: fix __sched_setscheduler() RT_GROUP_SCHED conditionals
 
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> v4:
-> * Use -x assembler-with-cpp so pre-defined macros are set up so that
->   #included header files know to only use cpp syntax, not C syntax.
-> * Define __DTS__ for similar reasons.
-> * use $(CPP) not $(CC) -E, and use $(cpp_flags).
-> * Save the pre-processed results so they can be easily inspected when
->   debugging build issues.
-> * The use of -x assembler-with-cpp causes cpp to recognize directives in
->   column 1 only. Hence, there's no need to escape property names that
->   begin with #. Hence, there's no need for separate skeleton.dtsi and
->   skeleton.dtsip. Maintain a separate file extension and build rule so that
->   CPP-usage is opt-in. In particular, when using CPP, #include must be used
->   rather than /include/ so that dependencies work.
-> v3: Pass "-x c" not "-xc" to cpp.
-> v2: Place make %.dtb: %.dtsp rule into Makefile.lib.
-> ---
->  scripts/Makefile.lib |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 425578e..33432f4 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -269,6 +269,15 @@ cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile
->  $(obj)/%.dtb: $(src)/dts/%.dts FORCE
->  	$(call if_changed_dep,dtc)
->  
-> +dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
-> +
-> +quiet_cmd_dtc_cpp = DTC+CPP $@
-> +cmd_dtc_cpp = $(CPP) $(cpp_flags) -D__DTS__ -x assembler-with-cpp -o $(dtc-tmp) $< ; \
-> +	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
-> +
-> +$(obj)/%.dtb: $(src)/dts/%.dtsp FORCE
-> +	$(call if_changed_dep,dtc_cpp)
-> +
->  # Bzip2
->  # ---------------------------------------------------------------------------
->  
-> 
+Remove user and rt_bandwidth_enabled() RT_GROUP_SCHED conditionals in
+__sched_setscheduler().  The end result of kernel OR user promoting a
+task in a group with zero rt_runtime allocated is the same bad thing,
+and throttle switch position matters little.  It's safer to just say
+no solely based upon bandwidth existence, may save the user a nasty
+surprise if he later flips the throttle switch to 'on'.
+
+The commit below came about due to sched_setscheduler_nocheck()
+allowing a task in a task group with zero rt_runtime allocated to
+be promoted by the kernel oom logic, thus marooning it forever.
+
+<quote>
+commit 341aea2bc48bf652777fb015cc2b3dfa9a451817
+Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date:   Thu Apr 14 15:22:13 2011 -0700
+
+    oom-kill: remove boost_dying_task_prio()
+    
+    This is an almost-revert of commit 93b43fa ("oom: give the dying task a
+    higher priority").
+    
+    That commit dramatically improved oom killer logic when a fork-bomb
+    occurs.  But I've found that it has nasty corner case.  Now cpu cgroup has
+    strange default RT runtime.  It's 0!  That said, if a process under cpu
+    cgroup promote RT scheduling class, the process never run at all.
+</quote>
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..d3a35f8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3810,17 +3810,14 @@ recheck:
+ 	}
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+-	if (user) {
+-		/*
+-		 * Do not allow realtime tasks into groups that have no runtime
+-		 * assigned.
+-		 */
+-		if (rt_bandwidth_enabled() && rt_policy(policy) &&
+-				task_group(p)->rt_bandwidth.rt_runtime == 0 &&
+-				!task_group_is_autogroup(task_group(p))) {
+-			task_rq_unlock(rq, p, &flags);
+-			return -EPERM;
+-		}
++	/*
++	 * Do not allow realtime tasks into groups that have no runtime
++	 * assigned.
++	 */
++	if (rt_policy(policy) && task_group(p)->rt_bandwidth.rt_runtime == 0 &&
++			!task_group_is_autogroup(task_group(p))) {
++		task_rq_unlock(rq, p, &flags);
++		return -EPERM;
+ 	}
+ #endif
+ 
+
+
