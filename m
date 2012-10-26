@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759107Ab2JZUa2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:30:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51999 "EHLO mga09.intel.com"
+	id S966226Ab2JZUfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:35:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62124 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966414Ab2JZUaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:30:24 -0400
+	id S1759081Ab2JZUa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:30:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.80,656,1344236400"; 
-   d="scan'208";a="233093563"
+   d="scan'208";a="233093566"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
         eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 04/33] perf, x86: Support the TSX intx/intx_cp qualifiers v2
-Date: Fri, 26 Oct 2012 13:29:46 -0700
-Message-Id: <1351283415-13170-5-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 21/33] perf, tools: Add support for record transaction flags
+Date: Fri, 26 Oct 2012 13:30:03 -0700
+Message-Id: <1351283415-13170-22-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
 References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
@@ -25,122 +25,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Implement the TSX transaction and checkpointed transaction qualifiers for
-Haswell. This allows e.g. to profile the number of cycles in transactions.
+Add the glue in the user tools to record transaction flags with
+--transaction (-T was already taken) and dump them.
 
-The checkpointed qualifier requires forcing the event to
-counter 2, implement this with a custom constraint for Haswell.
+Followon patches will use them.
 
-Also add sysfs format attributes for intx/intx_cp
-
-[Updated from earlier version that used generic attributes, now does
-raw + sysfs formats]
-v2: Moved bad hunk. Forbid some bad combinations.
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   61 ++++++++++++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
+ tools/perf/Documentation/perf-record.txt |    5 ++++-
+ tools/perf/builtin-record.c              |    2 ++
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/event.h                  |    1 +
+ tools/perf/util/evsel.c                  |    9 +++++++++
+ tools/perf/util/session.c                |    3 +++
+ 6 files changed, 20 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 1770fb0..9502c19 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -13,6 +13,7 @@
- #include <linux/slab.h>
- #include <linux/export.h>
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 0ffb436..34f4f1a 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -185,12 +185,15 @@ is enabled for all the sampling events. The sampled branch type is the same for
+ The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
+ Note that this feature may not be available on all processors.
  
-+#include <asm/cpufeature.h>
- #include <asm/hardirq.h>
- #include <asm/apic.h>
+--W::
+ --weight::
+ Enable weightened sampling. When the event supports an additional weight per sample scale
+ the histogram by this weight. This currently works for TSX abort events and some memory events
+ in precise mode on modern Intel CPUs.
  
-@@ -1604,6 +1605,8 @@ PMU_FORMAT_ATTR(pc,	"config:19"	);
- PMU_FORMAT_ATTR(any,	"config:21"	); /* v3 + */
- PMU_FORMAT_ATTR(inv,	"config:23"	);
- PMU_FORMAT_ATTR(cmask,	"config:24-31"	);
-+PMU_FORMAT_ATTR(intx,	"config:32"	);
-+PMU_FORMAT_ATTR(intx_cp,"config:33"	);
- 
- static struct attribute *intel_arch_formats_attr[] = {
- 	&format_attr_event.attr,
-@@ -1615,6 +1618,44 @@ static struct attribute *intel_arch_formats_attr[] = {
- 	NULL,
++-T::
++--transaction::
++Record transaction flags for transaction related events.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 9a25116..49de48e 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -1008,6 +1008,8 @@ const struct option record_options[] = {
+ 		     parse_branch_stack),
+ 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+ 		    "sample by weight (on special events only)"),
++	OPT_BOOLEAN(0, "transaction", &record.opts.sample_transaction,
++		    "sample transaction flags (special events only)"),
+ 	OPT_END()
  };
  
-+static int hsw_hw_config(struct perf_event *event)
-+{
-+	int ret = intel_pmu_hw_config(event);
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2365abf..395d216 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -246,6 +246,7 @@ struct perf_record_opts {
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	u16	     stack_dump_size;
++	bool	     sample_transaction;
+ };
+ 
+ #endif
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index d60015b..28fd2eb 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -88,6 +88,7 @@ struct perf_sample {
+ 	u64 stream_id;
+ 	u64 period;
+ 	u64 weight;
++	u64 transaction;
+ 	u32 cpu;
+ 	u32 raw_size;
+ 	void *raw_data;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 3800fb5..5c9790d 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -448,6 +448,9 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 	if (opts->sample_weight)
+ 		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
+ 
++	if (opts->sample_transaction)
++		attr->sample_type	|= PERF_SAMPLE_TRANSACTION;
 +
-+	if (ret)
-+		return ret;
-+	if (!boot_cpu_has(X86_FEATURE_RTM) && !boot_cpu_has(X86_FEATURE_HLE))
-+		return 0;
-+	event->hw.config |= event->attr.config & (HSW_INTX|HSW_INTX_CHECKPOINTED);
-+
-+	/* 
-+ 	 * INTX/INTX-CP do not play well with PEBS or ANY thread mode.
-+ 	 */
-+	if ((event->hw.config & (HSW_INTX|HSW_INTX_CHECKPOINTED)) &&
-+	     ((event->hw.config & ARCH_PERFMON_EVENTSEL_ANY) ||
-+	      event->attr.precise_ip > 0))
-+		return -EIO;
-+	return 0;
-+}
-+
-+static struct event_constraint counter2_constraint = 
-+			EVENT_CONSTRAINT(0, 0x4, 0);
-+
-+static struct event_constraint *
-+hsw_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
-+{
-+	struct event_constraint *c = intel_get_event_constraints(cpuc, event);
-+
-+	/* Handle special quirk on intx_checkpointed only in counter 2 */
-+	if (event->hw.config & HSW_INTX_CHECKPOINTED) {
-+		if (c->idxmsk64 & (1U << 2))
-+			return &counter2_constraint;
-+		return &emptyconstraint;
+ 	if (opts->call_graph) {
+ 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
+ 
+@@ -951,6 +954,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		array++;
+ 	}
+ 
++	data->transaction = 0;
++	if (type & PERF_SAMPLE_TRANSACTION) {
++		data->transaction = *array;
++		array++;
 +	}
 +
-+	return c;
-+}
-+
- static __initconst const struct x86_pmu core_pmu = {
- 	.name			= "core",
- 	.handle_irq		= x86_pmu_handle_irq,
-@@ -1753,6 +1794,23 @@ static struct attribute *intel_arch3_formats_attr[] = {
- 	NULL,
- };
+ 	if (type & PERF_SAMPLE_READ) {
+ 		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+ 		return -1;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 2009665..316dd91 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1009,6 +1009,9 @@ static void dump_sample(struct perf_evsel *evsel, union perf_event *event,
  
-+/* Arch3 + TSX support */
-+static struct attribute *intel_hsw_formats_attr[] __read_mostly = {
-+	&format_attr_event.attr,
-+	&format_attr_umask.attr,
-+	&format_attr_edge.attr,
-+	&format_attr_pc.attr,
-+	&format_attr_any.attr,
-+	&format_attr_inv.attr,
-+	&format_attr_cmask.attr,
-+	&format_attr_intx.attr,
-+	&format_attr_intx_cp.attr,
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		printf("... weight: %" PRIu64 "\n", sample->weight);
 +
-+	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
-+	NULL,
-+};
-+
-+
- static __initconst const struct x86_pmu intel_pmu = {
- 	.name			= "Intel",
- 	.handle_irq		= intel_pmu_handle_irq,
-@@ -2126,6 +2184,9 @@ __init int intel_pmu_init(void)
- 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
- 		x86_pmu.er_flags |= ERF_NO_HT_SHARING;
++	if (sample_type & PERF_SAMPLE_TRANSACTION)
++		printf("... transaction: %" PRIx64 "\n", sample->transaction);
+ }
  
-+		x86_pmu.hw_config = hsw_hw_config;
-+		x86_pmu.get_event_constraints = hsw_get_event_constraints;
-+		x86_pmu.format_attrs = intel_hsw_formats_attr;
- 		pr_cont("Haswell events, ");
- 		break;
- 
+ static struct machine *
 -- 
 1.7.7.6
 
