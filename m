@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966028Ab2JZSe3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:34:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35550 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965944Ab2JZSe1 (ORCPT
+	id S966032Ab2JZSgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:36:06 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53969 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965944Ab2JZSgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:34:27 -0400
-Date: Fri, 26 Oct 2012 20:34:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Juri Lelli <juri.lelli@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>, mingo@redhat.com,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-In-Reply-To: <1351276134.8467.62.camel@gandalf.local.home>
-Message-ID: <alpine.LFD.2.02.1210262033300.2756@ionos>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>   <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>   <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>   <1351172849.12171.10.camel@twins>  
- <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>   <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>   <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com>   <1351245264.16863.12.camel@twins>  
- <alpine.LFD.2.02.1210261208170.2756@ionos>   <1351248244.16863.13.camel@twins> <1351256204.16863.56.camel@twins>  <508AD291.1010803@gmail.com> <1351276134.8467.62.camel@gandalf.local.home>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 26 Oct 2012 14:36:03 -0400
+Date: Fri, 26 Oct 2012 19:36:01 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: P J P <ppandit@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+Message-ID: <20121026183601.GR2616@ZenIV.linux.org.uk>
+References: <20121024232032.GA31129@www.outflux.net>
+ <20121025041620.GH2616@ZenIV.linux.org.uk>
+ <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
+ <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
+ <20121025120952.GI2616@ZenIV.linux.org.uk>
+ <20121025123843.GJ2616@ZenIV.linux.org.uk>
+ <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012, Steven Rostedt wrote:
-
-> On Fri, 2012-10-26 at 11:12 -0700, Juri Lelli wrote:
+On Fri, Oct 26, 2012 at 11:08:20PM +0530, P J P wrote:
+> +-- On Thu, 25 Oct 2012, Al Viro wrote --+
+> | 	* every bleeding script will have bogus execution of modprobe done
+> | at execve time (and you'd better pray that /sbin/modprobe isn't a shell
+> | script wrapper around the actual binary, or you *will* get loop prevention
+> | kick in)
+> | 	* none of the existing binfmt-<...> aliases is going to be hit
+> | now; IOW, all usecases got broken.  Granted, realistically it just means
+> | broken modular aout support, but then it's the only reason to have that
+> | request_module() there in the first place.
 > 
-> > - scale down (right by 10) incoming parameters as to do internal
-> >    math with ~1us resolution (and scale up outgoing params)
+>   Please have a look at the updated patch below.
 > 
-> Would scaling down by 9 be sufficient? That way the resolution is still
-> just less than 1us.
+> It fixes the issue of excessive calls to request_module. find_module() routine 
+> is used before request_module(), to see if the module is already loaded or 
+> not. Module alias could dodge this though, I guess.
 
-You have to do rounding anyway. So it does not matter whether you
-chose 10 or 9.
+"Could"?  Can you show a single module that would have name matching
+binfmt-[0-9a-f]*?  In other words, are they ever loaded _not_ via an
+alias?
