@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2JZAif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:38:35 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:22506 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab2JZAid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:38:33 -0400
-Message-ID: <1351211909.6851.26.camel@lorien2>
-Subject: [PATCH RFT RESEND] sparc: dma-mapping: support
- debug_dma_mapping_error
-From: Shuah Khan <shuah@fc.hp.com>
-Reply-To: shuah@fc.hp.com
-To: davem@davemloft.net, kyungmin.park@samsung.com, sam@ravnborg.org,
-        arnd@arndb.de, m.szyprowski@samsung.com
-Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        shuahkhan@gmail.com
-Date: Thu, 25 Oct 2012 18:38:29 -0600
-In-Reply-To: <1351211773.6851.24.camel@lorien2>
-References: <1351211773.6851.24.camel@lorien2>
-Organization: ISS-Linux
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755685Ab2JZAjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:39:05 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52930 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753559Ab2JZAGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:40 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [ 23/42] pinctrl: tegra: correct bank for pingroup and drv pingroup
+Date: Thu, 25 Oct 2012 17:05:31 -0700
+Message-Id: <20121026000127.116857525@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
+References: <20121026000124.790781113@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for debug_dma_mapping_error() call to avoid warning from
-debug_dma_unmap() interface when it checks for mapping error checked
-status. Without this patch, device driver failed to check map error
-warning is generated.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+------------------
+
+From: Pritesh Raithatha <praithatha@nvidia.com>
+
+commit a03690e44468dcd3088f6600ab036d17bd2130ff upstream.
+
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/sparc/include/asm/dma-mapping.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/pinctrl/pinctrl-tegra30.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/arch/sparc/include/asm/dma-mapping.h b/arch/sparc/include/asm/dma-mapping.h
-index 8493fd3..05fe53f 100644
---- a/arch/sparc/include/asm/dma-mapping.h
-+++ b/arch/sparc/include/asm/dma-mapping.h
-@@ -59,6 +59,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
+--- a/drivers/pinctrl/pinctrl-tegra30.c
++++ b/drivers/pinctrl/pinctrl-tegra30.c
+@@ -3343,10 +3343,10 @@ static const struct tegra_function tegra
+ 	FUNCTION(vi_alt3),
+ };
  
- static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- {
-+	debug_dma_mapping_error(dev, dma_addr);
- 	return (dma_addr == DMA_ERROR_CODE);
- }
+-#define MUXCTL_REG_A	0x3000
+-#define PINGROUP_REG_A	0x868
++#define DRV_PINGROUP_REG_A	0x868	/* bank 0 */
++#define PINGROUP_REG_A		0x3000	/* bank 1 */
  
--- 
-1.7.9.5
-
+-#define PINGROUP_REG_Y(r) ((r) - MUXCTL_REG_A)
++#define PINGROUP_REG_Y(r) ((r) - PINGROUP_REG_A)
+ #define PINGROUP_REG_N(r) -1
+ 
+ #define PINGROUP(pg_name, f0, f1, f2, f3, f_safe, r, od, ior)	\
+@@ -3362,25 +3362,25 @@ static const struct tegra_function tegra
+ 		},						\
+ 		.func_safe = TEGRA_MUX_ ## f_safe,		\
+ 		.mux_reg = PINGROUP_REG_Y(r),			\
+-		.mux_bank = 0,					\
++		.mux_bank = 1,					\
+ 		.mux_bit = 0,					\
+ 		.pupd_reg = PINGROUP_REG_Y(r),			\
+-		.pupd_bank = 0,					\
++		.pupd_bank = 1,					\
+ 		.pupd_bit = 2,					\
+ 		.tri_reg = PINGROUP_REG_Y(r),			\
+-		.tri_bank = 0,					\
++		.tri_bank = 1,					\
+ 		.tri_bit = 4,					\
+ 		.einput_reg = PINGROUP_REG_Y(r),		\
+-		.einput_bank = 0,				\
++		.einput_bank = 1,				\
+ 		.einput_bit = 5,				\
+ 		.odrain_reg = PINGROUP_REG_##od(r),		\
+-		.odrain_bank = 0,				\
++		.odrain_bank = 1,				\
+ 		.odrain_bit = 6,				\
+ 		.lock_reg = PINGROUP_REG_Y(r),			\
+-		.lock_bank = 0,					\
++		.lock_bank = 1,					\
+ 		.lock_bit = 7,					\
+ 		.ioreset_reg = PINGROUP_REG_##ior(r),		\
+-		.ioreset_bank = 0,				\
++		.ioreset_bank = 1,				\
+ 		.ioreset_bit = 8,				\
+ 		.drv_reg = -1,					\
+ 	}
+@@ -3399,8 +3399,8 @@ static const struct tegra_function tegra
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
+-		.drv_reg = ((r) - PINGROUP_REG_A),		\
+-		.drv_bank = 1,					\
++		.drv_reg = ((r) - DRV_PINGROUP_REG_A),		\
++		.drv_bank = 0,					\
+ 		.hsm_bit = hsm_b,				\
+ 		.schmitt_bit = schmitt_b,			\
+ 		.lpmd_bit = lpmd_b,				\
 
 
