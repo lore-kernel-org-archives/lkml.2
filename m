@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab2JZISf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:18:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58228 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757275Ab2JZIS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:18:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Subject: Re: [PATCH 02/16 v2] f2fs: add on-disk layout
-Date: Fri, 26 Oct 2012 08:18:17 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: "'Vyacheslav Dubeyko'" <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        viro@zeniv.linux.org.uk, tytso@mit.edu, chur.lee@samsung.com,
-        cm224.lee@samsung.com, jooyoung.hwang@samsung.com
-References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com> <1351077945.2097.9.camel@slavad-ubuntu> <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
-In-Reply-To: <00e601cdb32a$59fbe090$0df3a1b0$%kim@samsung.com>
+	id S1757320Ab2JZIUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:20:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40773 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757043Ab2JZIUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 04:20:42 -0400
+Date: Fri, 26 Oct 2012 11:14:48 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+CC: <balbi@ti.com>, Li Yang-R58472 <r58472@freescale.com>,
+        Simon Haggett <simon.haggett@realvnc.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] usb: gadget: Don't attempt to dequeue requests for a
+ disabled USB endpoint on Freescale hardware
+Message-ID: <20121026081448.GD23501@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1350667166-3559-1-git-send-email-simon.haggett@realvnc.com>
+ <1535820.NU10ADjvOZ@avalon>
+ <20121022105601.GS14033@arwen.pp.htv.fi>
+ <3862785.b8vaFMSbLQ@avalon>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210260818.18155.arnd@arndb.de>
-X-Provags-ID: V02:K0:I14LHdh+DVP1WZi9PpCgq6wIGuk3vS0Xl9jqjxvl9Uu
- OVODKOlNwVPXUKVhD3slS2yxDD3kyloEeuJu2GLezCN482I5Uq
- wns/T7gYqx43J3OnqVnZeNpumTWKo+sDk/OAoXVZAUS1GuTN22
- JD1gYnDGkkOhHFqSOHTaLANNK8f2xvAx1lutKfU+zGxdv2si7N
- kOUlThHgNcdQbVU8sz25MHSybHtFIj8e1ccIBG39QatTzNvYHd
- 4sLy3O+2h8fOO7r21kD2lRb+phH+SV/T/kuq9S2+jQon+WJWY1
- zcszxFm0lGIDrCrMHsGfKy9llIAgoE6xyhqRtp2y6LKc3otwIr
- OCAlZFg2ZcY3q8F9GlsY=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J5MfuwkIyy7RmF4Q"
+Content-Disposition: inline
+In-Reply-To: <3862785.b8vaFMSbLQ@avalon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 October 2012, Jaegeuk Kim wrote:
+--J5MfuwkIyy7RmF4Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > +
-> > > +#define F2FS_ROOT_INO(sbi)	(sbi->root_ino_num)
-> > > +#define F2FS_NODE_INO(sbi)	(sbi->node_ino_num)
-> > > +#define F2FS_META_INO(sbi)	(sbi->meta_ino_num)
-> > > +
-> > > +#define GFP_F2FS_MOVABLE	(__GFP_WAIT | __GFP_IO | __GFP_ZERO)
-> > > +
-> > > +#define MAX_ACTIVE_LOGS	16
-> > > +#define MAX_ACTIVE_NODE_LOGS	8
-> > > +#define MAX_ACTIVE_DATA_LOGS	8
-> > 
-> > I think that it makes sense to comment the reasons of such limitations
-> > in MAX_ACTIVE_LOGS, MAX_ACTIVE_NODE_LOGS, MAX_ACTIVE_DATA_LOGS.
-> 
-> The maximum number of logs is suggested by arnd before.
-> As I understood, why he suggested such a quite large number is for further
-> optimization of multiple logs without any on-disk layout changes.
-> And, I think it is quite enough.
+Hi,
 
-I agree. I think Vyacheslav was just asking you to add a comment
-explaining how we got to these numbers, like
+On Thu, Oct 25, 2012 at 02:36:24AM +0200, Laurent Pinchart wrote:
+> Hi Felipe,
+>=20
+> On Monday 22 October 2012 13:56:01 Felipe Balbi wrote:
+> > On Mon, Oct 22, 2012 at 12:47:21PM +0200, Laurent Pinchart wrote:
+> > > On Monday 22 October 2012 03:33:19 Li Yang-R58472 wrote:
+> > > > On Saturday, October 20, 2012 1:37 AM Felipe Balbi wrote:
+> > > > > On Fri, Oct 19, 2012 at 06:19:26PM +0100, Simon Haggett wrote:
+> > > > > > Some gadget drivers may attempt to dequeue requests for an endp=
+oint
+> > > > > > that has already been disabled. For example, in the UVC gadget
+> > > > > > driver, uvc_function_set_alt() will call usb_ep_disable() when =
+alt
+> > > > > > setting 0 is selected. When the userspace application subsequen=
+tly
+> > > > > > issues the VIDIOC_STREAMOFF ioctl, uvc_video_enable() invokes
+> > > > > > usb_ep_dequeue() to ensure that all requests have been cancelle=
+d.
+> > > > >=20
+> > > > > bug is on uvc gadget, then. Laurent ?
+> > >=20
+> > > We've discussed this topic a couple of months before. I believe that'=
+s not
+> > > a bug.
+> > >=20
+> > > http://68.183.106.108/lists/linux-usb/msg68869.html
+> >=20
+> > fair enough :-)
+> >=20
+> > That's a different case, however. At the link above we're discussing
+> > dequeueing a request which is already being dequeued. $SUBJECT is trying
+> > to fix dequeueing of a request for an endpoint which isn't even enabled.
+>=20
+> You've got a point there :-) That's a different case indeed, I'm open to =
+(at=20
+> least evaluating) a fix in the UVC gadget driver if you think that's bett=
+er.
 
-/*
- * The file format supports up to 16 active logs, which should be
- * more than enough for future optimizations. The implementation
- * currently uses no more than 6 logs.
- * Half the logs are used for nodes, the other half are used for data.
- */
+I _do_ think that's better. If the endpoint isn't even enabled, why are
+you trying to dequeue a request ? :-)
 
+cheers
 
-	Arnd
+--=20
+balbi
+
+--J5MfuwkIyy7RmF4Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQikZ4AAoJEIaOsuA1yqRE3+0P/i23khVOl6XHW6nheK2QsTTh
+vljymPE3/DjIF0gpSo3CmE/iJI2Rfv3WLOppfiTZLz8tPsidyJ81D6A43fIUFqbn
+LRt8LGmsYmXHivetORjmkbn9tY5Bq8FwwS2HCTrxMKArhhMo3heTohNAfPMv3+F7
+pGnbFpci5GabUygU2OOZnxZKNmAcA3+yYtfGV3PIDsx3Kws+O44OBF4AM3X1F5cw
+irIbPAGiMMsJp4siSWnTjQRRHI7S64M5n8DE494DrnqEP0lLeeIZ72x8ETndZ4N2
+dmuE8nPf63F4UoGV+UeOjej2xgzLOJ4DOzBJeBAJVefb2VMb7n+RCdncNyLv6Hrq
+98NkJDTc1D1C91+KMMl4tkIY4Ji2M1/po9XUfhvWNl8CzHYO380wYqUCOqhIQ2sK
+0MhNVJ1kgeAIA5rywyOsX84ZCo3LnCrTZkq95rhG2PKwgZiPlMju1XSVUyxXLepm
+X/8mtnDuo1Kw3u86/EZ49d99VH53nsYso5blBgC4sJ/YEVeEkSZSzbAhWA86K2Gk
+ezftfTCyfvV2w4VbL8sw06g1gYzD2ExYNyV35zunjr/ioEOoPKK5mBz31f+gnZc4
+Fis0rHCmukzgn8Oj+DU4j/pQ7hD0bXUvsGbhSF/6ekL7/2/a7rgkmN/ZMuuwGb5Z
+x3XcZZMgzC1FE7y1rsP/
+=vNTh
+-----END PGP SIGNATURE-----
+
+--J5MfuwkIyy7RmF4Q--
