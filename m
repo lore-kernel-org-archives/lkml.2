@@ -1,173 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab2JZMWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:22:30 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:36926 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932490Ab2JZMW3 (ORCPT
+	id S932595Ab2JZM3n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:29:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42278 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758586Ab2JZM3l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:22:29 -0400
-Date: Fri, 26 Oct 2012 10:22:19 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: =?utf-8?B?0JTQvNC40YLRgNC40Lkg0JvQtdC+0L3RgtGM0LXQsg==?= 
-	<dm.leontiev7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        dleontie@amd.com, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: procfs does not return error code when file name is already in
- use
-Message-ID: <20121026122219.GC17909@oc0268524204.ibm.com>
-References: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102612-1524-0000-0000-0000042D27CC
+	Fri, 26 Oct 2012 08:29:41 -0400
+Message-ID: <1351254553.16863.52.camel@twins>
+Subject: Re: [RFC PATCH 00/13] sched: Integrating Per-entity-load-tracking
+ with the core scheduler
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        venki@google.com, robin.randhawa@arm.com, linaro-dev@lists.linaro.org,
+        mjg59@srcf.ucam.org, viresh.kumar@linaro.org,
+        akpm@linux-foundation.org, amit.kucheria@linaro.org,
+        deepthi@linux.vnet.ibm.com, paul.mckenney@linaro.org,
+        arjan@linux.intel.com, paulmck@linux.vnet.ibm.com,
+        srivatsa.bhat@linux.vnet.ibm.com, vincent.guittot@linaro.org,
+        tglx@linutronix.de, Arvind.Chauhan@arm.com, pjt@google.com,
+        Morten.Rasmussen@arm.com, linux-arm-kernel@lists.infradead.org,
+        suresh.b.siddha@intel.com
+Date: Fri, 26 Oct 2012 14:29:13 +0200
+In-Reply-To: <50898118.1050402@linux.vnet.ibm.com>
+References: <20121025102045.21022.92489.stgit@preeti.in.ibm.com>
+	 <1351180603.12171.31.camel@twins> <50898118.1050402@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 01:57:43PM +0400, Дмитрий Леонтьев wrote:
-> I'm working a kernel module, and one of my tasks is to disallow a
-> process to open my character device(/dev/xxx) more than once. I tried
-> to solve this problem by creating /proc/apu directory, and creating a
-> /proc/xxx/{pid} file for when process opens /dev/xxx. This file will
-> act as per-process mutex, and provide a way to control resource usage.
+On Thu, 2012-10-25 at 23:42 +0530, Preeti U Murthy wrote:
+
+> > Do explain..
+> > 
+> Let me see if I get what you are saying here right.You want to replace
+> for example cfs_rq->load.weight with a saner metric because it does not
+> consider the run time of the sched entities queued on it,merely their
+> priorities.If this is right,in this patchset I believe
+> cfs_rq->runnable_load_avg would be that right metric because it
+> considers the run time of the sched entities queued on it.
+
+firstly, cfs_rq is the wrong place for a per-cpu load measure, secondly
+why add another load field instead of fixing the one we have? 
+
+> So why didnt I replace? I added cfs_rq->runnable_load_avg as an
+> additional metric instead of replacing the older metric.I let the old
+> metric be as a dead metric and used the newer metric as an
+> alternative.so if this alternate metric does not do us good we have the
+> old metric to fall back on.
+
+That's wrong.. either it works and we can apply the patches or it
+doesn't and we won't. What you did makes it very hard to see you
+preserve the current balancer -- which afaict you don't, you change the
+balancer with the very first patch.
+
+Why not update weighted_cpuload(), update_idle_cpu_load() and
+update_cpu_load_active() to use another metric and go from there. If you
+do that the whole balancer will auto-magically use the new weight
+measure.
+
+Once you have that running, you can look at modifying it.
+
+> > At best they mention what you're doing, not why and how.
+> So the above explains *what* I am doing.
 > 
-> Then, I investigated,if procfs acts as I expect from it, and found
-> that procfs checks file names for uniqueness, but does not return an
-> error when I add two files with same name. Instead, it posts silly
-> messages to kernel log, and adds new entry as if nothing happened.
-> This is a vulnerability:
+> *How* am i doing it: Everywhere the scheduler needs to make a decision on:
 > 
-> Let we have 2 modules A and B trying to create file /proc/foo on load,
-> and removing it on unload. Load A, Load B, unload B. at step 3 B
-> removed /proc/foo owned by A, and /proc/foo created by B remains
-> accessible from userspace.
+>  a.find_busiest_group/find_idlest_group/update_sg_lb_stats:use sum of
+> cfs_rq->runnable_load_avg to decide this instead of sum of
+> cfs_rq->load.weight.
+
+But the first patches are about adding new balancing conditions, that's
+a complete fail..
+
+>  b.find_busiest_queue/find_idlest_queue: use cfs_rq->runnable_load_avg
+> to decide this instead of cfs_rq->load.weight
+
+See, if you would have changed the input function (weighted_cpuload),
+you wouldn't have needed to touch any of this.
+
+>  c.move_tasks: use se->avg.load_avg_contrib to decide the weight of of
+> each task instead of se->load.weight as the former reflects the runtime
+> of the sched entity and hence its actual load.
+
+The changelog in that patch (7) is completely devoid of any useful
+information.
+
+> This is what my patches3-13 do.Merely *Replace*.
 > 
-> My patch fixes this behaviour: proc_register will return -EEXIST when
-> file name is in use, and refuse to add a duplicate.
+> *Why am I doing it*: Feed the load balancer with a more realistic metric
+> to do load balancing and observe the consequences.
+
+I know why you're doing the entire thing, but you fail to motivate each
+individual change. A changelog should read something like:
+
+  current code does blah, this has a problem when blah, we can improve
+this doing blah because blah.
+
+
+
+> > you start out by some weird avoid short running task movement.
+> > why is that a good start?
 > 
-> ----start of patch for fs/proc/generic.c---------------------------------------
-> --- generic.c.orig	2012-10-25 22:20:05.196606263 +0400
-> +++ generic.c	2012-10-25 22:13:49.556955392 +0400
-> @@ -554,45 +554,51 @@ static const struct inode_operations pro
-> 
+> The short running tasks are not really burdening you,they have very
+> little run time,so why move them?
 
-You just push a lot of code a level deep, without any need, and don't
-handle your error path properly.
+The most important part is why this would be a good start to the series,
+it is not.
 
->  static int proc_register(struct proc_dir_entry * dir, struct
-> proc_dir_entry * dp)
->  {
-> +	int errorcode=-EAGAIN;
+The patch is also dubious at best; short running might be all you have,
+your definition of 'short' is also iffy.
 
-You have lots of coding style problems like this. Please use spaces
-before and after =, like this:
+> Throughout the concept of load balancing the focus is on *balancing the
+> *existing* load* between the sched groups.But not really evaluating the
+> *absolute load* of any given sched group.
 
-	int errorcode = -EAGAIN;
+Which is why you're going to change the metrics.. the balancer really
+only cares about making load equal, flipping the metric of the load
+doesn't change anything fundamental.
 
->  	unsigned int i;
->  	struct proc_dir_entry *tmp;
->  	
->  	i = get_inode_number();
-> -	if (i == 0)
-> -		return -EAGAIN;
+> Why is this *the start*? This is like a round of elimination before the
+> actual interview round  Try to have only those sched groups as
+> candidates for load balancing that are sufficiently loaded.[Patch1]
+> This *sufficiently loaded* is decided by the new metric explained in the
+> *How* above.
 
-You must use release_inode_number if you go into the error path. If you
-want to distinguish between this error path and the -EEXIST one, you'd
-better keep this as it is. Just return the error here and don't do the
-extra indentation.
+No, this is absolutely wrong.
 
-> -	dp->low_ino = i;
-> -
-> -	if (S_ISDIR(dp->mode)) {
-> -		if (dp->proc_iops == NULL) {
-> -			dp->proc_fops = &proc_dir_operations;
-> -			dp->proc_iops = &proc_dir_inode_operations;
-> +	if (i != 0)
-> +	{
-> +		errorcode=0;
-> +
-> +		dp->low_ino = i;
-> +
-> +		if (S_ISDIR(dp->mode)) {
-> +			if (dp->proc_iops == NULL) {
-> +				dp->proc_fops = &proc_dir_operations;
-> +				dp->proc_iops = &proc_dir_inode_operations;
-> +			}
-> +			dir->nlink++;
 
-Same here. You must undo the extra link, if you go through an error
-path.
+So a sane series would introduce maybe two functions: cpu_load() and
+task_load() and use those where we now use rq->load.weight and
+p->se.load.weight for load balancing purposes. Implement these functions
+using those two expression. So effectively this patch is a NOP.
 
-> +		} else if (S_ISLNK(dp->mode)) {
-> +			if (dp->proc_iops == NULL)
-> +				dp->proc_iops = &proc_link_inode_operations;
-> +		} else if (S_ISREG(dp->mode)) {
-> +			if (dp->proc_fops == NULL)
-> +				dp->proc_fops = &proc_file_operations;
-> +			if (dp->proc_iops == NULL)
-> +				dp->proc_iops = &proc_file_inode_operations;
->  		}
-> -		dir->nlink++;
-> -	} else if (S_ISLNK(dp->mode)) {
-> -		if (dp->proc_iops == NULL)
-> -			dp->proc_iops = &proc_link_inode_operations;
-> -	} else if (S_ISREG(dp->mode)) {
-> -		if (dp->proc_fops == NULL)
-> -			dp->proc_fops = &proc_file_operations;
-> -		if (dp->proc_iops == NULL)
-> -			dp->proc_iops = &proc_file_inode_operations;
-> -	}
-> 
-> -	spin_lock(&proc_subdir_lock);
-> +		spin_lock(&proc_subdir_lock);
-> 
-> -	for (tmp = dir->subdir; tmp; tmp = tmp->next)
-> -		if (strcmp(tmp->name, dp->name) == 0) {
-> -			WARN(1, KERN_WARNING "proc_dir_entry '%s/%s' already registered\n",
-> -				dir->name, dp->name);
-> -			break;
+Secondly, switch these two functions over to the per-task based
+averages.
 
-Please, keep the warning. In my experience, it points out to real bugs
-in new code.
+Tada! all done. The load balancer will then try and equalize effective
+load instead of instant load.
 
-> +		for (tmp = dir->subdir; tmp; tmp = tmp->next)
-> +		{
-> +			if (strcmp(tmp->name, dp->name) == 0) {
-> +				errorcode=-EEXIST;
-> +				break;
-> +			}
->  		}
-> -
-> -	dp->next = dir->subdir;
-> -	dp->parent = dir;
-> -	dir->subdir = dp;
-> -	spin_unlock(&proc_subdir_lock);
-> -
-> -	return 0;
-> +		if(!errorcode)
-> +		{
-> +			dp->next = dir->subdir;
-> +			dp->parent = dir;
-> +			dir->subdir = dp;
-> +		}
-> +		spin_unlock(&proc_subdir_lock);
-> +	}
-> +	return errorcode;
->  }
-> 
->  static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
-> ----end of patch---------------------------------------
-> 
-> Regards
-> Dmitry
-> --
+It will do the 3x10% vs 100% thing correctly with just those two
+patches. Simply because it will report a lower cpu-load for the 3x10%
+case than it will for the 100% case, no need to go fudge about in the
+load-balance internals.
 
-Regards.
-Cascardo.
+Once you've got this correctly done, you can go change balancing to
+better utilize the new metric, like use the effective load instead of
+nr_running against the capacity and things like that. But for every such
+change you want to be very careful and run all the benchmarks you can
+find -- in fact you want to do that after the 2nd patch too.
+
 
