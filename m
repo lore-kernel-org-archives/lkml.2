@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab2JZAIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:08:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54205 "EHLO mail.kernel.org"
+	id S1754858Ab2JZAIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:45 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54183 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab2JZAIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:46 -0400
+	id S1754829Ab2JZAIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: [ 80/85] tcp: resets are misrouted
-Date: Thu, 25 Oct 2012 17:06:38 -0700
-Message-Id: <20121026000039.155256273@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 84/85] sparc64: Fix bit twiddling in sparc_pmu_enable_event().
+Date: Thu, 25 Oct 2012 17:06:42 -0700
+Message-Id: <20121026000039.546566557@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,65 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 4c67525849e0b7f4bd4fab2487ec9e43ea52ef29 ]
+[ Upstream commit e793d8c6740f8fe704fa216e95685f4d92c4c4b9 ]
 
-After commit e2446eaa ("tcp_v4_send_reset: binding oif to iif in no
-sock case").. tcp resets are always lost, when routing is asymmetric.
-Yes, backing out that patch will result in misrouting of resets for
-dead connections which used interface binding when were alive, but we
-actually cannot do anything here.  What's died that's died and correct
-handling normal unbound connections is obviously a priority.
+There was a serious disconnect in the logic happening in
+sparc_pmu_disable_event() vs. sparc_pmu_enable_event().
 
-Comment to comment:
-> This has few benefits:
->   1. tcp_v6_send_reset already did that.
+Event disable is implemented by programming a NOP event into the PCR.
 
-It was done to route resets for IPv6 link local addresses. It was a
-mistake to do so for global addresses. The patch fixes this as well.
+However, event enable was not reversing this operation.  Instead, it
+was setting the User/Priv/Hypervisor trace enable bits.
 
-Actually, the problem appears to be even more serious than guaranteed
-loss of resets.  As reported by Sergey Soloviev <sol@eqv.ru>, those
-misrouted resets create a lot of arp traffic and huge amount of
-unresolved arp entires putting down to knees NAT firewalls which use
-asymmetric routing.
+That's not sparc_pmu_enable_event()'s job, that's what
+sparc_pmu_enable() and sparc_pmu_disable() do .
 
-Signed-off-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+The intent of sparc_pmu_enable_event() is clear, since it first clear
+out the event type encoding field.  So fix this by OR'ing in the event
+encoding rather than the trace enable bits.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_ipv4.c |    7 ++++---
- net/ipv6/tcp_ipv6.c |    3 ++-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/perf_event.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -693,10 +693,11 @@ static void tcp_v4_send_reset(struct soc
- 	arg.csumoffset = offsetof(struct tcphdr, check) / 2;
- 	arg.flags = (sk && inet_sk(sk)->transparent) ? IP_REPLY_ARG_NOSRCCHECK : 0;
- 	/* When socket is gone, all binding information is lost.
--	 * routing might fail in this case. using iif for oif to
--	 * make sure we can deliver it
-+	 * routing might fail in this case. No choice here, if we choose to force
-+	 * input interface, we will misroute in case of asymmetric route.
- 	 */
--	arg.bound_dev_if = sk ? sk->sk_bound_dev_if : inet_iif(skb);
-+	if (sk)
-+		arg.bound_dev_if = sk->sk_bound_dev_if;
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -557,11 +557,13 @@ static u64 nop_for_index(int idx)
  
- 	net = dev_net(skb_dst(skb)->dev);
- 	arg.tos = ip_hdr(skb)->tos;
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -863,7 +863,8 @@ static void tcp_v6_send_response(struct
- 	__tcp_v6_send_check(buff, &fl6.saddr, &fl6.daddr);
+ static inline void sparc_pmu_enable_event(struct cpu_hw_events *cpuc, struct hw_perf_event *hwc, int idx)
+ {
+-	u64 val, mask = mask_for_index(idx);
++	u64 enc, val, mask = mask_for_index(idx);
++
++	enc = perf_event_get_enc(cpuc->events[idx]);
  
- 	fl6.flowi6_proto = IPPROTO_TCP;
--	fl6.flowi6_oif = inet6_iif(skb);
-+	if (ipv6_addr_type(&fl6.daddr) & IPV6_ADDR_LINKLOCAL)
-+		fl6.flowi6_oif = inet6_iif(skb);
- 	fl6.fl6_dport = t1->dest;
- 	fl6.fl6_sport = t1->source;
- 	security_skb_classify_flow(skb, flowi6_to_flowi(&fl6));
+ 	val = cpuc->pcr;
+ 	val &= ~mask;
+-	val |= hwc->config;
++	val |= event_encoding(enc, idx);
+ 	cpuc->pcr = val;
+ 
+ 	pcr_ops->write(cpuc->pcr);
 
 
