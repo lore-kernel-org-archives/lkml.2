@@ -1,65 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933049Ab2JZNzB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:55:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab2JZNy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:54:59 -0400
-Date: Fri, 26 Oct 2012 15:00:07 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH 4/5] perf tools: Always show CHK message when doing try-cc
-Message-ID: <20121026130007.GB1067@krava.brq.redhat.com>
-References: <1351241752-2919-1-git-send-email-namhyung@kernel.org>
- <1351241752-2919-4-git-send-email-namhyung@kernel.org>
+	id S933087Ab2JZNz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:55:58 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:59030 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab2JZNz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:55:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351241752-2919-4-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1351187283-20715-4-git-send-email-fweisbec@gmail.com>
+References: <1351187283-20715-1-git-send-email-fweisbec@gmail.com>
+	<1351187283-20715-4-git-send-email-fweisbec@gmail.com>
+Date: Fri, 26 Oct 2012 15:55:55 +0200
+Message-ID: <CAFTL4hyA6sO9TREDLBeh3vbm6+if37Qv3Ex=hKcB07pb1ckf7w@mail.gmail.com>
+Subject: Re: [PATCH 3/5] kvm: Directly account vtime to system on guest switch
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, Alexander Graf <agraf@suse.de>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 05:55:51PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> It might be useful to see what's happening behind us rather than just
-> waiting few seconds during the config checking.
+(Adding  Christian Borntraeger in Cc)
 
-Do we want to see all that within just simple 'make'
-also in case nothing gets rebuilt? It seems noisy..
-
-
-[jolsa@krava perf]$ make
-    CHK -fstack-protector-all
-    CHK -Wstack-protector
-    CHK -Wvolatile-register-var
-    CHK bionic
-    CHK libelf
-    CHK libdw
-    CHK libunwind
-    CHK -DLIBELF_MMAP
-    CHK libaudit
-    CHK libnewt
-    CHK gtk2
-Makefile:608: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
-    CHK perl
-    CHK python
-    CHK python version
-    CHK libbfd
-    CHK -DHAVE_STRLCPY
-    CHK -DHAVE_ON_EXIT
-    CHK -DBACKTRACE_SUPPORT
-    SUBDIR ../lib/traceevent/
-    LINK perf
-
-hum, also not sure why's there ^^^ the final LINK for no change rebuild..
-
-jirka
+2012/10/25 Frederic Weisbecker <fweisbec@gmail.com>:
+> Switching to or from guest context is done on ioctl context.
+> So by the time we call kvm_guest_enter() or kvm_guest_exit()
+> we know we are not running the idle task.
+>
+> As a result, we can directly account the cputime using
+> vtime_account_system().
+>
+> There are two good reasons to do this:
+>
+> * We avoid some useless checks on guest switch. It optimizes
+> a bit this fast path.
+>
+> * In the case of CONFIG_IRQ_TIME_ACCOUNTING, calling vtime_account()
+> checks for irq time to account. This is pointless since we know
+> we are not in an irq on guest switch. This is wasting cpu cycles
+> for no good reason. vtime_account_system() OTOH is a no-op in
+> this config option.
+>
+> * We can remove the irq disable/enable around kvm guest switch in s390.
+>
+> A further optimization may consist in introducing a vtime_account_guest()
+> that directly calls account_guest_time().
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Joerg Roedel <joerg.roedel@amd.com>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Xiantao Zhang <xiantao.zhang@intel.com>
+> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> Cc: Cornelia Huck <cornelia.huck@de.ibm.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> ---
+>  arch/s390/kvm/kvm-s390.c |    4 ----
+>  include/linux/kvm_host.h |   12 ++++++++++--
+>  2 files changed, 10 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+> index ecced9d..d91a955 100644
+> --- a/arch/s390/kvm/kvm-s390.c
+> +++ b/arch/s390/kvm/kvm-s390.c
+> @@ -608,9 +608,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>                 kvm_s390_deliver_pending_interrupts(vcpu);
+>
+>         vcpu->arch.sie_block->icptcode = 0;
+> -       local_irq_disable();
+>         kvm_guest_enter();
+> -       local_irq_enable();
+>         VCPU_EVENT(vcpu, 6, "entering sie flags %x",
+>                    atomic_read(&vcpu->arch.sie_block->cpuflags));
+>         trace_kvm_s390_sie_enter(vcpu,
+> @@ -629,9 +627,7 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
+>         VCPU_EVENT(vcpu, 6, "exit sie icptcode %d",
+>                    vcpu->arch.sie_block->icptcode);
+>         trace_kvm_s390_sie_exit(vcpu, vcpu->arch.sie_block->icptcode);
+> -       local_irq_disable();
+>         kvm_guest_exit();
+> -       local_irq_enable();
+>
+>         memcpy(&vcpu->run->s.regs.gprs[14], &vcpu->arch.sie_block->gg14, 16);
+>         return rc;
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index 93bfc9f..0e2212f 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -737,7 +737,11 @@ static inline int kvm_deassign_device(struct kvm *kvm,
+>  static inline void kvm_guest_enter(void)
+>  {
+>         BUG_ON(preemptible());
+> -       vtime_account(current);
+> +       /*
+> +        * This is running in ioctl context so we can avoid
+> +        * the call to vtime_account() with its unnecessary idle check.
+> +        */
+> +       vtime_account_system(current);
+>         current->flags |= PF_VCPU;
+>         /* KVM does not hold any references to rcu protected data when it
+>          * switches CPU into a guest mode. In fact switching to a guest mode
+> @@ -751,7 +755,11 @@ static inline void kvm_guest_enter(void)
+>
+>  static inline void kvm_guest_exit(void)
+>  {
+> -       vtime_account(current);
+> +       /*
+> +        * This is running in ioctl context so we can avoid
+> +        * the call to vtime_account() with its unnecessary idle check.
+> +        */
+> +       vtime_account_system(current);
+>         current->flags &= ~PF_VCPU;
+>  }
+>
+> --
+> 1.7.5.4
+>
