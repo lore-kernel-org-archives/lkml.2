@@ -1,111 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab2JZAV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:21:56 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:32876 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab2JZAVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:21:53 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        Frank Mori Hess <fmhess@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH v4] staging/comedi: Use pr_ or dev_ printks in drivers/gsc_hpdi.c
-Date: Fri, 26 Oct 2012 09:21:45 +0900
-Message-Id: <1351210905-20366-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121025192430.GA26555@kroah.com>
-References: <20121025192430.GA26555@kroah.com>
+	id S1755352Ab2JZAWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:22:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53649 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754307Ab2JZAHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 36/85] USB: cypress_m8: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:54 -0700
+Message-Id: <20121026000034.742990205@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warning.
-- WARNING: Prefer netdev_warn(netdev, ... then dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-some of them have been replaced by dev_dbg.
+------------------
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
+
+commit 5c1a0f418d8d985f3a62849bcac43fc5404cc592 upstream.
+
+Fix port-data memory leak by replacing attach and release with
+port_probe and port_remove.
+
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
+
+Compile-only tested.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/staging/comedi/drivers/gsc_hpdi.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/usb/serial/cypress_m8.c |   82 ++++++++++++++++++++--------------------
+ 1 file changed, 41 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
-index 17aec51..4809295 100644
---- a/drivers/staging/comedi/drivers/gsc_hpdi.c
-+++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
-@@ -479,7 +479,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int i;
- 	int retval;
+--- a/drivers/usb/serial/cypress_m8.c
++++ b/drivers/usb/serial/cypress_m8.c
+@@ -124,10 +124,10 @@ struct cypress_private {
+ };
  
--	printk(KERN_WARNING "comedi%d: gsc_hpdi\n", dev->minor);
-+	dev_dbg(dev->class_dev, "gsc_hpdi\n");
+ /* function prototypes for the Cypress USB to serial device */
+-static int  cypress_earthmate_startup(struct usb_serial *serial);
+-static int  cypress_hidcom_startup(struct usb_serial *serial);
+-static int  cypress_ca42v2_startup(struct usb_serial *serial);
+-static void cypress_release(struct usb_serial *serial);
++static int  cypress_earthmate_port_probe(struct usb_serial_port *port);
++static int  cypress_hidcom_port_probe(struct usb_serial_port *port);
++static int  cypress_ca42v2_port_probe(struct usb_serial_port *port);
++static int  cypress_port_remove(struct usb_serial_port *port);
+ static int  cypress_open(struct tty_struct *tty, struct usb_serial_port *port);
+ static void cypress_close(struct usb_serial_port *port);
+ static void cypress_dtr_rts(struct usb_serial_port *port, int on);
+@@ -157,8 +157,8 @@ static struct usb_serial_driver cypress_
+ 	.description =			"DeLorme Earthmate USB",
+ 	.id_table =			id_table_earthmate,
+ 	.num_ports =			1,
+-	.attach =			cypress_earthmate_startup,
+-	.release =			cypress_release,
++	.port_probe =			cypress_earthmate_port_probe,
++	.port_remove =			cypress_port_remove,
+ 	.open =				cypress_open,
+ 	.close =			cypress_close,
+ 	.dtr_rts =			cypress_dtr_rts,
+@@ -183,8 +183,8 @@ static struct usb_serial_driver cypress_
+ 	.description =			"HID->COM RS232 Adapter",
+ 	.id_table =			id_table_cyphidcomrs232,
+ 	.num_ports =			1,
+-	.attach =			cypress_hidcom_startup,
+-	.release =			cypress_release,
++	.port_probe =			cypress_hidcom_port_probe,
++	.port_remove =			cypress_port_remove,
+ 	.open =				cypress_open,
+ 	.close =			cypress_close,
+ 	.dtr_rts =			cypress_dtr_rts,
+@@ -209,8 +209,8 @@ static struct usb_serial_driver cypress_
+ 	.description =			"Nokia CA-42 V2 Adapter",
+ 	.id_table =			id_table_nokiaca42v2,
+ 	.num_ports =			1,
+-	.attach =			cypress_ca42v2_startup,
+-	.release =			cypress_release,
++	.port_probe =			cypress_ca42v2_port_probe,
++	.port_remove =			cypress_port_remove,
+ 	.open =				cypress_open,
+ 	.close =			cypress_close,
+ 	.dtr_rts =			cypress_dtr_rts,
+@@ -437,10 +437,10 @@ static void cypress_set_dead(struct usb_
+  *****************************************************************************/
  
- 	devpriv = kzalloc(sizeof(*devpriv), GFP_KERNEL);
- 	if (!devpriv)
-@@ -510,17 +510,17 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		} while (pcidev != NULL);
+ 
+-static int generic_startup(struct usb_serial *serial)
++static int cypress_generic_port_probe(struct usb_serial_port *port)
+ {
++	struct usb_serial *serial = port->serial;
+ 	struct cypress_private *priv;
+-	struct usb_serial_port *port = serial->port[0];
+ 
+ 	priv = kzalloc(sizeof(struct cypress_private), GFP_KERNEL);
+ 	if (!priv)
+@@ -489,15 +489,17 @@ static int generic_startup(struct usb_se
+ }
+ 
+ 
+-static int cypress_earthmate_startup(struct usb_serial *serial)
++static int cypress_earthmate_port_probe(struct usb_serial_port *port)
+ {
++	struct usb_serial *serial = port->serial;
+ 	struct cypress_private *priv;
+-	struct usb_serial_port *port = serial->port[0];
++	int ret;
+ 
+-	if (generic_startup(serial)) {
++	ret = cypress_generic_port_probe(port);
++	if (ret) {
+ 		dbg("%s - Failed setting up port %d", __func__,
+ 				port->number);
+-		return 1;
++		return ret;
  	}
- 	if (dev->board_ptr == NULL) {
--		printk(KERN_WARNING "gsc_hpdi: no hpdi card found\n");
-+		dev_warn(dev->class_dev, "no hpdi card found\n");
- 		return -EIO;
+ 
+ 	priv = usb_get_serial_port_data(port);
+@@ -517,54 +519,52 @@ static int cypress_earthmate_startup(str
  	}
  
--	printk(KERN_WARNING
--	       "gsc_hpdi: found %s on bus %i, slot %i\n", board(dev)->name,
--	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-+	dev_warn(dev->class_dev,
-+		 "found %s on bus %i, slot %i\n", board(dev)->name,
-+		 pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+ 	return 0;
+-} /* cypress_earthmate_startup */
+-
++}
  
- 	if (comedi_pci_enable(pcidev, dev->driver->driver_name)) {
--		printk(KERN_WARNING
--		       " failed enable PCI device and request regions\n");
-+		dev_warn(dev->class_dev,
-+			 "failed enable PCI device and request regions\n");
- 		return -EIO;
- 	}
- 	pci_set_master(pcidev);
-@@ -541,7 +541,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	    ioremap(devpriv->hpdi_phys_iobase,
- 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
- 	if (!devpriv->plx9080_iobase || !devpriv->hpdi_iobase) {
--		printk(KERN_WARNING " failed to remap io memory\n");
-+		dev_warn(dev->class_dev, "failed to remap io memory\n");
- 		return -ENOMEM;
+-static int cypress_hidcom_startup(struct usb_serial *serial)
++static int cypress_hidcom_port_probe(struct usb_serial_port *port)
+ {
+ 	struct cypress_private *priv;
++	int ret;
+ 
+-	if (generic_startup(serial)) {
+-		dbg("%s - Failed setting up port %d", __func__,
+-				serial->port[0]->number);
+-		return 1;
++	ret = cypress_generic_port_probe(port);
++	if (ret) {
++ 		dev_dbg(&port->dev, "%s - Failed setting up port\n", __func__);
++		return ret;
  	}
  
-@@ -553,13 +553,13 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	/*  get irq */
- 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
- 			dev->driver->driver_name, dev)) {
--		printk(KERN_WARNING
--		       " unable to allocate irq %u\n", pcidev->irq);
-+		dev_warn(dev->class_dev,
-+			 "unable to allocate irq %u\n", pcidev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = pcidev->irq;
+-	priv = usb_get_serial_port_data(serial->port[0]);
++	priv = usb_get_serial_port_data(port);
+ 	priv->chiptype = CT_CYPHIDCOM;
  
--	printk(KERN_WARNING " irq %u\n", dev->irq);
-+	dev_dbg(dev->class_dev, " irq %u\n", dev->irq);
+ 	return 0;
+-} /* cypress_hidcom_startup */
+-
++}
  
- 	/*  allocate pci dma buffers */
- 	for (i = 0; i < NUM_DMA_BUFFERS; i++) {
-@@ -577,8 +577,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 						   &devpriv->
- 						   dma_desc_phys_addr);
- 	if (devpriv->dma_desc_phys_addr & 0xf) {
--		printk(KERN_WARNING
--		       " dma descriptors not quad-word aligned (bug)\n");
-+		dev_warn(dev->class_dev,
-+			 " dma descriptors not quad-word aligned (bug)\n");
- 		return -EIO;
+-static int cypress_ca42v2_startup(struct usb_serial *serial)
++static int cypress_ca42v2_port_probe(struct usb_serial_port *port)
+ {
+ 	struct cypress_private *priv;
++	int ret;
+ 
+-	if (generic_startup(serial)) {
+-		dbg("%s - Failed setting up port %d", __func__,
+-				serial->port[0]->number);
+-		return 1;
++	ret = cypress_generic_port_probe(port);
++	if (ret) {
++ 		dev_dbg(&port->dev, "%s - Failed setting up port\n", __func__);
++		return ret;
  	}
  
--- 
-1.7.9.5
+-	priv = usb_get_serial_port_data(serial->port[0]);
++	priv = usb_get_serial_port_data(port);
+ 	priv->chiptype = CT_CA42V2;
+ 
+ 	return 0;
+-} /* cypress_ca42v2_startup */
+-
++}
+ 
+-static void cypress_release(struct usb_serial *serial)
++static int cypress_port_remove(struct usb_serial_port *port)
+ {
+ 	struct cypress_private *priv;
+ 
+-	/* all open ports are closed at this point */
+-	priv = usb_get_serial_port_data(serial->port[0]);
++	priv = usb_get_serial_port_data(port);
+ 
+-	if (priv) {
+-		kfifo_free(&priv->write_fifo);
+-		kfree(priv);
+-	}
++	kfifo_free(&priv->write_fifo);
++	kfree(priv);
++
++	return 0;
+ }
+ 
+ 
+
 
