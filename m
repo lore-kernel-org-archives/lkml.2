@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab2JZARQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:17:16 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53884 "EHLO mail.kernel.org"
+	id S1755204Ab2JZARe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:17:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53870 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab2JZAIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:14 -0400
+	id S1754518Ab2JZAIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [ 53/85] pinctrl: tegra: correct bank for pingroup and drv pingroup
-Date: Thu, 25 Oct 2012 17:06:11 -0700
-Message-Id: <20121026000036.452359828@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 52/85] Revert "cgroup: Drop task_lock(parent) on cgroup_fork()"
+Date: Thu, 25 Oct 2012 17:06:10 -0700
+Message-Id: <20121026000036.356079318@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,79 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pritesh Raithatha <praithatha@nvidia.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit a03690e44468dcd3088f6600ab036d17bd2130ff upstream.
+commit 9bb71308b8133d643648776243e4d5599b1c193d upstream.
 
-Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
-Acked-by: Stephen Warren <swarren@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This reverts commit 7e381b0eb1e1a9805c37335562e8dc02e7d7848c.
+
+The commit incorrectly assumed that fork path always performed
+threadgroup_change_begin/end() and depended on that for
+synchronization against task exit and cgroup migration paths instead
+of explicitly grabbing task_lock().
+
+threadgroup_change is not locked when forking a new process (as
+opposed to a new thread in the same process) and even if it were it
+wouldn't be effective as different processes use different threadgroup
+locks.
+
+Revert the incorrect optimization.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+LKML-Reference: <20121008020000.GB2575@localhost>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Bitterly-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pinctrl/pinctrl-tegra30.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ kernel/cgroup.c |   23 ++++++-----------------
+ 1 file changed, 6 insertions(+), 17 deletions(-)
 
---- a/drivers/pinctrl/pinctrl-tegra30.c
-+++ b/drivers/pinctrl/pinctrl-tegra30.c
-@@ -3345,10 +3345,10 @@ static const struct tegra_function tegra
- 	FUNCTION(vi_alt3),
- };
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4694,31 +4694,20 @@ static const struct file_operations proc
+  *
+  * A pointer to the shared css_set was automatically copied in
+  * fork.c by dup_task_struct().  However, we ignore that copy, since
+- * it was not made under the protection of RCU, cgroup_mutex or
+- * threadgroup_change_begin(), so it might no longer be a valid
+- * cgroup pointer.  cgroup_attach_task() might have already changed
+- * current->cgroups, allowing the previously referenced cgroup
+- * group to be removed and freed.
+- *
+- * Outside the pointer validity we also need to process the css_set
+- * inheritance between threadgoup_change_begin() and
+- * threadgoup_change_end(), this way there is no leak in any process
+- * wide migration performed by cgroup_attach_proc() that could otherwise
+- * miss a thread because it is too early or too late in the fork stage.
++ * it was not made under the protection of RCU or cgroup_mutex, so
++ * might no longer be a valid cgroup pointer.  cgroup_attach_task() might
++ * have already changed current->cgroups, allowing the previously
++ * referenced cgroup group to be removed and freed.
+  *
+  * At the point that cgroup_fork() is called, 'current' is the parent
+  * task, and the passed argument 'child' points to the child task.
+  */
+ void cgroup_fork(struct task_struct *child)
+ {
+-	/*
+-	 * We don't need to task_lock() current because current->cgroups
+-	 * can't be changed concurrently here. The parent obviously hasn't
+-	 * exited and called cgroup_exit(), and we are synchronized against
+-	 * cgroup migration through threadgroup_change_begin().
+-	 */
++	task_lock(current);
+ 	child->cgroups = current->cgroups;
+ 	get_css_set(child->cgroups);
++	task_unlock(current);
+ 	INIT_LIST_HEAD(&child->cg_list);
+ }
  
--#define MUXCTL_REG_A	0x3000
--#define PINGROUP_REG_A	0x868
-+#define DRV_PINGROUP_REG_A	0x868	/* bank 0 */
-+#define PINGROUP_REG_A		0x3000	/* bank 1 */
- 
--#define PINGROUP_REG_Y(r) ((r) - MUXCTL_REG_A)
-+#define PINGROUP_REG_Y(r) ((r) - PINGROUP_REG_A)
- #define PINGROUP_REG_N(r) -1
- 
- #define PINGROUP(pg_name, f0, f1, f2, f3, f_safe, r, od, ior)	\
-@@ -3364,25 +3364,25 @@ static const struct tegra_function tegra
- 		},						\
- 		.func_safe = TEGRA_MUX_ ## f_safe,		\
- 		.mux_reg = PINGROUP_REG_Y(r),			\
--		.mux_bank = 0,					\
-+		.mux_bank = 1,					\
- 		.mux_bit = 0,					\
- 		.pupd_reg = PINGROUP_REG_Y(r),			\
--		.pupd_bank = 0,					\
-+		.pupd_bank = 1,					\
- 		.pupd_bit = 2,					\
- 		.tri_reg = PINGROUP_REG_Y(r),			\
--		.tri_bank = 0,					\
-+		.tri_bank = 1,					\
- 		.tri_bit = 4,					\
- 		.einput_reg = PINGROUP_REG_Y(r),		\
--		.einput_bank = 0,				\
-+		.einput_bank = 1,				\
- 		.einput_bit = 5,				\
- 		.odrain_reg = PINGROUP_REG_##od(r),		\
--		.odrain_bank = 0,				\
-+		.odrain_bank = 1,				\
- 		.odrain_bit = 6,				\
- 		.lock_reg = PINGROUP_REG_Y(r),			\
--		.lock_bank = 0,					\
-+		.lock_bank = 1,					\
- 		.lock_bit = 7,					\
- 		.ioreset_reg = PINGROUP_REG_##ior(r),		\
--		.ioreset_bank = 0,				\
-+		.ioreset_bank = 1,				\
- 		.ioreset_bit = 8,				\
- 		.drv_reg = -1,					\
- 	}
-@@ -3401,8 +3401,8 @@ static const struct tegra_function tegra
- 		.odrain_reg = -1,				\
- 		.lock_reg = -1,					\
- 		.ioreset_reg = -1,				\
--		.drv_reg = ((r) - PINGROUP_REG_A),		\
--		.drv_bank = 1,					\
-+		.drv_reg = ((r) - DRV_PINGROUP_REG_A),		\
-+		.drv_bank = 0,					\
- 		.hsm_bit = hsm_b,				\
- 		.schmitt_bit = schmitt_b,			\
- 		.lpmd_bit = lpmd_b,				\
 
 
