@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab2JZAL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:11:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54126 "EHLO mail.kernel.org"
+	id S1754727Ab2JZAIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:08:36 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54023 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754737Ab2JZAIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:37 -0400
+	id S1754568Ab2JZAI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 74/85] ipv4: fix forwarding for strict source routes
-Date: Thu, 25 Oct 2012 17:06:32 -0700
-Message-Id: <20121026000038.553161820@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        James Morris <james.l.morris@oracle.com>,
+        Jie Liu <jeff.liu@oracle.com>
+Subject: [ 79/85] RDS: fix rds-ping spinlock recursion
+Date: Thu, 25 Oct 2012 17:06:37 -0700
+Message-Id: <20121026000039.055668300@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -26,32 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Julian Anastasov <ja@ssi.bg>
+From: "jeff.liu" <jeff.liu@oracle.com>
 
-[ Upstream commit e0adef0f7456d5d3a3bfe8ea61c7dddf146b40e1 ]
+[ Upstream commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 ]
 
-After the change "Adjust semantics of rt->rt_gateway"
-(commit f8126f1d51) rt_gateway can be 0 but ip_forward() compares
-it directly with nexthop. What we want here is to check if traffic
-is to directly connected nexthop and to fail if using gateway.
+This is the revised patch for fixing rds-ping spinlock recursion
+according to Venkat's suggestions.
 
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
+RDS ping/pong over TCP feature has been broken for years(2.6.39 to
+3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
+ping/pong which both need to lock "struct sock *sk". However, this
+lock has already been hold before rds_tcp_data_ready() callback is
+triggerred. As a result, we always facing spinlock resursion which
+would resulting in system panic.
+
+Given that RDS ping is only used to test the connectivity and not for
+serious performance measurements, we can queue the pong transmit to
+rds_wq as a delayed response.
+
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: James Morris <james.l.morris@oracle.com>
+Signed-off-by: Jie Liu <jeff.liu@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_forward.c |    2 +-
+ net/rds/send.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv4/ip_forward.c
-+++ b/net/ipv4/ip_forward.c
-@@ -85,7 +85,7 @@ int ip_forward(struct sk_buff *skb)
+--- a/net/rds/send.c
++++ b/net/rds/send.c
+@@ -1122,7 +1122,7 @@ rds_send_pong(struct rds_connection *con
+ 	rds_stats_inc(s_send_pong);
  
- 	rt = skb_rtable(skb);
+ 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
+-		rds_send_xmit(conn);
++		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
  
--	if (opt->is_strictroute && opt->nexthop != rt->rt_gateway)
-+	if (opt->is_strictroute && rt->rt_gateway)
- 		goto sr_failed;
- 
- 	if (unlikely(skb->len > dst_mtu(&rt->dst) && !skb_is_gso(skb) &&
+ 	rds_message_put(rm);
+ 	return 0;
 
 
