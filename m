@@ -1,36 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab2JZHft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 03:35:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49825 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756554Ab2JZHfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 03:35:47 -0400
+	id S1756831Ab2JZHgf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 03:36:35 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60903 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756554Ab2JZHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 03:36:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,653,1344236400"; 
+   d="scan'208";a="160848324"
+Date: Fri, 26 Oct 2012 15:36:30 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Ni zhan Chen <nizhan.chen@gmail.com>
+Cc: Dave Chinner <david@fromorbit.com>, YingHang Zhu <casualfisher@gmail.com>,
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
+Message-ID: <20121026073630.GA12886@localhost>
+References: <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
+ <50889FF1.9030107@gmail.com>
+ <20121025025826.GB23462@localhost>
+ <20121026002544.GI29378@dastard>
+ <20121026012758.GA6282@localhost>
+ <5089F5AD.5040708@gmail.com>
+ <20121026065855.GA9179@localhost>
+ <508A35B0.30106@gmail.com>
+ <20121026070936.GA12282@localhost>
+ <508A399D.6000506@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121026065942.GB9284@elgon.mountain>
-References: <20121026065942.GB9284@elgon.mountain>
-Date: Fri, 26 Oct 2012 09:35:46 +0200
-Message-ID: <CACRpkdZPDZ_b=md7CXAc+tEkbdX1inw7eyQ4pZ2UdrW=S78vDQ@mail.gmail.com>
-Subject: Re: [patch] gpiolib: unlock on error in gpio_export()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, Ryan Mallon <rmallon@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508A399D.6000506@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 8:59 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+On Fri, Oct 26, 2012 at 03:19:57PM +0800, Ni zhan Chen wrote:
+> On 10/26/2012 03:09 PM, Fengguang Wu wrote:
+> >On Fri, Oct 26, 2012 at 03:03:12PM +0800, Ni zhan Chen wrote:
+> >>On 10/26/2012 02:58 PM, Fengguang Wu wrote:
+> >>>>  static void shrink_readahead_size_eio(struct file *filp,
+> >>>>                                         struct file_ra_state *ra)
+> >>>>  {
+> >>>>-       ra->ra_pages /= 4;
+> >>>>+       spin_lock(&filp->f_lock);
+> >>>>+       filp->f_mode |= FMODE_RANDOM;
+> >>>>+       spin_unlock(&filp->f_lock);
+> >>>>
+> >>>>As the example in comment above this function, the read maybe still
+> >>>>sequential, and it will waste IO bandwith if modify to FMODE_RANDOM
+> >>>>directly.
+> >>>Yes immediately disabling readahead may hurt IO performance, the
+> >>>original '/ 4' may perform better when there are only 1-3 IO errors
+> >>>encountered.
+> >>Hi Fengguang,
+> >>
+> >>Why the number should be 1-3?
+> >The original behavior is '/= 4' on each error.
+> >
+> >After 1 errors, readahead size will be shrinked by 1/4
+> >After 2 errors, readahead size will be shrinked by 1/16
+> >After 3 errors, readahead size will be shrinked by 1/64
+> >After 4 errors, readahead size will be effectively 0 (disabled)
+> 
+> But from function shrink_readahead_size_eio and its caller
+> filemap_fault I can't find the behavior you mentioned. How you
+> figure out it?
 
-> We need to unlock here before returning.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Only needed in linux-next.
+It's this line in shrink_readahead_size_eio():
 
-Thanks Dan, applied to my devel branch.
+        ra->ra_pages /= 4;
 
-Yours,
-Linus Walleij
+That ra_pages will keep shrinking by 4 on each error. The only way to
+restore it is to reopen the file, or POSIX_FADV_SEQUENTIAL.
+
+Thanks,
+Fengguang
