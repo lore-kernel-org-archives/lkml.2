@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2JZAWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:22:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53649 "EHLO mail.kernel.org"
+	id S1755333Ab2JZAWP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:22:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53659 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754307Ab2JZAHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754310Ab2JZAHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Oct 2012 20:07:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 36/85] USB: cypress_m8: fix port-data memory leak
-Date: Thu, 25 Oct 2012 17:05:54 -0700
-Message-Id: <20121026000034.742990205@linuxfoundation.org>
+Subject: [ 37/85] USB: cp210x: fix port-data memory leak
+Date: Thu, 25 Oct 2012 17:05:55 -0700
+Message-Id: <20121026000034.836872293@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,186 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 5c1a0f418d8d985f3a62849bcac43fc5404cc592 upstream.
+commit 4295fe7791a1b20c90cbaaa6f23f2fb94218b8a7 upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+Fix port data memory leak by replacing port private data with serial
+private data.
 
 Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
+driver is bound) the port private data is no longer freed at
+release.
 
-Compile-only tested.
+The private data is used to store the control interface number, but as
+this is the same for all ports on an interface it should be stored as
+usb-serial data anyway.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cypress_m8.c |   82 ++++++++++++++++++++--------------------
- 1 file changed, 41 insertions(+), 41 deletions(-)
+ drivers/usb/serial/cp210x.c |   43 ++++++++++++++++++-------------------------
+ 1 file changed, 18 insertions(+), 25 deletions(-)
 
---- a/drivers/usb/serial/cypress_m8.c
-+++ b/drivers/usb/serial/cypress_m8.c
-@@ -124,10 +124,10 @@ struct cypress_private {
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -164,7 +164,7 @@ static const struct usb_device_id id_tab
+ 
+ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+-struct cp210x_port_private {
++struct cp210x_serial_private {
+ 	__u8			bInterfaceNumber;
  };
  
- /* function prototypes for the Cypress USB to serial device */
--static int  cypress_earthmate_startup(struct usb_serial *serial);
--static int  cypress_hidcom_startup(struct usb_serial *serial);
--static int  cypress_ca42v2_startup(struct usb_serial *serial);
--static void cypress_release(struct usb_serial *serial);
-+static int  cypress_earthmate_port_probe(struct usb_serial_port *port);
-+static int  cypress_hidcom_port_probe(struct usb_serial_port *port);
-+static int  cypress_ca42v2_port_probe(struct usb_serial_port *port);
-+static int  cypress_port_remove(struct usb_serial_port *port);
- static int  cypress_open(struct tty_struct *tty, struct usb_serial_port *port);
- static void cypress_close(struct usb_serial_port *port);
- static void cypress_dtr_rts(struct usb_serial_port *port, int on);
-@@ -157,8 +157,8 @@ static struct usb_serial_driver cypress_
- 	.description =			"DeLorme Earthmate USB",
- 	.id_table =			id_table_earthmate,
- 	.num_ports =			1,
--	.attach =			cypress_earthmate_startup,
--	.release =			cypress_release,
-+	.port_probe =			cypress_earthmate_port_probe,
-+	.port_remove =			cypress_port_remove,
- 	.open =				cypress_open,
- 	.close =			cypress_close,
- 	.dtr_rts =			cypress_dtr_rts,
-@@ -183,8 +183,8 @@ static struct usb_serial_driver cypress_
- 	.description =			"HID->COM RS232 Adapter",
- 	.id_table =			id_table_cyphidcomrs232,
- 	.num_ports =			1,
--	.attach =			cypress_hidcom_startup,
--	.release =			cypress_release,
-+	.port_probe =			cypress_hidcom_port_probe,
-+	.port_remove =			cypress_port_remove,
- 	.open =				cypress_open,
- 	.close =			cypress_close,
- 	.dtr_rts =			cypress_dtr_rts,
-@@ -209,8 +209,8 @@ static struct usb_serial_driver cypress_
- 	.description =			"Nokia CA-42 V2 Adapter",
- 	.id_table =			id_table_nokiaca42v2,
- 	.num_ports =			1,
--	.attach =			cypress_ca42v2_startup,
--	.release =			cypress_release,
-+	.port_probe =			cypress_ca42v2_port_probe,
-+	.port_remove =			cypress_port_remove,
- 	.open =				cypress_open,
- 	.close =			cypress_close,
- 	.dtr_rts =			cypress_dtr_rts,
-@@ -437,10 +437,10 @@ static void cypress_set_dead(struct usb_
-  *****************************************************************************/
- 
- 
--static int generic_startup(struct usb_serial *serial)
-+static int cypress_generic_port_probe(struct usb_serial_port *port)
+@@ -278,7 +278,7 @@ static int cp210x_get_config(struct usb_
+ 		unsigned int *data, int size)
  {
-+	struct usb_serial *serial = port->serial;
- 	struct cypress_private *priv;
--	struct usb_serial_port *port = serial->port[0];
+ 	struct usb_serial *serial = port->serial;
+-	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
++	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
+ 	__le32 *buf;
+ 	int result, i, length;
  
- 	priv = kzalloc(sizeof(struct cypress_private), GFP_KERNEL);
- 	if (!priv)
-@@ -489,15 +489,17 @@ static int generic_startup(struct usb_se
- }
+@@ -294,7 +294,7 @@ static int cp210x_get_config(struct usb_
+ 	/* Issue the request, attempting to read 'size' bytes */
+ 	result = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_INTERFACE_TO_HOST, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size,
++				spriv->bInterfaceNumber, buf, size,
+ 				USB_CTRL_GET_TIMEOUT);
  
- 
--static int cypress_earthmate_startup(struct usb_serial *serial)
-+static int cypress_earthmate_port_probe(struct usb_serial_port *port)
+ 	/* Convert data into an array of integers */
+@@ -326,7 +326,7 @@ static int cp210x_set_config(struct usb_
+ 		unsigned int *data, int size)
  {
-+	struct usb_serial *serial = port->serial;
- 	struct cypress_private *priv;
--	struct usb_serial_port *port = serial->port[0];
-+	int ret;
+ 	struct usb_serial *serial = port->serial;
+-	struct cp210x_port_private *port_priv = usb_get_serial_port_data(port);
++	struct cp210x_serial_private *spriv = usb_get_serial_data(serial);
+ 	__le32 *buf;
+ 	int result, i, length;
  
--	if (generic_startup(serial)) {
-+	ret = cypress_generic_port_probe(port);
-+	if (ret) {
- 		dbg("%s - Failed setting up port %d", __func__,
- 				port->number);
--		return 1;
-+		return ret;
+@@ -348,13 +348,13 @@ static int cp210x_set_config(struct usb_
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_INTERFACE, 0x0000,
+-				port_priv->bInterfaceNumber, buf, size,
++				spriv->bInterfaceNumber, buf, size,
+ 				USB_CTRL_SET_TIMEOUT);
+ 	} else {
+ 		result = usb_control_msg(serial->dev,
+ 				usb_sndctrlpipe(serial->dev, 0),
+ 				request, REQTYPE_HOST_TO_INTERFACE, data[0],
+-				port_priv->bInterfaceNumber, NULL, 0,
++				spriv->bInterfaceNumber, NULL, 0,
+ 				USB_CTRL_SET_TIMEOUT);
  	}
  
- 	priv = usb_get_serial_port_data(port);
-@@ -517,54 +519,52 @@ static int cypress_earthmate_startup(str
- 	}
+@@ -854,37 +854,30 @@ static void cp210x_break_ctl (struct tty
  
- 	return 0;
--} /* cypress_earthmate_startup */
+ static int cp210x_startup(struct usb_serial *serial)
+ {
+-	struct cp210x_port_private *port_priv;
+-	int i;
++	struct usb_host_interface *cur_altsetting;
++	struct cp210x_serial_private *spriv;
+ 
+ 	/* cp210x buffers behave strangely unless device is reset */
+ 	usb_reset_device(serial->dev);
+ 
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port_priv = kzalloc(sizeof(*port_priv), GFP_KERNEL);
+-		if (!port_priv)
+-			return -ENOMEM;
 -
-+}
+-		memset(port_priv, 0x00, sizeof(*port_priv));
+-		port_priv->bInterfaceNumber =
+-		    serial->interface->cur_altsetting->desc.bInterfaceNumber;
++	spriv = kzalloc(sizeof(*spriv), GFP_KERNEL);
++	if (!spriv)
++		return -ENOMEM;
  
--static int cypress_hidcom_startup(struct usb_serial *serial)
-+static int cypress_hidcom_port_probe(struct usb_serial_port *port)
- {
- 	struct cypress_private *priv;
-+	int ret;
- 
--	if (generic_startup(serial)) {
--		dbg("%s - Failed setting up port %d", __func__,
--				serial->port[0]->number);
--		return 1;
-+	ret = cypress_generic_port_probe(port);
-+	if (ret) {
-+ 		dev_dbg(&port->dev, "%s - Failed setting up port\n", __func__);
-+		return ret;
- 	}
- 
--	priv = usb_get_serial_port_data(serial->port[0]);
-+	priv = usb_get_serial_port_data(port);
- 	priv->chiptype = CT_CYPHIDCOM;
- 
- 	return 0;
--} /* cypress_hidcom_startup */
--
-+}
- 
--static int cypress_ca42v2_startup(struct usb_serial *serial)
-+static int cypress_ca42v2_port_probe(struct usb_serial_port *port)
- {
- 	struct cypress_private *priv;
-+	int ret;
- 
--	if (generic_startup(serial)) {
--		dbg("%s - Failed setting up port %d", __func__,
--				serial->port[0]->number);
--		return 1;
-+	ret = cypress_generic_port_probe(port);
-+	if (ret) {
-+ 		dev_dbg(&port->dev, "%s - Failed setting up port\n", __func__);
-+		return ret;
- 	}
- 
--	priv = usb_get_serial_port_data(serial->port[0]);
-+	priv = usb_get_serial_port_data(port);
- 	priv->chiptype = CT_CA42V2;
- 
- 	return 0;
--} /* cypress_ca42v2_startup */
--
-+}
- 
--static void cypress_release(struct usb_serial *serial)
-+static int cypress_port_remove(struct usb_serial_port *port)
- {
- 	struct cypress_private *priv;
- 
--	/* all open ports are closed at this point */
--	priv = usb_get_serial_port_data(serial->port[0]);
-+	priv = usb_get_serial_port_data(port);
- 
--	if (priv) {
--		kfifo_free(&priv->write_fifo);
--		kfree(priv);
+-		usb_set_serial_port_data(serial->port[i], port_priv);
 -	}
-+	kfifo_free(&priv->write_fifo);
-+	kfree(priv);
++	cur_altsetting = serial->interface->cur_altsetting;
++	spriv->bInterfaceNumber = cur_altsetting->desc.bInterfaceNumber;
 +
-+	return 0;
++	usb_set_serial_data(serial, spriv);
+ 
+ 	return 0;
  }
  
+ static void cp210x_release(struct usb_serial *serial)
+ {
+-	struct cp210x_port_private *port_priv;
+-	int i;
++	struct cp210x_serial_private *spriv;
  
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port_priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(port_priv);
+-		usb_set_serial_port_data(serial->port[i], NULL);
+-	}
++	spriv = usb_get_serial_data(serial);
++	kfree(spriv);
+ }
+ 
+ module_usb_serial_driver(serial_drivers, id_table);
 
 
