@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966526Ab2JZUx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:53:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49166 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965143Ab2JZUxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:53:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: fixes for 3.7-rc3
-Date: Fri, 26 Oct 2012 20:53:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        voice <voice.shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>,
-        marek.belisko@open-nandra.com, ivan.shugov@gmail.com
-References: <5088F131.5040600@atmel.com>
-In-Reply-To: <5088F131.5040600@atmel.com>
+	id S966516Ab2JZU4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:56:34 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57861 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185Ab2JZU4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:56:32 -0400
+Date: Fri, 26 Oct 2012 16:56:18 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Nix <nix@esperi.org.uk>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121026205618.GC8614@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508AF3FA.4020506@redhat.com>
+ <87wqydx957.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201210262053.11498.arnd@arndb.de>
-X-Provags-ID: V02:K0:SFo9/Aeb0zMvO0LFv1XNp7m0TqfPG0o9uCHPIlK85+g
- ylW0E2dZDkWKOzW4Nuqb+hQmAlEAxB5wv39C6ytNjl7FdYZnfe
- D5iw7VZuJwt5E1fm1BjLu8uP9NvOdGd+jF6qhv+cfAzX6Sc45F
- jQ66tI8xaz6iL6GmWN3yHSL7E3Zu0r7MW1h7PVf9ad3fxfFbZd
- ALP68BObczMocMLZ0FO1jVbML0ft3RsDYsT0/I7oxIzp9C9GxQ
- +gLPBuiqGx2IwG1LeqTFoHHqbg3zTeiMvr4kev/GFLuOmSLxAC
- 4puPcXu+m01hvPqkVaXQW762RNdh+mVrlLDYBaa1PqFNbE48mp
- /Ds233O28x+7RmwuNnIE=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wqydx957.fsf@spindle.srvr.nix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 October 2012, Nicolas Ferre wrote:
->       ARM: at91: fix external interrupts in non-DT case
+On Fri, Oct 26, 2012 at 09:37:08PM +0100, Nix wrote:
+> 
+> I can reproduce this on a small filesystem and stick the image somewhere
+> if that would be of any use to anyone. (If I'm very lucky, merely making
+> this offer will make the problem go away. :} )
 
-This patch now leads to build errors with at91x40_defconfig,
-which I've fixed up by applying the patch below on top.
+I'm not sure the image is going to be that useful.  What we really
+need to do is to get a reliable reproduction of what _you_ are seeing.
 
-Please yell if this is not the right fix.
+It's clear from Eric's experiments that journal_checksum is dangerous.
+In fact, I will likely put it under an #ifdef EXT4_EXPERIMENTAL to try
+to discourage people from using it in the future.  There are things
+I've been planning on doing to make it be safer, but there's a very
+good *reason* that both journal_checksum and journal_async_commit are
+not on by default.
 
-	Arnd
+That's why one of the things I asked you to do when you had time was
+to see if you could reproduce the problem you are seeing w/o
+nobarrier,journal_checksum,journal_async_commit.
 
-commit 3a8852afde01682083028ee427e0678f9bbddd75
-Author: Arnd Bergmann <arnd@arndb.de>
-Date:   Fri Oct 26 22:49:09 2012 +0200
+The other experiment that would be really useful if you could do is to
+try to apply these two patches which I sent earlier this week:
 
-    ARM: at91: fix at91x40 build
-    
-    patch 738a0fd7 "ARM: at91: fix external interrupts in non-DT case"
-    fixed a run-time error on some at91 platforms but did not apply
-    the same change to at91x40, which now doesn't build.
-    
-    This changes at91x40 in the same way that the other platforms
-    were changed.
-    
-    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+[PATCH 1/2] ext4: revert "jbd2: don't write superblock when if its empty
+[PATCH 2/2] ext4: fix I/O error when unmounting an ro file system
 
-diff --git a/arch/arm/mach-at91/at91x40.c b/arch/arm/mach-at91/at91x40.c
-index 6bd7300..bb7f544 100644
---- a/arch/arm/mach-at91/at91x40.c
-+++ b/arch/arm/mach-at91/at91x40.c
-@@ -88,6 +88,6 @@ void __init at91x40_init_interrupts(unsigned int priority[NR_AIC_IRQS])
- 	if (!priority)
- 		priority = at91x40_default_irq_priority;
- 
--	at91_aic_init(priority);
-+	at91_aic_init(priority, at91_extern_irq);
- }
- 
+... and see if they make a difference.
+
+If they don't make a difference, I don't want to apply patches just
+for placebo/PR reasons.  And for Eric at least, he can reproduce the
+journal checksum error followed by fairly significant corruption
+reported by e2fsck with journal_checksum, and the presence or absense
+of these patches make no difference for him.  So I really don't want
+to push these patches to Linus until I get confirmation that they make
+a difference to *somebody*.
+
+Regards,
+
+						- Ted
