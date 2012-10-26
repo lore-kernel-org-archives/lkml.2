@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab2JZMeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:34:06 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44095 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758615Ab2JZMeD (ORCPT
+	id S932640Ab2JZMfb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:35:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39172 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758615Ab2JZMf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:34:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-References: <20121025121617.617683848@chello.nl>
-	<20121025124832.840241082@chello.nl>
-	<CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
-	<5089F5B5.1050206@redhat.com>
-	<CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
-	<508A0A0D.4090001@redhat.com>
-	<CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
-Date: Fri, 26 Oct 2012 05:34:02 -0700
-Message-ID: <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
-Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Fri, 26 Oct 2012 08:35:29 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH RESEND] cpufreq: Make sure target freq is within limits
+Date: Fri, 26 Oct 2012 18:05:21 +0530
+Message-Id: <f79c0841be1ae16e1f2bd9084ed9a158eb171eb0.1351254846.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 9:23 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Oct 25, 2012 at 8:57 PM, Rik van Riel <riel@redhat.com> wrote:
->>
->> That may not even be needed.  Apparently Intel chips
->> automatically flush an entry from the TLB when it
->> causes a page fault.  I assume AMD chips do the same,
->> because flush_tlb_fix_spurious_fault evaluates to
->> nothing on x86.
->
-> Yes. It's not architected as far as I know, though. But I agree, it's
-> possible - even likely - we could avoid TLB flushing entirely on x86.
+__cpufreq_driver_target() must not pass target frequency beyond the limits of
+current policy.
 
-Actually, it is architected on x86. This was first described in the
-intel appnote 317080 "TLBs, Paging-Structure Caches, and Their
-Invalidation", last paragraph of section 5.1. Nowadays, the same
-contents are buried somewhere in Volume 3 of the architecture manual
-(in my copy: 4.10.4.1 Operations that Invalidate TLBs and
-Paging-Structure Caches)
+Today most of cpufreq platform drivers are doing this check in their target
+routines. Why not move it to __cpufreq_driver_target().
 
-> If you want to try it, I would seriously suggest you do it as a
-> separate commit though, just in case.
->
->> Are there architectures where we do need to flush
->> remote TLBs on upgrading the permissions on a PTE?
->
-> I *suspect* that whole TLB flush just magically became an SMP one
-> without anybody ever really thinking about it.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Hi Rafael,
 
-I would be very worried about assuming every non-x86 arch has similar
-TLB semantics. However, if their fault handlers always invalidate TLB
-for pages that get spurious faults, then skipping the remote
-invalidation would be fine. (I believe this is what
-tlb_fix_spurious_fault() is for ?)
+Resend doesn't contain any change, but fixed commit log
 
+ drivers/cpufreq/cpufreq.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 28dc134..2f5ac2d 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1470,12 +1470,19 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			    unsigned int relation)
+ {
+ 	int retval = -EINVAL;
++	unsigned int old_target_freq = target_freq;
+ 
+ 	if (cpufreq_disabled())
+ 		return -ENODEV;
+ 
+-	pr_debug("target for CPU %u: %u kHz, relation %u\n", policy->cpu,
+-		target_freq, relation);
++	/* Make sure that target_freq is within supported range */
++	if (target_freq > policy->max)
++		target_freq = policy->max;
++	if (target_freq < policy->min)
++		target_freq = policy->min;
++
++	pr_debug("target for CPU %u: %u kHz, relation %u, requested %u kHz\n",
++			policy->cpu, target_freq, relation, old_target_freq);
+ 
+ 	if (target_freq == policy->cur)
+ 		return 0;
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+1.7.12.rc2.18.g61b472e
+
