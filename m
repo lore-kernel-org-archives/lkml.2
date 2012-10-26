@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2JZMzG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:55:06 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:63421 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab2JZMzD (ORCPT
+	id S932864Ab2JZMz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 08:55:26 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:47132 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab2JZMzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:55:03 -0400
-Date: Fri, 26 Oct 2012 14:54:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] RAS: MCA config cleanup
-Message-ID: <20121026125457.GA9886@gmail.com>
-References: <20121026124826.GA5762@aftab.osrc.amd.com>
+	Fri, 26 Oct 2012 08:55:22 -0400
+Message-ID: <508A8825.8020502@free-electrons.com>
+Date: Fri, 26 Oct 2012 14:55:01 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026124826.GA5762@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Jason Cooper <jason@lakedaemon.net>, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 0/4] Adding SATA support for Armada 370/XP
+References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com> <20121026123908.GH21046@lunn.ch>
+In-Reply-To: <20121026123908.GH21046@lunn.ch>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/26/2012 02:39 PM, Andrew Lunn wrote:
+> On Fri, Oct 26, 2012 at 02:30:45PM +0200, Gregory CLEMENT wrote:
+>> Hello,
+>>
+>> this patch set adds the SATA support for Armada 370 and Armada XP. Few
+>> changes have been done since the first version by taking in account
+>> the comments received for the first version.
+>>
+>> The evaluation boards for Armada 370 and Armada XP come with 2 SATA
+>> ports, and when both are enable the coherent pool for DMA mapping was
+>> too short. It was exactly the same issue that was fixed for Kirkwood
+>> two months ago. So I used the same fix in the first patch. Later when
+>> Kirkwood will be part of mach-mvebu, then this fix will be shared
+>> between the 2 SoCs families.
+>>
+>> This patch set is based on 3.7-rc2 and depends one the framework clock
+>> support (the last version was posted last week:
+>> http://thread.gmane.org/gmane.linux.kernel/1375701). The git branch
+>> called mvebu-SATA-for-3.8 is also available at
+>> https://github.com/MISL-EBU-System-SW/mainline-public.git.
+> 
+> Hi Gregory
+> 
+> What about the openblocks-ax3?
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Well I don't have this hardware, Thomas have. But with this question
+I guess this board have (a) SATA port(s).
 
-> Hi guys,
-> 
-> this is 5-patch set reworking the config variables in the MCA code.
-> There's an out-of-tree change which Greg and I agreed to push through
-> the RAS tree. These changes are for the next merge window.
-> 
-> Please pull,
-> thanks.
-> 
-> The following changes since commit 6f0c0580b70c89094b3422ba81118c7b959c7556:
-> 
->   Linux 3.7-rc2 (2012-10-20 12:11:32 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/mca_cfg
-> 
-> for you to fetch changes up to 1462594bf2866c1dc80066ed6f49f4331c551901:
-> 
->   x86, MCA: Finish mca_config conversion (2012-10-26 14:37:58 +0200)
-> 
-> ----------------------------------------------------------------
-> Rework all config variables used throughout the MCA code and collect
-> them together into a mca_config struct. This keeps them tightly and
-> neatly packed together instead of spilled all over the place.
-> 
-> Then, convert those which are used as booleans into real booleans and
-> save some space.
-> 
-> ----------------------------------------------------------------
-> Borislav Petkov (5):
->       drivers/base: Add a DEVICE_BOOL_ATTR macro
->       x86, MCA: Convert dont_log_ce, banks and tolerant
->       x86, MCA: Convert rip_msr, mce_bootlog, monarch_timeout
->       x86, MCA: Convert the next three variables batch
->       x86, MCA: Finish mca_config conversion
-> 
->  arch/x86/include/asm/mce.h                |  21 ++-
->  arch/x86/kernel/cpu/mcheck/mce-internal.h |   2 -
->  arch/x86/kernel/cpu/mcheck/mce-severity.c |   4 +-
->  arch/x86/kernel/cpu/mcheck/mce.c          | 209 +++++++++++++++---------------
->  arch/x86/kernel/cpu/mcheck/mce_intel.c    |   8 +-
->  arch/x86/lguest/boot.c                    |   2 +-
->  drivers/base/core.c                       |  21 +++
->  include/linux/device.h                    |   7 +
->  8 files changed, 159 insertions(+), 115 deletions(-)
+Moreover openblocks-ax3 is not (yet) in Jason branch so I can't make
+a patch applying on a file which doesn't exist on my branch. It could
+be a dependency but I try to reduce it as far as I can.
 
-Pulled, thanks Boris!
+But as soon as this series will be applied, adding SATA support for
+openblocks-ax3 should be pretty fast and just a matter of updating
+the dts.
 
-	Ingo
+> 
+>      Andrew
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
