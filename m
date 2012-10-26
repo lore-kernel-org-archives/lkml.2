@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab2JZLjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:39:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39957 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349Ab2JZLjl (ORCPT
+	id S932393Ab2JZLlX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:41:23 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49601 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab2JZLlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:39:41 -0400
-Message-ID: <508A7665.4030109@ti.com>
-Date: Fri, 26 Oct 2012 17:09:17 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 26 Oct 2012 07:41:21 -0400
 MIME-Version: 1.0
-To: Cyril Chemparathy <cyril@ti.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <khilman@ti.com>, "Porter, Matt" <mporter@ti.com>
-Subject: Re: [PATCH] davinci: check for presence of channel controller on
- slot alloc
-References: <1347473642-9948-1-git-send-email-cyril@ti.com>
-In-Reply-To: <1347473642-9948-1-git-send-email-cyril@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1351075240-2725-1-git-send-email-ashish.sangwan2@gmail.com>
+References: <1351075240-2725-1-git-send-email-ashish.sangwan2@gmail.com>
+Date: Fri, 26 Oct 2012 20:41:19 +0900
+Message-ID: <CAKYAXd_6pHdPtOgOS4=_c6naWwPdMhna29OOKD919HrYM-+kaA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] Ext4: Mount partition as read only if during orphan
+ cleanup truncate fails to obtain journal handle.
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Ashish Sangwan <ashishsangwan2@gmail.com>
+Cc: tytso@mit.edu, linux-ext4@vger.kernel.org,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Matt, who is doing the DMA engine conversion for EDMA
+Add Cc in mail loop.
 
-On 9/12/2012 11:44 PM, Cyril Chemparathy wrote:
-> This patch adds a check for the presence of the channel controller when
-> trying to allocate a slot.  Without this fix, the kernel panics with a NULL
-> pointer dereference when the dma-engine drivers are probed.
-> 
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Thanks.
+
+2012/10/24, Ashish Sangwan <ashishsangwan2@gmail.com>:
+> During orphan cleanup while doing truncate, if we fail to obtain journal
+> handle, the inode for which truncate was called would not be removed from
+> both the on-disk and in-memory orphan lists as the call to ext4_orphan_del
+> would not be executed.
+>
+> This would have following consequences:
+> a) As the inode is not removed from the on-disk list, truncate would be
+> called again for the same inode. Each call would add the inode to the
+> in-memory list. This operation would continue endlessly or until truncate
+> is succeed.
+>
+> b) If somehow, after some iterations, truncate is succeed, ext4_orphan_del
+> will only remove the inode from in-memory list just 1 time. This will
+> trigger
+> j_assert during put super.
+>
+> This patch handles both the problems. If truncate fails, first in-memory
+> list is cleared and than the partition is mounted as read only.
+> Failure to obtain journal handle during mount may suggest that journal
+> device is corrupted.
+>
+> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 > ---
->  arch/arm/mach-davinci/dma.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
-> index a685e97..2fee31e 100644
-> --- a/arch/arm/mach-davinci/dma.c
-> +++ b/arch/arm/mach-davinci/dma.c
-> @@ -743,6 +743,9 @@ EXPORT_SYMBOL(edma_free_channel);
->   */
->  int edma_alloc_slot(unsigned ctlr, int slot)
->  {
-> +	if (!edma_cc[ctlr])
-> +		return -ENODEV;
-
-I am ok with this patch, although I wonder if a better error is -ENXIO
-or even -EINVAL (since its most likely the result of a wrong argument).
-
-This patch will conflict with the EDMA movement series that Matt is
-doing and he should probably include it in his series to avoid
-conflicts. From the description it appears to be not required for v3.7
-anyway.
-
-Thanks,
-Sekhar
+>  fs/ext4/super.c | 16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 4e2aacb..859eccb 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -2201,7 +2201,21 @@ static void ext4_orphan_cleanup(struct super_block
+> *sb,
+>  			jbd_debug(2, "truncating inode %lu to %lld bytes\n",
+>  				  inode->i_ino, inode->i_size);
+>  			ext4_truncate(inode);
+> -			nr_truncates++;
+> +			if (list_empty(&EXT4_I(inode)->i_orphan)) {
+> +				nr_truncates++;
+> +			} else {
+> +				/* Remove inode from in-memory orphan list */
+> +				list_del_init(&EXT4_I(inode)->i_orphan);
+> +				ext4_msg(sb, KERN_ERR, "Truncate failed for "
+> +					 "orphan  inode = %lu. Running e2fsck"
+> +					 " is recommended", inode->i_ino);
+> +				if (!(s_flags & MS_RDONLY)) {
+> +					ext4_msg(sb, KERN_INFO, "FS would be"
+> +						" mounted as readonly");
+> +					s_flags |= MS_RDONLY;
+> +				}
+> +				break;
+> +			}
+>  		} else {
+>  			ext4_msg(sb, KERN_DEBUG,
+>  				"%s: deleting unreferenced inode %lu",
+> --
+> 1.7.11.4
+>
+>
