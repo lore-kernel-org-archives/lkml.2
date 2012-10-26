@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801Ab2JZN3A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:29:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44611 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab2JZN27 (ORCPT
+	id S1758882Ab2JZN30 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:29:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61248 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758854Ab2JZN3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:28:59 -0400
-Date: Fri, 26 Oct 2012 15:28:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from
- ptep_set_access_flags()
-Message-ID: <20121026132853.GA11178@gmail.com>
-References: <20121025124832.840241082@chello.nl>
- <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com>
- <5089F5B5.1050206@redhat.com>
- <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
- <508A0A0D.4090001@redhat.com>
- <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
- <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
- <m2pq45qu0s.fsf@firstfloor.org>
- <508A8D31.9000106@redhat.com>
- <20121026132601.GC9886@gmail.com>
+	Fri, 26 Oct 2012 09:29:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Will Deacon <will.deacon@arm.com>
+Subject: Re: [RESEND PATCH 1/4] asm-generic: io: remove {read,write} string functions
+Date: Fri, 26 Oct 2012 13:29:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        Ben Herrenschmidt <benh@kernel.crashing.org>
+References: <1350488704-3711-1-git-send-email-will.deacon@arm.com> <1350488704-3711-2-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1350488704-3711-2-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026132601.GC9886@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201210261329.03386.arnd@arndb.de>
+X-Provags-ID: V02:K0:vWCTEK2BqsG6BhqBOWjs/3fvfypIW99QDTDKRTsprCl
+ Hh32OtOziGMqSbkdlp/3cqT81UzSv/QuRBaDEj6m46blMoikcZ
+ S5YTXsJwoafQp4Es5/przkmgahiETG8BF+f3zOS/0Pd+vCkE31
+ Tkizp9FIPx/0j4APuabxX40fl8Z9GxMyh3cAsfgR+y0jMVm8KJ
+ a9fe3NuHuQNuKQ3KQYtxcR7OS/jiQQcbSbHXYWgCceVEoNRsmZ
+ QBTQv2PzG9kinFiCG5ndunncqWQpug4yfn5ARwBVGvXv+i5HL8
+ 4UwPz6dWQEgMjsEo4fRf2iOu9TVh4kVoJZBlb88gk53ODShZEu
+ PHlUNjFnzJvmThXYJZ+c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@kernel.org> wrote:
-
-> [...]
+On Wednesday 17 October 2012, Will Deacon wrote:
+> The {read,write}s{b,w,l} functions are not defined across all
+> architectures and therefore shouldn't be used by portable drivers. We
+> should encourage driver writers to use the io{read,write}{8,16,32}_rep
+> functions instead.
 > 
-> Rik, mind sending an updated patch that addresses Linus's 
-> concerns, or should I code it up if you are busy?
+> This patch removes the {read,write} string functions for the generic IO
+> header as they have no place in a new architecture port.
 > 
-> We can also certainly try the second patch, but I'd do it at 
-> the end of the series, to put some tree distance between the 
-> two patches, to not concentrate regression risks too tightly 
-> in the Git space, to help out with hard to bisect problems...
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Ben Herrenschmidt <benh@kernel.crashing.org>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
 
-I'd also like to have the second patch separately because I'd 
-like to measure spurious fault frequency before and after the 
-change, with a reference workload.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Just a single page fault, even it's a minor one, might make a 
-micro-optimization a net loss. INVLPG might be the cheaper 
-option on average - it needs to be measured. (I'll do that, just 
-please keep it separate from the main TLB-flush optimization.)
+What should we do with the series? I can take them through the asm-generic
+tree if you like, or we can let Catalin take them through the arm64 tree.
 
-Thanks,
-
-	Ingo
+	Arnd
