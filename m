@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab2JZOck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:32:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44304 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933384Ab2JZOcf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:32:35 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@amd64.org>,
-        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/9] perf tools: Fix LIBELF_MMAP checking
-Date: Fri, 26 Oct 2012 12:31:49 -0200
-Message-Id: <1351261913-28250-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1351261913-28250-1-git-send-email-acme@infradead.org>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933392Ab2JZOcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:32:17 -0400
+Received: from mx1.zhaw.ch ([160.85.104.50]:34629 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675Ab2JZOcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:32:12 -0400
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Yoshinori Sato <ysato@users.sourceforge.jp>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] h8300: Remove unnecessary prototypes for kobjsize() and is_in_rom()
+Date: Fri, 26 Oct 2012 16:32:08 +0200
+Message-Id: <1351261928-23443-1-git-send-email-tklauser@distanz.ch>
+X-Mailer: git-send-email 1.7.5.4
+X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.10.26.142120
+X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, BODY_SIZE_900_999 0, RDNS_NXDOMAIN 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, __ANY_URI 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+The prototype for kobjsize() is already defined in linux/mm.h
+which is included where kobjsize() is used.
 
-Currently checking mmap support in libelf failed due to wrong flags.
+is_in_rom() is neither defined nor used across the whole tree, so delete
+the prototype.
 
-    CHK libelf
-    CHK libdw
-    CHK libunwind
-    CHK -DLIBELF_MMAP
-/tmp/ccYJwdR0.o: In function `main':
-:(.text+0x18): undefined reference to `elf_begin'
-collect2: error: ld returned 1 exit status
-
-This cannot happen since we checked the elf_begin() when checking
-libelf and it succeeded.
-
-Fix it by using a same flag with libelf checking.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351241752-2919-5-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
 ---
- tools/perf/Makefile |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/h8300/include/asm/pgtable.h |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2d0c09a..629fc6a 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -541,7 +541,8 @@ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
- else # NO_LIBELF
- BASIC_CFLAGS += -DLIBELF_SUPPORT
+diff --git a/arch/h8300/include/asm/pgtable.h b/arch/h8300/include/asm/pgtable.h
+index 62ef176..cc51c6c 100644
+--- a/arch/h8300/include/asm/pgtable.h
++++ b/arch/h8300/include/asm/pgtable.h
+@@ -42,12 +42,6 @@ static inline int pte_file(pte_t pte) { return 0; }
+ #define ZERO_PAGE(vaddr)	(virt_to_page(0))
  
--ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_COMMON),-DLIBELF_MMAP),y)
-+FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
- 	BASIC_CFLAGS += -DLIBELF_MMAP
- endif
- 
+ /*
+- * These would be in other places but having them here reduces the diffs.
+- */
+-extern unsigned int kobjsize(const void *objp);
+-extern int is_in_rom(unsigned long);
+-
+-/*
+  * No page table caches to initialise
+  */
+ #define pgtable_cache_init()   do { } while (0)
 -- 
-1.7.9.2.358.g22243
+1.7.5.4
 
