@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934028Ab2JZPon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:44:43 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:58620 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928Ab2JZPnv (ORCPT
+	id S964854Ab2JZPpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:45:20 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:16792 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933946Ab2JZPpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:43:51 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: hch@infradead.org, eparis@redhat.com, linux-audit@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] audit: eliminate optional dentry argument to audit_copy_inode
-Date: Fri, 26 Oct 2012 11:43:40 -0400
-Message-Id: <1351266222-11107-2-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351266222-11107-1-git-send-email-jlayton@redhat.com>
-References: <1351266222-11107-1-git-send-email-jlayton@redhat.com>
+	Fri, 26 Oct 2012 11:45:17 -0400
+Message-ID: <1351266308.4013.5.camel@lorien2>
+Subject: [PATCH RFT RESEND linux-next] ia64: dma-mapping: support
+ debug_dma_mapping_error
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: tony.luck@intel.com, fenghua.yu@intel.com, m.szyprowski@samsung.com,
+        arnd@arndb.de, andrzej.p@samsung.com, kyungmin.park@samsung.com
+Cc: linux-ia64@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        shuahkhan@gmail.com
+Date: Fri, 26 Oct 2012 09:45:08 -0600
+In-Reply-To: <1351207286.6851.13.camel@lorien2>
+References: <1351207286.6851.13.camel@lorien2>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just have callers that are passing in a dentry call audit_copy_fcaps
-themselves after audit_copy_inode returns.
+Add support for debug_dma_mapping_error() call to avoid warning from
+debug_dma_unmap() interface when it checks for mapping error checked
+status. Without this patch, device driver failed to check map error
+warning is generated.
 
-Reported-by: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 ---
- kernel/auditsc.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/ia64/include/asm/dma-mapping.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 2f186ed..6a6d95a 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2148,7 +2148,7 @@ static inline int audit_copy_fcaps(struct audit_names *name, const struct dentry
- 
- 
- /* Copy inode data into an audit_names. */
--static void audit_copy_inode(struct audit_names *name, const struct dentry *dentry,
-+static void audit_copy_inode(struct audit_names *name,
- 			     const struct inode *inode)
+diff --git a/arch/ia64/include/asm/dma-mapping.h b/arch/ia64/include/asm/dma-mapping.h
+index 4f5e814..cf3ab7e 100644
+--- a/arch/ia64/include/asm/dma-mapping.h
++++ b/arch/ia64/include/asm/dma-mapping.h
+@@ -58,6 +58,7 @@ static inline void dma_free_attrs(struct device *dev, size_t size,
+ static inline int dma_mapping_error(struct device *dev, dma_addr_t daddr)
  {
- 	name->ino   = inode->i_ino;
-@@ -2158,7 +2158,6 @@ static void audit_copy_inode(struct audit_names *name, const struct dentry *dent
- 	name->gid   = inode->i_gid;
- 	name->rdev  = inode->i_rdev;
- 	security_inode_getsecid(inode, &name->osid);
--	audit_copy_fcaps(name, dentry);
+ 	struct dma_map_ops *ops = platform_dma_get_ops(dev);
++	debug_dma_mapping_error(dev, daddr);
+ 	return ops->mapping_error(dev, daddr);
  }
- 
- /**
-@@ -2232,7 +2231,8 @@ out:
- 		n->type = AUDIT_TYPE_NORMAL;
- 	}
- 	handle_path(dentry);
--	audit_copy_inode(n, dentry, inode);
-+	audit_copy_inode(n, inode);
-+	audit_copy_fcaps(n, dentry);
- }
- 
- /**
-@@ -2301,7 +2301,7 @@ void __audit_inode_child(const struct inode *parent,
- 		n = audit_alloc_name(context, AUDIT_TYPE_PARENT);
- 		if (!n)
- 			return;
--		audit_copy_inode(n, NULL, parent);
-+		audit_copy_inode(n, parent);
- 	}
- 
- 	if (!found_child) {
-@@ -2319,10 +2319,13 @@ void __audit_inode_child(const struct inode *parent,
- 			found_child->name_put = false;
- 		}
- 	}
--	if (inode)
--		audit_copy_inode(found_child, dentry, inode);
--	else
-+
-+	if (inode) {
-+		audit_copy_inode(found_child, inode);
-+		audit_copy_fcaps(found_child, dentry);
-+	} else {
- 		found_child->ino = (unsigned long)-1;
-+	}
- }
- EXPORT_SYMBOL_GPL(__audit_inode_child);
  
 -- 
-1.7.11.7
+1.7.9.5
+
+
 
