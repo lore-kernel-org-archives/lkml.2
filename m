@@ -1,97 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab2JZKET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 06:04:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45589 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab2JZKER (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 06:04:17 -0400
-Date: Fri, 26 Oct 2012 12:04:10 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, tglx@linutronix.de,
-        mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com,
-        vincent.guittot@linaro.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-Message-ID: <20121026100410.GA2661@gmail.com>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
- <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
- <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
- <1351172849.12171.10.camel@twins>
- <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
- <1351241389.12171.45.camel@twins>
- <20121026092421.GB628@gmail.com>
- <1351244130.16863.7.camel@twins>
- <20121026094207.GA2179@gmail.com>
- <1351245264.16863.12.camel@twins>
+	id S1755178Ab2JZKGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 06:06:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54498 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754259Ab2JZKGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 06:06:13 -0400
+Date: Fri, 26 Oct 2012 12:06:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?KOI8-R?B?5M3J1NLJyiDsxc/O1NjF1w==?= <dm.leontiev7@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dleontie@amd.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: procfs does not return error code when file name is already in
+ use
+In-Reply-To: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1210261200500.19184@pobox.suse.cz>
+References: <CA+JonM0vrXtGzhv44o5rOH-3z_BuU52=Nu8WmiMz5m1=ENZ9HA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351245264.16863.12.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 26 Oct 2012, Дмитрий Леонтьев wrote:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+> I'm working a kernel module, and one of my tasks is to disallow a
+> process to open my character device(/dev/xxx) more than once. I tried
+> to solve this problem by creating /proc/apu directory, and creating a
+> /proc/xxx/{pid} file for when process opens /dev/xxx. This file will
+> act as per-process mutex, and provide a way to control resource usage.
 
-> On Fri, 2012-10-26 at 11:42 +0200, Ingo Molnar wrote:
-> > * Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Fri, 2012-10-26 at 11:24 +0200, Ingo Molnar wrote:
-> > > 
-> > > > So can we control this by restricting the users and avoiding 
-> > > > the overflow?
-> > > > 
-> > > > A 2^64 result should be a *huge* amount of space already for 
-> > > > just about anything.
-> > > 
-> > > I _think_ something like: dl_runtime * dl_deadline < U64_MAX, 
-> > > might do that. The question is, is this constraint usable? 
-> > > Simplified that boils down to about 4 seconds each, which 
-> > > sounds pretty much ok for most people -- but such statements 
-> > > usually come back to bite you (640kb anybody...).
-> > 
-> > We could constrain the precision, not the maximum value.
-> > 
-> > Having a 4 seconds hard limit is one thing, only having 10 nsecs 
-> > precision at 40 seconds is another.
+Now that's a complex solution indeed! :)
+
+Why not just handle that by looking at struct inode* passed to your open() 
+callback and checking whether you have that open already, for example?
+
+> Then, I investigated,if procfs acts as I expect from it, and found
+> that procfs checks file names for uniqueness, but does not return an
+> error when I add two files with same name. Instead, it posts silly
+> messages to kernel log, and adds new entry as if nothing happened.
+> This is a vulnerability:
 > 
-> That gets to be rather ugly I think.. for one it might 
-> surprise people, secondly you get to have a bunch of 
-> conditionals and shifts in that code path.
+> Let we have 2 modules A and B trying to create file /proc/foo on load,
+> and removing it on unload. Load A, Load B, unload B. at step 3 B
+> removed /proc/foo owned by A, and /proc/foo created by B remains
+> accessible from userspace.
+> 
+> My patch fixes this behaviour: proc_register will return -EEXIST when
+> file name is in use, and refuse to add a duplicate.
 
-I don't think a limitation of precision to about 64 bits is a 
-"surprise": it's high grade precision of 0.00000005 parts per 
-trillion...
+I wouldn't call it a vulnerability, but a bug, probably yes. Adding Andrew 
+and Al to CC.
 
-( As a comparison, there's ~13 parts per trillion amount of pure 
-  gold dissolved in ocean water. )
+> 
+> ----start of patch for fs/proc/generic.c---------------------------------------
+> --- generic.c.orig	2012-10-25 22:20:05.196606263 +0400
+> +++ generic.c	2012-10-25 22:13:49.556955392 +0400
 
-> Personally I'd prefer to do the simple thing, esp. for a new 
-> interface. So either do the hard limit or the u128 thing.
+Please always generate the patches against kernel tree in a form so that 
+they could be applied using patch -p1.
 
-Given that the u128 thing, once it gets converted to machine 
-instructions, is not simple *at all*, that leaves us with the 
-hard limit.
+> @@ -554,45 +554,51 @@ static const struct inode_operations pro
+> 
+>  static int proc_register(struct proc_dir_entry * dir, struct
+> proc_dir_entry * dp)
+>  {
+> +	int errorcode=-EAGAIN;
+>  	unsigned int i;
+>  	struct proc_dir_entry *tmp;
+>  	
+>  	i = get_inode_number();
+> -	if (i == 0)
+> -		return -EAGAIN;
+> -	dp->low_ino = i;
+> -
+> -	if (S_ISDIR(dp->mode)) {
+> -		if (dp->proc_iops == NULL) {
+> -			dp->proc_fops = &proc_dir_operations;
+> -			dp->proc_iops = &proc_dir_inode_operations;
+> +	if (i != 0)
+> +	{
+> +		errorcode=0;
+> +
+> +		dp->low_ino = i;
+> +
+> +		if (S_ISDIR(dp->mode)) {
+> +			if (dp->proc_iops == NULL) {
+> +				dp->proc_fops = &proc_dir_operations;
+> +				dp->proc_iops = &proc_dir_inode_operations;
+> +			}
+> +			dir->nlink++;
+> +		} else if (S_ISLNK(dp->mode)) {
+> +			if (dp->proc_iops == NULL)
+> +				dp->proc_iops = &proc_link_inode_operations;
+> +		} else if (S_ISREG(dp->mode)) {
+> +			if (dp->proc_fops == NULL)
+> +				dp->proc_fops = &proc_file_operations;
+> +			if (dp->proc_iops == NULL)
+> +				dp->proc_iops = &proc_file_inode_operations;
+>  		}
+> -		dir->nlink++;
+> -	} else if (S_ISLNK(dp->mode)) {
+> -		if (dp->proc_iops == NULL)
+> -			dp->proc_iops = &proc_link_inode_operations;
+> -	} else if (S_ISREG(dp->mode)) {
+> -		if (dp->proc_fops == NULL)
+> -			dp->proc_fops = &proc_file_operations;
+> -		if (dp->proc_iops == NULL)
+> -			dp->proc_iops = &proc_file_inode_operations;
+> -	}
+> 
+> -	spin_lock(&proc_subdir_lock);
+> +		spin_lock(&proc_subdir_lock);
+> 
+> -	for (tmp = dir->subdir; tmp; tmp = tmp->next)
+> -		if (strcmp(tmp->name, dp->name) == 0) {
+> -			WARN(1, KERN_WARNING "proc_dir_entry '%s/%s' already registered\n",
+> -				dir->name, dp->name);
+> -			break;
+> +		for (tmp = dir->subdir; tmp; tmp = tmp->next)
+> +		{
+> +			if (strcmp(tmp->name, dp->name) == 0) {
+> +				errorcode=-EEXIST;
+> +				break;
+> +			}
+>  		}
+> -
+> -	dp->next = dir->subdir;
+> -	dp->parent = dir;
+> -	dir->subdir = dp;
+> -	spin_unlock(&proc_subdir_lock);
+> -
+> -	return 0;
+> +		if(!errorcode)
+> +		{
+> +			dp->next = dir->subdir;
+> +			dp->parent = dir;
+> +			dir->subdir = dp;
+> +		}
+> +		spin_unlock(&proc_subdir_lock);
+> +	}
+> +	return errorcode;
+>  }
+> 
+>  static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
+> ----end of patch---------------------------------------
+> 
+> Regards
+> Dmitry
+> 
 
-> If we go with the hard limit, we can always address things 
-> when people run into it and complain, at such a time we also 
-> have a better view of people's uses and expectations methinks.
-
-Indeed.
-
-Thanks,
-
-	Ingo
+-- 
+Jiri Kosina
+SUSE Labs
