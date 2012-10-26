@@ -1,94 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab2JZSuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:50:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965309Ab2JZSu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:50:26 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-Date: Fri, 26 Oct 2012 14:50:04 -0400
-Message-Id: <1351277405-9072-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20121026061206.GA31139@thunk.org>
+	id S965383Ab2JZSvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:51:01 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6444 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758943Ab2JZSuZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:50:25 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Fri, 26 Oct 2012 11:50:17 -0700
+Message-ID: <508ADB1C.6040602@nvidia.com>
+Date: Sat, 27 Oct 2012 00:19:00 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] spi: tegra: add spi driver for SLINK controller
+References: <1350557233-31234-1-git-send-email-ldewangan@nvidia.com> <5085A667.2000100@wwwdotorg.org>
+In-Reply-To: <5085A667.2000100@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 02:12:06AM -0400, Theodore Ts'o wrote:
-> On Thu, Oct 25, 2012 at 11:12:48AM -0400, Naoya Horiguchi wrote:
-> > +	/* Lost data. Handle as critical fs error. */
-> > +	bh = head = page_buffers(page);
-> > +	do {
-> > +		if (buffer_dirty(bh) && !buffer_delay(bh)) {
-> > +			block = bh->b_blocknr;
-> > +			EXT4_ERROR_INODE_BLOCK(inode, block,
-> > +						"Removing dirty pagecache page");
-> > +		} else
-> > +			EXT4_ERROR_INODE(inode,
-> > +					"Removing dirty pagecache page");
-> 
-> One of the side effects of calling EXT4_ERROR_INODE (or ext3_error in
-> your ext3 patch), it sets the "file system is corrupt" bit which
-> forces the file system to be fsck'ed at the next boot.
-> 
-> If this is just a memory error, it's not clear that this is the right
-> thing to have happen.  It's also not clear what the benefit would be
-> is of forcing a reboot in the errors=panic case.  If the file system
-> is corrupt, forcing a panic and reboot is useful because it allows a
-> file system to get checked instead of allowing the system to continue
-> on and perhaps cause more data loss.
+Thanks Stephen for review.
+I have taken care of almost all feedback. Some of having my below comments.
 
-Let me explain what I'm worry about.
-Once memory error hits a dirty pagecache page, the page itself is
-removed from pagecache tree and will never be accessed later.
-But the problem is that after memory error handling is done,
-not all processes can know about that error event.
-As a result, a process which is not aware of the error tries to read
-the old data for disk, and data corruption spreads by using wrong data.
-I think that forcing rebooting is effective to prevent such spread of
-data corruption.
 
-> 
-> But if what happened is that there was a hard ECC error on a page,
-> we've already lost data.  Forcing a reboot isn't going to make things
-> better; and if you force an e2fsck, it will just increase the system's
-> downtime.  It's also not entirely clear that throwing away the page is
-> the right thing to do, either, by the way.  If you have a hard ECC
-> error, then there has might be a two or three bits that have gotten
-> flipped on that page.  But by throwing the dirty page entirely, we're
-> throwing away 4k worth of data.
-> 
-> If we go back to first principles, what do we want to do?  We want the
-> system administrator to know that a file might be potentially
-> corrupted.  And perhaps, if a program tries to read from that file, it
-> should get an error.  If we have a program that has that file mmap'ed
-> at the time of the error, perhaps we should kill the program with some
-> kind of signal.  But to force a reboot of the entire system?  Or to
-> remounte the file system read-only?  That seems to be completely
-> disproportionate for what might be 2 or 3 bits getting flipped in a
-> page cache for a file.
 
-In order to completely solve this problem, I'm thinking about another
-approach without rebooting. Roughly saying, it introduces additional
-tag in pagecache tree to keep error-affected address of the error-affected
-file untouchable until we 'recover' the address range (This is based
-on the provious discussion in https://lkml.org/lkml/2012/9/2/194.)
-But I should be careful for many details for the patch and will take
-some time, so I want to start with a simpler approach.
+On Tuesday 23 October 2012 01:32 AM, Stephen Warren wrote:
+> On 10/18/2012 04:47 AM, Laxman Dewangan wrote:
+>> Tegra20/Tegra30 supports the spi interface through its SLINK
+>> controller. Add spi driver for SLINK controller.
+>
+>> +static inline void tegra_slink_writel(struct tegra_slink_data *tspi,
+>> +             unsigned long val, unsigned long reg)
+>> +{
+>> +     writel(val, tspi->base + reg);
+>> +
+>> +     /* Read back register to make sure that register writes completed */
+>> +     if (reg != SLINK_TX_FIFO)
+>> +             readl(tspi->base + SLINK_MAS_DATA);
+> Is that really necessary on every single write, or only for certain
+> specific operations? This seems rather heavy-weight.
+>
 
-Thanks,
-Naoya
+We do write register very less (as we  shadow the register locally), I 
+do not see any perf degradation here.
+
+
+>> +     val_write = SLINK_RDY;
+>> +     val_write |= (val&  SLINK_FIFO_ERROR);
+> Why not just always set SLINK_FIFO_ERROR; does it have to be set in the
+> write only if the status was previously asserted? If that is true, how
+> do you avoid a race condition where the bit gets set in SLINK_STATUS
+> after you read it but before you write to clear it?
+>
+Status gets updated together. There is no steps of updating status.
+
+
+>
+>> +     if (bits_per_word == 8 || bits_per_word == 16) {
+>> +             tspi->is_packed = 1;
+>> +             tspi->words_per_32bit = 32/bits_per_word;
+> Spaces required around all operators. Does this pass checkpatch? No:
+> total: 1405 errors, 11 warnings, 1418 lines checked
+>
+
+I saw the issue by my checkpatch is not caching the issue. Let me 
+recheck my command.
+
+>> +             bits_per_word = t->bits_per_word ? t->bits_per_word :
+>> +                                             tspi->cur_spi->bits_per_word;
+> That logic is repeated a few times. Shouldn't there be a macro to avoid
+> cut/paste. Perhaps even in the SPI core rather than this driver.
+>
+
+I will post the change for moving the code to core later. I will keep 
+this for now.
+
+>> +             struct tegra_slink_data *tspi, struct spi_transfer *t)
+> Are there no cases where we can simply DMA straight into the client
+> buffer? I suppose it would be limited to cache-line-aligned
+> cache-line-size-aligned buffers which is probably unlikely in general:-(
+>
+
+I think it is possible by checking some flags, I will explore and will 
+post the fix later.
+
+>> +static int tegra_slink_unprepare_transfer(struct spi_master *master)
+>> +{
+>> +     struct tegra_slink_data *tspi = spi_master_get_devdata(master);
+>> +
+>> +     pm_runtime_put_sync(tspi->dev);
+>> +     return 0;
+>> +}
+> Does this driver actually implement any runtime PM ops? I certainly
+> don't see any in struct dev_pm_ops tegra_slink_dev_pm_ops. Related, why
+> do tegra_slink_clk_{en,dis}able exist; shouldn't those functions be the
+> implementation of the runtime PM ops? Related, why are
+> tegra_slink_clk_{en,dis}able called all over the place, rather than
+> relying on runtime PM API calls, or tegra_slink_{,un}prepare_transfer
+> having been called?
+>
+
+
+OK, I move the clock control in runtime callbacks.
+
+
+> So that all implies that we wait for the very first interrupt from the
+> SPI peripheral for a transfer, and then wait for the DMA controller to
+> complete all DMA (which would probably entail actually waiting for DMA
+> to drain the RX FIFO in the RX case). Does it make sense to simply
+> return from the ISR if not all conditions that we will wait on have
+> occurred, and so avoid blocking this ISR thread? I suppose since this
+> thread gets blocked rather than spinning, it's not a big deal though.
+>
+
+In this case, we can get rid of isr thread and move the wait/status 
+check to caller thread.
+I need to do some more stress on this and if it is fine then will post 
+the patch later for this, not as part of this patch.
+
+
+>> +     spin_lock_irqsave(&tspi->lock, flags);
+>> +     if (err) {
+>> +             dev_err(tspi->dev,
+>> +                     "DmaXfer: ERROR bit set 0x%x\n", tspi->status_reg);
+>> +             dev_err(tspi->dev,
+>> +                     "DmaXfer 0x%08x:0x%08x:0x%08x\n", tspi->command_reg,
+>> +                             tspi->command2_reg, tspi->dma_control_reg);
+>> +             tegra_periph_reset_assert(tspi->clk);
+>> +             udelay(2);
+>> +             tegra_periph_reset_deassert(tspi->clk);
+> Do we /have/ to reset the SPI block; can't we just disable it in the
+> control register, clear all status, and re-program it from scratch?
+>
+> If at all possible, I would like to avoid introducing any new use of
+> tegra_periph_reset_{,de}assert, since that API has no standard subsystem
+> equivalent (or if it does, isn't hooked into the standard subsystem
+> yet), and hence means this driver relies on a header file currently in
+> arch/arm/mach-tegra/include/mach, and we need to move or delete all such
+> headers in order to support single zImage.
+
+Is there a way to support the reset of controller. We will need this 
+functionality.
+
