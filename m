@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab2JZBiH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 21:38:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:6073 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab2JZBiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 21:38:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,650,1344236400"; 
-   d="scan'208";a="238564183"
-Date: Fri, 26 Oct 2012 09:27:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Ni zhan Chen <nizhan.chen@gmail.com>,
-        YingHang Zhu <casualfisher@gmail.com>, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: readahead: remove redundant ra_pages in file_ra_state
-Message-ID: <20121026012758.GA6282@localhost>
-References: <1350996411-5425-1-git-send-email-casualfisher@gmail.com>
- <20121023224706.GR4291@dastard>
- <CAA9v8mGjdi9Kj7p-yeLJx-nr8C+u4M=QcP5+WcA+5iDs6-thGw@mail.gmail.com>
- <20121024201921.GX4291@dastard>
- <CAA9v8mExDX1TYgCrRfYuh82SnNmNkqC4HjkmczSnz3Ca4zT_qw@mail.gmail.com>
- <20121025015014.GC29378@dastard>
- <CAA9v8mEULAEHn8qSsFokEue3c0hy8pK8bkYB+6xOtz_Tgbp0vw@mail.gmail.com>
- <50889FF1.9030107@gmail.com>
- <20121025025826.GB23462@localhost>
- <20121026002544.GI29378@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026002544.GI29378@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752676Ab2JZBib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:38:31 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:50690 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2JZBia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 21:38:30 -0400
+Date: Thu, 25 Oct 2012 18:38:22 -0700
+From: Mukesh Rathor <mukesh.rathor@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH 5/5] xen: x86 pvh: use
+ XENMEM_add_to_physmap_range for foreign gmfn mappings
+Message-ID: <20121025183822.1ec77078@mantra.us.oracle.com>
+In-Reply-To: <1351084777-28898-5-git-send-email-ian.campbell@citrix.com>
+References: <1351084756.18035.28.camel@zakaz.uk.xensource.com>
+	<1351084777-28898-5-git-send-email-ian.campbell@citrix.com>
+Organization: Oracle Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:25:44AM +1100, Dave Chinner wrote:
-> On Thu, Oct 25, 2012 at 10:58:26AM +0800, Fengguang Wu wrote:
-> > Hi Chen,
-> > 
-> > > But how can bdi related ra_pages reflect different files' readahead
-> > > window? Maybe these different files are sequential read, random read
-> > > and so on.
-> > 
-> > It's simple: sequential reads will get ra_pages readahead size while
-> > random reads will not get readahead at all.
-> > 
-> > Talking about the below chunk, it might hurt someone that explicitly
-> > takes advantage of the behavior, however the ra_pages*2 seems more
-> > like a hack than general solution to me: if the user will need
-> > POSIX_FADV_SEQUENTIAL to double the max readahead window size for
-> > improving IO performance, then why not just increase bdi->ra_pages and
-> > benefit all reads? One may argue that it offers some differential
-> > behavior to specific applications, however it may also present as a
-> > counter-optimization: if the root already tuned bdi->ra_pages to the
-> > optimal size, the doubled readahead size will only cost more memory
-> > and perhaps IO latency.
-> > 
-> > --- a/mm/fadvise.c
-> > +++ b/mm/fadvise.c
-> > @@ -87,7 +86,6 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
-> >                 spin_unlock(&file->f_lock);
-> >                 break;
-> >         case POSIX_FADV_SEQUENTIAL:
-> > -               file->f_ra.ra_pages = bdi->ra_pages * 2;
+On Wed, 24 Oct 2012 14:19:37 +0100
+Ian Campbell <ian.campbell@citrix.com> wrote:
+
+> Squeezing the necessary fields into the existing XENMEM_add_to_physmap
+> interface was proving to be a bit tricky so we have decided to go with
+> a new interface upstream (the XENMAPSPACE_gmfn_foreign interface using
+> XENMEM_add_to_physmap was never committed anywhere). This interface
+> also allows for batching which was impossible to support at the same
+> time as foreign mfns in the old interface.
 > 
-> I think we really have to reset file->f_ra.ra_pages here as it is
-> not a set-and-forget value. e.g.  shrink_readahead_size_eio() can
-> reduce ra_pages as a result of IO errors. Hence if you have had io
-> errors, telling the kernel that you are now going to do  sequential
-> IO should reset the readahead to the maximum ra_pages value
-> supported....
+> This reverts the relevant parts of "PVH: basic and header changes,
+> elfnote changes, ..." and followups and trivially converts
+> pvh_add_to_xen_p2m over.
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Good point!
+Ok, I made the change on the xen side for x86 and tested it out. Works
+fine. Second ack.
 
-.... but wait .... this patch removes file->f_ra.ra_pages in all other
-places too, so there will be no file->f_ra.ra_pages to be reset here... 
+thanks, 
+Mukesh
 
-Thanks,
-Fengguang
