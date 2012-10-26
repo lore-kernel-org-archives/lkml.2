@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965850Ab2JZSI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 14:08:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38757 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965832Ab2JZSI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 14:08:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5102: Update maximum register
-Date: Fri, 26 Oct 2012 19:08:23 +0100
-Message-Id: <1351274903-26345-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S965854Ab2JZSMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 14:12:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54414 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965638Ab2JZSMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 14:12:03 -0400
+Message-ID: <508AD2FF.5020306@redhat.com>
+Date: Fri, 26 Oct 2012 14:14:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Michel Lespinasse <walken@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 05/31] x86/mm: Reduce tlb flushes from ptep_set_access_flags()
+References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl> <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com> <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com> <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com> <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com> <CA+55aFwpZ5pO2G7gs3Pga5et1DQZ4qMoe1CLFkSrVQK_4K4rhA@mail.gmail.com> <508ACE6E.8060303@redhat.com> <CA+55aFyYvu20qHtJ2SuNK3Dd466Hs9m9U3_41E8HtQ6KiRVRKw@mail.gmail.com>
+In-Reply-To: <CA+55aFyYvu20qHtJ2SuNK3Dd466Hs9m9U3_41E8HtQ6KiRVRKw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DSP memories are mapped into the register map, make them readable and
-writable by updating max_register appropriately.
+On 10/26/2012 02:02 PM, Linus Torvalds wrote:
+> On Fri, Oct 26, 2012 at 10:54 AM, Rik van Riel <riel@redhat.com> wrote:
+>>
+>> Would tlb_fix_spurious_fault take care of that on those
+>> architectures?
+>
+> .. assuming that they implement it as a real TLB flush, yes.
+>
+> But maybe the architecture never noticed that it happened to depend on
+> the fact that we do a cross-CPU invalidate? So a missing
+> tlb_fix_spurious_fault() implementation could cause a short loop of
+> repeated page faults, until the IPI happens. And it would be so
+> incredibly rare that nobody would ever have noticed.
+>
+> And if that could have happened, then with the cross-cpu invalidate
+> removed, the "incredibly rare short-lived constant page fault retry"
+> could turn into "incredibly rare lockup due to infinite page fault
+> retry due to TLB entry that never turns dirty despite it being marked
+> dirty by SW in the in-memory page tables".
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+I suspect the next context switch would flush out the TLB,
+making it a slowdown, not a lockup.
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index e1dc022..645c0d6 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -1855,12 +1855,14 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
- 	}
- }
- 
-+#define WM5102_MAX_REGISTER 0x1a8fff
-+
- const struct regmap_config wm5102_spi_regmap = {
- 	.reg_bits = 32,
- 	.pad_bits = 16,
- 	.val_bits = 16,
- 
--	.max_register = ARIZONA_DSP1_STATUS_2,
-+	.max_register = WM5102_MAX_REGISTER,
- 	.readable_reg = wm5102_readable_register,
- 	.volatile_reg = wm5102_volatile_register,
- 
-@@ -1874,7 +1876,7 @@ const struct regmap_config wm5102_i2c_regmap = {
- 	.reg_bits = 32,
- 	.val_bits = 16,
- 
--	.max_register = ARIZONA_DSP1_STATUS_2,
-+	.max_register = WM5102_MAX_REGISTER,
- 	.readable_reg = wm5102_readable_register,
- 	.volatile_reg = wm5102_volatile_register,
- 
--- 
-1.7.10.4
+Still a good reason to make such a change in its own commit,
+so it can be bisected and tracked down.
+
+The commit message could tell architecture maintainers what
+to do if this particular commit got them into trouble:
+implement a proper local TLB flush in tlb_fix_spurious_fault.
+
+I'll send this in as a separate patch.
 
