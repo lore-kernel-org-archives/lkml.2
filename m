@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933040Ab2JZNwy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 09:52:54 -0400
-Received: from antcom.de ([188.40.178.216]:39342 "EHLO chuck.antcom.de"
+	id S933070Ab2JZNxG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:53:06 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:53826 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab2JZNwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 09:52:53 -0400
-Message-ID: <508A95B3.3010306@antcom.de>
-Date: Fri, 26 Oct 2012 15:52:51 +0200
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
+	id S932356Ab2JZNxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:53:02 -0400
+Date: Fri, 26 Oct 2012 15:52:25 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/4] arm: mvebu: adding SATA support: dt binding for
+ Armada 370/XP
+Message-ID: <20121026135225.GO21046@lunn.ch>
+References: <1351254650-26861-1-git-send-email-gregory.clement@free-electrons.com>
+ <1351254650-26861-3-git-send-email-gregory.clement@free-electrons.com>
+ <20121026133154.GN18811@titan.lakedaemon.net>
+ <20121026133446.GM21046@lunn.ch>
+ <508A945C.4010006@free-electrons.com>
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, kernel@pengutronix.de,
-        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "tru@work-microwave.de" <tru@work-microwave.de>
-Subject: Re: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
-References: <1351164400-27940-1-git-send-email-stigge@antcom.de> <1351164400-27940-2-git-send-email-stigge@antcom.de> <20121026085934.GA1641@pengutronix.de> <508A54E4.2060108@antcom.de> <508A665C.80107@pengutronix.de> <508A6E92.1000107@antcom.de>
-In-Reply-To: <508A6E92.1000107@antcom.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508A945C.4010006@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 01:05 PM, Roland Stigge wrote:
-> On 10/26/2012 12:30 PM, Marc Kleine-Budde wrote:
->>>>> +	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate",
->>>>> "can_sel", MXC_CCM_CCGR4, 6); +	clk[can1_ipg_gate] =
->>>>> imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR4, 8); +
->>>>> clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate",
->>>>> "can_sel", MXC_CCM_CCGR4, 6); +	clk[can2_ipg_gate] =
->>>>> imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
->>>>
->>>> This doesn't.
->>>
->>> This may be right, but unfortunately, since the introduction of
->>> your can1 + can2 clocking change, the first block stopped working
->>> for me.
->>
->> You are effectively using can2's clock for can1. Are you sure you 
->> haven't mixed up can1 and can2?
-> 
-> Just using the above patch and patch 1/2 from this series (missing can
-> pinmuxing), doing like this in custom .dts:
-> 
-> +                       can1: can@53fc8000 {
-> +                               pinctrl-names = "default";
-> +                               pinctrl-0 = <&pinctrl_can1_1>;
-> +                               clock-frequency = <66500000>;
+> Now, about white spaces vs tab, I don't know what is the rule for .dts
+> file.
 
-That was the problem, since in flexcan.c probe():
+I personally use tabs, but i don't see anything in the
+Documentation/CodingStyle.
 
+Maybe ask on the device tree mailing list?
 
-	if (pdev->dev.of_node)
-		of_property_read_u32(pdev->dev.of_node,
-						"clock-frequency", &clock_freq);
-
-	if (!clock_freq) {
-		clk_ipg = devm_clk_get(&pdev->dev, "ipg");
-		if (IS_ERR(clk_ipg)) {
-			dev_err(&pdev->dev, "no ipg clock defined\n");
-			err = PTR_ERR(clk_ipg);
-			goto failed_clock;
-		}
-		clock_freq = clk_get_rate(clk_ipg);
-
-		clk_per = devm_clk_get(&pdev->dev, "per");
-		if (IS_ERR(clk_per)) {
-			dev_err(&pdev->dev, "no per clock defined\n");
-			err = PTR_ERR(clk_per);
-			goto failed_clock;
-		}
-	}
-
-Sorry for the noise.
-
-The other patches are still current.
-
-Thanks,
-
-Roland
+      Andrew
