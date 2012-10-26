@@ -1,74 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab2JZGGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 02:06:09 -0400
-Received: from guarana.org ([59.167.251.209]:40851 "EHLO
-	cheesypoof.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab2JZGGI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 02:06:08 -0400
-X-Greylist: delayed 507 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Oct 2012 02:06:08 EDT
-Message-ID: <20121026165713.19106iudy5h4nvbw@guarana.org>
-Date: Fri, 26 Oct 2012 16:57:13 +1100
-From: Kevin Easton <kevin@guarana.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1] firmware loader: introduce module parameter to
- customize fw search path
-References: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
- <CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
- <CACVXFVObmYD9iG1yMkCNqfdx-XxMKOJ41kAROyxx-RBDufKKmQ@mail.gmail.com>
- <CA+55aFzoJULimHhYHdb-BW1bqSAY8FUevPnYu-K6nDa7xRtg2w@mail
- <20121026035259.GO2616@ZenIV.linux.org.uk>
-In-Reply-To: <20121026035259.GO2616@ZenIV.linux.org.uk>
+	id S1756311Ab2JZGLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 02:11:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28734 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab2JZGLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 02:11:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,652,1344236400"; 
+   d="scan'208";a="209546765"
+Date: Fri, 26 Oct 2012 14:11:45 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Yuanhan Liu <yliu.null@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wei Yang <weiyang@linux.vnet.ibm.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] kfifo: remove unnecessary type check
+Message-ID: <20121026061145.GA2778@yliu-dev.sh.intel.com>
+References: <1351215971-11639-1-git-send-email-yliu.null@gmail.com>
+ <1351229911.12511.1.camel@wall-e>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+In-Reply-To: <1351229911.12511.1.camel@wall-e>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Al Viro <viro@ZenIV.linux.org.uk>:
+On Fri, Oct 26, 2012 at 07:38:31AM +0200, Stefani Seibold wrote:
+> Am Freitag, den 26.10.2012, 09:46 +0800 schrieb Yuanhan Liu:
+> > From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > 
+> > Firstly, this kind of type check doesn't work. It does something similay
+> > like following:
+> > 	void * __dummy = NULL;
+> > 	__buf = __dummy;
+> > 
+> > __dummy is defined as void *. Thus it will not trigger warnings as
+> > expected.
+> > 
+> > Second, we don't need that kind of check. Since the prototype
+> > of __kfifo_out is:
+> > 	unsigned int __kfifo_out(struct __kfifo *fifo,  void *buf, unsigned int len)
+> > 
+> > buf is defined as void *, so we don't need do the type check. Remove it.
+> > 
+> > LINK: https://lkml.org/lkml/2012/10/25/386
+> > LINK: https://lkml.org/lkml/2012/10/25/584
+> > 
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Wei Yang <weiyang@linux.vnet.ibm.com>
+> > Cc: Stefani Seibold <stefani@seibold.net>
+> > Cc: Fengguang Wu <fengguang.wu@intel.com>
+> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Signed-off-by: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+> > ---
+> >  include/linux/kfifo.h | 20 --------------------
+> >  1 file changed, 20 deletions(-)
+> > 
+> > diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+> > index 10308c6..b8c1d03 100644
+> > --- a/include/linux/kfifo.h
+> > +++ b/include/linux/kfifo.h
+> > @@ -390,10 +390,6 @@ __kfifo_int_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> > -		__dummy = (typeof(__val))NULL; \
+> > -	} \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_in_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -432,8 +428,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) \
+> > -		__val = (typeof(__tmp->ptr))0; \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_out_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -473,8 +467,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned int __ret; \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) \
+> > -		__val = (typeof(__tmp->ptr))NULL; \
+> >  	if (__recsize) \
+> >  		__ret = __kfifo_out_peek_r(__kfifo, __val, sizeof(*__val), \
+> >  			__recsize); \
+> > @@ -512,10 +504,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr_const) __dummy __attribute__ ((unused)); \
+> > -		__dummy = (typeof(__buf))NULL; \
+> > -	} \
+> >  	(__recsize) ?\
+> >  	__kfifo_in_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_in(__kfifo, __buf, __n); \
+> > @@ -565,10 +553,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr) __dummy = NULL; \
+> > -		__buf = __dummy; \
+> > -	} \
+> >  	(__recsize) ?\
+> >  	__kfifo_out_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_out(__kfifo, __buf, __n); \
+> > @@ -777,10 +761,6 @@ __kfifo_uint_must_check_helper( \
+> >  	unsigned long __n = (n); \
+> >  	const size_t __recsize = sizeof(*__tmp->rectype); \
+> >  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+> > -	if (0) { \
+> > -		typeof(__tmp->ptr) __dummy __attribute__ ((unused)) = NULL; \
+> > -		__buf = __dummy; \
+> > -	} \
+> >  	(__recsize) ? \
+> >  	__kfifo_out_peek_r(__kfifo, __buf, __n, __recsize) : \
+> >  	__kfifo_out_peek(__kfifo, __buf, __n); \
+> 
+> Did you tried to compile the whole kernel including all the drivers with
+> your patch?
 
-> On Thu, Oct 25, 2012 at 08:38:25PM -0700, Linus Torvalds wrote:
->
->> It's valid to cast a non-const pointer to a const one. It's the
->> *other* way around that is invalid.
->>
->> So marking fw_path[] as having 'const char *' elements just means that
->> we won't be changing those elements through the fw_path[] array
->> (correct: we only read them). The fact that one of those same pointers
->> is then also available through a non-const pointer variable means that
->> they can change through *that* pointer, but that doesn't change the
->> fact that fw_path[] itself contains const pointers.
->>
->> Remember: in C, a "const pointer" does *not* mean that the thing it
->> points to cannot change. It only means that it cannot change through
->> *that* pointer.
->
-> It's a bit trickier, unfortunately - pointer to pointer to const char
-> and pointer to pointer to char do not mix.  Just for fun, try to constify
-> envp and argv arguments of call_usermodehelper()...
+Hi Stefani,
 
-That's because if it _was_ allowed, you could use it to silently  
-launder the const away:
+I did a build test, it did't introduce any new compile errors and
+warnings. While, I haven't tried make allmodconfig then. Does this patch
+seems wrong to you?
 
-const char *c = "rodata";
-char *x;
-const char **y;
-
-y = &x;
-*y = c;
-
-/* We now have (const char) values accessible through a (char *) pointer x */
-
-
-
+Thanks,
+Yuanhan Liu
