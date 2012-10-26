@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab2JZDMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:12:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60170 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755671Ab2JZDMU (ORCPT
+	id S1755909Ab2JZDNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:13:42 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:45398 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab2JZDNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:12:20 -0400
+	Thu, 25 Oct 2012 23:13:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
-References: <1351212379-26026-1-git-send-email-ming.lei@canonical.com>
-	<CA+55aFwaLnyYFaydxw1ALmp_EP217DmgY=ihNy3z1ZqF-pqkSA@mail.gmail.com>
-Date: Fri, 26 Oct 2012 11:12:18 +0800
-Message-ID: <CACVXFVObmYD9iG1yMkCNqfdx-XxMKOJ41kAROyxx-RBDufKKmQ@mail.gmail.com>
-Subject: Re: [PATCH v1] firmware loader: introduce module parameter to
- customize fw search path
-From: Ming Lei <ming.lei@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20121025191622.GA4088@kroah.com>
+References: <1351144271-24443-1-git-send-email-sj38.park@gmail.com> <20121025191622.GA4088@kroah.com>
+From: SeongJae Park <sj38.park@gmail.com>
+Date: Fri, 26 Oct 2012 12:13:19 +0900
+Message-ID: <CAEjAshp1zR=cMht71q5nt5_PCM8uozEhwO7D3Un0y4MPhxebBg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Remove CsrEventHandle and functions using it
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:32 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Thank you for comment.
+I will make and send patch again.
+
+Thanks and Regards.
+SeongJae Park.
+
+On Fri, Oct 26, 2012 at 4:16 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Oct 25, 2012 at 02:51:10PM +0900, SeongJae Park wrote:
+>> Nobody use CsrEventHandle, Nobody call function using it as parameter.
+>> So, remove it.
+>>
+>> Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+>> ---
+>>  drivers/staging/csr/csr_framework_ext.h       |   61 -------------------------
+>>  drivers/staging/csr/csr_framework_ext_types.h |    2 -
+>>  2 files changed, 63 deletions(-)
 >
-> Please just make "fw_path[0]" just be the pointer to fw_path_para[]
-> (which sounds like the cleanest fix) and get rid of the negative 'i'
-> and conditional entirely.
-
-Yes, it should be the cleanest, I don't do it because I thought that might
-have caused one compile warning('const char *' points to memory
-without 'const', like below)
-
-	static char fw_path_para[256];
-	static const char *fw_path[] = {
-		fw_path_para,
-		"/lib/firmware/updates/" UTS_RELEASE,
-		"/lib/firmware/updates",
-		"/lib/firmware/" UTS_RELEASE,
-		"/lib/firmware"
-	};
-
-but in fact there isn't any warning with above change and it does work, still
-don't know why? :-(
-
-Thanks,
---
-Ming Lei
+> This patch applies with fuzz, which implies that you didn't make it
+> against the latest tree.  Care to redo it, and the 2/2 patch, against
+> either my staging-next branch of the staging.git tree, or the next
+> linux-next release that will happen tomorrow, and resend them?
+>
+> thanks,
+>
+> greg k-h
