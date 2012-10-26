@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab2JZAnZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:43:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52706 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab2JZAGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [ 06/42] oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
-Date: Thu, 25 Oct 2012 17:05:14 -0700
-Message-Id: <20121026000125.435950403@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
-References: <20121026000124.790781113@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755494Ab2JZAni (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:43:38 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57650 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754015Ab2JZAng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:43:36 -0400
+Date: Thu, 25 Oct 2012 20:43:26 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Ric Wheeler <ricwheeler@gmail.com>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121026004326.GB10509@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Ric Wheeler <ricwheeler@gmail.com>,
+	Eric Sandeen <sandeen@redhat.com>, linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>
+References: <87objupjlr.fsf@spindle.srvr.nix>
+ <20121023013343.GB6370@fieldses.org>
+ <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508740B2.2030401@redhat.com>
+ <87txtkld4h.fsf@spindle.srvr.nix>
+ <5089D520.6020106@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5089D520.6020106@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 25, 2012 at 08:11:12PM -0400, Ric Wheeler wrote:
+> 
+> Sending this just to you two to avoid embarrassing myself if I
+> misread the thread, but....
+> 
+> Can we reproduce this with any other hardware RAID card? Or with MD?
 
-------------------
+There was another user who reported very similar corruption using
+3.6.2 using USB thumb drive.  I can't be certain that it's the same
+bug that's being triggered, but the symptoms were identical.
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+> If we cannot reproduce this in other machines, why assume this is an
+> ext4 issue and not a hardware firmware bug?
+> 
+> As an ex-storage guy, this really smells like the hardware raid card
+> might be misleading us....
 
-commit 44009105081b51417f311f4c3be0061870b6b8ed upstream.
+It's possible.  The main reason why I took this so seriously was
+because of the 2nd, apparently confirming report, with very different
+hardware.  That was what was so scary to me, at least at first.
 
-The "event" variable is a u16 so the shift will always wrap to zero
-making the line a no-op.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/oprofile/nmi_int.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -55,7 +55,7 @@ u64 op_x86_get_ctrl(struct op_x86_model_
- 	val |= counter_config->extra;
- 	event &= model->event_mask ? model->event_mask : 0xFF;
- 	val |= event & 0xFF;
--	val |= (event & 0x0F00) << 24;
-+	val |= (u64)(event & 0x0F00) << 24;
- 
- 	return val;
- }
-
-
+	   	    	     	      - Ted
