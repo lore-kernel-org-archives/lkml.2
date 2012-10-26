@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966593Ab2JZVQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 17:16:30 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:40188 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966544Ab2JZVQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 17:16:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>
-Subject: [GIT PULL] Power management and ACPI fixes for 3.7-rc3
-Date: Fri, 26 Oct 2012 23:20:24 +0200
-Message-ID: <20490446.pylUFvD5EM@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+	id S966597Ab2JZVTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 17:19:32 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:40349 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966492Ab2JZVTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 17:19:30 -0400
+From: Nix <nix@esperi.org.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
+References: <87objupjlr.fsf@spindle.srvr.nix>
+	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
+	<20121023143019.GA3040@fieldses.org>
+	<874nllxi7e.fsf_-_@spindle.srvr.nix>
+	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com>
+	<87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org>
+	<87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org>
+Emacs: more than just a Lisp interpreter, a text editor as well!
+Date: Fri, 26 Oct 2012 22:19:21 +0100
+In-Reply-To: <20121026211542.GE8614@thunk.org> (Theodore Ts'o's message of
+	"Fri, 26 Oct 2012 17:15:42 -0400")
+Message-ID: <87haphx76u.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-DCC-INFN-TO-Metrics: spindle 1233; Body=10 Fuz1=10 Fuz2=10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 26 Oct 2012, Theodore Ts'o uttered the following:
 
-Please pull from the git repository at
+> The plan is that eventually, we will have checksums on a
+> per-journalled block basis, instead of a per-commit basis, and when we
+> get a failed checksum, we skip the replay of that block,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-for-3.7-rc3
+But not of everything it implies, since that's quite tricky to track
+down (it's basically the same work needed for softupdates, but in
+reverse). Hence the e2fsck check, I suppose.
 
-to receive power management and ACPI fixes for v3.7-rc3 with top-most commit
-879dca019dc43a1622edca3e7dde644b14b5acc5
+> prevent unwary civilians from coming across the feature and saying,
+> "oooh, shiny!" and turning it on.  :-(
 
-  ACPI: missing break
-
-on top of commit 6f0c0580b70c89094b3422ba81118c7b959c7556
-
-  Linux 3.7-rc2
-
-Included are:
-
-* Fix for a recently introduced memory leak in acpi_bind_one() from Jesper Juhl.
-
-* PM domains fix for an error code path memory leak in pm_genpd_attach_cpuidle()
-  from Jonghwan Choi.
-
-* Fix for smp_processor_id() usage in preemptible code in powernow-k8 from
-  Andreas Herrmann (stable material).
-
-* Fix for a suspend-related memory leak in cpufreq stats from Xiaobing Tu.
-
-* Freezer fix for failure to clear PF_NOFREEZE along with PF_KTHREAD
-  in flush_old_exec() from Oleg Nesterov.
-
-* One-liner acpi_processor_notify() fix from Alan Cox.
-
-Thanks!
-
-
- drivers/acpi/glue.c             | 1 +
- drivers/acpi/processor_driver.c | 1 +
- drivers/base/power/domain.c     | 5 ++++-
- drivers/cpufreq/cpufreq_stats.c | 1 +
- drivers/cpufreq/powernow-k8.c   | 9 +--------
- fs/exec.c                       | 3 ++-
- 6 files changed, 10 insertions(+), 10 deletions(-)
-
----------------
-
-Alan Cox (1):
-      ACPI: missing break
-
-Andreas Herrmann (1):
-      cpufreq / powernow-k8: Remove usage of smp_processor_id() in preemptible code
-
-Jesper Juhl (1):
-      ACPI: Fix memory leak in acpi_bind_one()
-
-Oleg Nesterov (1):
-      freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
-
-Tu, Xiaobing (1):
-      Fix memory leak in cpufreq stats.
-
-jhbird.choi@samsung.com (1):
-      PM / Domains: Fix memory leak on error path in pm_genpd_attach_cpuidle
-
+Or having it turned on by default either, which seems to be the case
+now.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+NULL && (void)
