@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab2JZM5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 08:57:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42655 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932766Ab2JZM5Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 08:57:16 -0400
-Message-ID: <1351256204.16863.56.camel@twins>
-Subject: Re: [PATCH 01/16] math128: Introduce various 128bit primitives
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com,
-        rostedt@goodmis.org, oleg@redhat.com, fweisbec@gmail.com,
-        darren@dvhart.com, johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com, vincent.guittot@linaro.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 26 Oct 2012 14:56:44 +0200
-In-Reply-To: <1351248244.16863.13.camel@twins>
-References: <1351115634-8420-1-git-send-email-juri.lelli@gmail.com>
-	 <1351115634-8420-2-git-send-email-juri.lelli@gmail.com>
-	 <CA+55aFwLnz4ZNgKxJ6ANn7usppJC_OKHy0uVuh2+EhYTuiL5yw@mail.gmail.com>
-	 <1351172849.12171.10.camel@twins>
-	 <CA+55aFx5jCKtEbEY9iuv0J2TFipkwJP=tBH-F2x_bzJG1RBzTQ@mail.gmail.com>
-	 <1351241389.12171.45.camel@twins> <20121026092421.GB628@gmail.com>
-	 <1351244130.16863.7.camel@twins> <20121026094207.GA2179@gmail.com>
-	 <1351245264.16863.12.camel@twins>
-	 <alpine.LFD.2.02.1210261208170.2756@ionos>
-	 <1351248244.16863.13.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754560Ab2JZNDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 09:03:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28594 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751058Ab2JZNDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 09:03:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
+   d="scan'208";a="238756763"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: linux-mm@kvack.org
+Cc: Will Deacon <will.deacon@arm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] numa, mm: consolidate error path in do_huge_pmd_numa_page()
+Date: Fri, 26 Oct 2012 15:54:35 +0300
+Message-Id: <1351256077-1594-2-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351256077-1594-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1351256077-1594-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-10-26 at 12:44 +0200, Peter Zijlstra wrote:
-> > We can still have the user space interface handing in the information
-> > in nsec resolution, but it's reasonable to scale it down to something
-> > useful. Just shift the incoming information right by 10, so you're in
-> > the 1us resolution for all the internal math and all your limitation
-> > problems are gone. A shift by ten for converting back and forth to
-> > nsecs is not a real performance issue.
-> 
-> I'm fine with that.. all I wanted was to not have the undefined overflow
-> we initially had. 
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Note that we still need the constraint checking with this, although with
-both values shifted right 10 bits the range is now much bigger and
-shouldn't be a practical limit anymore.
+Let's move all error path code to the end if the function. It makes code
+more straight-forward.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c |   44 ++++++++++++++++++++------------------------
+ 1 file changed, 20 insertions(+), 24 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 9bb2c23..95ec485 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -759,30 +759,14 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		goto unlock;
+ 
+ 	page = pmd_page(entry);
+-	if (page) {
+-		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+-
+-		get_page(page);
+-		node = mpol_misplaced(page, vma, haddr);
+-		if (node != -1)
+-			goto migrate;
+-	}
+-
+-fixup:
+-	/* change back to regular protection */
+-	entry = pmd_modify(entry, vma->vm_page_prot);
+-	set_pmd_at(mm, haddr, pmd, entry);
+-	update_mmu_cache_pmd(vma, address, entry);
+-
+-unlock:
+-	spin_unlock(&mm->page_table_lock);
+-	if (page) {
+-		task_numa_fault(page_to_nid(page), HPAGE_PMD_NR);
+-		put_page(page);
+-	}
+-	return;
++	if (!page)
++		goto fixup;
++	VM_BUG_ON(!PageCompound(page) || !PageHead(page));
+ 
+-migrate:
++	get_page(page);
++	node = mpol_misplaced(page, vma, haddr);
++	if (node == -1)
++		goto fixup;
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	lock_page(page);
+@@ -871,7 +855,19 @@ alloc_fail:
+ 		page = NULL;
+ 		goto unlock;
+ 	}
+-	goto fixup;
++fixup:
++	/* change back to regular protection */
++	entry = pmd_modify(entry, vma->vm_page_prot);
++	set_pmd_at(mm, haddr, pmd, entry);
++	update_mmu_cache_pmd(vma, address, entry);
++
++unlock:
++	spin_unlock(&mm->page_table_lock);
++	if (page) {
++		task_numa_fault(page_to_nid(page), HPAGE_PMD_NR);
++		put_page(page);
++	}
++	return;
+ }
+ 
+ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+-- 
+1.7.10.4
+
