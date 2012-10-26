@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab2JZBL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 21:11:59 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:60024 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752347Ab2JZBL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 21:11:57 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9Q1AjGE003284, This message is released by code: ctaloc0852
-Message-ID: <5089E315.1010708@realsil.com.cn>
-Date: Fri, 26 Oct 2012 09:10:45 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752882Ab2JZBM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 21:12:26 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:30043 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab2JZBMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 21:12:24 -0400
+X-IronPort-AV: E=Sophos;i="4.80,650,1344236400"; 
+   d="scan'208";a="277311713"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        "Linux Kernel mailing list" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Please pull more NFS related bugfixes
+Thread-Topic: [GIT PULL] Please pull more NFS related bugfixes
+Thread-Index: AQHNsxbzSHsBlhUzYUW4TgAgez1PZA==
+Date: Fri, 26 Oct 2012 01:12:22 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA909293049@SACEXCMBX04-PRD.hq.netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.116]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <0172666A1077424BB0F592B807D367AB@tahoe.netapp.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Dan Carpenter <dan.carpenter@oracle.com>, Phil Turmel <philip@turmel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Ball <cjb@laptop.org>,
-        "oakad@yahoo.com" <oakad@yahoo.com>
-Subject: Re: [PATCH v6 0/3] Add modules to support realtek PCIE card reader
-References: <cover.1347330871.git.wei_wang@realsil.com.cn> <50664814.30407@turmel.org> <20120929110730.GA27797@liondog.tnic> <87d315osjm.fsf@octavius.laptop.org> <20120929152942.GA11412@liondog.tnic> <506FDC8C.3030707@realsil.com.cn> <20121020034615.GT5685@mwanda> <20121025185041.GB22114@kroah.com>
-In-Reply-To: <20121025185041.GB22114@kroah.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9Q1CXUu022223
 
-ÓÚ 2012Äê10ÔÂ26ÈÕ 02:50, Greg KH Ğ´µÀ:
-> On Sat, Oct 20, 2012 at 06:46:15AM +0300, Dan Carpenter wrote:
->> On Sat, Oct 06, 2012 at 03:23:56PM +0800, wwang wrote:
->>> We are still maintaining the SCSI driver for Realtek card reader,
->>> and will release the latest source code in the Github in the future.
->>> But maybe we won't push it to the staging tree any more.
->> Maybe we should just remove the staging code if it won't be fixed.
->> That's sort of the point of staging.
-> I agree.  wwang, want me to delet the staging driver now?  I don't want
-> "dead" code in the tree, especially as you don't want to maintain it
-> anymore.
->
-> thanks,
->
-> greg k-h
-Hi Greg:
+Hi Linus,
 
-OK. You can delete it now, please.
-And I will push my new driver to MFD and MMC subsystem.
+This pull fixes a fairly urgent issue with the NFSv2/v3 statd code that
+is causing Oopses, as well as some long standing races with the SUNRPC
+tcp code.
 
-Best Regards,
-wwang
+The following changes since commit 0e9e3e306c7e472bdcffa34c4c4584301eda03b3:
+
+  Merge tag 'stable/for-linus-3.7-rc2-tag' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen (2012-10-24 05:17:27 +0300)
+
+are available in the git repository at:
+
+
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.7-3
+
+for you to fetch changes up to e498daa81295d02f7359af313c2b7f87e1062207:
+
+  LOCKD: Clear ln->nsm_clnt only when ln->nsm_users is zero (2012-10-24 10:46:22 -0400)
+
+----------------------------------------------------------------
+NFS bugfixes for Linux 3.7
+
+- Fix the NFSv2/v3 kernel statd protocol, which broke due to net namespace
+  related changes.
+- Fix a number of races in the SUNRPC TCP disconnect/reconnect code.
+
+----------------------------------------------------------------
+Trond Myklebust (6):
+      SUNRPC: Clear the connect flag when socket state is TCP_CLOSE_WAIT
+      Revert "SUNRPC: Ensure we close the socket on EPIPE errors too..."
+      SUNRPC: Prevent races in xs_abort_connection()
+      SUNRPC: Get rid of the xs_error_report socket callback
+      LOCKD: fix races in nsm_client_get
+      LOCKD: Clear ln->nsm_clnt only when ln->nsm_users is zero
+
+ fs/lockd/mon.c        | 57 +++++++++++++++++++++++++++++----------------------
+ net/sunrpc/xprtsock.c | 41 +++++++++---------------------------
+ 2 files changed, 42 insertions(+), 56 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
