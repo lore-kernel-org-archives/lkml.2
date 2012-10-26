@@ -1,177 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2JZAct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:32:49 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53211 "EHLO mail.kernel.org"
+	id S1753981Ab2JZAdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:33:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53199 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753724Ab2JZAHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:07:07 -0400
+	id S1753862Ab2JZAHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:07:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dmitry Monakhov <dmonakhov@openvz.org>, "Theodore Tso" <tytso@mit.edu>
-Subject: [ 01/85] ext4: race-condition protection for ext4_convert_unwritten_extents_endio
-Date: Thu, 25 Oct 2012 17:05:19 -0700
-Message-Id: <20121026000031.274212867@linuxfoundation.org>
+        Brian Norris <computersforpeace@gmail.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 42/42] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
+Date: Thu, 25 Oct 2012 17:05:50 -0700
+Message-Id: <20121026000129.021347820@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
+In-Reply-To: <20121026000124.790781113@linuxfoundation.org>
+References: <20121026000124.790781113@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Monakhov <dmonakhov@openvz.org>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit dee1f973ca341c266229faa5a1a5bb268bed3531 upstream.
+commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
 
-We assumed that at the time we call ext4_convert_unwritten_extents_endio()
-extent in question is fully inside [map.m_lblk, map->m_len] because
-it was already split during submission.  But this may not be true due to
-a race between writeback vs fallocate.
+The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
+silently masks off at least one flag that might be set by the driver
+(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
+others.
 
-If extent in question is larger than requested we will split it again.
-Special precautions should being done if zeroout required because
-[map.m_lblk, map->m_len] already contains valid data.
+Really, as long as driver writers exercise a small amount of care with
+NAND_* options, this mask is not necessary at all; it was only here to
+prevent certain options from accidentally being set by the driver. But the
+original thought turns out to be a bad idea occasionally. Thus, kill it.
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Note, this patch fixes some major gpmi-nand breakage.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Tested-by: Huang Shijie <shijie8@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/extents.c |   57 +++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 46 insertions(+), 11 deletions(-)
+ drivers/mtd/nand/nand_base.c |    9 +++------
+ include/linux/mtd/nand.h     |    3 ---
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -52,6 +52,9 @@
- #define EXT4_EXT_MARK_UNINIT1	0x2  /* mark first half uninitialized */
- #define EXT4_EXT_MARK_UNINIT2	0x4  /* mark second half uninitialized */
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2897,9 +2897,7 @@ static int nand_flash_detect_onfi(struct
+ 	if (le16_to_cpu(p->features) & 1)
+ 		*busw = NAND_BUSWIDTH_16;
  
-+#define EXT4_EXT_DATA_VALID1	0x8  /* first half contains valid data */
-+#define EXT4_EXT_DATA_VALID2	0x10 /* second half contains valid data */
-+
- static __le32 ext4_extent_block_csum(struct inode *inode,
- 				     struct ext4_extent_header *eh)
- {
-@@ -2895,6 +2898,9 @@ static int ext4_split_extent_at(handle_t
- 	unsigned int ee_len, depth;
- 	int err = 0;
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= (NAND_NO_READRDY |
+-			NAND_NO_AUTOINCR) & NAND_CHIPOPTIONS_MSK;
++	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
  
-+	BUG_ON((split_flag & (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2)) ==
-+	       (EXT4_EXT_DATA_VALID1 | EXT4_EXT_DATA_VALID2));
-+
- 	ext_debug("ext4_split_extents_at: inode %lu, logical"
- 		"block %llu\n", inode->i_ino, (unsigned long long)split);
- 
-@@ -2953,7 +2959,14 @@ static int ext4_split_extent_at(handle_t
- 
- 	err = ext4_ext_insert_extent(handle, inode, path, &newex, flags);
- 	if (err == -ENOSPC && (EXT4_EXT_MAY_ZEROOUT & split_flag)) {
--		err = ext4_ext_zeroout(inode, &orig_ex);
-+		if (split_flag & (EXT4_EXT_DATA_VALID1|EXT4_EXT_DATA_VALID2)) {
-+			if (split_flag & EXT4_EXT_DATA_VALID1)
-+				err = ext4_ext_zeroout(inode, ex2);
-+			else
-+				err = ext4_ext_zeroout(inode, ex);
-+		} else
-+			err = ext4_ext_zeroout(inode, &orig_ex);
-+
- 		if (err)
- 			goto fix_extent_len;
- 		/* update the extent length and mark as initialized */
-@@ -3006,12 +3019,13 @@ static int ext4_split_extent(handle_t *h
- 	uninitialized = ext4_ext_is_uninitialized(ex);
- 
- 	if (map->m_lblk + map->m_len < ee_block + ee_len) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT;
- 		flags1 = flags | EXT4_GET_BLOCKS_PRE_IO;
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1 |
- 				       EXT4_EXT_MARK_UNINIT2;
-+		if (split_flag & EXT4_EXT_DATA_VALID2)
-+			split_flag1 |= EXT4_EXT_DATA_VALID1;
- 		err = ext4_split_extent_at(handle, inode, path,
- 				map->m_lblk + map->m_len, split_flag1, flags1);
- 		if (err)
-@@ -3024,8 +3038,8 @@ static int ext4_split_extent(handle_t *h
- 		return PTR_ERR(path);
- 
- 	if (map->m_lblk >= ee_block) {
--		split_flag1 = split_flag & EXT4_EXT_MAY_ZEROOUT ?
--			      EXT4_EXT_MAY_ZEROOUT : 0;
-+		split_flag1 = split_flag & (EXT4_EXT_MAY_ZEROOUT |
-+					    EXT4_EXT_DATA_VALID2);
- 		if (uninitialized)
- 			split_flag1 |= EXT4_EXT_MARK_UNINIT1;
- 		if (split_flag & EXT4_EXT_MARK_UNINIT2)
-@@ -3303,26 +3317,47 @@ static int ext4_split_unwritten_extents(
- 
- 	split_flag |= ee_block + ee_len <= eof_block ? EXT4_EXT_MAY_ZEROOUT : 0;
- 	split_flag |= EXT4_EXT_MARK_UNINIT2;
--
-+	if (flags & EXT4_GET_BLOCKS_CONVERT)
-+		split_flag |= EXT4_EXT_DATA_VALID2;
- 	flags |= EXT4_GET_BLOCKS_PRE_IO;
- 	return ext4_split_extent(handle, inode, path, map, split_flag, flags);
- }
- 
- static int ext4_convert_unwritten_extents_endio(handle_t *handle,
--					      struct inode *inode,
--					      struct ext4_ext_path *path)
-+						struct inode *inode,
-+						struct ext4_map_blocks *map,
-+						struct ext4_ext_path *path)
- {
- 	struct ext4_extent *ex;
-+	ext4_lblk_t ee_block;
-+	unsigned int ee_len;
- 	int depth;
- 	int err = 0;
- 
- 	depth = ext_depth(inode);
- 	ex = path[depth].p_ext;
-+	ee_block = le32_to_cpu(ex->ee_block);
-+	ee_len = ext4_ext_get_actual_len(ex);
- 
- 	ext_debug("ext4_convert_unwritten_extents_endio: inode %lu, logical"
- 		"block %llu, max_blocks %u\n", inode->i_ino,
--		(unsigned long long)le32_to_cpu(ex->ee_block),
--		ext4_ext_get_actual_len(ex));
-+		  (unsigned long long)ee_block, ee_len);
-+
-+	/* If extent is larger than requested then split is required */
-+	if (ee_block != map->m_lblk || ee_len > map->m_len) {
-+		err = ext4_split_unwritten_extents(handle, inode, map, path,
-+						   EXT4_GET_BLOCKS_CONVERT);
-+		if (err < 0)
-+			goto out;
-+		ext4_ext_drop_refs(path);
-+		path = ext4_ext_find_extent(inode, map->m_lblk, path);
-+		if (IS_ERR(path)) {
-+			err = PTR_ERR(path);
-+			goto out;
-+		}
-+		depth = ext_depth(inode);
-+		ex = path[depth].p_ext;
-+	}
- 
- 	err = ext4_ext_get_access(handle, inode, path + depth);
- 	if (err)
-@@ -3630,7 +3665,7 @@ ext4_ext_handle_uninitialized_extents(ha
+ 	pr_info("ONFI flash detected\n");
+ 	return 1;
+@@ -3064,9 +3062,8 @@ static struct nand_flash_dev *nand_get_f
+ 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
+ 		}
  	}
- 	/* IO end_io complete, convert the filled extent to written */
- 	if ((flags & EXT4_GET_BLOCKS_CONVERT)) {
--		ret = ext4_convert_unwritten_extents_endio(handle, inode,
-+		ret = ext4_convert_unwritten_extents_endio(handle, inode, map,
- 							path);
- 		if (ret >= 0) {
- 			ext4_update_inode_fsync_trans(handle, inode, 1);
+-	/* Get chip options, preserve non chip based options */
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
++	/* Get chip options */
++	chip->options |= type->options;
+ 
+ 	/*
+ 	 * Check if chip is not a Samsung device. Do not clear the
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -215,9 +215,6 @@ typedef enum {
+ #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
+ 					&& (chip->page_shift > 9))
+ 
+-/* Mask to zero out the chip options, which come from the id table */
+-#define NAND_CHIPOPTIONS_MSK	(0x0000ffff & ~NAND_NO_AUTOINCR)
+-
+ /* Non chip related options */
+ /* This option skips the bbt scan during initialization. */
+ #define NAND_SKIP_BBTSCAN	0x00010000
 
 
