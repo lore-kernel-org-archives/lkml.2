@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966157Ab2JZTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 15:21:26 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40941 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966098Ab2JZTVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 15:21:24 -0400
+	id S966164Ab2JZTZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 15:25:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966098Ab2JZTZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 15:25:26 -0400
+Date: Fri, 26 Oct 2012 15:25:17 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Robin Dong <robin.k.dong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: Re: [PATCH 2/2 v4] block/throttle: Add IO submitted information in
+ blkio.throttle
+Message-ID: <20121026192517.GC24687@redhat.com>
+References: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
+ <1351226868-30063-2-git-send-email-robin.k.dong@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121026185021.GA1960@www.outflux.net>
-References: <20121026185021.GA1960@www.outflux.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 26 Oct 2012 12:21:02 -0700
-X-Google-Sender-Auth: 4da0lCvvhtUzSC9srzNWeV7Sm6s
-Message-ID: <CA+55aFxSO9oGtNEBOAVXj+OQn0tye7rNBu8C5tsggsYdZarNrw@mail.gmail.com>
-Subject: Re: [PATCH] VFS: add config options to enable link restrictions
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351226868-30063-2-git-send-email-robin.k.dong@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:50 AM, Kees Cook <keescook@chromium.org> wrote:
-> There are situations where devices running without initrds may need
-> very early protection from link vulnerabilities
+On Fri, Oct 26, 2012 at 12:47:48PM +0800, Robin Dong wrote:
 
-I really don't see what this argument is all about.
+[..]
+> @@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
+>  		.private = offsetof(struct tg_stats_cpu, serviced),
+>  		.read_seq_string = tg_print_cpu_rwstat,
+>  	},
+> +	{
+> +		.name = "throttle.io_submit_bytes",
 
-If you don't have initrd, you still have early bootup scripts etc.
+Do we really need io_submit_bytes stats? Your need seems to be able to
+figure out if there are pending IOs in the group and if you need to
+increase the bandwidth. For that, isn't number of bios enough?
 
-If your early bootup has security problems, you have security
-problems. It has nothing to do with initrd, or with restricted links,
-or anything else.
+Also even if we retain bytes, let us change it to "io_submitted_bytes".
 
-I also refuse to add these kinds of micro-management config options
-and ask any kind of normal person these kinds of "do you want this
-random crazy feature". A config option would need to be way more sane,
-not this kind of micro-management.
-
-                 Linus
+Thanks
+Vivek
