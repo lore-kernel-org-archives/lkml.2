@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932410Ab2JZLm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 07:42:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:49956 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab2JZLmZ (ORCPT
+	id S932449Ab2JZLp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 07:45:26 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:58607 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932333Ab2JZLpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 07:42:25 -0400
+	Fri, 26 Oct 2012 07:45:25 -0400
+Date: Fri, 26 Oct 2012 07:45:33 -0400
+From: Matt Porter <mporter@ti.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Cyril Chemparathy <cyril@ti.com>, khilman@ti.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] davinci: check for presence of channel controller on
+ slot alloc
+Message-ID: <20121026114533.GA2710@beef>
+References: <1347473642-9948-1-git-send-email-cyril@ti.com>
+ <508A7665.4030109@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <1351075364-2886-1-git-send-email-ashish.sangwan2@gmail.com>
-References: <1351075364-2886-1-git-send-email-ashish.sangwan2@gmail.com>
-Date: Fri, 26 Oct 2012 20:42:23 +0900
-Message-ID: <CAKYAXd91L8Ar+kO-oPg9_j65s_4xtd87JJZ7S8B7EH_jB-NLgA@mail.gmail.com>
-Subject: Re: [PATCH, RFC] Ext3: Mount partition as read only if during orphan
- cleanup truncate fails to obtain journal handle.
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Ashish Sangwan <ashishsangwan2@gmail.com>
-Cc: jack@suse.cz, linux-ext4@vger.kernel.org,
-        Ashish Sangwan <ashish.sangwan2@gmail.com>,
-        =?UTF-8?B?THVrw6HFoSBDemVybmVy?= <lczerner@redhat.com>,
-        Eric Sandeen <sandeen@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508A7665.4030109@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Cc in mail loop.
+On Fri, Oct 26, 2012 at 05:09:17PM +0530, Sekhar Nori wrote:
+> + Matt, who is doing the DMA engine conversion for EDMA
+> 
+> On 9/12/2012 11:44 PM, Cyril Chemparathy wrote:
+> > This patch adds a check for the presence of the channel controller when
+> > trying to allocate a slot.  Without this fix, the kernel panics with a NULL
+> > pointer dereference when the dma-engine drivers are probed.
+> > 
+> > Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> > ---
+> >  arch/arm/mach-davinci/dma.c |    3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
+> > index a685e97..2fee31e 100644
+> > --- a/arch/arm/mach-davinci/dma.c
+> > +++ b/arch/arm/mach-davinci/dma.c
+> > @@ -743,6 +743,9 @@ EXPORT_SYMBOL(edma_free_channel);
+> >   */
+> >  int edma_alloc_slot(unsigned ctlr, int slot)
+> >  {
+> > +	if (!edma_cc[ctlr])
+> > +		return -ENODEV;
+> 
+> I am ok with this patch, although I wonder if a better error is -ENXIO
+> or even -EINVAL (since its most likely the result of a wrong argument).
+> 
+> This patch will conflict with the EDMA movement series that Matt is
+> doing and he should probably include it in his series to avoid
+> conflicts. From the description it appears to be not required for v3.7
+> anyway.
 
-Thanks.
+I'll add this to the am33xx dmaengine series with -EINVAL, thanks.
 
-2012/10/24, Ashish Sangwan <ashishsangwan2@gmail.com>:
-> During orphan cleanup while doing truncate, if we fail to obtain journal
-> handle, the inode for which truncate was called would not be removed from
-> both the on-disk and in-memory orphan lists as the call to ext3_orphan_del
-> would not be executed.
->
-> This would have following consequences:
-> a) As the inode is not removed from the on-disk list, truncate would be
-> called again for the same inode. Each call would add the inode to the
-> in-memory list. This operation would continue endlessly or until truncate
-> is succeed.
->
-> b) If somehow, after some iterations, truncate is succeed, ext3_orphan_del
-> will only remove the inode from in-memory list just 1 time. This will
-> trigger
-> j_assert during put super.
->
-> This patch handles both the problems. If truncate fails, first in-memory
-> list is cleared and than the partition is mounted as read only.
-> Failure to obtain journal handle during mount may suggest that journal
-> device is corrupted.
->
-> Signed-off-by: Ashish Sangwan <ashish.sangwan2@gmail.com>
-> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
-> ---
->  fs/ext3/super.c | 17 ++++++++++++++++-
->  1 file changed, 16 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> index bd60e08..798cd6f 100644
-> --- a/fs/ext3/super.c
-> +++ b/fs/ext3/super.c
-> @@ -1540,7 +1540,22 @@ static void ext3_orphan_cleanup (struct super_block *
-> sb,
->  			jbd_debug(2, "truncating inode %lu to %Ld bytes\n",
->  				  inode->i_ino, inode->i_size);
->  			ext3_truncate(inode);
-> -			nr_truncates++;
-> +			if (list_empty(&EXT3_I(inode)->i_orphan)) {
-> +				nr_truncates++;
-> +			} else {
-> +				/* Remove inode from in-memory orphan list */
-> +				list_del_init(&EXT3_I(inode)->i_orphan);
-> +				ext3_msg(sb, KERN_ERR, "Truncate failed for "
-> +                                        "orphan  inode = %lu. Running
-> e2fsck"
-> +                                        " is recommended", inode->i_ino);
-> +				if (!(s_flags & MS_RDONLY)) {
-> +					ext3_msg(sb, KERN_INFO, "FS would be"
-> +						" mounted as readonly");
-> +					s_flags |= MS_RDONLY;
-> +				}
-> +				break;
-> +			}
-> +
->  		} else {
->  			printk(KERN_DEBUG
->  				"%s: deleting unreferenced inode %lu\n",
-> --
-> 1.7.11.4
->
->
+-Matt
