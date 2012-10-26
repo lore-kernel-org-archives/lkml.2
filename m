@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab2JZP1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:27:50 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46979 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933738Ab2JZP1s (ORCPT
+	id S964833Ab2JZPbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:31:06 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60239 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964782Ab2JZPbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:27:48 -0400
-Date: Fri, 26 Oct 2012 08:28:29 -0700
-From: Greg-Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rob Landley <rob@landley.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Tekkaman Ninja <tekkamanninja@gmail.com>,
-        Harry Wei <harryxiyou@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel@vger.linux-kernel.cn
-Subject: Re: [PATCH]Documentation:Chinese translation of
- Documentation/arm64/booting.txt
-Message-ID: <20121026152829.GE15840@kroah.com>
-References: <20121024155647.GA6567@Super-MAGI>
- <CAHkRjk7_KC4OceuRw5TEoKYNv9BNVrJ6MY5nYw1qpDtW+cG8_A@mail.gmail.com>
- <1351224138.20232.1@driftwood>
+	Fri, 26 Oct 2012 11:31:03 -0400
+Date: Fri, 26 Oct 2012 18:31:00 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [BUG] lkvm crash on crashkernel boot
+In-Reply-To: <CA+1xoqdN0AhLTczH6u1KngiOA61Ej1tL+v-FHAajqYO3tyGSwg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
+References: <20121024152740.GA25303@otc-wbsnb-06> <CAOJsxLFD36jYiyE5sfN+uPT5G9G9ttf=K2UB=abEjBiTFNeehA@mail.gmail.com> <20121025121645.GA28475@otc-wbsnb-06> <CA+1xoqdN0AhLTczH6u1KngiOA61Ej1tL+v-FHAajqYO3tyGSwg@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351224138.20232.1@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 25, 2012 at 11:02:18PM -0500, Rob Landley wrote:
-> On 10/24/2012 11:11:36 AM, Catalin Marinas wrote:
-> > 2012/10/24 Tekkaman Ninja <tekkamanninja@gmail.com>:
-> > > This is a Chinese translated version of
-> > > Documentation/arm64/booting.txt
-> > >
-> > > Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
-> > 
-> > Same as my comment on the memory.txt patch, I don't understand what 
-> > it
-> > says, so you need to keep it up to date.
-> > 
-> > Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+On Thu, 25 Oct 2012, Sasha Levin wrote:
+> I think we're seeing that because we don't handle VIRTIO_MSI_NO_VECTOR properly.
 > 
-> I have a similar problem: I can't read translations to languages I 
-> don't speak. I argued for putting them on the web way back when, but 
-> Greg Kroah-Hartman incorporated stuff he can't read either into the 
-> Documentation directory.
-> 
-> Last I pinged him he was willing to maintain non-english translations, 
-> try sending them to him?
+> We need to deal with the ability to remove GSI & friends as well. I've
+> added it to my workqueue (unless someone deals with it first).
 
-I already took this :)
+Any reason I shouldn't apply Kirill's patch before someone find the time 
+to do that?
+
+			Pekka
