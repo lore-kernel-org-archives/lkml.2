@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab2JZAGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:06:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52589 "EHLO mail.kernel.org"
+	id S1753195Ab2JZAGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:06:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52599 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab2JZAGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:06:02 -0400
+	id S1753102Ab2JZAGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:06:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/31] sparc64: Like x86 we should check current->mm during perf backtrace generation.
-Date: Thu, 25 Oct 2012 17:04:31 -0700
-Message-Id: <20121026000217.407938257@linuxfoundation.org>
+Subject: [ 25/31] sparc64: Fix bit twiddling in sparc_pmu_enable_event().
+Date: Thu, 25 Oct 2012 17:04:32 -0700
+Message-Id: <20121026000217.506916594@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000214.941721299@linuxfoundation.org>
 References: <20121026000214.941721299@linuxfoundation.org>
@@ -28,48 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 08280e6c4c2e8049ac61d9e8e3536ec1df629c0d ]
+[ Upstream commit e793d8c6740f8fe704fa216e95685f4d92c4c4b9 ]
 
-If the MM is not active, only report the top-level PC.  Do not try to
-access the address space.
+There was a serious disconnect in the logic happening in
+sparc_pmu_disable_event() vs. sparc_pmu_enable_event().
+
+Event disable is implemented by programming a NOP event into the PCR.
+
+However, event enable was not reversing this operation.  Instead, it
+was setting the User/Priv/Hypervisor trace enable bits.
+
+That's not sparc_pmu_enable_event()'s job, that's what
+sparc_pmu_enable() and sparc_pmu_disable() do .
+
+The intent of sparc_pmu_enable_event() is clear, since it first clear
+out the event type encoding field.  So fix this by OR'ing in the event
+encoding rather than the trace enable bits.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/perf_event.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/perf_event.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 --- a/arch/sparc/kernel/perf_event.c
 +++ b/arch/sparc/kernel/perf_event.c
-@@ -1380,8 +1380,6 @@ static void perf_callchain_user_64(struc
- {
- 	unsigned long ufp;
+@@ -513,11 +513,13 @@ static u64 nop_for_index(int idx)
  
--	perf_callchain_store(entry, regs->tpc);
--
- 	ufp = regs->u_regs[UREG_I6] + STACK_BIAS;
- 	do {
- 		struct sparc_stackf *usf, sf;
-@@ -1402,8 +1400,6 @@ static void perf_callchain_user_32(struc
+ static inline void sparc_pmu_enable_event(struct cpu_hw_events *cpuc, struct hw_perf_event *hwc, int idx)
  {
- 	unsigned long ufp;
+-	u64 val, mask = mask_for_index(idx);
++	u64 enc, val, mask = mask_for_index(idx);
++
++	enc = perf_event_get_enc(cpuc->events[idx]);
  
--	perf_callchain_store(entry, regs->tpc);
--
- 	ufp = regs->u_regs[UREG_I6] & 0xffffffffUL;
- 	do {
- 		struct sparc_stackf32 *usf, sf;
-@@ -1422,6 +1418,11 @@ static void perf_callchain_user_32(struc
- void
- perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- {
-+	perf_callchain_store(entry, regs->tpc);
-+
-+	if (!current->mm)
-+		return;
-+
- 	flushw_user();
- 	if (test_thread_flag(TIF_32BIT))
- 		perf_callchain_user_32(entry, regs);
+ 	val = cpuc->pcr;
+ 	val &= ~mask;
+-	val |= hwc->config;
++	val |= event_encoding(enc, idx);
+ 	cpuc->pcr = val;
+ 
+ 	pcr_ops->write(cpuc->pcr);
 
 
