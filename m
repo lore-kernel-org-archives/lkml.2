@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2JZJjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 05:39:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755689Ab2JZJjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 05:39:13 -0400
-Message-ID: <508A5AB2.2020006@redhat.com>
-Date: Fri, 26 Oct 2012 17:41:06 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        CAI Qian <caiqian@redhat.com>
-Subject: Re: [PATCH 00/31] numa/core patches
-References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121026092048.GA628@gmail.com>
-In-Reply-To: <20121026092048.GA628@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756154Ab2JZJki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 05:40:38 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:50717 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010Ab2JZJkf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 05:40:35 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] rcu: Fix unrecovered RCU user mode in syscall_trace_leave()
+Date: Fri, 26 Oct 2012 11:40:28 +0200
+Message-Id: <1351244428-2277-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <20121025074147.GA2240@swordfish>
+References: <20121025074147.GA2240@swordfish>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 05:20 PM, Ingo Molnar wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
->> On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
->>> [  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
->>> [  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
->>> [  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
->>> [  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
->>> [  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
->>> [  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
->>> [  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
->>> [  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
->>> [  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30
->> Johannes, this looks like the thp migration memcg hookery gone bad,
->> could you have a look at this?
-> Meanwhile, Zhouping Liu, could you please not apply the last
-> patch:
->
->    [PATCH] sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
->
-> and see whether it boots/works without that?
+On x86-64 syscall exit, 3 non exclusive events may happen
+looping in the following order:
 
-Ok, I  reverted the 31st patch, will provide the results here after I 
-finish testing.
+1) Check if we need resched for user preemption, if so call
+schedule_user()
 
-Thanks,
-Zhouping
+2) Check if we have pending signals, if so call do_notify_resume()
+
+3) Check if we do syscall tracing, if so call syscall_trace_leave()
+
+However syscall_trace_leave() has been written assuming it directly
+follows the syscall and forget about the above possible 1st and 2nd
+steps.
+
+Now schedule_user() and do_notify_resume() exit in RCU user mode
+because they have most chances to resume userspace immediately and
+this avoids an rcu_user_enter() call in the syscall fast path.
+
+So by the time we call syscall_trace_leave(), we may well be in RCU
+user mode. To fix this up, simply call rcu_user_exit() in the beginning
+of this function.
+
+This fixes some reported RCU uses in extended quiescent state.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/ptrace.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index b00b33a..eff5b8c 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1511,6 +1511,13 @@ void syscall_trace_leave(struct pt_regs *regs)
+ {
+ 	bool step;
+ 
++	/*
++	 * We may come here right after calling schedule_user()
++	 * or do_notify_resume(), in which case we can be in RCU
++	 * user mode.
++	 */
++	rcu_user_exit();
++
+ 	audit_syscall_exit(regs);
+ 
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
+-- 
+1.7.5.4
+
