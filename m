@@ -1,653 +1,486 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105Ab2JZOAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:00:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34521 "EHLO comal.ext.ti.com"
+	id S933131Ab2JZOAu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:00:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:25219 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932529Ab2JZOAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 10:00:41 -0400
-Date: Fri, 26 Oct 2012 16:54:52 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <alan@linux.intel.com>,
-        <arc-linux-dev@synopsys.com>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] serial/arc-uart: Add new driver
-Message-ID: <20121026135452.GB27141@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1351252996-28484-1-git-send-email-vgupta@synopsys.com>
- <1351252996-28484-2-git-send-email-vgupta@synopsys.com>
- <20121026121032.GD26342@arwen.pp.htv.fi>
- <508A865E.6030903@synopsys.com>
+	id S932529Ab2JZOAr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 10:00:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,654,1344236400"; 
+   d="scan'208,223";a="232926308"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>
+CC: "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: RE: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Topic: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Thread-Index: AQHNs3G2Ti91BiFLfUibRvXA4zlK85fLgkyggAAZxiA=
+Date: Fri, 26 Oct 2012 14:00:36 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+	<5089676602000078000A4928@nat28.tlf.novell.com>
+	<DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+	<508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC829233537292ESHSMSX101ccrcorpi_"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tsOsTdHNUZQcU9Ye"
-Content-Disposition: inline
-In-Reply-To: <508A865E.6030903@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tsOsTdHNUZQcU9Ye
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--_002_DE8DF0795D48FD4CA783C40EC829233537292ESHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-hi,
+Updated per Jan's comments.
 
-On Fri, Oct 26, 2012 at 06:17:26PM +0530, Vineet Gupta wrote:
-> >> +#endif
-> >> +};
-> >> +
-> >> +static void arc_serial_stop_rx(struct uart_port *port)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> > I would suggest using container_of() here. It's very unlikely to happen,
-> > but if another field is added before struct uart_port member in your
-> > structure, this will break.
->=20
-> I agree  that container_of() would make it future safe - but I don't
-> foresee any significant changes to driver specially the arc_uart_port
-> structure.
+Thanks,
+Jinsong
 
-I would still do it. The way code is right now, container_of() will be
-optmized into the same cast you have today, so no impacts there.
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
 
-> >> +static void arc_serial_rx_chars(struct arc_uart_port *uart)
-> >> +{
-> >> +	struct tty_struct *tty =3D tty_port_tty_get(&uart->port.state->port);
-> >> +	unsigned int status, ch, flg =3D 0;
-> >> +
-> >> +	if (!tty)
-> >> +		return;
-> > can this really happen ? why would you receive characters while tty is
-> > NULL ?
->=20
-> Since we are getting a ref to tty - it makes sense to check if the
-> pointer is not NULL. Alan had pointed to a possible hangup race which
-> could yield a NULL tty. But I'm not really an expert in serial core to
-> be sure if at all this will happen - so added the check.
+>From e6d4eceba9538c6873f9c970425e65e257fd9bf0 Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Sat, 27 Oct 2012 05:34:50 +0800
+Subject: [PATCH 1/2] Xen acpi pad implement
 
-fair enough...
+PAD is acpi Processor Aggregator Device which provides a control point
+that enables the platform to perform specific processor configuration
+and control that applies to all processors in the platform.
 
-> >> +	/*
-> >> +	 * UART has 4 deep RX-FIFO. Driver's recongnition of this fact
-> >> +	 * is very subtle. Here's how ...
-> >> +	 * Upon getting a RX-Intr, such that RX-EMPTY=3D0, meaning data avai=
-lable,
-> >> +	 * driver reads the DATA Reg and keeps doing that in a loop, until
-> >> +	 * RX-EMPTY=3D1. Multiple chars being avail, with a single Interrupt,
-> >> +	 * before RX-EMPTY=3D0, implies some sort of buffering going on in t=
-he
-> >> +	 * controller, which is indeed the Rx-FIFO.
-> >> +	 */
-> >> +	while (!((status =3D UART_GET_STATUS(uart)) & RXEMPTY)) {
-> >> +
-> >> +		ch =3D UART_GET_DATA(uart);
-> >> +		uart->port.icount.rx++;
-> >> +
-> >> +		if (unlikely(status & (RXOERR | RXFERR))) {
-> >> +			if (status & RXOERR) {
-> >> +				uart->port.icount.overrun++;
-> >> +				flg =3D TTY_OVERRUN;
-> >> +				UART_CLR_STATUS(uart, RXOERR);
-> >> +			}
-> >> +
-> >> +			if (status & RXFERR) {
-> >> +				uart->port.icount.frame++;
-> >> +				flg =3D TTY_FRAME;
-> >> +				UART_CLR_STATUS(uart, RXFERR);
-> >> +			}
-> >> +		} else
-> >> +			flg =3D TTY_NORMAL;
-> >> +
-> >> +		if (unlikely(uart_handle_sysrq_char(&uart->port, ch)))
-> >> +			goto done;
-> >> +
-> >> +		uart_insert_char(&uart->port, status, RXOERR, ch, flg);
-> >> +
-> >> +done:
-> >> +		tty_flip_buffer_push(tty);
-> >> +	}
-> >> +
-> >> +	tty_kref_put(tty);
-> >> +}
-> >> +
-> >> +/*
-> >> + * A note on the Interrupt handling state machine of this driver
-> >> + *
-> >> + * kernel printk writes funnel thru the console driver framework and =
-in order
-> >> + * to keep things simple as well as efficient, it writes to UART in p=
-olled
-> >> + * mode, in one shot, and exits.
-> >> + *
-> >> + * OTOH, Userland output (via tty layer), uses interrupt based writes=
- as there
-> >> + * can be undeterministic delay between char writes.
-> >> + *
-> >> + * Thus Rx-interrupts are always enabled, while tx-interrupts are by =
-default
-> >> + * disabled.
-> >> + *
-> >> + * When tty has some data to send out, serial core calls driver's sta=
-rt_tx
-> >> + * which
-> >> + *   -checks-if-tty-buffer-has-char-to-send
-> >> + *   -writes-data-to-uart
-> >> + *   -enable-tx-intr
-> >> + *
-> >> + * Once data bits are pushed out, controller raises the Tx-room-avail=
--Interrupt.
-> >> + * The first thing Tx ISR does is disable further Tx interrupts (as t=
-his could
-> >> + * be the last char to send, before settling down into the quiet poll=
-ed mode).
-> >> + * It then calls the exact routine used by tty layer write to send ou=
-t any
-> >> + * more char in tty buffer. In case of sending, it re-enables Tx-intr=
-=2E In case
-> >> + * of no data, it remains disabled.
-> >> + * This is how the transmit state machine is dynamically switched on/=
-off
-> >> + */
-> >> +
-> >> +static irqreturn_t arc_serial_isr(int irq, void *dev_id)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D dev_id;
-> >> +	unsigned int status;
-> >> +
-> >> +	status =3D UART_GET_STATUS(uart);
-> >> +
-> >> +	/*
-> >> +	 * Single IRQ for both Rx (data available) Tx (room available) Inter=
-rupt
-> >> +	 * notifications from the UART Controller.
-> >> +	 * To demultiplex between the two, we check the relevant bits
-> >> +	 */
-> >> +	if ((status & RXIENB) && !(status & RXEMPTY)) {
-> >> +
-> >> +		/* already in ISR, no need of xx_irqsave */
-> >> +		spin_lock(&uart->port.lock);
-> >> +		arc_serial_rx_chars(uart);
-> >> +		spin_unlock(&uart->port.lock);
-> >> +	}
-> >> +
-> >> +	if ((status & TXIENB) && (status & TXEMPTY)) {
-> >> +
-> >> +		/* Unconditionally disable further Tx-Interrupts.
-> >> +		 * will be enabled by tx_chars() if needed.
-> >> +		 */
-> >> +		UART_TX_IRQ_DISABLE(uart);
-> >> +
-> >> +		spin_lock(&uart->port.lock);
-> >> +
-> >> +		if (!uart_tx_stopped(&uart->port))
-> >> +			arc_serial_tx_chars(uart);
-> >> +
-> >> +		spin_unlock(&uart->port.lock);
-> >> +	}
-> >> +
-> >> +	return IRQ_HANDLED;
-> >> +}
-> >> +
-> >> +static unsigned int arc_serial_get_mctrl(struct uart_port *port)
-> >> +{
-> >> +	/*
-> >> +	 * Pretend we have a Modem status reg and following bits are
-> >> +	 *  always set, to satify the serial core state machine
-> >> +	 *  (DSR) Data Set Ready
-> >> +	 *  (CTS) Clear To Send
-> >> +	 *  (CAR) Carrier Detect
-> >> +	 */
-> >> +	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
-> >> +}
-> >> +
-> >> +static void arc_serial_set_mctrl(struct uart_port *port, unsigned int=
- mctrl)
-> >> +{
-> >> +	/* MCR not present */
-> >> +}
-> >> +
-> >> +/* Enable Modem Status Interrupts */
-> >> +
-> >> +static void arc_serial_enable_ms(struct uart_port *port)
-> >> +{
-> >> +	/* MSR not present */
-> >> +}
-> >> +
-> >> +static void arc_serial_break_ctl(struct uart_port *port, int break_st=
-ate)
-> >> +{
-> >> +	/* ARC UART doesn't support sending Break signal */
-> >> +}
-> >> +
-> >> +static int arc_serial_startup(struct uart_port *port)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +
-> >> +	/* Before we hook up the ISR, Disable all UART Interrupts */
-> >> +	UART_ALL_IRQ_DISABLE(uart);
-> >> +
-> >> +	if (request_irq(uart->port.irq, arc_serial_isr, 0, "arc uart rx-tx",
-> >> +			uart)) {
-> >> +		pr_warn("Unable to attach ARC UART interrupt\n");
-> >> +		return -EBUSY;
-> >> +	}
-> >> +
-> >> +	UART_RX_IRQ_ENABLE(uart); /* Only Rx IRQ enabled to begin with */
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +/* This is not really needed */
-> >> +static void arc_serial_shutdown(struct uart_port *port)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +	free_irq(uart->port.irq, uart);
-> >> +}
-> >> +
-> >> +static void
-> >> +arc_serial_set_termios(struct uart_port *port, struct ktermios *new,
-> >> +		       struct ktermios *old)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +	unsigned int baud, uartl, uarth, hw_val;
-> >> +	unsigned long flags;
-> >> +
-> >> +	/*
-> >> +	 * Use the generic handler so that any specially encoded baud rates
-> >> +	 * such as SPD_xx flags or "%B0" can be handled
-> >> +	 * Max Baud I suppose will not be more than current 115K * 4
-> >> +	 * Formula for ARC UART is: hw-val =3D ((CLK/(BAUD*4)) -1)
-> >> +	 * spread over two 8-bit registers
-> >> +	 */
-> >> +	baud =3D uart_get_baud_rate(port, new, old, 0, 460800);
-> >> +
-> >> +	hw_val =3D port->uartclk / (uart->baud * 4) - 1;
-> >> +	uartl =3D hw_val & 0xFF;
-> >> +	uarth =3D (hw_val >> 8) & 0xFF;
-> >> +
-> >> +	/*
-> >> +	 * UART ISS(Instruction Set simulator) emulation has a subtle bug:
-> >> +	 * A existing value of Baudh =3D 0 is used as a indication to startup
-> >> +	 * it's internal state machine.
-> >> +	 * Thus if baudh is set to 0, 2 times, it chokes.
-> >> +	 * This happens with BAUD=3D115200 and the formaula above
-> >> +	 * Until that is fixed, when running on ISS, we will set baudh to !0
-> >> +	 */
-> >> +	if (uart->is_emulated)
-> >> +		uarth =3D 1;
-> >> +
-> >> +	spin_lock_irqsave(&port->lock, flags);
-> >> +
-> >> +	UART_ALL_IRQ_DISABLE(uart);
-> >> +
-> >> +	UART_SET_BAUDL(uart, uartl);
-> >> +	UART_SET_BAUDH(uart, uarth);
-> >> +
-> >> +	UART_RX_IRQ_ENABLE(uart);
-> >> +
-> >> +	/*
-> >> +	 * UART doesn't support Parity/Hardware Flow Control;
-> >> +	 * Only supports 8N1 character size
-> >> +	 */
-> >> +	new->c_cflag &=3D ~(CMSPAR|CRTSCTS|CSIZE);
-> >> +	new->c_cflag |=3D CS8;
-> >> +
-> >> +	if (old)
-> >> +		tty_termios_copy_hw(new, old);
-> >> +
-> >> +	/* Don't rewrite B0 */
-> >> +	if (tty_termios_baud_rate(new))
-> >> +		tty_termios_encode_baud_rate(new, baud, baud);
-> >> +
-> >> +	uart_update_timeout(port, new->c_cflag, baud);
-> >> +
-> >> +	spin_unlock_irqrestore(&port->lock, flags);
-> >> +}
-> >> +
-> >> +static const char *arc_serial_type(struct uart_port *port)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +
-> >> +	return uart->port.type =3D=3D PORT_ARC ? DRIVER_NAME : NULL;
-> >> +}
-> >> +
-> >> +/*
-> >> + * Release the memory region(s) being used by 'port'.
-> >> + */
-> >> +static void arc_serial_release_port(struct uart_port *port)
-> >> +{
-> >> +}
-> >> +
-> >> +/*
-> >> + * Request the memory region(s) being used by 'port'.
-> >> + */
-> >> +static int arc_serial_request_port(struct uart_port *port)
-> >> +{
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +/*
-> >> + * Verify the new serial_struct (for TIOCSSERIAL).
-> >> + */
-> >> +static int
-> >> +arc_serial_verify_port(struct uart_port *port, struct serial_struct *=
-ser)
-> >> +{
-> >> +	return 0;
-> >> +}
-> > why all these empty functions with wrong comments above them ??
->=20
-> Copy/paste cruft. Empty functions deleted in next ver !
-> Regarding verify_port, I'm not sure whether it needs to elaborately
-> check for PORT_UNKNOWN -> PORT_ARC or can we simply continue to return
-> 0. But IMHO the comment in there is right. No ?
+This patch is to implement Xen acpi pad logic. When running under Xen
+virt platform, native pad driver would not work. Instead Xen pad driver,
+a self-contained and very thin logic level, would take over acpi pad staff.
+When acpi pad notify OSPM, xen pad logic intercept and parse _PUR object
+and then hypercall to hyervisor for the rest work, say, core parking.
 
-nope, you say that you should verify the new serial_struct, but you
-don't verify anything, just return.
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+---
+ drivers/xen/Makefile             |    1 +
+ drivers/xen/xen_acpi_pad.c       |  201 ++++++++++++++++++++++++++++++++++=
+++++
+ include/xen/interface/platform.h |   17 +++
+ 3 files changed, 219 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/xen/xen_acpi_pad.c
 
-> >> +/*
-> >> + * Configure/autoconfigure the port.
-> >> + */
-> >> +static void arc_serial_config_port(struct uart_port *port, int flags)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +
-> >> +	if (flags & UART_CONFIG_TYPE &&
-> >> +	    arc_serial_request_port(&uart->port) =3D=3D 0)
-> >> +		uart->port.type =3D PORT_ARC;
-> >> +}
-> >> +
-> >> +#if defined(CONFIG_CONSOLE_POLL) || defined(CONFIG_SERIAL_ARC_CONSOLE)
-> >> +
-> >> +static void arc_serial_poll_putchar(struct uart_port *port, unsigned =
-char chr)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +
-> >> +	while (!(UART_GET_STATUS(uart) & TXEMPTY))
-> >> +		cpu_relax();
-> >> +
-> >> +	UART_SET_DATA(uart, chr);
-> >> +}
-> >> +#endif
-> >> +
-> >> +#ifdef CONFIG_CONSOLE_POLL
-> >> +static int arc_serial_poll_getchar(struct uart_port *port)
-> >> +{
-> >> +	struct arc_uart_port *uart =3D (struct arc_uart_port *)port;
-> >> +	unsigned char chr;
-> >> +
-> >> +	while (!(UART_GET_STATUS(uart) & RXEMPTY))
-> >> +		cpu_relax();
-> >> +
-> >> +	chr =3D UART_GET_DATA(uart);
-> >> +	return chr;
-> >> +}
-> >> +#endif
-> >> +
-> >> +static struct uart_ops arc_serial_pops =3D {
-> >> +	.tx_empty	=3D arc_serial_tx_empty,
-> >> +	.set_mctrl	=3D arc_serial_set_mctrl,
-> >> +	.get_mctrl	=3D arc_serial_get_mctrl,
-> >> +	.stop_tx	=3D arc_serial_stop_tx,
-> >> +	.start_tx	=3D arc_serial_start_tx,
-> >> +	.stop_rx	=3D arc_serial_stop_rx,
-> >> +	.enable_ms	=3D arc_serial_enable_ms,
-> >> +	.break_ctl	=3D arc_serial_break_ctl,
-> >> +	.startup	=3D arc_serial_startup,
-> >> +	.shutdown	=3D arc_serial_shutdown,
-> >> +	.set_termios	=3D arc_serial_set_termios,
-> >> +	.type		=3D arc_serial_type,
-> >> +	.release_port	=3D arc_serial_release_port,
-> >> +	.request_port	=3D arc_serial_request_port,
-> >> +	.config_port	=3D arc_serial_config_port,
-> >> +	.verify_port	=3D arc_serial_verify_port,
-> >> +#ifdef CONFIG_CONSOLE_POLL
-> >> +	.poll_put_char =3D arc_serial_poll_putchar,
-> >> +	.poll_get_char =3D arc_serial_poll_getchar,
-> >> +#endif
-> >> +};
-> >> +
-> >> +static int __devinit
-> >> +arc_uart_init_one(struct platform_device *pdev, struct arc_uart_port =
-*uart)
-> >> +{
-> >> +	struct resource *res, *res2;
-> >> +	unsigned long *plat_data;
-> >> +
-> >> +	if (pdev->id < 0 || pdev->id >=3D CONFIG_SERIAL_ARC_NR_PORTS) {
-> >> +		dev_err(&pdev->dev, "Wrong uart platform device id.\n");
-> >> +		return -ENOENT;
-> >> +	}
-> >> +
-> >> +	plat_data =3D ((unsigned long *)(pdev->dev.platform_data));
-> >> +	uart->baud =3D plat_data[0];
-> >> +
-> >> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >> +	if (!res)
-> >> +		return -ENODEV;
-> >> +
-> >> +	res2 =3D platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-> >> +	if (!res2)
-> >> +		return -ENODEV;
-> >> +
-> >> +	uart->port.mapbase =3D res->start;
-> >> +	uart->port.membase =3D ioremap_nocache(res->start, resource_size(res=
-));
-> >> +	if (!uart->port.membase)
-> >> +		/* No point of pr_err since UART itself is hosed here */
-> >> +		return -ENXIO;
-> >> +
-> >> +	uart->port.irq =3D res2->start;
-> >> +	uart->port.dev =3D &pdev->dev;
-> >> +	uart->port.iotype =3D UPIO_MEM;
-> >> +	uart->port.flags =3D UPF_BOOT_AUTOCONF;
-> >> +	uart->port.line =3D pdev->id;
-> >> +	uart->port.ops =3D &arc_serial_pops;
-> >> +
-> >> +	uart->port.uartclk =3D plat_data[1];
-> >> +	uart->port.fifosize =3D ARC_UART_TX_FIFO_SIZE;
-> >> +
-> >> +	/*
-> >> +	 * uart_insert_char( ) uses it in decideding whether to ignore a
-> >> +	 * char or not. Explicitly setting it here, removes the subtelty
-> >> +	 */
-> >> +	uart->port.ignore_status_mask =3D 0;
-> >> +
-> >> +	/* Real Hardware vs. emulated to work around a bug */
-> >> +	uart->is_emulated =3D !!plat_data[2];
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +#ifdef CONFIG_SERIAL_ARC_CONSOLE
-> >> +
-> >> +static int __devinit arc_serial_console_setup(struct console *co, cha=
-r *options)
-> >> +{
-> >> +	struct uart_port *port;
-> >> +	int baud =3D 115200;
-> >> +	int bits =3D 8;
-> >> +	int parity =3D 'n';
-> >> +	int flow =3D 'n';
-> >> +
-> >> +	if (co->index < 0 || co->index >=3D CONFIG_SERIAL_ARC_NR_PORTS)
-> >> +		return -ENODEV;
-> >> +
-> >> +	/*
-> >> +	 * The uart port backing the console (e.g. ttyARC1) might not have b=
-een
-> >> +	 * init yet. If so, defer the console setup to after the port.
-> >> +	 */
-> >> +	port =3D &arc_uart_ports[co->index].port;
-> >> +	if (!port->membase)
-> >> +		return -ENODEV;
-> >> +
-> >> +	if (options)
-> >> +		uart_parse_options(options, &baud, &parity, &bits, &flow);
-> >> +
-> >> +	/*
-> >> +	 * Serial core will call port->ops->set_termios( )
-> >> +	 * which will set the baud reg
-> >> +	 */
-> >> +	return uart_set_options(port, co, baud, parity, bits, flow);
-> >> +}
-> >> +
-> >> +static void arc_serial_console_putchar(struct uart_port *port, int ch)
-> >> +{
-> >> +	arc_serial_poll_putchar(port, (unsigned char)ch);
-> >> +}
-> >> +
-> >> +/*
-> >> + * Interrupts are disabled on entering
-> >> + */
-> >> +static void arc_serial_console_write(struct console *co, const char *=
-s,
-> >> +				     unsigned int count)
-> >> +{
-> >> +	struct uart_port *port =3D &arc_uart_ports[co->index].port;
-> >> +	unsigned long flags;
-> >> +
-> >> +	spin_lock_irqsave(&port->lock, flags);
-> >> +	uart_console_write(port, s, count, arc_serial_console_putchar);
-> >> +	spin_unlock_irqrestore(&port->lock, flags);
-> >> +}
-> >> +
-> >> +static struct console arc_console =3D {
-> >> +	.name	=3D ARC_SERIAL_DEV_NAME,
-> >> +	.write	=3D arc_serial_console_write,
-> >> +	.device	=3D uart_console_device,
-> >> +	.setup	=3D arc_serial_console_setup,
-> >> +	.flags	=3D CON_PRINTBUFFER,
-> >> +	.index	=3D -1,
-> >> +	.data	=3D &arc_uart_driver
-> >> +};
-> >> +
-> >> +static __init void early_serial_write(struct console *con, const char=
- *s,
-> >> +					unsigned int n)
-> >> +{
-> >> +	struct uart_port *port =3D &arc_uart_ports[con->index].port;
-> >> +	unsigned int i;
-> >> +
-> >> +	for (i =3D 0; i < n; i++, s++) {
-> >> +		if (*s =3D=3D '\n')
-> >> +			arc_serial_poll_putchar(port, '\r');
-> >> +		arc_serial_poll_putchar(port, *s);
-> >> +	}
-> >> +}
-> >> +
-> >> +static struct __initdata console arc_early_serial_console =3D {
-> >> +	.name =3D "early_ARCuart",
-> >> +	.write =3D early_serial_write,
-> >> +	.flags =3D CON_PRINTBUFFER | CON_BOOT,
-> >> +	.index =3D -1
-> >> +};
-> >> +
-> >> +static int __devinit arc_serial_probe_earlyprintk(struct platform_dev=
-ice *pdev)
-> >> +{
-> >> +	arc_early_serial_console.index =3D pdev->id;
-> >> +
-> >> +	arc_uart_init_one(pdev, &arc_uart_ports[pdev->id]);
-> >> +
-> >> +	arc_serial_console_setup(&arc_early_serial_console, NULL);
-> >> +
-> >> +	register_console(&arc_early_serial_console);
-> >> +	return 0;
-> >> +}
-> >> +#else
-> >> +static int __devinit arc_serial_probe_earlyprintk(struct platform_dev=
-ice *pdev)
-> >> +{
-> >> +	return -ENODEV;
-> >> +}
-> >> +#endif	/* CONFIG_SERIAL_ARC_CONSOLE */
-> >> +
-> >> +static int __devinit arc_serial_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct arc_uart_port *uart;
-> >> +	int rc;
-> >> +
-> >> +	if (is_early_platform_device(pdev))
-> >> +		return arc_serial_probe_earlyprintk(pdev);
-> >> +
-> >> +	uart =3D &arc_uart_ports[pdev->id];
-> >> +	rc =3D arc_uart_init_one(pdev, uart);
-> >> +	if (rc)
-> >> +		return rc;
-> >> +
-> >> +	return uart_add_one_port(&arc_uart_driver, &uart->port);
-> >> +}
-> >> +
-> >> +static int __devexit arc_serial_remove(struct platform_device *pdev)
-> >> +{
-> >> +	/* This will never be called */
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static struct platform_driver arc_platform_driver =3D {
-> >> +	.probe =3D arc_serial_probe,
-> >> +	.remove =3D __devexit_p(arc_serial_remove),
-> >> +	.driver =3D {
-> >> +		.name =3D DRIVER_NAME,
-> >> +		.owner =3D THIS_MODULE,
-> >> +	 },
-> >> +};
-> >> +
-> >> +#ifdef CONFIG_SERIAL_ARC_CONSOLE
-> >> +/*
-> >> + * Register an early platform driver of "earlyprintk" class.
-> >> + * ARCH platform code installs the driver and probes the early devices
-> >> + * The installation could rely on user specifying earlyprintk=3Dxyx i=
-n cmd line
-> >> + * or it could be done independently, for all "earlyprintk" class dri=
-vers.
-> >> + * [see arch/arc/plat-arcfpga/platform.c]
-> >> + */
-> >> +early_platform_init("earlyprintk", &arc_platform_driver);
-> >> +
-> >> +#endif  /* CONFIG_SERIAL_ARC_CONSOLE */
-> >> +
-> >> +static int __init arc_serial_init(void)
-> >> +{
-> >> +	int ret;
-> >> +
-> >> +	pr_info("Serial: ARC serial driver: platform register\n");
-> > please remove this line, it's just useless IMHO.
->=20
-> It has helped me enough in past when debugging the uncoupling of driver
-> from ARC platform code. I'd rather keep it !
-
-then make it a debugging print ;-)
-
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e86370..a2af622 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)		+=3D mcelog.o
+ obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+=3D xen-pciback/
+ obj-$(CONFIG_XEN_PRIVCMD)		+=3D xen-privcmd.o
+ obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+=3D xen-acpi-processor.o
++obj-$(CONFIG_XEN_DOM0)			+=3D xen_acpi_pad.o
+ xen-evtchn-y				:=3D evtchn.o
+ xen-gntdev-y				:=3D gntdev.o
+ xen-gntalloc-y				:=3D gntalloc.o
+diff --git a/drivers/xen/xen_acpi_pad.c b/drivers/xen/xen_acpi_pad.c
+new file mode 100644
+index 0000000..0f1a1e6
+--- /dev/null
++++ b/drivers/xen/xen_acpi_pad.c
+@@ -0,0 +1,201 @@
++/*
++ * xen_acpi_pad.c - Xen pad interface
++ *
++ * Copyright (c) 2012, Intel Corporation.
++ *    Author: Liu, Jinsong <jinsong.liu@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License f=
+or
++ * more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++#include <asm/xen/hypercall.h>
++
++#if defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) || \
++		defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
++
++#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"acpi_pad"
++#define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
++#define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
++
++static DEFINE_MUTEX(xen_pad_lock);
++
++static int xen_pad_set_idle_cpus(int num_cpus)
++{
++	struct xen_platform_op op;
++
++	if (num_cpus < 0)
++		return -EINVAL;
++
++	/* set cpu nums expected to be idled */
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_SET;
++	op.u.core_parking.idle_nums =3D num_cpus;
++
++	return HYPERVISOR_dom0_op(&op);
++}
++
++/*
++ * Cannot get idle cpus by using hypercall once (shared with _SET)
++ * because of the characteristic of Xen continue_hypercall_on_cpu
++ */
++static int xen_pad_get_idle_cpus(void)
++{
++	int ret;
++	struct xen_platform_op op;
++
++	/* get cpu nums actually be idled */
++	op.cmd =3D XENPF_core_parking;
++	op.u.core_parking.type =3D XEN_CORE_PARKING_GET;
++	ret =3D HYPERVISOR_dom0_op(&op);
++	if (ret < 0)
++		return ret;
++
++	return op.u.core_parking.idle_nums;
++}
++
++/*
++ * Query firmware how many CPUs should be idle
++ * return -1 on failure
++ */
++static int xen_acpi_pad_pur(acpi_handle handle)
++{
++	struct acpi_buffer buffer =3D {ACPI_ALLOCATE_BUFFER, NULL};
++	union acpi_object *package;
++	int num =3D -1;
++
++	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_PUR", NULL, &buffer)))
++		return num;
++
++	if (!buffer.length || !buffer.pointer)
++		return num;
++
++	package =3D buffer.pointer;
++
++	if (package->type =3D=3D ACPI_TYPE_PACKAGE &&
++		package->package.count =3D=3D 2 &&
++		package->package.elements[0].integer.value =3D=3D 1) /* rev 1 */
++
++		num =3D package->package.elements[1].integer.value;
++
++	kfree(buffer.pointer);
++	return num;
++}
++
++/* Notify firmware how many CPUs are idle */
++static void xen_acpi_pad_ost(acpi_handle handle, int stat,
++	uint32_t idle_cpus)
++{
++	union acpi_object params[3] =3D {
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_INTEGER,},
++		{.type =3D ACPI_TYPE_BUFFER,},
++	};
++	struct acpi_object_list arg_list =3D {3, params};
++
++	params[0].integer.value =3D ACPI_PROCESSOR_AGGREGATOR_NOTIFY;
++	params[1].integer.value =3D  stat;
++	params[2].buffer.length =3D 4;
++	params[2].buffer.pointer =3D (void *)&idle_cpus;
++	acpi_evaluate_object(handle, "_OST", &arg_list, NULL);
++}
++
++static void xen_acpi_pad_handle_notify(acpi_handle handle)
++{
++	int num_cpus;
++
++	num_cpus =3D xen_acpi_pad_pur(handle);
++	if (num_cpus < 0)
++		return;
++
++	mutex_lock(&xen_pad_lock);
++	if (xen_pad_set_idle_cpus(num_cpus)) {
++		mutex_unlock(&xen_pad_lock);
++		return;
++	}
++
++	num_cpus =3D xen_pad_get_idle_cpus();
++	if (num_cpus < 0) {
++		mutex_unlock(&xen_pad_lock);
++		return;
++	}
++	mutex_unlock(&xen_pad_lock);
++
++	xen_acpi_pad_ost(handle, 0, num_cpus);
++}
++
++static void xen_acpi_pad_notify(acpi_handle handle, u32 event,
++	void *data)
++{
++	switch (event) {
++	case ACPI_PROCESSOR_AGGREGATOR_NOTIFY:
++		xen_acpi_pad_handle_notify(handle);
++		break;
++	default:
++		pr_warn("Unsupported event [0x%x]\n", event);
++		break;
++	}
++}
++
++static int xen_acpi_pad_add(struct acpi_device *device)
++{
++	acpi_status status;
++
++	strcpy(acpi_device_name(device), ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME);
++	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
++
++	status =3D acpi_install_notify_handler(device->handle,
++		 ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify, device);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	return 0;
++}
++
++static int xen_acpi_pad_remove(struct acpi_device *device,
++	int type)
++{
++	mutex_lock(&xen_pad_lock);
++	xen_pad_set_idle_cpus(0);
++	mutex_unlock(&xen_pad_lock);
++
++	acpi_remove_notify_handler(device->handle,
++		ACPI_DEVICE_NOTIFY, xen_acpi_pad_notify);
++	return 0;
++}
++
++static const struct acpi_device_id pad_device_ids[] =3D {
++	{"ACPI000C", 0},
++	{"", 0},
++};
++
++static struct acpi_driver xen_acpi_pad_driver =3D {
++	.name =3D "processor_aggregator",
++	.class =3D ACPI_PROCESSOR_AGGREGATOR_CLASS,
++	.ids =3D pad_device_ids,
++	.ops =3D {
++		.add =3D xen_acpi_pad_add,
++		.remove =3D xen_acpi_pad_remove,
++	},
++};
++
++static int __init xen_acpi_pad_init(void)
++{
++	/* Only DOM0 is responsible for Xen acpi pad */
++	if (xen_initial_domain())
++		return acpi_bus_register_driver(&xen_acpi_pad_driver);
++
++	return -ENODEV;
++}
++subsys_initcall(xen_acpi_pad_init);
++
++#endif
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platf=
+orm.h
+index 4755b5f..0f44376 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -324,6 +324,22 @@ struct xenpf_cpu_ol {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
+=20
++/*
++ * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
++ * which already occupied at Xen hypervisor side.
++ */
++#define XENPF_core_parking	60
++struct xenpf_core_parking {
++	/* IN variables */
++#define XEN_CORE_PARKING_SET	1
++#define XEN_CORE_PARKING_GET	2
++	uint32_t type;
++	/* IN variables:  set cpu nums expected to be idled */
++	/* OUT variables: get cpu nums actually be idled */
++	uint32_t idle_nums;
++};
++DEFINE_GUEST_HANDLE_STRUCT(xenpf_core_parking);
++
+ struct xen_platform_op {
+ 	uint32_t cmd;
+ 	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+@@ -341,6 +357,7 @@ struct xen_platform_op {
+ 		struct xenpf_set_processor_pminfo set_pminfo;
+ 		struct xenpf_pcpuinfo          pcpu_info;
+ 		struct xenpf_cpu_ol            cpu_ol;
++		struct xenpf_core_parking      core_parking;
+ 		uint8_t                        pad[128];
+ 	} u;
+ };
 --=20
-balbi
+1.7.1
 
---tsOsTdHNUZQcU9Ye
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--_002_DE8DF0795D48FD4CA783C40EC829233537292ESHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0001-Xen-acpi-pad-implement.patch"
+Content-Description: 0001-Xen-acpi-pad-implement.patch
+Content-Disposition: attachment;
+	filename="0001-Xen-acpi-pad-implement.patch"; size=7968;
+	creation-date="Fri, 26 Oct 2012 13:48:06 GMT";
+	modification-date="Fri, 26 Oct 2012 21:38:58 GMT"
+Content-Transfer-Encoding: base64
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+RnJvbSBlNmQ0ZWNlYmE5NTM4YzY4NzNmOWM5NzA0MjVlNjVlMjU3ZmQ5YmYwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogU2F0LCAyNyBPY3QgMjAxMiAwNTozNDo1MCArMDgwMApTdWJqZWN0OiBbUEFUQ0ggMS8y
+XSBYZW4gYWNwaSBwYWQgaW1wbGVtZW50CgpQQUQgaXMgYWNwaSBQcm9jZXNzb3IgQWdncmVnYXRv
+ciBEZXZpY2Ugd2hpY2ggcHJvdmlkZXMgYSBjb250cm9sIHBvaW50CnRoYXQgZW5hYmxlcyB0aGUg
+cGxhdGZvcm0gdG8gcGVyZm9ybSBzcGVjaWZpYyBwcm9jZXNzb3IgY29uZmlndXJhdGlvbgphbmQg
+Y29udHJvbCB0aGF0IGFwcGxpZXMgdG8gYWxsIHByb2Nlc3NvcnMgaW4gdGhlIHBsYXRmb3JtLgoK
+VGhpcyBwYXRjaCBpcyB0byBpbXBsZW1lbnQgWGVuIGFjcGkgcGFkIGxvZ2ljLiBXaGVuIHJ1bm5p
+bmcgdW5kZXIgWGVuCnZpcnQgcGxhdGZvcm0sIG5hdGl2ZSBwYWQgZHJpdmVyIHdvdWxkIG5vdCB3
+b3JrLiBJbnN0ZWFkIFhlbiBwYWQgZHJpdmVyLAphIHNlbGYtY29udGFpbmVkIGFuZCB2ZXJ5IHRo
+aW4gbG9naWMgbGV2ZWwsIHdvdWxkIHRha2Ugb3ZlciBhY3BpIHBhZCBzdGFmZi4KV2hlbiBhY3Bp
+IHBhZCBub3RpZnkgT1NQTSwgeGVuIHBhZCBsb2dpYyBpbnRlcmNlcHQgYW5kIHBhcnNlIF9QVVIg
+b2JqZWN0CmFuZCB0aGVuIGh5cGVyY2FsbCB0byBoeWVydmlzb3IgZm9yIHRoZSByZXN0IHdvcmss
+IHNheSwgY29yZSBwYXJraW5nLgoKU2lnbmVkLW9mZi1ieTogTGl1LCBKaW5zb25nIDxqaW5zb25n
+LmxpdUBpbnRlbC5jb20+Ci0tLQogZHJpdmVycy94ZW4vTWFrZWZpbGUgICAgICAgICAgICAgfCAg
+ICAxICsKIGRyaXZlcnMveGVuL3hlbl9hY3BpX3BhZC5jICAgICAgIHwgIDIwMSArKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKwogaW5jbHVkZS94ZW4vaW50ZXJmYWNlL3BsYXRm
+b3JtLmggfCAgIDE3ICsrKwogMyBmaWxlcyBjaGFuZ2VkLCAyMTkgaW5zZXJ0aW9ucygrKSwgMCBk
+ZWxldGlvbnMoLSkKIGNyZWF0ZSBtb2RlIDEwMDY0NCBkcml2ZXJzL3hlbi94ZW5fYWNwaV9wYWQu
+YwoKZGlmZiAtLWdpdCBhL2RyaXZlcnMveGVuL01ha2VmaWxlIGIvZHJpdmVycy94ZW4vTWFrZWZp
+bGUKaW5kZXggMGU4NjM3MC4uYTJhZjYyMiAxMDA2NDQKLS0tIGEvZHJpdmVycy94ZW4vTWFrZWZp
+bGUKKysrIGIvZHJpdmVycy94ZW4vTWFrZWZpbGUKQEAgLTI5LDYgKzI5LDcgQEAgb2JqLSQoQ09O
+RklHX1hFTl9NQ0VfTE9HKQkJKz0gbWNlbG9nLm8KIG9iai0kKENPTkZJR19YRU5fUENJREVWX0JB
+Q0tFTkQpCSs9IHhlbi1wY2liYWNrLwogb2JqLSQoQ09ORklHX1hFTl9QUklWQ01EKQkJKz0geGVu
+LXByaXZjbWQubwogb2JqLSQoQ09ORklHX1hFTl9BQ1BJX1BST0NFU1NPUikJKz0geGVuLWFjcGkt
+cHJvY2Vzc29yLm8KK29iai0kKENPTkZJR19YRU5fRE9NMCkJCQkrPSB4ZW5fYWNwaV9wYWQubwog
+eGVuLWV2dGNobi15CQkJCTo9IGV2dGNobi5vCiB4ZW4tZ250ZGV2LXkJCQkJOj0gZ250ZGV2Lm8K
+IHhlbi1nbnRhbGxvYy15CQkJCTo9IGdudGFsbG9jLm8KZGlmZiAtLWdpdCBhL2RyaXZlcnMveGVu
+L3hlbl9hY3BpX3BhZC5jIGIvZHJpdmVycy94ZW4veGVuX2FjcGlfcGFkLmMKbmV3IGZpbGUgbW9k
+ZSAxMDA2NDQKaW5kZXggMDAwMDAwMC4uMGYxYTFlNgotLS0gL2Rldi9udWxsCisrKyBiL2RyaXZl
+cnMveGVuL3hlbl9hY3BpX3BhZC5jCkBAIC0wLDAgKzEsMjAxIEBACisvKgorICogeGVuX2FjcGlf
+cGFkLmMgLSBYZW4gcGFkIGludGVyZmFjZQorICoKKyAqIENvcHlyaWdodCAoYykgMjAxMiwgSW50
+ZWwgQ29ycG9yYXRpb24uCisgKiAgICBBdXRob3I6IExpdSwgSmluc29uZyA8amluc29uZy5saXVA
+aW50ZWwuY29tPgorICoKKyAqIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOyB5b3UgY2Fu
+IHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5IGl0CisgKiB1bmRlciB0aGUgdGVybXMgYW5k
+IGNvbmRpdGlvbnMgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlLAorICogdmVyc2lv
+biAyLCBhcyBwdWJsaXNoZWQgYnkgdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbi4KKyAqCisg
+KiBUaGlzIHByb2dyYW0gaXMgZGlzdHJpYnV0ZWQgaW4gdGhlIGhvcGUgaXQgd2lsbCBiZSB1c2Vm
+dWwsIGJ1dCBXSVRIT1VUCisgKiBBTlkgV0FSUkFOVFk7IHdpdGhvdXQgZXZlbiB0aGUgaW1wbGll
+ZCB3YXJyYW50eSBvZiBNRVJDSEFOVEFCSUxJVFkgb3IKKyAqIEZJVE5FU1MgRk9SIEEgUEFSVElD
+VUxBUiBQVVJQT1NFLiAgU2VlIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBmb3IKKyAq
+IG1vcmUgZGV0YWlscy4KKyAqLworCisjaW5jbHVkZSA8bGludXgva2VybmVsLmg+CisjaW5jbHVk
+ZSA8bGludXgvdHlwZXMuaD4KKyNpbmNsdWRlIDxhY3BpL2FjcGlfYnVzLmg+CisjaW5jbHVkZSA8
+YWNwaS9hY3BpX2RyaXZlcnMuaD4KKyNpbmNsdWRlIDxhc20veGVuL2h5cGVyY2FsbC5oPgorCisj
+aWYgZGVmaW5lZChDT05GSUdfQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUikgfHwgXAorCQlkZWZp
+bmVkKENPTkZJR19BQ1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX01PRFVMRSkKKworI2RlZmluZSBB
+Q1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX0NMQVNTCSJhY3BpX3BhZCIKKyNkZWZpbmUgQUNQSV9Q
+Uk9DRVNTT1JfQUdHUkVHQVRPUl9ERVZJQ0VfTkFNRSAiUHJvY2Vzc29yIEFnZ3JlZ2F0b3IiCisj
+ZGVmaW5lIEFDUElfUFJPQ0VTU09SX0FHR1JFR0FUT1JfTk9USUZZIDB4ODAKKworc3RhdGljIERF
+RklORV9NVVRFWCh4ZW5fcGFkX2xvY2spOworCitzdGF0aWMgaW50IHhlbl9wYWRfc2V0X2lkbGVf
+Y3B1cyhpbnQgbnVtX2NwdXMpCit7CisJc3RydWN0IHhlbl9wbGF0Zm9ybV9vcCBvcDsKKworCWlm
+IChudW1fY3B1cyA8IDApCisJCXJldHVybiAtRUlOVkFMOworCisJLyogc2V0IGNwdSBudW1zIGV4
+cGVjdGVkIHRvIGJlIGlkbGVkICovCisJb3AuY21kID0gWEVOUEZfY29yZV9wYXJraW5nOworCW9w
+LnUuY29yZV9wYXJraW5nLnR5cGUgPSBYRU5fQ09SRV9QQVJLSU5HX1NFVDsKKwlvcC51LmNvcmVf
+cGFya2luZy5pZGxlX251bXMgPSBudW1fY3B1czsKKworCXJldHVybiBIWVBFUlZJU09SX2RvbTBf
+b3AoJm9wKTsKK30KKworLyoKKyAqIENhbm5vdCBnZXQgaWRsZSBjcHVzIGJ5IHVzaW5nIGh5cGVy
+Y2FsbCBvbmNlIChzaGFyZWQgd2l0aCBfU0VUKQorICogYmVjYXVzZSBvZiB0aGUgY2hhcmFjdGVy
+aXN0aWMgb2YgWGVuIGNvbnRpbnVlX2h5cGVyY2FsbF9vbl9jcHUKKyAqLworc3RhdGljIGludCB4
+ZW5fcGFkX2dldF9pZGxlX2NwdXModm9pZCkKK3sKKwlpbnQgcmV0OworCXN0cnVjdCB4ZW5fcGxh
+dGZvcm1fb3Agb3A7CisKKwkvKiBnZXQgY3B1IG51bXMgYWN0dWFsbHkgYmUgaWRsZWQgKi8KKwlv
+cC5jbWQgPSBYRU5QRl9jb3JlX3Bhcmtpbmc7CisJb3AudS5jb3JlX3BhcmtpbmcudHlwZSA9IFhF
+Tl9DT1JFX1BBUktJTkdfR0VUOworCXJldCA9IEhZUEVSVklTT1JfZG9tMF9vcCgmb3ApOworCWlm
+IChyZXQgPCAwKQorCQlyZXR1cm4gcmV0OworCisJcmV0dXJuIG9wLnUuY29yZV9wYXJraW5nLmlk
+bGVfbnVtczsKK30KKworLyoKKyAqIFF1ZXJ5IGZpcm13YXJlIGhvdyBtYW55IENQVXMgc2hvdWxk
+IGJlIGlkbGUKKyAqIHJldHVybiAtMSBvbiBmYWlsdXJlCisgKi8KK3N0YXRpYyBpbnQgeGVuX2Fj
+cGlfcGFkX3B1cihhY3BpX2hhbmRsZSBoYW5kbGUpCit7CisJc3RydWN0IGFjcGlfYnVmZmVyIGJ1
+ZmZlciA9IHtBQ1BJX0FMTE9DQVRFX0JVRkZFUiwgTlVMTH07CisJdW5pb24gYWNwaV9vYmplY3Qg
+KnBhY2thZ2U7CisJaW50IG51bSA9IC0xOworCisJaWYgKEFDUElfRkFJTFVSRShhY3BpX2V2YWx1
+YXRlX29iamVjdChoYW5kbGUsICJfUFVSIiwgTlVMTCwgJmJ1ZmZlcikpKQorCQlyZXR1cm4gbnVt
+OworCisJaWYgKCFidWZmZXIubGVuZ3RoIHx8ICFidWZmZXIucG9pbnRlcikKKwkJcmV0dXJuIG51
+bTsKKworCXBhY2thZ2UgPSBidWZmZXIucG9pbnRlcjsKKworCWlmIChwYWNrYWdlLT50eXBlID09
+IEFDUElfVFlQRV9QQUNLQUdFICYmCisJCXBhY2thZ2UtPnBhY2thZ2UuY291bnQgPT0gMiAmJgor
+CQlwYWNrYWdlLT5wYWNrYWdlLmVsZW1lbnRzWzBdLmludGVnZXIudmFsdWUgPT0gMSkgLyogcmV2
+IDEgKi8KKworCQludW0gPSBwYWNrYWdlLT5wYWNrYWdlLmVsZW1lbnRzWzFdLmludGVnZXIudmFs
+dWU7CisKKwlrZnJlZShidWZmZXIucG9pbnRlcik7CisJcmV0dXJuIG51bTsKK30KKworLyogTm90
+aWZ5IGZpcm13YXJlIGhvdyBtYW55IENQVXMgYXJlIGlkbGUgKi8KK3N0YXRpYyB2b2lkIHhlbl9h
+Y3BpX3BhZF9vc3QoYWNwaV9oYW5kbGUgaGFuZGxlLCBpbnQgc3RhdCwKKwl1aW50MzJfdCBpZGxl
+X2NwdXMpCit7CisJdW5pb24gYWNwaV9vYmplY3QgcGFyYW1zWzNdID0geworCQl7LnR5cGUgPSBB
+Q1BJX1RZUEVfSU5URUdFUix9LAorCQl7LnR5cGUgPSBBQ1BJX1RZUEVfSU5URUdFUix9LAorCQl7
+LnR5cGUgPSBBQ1BJX1RZUEVfQlVGRkVSLH0sCisJfTsKKwlzdHJ1Y3QgYWNwaV9vYmplY3RfbGlz
+dCBhcmdfbGlzdCA9IHszLCBwYXJhbXN9OworCisJcGFyYW1zWzBdLmludGVnZXIudmFsdWUgPSBB
+Q1BJX1BST0NFU1NPUl9BR0dSRUdBVE9SX05PVElGWTsKKwlwYXJhbXNbMV0uaW50ZWdlci52YWx1
+ZSA9ICBzdGF0OworCXBhcmFtc1syXS5idWZmZXIubGVuZ3RoID0gNDsKKwlwYXJhbXNbMl0uYnVm
+ZmVyLnBvaW50ZXIgPSAodm9pZCAqKSZpZGxlX2NwdXM7CisJYWNwaV9ldmFsdWF0ZV9vYmplY3Qo
+aGFuZGxlLCAiX09TVCIsICZhcmdfbGlzdCwgTlVMTCk7Cit9CisKK3N0YXRpYyB2b2lkIHhlbl9h
+Y3BpX3BhZF9oYW5kbGVfbm90aWZ5KGFjcGlfaGFuZGxlIGhhbmRsZSkKK3sKKwlpbnQgbnVtX2Nw
+dXM7CisKKwludW1fY3B1cyA9IHhlbl9hY3BpX3BhZF9wdXIoaGFuZGxlKTsKKwlpZiAobnVtX2Nw
+dXMgPCAwKQorCQlyZXR1cm47CisKKwltdXRleF9sb2NrKCZ4ZW5fcGFkX2xvY2spOworCWlmICh4
+ZW5fcGFkX3NldF9pZGxlX2NwdXMobnVtX2NwdXMpKSB7CisJCW11dGV4X3VubG9jaygmeGVuX3Bh
+ZF9sb2NrKTsKKwkJcmV0dXJuOworCX0KKworCW51bV9jcHVzID0geGVuX3BhZF9nZXRfaWRsZV9j
+cHVzKCk7CisJaWYgKG51bV9jcHVzIDwgMCkgeworCQltdXRleF91bmxvY2soJnhlbl9wYWRfbG9j
+ayk7CisJCXJldHVybjsKKwl9CisJbXV0ZXhfdW5sb2NrKCZ4ZW5fcGFkX2xvY2spOworCisJeGVu
+X2FjcGlfcGFkX29zdChoYW5kbGUsIDAsIG51bV9jcHVzKTsKK30KKworc3RhdGljIHZvaWQgeGVu
+X2FjcGlfcGFkX25vdGlmeShhY3BpX2hhbmRsZSBoYW5kbGUsIHUzMiBldmVudCwKKwl2b2lkICpk
+YXRhKQoreworCXN3aXRjaCAoZXZlbnQpIHsKKwljYXNlIEFDUElfUFJPQ0VTU09SX0FHR1JFR0FU
+T1JfTk9USUZZOgorCQl4ZW5fYWNwaV9wYWRfaGFuZGxlX25vdGlmeShoYW5kbGUpOworCQlicmVh
+azsKKwlkZWZhdWx0OgorCQlwcl93YXJuKCJVbnN1cHBvcnRlZCBldmVudCBbMHgleF1cbiIsIGV2
+ZW50KTsKKwkJYnJlYWs7CisJfQorfQorCitzdGF0aWMgaW50IHhlbl9hY3BpX3BhZF9hZGQoc3Ry
+dWN0IGFjcGlfZGV2aWNlICpkZXZpY2UpCit7CisJYWNwaV9zdGF0dXMgc3RhdHVzOworCisJc3Ry
+Y3B5KGFjcGlfZGV2aWNlX25hbWUoZGV2aWNlKSwgQUNQSV9QUk9DRVNTT1JfQUdHUkVHQVRPUl9E
+RVZJQ0VfTkFNRSk7CisJc3RyY3B5KGFjcGlfZGV2aWNlX2NsYXNzKGRldmljZSksIEFDUElfUFJP
+Q0VTU09SX0FHR1JFR0FUT1JfQ0xBU1MpOworCisJc3RhdHVzID0gYWNwaV9pbnN0YWxsX25vdGlm
+eV9oYW5kbGVyKGRldmljZS0+aGFuZGxlLAorCQkgQUNQSV9ERVZJQ0VfTk9USUZZLCB4ZW5fYWNw
+aV9wYWRfbm90aWZ5LCBkZXZpY2UpOworCWlmIChBQ1BJX0ZBSUxVUkUoc3RhdHVzKSkKKwkJcmV0
+dXJuIC1FTk9ERVY7CisKKwlyZXR1cm4gMDsKK30KKworc3RhdGljIGludCB4ZW5fYWNwaV9wYWRf
+cmVtb3ZlKHN0cnVjdCBhY3BpX2RldmljZSAqZGV2aWNlLAorCWludCB0eXBlKQoreworCW11dGV4
+X2xvY2soJnhlbl9wYWRfbG9jayk7CisJeGVuX3BhZF9zZXRfaWRsZV9jcHVzKDApOworCW11dGV4
+X3VubG9jaygmeGVuX3BhZF9sb2NrKTsKKworCWFjcGlfcmVtb3ZlX25vdGlmeV9oYW5kbGVyKGRl
+dmljZS0+aGFuZGxlLAorCQlBQ1BJX0RFVklDRV9OT1RJRlksIHhlbl9hY3BpX3BhZF9ub3RpZnkp
+OworCXJldHVybiAwOworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0IGFjcGlfZGV2aWNlX2lkIHBh
+ZF9kZXZpY2VfaWRzW10gPSB7CisJeyJBQ1BJMDAwQyIsIDB9LAorCXsiIiwgMH0sCit9OworCitz
+dGF0aWMgc3RydWN0IGFjcGlfZHJpdmVyIHhlbl9hY3BpX3BhZF9kcml2ZXIgPSB7CisJLm5hbWUg
+PSAicHJvY2Vzc29yX2FnZ3JlZ2F0b3IiLAorCS5jbGFzcyA9IEFDUElfUFJPQ0VTU09SX0FHR1JF
+R0FUT1JfQ0xBU1MsCisJLmlkcyA9IHBhZF9kZXZpY2VfaWRzLAorCS5vcHMgPSB7CisJCS5hZGQg
+PSB4ZW5fYWNwaV9wYWRfYWRkLAorCQkucmVtb3ZlID0geGVuX2FjcGlfcGFkX3JlbW92ZSwKKwl9
+LAorfTsKKworc3RhdGljIGludCBfX2luaXQgeGVuX2FjcGlfcGFkX2luaXQodm9pZCkKK3sKKwkv
+KiBPbmx5IERPTTAgaXMgcmVzcG9uc2libGUgZm9yIFhlbiBhY3BpIHBhZCAqLworCWlmICh4ZW5f
+aW5pdGlhbF9kb21haW4oKSkKKwkJcmV0dXJuIGFjcGlfYnVzX3JlZ2lzdGVyX2RyaXZlcigmeGVu
+X2FjcGlfcGFkX2RyaXZlcik7CisKKwlyZXR1cm4gLUVOT0RFVjsKK30KK3N1YnN5c19pbml0Y2Fs
+bCh4ZW5fYWNwaV9wYWRfaW5pdCk7CisKKyNlbmRpZgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS94ZW4v
+aW50ZXJmYWNlL3BsYXRmb3JtLmggYi9pbmNsdWRlL3hlbi9pbnRlcmZhY2UvcGxhdGZvcm0uaApp
+bmRleCA0NzU1YjVmLi4wZjQ0Mzc2IDEwMDY0NAotLS0gYS9pbmNsdWRlL3hlbi9pbnRlcmZhY2Uv
+cGxhdGZvcm0uaAorKysgYi9pbmNsdWRlL3hlbi9pbnRlcmZhY2UvcGxhdGZvcm0uaApAQCAtMzI0
+LDYgKzMyNCwyMiBAQCBzdHJ1Y3QgeGVucGZfY3B1X29sIHsKIH07CiBERUZJTkVfR1VFU1RfSEFO
+RExFX1NUUlVDVCh4ZW5wZl9jcHVfb2wpOwogCisvKgorICogQ01EIDU4IGFuZCA1OSBhcmUgcmVz
+ZXJ2ZWQgZm9yIGNwdSBob3RhZGQgYW5kIG1lbW9yeSBob3RhZGQsCisgKiB3aGljaCBhbHJlYWR5
+IG9jY3VwaWVkIGF0IFhlbiBoeXBlcnZpc29yIHNpZGUuCisgKi8KKyNkZWZpbmUgWEVOUEZfY29y
+ZV9wYXJraW5nCTYwCitzdHJ1Y3QgeGVucGZfY29yZV9wYXJraW5nIHsKKwkvKiBJTiB2YXJpYWJs
+ZXMgKi8KKyNkZWZpbmUgWEVOX0NPUkVfUEFSS0lOR19TRVQJMQorI2RlZmluZSBYRU5fQ09SRV9Q
+QVJLSU5HX0dFVAkyCisJdWludDMyX3QgdHlwZTsKKwkvKiBJTiB2YXJpYWJsZXM6ICBzZXQgY3B1
+IG51bXMgZXhwZWN0ZWQgdG8gYmUgaWRsZWQgKi8KKwkvKiBPVVQgdmFyaWFibGVzOiBnZXQgY3B1
+IG51bXMgYWN0dWFsbHkgYmUgaWRsZWQgKi8KKwl1aW50MzJfdCBpZGxlX251bXM7Cit9OworREVG
+SU5FX0dVRVNUX0hBTkRMRV9TVFJVQ1QoeGVucGZfY29yZV9wYXJraW5nKTsKKwogc3RydWN0IHhl
+bl9wbGF0Zm9ybV9vcCB7CiAJdWludDMyX3QgY21kOwogCXVpbnQzMl90IGludGVyZmFjZV92ZXJz
+aW9uOyAvKiBYRU5QRl9JTlRFUkZBQ0VfVkVSU0lPTiAqLwpAQCAtMzQxLDYgKzM1Nyw3IEBAIHN0
+cnVjdCB4ZW5fcGxhdGZvcm1fb3AgewogCQlzdHJ1Y3QgeGVucGZfc2V0X3Byb2Nlc3Nvcl9wbWlu
+Zm8gc2V0X3BtaW5mbzsKIAkJc3RydWN0IHhlbnBmX3BjcHVpbmZvICAgICAgICAgIHBjcHVfaW5m
+bzsKIAkJc3RydWN0IHhlbnBmX2NwdV9vbCAgICAgICAgICAgIGNwdV9vbDsKKwkJc3RydWN0IHhl
+bnBmX2NvcmVfcGFya2luZyAgICAgIGNvcmVfcGFya2luZzsKIAkJdWludDhfdCAgICAgICAgICAg
+ICAgICAgICAgICAgIHBhZFsxMjhdOwogCX0gdTsKIH07Ci0tIAoxLjcuMQoK
 
-iQIcBAEBAgAGBQJQipYsAAoJEIaOsuA1yqREUGoQAKDuFs1XT5dy5FunLPKfl4pS
-0O4JiN5qN/Wd0luIOzhif6a4IPFJxQt+XvMZKVXPkjG181j5fSzkOCEeUm9UtWEs
-4mMGe/eAVdYiI3AHzaVNkzJrBFCqI8ta1W4qAoF4iQ4yn5hhwtcJf/lwEwm6LJ1G
-5k9LE1LpxWHof4kuOOna2G681QRMLa+b8imKFEbu4W9GQBz3DlkbZPMNXvY2rtVr
-BANQLeZrKDgVx3ZByFQIZVe5lOS4uGfU4EVj1GdRAWIuvhbUoAj5bPhd1XxLprNM
-TRyYocfj3OG3yHheEZq7I7tVvltuQ3cMQ7oXRbwlwqEZkZ35hqJWW2Ax/Fri0/4q
-VdB+Dnv2+sQQjAoQIRhRfgjPvKWcL1hT+kLKAKuHNVQSOmJGzwhjbuB29HAxcVku
-49UGyrFLs4zgcjLvoRx30HHu4xSUo6S4GYsSMERfBA24Yu4Xx9XTPGUrNDCWi5Io
-Hah8IBEvKyEls+WdWR5YlilOz1f3vEQzoUFzqj847NzSyEVWxwXq5T6YGi8B6cNo
-r3rlksCEa82fSk32B2ucLNT9IsKYg4C5Av9c37Qbxs+gNanCzriAAbe/wAZxnhko
-k37p4+cM8wFBPKbSr5lPjewcuiu6wCZgBhtYg91Fi3LkkvXOqFzi76PRrF0eGSAu
-VK9srNcLv1gYaU40AlP5
-=d4Z6
------END PGP SIGNATURE-----
-
---tsOsTdHNUZQcU9Ye--
+--_002_DE8DF0795D48FD4CA783C40EC829233537292ESHSMSX101ccrcorpi_--
