@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab2JZOcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 10:32:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44267 "EHLO
+	id S933338Ab2JZOcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 10:32:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44266 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab2JZOcL (ORCPT
+	with ESMTP id S1751614Ab2JZOcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Oct 2012 10:32:11 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@amd64.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/9] perf tools: Cleanup doc related targets
-Date: Fri, 26 Oct 2012 12:31:46 -0200
-Message-Id: <1351261913-28250-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 9/9] perf stat: Add --pre and --post command
+Date: Fri, 26 Oct 2012 12:31:53 -0200
+Message-Id: <1351261913-28250-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1351261913-28250-1-git-send-email-acme@infradead.org>
 References: <1351261913-28250-1-git-send-email-acme@infradead.org>
@@ -27,88 +26,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-Documentation targets handling rules are duplicate.  Consolidate them
-with DOC_TARGETS and INSTALL_DOC_TARGETS.
+In order to measure kernel builds, one has to do some pre/post cleanup
+work in order to do the repeat build.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1351241752-2919-2-git-send-email-namhyung@kernel.org
+So provide --pre and --post command hooks to allow doing just that.
+
+  perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' \
+	-- make -s -j64 O=defconfig-build/ bzImage
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@gmail.com>
+Link: http://lkml.kernel.org/r/1350992414.13456.5.camel@twins
+[ committer note: Added respective entries in Documentation/perf-stat.txt ]
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |   46 +++++++++-------------------------------------
- 1 file changed, 9 insertions(+), 37 deletions(-)
+ tools/perf/Documentation/perf-stat.txt |    5 ++++
+ tools/perf/builtin-stat.c              |   42 +++++++++++++++++++++++++++-----
+ 2 files changed, 41 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b14eeb8..5cf40cb 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -977,20 +977,15 @@ help:
- 	@echo 'Perf maintainer targets:'
- 	@echo '  clean			- clean all binary objects and build output'
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 2fa173b..cf0c310 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -108,6 +108,11 @@ with it.  --append may be used here.  Examples:
+      3>results  perf stat --log-fd 3          -- $cmd
+      3>>results perf stat --log-fd 3 --append -- $cmd
  
--doc:
--	$(MAKE) -C Documentation all
++--pre::
++--post::
++	Pre and post measurement hooks, e.g.:
++
++perf stat --repeat 10 --null --sync --pre 'make -s O=defconfig-build/clean' -- make -s -j64 O=defconfig-build/ bzImage
  
--man:
--	$(MAKE) -C Documentation man
-+DOC_TARGETS := doc man html info pdf
  
--html:
--	$(MAKE) -C Documentation html
-+INSTALL_DOC_TARGETS := $(patsubst %,install-%,$(DOC_TARGETS)) try-install-man
-+INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
+ EXAMPLES
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 93b9011..6888960 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -57,6 +57,7 @@
+ #include "util/thread.h"
+ #include "util/thread_map.h"
  
--info:
--	$(MAKE) -C Documentation info
--
--pdf:
--	$(MAKE) -C Documentation pdf
-+# 'make doc' should call 'make -C Documentation all'
-+$(DOC_TARGETS):
-+	$(MAKE) -C Documentation $(@:doc=all)
++#include <stdlib.h>
+ #include <sys/prctl.h>
+ #include <locale.h>
  
- TAGS:
- 	$(RM) TAGS
-@@ -1061,32 +1056,9 @@ install: all try-install-man
- install-python_ext:
- 	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+@@ -83,6 +84,9 @@ static const char		*csv_sep			= NULL;
+ static bool			csv_output			= false;
+ static bool			group				= false;
+ static FILE			*output				= NULL;
++static const char		*pre_cmd			= NULL;
++static const char		*post_cmd			= NULL;
++static bool			sync_run			= false;
  
--install-doc:
--	$(MAKE) -C Documentation install
--
--install-man:
--	$(MAKE) -C Documentation install-man
--
--try-install-man:
--	$(MAKE) -C Documentation try-install-man
--
--install-html:
--	$(MAKE) -C Documentation install-html
--
--install-info:
--	$(MAKE) -C Documentation install-info
--
--install-pdf:
--	$(MAKE) -C Documentation install-pdf
--
--quick-install-doc:
--	$(MAKE) -C Documentation quick-install
--
--quick-install-man:
--	$(MAKE) -C Documentation quick-install-man
--
--quick-install-html:
--	$(MAKE) -C Documentation quick-install-html
-+# 'make install-doc' should call 'make -C Documentation install'
-+$(INSTALL_DOC_TARGETS):
-+	$(MAKE) -C Documentation $(@:-doc=)
+ static volatile int done = 0;
  
- ### Cleaning rules
+@@ -265,7 +269,7 @@ static int read_counter(struct perf_evsel *counter)
+ 	return 0;
+ }
+ 
+-static int run_perf_stat(int argc __maybe_unused, const char **argv)
++static int __run_perf_stat(int argc __maybe_unused, const char **argv)
+ {
+ 	unsigned long long t0, t1;
+ 	struct perf_evsel *counter, *first;
+@@ -405,6 +409,32 @@ static int run_perf_stat(int argc __maybe_unused, const char **argv)
+ 	return WEXITSTATUS(status);
+ }
+ 
++static int run_perf_stat(int argc __maybe_unused, const char **argv)
++{
++	int ret;
++
++	if (pre_cmd) {
++		ret = system(pre_cmd);
++		if (ret)
++			return ret;
++	}
++
++	if (sync_run)
++		sync();
++
++	ret = __run_perf_stat(argc, argv);
++	if (ret)
++		return ret;
++
++	if (post_cmd) {
++		ret = system(post_cmd);
++		if (ret)
++			return ret;
++	}
++
++	return ret;
++}
++
+ static void print_noise_pct(double total, double avg)
+ {
+ 	double pct = rel_stddev_stats(total, avg);
+@@ -1069,8 +1099,7 @@ static int add_default_attributes(void)
+ 
+ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+-	bool append_file = false,
+-	     sync_run = false;
++	bool append_file = false;
+ 	int output_fd = 0;
+ 	const char *output_name	= NULL;
+ 	const struct option options[] = {
+@@ -1114,6 +1143,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "append", &append_file, "append to the output file"),
+ 	OPT_INTEGER(0, "log-fd", &output_fd,
+ 		    "log output to fd, instead of stderr"),
++	OPT_STRING(0, "pre", &pre_cmd, "command",
++			"command to run prior to the measured command"),
++	OPT_STRING(0, "post", &post_cmd, "command",
++			"command to run after to the measured command"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+@@ -1238,9 +1271,6 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			fprintf(output, "[ perf stat: executing run #%d ... ]\n",
+ 				run_idx + 1);
+ 
+-		if (sync_run)
+-			sync();
+-
+ 		status = run_perf_stat(argc, argv);
+ 	}
  
 -- 
 1.7.9.2.358.g22243
