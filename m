@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab2JZIpW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 04:45:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58210 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757425Ab2JZIov (ORCPT
+	id S1757614Ab2JZIpS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 04:45:18 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:64066 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757420Ab2JZIos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 04:44:51 -0400
+	Fri, 26 Oct 2012 04:44:48 -0400
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
         Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 11/11] HID: hid-multitouch: get rid of usbhid depedency for general path
-Date: Fri, 26 Oct 2012 10:44:27 +0200
-Message-Id: <1351241067-9521-12-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH v2 09/11] HID: hid-multitouch: support for hovering devices
+Date: Fri, 26 Oct 2012 10:44:25 +0200
+Message-Id: <1351241067-9521-10-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -23,107 +23,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch factorizes the hid set_feature command by using
-hid_device->hid_output_raw_report instead of direclty relying on
-usbhid. This makes the driver usb independant.
-
-However I still can't remove the 2 usb related headers because the
-function mt_resume has a specific patch for usb devices.
+Win8 devices supporting hovering must provides InRange HID field.
+The information that the finger is here but is not touching the surface
+is sent to the user space through ABS_MT_DISTANCE as required by the
+multitouch protocol.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/hid/hid-multitouch.c | 63 ++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 26 deletions(-)
+ drivers/hid/hid-multitouch.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 21a120b..33038c5 100644
+index bd23f19..c0ab1c6 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -670,47 +670,58 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
- 	return 1;
- }
+@@ -55,7 +55,7 @@ MODULE_LICENSE("GPL");
+ #define MT_QUIRK_WIN_8_CERTIFIED	(1 << 10)
  
--static void mt_set_input_mode(struct hid_device *hdev)
-+static void mt_set_feature(struct hid_device *hdev, __s8 feature_id,
-+	u8 value, size_t index)
- {
--	struct mt_device *td = hid_get_drvdata(hdev);
- 	struct hid_report *r;
- 	struct hid_report_enum *re;
-+	u8 *data;
-+	u8 max_value;
-+	int len;
+ struct mt_slot {
+-	__s32 x, y, cx, cy, p, w, h;
++	__s32 x, y, cx, cy, z, p, w, h;
+ 	__s32 contactid;	/* the device ContactID assigned to this slot */
+ 	bool touch_state;	/* is the touch valid? */
+ };
+@@ -394,6 +394,12 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	case HID_UP_DIGITIZER:
+ 		switch (usage->hid) {
+ 		case HID_DG_INRANGE:
++			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED) {
++				hid_map_usage(hi, usage, bit, max,
++					EV_ABS, ABS_MT_DISTANCE);
++				input_set_abs_params(hi->input,
++					ABS_MT_DISTANCE, 0, 1, 0, 0);
++			}
+ 			mt_store_field(usage, td, hi);
+ 			td->last_field_index = field->index;
+ 			return 1;
+@@ -511,6 +517,11 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+ 		struct mt_slot *s = &td->curdata;
+ 
+ 		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
++		    !test_bit(ABS_MT_DISTANCE, input->absbit))
++			/* If InRange is not present, rely on TipSwitch */
++			s->touch_state = !s->z;
 +
-+	if (feature_id < 0 || !hdev->hid_output_raw_report)
-+		return;
-+
-+	re = &hdev->report_enum[HID_FEATURE_REPORT];
-+	r = re->report_id_hash[feature_id];
-+	if (!r)
-+		return;
-+
-+	len = ((r->size - 1) >> 3) + 1 + (r->id > 0);
-+	max_value = r->field[0]->logical_maximum;
-+	value = min(value, max_value);
- 
--	if (td->inputmode < 0)
-+	if (r->field[0]->value[index] == value || len < 2 || index + 1 >= len)
- 		return;
- 
--	re = &(hdev->report_enum[HID_FEATURE_REPORT]);
--	r = re->report_id_hash[td->inputmode];
--	if (r) {
--		r->field[0]->value[td->inputmode_index] = 0x02;
--		usbhid_submit_report(hdev, r, USB_DIR_OUT);
-+	data = kzalloc(len, GFP_ATOMIC);
-+	if (!data) {
-+		hid_warn(hdev, "output queueing failed\n");
-+		return;
- 	}
-+
-+	data[0] = r->id;
-+	data[index + 1] = value;
-+	hdev->hid_output_raw_report(hdev, data, len, HID_FEATURE_REPORT);
-+	kfree(data);
- }
- 
--static void mt_set_maxcontacts(struct hid_device *hdev)
-+static void mt_set_input_mode(struct hid_device *hdev)
- {
- 	struct mt_device *td = hid_get_drvdata(hdev);
--	struct hid_report *r;
--	struct hid_report_enum *re;
--	int fieldmax, max;
- 
--	if (td->maxcontact_report_id < 0)
--		return;
-+	mt_set_feature(hdev, td->inputmode, 0x02, td->inputmode_index);
-+}
- 
--	if (!td->mtclass.maxcontacts)
-+static void mt_set_maxcontacts(struct hid_device *hdev)
-+{
-+	struct mt_device *td = hid_get_drvdata(hdev);
-+	int max = td->mtclass.maxcontacts;
-+
-+	if (!max)
- 		return;
- 
--	re = &hdev->report_enum[HID_FEATURE_REPORT];
--	r = re->report_id_hash[td->maxcontact_report_id];
--	if (r) {
--		max = td->mtclass.maxcontacts;
--		fieldmax = r->field[0]->logical_maximum;
--		max = min(fieldmax, max);
--		if (r->field[0]->value[0] != max) {
--			r->field[0]->value[0] = max;
--			usbhid_submit_report(hdev, r, USB_DIR_OUT);
--		}
--	}
-+	mt_set_feature(hdev, td->maxcontact_report_id, max, 0);
- }
- 
- static void mt_post_parse_default_settings(struct mt_device *td)
++		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+ 		    !s->touch_state) {
+ 			struct input_mt_slot *slot = &input->mt->slots[slotnum];
+ 			int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
+@@ -543,6 +554,7 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+ 				input_event(input, EV_ABS, ABS_MT_TOOL_Y,
+ 					s->cy);
+ 			}
++			input_event(input, EV_ABS, ABS_MT_DISTANCE, s->z);
+ 			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+ 			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
+ 			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
+@@ -575,11 +587,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+ 		case HID_DG_INRANGE:
+ 			if (quirks & MT_QUIRK_VALID_IS_INRANGE)
+ 				td->curvalid = value;
++			if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
++				td->curdata.touch_state = value;
+ 			break;
+ 		case HID_DG_TIPSWITCH:
+ 			if (quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
+ 				td->curvalid = value;
+-			td->curdata.touch_state = value;
++			if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
++				td->curdata.z = !value;
++			else
++				td->curdata.touch_state = value;
+ 			break;
+ 		case HID_DG_CONFIDENCE:
+ 			if (quirks & MT_QUIRK_VALID_IS_CONFIDENCE)
 -- 
 1.7.11.7
 
