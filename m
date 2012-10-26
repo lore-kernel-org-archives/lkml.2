@@ -1,55 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964894Ab2JZPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:49:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34855 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964874Ab2JZPtV (ORCPT
+	id S964922Ab2JZPtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:49:32 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52584 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964897Ab2JZPt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:49:21 -0400
-Date: Fri, 26 Oct 2012 17:49:19 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Florian Fainelli <ffainelli@freebox.fr>
-Cc: linux-kernel@vger.kernel.org, x86@vger.kernel.org, mbizon@freebox.fr,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH 3/3] x86: ce4100: fixup PCI configuration register
- access for devices without interrupts
-Message-ID: <20121026154919.GA8459@linutronix.de>
-References: <1350647516-4842-1-git-send-email-ffainelli@freebox.fr>
- <1350647516-4842-4-git-send-email-ffainelli@freebox.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1350647516-4842-4-git-send-email-ffainelli@freebox.fr>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 26 Oct 2012 11:49:28 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: [PATCH] debugfs: add get/set for atomic types
+Date: Fri, 26 Oct 2012 10:49:01 -0500
+Message-Id: <1351266541-17268-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102615-2398-0000-0000-00000CE159DD
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00185856; UDB=6.00042104; UTC=2012-10-26
+ 15:49:26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Florian Fainelli | 2012-10-19 13:51:56 [+0200]:
+debugfs currently lacks the ability to create attributes
+that set/get atomic_t values.
 
->From: Maxime Bizon <mbizon@freebox.fr>
->
->Some CE4100 devices such as the:
->- DFX module (01:0b.7)
->- entertainment encryption device (01:10.0)
->- multimedia controller (01:12.0)
->
->do not have a device interrupt at all. This patch fixes the PCI controller
->code to declare the missing PCI configuration register space, as well as a
->fixup method for forcing the interrupt pin to be 0 for these devices. This is
->required to ensure that pci drivers matching on these devices will be able to
->call honor the various PCI subsystem calls touching the configuration space.
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
 
-So they realy don't have an Interrupt. I assumed that I was not good
-enough reading the table and matching the entries to the HW.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ fs/debugfs/file.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |    2 ++
+ 2 files changed, 44 insertions(+)
 
->Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
-Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..b6f163f 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%d\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%d\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%d\n");
++
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
++
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 66c434f..51fea70 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
+-- 
+1.7.9.5
 
-for patches 1-3
-
-Sebastian
