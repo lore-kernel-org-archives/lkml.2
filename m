@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2JZANo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 20:13:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:54058 "EHLO mail.kernel.org"
+	id S1754883Ab2JZAOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 20:14:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:54046 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754665Ab2JZAIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 20:08:31 -0400
+	id S1753688Ab2JZAIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Oct 2012 20:08:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Steffen Klassert <steffen.klassert@secunet.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 68/85] ipv4: Always invalidate or update the route on pmtu events
-Date: Thu, 25 Oct 2012 17:06:26 -0700
-Message-Id: <20121026000037.950736887@linuxfoundation.org>
+Subject: [ 67/85] ipv6: GRO should be ECN friendly
+Date: Thu, 25 Oct 2012 17:06:25 -0700
+Message-Id: <20121026000037.856492617@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121026000031.107227138@linuxfoundation.org>
 References: <20121026000031.107227138@linuxfoundation.org>
@@ -27,75 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit d851c12b60471188e15e5c8405b289073e8dd025 ]
+[ Upstream commit 51ec04038c113a811b177baa85d293feff9ce995 ]
 
-Some protocols, like IPsec still cache routes. So we need to invalidate
-the old route on pmtu events to avoid the reuse of stale routes.
-We also need to update the mtu and expire time of the route if we already
-use a nh exception route, otherwise we ignore newly learned pmtu values
-after the first expiration.
+IPv4 side of the problem was addressed in commit a9e050f4e7f9d
+(net: tcp: GRO should be ECN friendly)
 
-With this patch we always invalidate or update the route on pmtu events.
+This patch does the same, but for IPv6 : A Traffic Class mismatch
+doesnt mean flows are different, but instead should force a flush
+of previous packets.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+This patch removes artificial packet reordering problem.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/route.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ net/ipv6/af_inet6.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -904,22 +904,29 @@ out:	kfree_skb(skb);
- 	return 0;
- }
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -880,22 +880,25 @@ static struct sk_buff **ipv6_gro_receive
+ 	nlen = skb_network_header_len(skb);
  
--static u32 __ip_rt_update_pmtu(struct rtable *rt, struct flowi4 *fl4, u32 mtu)
-+static void __ip_rt_update_pmtu(struct rtable *rt, struct flowi4 *fl4, u32 mtu)
- {
-+	struct dst_entry *dst = &rt->dst;
- 	struct fib_result res;
+ 	for (p = *head; p; p = p->next) {
+-		struct ipv6hdr *iph2;
++		const struct ipv6hdr *iph2;
++		__be32 first_word; /* <Version:4><Traffic_Class:8><Flow_Label:20> */
  
- 	if (mtu < ip_rt_min_pmtu)
- 		mtu = ip_rt_min_pmtu;
+ 		if (!NAPI_GRO_CB(p)->same_flow)
+ 			continue;
  
-+	if (!rt->rt_pmtu) {
-+		dst->obsolete = DST_OBSOLETE_KILL;
-+	} else {
-+		rt->rt_pmtu = mtu;
-+		dst->expires = max(1UL, jiffies + ip_rt_mtu_expires);
-+	}
-+
- 	rcu_read_lock();
--	if (fib_lookup(dev_net(rt->dst.dev), fl4, &res) == 0) {
-+	if (fib_lookup(dev_net(dst->dev), fl4, &res) == 0) {
- 		struct fib_nh *nh = &FIB_RES_NH(res);
+ 		iph2 = ipv6_hdr(p);
++		first_word = *(__be32 *)iph ^ *(__be32 *)iph2 ;
  
- 		update_or_create_fnhe(nh, fl4->daddr, 0, mtu,
- 				      jiffies + ip_rt_mtu_expires);
- 	}
- 	rcu_read_unlock();
--	return mtu;
- }
- 
- static void ip_rt_update_pmtu(struct dst_entry *dst, struct sock *sk,
-@@ -929,14 +936,7 @@ static void ip_rt_update_pmtu(struct dst
- 	struct flowi4 fl4;
- 
- 	ip_rt_build_flow_key(&fl4, sk, skb);
--	mtu = __ip_rt_update_pmtu(rt, &fl4, mtu);
+-		/* All fields must match except length. */
++		/* All fields must match except length and Traffic Class. */
+ 		if (nlen != skb_network_header_len(p) ||
+-		    memcmp(iph, iph2, offsetof(struct ipv6hdr, payload_len)) ||
++		    (first_word & htonl(0xF00FFFFF)) ||
+ 		    memcmp(&iph->nexthdr, &iph2->nexthdr,
+ 			   nlen - offsetof(struct ipv6hdr, nexthdr))) {
+ 			NAPI_GRO_CB(p)->same_flow = 0;
+ 			continue;
+ 		}
 -
--	if (!rt->rt_pmtu) {
--		dst->obsolete = DST_OBSOLETE_KILL;
--	} else {
--		rt->rt_pmtu = mtu;
--		rt->dst.expires = max(1UL, jiffies + ip_rt_mtu_expires);
--	}
-+	__ip_rt_update_pmtu(rt, &fl4, mtu);
- }
++		/* flush if Traffic Class fields are different */
++		NAPI_GRO_CB(p)->flush |= !!(first_word & htonl(0x0FF00000));
+ 		NAPI_GRO_CB(p)->flush |= flush;
+ 	}
  
- void ipv4_update_pmtu(struct sk_buff *skb, struct net *net, u32 mtu,
 
 
