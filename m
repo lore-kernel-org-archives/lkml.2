@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2JZD1M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Oct 2012 23:27:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59551 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab2JZD1K (ORCPT
+	id S1756033Ab2JZD14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Oct 2012 23:27:56 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:61566 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817Ab2JZD1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Oct 2012 23:27:10 -0400
-Date: Fri, 26 Oct 2012 14:27:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the pinctrl tree
-Message-Id: <20121026142708.394d5ef1e6e3b9ad19243cc6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2"
+	Thu, 25 Oct 2012 23:27:55 -0400
+Message-ID: <508A0337.2000608@gmail.com>
+Date: Thu, 25 Oct 2012 22:27:51 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Josh Cartwright <josh.cartwright@ni.com>
+CC: Grant Likely <grant.likely@secretlab.ca>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: l2cc: doc: fix device tree example typo
+References: <20121024005306.GA32126@beefymiracle.amer.corp.natinst.com>
+In-Reply-To: <20121024005306.GA32126@beefymiracle.amer.corp.natinst.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/23/2012 07:53 PM, Josh Cartwright wrote:
+> The list of attributes above details the use of the 'filter-ranges'
+> property, but the example improperly used 'filter-latency'.  Make these
+> consistent by fixing up the example.
+> 
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
 
-Hi all,
+Applied for 3.8 (unless I get more to send for 3.7).
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-ux500/cpu-db8500.c between commit 63c53906312f
-("pinctrl/nomadik: move the platform data header") from the pinctrl tree
-and commit 4040d10a3d44 ("ARM: ux500: add DB serial number to entropy
-pool") from the arm-soc tree.
+Rob
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-ux500/cpu-db8500.c
-index 87a8f9f,50202a1..0000000
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@@ -18,7 -18,7 +18,8 @@@
-  #include <linux/io.h>
-  #include <linux/mfd/abx500/ab8500.h>
-  #include <linux/platform_data/usb-musb-ux500.h>
- +#include <linux/platform_data/pinctrl-nomadik.h>
-+ #include <linux/random.h>
- =20
-  #include <asm/pmu.h>
-  #include <asm/mach/map.h>
-
---Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQigMMAAoJEECxmPOUX5FEe50QAIJtMZQiI4/3R4tAtC49tgjX
-CdzySCZg0gNcA7IZRDy/IuzlEOdYby7xedHq0EKc3+uPyTQZT0PqIHv3829024ac
-3srlgeNo2RR57ANKzCgIWA0pemVf9FC+fl0pKR+9WCIm+GSidcBxOABI7EfygSq6
-cgK/gWtyCO8y2qPCj8hxwopFWVu5JEOx1NGgfjaeT174GMUFlUKfXLnWlSSqLoUB
-BtkiDbpVZEVcyeVFmWBA3P4j8C0iGwJljjLD6hNr5+rD4id2kEon33hGWANd6RQc
-LoXKaxIt71bSzCYOAMi0xjXGEJd3O/FDRZxowF02GPtuSp8HAo7optK5N7s01r+n
-B+E5P6dLoOLIjN4NUxQbj1W40HDlhownhAS09f6HEGT10zQJHvSGVhCptwMwgVWi
-Zhp3mAN9c2eEdNpqO2MrbvN+OlMe/Fr0QFfKn4f26FO8gXR2CezjKzh6Xo8VHb6U
-4gIEzsVdw6NSJQhUgVPlw5uGj3onyWT1ULEm0nO95Nc36TFMO+fjVVJwI9QhxZM3
-6+op5dDU3D0zNhlEciUTLtTkNH6Ieibk/L6cyJ6sy3VmLm6zEPssXkFqtOUh4Ve7
-hOt4avJPaJCsYp/MA2U0gUDAJyItALloR7dBJdCygtb5fCcOSoIc1EgLIy0Ugp9E
-qXWq0aEfSeCSbl0NvlRQ
-=ABmp
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Oct_2012_14_27_08_+1100_tkVrAEZ6n_dkreV2--
+> ---
+>  Documentation/devicetree/bindings/arm/l2cc.txt | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+> index 7ca5216..7c3ee3a 100644
+> --- a/Documentation/devicetree/bindings/arm/l2cc.txt
+> +++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+> @@ -37,7 +37,7 @@ L2: cache-controller {
+>          reg = <0xfff12000 0x1000>;
+>          arm,data-latency = <1 1 1>;
+>          arm,tag-latency = <2 2 2>;
+> -        arm,filter-latency = <0x80000000 0x8000000>;
+> +        arm,filter-ranges = <0x80000000 0x8000000>;
+>          cache-unified;
+>          cache-level = <2>;
+>  	interrupts = <45>;
+> 
