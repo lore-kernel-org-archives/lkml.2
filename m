@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934115Ab2JZUte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:49:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57004 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab2JZUtc (ORCPT
+	id S966456Ab2JZUxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:53:01 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2475 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965143Ab2JZUxA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:49:32 -0400
+	Fri, 26 Oct 2012 16:53:00 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+From: "Chris Brand" <chris.brand@broadcom.com>
+To: "Tony Prisk" <linux@prisktech.co.nz>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>
+cc: "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4] pwm: vt8500: Update vt8500 PWM driver support
+Thread-Topic: [PATCH v4] pwm: vt8500: Update vt8500 PWM driver support
+Thread-Index: AQHNsg8byW4pIJiUa06F4FONA3rtmZfMEn6A
+Date: Fri, 26 Oct 2012 20:52:26 +0000
+Message-ID: <4EE5B48738DDED408878C97C8E050A8B1BD17DD2@SJEXCHMB05.corp.ad.broadcom.com>
+References: <1351100330-26072-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <1351100330-26072-1-git-send-email-linux@prisktech.co.nz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.16.203.100]
 MIME-Version: 1.0
-In-Reply-To: <1351254544.7077.27.camel@vkoul-udesk3>
-References: <1351254544.7077.27.camel@vkoul-udesk3>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 26 Oct 2012 13:49:11 -0700
-X-Google-Sender-Auth: 4zT7ZXiB_eDeZnpPJSEnDefWhj4
-Message-ID: <CA+55aFxTf1as+zBuPNjOGrYLxw1ZX2WsT8iWQMpZpOu+3nETfw@mail.gmail.com>
-Subject: Re: [GIT PULL] slave-dmaengine fixes
-To: Vinod Koul <vkoul@infradead.org>
-Cc: vinod.koul@intel.com, Dan Williams <djbw@fb.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7C94283F3OW10877676-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 5:29 AM, Vinod Koul <vkoul@infradead.org> wrote:
->
->   git://git.infradead.org/users/vkoul/slave-dma.git fixes
+Hi Tony,
 
-git.infradead.org is sick, and is apparently not accepting connections...
+> @@ -124,6 +156,12 @@ static int __devinit pwm_probe(struct
+> platform_device *pdev)
+>  	chip->chip.base = -1;
+>  	chip->chip.npwm = VT8500_NR_PWMS;
+> 
+> +	chip->clk = devm_clk_get(&pdev->dev, NULL);
+> +	if (IS_ERR_OR_NULL(chip->clk)) {
+> +		dev_err(&pdev->dev, "clock source not specified\n");
+> +		return PTR_ERR(chip->clk);
+> +	}
+> +
 
-Can you check whether git-daemon is actually running there? The
-machine is pinging ok.
+Do you want IS_ERR() rather than IS_ERR_OR_NULL() here ?
+Otherwise you may return PTR_ERR(NULL).
 
-          Linus
+Chris
+
+
