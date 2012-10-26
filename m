@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933796Ab2JZPZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 11:25:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56951 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab2JZPZD (ORCPT
+	id S964812Ab2JZPZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 11:25:18 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:18511 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933811Ab2JZPZN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 11:25:03 -0400
-Date: Fri, 26 Oct 2012 08:25:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, toshi.kani@hp.com, lenb@kernel.org,
-        wency@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] acpi : acpi_bus_trim() stops removing devices when
- failing to remove the device
-Message-ID: <20121026152544.GC15840@kroah.com>
-References: <50769B8C.2060901@jp.fujitsu.com>
- <1846185.MSykHDcMmb@vostro.rjw.lan>
- <20121019175941.GB3375@kroah.com>
- <508A3CDD.20506@jp.fujitsu.com>
+	Fri, 26 Oct 2012 11:25:13 -0400
+Message-ID: <508AAB54.9010506@atmel.com>
+Date: Fri, 26 Oct 2012 17:25:08 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508A3CDD.20506@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <davem@davemloft.net>, Joachim Eastwood <manabian@gmail.com>
+CC: <netdev@vger.kernel.org>, <havard@skinnemoen.net>,
+        <bhutchings@solarflare.com>, <linux-arm-kernel@lists.infradead.org>,
+        <plagnioj@jcrosoft.com>, <patrice.vilchez@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/9] net/macb: driver enhancement concerning GEM support,
+ ring logic and cleanup
+References: <cover.1348055112.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1348055112.git.nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 04:33:49PM +0900, Yasuaki Ishimatsu wrote:
-> Hi Greg,
-> 
-> Sorry for late reply.
-> 
-> 2012/10/20 2:59, Greg Kroah-Hartman wrote:
-> >On Fri, Oct 19, 2012 at 06:29:52AM +0200, Rafael J. Wysocki wrote:
-> >>On Thursday 11 of October 2012 19:12:28 Yasuaki Ishimatsu wrote:
-> >>>acpi_bus_trim() stops removing devices, when acpi_bus_remove() return error
-> >>>number. But acpi_bus_remove() cannot return error number correctly.
-> >>>acpi_bus_remove() only return -EINVAL, when dev argument is NULL. Thus even if
-> >>>device cannot be removed correctly, acpi_bus_trim() ignores and continues to
-> >>>remove devices. acpi_bus_hot_remove_device() uses acpi_bus_trim() for removing
-> >>>devices. Therefore acpi_bus_hot_remove_device() can send "_EJ0" to firmware,
-> >>>even if the device is running on the system. In this case, the system cannot
-> >>>work well.
-> >>>
-> >>>Vasilis hit the bug at memory hotplug and reported it as follow:
-> >>>https://lkml.org/lkml/2012/9/26/318
-> >>>
-> >>>So acpi_bus_trim() should check whether device was removed or not correctly.
-> >>>The patch adds error check into some functions to remove the device.
-> >>>
-> >>>Applying the patch, acpi_bus_trim() stops removing devices when failing
-> >>>to remove the device. But I think there is no impact with the
-> >>>exceptionof CPU and Memory hotplug path. Because other device also fails
-> >>>but the fail is an irregular case like device is NULL.
-> >>>
-> >>>v1->v2
-> >>>- add a rollback for reinstalling a notify handler.
-> >>>
-> >>>Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> >>
-> >>Greg, do you think there may be any problems with the changes in dd.c?
-> >
-> >Yes, I don't like it.
-> >
-> >remove should always work, just like the exit call in a module.  It
-> >means that the core wants to remove the driver, so it is going to
-> >happen, a driver can't refuse it.
-> >
-> >Which brings me to the larger question, why would this solve anything?
-> 
-> Now we are developing physical memory hot plug.
-> 
-> https://lkml.org/lkml/2012/10/23/213
-> 
-> So if we aplly the patch-set, we can hot remove a physical memory
-> by the following way.
-> 
-> "echo 1 > /sys/bus/acpi/devices/PNP/eject"
-> 
-> In this case, acpi_bus_hot_remove_device() tries to remove memory
-> device by acpi_bus_trim(). But if the memory has irremovable memory,
-> memory hot remove fails. And the memory remains in kernel.
-> However acpi_bus_trim() cannot notice that memory hot remove fails and
-> retruns 0. So acpi_bus_hot_remove_device() continues to remove memory
-> devices and sends _EJ0 method to firmware. Thus the memory device cannot
-> be used. But the memory remains in kernel yet. So if someone access the
-> memory, kernel panic occurs.
+David,
 
-Why can't you check to find out if you can do the remove operation
-before you enter the driver core asking to actually remove the devices?
-That would allow you to "know" if you can do this before having to go
-through the whole operation.  What happens if you can complete half of
-the removal, and do that, but not the whole thing?  Don't you end up
-with half of the memory chunk gone from the system now?
+On 09/19/2012 01:55 PM, Nicolas Ferre :
+> This is an enhancement work that began several years ago. I try to catchup with
+> some performance improvement that has been implemented then by Havard.
+> The ring index logic and the TX error path modification are the biggest changes
+> but some cleanup/debugging have been added along the way.
+> The GEM revision will benefit from the Gigabit support.
+> 
+> The series has been tested on several Atmel AT91 SoC with the two MACB/GEM
+> flavors.
+> 
+> v2: - modify the tx error handling: now uses a workqueue
+>     - information provided by ethtool -i were not accurate: removed
 
-In other words, please solve this at a higher level than the driver
-core if at all possible.
+I am about to re-send this patch series. Should I rebase it on top of
+Joachim's recent modifications? I mean, I plan to rebase them on top of
+net-next, is it the proper thing to do?
 
-greg k-h
+> Havard Skinnemoen (4):
+>   net/macb: memory barriers cleanup
+>   net/macb: change debugging messages
+>   net/macb: clean up ring buffer logic
+>   net/macb: Offset first RX buffer by two bytes
+> 
+> Nicolas Ferre (4):
+>   net/macb: remove macb_get_drvinfo()
+>   net/macb: tx status is more than 8 bits now
+>   net/macb: ethtool interface: add register dump feature
+>   net/macb: better manage tx errors
+> 
+> Patrice Vilchez (1):
+>   net/macb: Add support for Gigabit Ethernet mode
+> 
+>  drivers/net/ethernet/cadence/macb.c | 433 +++++++++++++++++++++++++-----------
+>  drivers/net/ethernet/cadence/macb.h |  30 ++-
+>  2 files changed, 321 insertions(+), 142 deletions(-)
+
+Best regards,
+-- 
+Nicolas Ferre
