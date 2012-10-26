@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966516Ab2JZU4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 16:56:34 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57861 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932185Ab2JZU4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 16:56:32 -0400
-Date: Fri, 26 Oct 2012 16:56:18 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Nix <nix@esperi.org.uk>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
-        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-Message-ID: <20121026205618.GC8614@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
-	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	"J. Bruce Fields" <bfields@fieldses.org>,
-	Bryan Schumaker <bjschuma@netapp.com>,
-	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
-	gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <508AF3FA.4020506@redhat.com>
- <87wqydx957.fsf@spindle.srvr.nix>
+	id S934132Ab2JZU5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 16:57:47 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:34947 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab2JZU5q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 16:57:46 -0400
+Message-ID: <508AF938.9090004@gmail.com>
+Date: Fri, 26 Oct 2012 13:57:28 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqydx957.fsf@spindle.srvr.nix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Daniel Vetter <daniel@ffwll.ch>
+CC: Chris Wilson <chris@chris-wilson.co.uk>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed...
+ GPU hung
+References: <2b9aabdc-6f44-40cc-ad0b-4180101570c7@mail.android.htc.com> <5088CC9B.6010009@gmail.com> <CAKMK7uFMaf=ohEKyWKNsd-mSQkW__0BUww_iYLNFo347mEYAMg@mail.gmail.com> <84c8a8$68qvdl@orsmga001.jf.intel.com> <508A1505.6010809@gmail.com> <CAKMK7uHm8OXPGmYa3zgn64mmufgGMmqiAE=+5ugBBKQ+i6PTag@mail.gmail.com>
+In-Reply-To: <CAKMK7uHm8OXPGmYa3zgn64mmufgGMmqiAE=+5ugBBKQ+i6PTag@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 09:37:08PM +0100, Nix wrote:
-> 
-> I can reproduce this on a small filesystem and stick the image somewhere
-> if that would be of any use to anyone. (If I'm very lucky, merely making
-> this offer will make the problem go away. :} )
+On 10/26/2012 01:05 AM, Daniel Vetter wrote:
+> On Fri, Oct 26, 2012 at 6:43 AM, Justin P. Mattock
+> <justinmattock@gmail.com> wrote:
+>>>
+>>> No worries, it is another ILK hang similar to the ones reported earlier
+>>> - it just seems the ring stops advancing. Hopefully it is a missing w/a
+>>> from http://cgit.freedesktop.org/~danvet/drm/log/?h=ilk-wa-pile
+>>> -Chris
+>>>
+>>
+>> well if this means building libdrm etc.. then thats not a problem, more time
+>> consuming if anything. perhaps an *.rpm that I can test to see?
+>
+> It's not libdrm, the above is just a kernel git tree with a bunch of
+> ironlake workarounds.
+> -Daniel
+>
 
-I'm not sure the image is going to be that useful.  What we really
-need to do is to get a reliable reproduction of what _you_ are seeing.
 
-It's clear from Eric's experiments that journal_checksum is dangerous.
-In fact, I will likely put it under an #ifdef EXT4_EXPERIMENTAL to try
-to discourage people from using it in the future.  There are things
-I've been planning on doing to make it be safer, but there's a very
-good *reason* that both journal_checksum and journal_async_commit are
-not on by default.
+nice..
 
-That's why one of the things I asked you to do when you had time was
-to see if you could reproduce the problem you are seeing w/o
-nobarrier,journal_checksum,journal_async_commit.
+:~/drm> git clone git://people.freedesktop.org/~danvet/drm
+Cloning into 'drm'...
+remote: Counting objects: 2728390, done.
+remote: Compressing objects: 100% (418606/418606), done.
+remote: Total 2728390 (delta 2293727), reused 2717443 (delta 2282880)
+Receiving objects: 100% (2728390/2728390), 637.95 MiB | 599 KiB/s, done.
+Resolving deltas: 100% (2293727/2293727), done.
+warning: remote HEAD refers to nonexistent ref, unable to checkout.
 
-The other experiment that would be really useful if you could do is to
-try to apply these two patches which I sent earlier this week:
 
-[PATCH 1/2] ext4: revert "jbd2: don't write superblock when if its empty
-[PATCH 2/2] ext4: fix I/O error when unmounting an ro file system
+so now I have to go on a witch hunt for 600MB's in my system.
 
-... and see if they make a difference.
-
-If they don't make a difference, I don't want to apply patches just
-for placebo/PR reasons.  And for Eric at least, he can reproduce the
-journal checksum error followed by fairly significant corruption
-reported by e2fsck with journal_checksum, and the presence or absense
-of these patches make no difference for him.  So I really don't want
-to push these patches to Linus until I get confirmation that they make
-a difference to *somebody*.
-
-Regards,
-
-						- Ted
+Justin P. Mattock
