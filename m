@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab2J0QSg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 12:18:36 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57053 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab2J0QSf (ORCPT
+	id S1759287Ab2J0QTH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 12:19:07 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46168 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756488Ab2J0QTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 12:18:35 -0400
+	Sat, 27 Oct 2012 12:19:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd8BxYammidxX_-fmQSujf2LHL44qYMEBVDLrfV2ziBKBA@mail.gmail.com>
-References: <CAPgLHd8BxYammidxX_-fmQSujf2LHL44qYMEBVDLrfV2ziBKBA@mail.gmail.com>
-Date: Sat, 27 Oct 2012 18:18:34 +0200
-Message-ID: <CACRpkdbWfnoNQCXPu9hVy9R=NJch42XcFNW1WKGYhXdpOizyVQ@mail.gmail.com>
-Subject: Re: [PATCH -next] GPIO: clps711x: use platform_device_unregister in gpio_clps711x_init()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>, Alexander Shiyan <shc_work@mail.ru>
-Cc: grant.likely@secretlab.ca, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20121027150649.GC3349@kroah.com>
+References: <1351325129-10097-1-git-send-email-clouds.yan@gmail.com>
+	<1351325129-10097-5-git-send-email-clouds.yan@gmail.com>
+	<20121027150649.GC3349@kroah.com>
+Date: Sun, 28 Oct 2012 00:19:04 +0800
+Message-ID: <CAH+=+MGFxzENSy2stbgv5BQvgSbgKtsSnn2Fuj+O-zw8-2Ljfg@mail.gmail.com>
+Subject: Re: [PATCH 5/5] debugfs: remove goto in debugfs_remount()
+From: Yan Hong <clouds.yan@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 5:15 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+2012/10/27 Greg KH <gregkh@linuxfoundation.org>:
+> On Sat, Oct 27, 2012 at 04:05:29PM +0800, Yan Hong wrote:
+>> Simple code clean to remove goto.
+>
+> There is nothing wrong with gotos on error paths, so this one should
+> stay.
+>
+> greg k-h
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> platform_device_unregister() only calls platform_device_del() and
-> platform_device_put(), thus use platform_device_unregister() to
-> simplify the code.
->
-> Also the documents in platform.c shows that platform_device_del
-> and platform_device_put must _only_ be externally called in error
-> cases.  All other usage is a bug.
->
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+I thought we use goto on error path because there is no other elegant
+ways to do the things, but it sounds like goto is still welcome and preferable
+when we are not in this case. Anyway, this is a simple clean, I do not insist
+on it.
 
-Thanks, patch applied.
-
-Yours,
-Linus Walleij
+Thanks
