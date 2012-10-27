@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594Ab2J0Wgq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 18:36:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61555 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759547Ab2J0Wgo (ORCPT
+	id S1759626Ab2J0WhW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 18:37:22 -0400
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:58400 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759567Ab2J0WhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 18:36:44 -0400
-Date: Sun, 28 Oct 2012 00:36:40 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: linux-kernel@vger.kernel.org
-Subject: [Q] .readable_reg() not verified during read?
-Message-ID: <Pine.LNX.4.64.1210280034310.4378@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:phkB0c6HyTBkvbUNcxrj+hQrx+DynSCbIu3pN2HoTjM
- t0Y6BbJn+Nm7iIx3t27RFQGyLKTP23AaXHQvy+vklnLspVJsOv
- sBQwaIw04ovyL7KPv6aVmbRfddXMeCZCCtxEbq/8woMN6pAicU
- y2shZ69TR7bK0C+dK8vfsleIO/Ovp+GfhYtzRhDG9MgwV8JE4+
- P67fE/ug2LS/yTdkUTayKfzWBxuomrGg49J7vD3Q2lVISjRxZ0
- sUgyokircaElxP9byXNtXzyrih8sTPOiHDD5brTLS83m3kHVSh
- RfKsEZSpZXpE7A3vpHYVMCQsRJ6uT5kBdJjpIiVrRsgVkWa+v0
- QgF1M3jIx3fCmFpTd3KRTdxo4PsL+FqLqnyNglrJYIhq1ij3ub
- zvbz8Y0AY1t9Q==
+	Sat, 27 Oct 2012 18:37:21 -0400
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] firmware: use noinline_for_stack
+Date: Sat, 27 Oct 2012 20:37:10 -0200
+Message-Id: <1351377430-21247-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark
+The comment above fw_file_size() suggests it is noinline for stack size
+reasons. Use noinline_for_stack to make this more clear.
 
-Looking at regmap.c it looks like the .readable_reg() callback is not 
-consulted when performing a register read, e.g. in _regmap_raw_read(). Is 
-this intentional? If yes - why?
-
-Thanks
-Guennadi
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ drivers/base/firmware_class.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8945f4e..620b876 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -275,7 +275,7 @@ static const char *fw_path[] = {
+ };
+ 
+ /* Don't inline this: 'struct kstat' is biggish */
+-static noinline long fw_file_size(struct file *file)
++static noinline_for_stack long fw_file_size(struct file *file)
+ {
+ 	struct kstat st;
+ 	if (vfs_getattr(file->f_path.mnt, file->f_path.dentry, &st))
+-- 
+1.7.11.7
+
