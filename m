@@ -1,85 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934342Ab2JZX6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 19:58:16 -0400
-Received: from tru75-7-88-161-131-83.fbx.proxad.net ([88.161.131.83]:47500
-	"EHLO next.fork.zz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934214Ab2JZX6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 19:58:15 -0400
-Message-ID: <508B2382.60108@free.fr>
-Date: Sat, 27 Oct 2012 01:57:54 +0200
-From: Wallak <wallak@free.fr>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20100101 Firefox/16.0
+	id S966923Ab2J0AHq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 20:07:46 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57894 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966897Ab2J0AHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 20:07:44 -0400
+Date: Fri, 26 Oct 2012 20:07:36 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Martin <marogge@onlinehome.de>, linux-ext4@vger.kernel.org,
+        Nix <nix@esperi.org.uk>
+Subject: Re: ext4 issue after unclean shutdown and reboot
+Message-ID: <20121027000736.GA31030@thunk.org>
+References: <508B199E.6020107@onlinehome.de>
 MIME-Version: 1.0
-To: Chris Friesen <chris.friesen@genband.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linix-3.6.3 sda, sdb drives in reverse order (with a USB 2.0
- drives and a monolithic kernel configuration)
-References: <5089C20E.4090707@free.fr> <5089C70B.1020007@genband.com> <508AE7D7.309@free.fr> <508AF0E4.7030701@genband.com>
-In-Reply-To: <508AF0E4.7030701@genband.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508B199E.6020107@onlinehome.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Friesen wrote:
-> On 10/26/2012 01:43 PM, Wallak wrote:
->> Chris Friesen wrote:
->>> On 10/25/2012 04:49 PM, Wallak wrote:
->>>> I've a very annoying behavior with the linux-3.6.x kernels release, 
->>>> and
->>>> a monolithic configuration. The USB 2.0 drives are mapped first with
->>>> /dev/sda, /dev/sdb... devices, and than the SATA AHCI drives come 
->>>> after.
->>>> This is out of order with the BIOS configuration and breaks a program
->>>> like lilo. This is also annoying when we use a static partition 
->>>> mapping.
->>>>
->>>> Linux-3.5 works fine. Where this bug come from ? Is this a patch to 
->>>> get
->>>> the old, and classical behavior ?
->>>
->>> As you have discovered it's fragile to rely on /dev/sd* names since a
->>> BIOS update, kernel update, or motherboard replacement could
->>> conceivably cause them to change.
->>>
->>> Better to use something like partition labels that you control and
->>> that don't change.
->>>
->>> Chris
->>>
->> You are right, when we have a configuration with a lot of drvies and
->> adapters SATA, old SCSI,.. etc. the order may change. But having the
->> main SATA hard drive defined, as the BIOS boot device, behind external
->> and removable USB drives is in my opinion a bug.And may lead to security
->> issues (drives with the same label, etc...).
->>
->> Using =LABEL, or =UUID with a bootloader like grub or lilo, save the the
->> boot device mapped drive partition number , and so booting on an older
->> kernel like linux 3.5 will fail. If we remove the external USB drive,
->> the boot process will fail too...
->>
->> So such a bug have to be fix.
->
-> If you specify "root=LABEL=<label>" as part of the kernel boot args in 
-> grub does it not check the label at boot time?
+I've bcc'ed stable@vger.kernel.org, LKML, and greg-kh, since I suspect
+they aren't interested in all of these details... we'll keep this on
+linux-ext4 for sanity's sake.
 
-Using root=LABEL= or root=UUID= don't work on a plain kernel, this 
-feature may be handled by an initrd trick. Otherwise for all non root 
-partitions UUID= work fine.
-Nevertheless not fixing this bug yields some other issues:  Using lilo 
-to launch a second OS (other= option) fail, the command try to parse 
-partitions available on /dev/sda, and miss the real main HDD. Boot drive 
-must be force with lilo options...
-SATA drives have, most of the time, no reason to be behind USB drives. 
-If we want to get a reliable behavior: /dev/sda must be mapped to the 
-BIOS boot device. Using the same behavior as linux-3.5 will be fine.
+On Sat, Oct 27, 2012 at 01:15:42AM +0200, Martin wrote:
+> 
+> sorry for the repetition, but Theodore Ts'o asked me to re-post this
+> as a new mail thread in order to keep track of this more easily.
 
-Wallak.
+1)  Is it repeatable?  This is what happened once.  Can you reliably reproduce it?
 
->
-> Chris
->
+2)  Can you send the full dmesg of the previous boot and the boot where
+you found the problem?
 
+3)  Can you send me the fsck logs?
+
+4)  Can you send me the output dumpe2fs on the file system in question?
+
+Thanks....
+
+						- Ted
