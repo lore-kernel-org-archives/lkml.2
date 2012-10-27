@@ -1,126 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832Ab2J0BGA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 21:06:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46280 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757999Ab2J0BF6 (ORCPT
+	id S933620Ab2J0BYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 21:24:01 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64324 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932252Ab2J0BYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 21:05:58 -0400
-Date: Fri, 26 Oct 2012 18:02:15 -0700
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, linux-man@vger.kernel.org
-Subject: Re: [RFC v2 0/2] vmevent: A bit reworked pressure attribute + docs +
- man page
-Message-ID: <20121027010215.GA9152@lizard>
-References: <20121022111928.GA12396@lizard>
- <20121025064009.GA15767@bbox>
- <20121025090813.GA16078@lizard>
- <20121026023720.GE15767@bbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121026023720.GE15767@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Oct 2012 21:24:00 -0400
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH v3] firmware loader: introduce module parameter to customize fw search path
+Date: Sat, 27 Oct 2012 09:23:45 +0800
+Message-Id: <1351301025-5657-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:37:20AM +0900, Minchan Kim wrote:
-[...]
-> > > Of course, it's very flexible and potential to add new VM knob easily but
-> > > the thing we is about to use now is only VMEVENT_ATTR_PRESSURE.
-> > > Is there any other use cases for swap or free? or potential user?
-> > 
-> > Number of idle pages by itself might be not that interesting, but
-> > cache+idle level is quite interesting.
-> > 
-> > By definition, _MED happens when performance already degraded, slightly,
-> > but still -- we can be swapping.
-> > 
-> > But _LOW notifications are coming when kernel is just reclaiming, so by
-> > using _LOW notifications + watching for cache level we can very easily
-> > predict the swapping activity long before we have even _MED pressure.
-> 
-> So, for seeing cache level, we need new vmevent_attr?
+This patch introduces one module parameter of 'path' in firmware_class
+to support customizing firmware image search path, so that people can
+use its own firmware path if the default built-in paths can't meet their
+demand[1], and the typical usage is passing the below from kernel command
+parameter when 'firmware_class' is built in kernel:
 
-Hopefully, not. We're not interested in the raw values of the cache level,
-but what we want is to to tell the kernel how much "easily reclaimable
-pages" userland has, and get notified when kernel believes that it's good
-time for the userland is to help. I.e. this new _MILD level:
+	firmware_class.path=$CUSTOMIZED_PATH
 
-> > Maybe it makes sense to implement something like PRESSURE_MILD with an
-> > additional nr_pages threshold, which basically hits the kernel about how
-> > many easily reclaimable pages userland has (that would be a part of our
-> > definition for the mild pressure level). So, essentially it will be
-> > 
-> > 	if (pressure_index >= oom_level)
-> > 		return PRESSURE_OOM;
-> > 	else if (pressure_index >= med_level)
-> > 		return PRESSURE_MEDIUM;
-> > 	else if (userland_reclaimable_pages >= nr_reclaimable_pages)
-> > 		return PRESSURE_MILD;
-> > 	return PRESSURE_LOW;
-> > 
-> > I must admit I like the idea more than exposing NR_FREE and stuff, but the
-> > scheme reminds me the blended attributes, which we abandoned. Although,
-> > the definition sounds better now, and we seem to be doing it in the right
-> > place.
-> > 
-> > And if we go this way, then sure, we won't need any other attributes, and
-> > so we could make the API much simpler.
-> 
-> That's what I want! If there isn't any user who really are willing to use it,
-> let's drop it. Do not persuade with imaginary scenario because we should be 
-> careful to introduce new ABI.
+[1], https://lkml.org/lkml/2012/10/11/337
 
-Yeah, I think you're right. Let's make the vmevent_fd slim first. I won't
-even focus on the _MILD/_BALANCE level for now, we can do it later, and we
-always have the /proc/vmstat even if the _MILD turns out to be a bad idea.
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+v3
+	- fix one mistake on checking unset firmware path
 
-Reading /proc/vmstat is a bit more overhead, but it's not that much at all
-(especially when we don't have to timer-poll the vmstat).
+v2
+	- take a cleaner approach suggested by Linus
+	- mark the path array as const because it needn't be changed
+	- fix one error in Document about the module name
 
-> > > Adding vmevent_fd without them is rather overkill.
-> > > 
-> > > And I want to avoid timer-base polling of vmevent if possbile.
-> > > mem_notify of KOSAKI doesn't use such timer.
-> > 
-> > For pressure notifications we don't use the timers. We also read the
-> 
-> Hmm, when I see the code, timer still works and can notify to user. No?
+v1:
+	- remove kernel boot parameter and only support the feature by
+        module parameter as suggested by Greg
+---
+ Documentation/firmware_class/README |    5 +++++
+ drivers/base/firmware_class.c       |   17 ++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
-Yes, I was mostly saying that it is technically not required anymore, but
-you're right, the code still fires the timer (it just runs needlessly for
-the pressure attr).
+diff --git a/Documentation/firmware_class/README b/Documentation/firmware_class/README
+index 815b711..e9fce78 100644
+--- a/Documentation/firmware_class/README
++++ b/Documentation/firmware_class/README
+@@ -22,12 +22,17 @@
+ 	- calls request_firmware(&fw_entry, $FIRMWARE, device)
+ 	- kernel searchs the fimware image with name $FIRMWARE directly
+ 	in the below search path of root filesystem:
++		User customized search path by module parameter 'path'[1]
+ 		"/lib/firmware/updates/" UTS_RELEASE,
+ 		"/lib/firmware/updates",
+ 		"/lib/firmware/" UTS_RELEASE,
+ 		"/lib/firmware"
+ 	- If found, goto 7), else goto 2)
+ 
++	[1], the 'path' is a string parameter which length should be less
++	than 256, user should pass 'firmware_class.path=$CUSTOMIZED_PATH'
++	if firmware_class is built in kernel(the general situation)
++
+  2), userspace:
+  	- /sys/class/firmware/xxx/{loading,data} appear.
+ 	- hotplug gets called with a firmware identifier in $FIRMWARE
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 8945f4e..62568c2 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -267,13 +267,23 @@ static void fw_free_buf(struct firmware_buf *buf)
+ }
+ 
+ /* direct firmware loading support */
+-static const char *fw_path[] = {
++static char fw_path_para[256];
++static const char * const fw_path[] = {
++	fw_path_para,
+ 	"/lib/firmware/updates/" UTS_RELEASE,
+ 	"/lib/firmware/updates",
+ 	"/lib/firmware/" UTS_RELEASE,
+ 	"/lib/firmware"
+ };
+ 
++/*
++ * Typical usage is that passing 'firmware_class.path=$CUSTOMIZED_PATH'
++ * from kernel command because firmware_class is generally built in
++ * kernel instead of module.
++ */
++module_param_string(path, fw_path_para, sizeof(fw_path_para), 0644);
++MODULE_PARM_DESC(path, "customized firmware image search path with a higher priority than default path");
++
+ /* Don't inline this: 'struct kstat' is biggish */
+ static noinline long fw_file_size(struct file *file)
+ {
+@@ -315,6 +325,11 @@ static bool fw_get_filesystem_firmware(struct firmware_buf *buf)
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+ 		struct file *file;
++
++		/* skip the unset customized path */
++		if (!fw_path[i][0])
++			continue;
++
+ 		snprintf(path, PATH_MAX, "%s/%s", fw_path[i], buf->fw_id);
+ 
+ 		file = filp_open(path, O_RDONLY, 0);
+-- 
+1.7.9.5
 
-Bad wording on my side.
-
-[..]
-> > We can do it via eventfd, or /dev/chardev (which has been discussed and
-> > people didn't like it, IIRC), or signals (which also has been discussed
-> > and there are problems with this approach as well).
-> > 
-> > I'm not sure why having a syscall is a big issue. If we're making eventfd
-> > interface, then we'd need to maintain /sys/.../ ABI the same way as we
-> > maintain the syscall. What's the difference? A dedicated syscall is just a
-> 
-> No difference. What I want is just to remove unnecessary stuff in vmevent_fd
-> and keep it as simple. If we do via /dev/chardev, I expect we can do necessary
-> things for VM pressure. But if we can diet with vmevent_fd, It would be better.
-> If so, maybe we have to change vmevent_fd to lowmem_fd or
-> vmpressure_fd.
-
-Sure, then I'm starting the work to slim the API down, and we'll see how
-things are going to look after that.
-
-Thanks a lot!
-
-Anton.
