@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934486Ab2J0DrD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 23:47:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56826 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934463Ab2J0DrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 23:47:00 -0400
-Message-ID: <508B59B0.5010503@redhat.com>
-Date: Fri, 26 Oct 2012 23:49:04 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
+	id S1750977Ab2J0EWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 00:22:05 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54750 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab2J0EWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 00:22:03 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
-References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl> <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com> <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com> <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com> <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com> <m2pq45qu0s.fsf@firstfloor.org> <508A8D31.9000106@redhat.com> <20121026132601.GC9886@gmail.com> <20121026144502.6e94643e@dull> <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
-In-Reply-To: <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAD+1EGNrcpSf3LXCw=OPEx9WzKGmkp01OquCRZySGKjvEeOp1Q@mail.gmail.com>
+References: <20121024155647.GA6567@Super-MAGI>
+	<CAD+1EGNrcpSf3LXCw=OPEx9WzKGmkp01OquCRZySGKjvEeOp1Q@mail.gmail.com>
+Date: Sat, 27 Oct 2012 12:22:00 +0800
+Message-ID: <CA+HMz3gBqyiVsyQfGZQ_nUTReWVT9yG8OzGN42h0JzyeoOHmag@mail.gmail.com>
+Subject: Re: [PATCH]Documentation:Chinese translation of Documentation/arm64/booting.txt
+From: Ninja Tekkaman <tekkamanninja@gmail.com>
+To: harryxiyou <harryxiyou@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        Greg-Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel@vger.linux-kernel.cn
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 05:12 PM, Alan Cox wrote:
-> On Fri, 26 Oct 2012 14:45:02 -0400
-> Rik van Riel <riel@redhat.com> wrote:
->
->> Intel has an architectural guarantee that the TLB entry causing
->> a page fault gets invalidated automatically. This means
->> we should be able to drop the local TLB invalidation.
+OK, I will try my best to  keep it up to date.
+I hope that Catalin Marinas can Cc the patch to me, when the
+Documentation/arm64 has got a patch.
+Then I can  translate it to Chinese immediately.
+
+Now the info about AArch64 is limited. so maybe it have some translation errors.
+When I realized that error in the future, I will fix it immediately.
+
+Thank you for reminding me.
+
+2012/10/26 harryxiyou <harryxiyou@gmail.com>:
+> 2012/10/24 Tekkaman Ninja <tekkamanninja@gmail.com>:
+>> This is a Chinese translated version of
+>> Documentation/arm64/booting.txt
 >>
->> Because of the way other areas of the page fault code work,
->> chances are good that all x86 CPUs do this.  However, if
->> someone somewhere has an x86 CPU that does not invalidate
->> the TLB entry causing a page fault, this one-liner should
->> be easy to revert.
+>> Signed-off-by: Fu Wei <tekkamanninja@gmail.com>
+>>
 >
-> This does not strike me as a good standard of validation for such a change
+> Acked-by: Harry Wei <harryxiyou@gmail.com>
 >
-> At the very least we should have an ACK from AMD and from VIA, and
-> preferably ping RDC and some of the other embedded folks. Given an AMD
-> and VIA ACK I'd be fine. I doubt anyone knows any more what Cyrix CPUs
-> did or cared about and I imagine H Peter or Linus can answer for
-> Transmeta ;-)
-
-Fair enough.
-
-If it turns out any of those CPUs need an explicit
-flush, then we can also adjust flush_tlb_fix_spurious_fault
-to actually do a local flush on x86 (or at least on those
-CPUs).
-
+> Thanks for your good job and you should keep it up to date ;-)
+>
+>
+> --
+> Thanks
+> Harry Wei
