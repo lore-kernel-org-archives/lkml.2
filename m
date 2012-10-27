@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758804Ab2J0O4K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 10:56:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57458 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab2J0O4F (ORCPT
+	id S1756115Ab2J0PBS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 11:01:18 -0400
+Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:60869 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753442Ab2J0PBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 10:56:05 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 5/6] fat: add mutex lock to fat_build_inode
-Date: Sat, 27 Oct 2012 23:55:54 +0900
-Message-Id: <1351349754-8278-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 27 Oct 2012 11:01:17 -0400
+X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Oct 2012 11:01:17 EDT
+Date: Sat, 27 Oct 2012 16:48:45 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        voice <voice.shen@atmel.com>, "Wu, Josh" <Josh.wu@atmel.com>,
+        marek.belisko@open-nandra.com, ivan.shugov@gmail.com
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [GIT PULL] at91: fixes for 3.7-rc3
+Message-ID: <20121027144845.GI18964@game.jcrosoft.org>
+References: <5088F131.5040600@atmel.com>
+ <201210262053.11498.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201210262053.11498.arnd@arndb.de>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 17640318266844424964
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrudefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehfedrudefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On 20:53 Fri 26 Oct     , Arnd Bergmann wrote:
+> On Thursday 25 October 2012, Nicolas Ferre wrote:
+> >       ARM: at91: fix external interrupts in non-DT case
+> 
+> This patch now leads to build errors with at91x40_defconfig,
+> which I've fixed up by applying the patch below on top.
+> 
+> Please yell if this is not the right fix.
+> 
+> 	Arnd
+> 
+> commit 3a8852afde01682083028ee427e0678f9bbddd75
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Fri Oct 26 22:49:09 2012 +0200
+> 
+>     ARM: at91: fix at91x40 build
+>     
+>     patch 738a0fd7 "ARM: at91: fix external interrupts in non-DT case"
+>     fixed a run-time error on some at91 platforms but did not apply
+>     the same change to at91x40, which now doesn't build.
+>     
+>     This changes at91x40 in the same way that the other platforms
+>     were changed.
+>     
+>     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-fat_nfs_get_inode does not hold i_mutex of parent directory.So add
-lock to fat_build_inode.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/fat/fat.h   |    1 +
- fs/fat/inode.c |   15 +++++++++++++++
- 2 files changed, 16 insertions(+)
-
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 177e94e..811267c 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -75,6 +75,7 @@ struct msdos_sb_info {
- 	unsigned long fsinfo_sector;  /* sector number of FAT32 fsinfo */
- 	struct mutex fat_lock;
- 	struct mutex s_lock;
-+	struct mutex nfs_build_inode_lock;
- 	unsigned int prev_free;      /* previously allocated cluster number */
- 	unsigned int free_clusters;  /* -1 if undefined */
- 	unsigned int free_clus_valid; /* is free_clusters valid? */
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 63e0883..a1650ef 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -443,12 +443,25 @@ static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
- 	return 0;
- }
- 
-+static inline void fat_lock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_lock(&sbi->nfs_build_inode_lock);
-+}
-+
-+static inline void fat_unlock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_unlock(&sbi->nfs_build_inode_lock);
-+}
-+
- struct inode *fat_build_inode(struct super_block *sb,
- 			struct msdos_dir_entry *de, loff_t i_pos)
- {
- 	struct inode *inode;
- 	int err;
- 
-+	fat_lock_build_inode(MSDOS_SB(sb));
- 	inode = fat_iget(sb, i_pos);
- 	if (inode)
- 		goto out;
-@@ -468,6 +481,7 @@ struct inode *fat_build_inode(struct super_block *sb,
- 	fat_attach(inode, i_pos);
- 	insert_inode_hash(inode);
- out:
-+	fat_unlock_build_inode(MSDOS_SB(sb));
- 	return inode;
- }
- 
-@@ -1173,6 +1187,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sb->s_magic = MSDOS_SUPER_MAGIC;
- 	sb->s_op = &fat_sops;
- 	sb->s_export_op = &fat_export_ops;
-+	mutex_init(&sbi->nfs_build_inode_lock);
- 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
- 			     DEFAULT_RATELIMIT_BURST);
- 
--- 
-1.7.9.5
-
+Best Regards,
+J.
