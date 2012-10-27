@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2J0MkQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:40:16 -0400
+	id S1756901Ab2J0Mkv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:40:51 -0400
 Received: from mail-yh0-f46.google.com ([209.85.213.46]:54525 "EHLO
 	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab2J0MeR (ORCPT
+	with ESMTP id S1755283Ab2J0MeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:17 -0400
+	Sat, 27 Oct 2012 08:34:15 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 14/32] vfs: have faccessat retry once on an ESTALE error
-Date: Sat, 27 Oct 2012 08:33:21 -0400
-Message-Id: <1351341219-17837-15-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 13/32] vfs: have do_sys_truncate retry once on an ESTALE error
+Date: Sat, 27 Oct 2012 08:33:20 -0400
+Message-Id: <1351341219-17837-14-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -24,97 +24,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/open.c | 64 +++++++++++++++++++++++++++++++++------------------------------
- 1 file changed, 34 insertions(+), 30 deletions(-)
+ fs/open.c | 86 +++++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 45 insertions(+), 41 deletions(-)
 
 diff --git a/fs/open.c b/fs/open.c
-index 2a32d5c..9cd0a50 100644
+index 94d5649..2a32d5c 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -310,6 +310,8 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+@@ -66,62 +66,66 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
  	struct path path;
  	struct inode *inode;
- 	int res;
+ 	int error;
 +	unsigned int lookup_flags = LOOKUP_FOLLOW;
 +	unsigned int try = 0;
  
- 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
- 		return -EINVAL;
-@@ -333,42 +335,44 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 
- 	old_cred = override_creds(override_cred);
- 
--	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
--	if (res)
+-	error = -EINVAL;
+ 	if (length < 0)	/* sorry, but loff_t says... */
 -		goto out;
-+	do {
-+		res = user_path_at(dfd, filename, lookup_flags, &path);
-+		if (res)
-+			break;
++		return -EINVAL;
  
+-	error = user_path(pathname, &path);
+-	if (error)
+-		goto out;
 -	inode = path.dentry->d_inode;
++	do {
++		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
++		if (error)
++			break;
 +		inode = path.dentry->d_inode;
-+
-+		if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
-+			/*
-+			 * MAY_EXEC on regular files is denied if the fs is
-+			 * mounted with the "noexec" flag.
-+			 */
-+			res = -EACCES;
-+			if (path.mnt->mnt_flags & MNT_NOEXEC)
-+				goto out_path_release;
-+		}
  
--	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
-+		res = inode_permission(inode, mode | MAY_ACCESS);
-+		/* SuS v2 requires we report a read only fs too */
-+		if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
-+			goto out_path_release;
- 		/*
--		 * MAY_EXEC on regular files is denied if the fs is mounted
--		 * with the "noexec" flag.
-+		 * This is a rare case where using __mnt_is_readonly()
-+		 * is OK without a mnt_want/drop_write() pair.  Since
-+		 * no actual write to the fs is performed here, we do
-+		 * not need to telegraph to that to anyone.
-+		 *
-+		 * By doing this, we accept that this access is
-+		 * inherently racy and know that the fs may change
-+		 * state before we even see this result.
- 		 */
--		res = -EACCES;
--		if (path.mnt->mnt_flags & MNT_NOEXEC)
--			goto out_path_release;
--	}
--
--	res = inode_permission(inode, mode | MAY_ACCESS);
--	/* SuS v2 requires we report a read only fs too */
--	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
--		goto out_path_release;
+-	/* For directories it's -EISDIR, for other non-regulars - -EINVAL */
+-	error = -EISDIR;
+-	if (S_ISDIR(inode->i_mode))
+-		goto dput_and_out;
++		/* For dirs, -EISDIR. For other non-regulars, -EINVAL */
++		error = -EISDIR;
++		if (S_ISDIR(inode->i_mode))
++			goto dput_and_out;
+ 
+-	error = -EINVAL;
+-	if (!S_ISREG(inode->i_mode))
+-		goto dput_and_out;
++		error = -EINVAL;
++		if (!S_ISREG(inode->i_mode))
++			goto dput_and_out;
+ 
+-	error = mnt_want_write(path.mnt);
+-	if (error)
+-		goto dput_and_out;
++		error = mnt_want_write(path.mnt);
++		if (error)
++			goto dput_and_out;
+ 
+-	error = inode_permission(inode, MAY_WRITE);
+-	if (error)
+-		goto mnt_drop_write_and_out;
++		error = inode_permission(inode, MAY_WRITE);
++		if (error)
++			goto mnt_drop_write_and_out;
+ 
+-	error = -EPERM;
+-	if (IS_APPEND(inode))
+-		goto mnt_drop_write_and_out;
++		error = -EPERM;
++		if (IS_APPEND(inode))
++			goto mnt_drop_write_and_out;
+ 
+-	error = get_write_access(inode);
+-	if (error)
+-		goto mnt_drop_write_and_out;
++		error = get_write_access(inode);
++		if (error)
++			goto mnt_drop_write_and_out;
+ 
 -	/*
--	 * This is a rare case where using __mnt_is_readonly()
--	 * is OK without a mnt_want/drop_write() pair.  Since
--	 * no actual write to the fs is performed here, we do
--	 * not need to telegraph to that to anyone.
--	 *
--	 * By doing this, we accept that this access is
--	 * inherently racy and know that the fs may change
--	 * state before we even see this result.
+-	 * Make sure that there are no leases.  get_write_access() protects
+-	 * against the truncate racing with a lease-granting setlease().
 -	 */
--	if (__mnt_is_readonly(path.mnt))
--		res = -EROFS;
-+		if (__mnt_is_readonly(path.mnt))
-+			res = -EROFS;
+-	error = break_lease(inode, O_WRONLY);
+-	if (error)
+-		goto put_write_and_out;
++		/*
++		 * Make sure that there are no leases. get_write_access()
++		 * protects against the truncate racing with a lease-granting
++		 * setlease().
++		 */
++		error = break_lease(inode, O_WRONLY);
++		if (error)
++			goto put_write_and_out;
  
- out_path_release:
+-	error = locks_verify_truncate(inode, NULL, length);
+-	if (!error)
+-		error = security_path_truncate(&path);
+-	if (!error)
+-		error = do_truncate(path.dentry, length, 0, NULL);
++		error = locks_verify_truncate(inode, NULL, length);
++		if (!error)
++			error = security_path_truncate(&path);
++		if (!error)
++			error = do_truncate(path.dentry, length, 0, NULL);
+ 
+ put_write_and_out:
+-	put_write_access(inode);
++		put_write_access(inode);
+ mnt_drop_write_and_out:
+-	mnt_drop_write(path.mnt);
++		mnt_drop_write(path.mnt);
+ dput_and_out:
 -	path_put(&path);
 -out:
 +		path_put(&path);
 +		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(res, try++));
- 	revert_creds(old_cred);
- 	put_cred(override_cred);
- 	return res;
++	} while (retry_estale(error, try++));
+ 	return error;
+ }
+ 
 -- 
 1.7.11.7
 
