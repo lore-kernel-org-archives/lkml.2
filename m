@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab2J0H44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 03:56:56 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:59077 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753321Ab2J0H4z (ORCPT
+	id S1754101Ab2J0IAv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 04:00:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:41703 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751082Ab2J0IAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 03:56:55 -0400
+	Sat, 27 Oct 2012 04:00:50 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/VtM8tT4jVtO4TjN/5LFARNJFuIv7BstSc754ET5
+	Hsg9TjdGuduE0R
+Message-ID: <508B94AE.9050505@gmx.de>
+Date: Sat, 27 Oct 2012 10:00:46 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
-References: <20121024152740.GA25303@otc-wbsnb-06> <CAOJsxLFD36jYiyE5sfN+uPT5G9G9ttf=K2UB=abEjBiTFNeehA@mail.gmail.com>
- <20121025121645.GA28475@otc-wbsnb-06> <CA+1xoqdN0AhLTczH6u1KngiOA61Ej1tL+v-FHAajqYO3tyGSwg@mail.gmail.com>
- <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
-From: Asias He <asias.hejun@gmail.com>
-Date: Sat, 27 Oct 2012 15:56:12 +0800
-Message-ID: <CAFO3S40UeMJOe7NU=E+6fiZ_dU=4S_6qzEN8zATaK0Viu-NNng@mail.gmail.com>
-Subject: Re: [BUG] lkvm crash on crashkernel boot
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@kernel.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: RFC: kconfig option CONFIG_LBDAF should be auto-selected if EXT4
+ is chosen
+References: <508A967F.4080802@gmx.de>
+In-Reply-To: <508A967F.4080802@gmx.de>
+X-Enigmail-Version: 1.5a1pre
+X-Forwarded-Message-Id: <508A967F.4080802@gmx.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 11:31 PM, Pekka Enberg <penberg@kernel.org> wrote:
-> On Thu, 25 Oct 2012, Sasha Levin wrote:
->> I think we're seeing that because we don't handle VIRTIO_MSI_NO_VECTOR properly.
->>
->> We need to deal with the ability to remove GSI & friends as well. I've
->> added it to my workqueue (unless someone deals with it first).
->
-> Any reason I shouldn't apply Kirill's patch before someone find the time
-> to do that?
 
-Please apply it.
+otherwise booting an EXT4 image won't work b/c the root fs can't be
+mounted read-write - and as a side effect no syslog messages might
+point the user to this issue (at least in my setup) ...
+
+:-/
 
 -- 
-Asias He
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
+
