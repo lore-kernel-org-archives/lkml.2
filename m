@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507Ab2J0SuH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 14:50:07 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:35896 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932330Ab2J0SuG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 14:50:06 -0400
-From: Constantine Shulyupin <const@MakeLinux.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
-        tim.bird@am.sony.com, pandaboard@googlegroups.com,
-        Tony Lindgren OMAP <tony@atomide.com>,
-        Santosh Shilimkar OMAP <santosh.shilimkar@ti.com>, nsekhar@ti.com,
-        balbi@ti.com, Constantine Shulyupin <const@MakeLinux.com>
-Subject: [PATCH] Add FDT support to Pandaboard initialization
-Date: Sat, 27 Oct 2012 20:50:00 +0200
-Message-Id: <1351363800-28744-1-git-send-email-const@MakeLinux.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.net} {sentby:smtp auth 84.229.179.154 authed with poster@makelinux.net}
-To: unlisted-recipients:; (no To-header on input)
+	id S932582Ab2J0TJH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 15:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932451Ab2J0TJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 15:09:06 -0400
+Date: Sat, 27 Oct 2012 21:08:41 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 24/33] perf, tools: Move parse_events error printing to
+ parse_events_options
+Message-ID: <20121027190841.GA1039@krava.redhat.com>
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+ <1351283415-13170-25-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351283415-13170-25-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Constantine Shulyupin <const@MakeLinux.com>
+On Fri, Oct 26, 2012 at 01:30:06PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> The callers of parse_events usually have their own error handling.
+> Move the fprintf for a bad event to parse_events_options, which
+> is the only one who should need it.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/util/parse-events.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+> index 75c7b0f..409da3e 100644
+> --- a/tools/perf/util/parse-events.c
+> +++ b/tools/perf/util/parse-events.c
+> @@ -827,8 +827,6 @@ int parse_events(struct perf_evlist *evlist, const char *str,
+>  	 * Both call perf_evlist__delete in case of error, so we dont
+>  	 * need to bother.
+>  	 */
+> -	fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
+> -	fprintf(stderr, "Run 'perf list' for a list of valid events\n");
+>  	return ret;
+>  }
+>  
+> @@ -836,7 +834,13 @@ int parse_events_option(const struct option *opt, const char *str,
+>  			int unset __maybe_unused)
+>  {
+>  	struct perf_evlist *evlist = *(struct perf_evlist **)opt->value;
+> -	return parse_events(evlist, str, unset);
+> +	int ret = parse_events(evlist, str, unset);
+> +
+> +	if (ret) {
+> +		fprintf(stderr, "invalid or unsupported event: '%s'\n", str);
+> +		fprintf(stderr, "Run 'perf list' for a list of valid events\n");
+> +	}
+> +	return ret;
+>  }
+>  
+>  int parse_filter(const struct option *opt, const char *str,
+> -- 
+> 1.7.7.6
+> 
 
-Problem:
-- FDT is supported only by generic OMAP board initialization in arch/arm/mach-omap2/board-generic.c and lacks some configurations, which are not yet configured in FDT (USB for example).
-Solution:
-- arch/arm/mach-omap2/board-omap4panda.c supports initialization with FDT and without it.
-
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
----
- arch/arm/mach-omap2/board-omap4panda.c |   33 ++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-index bfcd397..fea7a83 100644
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -31,6 +31,7 @@
- #include <linux/ti_wilink_st.h>
- #include <linux/wl12xx.h>
- #include <linux/platform_data/omap-abe-twl6040.h>
-+#include <linux/of_platform.h>
- 
- #include <asm/hardware/gic.h>
- #include <asm/mach-types.h>
-@@ -526,3 +527,35 @@ MACHINE_START(OMAP4_PANDA, "OMAP4 Panda board")
- 	.timer		= &omap4_timer,
- 	.restart	= omap_prcm_restart,
- MACHINE_END
-+
-+static struct of_device_id omap_dt_match_table[] __initdata = {
-+	{ .compatible = "simple-bus", },
-+	{ .compatible = "ti,omap-infra", },
-+	{ }
-+};
-+
-+static void __init panda_dt_init(void)
-+{
-+	of_platform_populate(NULL, omap_dt_match_table, NULL, NULL);
-+	omap4_panda_init();
-+}
-+
-+static const char *omap4_panda_compat[] __initdata = {
-+	"ti,omap4-panda",
-+	"ti,omap4",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(OMAP4_PANDA_DT, "OMAP4 Pandaboard with FDT support")
-+	.dt_compat	= omap4_panda_compat,
-+	.reserve	= omap_reserve,
-+	.smp		= smp_ops(omap4_smp_ops),
-+	.map_io		= omap4_map_io,
-+	.init_early	= omap4430_init_early,
-+	.init_irq	= omap_gic_of_init,
-+	.handle_irq	= gic_handle_irq,
-+	.init_machine	= panda_dt_init,
-+	.init_late	= omap4430_init_late,
-+	.timer		= &omap4_timer,
-+	.restart	= omap_prcm_restart,
-+MACHINE_END
--- 
-1.7.9.5
-
+Acked-by: Jiri Olsa <jolsa@redhat.com>
