@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab2J0UR1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 16:17:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18983 "EHLO mx1.redhat.com"
+	id S933287Ab2J0UUp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 16:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933171Ab2J0UR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 16:17:26 -0400
-Date: Sun, 28 Oct 2012 01:46:50 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Kees Cook <keescook@chromium.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-In-Reply-To: <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk>
- <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
- <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
+	id S932475Ab2J0UUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 16:20:44 -0400
+Date: Sat, 27 Oct 2012 22:20:21 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 33/33] perf, tools: List kernel supplied event aliases in
+ perf list v2
+Message-ID: <20121027202021.GA9099@krava.redhat.com>
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+ <1351283415-13170-34-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351283415-13170-34-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+-- On Sat, 27 Oct 2012, Kees Cook wrote --+
-| Al showed a list of them earlier in the thread.
+On Fri, Oct 26, 2012 at 01:30:15PM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> List the kernel supplied pmu event aliases in perf list
+> 
+> It's better when the users can actually see them.
 
-  Yeah, the list Al showed and I came across mostly has - binfmt_aout - entry. 
-Do people still use - a.out - format? (considering ELF has been the default 
-standard for so many years)
+with the HW events being part of PMU 'events' dir
+we get single HW events listed twice
 
-| I don't have any on the various distros I checked.
+  branch-instructions OR cpu/branch-instructions/    [Kernel PMU event]
+  branch-misses OR cpu/branch-misses/                [Kernel PMU event]
+  bus-cycles OR cpu/bus-cycles/                      [Kernel PMU event]
+  cache-misses OR cpu/cache-misses/                  [Kernel PMU event]
+  cache-references OR cpu/cache-references/          [Kernel PMU event]
+  cpu-cycles OR cpu/cpu-cycles/                      [Kernel PMU event]
+  instructions OR cpu/instructions/                  [Kernel PMU event]
+  ref-cycles OR cpu/ref-cycles/                      [Kernel PMU event]
+  stalled-cycles-backend OR cpu/stalled-cycles-backend/ [Kernel PMU event]
+  stalled-cycles-frontend OR cpu/stalled-cycles-frontend/ [Kernel PMU event]
+  uncore_cbox_0/clockticks/                          [Kernel PMU event]
+  uncore_cbox_1/clockticks/                          [Kernel PMU event]
+  uncore_cbox_2/clockticks/                          [Kernel PMU event]
+  uncore_cbox_3/clockticks/                          [Kernel PMU event]
 
-  Same here, my F17 machine has no entries for binfmt-xxxx modules, in fact I 
-don't even have the /etc/modprobe.d/aliases.conf file.
 
-Documentation/binfmt_misc.txt talks about executing Java, Python, DOSEMU and 
-Windows programs which could be supported by loadable modules.
-
-| The problem I see here is that we only want to do module loading in the "no 
-| match" case. But that means that either we need to restart with the original 
-| bprm, or we need to keep bprm changes off the stack. Leading with a module 
-| load is going to wreck performance.  
-
-  I beg to *slightly* differ here. I agree we currently have a small overhead 
-of find_module() -> request_module() only when binfmt_xxxx module is already 
-loaded, partly because find_module can not resolve aliases.
-
-I guess this small overhead is worth it if it helps to make things less 
-confusing and easy to follow. Besides this overhead does not exist for regular 
-executables ELFs and scripts alike.
-
-If the required module is missing, a call to request_module() will anyway 
-happen and its cost remains the same whether it happens before or after the 
-"match".
-
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+jirka
