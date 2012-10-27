@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab2J0Mf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:35:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:64624 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756808Ab2J0Mem (ORCPT
+	id S1757249Ab2J0Mfw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:35:52 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:42731 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756701Ab2J0Mel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:42 -0400
+	Sat, 27 Oct 2012 08:34:41 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 31/32] vfs: convert filename_lookup to use retry_estale helper
-Date: Sat, 27 Oct 2012 08:33:38 -0400
-Message-Id: <1351341219-17837-32-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 30/32] vfs: convert do_file_open_root to use retry_estale helper
+Date: Sat, 27 Oct 2012 08:33:37 -0400
+Message-Id: <1351341219-17837-31-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -28,22 +28,26 @@ Signed-off-by: Jeff Layton <jlayton@redhat.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index c6173cc..6886630 100644
+index 6930e91..c6173cc 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2020,10 +2020,11 @@ static int path_lookupat(int dfd, const char *name,
- static int filename_lookup(int dfd, struct filename *name,
- 				unsigned int flags, struct nameidata *nd)
- {
+@@ -3028,6 +3028,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	struct nameidata nd;
+ 	struct file *file;
+ 	struct filename filename = { .name = name };
 +	unsigned int try = 0;
- 	int retval = path_lookupat(dfd, name->name, flags | LOOKUP_RCU, nd);
- 	if (unlikely(retval == -ECHILD))
- 		retval = path_lookupat(dfd, name->name, flags, nd);
--	if (unlikely(retval == -ESTALE))
-+	while (retry_estale(retval, try++))
- 		retval = path_lookupat(dfd, name->name,
- 						flags | LOOKUP_REVAL, nd);
  
+ 	nd.root.mnt = mnt;
+ 	nd.root.dentry = dentry;
+@@ -3040,7 +3041,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
+ 	if (unlikely(file == ERR_PTR(-ECHILD)))
+ 		file = path_openat(-1, &filename, &nd, op, flags);
+-	if (unlikely(file == ERR_PTR(-ESTALE)))
++	while (retry_estale(PTR_ERR(file), try++))
+ 		file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
+ 	return file;
+ }
 -- 
 1.7.11.7
 
