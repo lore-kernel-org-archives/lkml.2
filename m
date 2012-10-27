@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab2J0Oze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 10:55:34 -0400
+	id S1758619Ab2J0Ozt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 10:55:49 -0400
 Received: from mail-da0-f46.google.com ([209.85.210.46]:64598 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab2J0Oza (ORCPT
+	with ESMTP id S1753799Ab2J0Ozr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 10:55:30 -0400
+	Sat, 27 Oct 2012 10:55:47 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Ravishankar N <ravi.n1@samsung.com>,
         Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 3/6] fat: move fat_i_pos_read to fat.h
-Date: Sat, 27 Oct 2012 23:55:18 +0900
-Message-Id: <1351349718-8206-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 4/6] fat: (exportfs) move code to rebuild directory-inode to separate function
+Date: Sat, 27 Oct 2012 23:55:37 +0900
+Message-Id: <1351349737-8242-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,69 +24,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Originally, fat_i_pos_read was a static inline function in inode.c.
-The static keyword was removed so that it could be accessed from other
-files. However it is better to make it a static inline function in fat.h
-as suggested by Ogawa.
+Move the logic to rebuild directory inode (when mounted with nostale_ro)
+to new function fat_rebuild_parent
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
 Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- fs/fat/fat.h   |   14 ++++++++++++++
- fs/fat/inode.c |   14 --------------
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ fs/fat/nfs.c |   71 ++++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 42 insertions(+), 29 deletions(-)
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 65f9149..177e94e 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -222,6 +222,20 @@ static inline void fat_get_blknr_offset(struct msdos_sb_info *sbi,
- 	*offset = i_pos & (sbi->dir_per_block - 1);
+diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+index 0abfacf..6e6b233 100644
+--- a/fs/fat/nfs.c
++++ b/fs/fat/nfs.c
+@@ -312,6 +312,45 @@ static int fat_read_next_clus(struct super_block *sb, int search_clus)
  }
  
-+static inline loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
-+					struct inode *inode)
+ /*
++ * Rebuild the parent for a directory that is not connected
++ * to the filesystem root
++ */
++static
++struct inode *fat_rebuild_parent(struct super_block *sb, int parent_logstart)
 +{
-+	loff_t i_pos;
-+#if BITS_PER_LONG == 32
-+	spin_lock(&sbi->inode_hash_lock);
-+#endif
-+	i_pos = MSDOS_I(inode)->i_pos;
-+#if BITS_PER_LONG == 32
-+	spin_unlock(&sbi->inode_hash_lock);
-+#endif
-+	return i_pos;
-+}
++	int search_clus, clus_to_match;
++	struct msdos_dir_entry *de;
++	struct inode *parent;
++	struct msdos_sb_info *sbi = MSDOS_SB(sb);
++	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
++	struct buffer_head *parent_bh = sb_bread(sb, blknr);
 +
- static inline void fat16_towchar(wchar_t *dst, const __u8 *src, size_t len)
++	if (!parent_bh) {
++		fat_msg(sb, KERN_ERR,
++			"NFS:unable to read cluster of parent directory");
++		return NULL;
++	}
++	de = (struct msdos_dir_entry *) parent_bh->b_data;
++	clus_to_match = fat_get_start(sbi, &de[0]);
++	search_clus = fat_get_start(sbi, &de[1]);
++	if (!search_clus)
++		search_clus = sbi->root_cluster;
++	brelse(parent_bh);
++	do {
++		parent =  fat_traverse_cluster(sb,
++					search_clus, clus_to_match);
++		if (IS_ERR(parent) || parent)
++			break;
++		search_clus = fat_read_next_clus(sb, search_clus);
++		if (search_clus < 0)
++			break;
++	} while (search_clus != FAT_ENT_EOF);
++
++	return parent;
++
++
++}
++/*
+  * Find the parent for a directory that is not currently connected to
+  * the filesystem root.
+  *
+@@ -320,44 +359,18 @@ static int fat_read_next_clus(struct super_block *sb, int search_clus)
+ struct dentry *fat_get_parent(struct dentry *child_dir)
  {
- #ifdef __BIG_ENDIAN
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 34253dc..63e0883 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -595,20 +595,6 @@ static int fat_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return 0;
- }
+ 	struct super_block *sb = child_dir->d_sb;
+-	struct buffer_head *dotdot_bh = NULL, *parent_bh = NULL;
++	struct buffer_head *dotdot_bh = NULL;
+ 	struct msdos_dir_entry *de;
+ 	struct inode *parent_inode = NULL;
+ 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+ 	int parent_logstart;
+-	int search_clus, clus_to_match;
+-	sector_t blknr;
  
--loff_t fat_i_pos_read(struct msdos_sb_info *sbi,
--				    struct inode *inode)
--{
--	loff_t i_pos;
--#if BITS_PER_LONG == 32
--	spin_lock(&sbi->inode_hash_lock);
--#endif
--	i_pos = MSDOS_I(inode)->i_pos;
--#if BITS_PER_LONG == 32
--	spin_unlock(&sbi->inode_hash_lock);
--#endif
--	return i_pos;
--}
--
- static int __fat_write_inode(struct inode *inode, int wait)
- {
- 	struct super_block *sb = inode->i_sb;
+ 	if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
+ 		parent_logstart = fat_get_start(sbi, de);
+ 		parent_inode = fat_dget(sb, parent_logstart);
+-		if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
+-			goto out;
+-		blknr = fat_clus_to_blknr(sbi, parent_logstart);
+-		parent_bh = sb_bread(sb, blknr);
+-		if (!parent_bh) {
+-			fat_msg(sb, KERN_ERR,
+-				"NFS:unable to read cluster of parent directory");
+-			goto out;
+-		}
+-		de = (struct msdos_dir_entry *) parent_bh->b_data;
+-		clus_to_match = fat_get_start(sbi, &de[0]);
+-		search_clus = fat_get_start(sbi, &de[1]);
+-		if (!search_clus)
+-			search_clus = sbi->root_cluster;
+-		brelse(parent_bh);
+-		do {
+-			parent_inode =  fat_traverse_cluster(sb,
+-					search_clus, clus_to_match);
+-			if (IS_ERR(parent_inode) || parent_inode)
+-				break;
+-			search_clus = fat_read_next_clus(sb,
+-							search_clus);
+-			if (search_clus < 0)
+-				break;
+-		} while (search_clus != FAT_ENT_EOF);
++		if (!parent_inode && sbi->options.nfs == FAT_NFS_NOSTALE_RO)
++			parent_inode = fat_rebuild_parent(sb, parent_logstart);
+ 	}
+-out:
+ 	brelse(dotdot_bh);
+ 
+ 	return d_obtain_alias(parent_inode);
 -- 
 1.7.9.5
 
