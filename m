@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab2J0RHN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 13:07:13 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:59824 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2J0RHL (ORCPT
+	id S1759369Ab2J0RMK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 13:12:10 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53596 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2J0RMI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 13:07:11 -0400
+	Sat, 27 Oct 2012 13:12:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
-References: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
-From: Mark Einon <mark.einon@gmail.com>
-Date: Sat, 27 Oct 2012 18:06:54 +0100
-Message-ID: <CANK3SE2BrcMAy1ikgHE7hX2k38qHfP6GqYY5XNJUMH3Zz3hLKQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: csr: Fix typo in csr/netdev.c
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: eranian@gmail.com
+In-Reply-To: <1351265502.1619.13.camel@leonhard>
+References: <1351261913-28250-1-git-send-email-acme@infradead.org>
+	<20121026145451.GA14379@gmail.com>
+	<508AA709.7010202@gmail.com>
+	<1351265502.1619.13.camel@leonhard>
+Date: Sat, 27 Oct 2012 19:12:06 +0200
+Message-ID: <CAMsRxfLsMdrSSd4GQBuDDJGC7jc0=gJFvmMaFKzAafu53A6KBA@mail.gmail.com>
+Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
+From: stephane eranian <eranian@googlemail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
+        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 October 2012 15:53, Masanari Iida <standby24x7@gmail.com> wrote:
-> Correct spelling typo in trace message.
+On Fri, Oct 26, 2012 at 5:31 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> 2012-10-26 (금), 09:06 -0600, David Ahern:
+>> On 10/26/12 8:54 AM, Ingo Molnar wrote:
+>> >> perf/core improvements:
+>> >>
+>> >> . perf inject changes to allow showing where a task sleeps, from Andrew Vagin.
+>> >>
+>> >> . Makefile improvements from Namhyung Kim.
+>> >
+>> > These are really useful: there used to be a couple of seconds of
+>> > wait time at the beginning of every perf build - these are now
+>> > nicely explained with the various CHK entries.
 >
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/staging/csr/netdev.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+> Kudos to Jiri who did the real work!
 >
-> diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
-> index 0e34020..878c3df 100644
-> --- a/drivers/staging/csr/netdev.c
-> +++ b/drivers/staging/csr/netdev.c
-> @@ -100,7 +100,7 @@
->  #endif /* LINUX_VERSION_CODE */
+>>
+>> PERF-VERSION-GEN and specifically the git commands are the cause of more
+>> delay than the config checks, especially when doing the build in a VM
+>> with the kernel source on an NFS mount.
 >
+> And I see a strange delay when compiling builtin-sched.o.  After
+> building perf tools, I deleted builtin-{sched,test,script}.o to rebuild
+> the only since they are largest ones.
 >
-> -/* Wext handler is suported only if CSR_SUPPORT_WEXT is defined */
-> +/* Wext handler is supported only if CSR_SUPPORT_WEXT is defined */
->  #ifdef CSR_SUPPORT_WEXT
->  extern struct iw_handler_def unifi_iw_handler_def;
->  #endif /* CSR_SUPPORT_WEXT */
-> @@ -146,7 +146,7 @@ typedef int (*tx_signal_handler)(unifi_priv_t *priv, struct sk_buff *skb, const
->  /*
->   * The driver uses the qdisc interface to buffer and control all
->   * outgoing traffic. We create a root qdisc, register our qdisc operations
-> - * and later we create two subsiduary pfifo queues for the uncontrolled
-> + * and later we create two subsidiary pfifo queues for the uncontrolled
->   * and controlled ports.
->   *
->   * The network stack delivers all outgoing packets in our enqueue handler.
-> @@ -1748,7 +1748,7 @@ send_ma_pkt_request(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
->          return -1;
->      }
->
-> -    /* RA adrress must contain the immediate destination MAC address that is similiar to
-> +    /* RA adrress must contain the immediate destination MAC address that is similar to
+Yes, I see that delay on copiling builtin-sched.c on my IVB system.
+Don't know why it takes a significant number of seconds to compile
+this file. It did not use to be like that a few revisions back. It takes
+about 8 seconds on my OC'd IVB (> 4GHz).  I don't see much code
+in that file.
 
-Hi Masanari,
-
-You've also missed the fact that 'address' is spelt incorrectly in
-'RSA adrress' here.
-
-Cheers,
-
-Mark
+>   namhyung@leonhard:perf$ ls -lS *.c | head -3
+>   -rw-r--r-- 1 namhyung namhyung 45522 2012-10-27 00:20 builtin-sched.c
+>   -rw-r--r-- 1 namhyung namhyung 36372 2012-10-27 00:20 builtin-test.c
+>   -rw-r--r-- 1 namhyung namhyung 35555 2012-10-27 00:20 builtin-script.c
+>
+>   namhyung@leonhard:perf$ rm builtin-{sched,test,script}.o
+>
+>
+> And then building each file with time command shows this:
+>
+>   namhyung@leonhard:perf$ time make builtin-script.o &> /dev/null
+>
+>   real  0m4.577s
+>   user  0m2.755s
+>   sys   0m1.655s
+>
+>   namhyung@leonhard:perf$ time make builtin-test.o &> /dev/null
+>
+>   real  0m4.486s
+>   user  0m2.707s
+>   sys   0m1.658s
+>
+>   namhyung@leonhard:perf$ time make builtin-sched.o &> /dev/null
+>
+>   real  0m16.936s
+>   user  0m15.157s
+>   sys   0m1.635s
+>
+> You can see it easily when building perf without -j option. But I have
+> no idea why it takes so long..
+>
+> Thanks,
+> Namhyung
+>
+>
