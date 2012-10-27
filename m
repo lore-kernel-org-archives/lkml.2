@@ -1,119 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab2J0Nd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 09:33:59 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39608 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758025Ab2J0Nd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 09:33:57 -0400
-Date: Sat, 27 Oct 2012 15:33:52 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Ahern <dsahern@gmail.com>, git@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: 'git describe' is very slow on development trees with lots of commits
-Message-ID: <20121027133352.GB30001@gmail.com>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
- <20121026145451.GA14379@gmail.com>
- <508AA709.7010202@gmail.com>
+	id S1758553Ab2J0Ng1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 09:36:27 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38540 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758171Ab2J0NgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 09:36:23 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
+        <kishon@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
+        <rdunlap@xenotime.net>, <balbi@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 3/3] ARM: OMAP: ocp2scp: create omap device for ocp2scp
+Date: Sat, 27 Oct 2012 19:05:56 +0530
+Message-ID: <1351344956-22868-4-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351344956-22868-1-git-send-email-kishon@ti.com>
+References: <1351344956-22868-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508AA709.7010202@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Platfrom device for ocp2scp is created using omap_device_build in
+devices file. This is used for both omap4(musb) and omap5(dwc3).
 
-(Cc:-ed the Git development list.)
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/mach-omap2/devices.c |   79 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 79 insertions(+)
 
-* David Ahern <dsahern@gmail.com> wrote:
+diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+index c8c2117..4f3c58c 100644
+--- a/arch/arm/mach-omap2/devices.c
++++ b/arch/arm/mach-omap2/devices.c
+@@ -19,6 +19,7 @@
+ #include <linux/of.h>
+ #include <linux/pinctrl/machine.h>
+ #include <linux/platform_data/omap4-keypad.h>
++#include <linux/platform_data/omap_ocp2scp.h>
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/map.h>
+@@ -613,6 +614,83 @@ static void omap_init_vout(void)
+ static inline void omap_init_vout(void) {}
+ #endif
+ 
++#if defined(CONFIG_OMAP_OCP2SCP) || defined(CONFIG_OMAP_OCP2SCP_MODULE)
++static int count_ocp2scp_devices(struct omap_ocp2scp_dev *ocp2scp_dev)
++{
++	int cnt	= 0;
++
++	while (ocp2scp_dev->drv_name != NULL) {
++		cnt++;
++		ocp2scp_dev++;
++	}
++
++	return cnt;
++}
++
++static void omap_init_ocp2scp(void)
++{
++	struct omap_hwmod	*oh;
++	struct platform_device	*pdev;
++	int			bus_id = -1, dev_cnt = 0, i;
++	struct omap_ocp2scp_dev	*ocp2scp_dev;
++	const char		*oh_name, *name;
++	struct omap_ocp2scp_platform_data *pdata;
++
++	if (!cpu_is_omap44xx())
++		return;
++
++	oh_name = "ocp2scp_usb_phy";
++	name	= "omap-ocp2scp";
++
++	oh = omap_hwmod_lookup(oh_name);
++	if (!oh) {
++		pr_err("%s: could not find omap_hwmod for %s\n", __func__,
++								oh_name);
++		return;
++	}
++
++	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		pr_err("%s: No memory for ocp2scp pdata\n", __func__);
++		return;
++	}
++
++	ocp2scp_dev = oh->dev_attr;
++	dev_cnt = count_ocp2scp_devices(ocp2scp_dev);
++
++	if (!dev_cnt) {
++		pr_err("%s: No devices connected to ocp2scp\n", __func__);
++		kfree(pdata);
++		return;
++	}
++
++	pdata->devices = kzalloc(sizeof(struct omap_ocp2scp_dev *)
++					* dev_cnt, GFP_KERNEL);
++	if (!pdata->devices) {
++		pr_err("%s: No memory for ocp2scp pdata devices\n", __func__);
++		kfree(pdata);
++		return;
++	}
++
++	for (i = 0; i < dev_cnt; i++, ocp2scp_dev++)
++		pdata->devices[i] = ocp2scp_dev;
++
++	pdata->dev_cnt	= dev_cnt;
++
++	pdev = omap_device_build(name, bus_id, oh, pdata, sizeof(*pdata), NULL,
++								0, false);
++	if (IS_ERR(pdev)) {
++		pr_err("Could not build omap_device for %s %s\n",
++						name, oh_name);
++		kfree(pdata->devices);
++		kfree(pdata);
++		return;
++	}
++}
++#else
++static inline void omap_init_ocp2scp(void) { }
++#endif
++
+ /*-------------------------------------------------------------------------*/
+ 
+ static int __init omap2_init_devices(void)
+@@ -640,6 +718,7 @@ static int __init omap2_init_devices(void)
+ 	omap_init_sham();
+ 	omap_init_aes();
+ 	omap_init_vout();
++	omap_init_ocp2scp();
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
-> PERF-VERSION-GEN and specifically the git commands are the 
-> cause of more delay than the config checks, especially when 
-> doing the build in a VM with the kernel source on an NFS 
-> mount.
-
-Yes, I have noticed that too.
-
-So, the problem is that we use 'git describe' on the kernel tree 
-to generate the version string, which is very, very slow if we 
-are far away from any tagged release - which is the case for the 
--tip tree:
-
- comet:~/tip> perf stat --null --repeat 3 git describe
- v3.7-rc2-2007-g83e8223
- v3.7-rc2-2007-g83e8223
- v3.7-rc2-2007-g83e8223
-
-'git describe' is much faster if we are on or near to a tag:
-
- $ git checkout v3.6
- $ perf stat --null --repeat 3 git describe
- v3.6
- v3.6
- v3.6
-
- Performance counter stats for 'git describe' (3 runs):
-
-       0.020171640 seconds time elapsed                                          ( +-  3.64% )
-
- $ git checkout b34e5f55a1e6
-
- $ perf stat --null --repeat 3 git describe
- v3.6-41-gb34e5f5
- v3.6-41-gb34e5f5
- v3.6-41-gb34e5f5
-
- Performance counter stats for 'git describe' (3 runs):
-
-       0.155603676 seconds time elapsed                                          ( +-  0.23% )
-
-The cost on this pretty fast machine is about 1 msecs per commit 
-- which adds up to about 2.5 seconds during much of the 
-development cycle.
-
-So maybe we should be using a different version string, for 
-example, instead of:
-
- v3.7-rc2-2007-g83e8223
-
-this would be perfectly fine:
-
- v3.7-rc2-g83e8223
-
-the 'commit count' is informative but not essential - and in 
-counting the number of off-tag commits is where much of the 
-overhead is:
-
-#
-# Overhead  Command       Shared Object                                      Symbol
-# ........  .......  ..................  ..........................................
-#
-    39.79%      git  libz.so.1.2.5       [.] 0x000000000000c1fe                    
-    26.39%      git  libz.so.1.2.5       [.] inflate                               
-    22.42%      git  git                 [.] 0x000000000009bd1e                    
-     2.99%      git  libz.so.1.2.5       [.] adler32                               
-     1.23%      git  libc-2.15.so        [.] _int_malloc                           
-     0.72%      git  libc-2.15.so        [.] __GI_____strtoull_l_internal          
-     0.67%      git  libc-2.15.so        [.] _int_free                             
-     0.62%      git  libc-2.15.so        [.] malloc_consolidate                    
-     0.54%      git  [kernel.kallsyms]   [k] clear_page_c                          
-     0.32%      git  [kernel.kallsyms]   [k] page_fault                            
-
-So by switching to the shorter version string that still embedds 
-the tag and the exact sha1 we'd be able to run this script a 
-*lot* faster.
-
-Thanks,
-
-	Ingo
