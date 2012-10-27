@@ -1,290 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab2J0Kod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 06:44:33 -0400
-Received: from forward12.mail.yandex.net ([95.108.130.94]:43845 "EHLO
-	forward12.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2J0Kob (ORCPT
+	id S1752048Ab2J0Kri (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 06:47:38 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46251 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab2J0Krg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 06:44:31 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Oct 2012 06:44:31 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Tkhai Kirill <tkhai@yandex.ru>
-Subject: [PATCH][sched] Ignore RT throttling if rq->rt tasks are the only running tasks in the rq
+	Sat, 27 Oct 2012 06:47:36 -0400
 MIME-Version: 1.0
-Message-Id: <1256291351334215@web9f.yandex.ru>
-Date: Sat, 27 Oct 2012 14:36:55 +0400
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+In-Reply-To: <20121026192517.GC24687@redhat.com>
+References: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
+	<1351226868-30063-2-git-send-email-robin.k.dong@gmail.com>
+	<20121026192517.GC24687@redhat.com>
+Date: Sat, 27 Oct 2012 18:47:36 +0800
+Message-ID: <CANsebLGyP10Ai9Sta2xqyeTj0xR6dog4uU79a_bQMEb8kXuLrg@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v4] block/throttle: Add IO submitted information in blkio.throttle
+From: Robin Dong <robin.k.dong@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Tao Ma <boyu.mt@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current throttling logic always skips RT class if rq->rt is throttled.
-It doesn't handle the special case when RT tasks are the only running tasks
-in the rq. So it's possible CPU picks idle task up when RTs are available.
+2012/10/27 Vivek Goyal <vgoyal@redhat.com>:
+> On Fri, Oct 26, 2012 at 12:47:48PM +0800, Robin Dong wrote:
+>
+> [..]
+>> @@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
+>>               .private = offsetof(struct tg_stats_cpu, serviced),
+>>               .read_seq_string = tg_print_cpu_rwstat,
+>>       },
+>> +     {
+>> +             .name = "throttle.io_submit_bytes",
+>
+> Do we really need io_submit_bytes stats? Your need seems to be able to
+> figure out if there are pending IOs in the group and if you need to
+> increase the bandwidth. For that, isn't number of bios enough?
 
-This patch aims to avoid the above situation. The modified
-_pick_next_task_rt() looks at the number of total rq->rt tasks(with the sum
-of all child rt_rq's) and compares it with the number of all running tasks
-of the rq. If they are equal then scheduler picks the highest rq->rt task
-(children are considered too).
+ I just want to be more consistent to "io_service_bytes" and "io_serviced" pair
 
-Later, the first unthrottled rq_rt will replace this task. The case
-of appearance of fair task is handled in check_preempt_curr() function.
+>
+> Also even if we retain bytes, let us change it to "io_submitted_bytes".
 
-The patch changes the logic of pick_rt_task() and pick_next_highest_task_rt().
-Now the negative cpu always makes task "picked". But there are no another
-users of this posibility and nobody is touched by this change.
+Since "io_service_bytes" is "service", I use "io_submit_bytes"....
+Never mind, "io_submitted_bytes" is much better.
 
-Signed-off-by: Kirill V Tkhai <tkhai@yandex.ru>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>
+>
+> Thanks
+> Vivek
 
----
- kernel/sched/core.c  |    6 +++-
- kernel/sched/rt.c    |   97 ++++++++++++++++++++++++++++++++------------------
- kernel/sched/sched.h |    3 +-
- 3 files changed, 69 insertions(+), 37 deletions(-)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bf41f82..ecc9833 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -901,7 +901,9 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
- {
- 	const struct sched_class *class;
- 
--	if (p->sched_class == rq->curr->sched_class) {
-+	if (rq->curr->sched_class == rq->extended_class) {
-+		resched_task(rq->curr);
-+	} else if (p->sched_class == rq->curr->sched_class) {
- 		rq->curr->sched_class->check_preempt_curr(rq, p, flags);
- 	} else {
- 		for_each_class(class) {
-@@ -2771,6 +2773,7 @@ static void put_prev_task(struct rq *rq, struct task_struct *prev)
- 	if (prev->on_rq || rq->skip_clock_update < 0)
- 		update_rq_clock(rq);
- 	prev->sched_class->put_prev_task(rq, prev);
-+	rq->extended_class = NULL;
- }
- 
- /*
-@@ -6892,6 +6895,7 @@ void __init sched_init(void)
- 		rq->calc_load_update = jiffies + LOAD_FREQ;
- 		init_cfs_rq(&rq->cfs);
- 		init_rt_rq(&rq->rt, rq);
-+		rq->extended_class = NULL;
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
- 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 418feb0..6f6da20 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -274,15 +274,8 @@ static void update_rt_migration(struct rt_rq *rt_rq)
- 
- static void inc_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
--	struct task_struct *p;
--
--	if (!rt_entity_is_task(rt_se))
--		return;
--
--	p = rt_task_of(rt_se);
--	rt_rq = &rq_of_rt_rq(rt_rq)->rt;
-+	struct task_struct *p = rt_task_of(rt_se);
- 
--	rt_rq->rt_nr_total++;
- 	if (p->nr_cpus_allowed > 1)
- 		rt_rq->rt_nr_migratory++;
- 
-@@ -291,15 +284,8 @@ static void inc_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- 
- static void dec_rt_migration(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- {
--	struct task_struct *p;
--
--	if (!rt_entity_is_task(rt_se))
--		return;
--
--	p = rt_task_of(rt_se);
--	rt_rq = &rq_of_rt_rq(rt_rq)->rt;
-+	struct task_struct *p = rt_task_of(rt_se);
- 
--	rt_rq->rt_nr_total--;
- 	if (p->nr_cpus_allowed > 1)
- 		rt_rq->rt_nr_migratory--;
- 
-@@ -467,6 +453,16 @@ static int rt_se_boosted(struct sched_rt_entity *rt_se)
- 	return p->prio != p->normal_prio;
- }
- 
-+static void extended_rt_unthrottles(struct rq *rq, struct rt_rq *rt_rq)
-+{
-+	struct task_struct *curr = rq->curr;
-+
-+	if (rt_rq_of_se(&curr->rt) == rt_rq)
-+		rq->extended_class = NULL;
-+	else
-+		resched_task(curr);
-+}
-+
- #ifdef CONFIG_SMP
- static inline const struct cpumask *sched_rt_period_mask(void)
- {
-@@ -826,6 +822,9 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
- 				 */
- 				if (rt_rq->rt_nr_running && rq->curr == rq->idle)
- 					rq->skip_clock_update = -1;
-+
-+				if (rq->extended_class == &rt_sched_class)
-+					extended_rt_unthrottles(rq, rt_rq);
- 			}
- 			if (rt_rq->rt_time || rt_rq->rt_nr_running)
- 				idle = 0;
-@@ -1071,8 +1070,14 @@ void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- 	WARN_ON(!rt_prio(prio));
- 	rt_rq->rt_nr_running++;
- 
-+	if (rt_entity_is_task(rt_se)) {
-+		struct rt_rq *rt = &rq_of_rt_rq(rt_rq)->rt;
-+
-+		rt->rt_nr_total++;
-+		inc_rt_migration(rt_se, rt);
-+	}
-+
- 	inc_rt_prio(rt_rq, prio);
--	inc_rt_migration(rt_se, rt_rq);
- 	inc_rt_group(rt_se, rt_rq);
- }
- 
-@@ -1083,8 +1088,15 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
- 	WARN_ON(!rt_rq->rt_nr_running);
- 	rt_rq->rt_nr_running--;
- 
-+	if (rt_entity_is_task(rt_se)) {
-+		struct rt_rq *rt = &rq_of_rt_rq(rt_rq)->rt;
-+
-+		WARN_ON(!rt->rt_nr_total);
-+		rt->rt_nr_total--;
-+		dec_rt_migration(rt_se, rt);
-+	}
-+
- 	dec_rt_prio(rt_rq, rt_se_prio(rt_se));
--	dec_rt_migration(rt_se, rt_rq);
- 	dec_rt_group(rt_se, rt_rq);
- }
- 
-@@ -1362,28 +1374,41 @@ static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
- 	return next;
- }
- 
-+static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu);
-+
- static struct task_struct *_pick_next_task_rt(struct rq *rq)
- {
--	struct sched_rt_entity *rt_se;
--	struct task_struct *p;
- 	struct rt_rq *rt_rq;
-+	struct task_struct *p;
-+	int running, rt_total;
- 
- 	rt_rq = &rq->rt;
-+	running = rt_rq->rt_nr_running;
- 
--	if (!rt_rq->rt_nr_running)
--		return NULL;
-+	/* If rq->rt is suitable to get tasks */
-+	if (running && !rt_rq_throttled(rt_rq)) {
-+		struct sched_rt_entity *rt_se;
- 
--	if (rt_rq_throttled(rt_rq))
-+		do {
-+			rt_se = pick_next_rt_entity(rq, rt_rq);
-+			BUG_ON(!rt_se);
-+			rt_rq = group_rt_rq(rt_se);
-+		} while (rt_rq);
-+
-+		return rt_task_of(rt_se);
-+	}
-+
-+	rt_total = rt_rq->rt_nr_total;
-+
-+	/* If rq has no-RT tasks OR rt_rq and its children are empty */
-+	if (rt_total != rq->nr_running || !rt_total)
- 		return NULL;
- 
--	do {
--		rt_se = pick_next_rt_entity(rq, rt_rq);
--		BUG_ON(!rt_se);
--		rt_rq = group_rt_rq(rt_se);
--	} while (rt_rq);
-+	/* All running tasks are RT. Let's avoid idle wasting CPU time */
-+	p = pick_next_highest_task_rt(rq, -1);
-+	rq->extended_class = &rt_sched_class;
- 
--	p = rt_task_of(rt_se);
--	p->se.exec_start = rq->clock_task;
-+	WARN_ON(!p || rq->cfs.h_nr_running);
- 
- 	return p;
- }
-@@ -1392,9 +1417,11 @@ static struct task_struct *pick_next_task_rt(struct rq *rq)
- {
- 	struct task_struct *p = _pick_next_task_rt(rq);
- 
--	/* The running task is never eligible for pushing */
--	if (p)
-+	if (p) {
-+		/* The running task is never eligible for pushing */
- 		dequeue_pushable_task(rq, p);
-+		p->se.exec_start = rq->clock_task;
-+	}
- 
- #ifdef CONFIG_SMP
- 	/*
-@@ -1426,9 +1453,9 @@ static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
- 
- static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
- {
--	if (!task_running(rq, p) &&
--	    (cpu < 0 || cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) &&
--	    (p->nr_cpus_allowed > 1))
-+	if (cpu < 0 || (!task_running(rq, p)
-+		&& (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))
-+		&& p->nr_cpus_allowed > 1)))
- 		return 1;
- 	return 0;
- }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 508e77e..9fdacef 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -294,6 +294,7 @@ static inline int rt_bandwidth_enabled(void)
- struct rt_rq {
- 	struct rt_prio_array active;
- 	unsigned int rt_nr_running;
-+	unsigned long rt_nr_total;
- #if defined CONFIG_SMP || defined CONFIG_RT_GROUP_SCHED
- 	struct {
- 		int curr; /* highest queued rt task prio */
-@@ -304,7 +305,6 @@ struct rt_rq {
- #endif
- #ifdef CONFIG_SMP
- 	unsigned long rt_nr_migratory;
--	unsigned long rt_nr_total;
- 	int overloaded;
- 	struct plist_head pushable_tasks;
- #endif
-@@ -396,6 +396,7 @@ struct rq {
- #ifdef CONFIG_RT_GROUP_SCHED
- 	struct list_head leaf_rt_rq_list;
- #endif
-+	const struct sched_class *extended_class;
- 
- 	/*
- 	 * This is part of a global counter where only the total sum
+
+
+-- 
+--
+Best Regard
+Robin Dong
