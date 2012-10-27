@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab2J0Qfj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 12:35:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50577 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759056Ab2J0Qfh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 12:35:37 -0400
-Message-ID: <508C0D55.30205@gmail.com>
-Date: Sat, 27 Oct 2012 18:35:33 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
-MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+	id S1759334Ab2J0QpF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 12:45:05 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:57811 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759269Ab2J0QpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 12:45:04 -0400
+Date: Sat, 27 Oct 2012 18:44:48 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, linux-kernel@vger.kernel.org
+        Maen Suleiman <maen@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] arm: mvebu: support for the Globalscale Mirabox MBX0001
  board
-References: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com> <20121027183326.62ab505a@skate>
-In-Reply-To: <20121027183326.62ab505a@skate>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20121027164448.GB15824@lunn.ch>
+References: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2012 06:33 PM, Thomas Petazzoni wrote:
-> On Sat, 27 Oct 2012 18:22:45 +0200, Gregory CLEMENT wrote:
->> This platform, available from Globalscale has an Armada 370. For now,
->> only the serial port is supported. Support for network, USB and other
->> peripherals will be added as drivers for them become available for
->> Armada 370 in mainline.
->
-> Great!
+> diff --git a/arch/arm/boot/dts/mbx001.dts b/arch/arm/boot/dts/mbx001.dts
+> new file mode 100644
+> index 0000000..88a5a11
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mbx001.dts
 
-ACK!
+Hi Gregory
 
->> +++ b/arch/arm/boot/dts/mbx001.dts
->
-> If you decided to name your platform with four zeros (00001), then the
-> file should be mbx0001.dts here.
+Maybe it would be good to prefix this with armada-370. It then fits
+with armada-370-db.dts, and all the kirkwood files are kirkwood-*.dts.
 
-What is wrong with "globalscale,mirabox" ?
-
-Sebastian
+     Andrew
