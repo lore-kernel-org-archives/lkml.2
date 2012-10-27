@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab2J0QDZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 12:03:25 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55343 "EHLO
+	id S1759283Ab2J0QGT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 12:06:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63097 "EHLO
 	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759172Ab2J0QDY (ORCPT
+	with ESMTP id S1759160Ab2J0QGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 12:03:24 -0400
-Date: Sat, 27 Oct 2012 09:00:52 -0700
+	Sat, 27 Oct 2012 12:06:18 -0400
+Date: Sat, 27 Oct 2012 09:03:47 -0700
 From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 To: Nitin Gupta <ngupta@vflare.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] zram: factor-out zram_decompress_page() function
-Message-ID: <20121027160052.GA4771@swordfish>
+Subject: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
+ parameter
+Message-ID: <20121027160347.GB4771@swordfish>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -22,180 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  zram: factor-out zram_decompress_page() function
+  zram: handle mem suffixes in disk size zram_sysfs parameter
 
-  zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
-  Factor-out and make commonly used zram_decompress_page() function, which also simplified
-  error handling in zram_bvec_read().
+  Use memparse() to allow mem suffixes in disksize sysfs number.
+  Examples:
+       echo 256K > /sys/block/zram0/disksize
+       echo 512M > /sys/block/zram0/disksize
+       echo 1G > /sys/block/zram0/disksize
     
   Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
 ---
 
- drivers/staging/zram/zram_drv.c | 115 +++++++++++++++++-----------------------
- 1 file changed, 50 insertions(+), 65 deletions(-)
+ drivers/staging/zram/zram_sysfs.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 6edefde..7585467 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
- 	return bvec->bv_len != PAGE_SIZE;
- }
+diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
+index edb0ed4..6be318e 100644
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/genhd.h>
+ #include <linux/mm.h>
++#include <linux/kernel.h>
  
--static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
--			  u32 index, int offset, struct bio *bio)
-+static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ #include "zram_drv.h"
+ 
+@@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
+ static ssize_t disksize_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
  {
 -	int ret;
--	size_t clen;
--	struct page *page;
--	unsigned char *user_mem, *cmem, *uncmem = NULL;
--
--	page = bvec->bv_page;
--
--	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
--		handle_zero_page(bvec);
--		return 0;
--	}
-+	int ret = LZO_E_OK;
-+	size_t clen = PAGE_SIZE;
-+	unsigned char *cmem;
-+	unsigned long handle = zram->table[index].handle;
+ 	u64 disksize;
+ 	struct zram *zram = dev_to_zram(dev);
  
--	/* Requested page is not present in compressed area */
--	if (unlikely(!zram->table[index].handle)) {
--		pr_debug("Read before write: sector=%lu, size=%u",
--			 (ulong)(bio->bi_sector), bio->bi_size);
--		handle_zero_page(bvec);
-+	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		memset(mem, 0, PAGE_SIZE);
- 		return 0;
- 	}
- 
--	if (is_partial_io(bvec)) {
--		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
--		if (!uncmem) {
--			pr_info("Error allocating temp memory!\n");
--			return -ENOMEM;
--		}
--	}
--
--	user_mem = kmap_atomic(page);
--	if (!is_partial_io(bvec))
--		uncmem = user_mem;
--	clen = PAGE_SIZE;
--
--	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
--				ZS_MM_RO);
--
--	if (zram->table[index].size == PAGE_SIZE) {
--		memcpy(uncmem, cmem, PAGE_SIZE);
--		ret = LZO_E_OK;
--	} else {
-+	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
-+	if (zram->table[index].size == PAGE_SIZE)
-+		memcpy(mem, cmem, PAGE_SIZE);
-+	else
- 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    uncmem, &clen);
--	}
--
--	if (is_partial_io(bvec)) {
--		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
--		       bvec->bv_len);
--		kfree(uncmem);
--	}
--
--	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
--	kunmap_atomic(user_mem);
-+						mem, &clen);
-+	zs_unmap_object(zram->mem_pool, handle);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -247,36 +210,58 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 		return ret;
- 	}
- 
--	flush_dcache_page(page);
--
- 	return 0;
- }
- 
--static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
-+static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-+			  u32 index, int offset, struct bio *bio)
- {
- 	int ret;
--	size_t clen = PAGE_SIZE;
--	unsigned char *cmem;
--	unsigned long handle = zram->table[index].handle;
-+	struct page *page;
-+	unsigned char *user_mem, *uncmem = NULL;
- 
--	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
--		memset(mem, 0, PAGE_SIZE);
-+	page = bvec->bv_page;
-+
-+	if (unlikely(!zram->table[index].handle) ||
-+			zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		pr_debug("Read before write: sector=%lu, size=%u",
-+			 (ulong)(bio->bi_sector), bio->bi_size);
-+		handle_zero_page(bvec);
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
--	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    mem, &clen);
--	zs_unmap_object(zram->mem_pool, handle);
-+	user_mem = kmap_atomic(page);
-+	if (is_partial_io(bvec))
-+		/* Use  a temporary buffer to decompress the page */
-+		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	else
-+		uncmem = user_mem;
- 
-+	if (!uncmem) {
-+		pr_info("Unable to allocate temp memory\n");
-+		ret = -ENOMEM;
-+		goto out_cleanup;
-+	}
-+
-+	ret = zram_decompress_page(zram, uncmem, index);
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
- 		zram_stat64_inc(zram, &zram->stats.failed_reads);
+-	ret = kstrtoull(buf, 10, &disksize);
+-	if (ret)
 -		return ret;
-+		goto out_cleanup;
- 	}
++	disksize = memparse(buf, NULL);
++	if (disksize < 1)
++		return -EINVAL;
  
--	return 0;
-+	if (is_partial_io(bvec))
-+		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-+				bvec->bv_len);
-+
-+	flush_dcache_page(page);
-+	ret = 0;
-+out_cleanup:
-+	kunmap_atomic(user_mem);
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
-+	return ret;
- }
- 
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-@@ -302,7 +287,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		ret = zram_read_before_write(zram, uncmem, index);
-+		ret = zram_decompress_page(zram, uncmem, index);
- 		if (ret) {
- 			kfree(uncmem);
- 			goto out;
-
+ 	down_write(&zram->init_lock);
+ 	if (zram->init_done) {
 
