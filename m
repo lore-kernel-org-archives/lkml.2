@@ -1,110 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab2J0QXJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 12:23:09 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:56459 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab2J0QXH (ORCPT
+	id S1759302Ab2J0Q2J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 12:28:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:57865 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756653Ab2J0Q2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 12:23:07 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: mvebu: support for the Globalscale Mirabox MBX0001 board
-Date: Sat, 27 Oct 2012 18:22:45 +0200
-Message-Id: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 27 Oct 2012 12:28:07 -0400
+Message-ID: <1351355275.4834.10.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 18/85] x86: Exclude E820_RESERVED regions and memory holes
+ above 4 GB from direct mapping.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Sat, 27 Oct 2012 17:27:55 +0100
+In-Reply-To: <20121026000032.951798157@linuxfoundation.org>
+References: <20121026000031.107227138@linuxfoundation.org>
+	 <20121026000032.951798157@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-UZ691iJJwveAoWpc2krh"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This platform, available from Globalscale has an Armada 370. For now,
-only the serial port is supported. Support for network, USB and other
-peripherals will be added as drivers for them become available for
-Armada 370 in mainline.
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- arch/arm/boot/dts/Makefile          |    3 ++-
- arch/arm/boot/dts/mbx001.dts        |   37 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-mvebu/armada-370-xp.c |    1 +
- 3 files changed, 40 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/boot/dts/mbx001.dts
+--=-UZ691iJJwveAoWpc2krh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f37cf9f..ee09963 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -44,7 +44,8 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-dns320.dtb \
- dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
- 	msm8960-cdp.dtb
- dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
--	armada-xp-db.dtb
-+	armada-xp-db.dtb \
-+	mbx0001.dtb
- dtb-$(CONFIG_ARCH_MXC) += imx51-babbage.dtb \
- 	imx53-ard.dtb \
- 	imx53-evk.dtb \
-diff --git a/arch/arm/boot/dts/mbx001.dts b/arch/arm/boot/dts/mbx001.dts
-new file mode 100644
-index 0000000..88a5a11
---- /dev/null
-+++ b/arch/arm/boot/dts/mbx001.dts
-@@ -0,0 +1,37 @@
-+/*
-+ * Device Tree file for Globalscale Mirabox MBX0001
-+ *
-+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+/dts-v1/;
-+/include/ "armada-370.dtsi"
-+
-+/ {
-+	model = "Mirabox MBX0001";
-+	compatible = "globalscale,mbx0001", "marvell,armada370", "marvell,armada-370-xp";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk";
-+	};
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x00000000 0x20000000>; /* 512 MB */
-+	};
-+
-+	soc {
-+		serial@d0012000 {
-+			clock-frequency = <200000000>;
-+			status = "okay";
-+		};
-+		timer@d0020300 {
-+			clock-frequency = <600000000>;
-+			status = "okay";
-+		};
-+	};
-+};
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.c b/arch/arm/mach-mvebu/armada-370-xp.c
-index 49d7915..e5269b4 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.c
-+++ b/arch/arm/mach-mvebu/armada-370-xp.c
-@@ -49,6 +49,7 @@ static void __init armada_370_xp_dt_init(void)
- static const char * const armada_370_xp_dt_board_dt_compat[] = {
- 	"marvell,a370-db",
- 	"marvell,axp-db",
-+	"globalscale,mbx0001",
- 	NULL,
- };
- 
--- 
-1.7.9.5
+On Thu, 2012-10-25 at 17:05 -0700, Greg Kroah-Hartman wrote:
+> 3.6-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Jacob Shin <jacob.shin@amd.com>
+>=20
+> commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
+>=20
+> On systems with very large memory (1 TB in our case), BIOS may report a
+> reserved region or a hole in the E820 map, even above the 4 GB range. Exc=
+lude
+> these from the direct mapping.
+>=20
+> [ hpa: this should be done not just for > 4 GB but for everything above t=
+he legacy
+>   region (1 MB), at the very least.  That, however, turns out to require =
+significant
+>   restructuring.  That work is well underway, but is not suitable for rc/=
+stable. ]
+[...]
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -919,8 +919,21 @@ void __init setup_arch(char **cmdline_p)
+> =20
+>  #ifdef CONFIG_X86_64
+>  	if (max_pfn > max_low_pfn) {
+> -		max_pfn_mapped =3D init_memory_mapping(1UL<<32,
+> -						     max_pfn<<PAGE_SHIFT);
+> +		int i;
+> +		for (i =3D 0; i < e820.nr_map; i++) {
+> +			struct e820entry *ei =3D &e820.map[i];
+> +
+> +			if (ei->addr + ei->size <=3D 1UL << 32)
+> +				continue;
+> +
+> +			if (ei->type =3D=3D E820_RESERVED)
+> +				continue;
+> +
+> +			max_pfn_mapped =3D init_memory_mapping(
+> +				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
+> +				ei->addr + ei->size);
 
+Is it safe to assume that the e820 entries are sorted?  If not, this
+assignment needs to be conditional.
+
+Ben.
+
+> +		}
+> +
+>  		/* can we preseve max_low_pfn ?*/
+>  		max_low_pfn =3D max_pfn;
+>  	}
+
+--=20
+Ben Hutchings
+Never attribute to conspiracy what can adequately be explained by stupidity=
+.
+
+--=-UZ691iJJwveAoWpc2krh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUIwLi+e/yOyVhhEJAQpUiQ//SSbE5o8WCMdPNidtg2Ak5R9+Zv07a7Fm
+DVgvbWSuV0tqTWeHAiTVGPeDfvxfZUpcPpsDFi9Qqu905/mQoR3UgVClQ6v2PcoP
+BWHr0NGUnF/p7FqrezxuUd4xuQ0OK8Ca7h/lZL5H7cGyb1Ijf2Ooh+w+QCcOeydm
+fAccjuZpg5A2+aU34JuUn0E2l2mauB9snKrbwYzJeoOfE3/fFDDXJLbgwNSt1fiF
+C3EYg4ebQWjZkBP5AavrKCsyEFx1ASO9l6wSfvFICbixIgVhhIUdfjqElcbBSB1w
+w77RFznwuRJfVYlSOIkQ4NjEHcV6KRodWSTkyIZixp15WrgK3qm+b7b6XriLi/tk
+hXY3Jf7wf36pF8QUcsSrYERJ9NhY/Y7pcZxQuyhvfqetyXC8f20Ba7QVe/YzrCAb
+93VX7DxPuqFeVk5TPxD61rq6SCpkV56feCP0mTjxplunGIIgZOaBy8D0r6posk+K
+G+HM9EW7bMgNHtsIRTDbmztSOpmoGW4KQqsvOSMOj6r2NEj4EEPuOLaWZzQ00bMV
+V63nvrMyXnZtokojTiz/MZEGqKJhdTFraVvqBAArX4EEoRhvCTSokDvpPs4yCE/m
+1u/dObTqADG14sicchvoraQ7kWfJNfhLwvgCFaF64KiILWwZzBsMXW05u4PEOk88
+HftjmVxV1R0=
+=HyTY
+-----END PGP SIGNATURE-----
+
+--=-UZ691iJJwveAoWpc2krh--
