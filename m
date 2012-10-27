@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab2J0HlA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 03:41:00 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:51532 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752994Ab2J0Hk7 (ORCPT
+	id S1754695Ab2J0H44 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 03:56:56 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:59077 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753321Ab2J0H4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 03:40:59 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] Input: select INPUT_MATRIXKMAP for lpc32xx-keys
-Date: Sat, 27 Oct 2012 09:40:48 +0200
-Message-Id: <1351323648-18645-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sat, 27 Oct 2012 03:56:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
+References: <20121024152740.GA25303@otc-wbsnb-06> <CAOJsxLFD36jYiyE5sfN+uPT5G9G9ttf=K2UB=abEjBiTFNeehA@mail.gmail.com>
+ <20121025121645.GA28475@otc-wbsnb-06> <CA+1xoqdN0AhLTczH6u1KngiOA61Ej1tL+v-FHAajqYO3tyGSwg@mail.gmail.com>
+ <alpine.LFD.2.02.1210261830200.1981@tux.localdomain>
+From: Asias He <asias.hejun@gmail.com>
+Date: Sat, 27 Oct 2012 15:56:12 +0800
+Message-ID: <CAFO3S40UeMJOe7NU=E+6fiZ_dU=4S_6qzEN8zATaK0Viu-NNng@mail.gmail.com>
+Subject: Re: [BUG] lkvm crash on crashkernel boot
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a "select" dependency of KEYBOARD_LPC32XX on INPUT_MATRIXKMAP,
-as the other drivers are doing in this regard. This fixes the following compile
-error if KEYBOARD_LPC32XX is enabled but INPUT_MATRIXKMAP is not:
+On Fri, Oct 26, 2012 at 11:31 PM, Pekka Enberg <penberg@kernel.org> wrote:
+> On Thu, 25 Oct 2012, Sasha Levin wrote:
+>> I think we're seeing that because we don't handle VIRTIO_MSI_NO_VECTOR properly.
+>>
+>> We need to deal with the ability to remove GSI & friends as well. I've
+>> added it to my workqueue (unless someone deals with it first).
+>
+> Any reason I shouldn't apply Kirill's patch before someone find the time
+> to do that?
 
-drivers/input/keyboard/lpc32xx-keys.c:230: undefined reference to
-`matrix_keypad_build_keymap'
+Please apply it.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
----
- drivers/input/keyboard/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-2.6.orig/drivers/input/keyboard/Kconfig
-+++ linux-2.6/drivers/input/keyboard/Kconfig
-@@ -335,6 +335,7 @@ config KEYBOARD_LOCOMO
- config KEYBOARD_LPC32XX
- 	tristate "LPC32XX matrix key scanner support"
- 	depends on ARCH_LPC32XX && OF
-+	select INPUT_MATRIXKMAP
- 	help
- 	  Say Y here if you want to use NXP LPC32XX SoC key scanner interface,
- 	  connected to a key matrix.
+-- 
+Asias He
