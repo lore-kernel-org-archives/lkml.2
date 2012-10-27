@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759530Ab2J0VVf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 17:21:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57244 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757859Ab2J0VVe (ORCPT
+	id S1759458Ab2J0VVD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 17:21:03 -0400
+Received: from smtp-02.mandic.com.br ([200.225.81.133]:56883 "EHLO
+	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758181Ab2J0VVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 17:21:34 -0400
-Date: Sat, 27 Oct 2012 22:21:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant@secretlab.ca>, Marek Vasut <marex@denx.de>
-Subject: [GIT PULL] MXS SPI fixes for v3.7
-Message-ID: <20121027212125.GC4564@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UPT3ojh+0CqEDtpF"
-Content-Disposition: inline
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 27 Oct 2012 17:21:00 -0400
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCH 0/2] mm: do not call frontswap_init() during swapoff
+Date: Sat, 27 Oct 2012 19:20:45 -0200
+Message-Id: <1351372847-13625-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The call to frontswap_init() was added in a place where it is called not
+only from sys_swapon, but also from sys_swapoff. This pair of patches
+fixes that.
 
---UPT3ojh+0CqEDtpF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The first patch moves the acquisition of swap_lock from enable_swap_info
+to two separate helpers, one for sys_swapon and one for sys_swapoff. As
+a bonus, it also makes the code for sys_swapoff less subtle.
 
-The following changes since commit ddffeb8c4d0331609ef2581d84de4d763607bd37:
+The second patch moves the call to frontswap_init() from the common code
+to the helper used only by sys_swapon.
 
-  Linux 3.7-rc1 (2012-10-14 14:41:04 -0700)
+Compile-tested only, but should be safe.
 
-are available in the git repository at:
+Cesar Eduardo Barros (2):
+  mm: refactor reinsert of swap_info in sys_swapoff
+  mm: do not call frontswap_init() during swapoff
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/spi-mxs
+ mm/swapfile.c | 26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
-for you to fetch changes up to 44968466cfb969f960dbe422bbc785117f497729:
+-- 
+1.7.11.7
 
-  spi: mxs: Terminate DMA in case of DMA timeout (2012-10-17 16:11:09 +0900)
-
-----------------------------------------------------------------
-spi: Some minor MXS fixes
-
-These fixes are both pretty minor ones and are driver local.
-
-----------------------------------------------------------------
-Marek Vasut (2):
-      spi: mxs: Assign message status after transfer finished
-      spi: mxs: Terminate DMA in case of DMA timeout
-
- drivers/spi/spi-mxs.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---UPT3ojh+0CqEDtpF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQjFBLAAoJELSic+t+oim9lhkP/1gCoVKv9G8egWei0/Dmo0dV
-n/bd3mE4aKNn3qw75eywOuGwFiH75/OKC3ca3RnSFjMdaqWklYwFJRbRDy9mEApN
-UoTgaODwrMOG68wwaGvvj0fdqY36A32ynQ1gvPn5VbfQLewkOuU5ZhefiXlm4Ny4
-4RfyKGbjImU32ceAKSaJ89unGCG/0B25tHbpgxzb8ujHvl5GCua1FrFdULiVmOAO
-EPFw5h9opINZ52fUbC/7VgeWkU7Q9xmxC2DPQjZpVbjWtYcKImpsfSCIcC0sN+bk
-mMvrnuxKx5Nj7SedkaP2IK6VIFRiNvMMduB8kxoKUlo57EkJ6oue3H0loYK/BNYN
-AI8Y02GL4EdxBttPGCBOejWFl4TGD3OQ6MPk9y5NKUJ+mdaA91VIK3v1zNxEBKqb
-WhfID5mO7E+IvCTpJ7Ihsz0X2OU5WVXOqcZnUngYB/hh12Xf3Hkk03f6/XtKsmrN
-q8y7Y4jW43zL1ADehhtXlRTyRSnuZxyHIJKdn35ogmTHNiX6LDXHJI2/Qj3NFlHL
-GdNExfPvuUdJCNJPFa39hgLxJnRyXZNiCVNaELFAlgsfQcTFdmY24wNHXgKCyWyF
-N4ribfmeDXv/jd3LFdxETobDBIfpH9TQlGejhwnvl+v01YM/D/gnxW7nGiz+/Xfd
-hCMDWkB6gD6J575DQcbt
-=AwjM
------END PGP SIGNATURE-----
-
---UPT3ojh+0CqEDtpF--
