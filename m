@@ -1,88 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2J0Oxn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 10:53:43 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53836 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab2J0Oxl (ORCPT
+	id S1755256Ab2J0Oyj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 10:54:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36347 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab2J0Oyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 10:53:41 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] staging: csr: Fix typo in csr/netdev.c
-Date: Sat, 27 Oct 2012 23:53:36 +0900
-Message-Id: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+	Sat, 27 Oct 2012 10:54:36 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 1/6] fat: remove parent_logstart check in fat_get_parent
+Date: Sat, 27 Oct 2012 23:54:23 +0900
+Message-Id: <1351349663-8134-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typo in trace message.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+The root directory inode is added to the directory hash table in
+fat_attach when mounted with nfs option. Since root dentry never
+expires until umount, fat_dget never fails to return the root inode
+for subdirectories of root inode.i.e., parent_logstart cannot be zero.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 ---
- drivers/staging/csr/netdev.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/fat/nfs.c |   51 ++++++++++++++++++++++-----------------------------
+ 1 file changed, 22 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
-index 0e34020..878c3df 100644
---- a/drivers/staging/csr/netdev.c
-+++ b/drivers/staging/csr/netdev.c
-@@ -100,7 +100,7 @@
- #endif /* LINUX_VERSION_CODE */
- 
- 
--/* Wext handler is suported only if CSR_SUPPORT_WEXT is defined */
-+/* Wext handler is supported only if CSR_SUPPORT_WEXT is defined */
- #ifdef CSR_SUPPORT_WEXT
- extern struct iw_handler_def unifi_iw_handler_def;
- #endif /* CSR_SUPPORT_WEXT */
-@@ -146,7 +146,7 @@ typedef int (*tx_signal_handler)(unifi_priv_t *priv, struct sk_buff *skb, const
- /*
-  * The driver uses the qdisc interface to buffer and control all
-  * outgoing traffic. We create a root qdisc, register our qdisc operations
-- * and later we create two subsiduary pfifo queues for the uncontrolled
-+ * and later we create two subsidiary pfifo queues for the uncontrolled
-  * and controlled ports.
-  *
-  * The network stack delivers all outgoing packets in our enqueue handler.
-@@ -1748,7 +1748,7 @@ send_ma_pkt_request(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
-         return -1;
-     }
- 
--    /* RA adrress must contain the immediate destination MAC address that is similiar to
-+    /* RA adrress must contain the immediate destination MAC address that is similar to
-      * the Address 1 field of 802.11 Mac header here 4 is: (sizeof(framecontrol) + sizeof (durationID))
-      * which is address 1 field
-      */
-@@ -2782,7 +2782,7 @@ static void process_ma_packet_ind(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_d
-         return;
-     }
-     /* For monitor mode we need to pass this indication to the registered application
--    handle this seperately*/
-+    handle this separately*/
-     /* MIC failure is already taken care of so no need to send the PDUs which are not successfully received in non-monitor mode*/
-     if(pkt_ind->ReceptionStatus != CSR_RX_SUCCESS)
-     {
-@@ -3717,13 +3717,13 @@ static void update_expected_sn(unifi_priv_t *priv,
-     u16 gap;
- 
-     gap = (sn - ba_session->expected_sn) & 0xFFF;
--    unifi_trace(priv, UDBG6, "%s: proccess the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
-+    unifi_trace(priv, UDBG6, "%s: process the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
-     for(j = 0; j < gap && j < ba_session->wind_size; j++) {
-         i = SN_TO_INDEX(ba_session, ba_session->expected_sn);
--        unifi_trace(priv, UDBG6, "%s: proccess the slot index = %d\n", __FUNCTION__, i);
-+        unifi_trace(priv, UDBG6, "%s: process the slot index = %d\n", __FUNCTION__, i);
-         if(ba_session->buffer[i].active) {
-             add_frame_to_ba_complete(priv, interfacePriv, &ba_session->buffer[i]);
--            unifi_trace(priv, UDBG6, "%s: proccess the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
-+            unifi_trace(priv, UDBG6, "%s: process the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
-             FREE_BUFFER_SLOT(ba_session, i);
-         } else {
-             unifi_trace(priv, UDBG6, "%s: empty slot at index = %d\n", __FUNCTION__, i);
+diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+index a4e6ac7..671a75d 100644
+--- a/fs/fat/nfs.c
++++ b/fs/fat/nfs.c
+@@ -274,36 +274,29 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
+ 		parent_inode = fat_dget(sb, parent_logstart);
+ 		if (parent_inode || sbi->options.nfs != FAT_NFS_NOSTALE_RO)
+ 			goto out;
+-		if (!parent_logstart)
+-			/*logstart of dotdot entry is zero if
+-			* if the directory's parent is root
+-			*/
+-			parent_inode = sb->s_root->d_inode;
+-		else {
+-			blknr = fat_clus_to_blknr(sbi, parent_logstart);
+-			parent_bh = sb_bread(sb, blknr);
+-			if (!parent_bh) {
+-				fat_msg(sb, KERN_ERR,
+-					"NFS:unable to read cluster of parent directory");
+-				goto out;
+-			}
+-			de = (struct msdos_dir_entry *) parent_bh->b_data;
+-			clus_to_match = fat_get_start(sbi, &de[0]);
+-			search_clus = fat_get_start(sbi, &de[1]);
+-			if (!search_clus)
+-				search_clus = sbi->root_cluster;
+-			brelse(parent_bh);
+-			do {
+-				parent_inode =  fat_traverse_cluster(sb,
+-						search_clus, clus_to_match);
+-				if (IS_ERR(parent_inode) || parent_inode)
+-					break;
+-				search_clus = fat_read_next_clus(sb,
+-								search_clus);
+-				if (search_clus < 0)
+-					break;
+-			} while (search_clus != FAT_ENT_EOF);
++		blknr = fat_clus_to_blknr(sbi, parent_logstart);
++		parent_bh = sb_bread(sb, blknr);
++		if (!parent_bh) {
++			fat_msg(sb, KERN_ERR,
++				"NFS:unable to read cluster of parent directory");
++			goto out;
+ 		}
++		de = (struct msdos_dir_entry *) parent_bh->b_data;
++		clus_to_match = fat_get_start(sbi, &de[0]);
++		search_clus = fat_get_start(sbi, &de[1]);
++		if (!search_clus)
++			search_clus = sbi->root_cluster;
++		brelse(parent_bh);
++		do {
++			parent_inode =  fat_traverse_cluster(sb,
++					search_clus, clus_to_match);
++			if (IS_ERR(parent_inode) || parent_inode)
++				break;
++			search_clus = fat_read_next_clus(sb,
++							search_clus);
++			if (search_clus < 0)
++				break;
++		} while (search_clus != FAT_ENT_EOF);
+ 	}
+ out:
+ 	brelse(dotdot_bh);
 -- 
-1.8.0.rc3.16.g8ead1bf
+1.7.9.5
 
