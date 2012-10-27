@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2J0M2Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:28:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50072 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752112Ab2J0M2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:28:15 -0400
-Message-ID: <508BD344.1090001@ti.com>
-Date: Sat, 27 Oct 2012 17:57:48 +0530
+	id S1753423Ab2J0MaM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:30:12 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60275 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2J0MaK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 08:30:10 -0400
+Message-ID: <508BD3BF.1080409@ti.com>
+Date: Sat, 27 Oct 2012 17:59:51 +0530
 From: kishon <kishon@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <b-cousson@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Arnd Bergmann <arnd@arndb.de>,
+        <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <olof@lixom.net>,
         <rdunlap@xenotime.net>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
-References: <1349675983-23803-1-git-send-email-kishon@ti.com> <1349675983-23803-2-git-send-email-kishon@ti.com> <20121016165043.GS15569@atomide.com> <20121025004806.GK11928@atomide.com> <20121025061722.GB4449@arwen.pp.htv.fi> <20121025174446.GT11928@atomide.com> <20121026064736.GA22206@arwen.pp.htv.fi> <20121026171655.GI11908@atomide.com> <20121026195915.GA29548@arwen.pp.htv.fi>
-In-Reply-To: <20121026195915.GA29548@arwen.pp.htv.fi>
+Subject: Re: [PATCH v2 3/3] ARM: OMAP: ocp2scp: create omap device for ocp2scp
+References: <1349675983-23803-1-git-send-email-kishon@ti.com> <1349675983-23803-4-git-send-email-kishon@ti.com> <20121026065012.GC22206@arwen.pp.htv.fi> <201210260747.11848.arnd@arndb.de> <20121026172140.GJ11908@atomide.com> <20121026195958.GB29548@arwen.pp.htv.fi> <20121026201631.GR11908@atomide.com>
+In-Reply-To: <20121026201631.GR11908@atomide.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Saturday 27 October 2012 01:29 AM, Felipe Balbi wrote:
-> Hi,
->
-> On Fri, Oct 26, 2012 at 10:16:55AM -0700, Tony Lindgren wrote:
->> * Felipe Balbi <balbi@ti.com> [121025 23:55]:
->>> On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
->>>> * Felipe Balbi <balbi@ti.com> [121024 23:24]:
->>>>> Hi,
+On Saturday 27 October 2012 01:46 AM, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [121026 13:07]:
+>> On Fri, Oct 26, 2012 at 10:21:41AM -0700, Tony Lindgren wrote:
+>>> * Arnd Bergmann <arnd@arndb.de> [121026 00:48]:
+>>>> On Friday 26 October 2012, Felipe Balbi wrote:
+>>>>>> +static void omap_init_ocp2scp(void)
+>>>>>> +{
+>>>>>> +     struct omap_hwmod       *oh;
+>>>>>> +     struct platform_device  *pdev;
+>>>>>> +     int                     bus_id = -1, dev_cnt = 0, i;
+>>>>>> +     struct omap_ocp2scp_dev *ocp2scp_dev;
+>>>>>> +     const char              *oh_name, *name;
+>>>>>> +     struct omap_ocp2scp_platform_data *pdata;
+>>>>>> +
+>>>>>> +     oh_name = "ocp2scp_usb_phy";
+>>>>>> +     name    = "omap-ocp2scp";
 >>>>>
->>>>> On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
->>>>>> * Tony Lindgren <tony@atomide.com> [121016 09:53]:
->>>>>>> * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
->>>>>>>> ocp2scp was not having pdata support which makes *musb* fail for non-dt
->>>>>>>> boot in OMAP platform. The pdata will have information about the devices
->>>>>>>> that is connected to ocp2scp. ocp2scp driver will now make use of this
->>>>>>>> information to create the devices that is attached to ocp2scp.
->>>>>>>>
->>>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>>>>>
->>>>>>> This fixes the regression on my panda es for musb port:
->>>>>>>
->>>>>>> Acked-by: Tony Lindgren <tony@atomide.com>
->>>>>>
->>>>>> Looks like nobody has picked this one up and we need it to
->>>>>> fix the musb regression on omap, so I'll queue these up.
+>>>>> how about adding checks here to return early case we're not running on
+>>>>> OMAP4 or OMAP5 ??
 >>>>>
->>>>> I don't seem to have the patches around in any mailbox :-(
 >>>>
->>>> Bounced them to you. Do you have any better ideas for the
->>>> -rc cycle to fix the MUSB regression on omap4?
+>>>> I suppose even OMAP4-only, since OMAP5 always has DT enabled.
 >>>
->>> Well, there are two regressions that I know of. One is caused by the
->>> mode1 DMA changes, which I'll just revert, and the other is the
->>> missing platform_data support on the new PHY driver which these patches
->>> are supposed to solve, right ?
+>>> Hmm yes, currently omap_hwmod_lookup(oh_name) produces
+>>> bogus errors for other omaps as the hwmod data is only
+>>> there for omap4.
 >>
->> Yes that's it AFAIK.
+>> shouldn't that be fixed too ? I mean, if data isn't just return -ENODEV
+>> or something similar.
 >
-> Kishon, any other patches I need to take to get MUSB working on v3.7 ?
+> Yes some kind of checking is needed here.
 
-These should be good enough to get MUSB working..
+Ok. I'll fix and send.
 
 Thanks
 Kishon
