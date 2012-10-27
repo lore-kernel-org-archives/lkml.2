@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab2J0MgX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:36:23 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:56913 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756595Ab2J0Mej (ORCPT
+	id S1757439Ab2J0Mgn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:36:43 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:65280 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab2J0Mef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:39 -0400
+	Sat, 27 Oct 2012 08:34:35 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 29/32] vfs: convert do_filp_open to use retry_estale helper
-Date: Sat, 27 Oct 2012 08:33:36 -0400
-Message-Id: <1351341219-17837-30-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 26/32] vfs: make llistxattr retry once on ESTALE error
+Date: Sat, 27 Oct 2012 08:33:33 -0400
+Message-Id: <1351341219-17837-27-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -24,27 +24,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/xattr.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 27bff9b..6930e91 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3012,11 +3012,12 @@ struct file *do_filp_open(int dfd, struct filename *pathname,
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 8a318a4..8a30ef0 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -595,12 +595,17 @@ SYSCALL_DEFINE3(llistxattr, const char __user *, pathname, char __user *, list,
  {
- 	struct nameidata nd;
- 	struct file *filp;
+ 	struct path path;
+ 	ssize_t error;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = 0;
  
- 	filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(filp == ERR_PTR(-ECHILD)))
- 		filp = path_openat(dfd, pathname, &nd, op, flags);
--	if (unlikely(filp == ERR_PTR(-ESTALE)))
-+	while (retry_estale(PTR_ERR(filp), try++))
- 		filp = path_openat(dfd, pathname, &nd, op, flags | LOOKUP_REVAL);
- 	return filp;
+-	error = user_lpath(pathname, &path);
+-	if (error)
+-		return error;
+-	error = listxattr(path.dentry, list, size);
+-	path_put(&path);
++	do {
++		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
++		if (error)
++			break;
++		error = listxattr(path.dentry, list, size);
++		path_put(&path);
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(error, try++));
+ 	return error;
  }
+ 
 -- 
 1.7.11.7
 
