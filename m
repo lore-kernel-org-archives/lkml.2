@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab2J0Mfw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:35:52 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:42731 "EHLO
+	id S1756518Ab2J0Meg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:34:36 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:35968 "EHLO
 	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756701Ab2J0Mel (ORCPT
+	with ESMTP id S1755439Ab2J0Mec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:41 -0400
+	Sat, 27 Oct 2012 08:34:32 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 30/32] vfs: convert do_file_open_root to use retry_estale helper
-Date: Sat, 27 Oct 2012 08:33:37 -0400
-Message-Id: <1351341219-17837-31-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 23/32] vfs: make getxattr retry once on an ESTALE error
+Date: Sat, 27 Oct 2012 08:33:30 -0400
+Message-Id: <1351341219-17837-24-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -24,30 +24,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/xattr.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 6930e91..c6173cc 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3028,6 +3028,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	struct nameidata nd;
- 	struct file *file;
- 	struct filename filename = { .name = name };
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 5a9ddba..42284fc 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -486,12 +486,17 @@ SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
+ {
+ 	struct path path;
+ 	ssize_t error;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_FOLLOW;
  
- 	nd.root.mnt = mnt;
- 	nd.root.dentry = dentry;
-@@ -3040,7 +3041,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(file == ERR_PTR(-ECHILD)))
- 		file = path_openat(-1, &filename, &nd, op, flags);
--	if (unlikely(file == ERR_PTR(-ESTALE)))
-+	while (retry_estale(PTR_ERR(file), try++))
- 		file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
- 	return file;
+-	error = user_path(pathname, &path);
+-	if (error)
+-		return error;
+-	error = getxattr(path.dentry, name, value, size);
+-	path_put(&path);
++	do {
++		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
++		if (error)
++			break;
++		error = getxattr(path.dentry, name, value, size);
++		path_put(&path);
++		lookup_flags |= LOOKUP_REVAL;
++	} while (retry_estale(error, try++));
+ 	return error;
  }
+ 
 -- 
 1.7.11.7
 
