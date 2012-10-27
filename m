@@ -1,248 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964895Ab2J0Btt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 21:49:49 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:63860 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab2J0Bts (ORCPT
+	id S933957Ab2J0BxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 21:53:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:49160 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab2J0BxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 21:49:48 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: thierry.reding@avionic-design.de
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH v5] pwm: vt8500: Update vt8500 PWM driver support
-Date: Sat, 27 Oct 2012 14:49:57 +1300
-Message-Id: <1351302597-4167-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 26 Oct 2012 21:53:22 -0400
+Message-ID: <508B3E6E.6060702@vlnb.net>
+Date: Fri, 26 Oct 2012 21:52:46 -0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.28) Gecko/20120313 Mnenhy/0.8.5 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Nico Williams <nico@cryptonector.com>
+CC: General Discussion of SQLite Database <sqlite-users@sqlite.org>,
+        =?UTF-8?B?5p2o6IuP56uLIFlhbmcgU3UgTGk=?= <suli@cs.wisc.edu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        drh@hwaci.com
+Subject: Re: [sqlite] light weight write barriers
+References: <CALwJ=MzHjAOs4J4kGH6HLdwP8E88StDWyAPVumNg9zCWpS9Tdg@mail.gmail.com>	<m2fw5mtffg.fsf_-_@firstfloor.org>	<CABK4GYNKF6LCgsQ5SN+dATtRm-0Qh_QmNdqZqZcj6S98z+ofXg@mail.gmail.com>	<5086F5A7.9090406@vlnb.net> <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+In-Reply-To: <CAK3OfOjYgTQBeCh1SucYw=Vriw6W3qaygwmiRmude0oAYhcaxg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:12ux4i/NJdHVDsDeopgDVRHyYFoUMkfkjnkn8+caybI
+ MfKnDk4R37mByEkLfZZlGL+Umpyh8O9CmeabP51ienqY2sJiOs
+ ELVlSUdMvpeolS0nAGy0mw40oRQMu7CD7OWQOZZenkhBD4vyTZ
+ s2pwVkXG4ytLNyE6pbWSvgQ+1wWxeJb8PIWIW4RN3ip1HPaVII
+ WWbbhBSD4x+94BqnL5jvZqqEmIukuPGHkeqm4c+BBJIXkSHQOn
+ XSjFDNRP/eRD7jXb4sfdYFSqdXGt+86I/76bQoR0/130HmCLs4
+ Wrj6LZBnyBZb6G6eTR8vsM7RQo9qChvmIh/xbm6SbDxyYjjLyY
+ 0/SYjNefwVvPyMh+alsY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates pwm-vt8500.c to support devicetree probing and
-make use of the common clock subsystem.
 
-A binding document describing the PWM controller found on
-arch-vt8500 is also included.
+Nico Williams, on 10/24/2012 05:17 PM wrote:
+>> Yes, SCSI has full support for ordered/simple commands designed exactly for
+>> that task: [...]
+>>
+>> [...]
+>>
+>> But historically for some reason Linux storage developers were stuck with
+>> "barriers" concept, which is obviously not the same as ORDERED commands,
+>> hence had a lot troubles with their ambiguous semantic. As far as I can tell
+>> the reason of that was some lack of sufficiently deep SCSI understanding
+>> (how to handle errors, believe that ACA is something legacy from parallel
+>> SCSI times, etc.).
+>
+> Barriers are a very simple abstraction, so there's that.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-v4:
-return err from clk_enable rather than -EBUSY
-v5:
-replace IS_ERR_OR_NULL with IS_ERR as pointed out by Chris Brand
+It isn't simple at all. If you think for some time about barriers from the storage 
+point of view, you will soon realize how bad and ambiguous they are.
 
- .../devicetree/bindings/pwm/vt8500-pwm.txt         |   17 ++++
- drivers/pwm/pwm-vt8500.c                           |   86 ++++++++++++++------
- 2 files changed, 80 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+>> Before that happens, people will keep returning again and again with those
+>> simple questions: why the queue must be flushed for any ordered operation?
+>> Isn't is an obvious overkill?
+>
+> That [cache flushing]
 
-diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-new file mode 100644
-index 0000000..bcc6367
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-@@ -0,0 +1,17 @@
-+VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
-+
-+Required properties:
-+- compatible: should be "via,vt8500-pwm"
-+- reg: physical base address and length of the controller's registers
-+- #pwm-cells: should be 2.  The first cell specifies the per-chip index
-+  of the PWM to use and the second cell is the period in nanoseconds.
-+- clocks: phandle to the PWM source clock
-+
-+Example:
-+
-+pwm1: pwm@d8220000 {
-+	#pwm-cells = <2>;
-+	compatible = "via,vt8500-pwm";
-+	reg = <0xd8220000 0x1000>;
-+	clocks = <&clkpwm>;
-+};
-diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-index ad14389..970b0c6 100644
---- a/drivers/pwm/pwm-vt8500.c
-+++ b/drivers/pwm/pwm-vt8500.c
-@@ -1,7 +1,8 @@
- /*
-  * drivers/pwm/pwm-vt8500.c
-  *
-- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
-  *
-  * This software is licensed under the terms of the GNU General Public
-  * License version 2, as published by the Free Software Foundation, and
-@@ -21,14 +22,24 @@
- #include <linux/io.h>
- #include <linux/pwm.h>
- #include <linux/delay.h>
-+#include <linux/clk.h>
- 
- #include <asm/div64.h>
- 
--#define VT8500_NR_PWMS 4
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+
-+/*
-+ * SoC architecture allocates register space for 4 PWMs but only
-+ * 2 are currently implemented.
-+ */
-+#define VT8500_NR_PWMS	2
- 
- struct vt8500_chip {
- 	struct pwm_chip chip;
- 	void __iomem *base;
-+	struct clk *clk;
- };
- 
- #define to_vt8500_chip(chip)	container_of(chip, struct vt8500_chip, chip)
-@@ -52,7 +63,7 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	unsigned long long c;
- 	unsigned long period_cycles, prescale, pv, dc;
- 
--	c = 25000000/2; /* wild guess --- need to implement clocks */
-+	c = clk_get_rate(vt8500->clk);
- 	c = c * period_ns;
- 	do_div(c, 1000000000);
- 	period_cycles = c;
-@@ -85,8 +96,15 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 
- static int vt8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
-+	int err;
- 	struct vt8500_chip *vt8500 = to_vt8500_chip(chip);
- 
-+	err = clk_enable(vt8500->clk);
-+	if (err < 0)
-+		dev_err(chip->dev, "failed to enable clock\n");
-+		return err;
-+	};
-+
- 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
- 	writel(5, vt8500->base + (pwm->hwpwm << 4));
- 	return 0;
-@@ -98,6 +116,8 @@ static void vt8500_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- 
- 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
- 	writel(0, vt8500->base + (pwm->hwpwm << 4));
-+
-+	clk_disable(vt8500->clk);
- }
- 
- static struct pwm_ops vt8500_pwm_ops = {
-@@ -107,12 +127,24 @@ static struct pwm_ops vt8500_pwm_ops = {
- 	.owner = THIS_MODULE,
- };
- 
--static int __devinit pwm_probe(struct platform_device *pdev)
-+static const struct of_device_id vt8500_pwm_dt_ids[] = {
-+	{ .compatible = "via,vt8500-pwm", },
-+	{ /* Sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, vt8500_pwm_dt_ids);
-+
-+static int vt8500_pwm_probe(struct platform_device *pdev)
- {
- 	struct vt8500_chip *chip;
- 	struct resource *r;
-+	struct device_node *np = pdev->dev.of_node;
- 	int ret;
- 
-+	if (!np) {
-+		dev_err(&pdev->dev, "invalid devicetree node\n");
-+		return -EINVAL;
-+	}
-+
- 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
- 	if (chip == NULL) {
- 		dev_err(&pdev->dev, "failed to allocate memory\n");
-@@ -124,6 +156,12 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	chip->chip.base = -1;
- 	chip->chip.npwm = VT8500_NR_PWMS;
- 
-+	chip->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(chip->clk)) {
-+		dev_err(&pdev->dev, "clock source not specified\n");
-+		return PTR_ERR(chip->clk);
-+	}
-+
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
- 		dev_err(&pdev->dev, "no memory resource defined\n");
-@@ -131,18 +169,26 @@ static int __devinit pwm_probe(struct platform_device *pdev)
- 	}
- 
- 	chip->base = devm_request_and_ioremap(&pdev->dev, r);
--	if (chip->base == NULL)
-+	if (!chip->base)
- 		return -EADDRNOTAVAIL;
- 
-+	ret = clk_prepare(chip->clk);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to prepare clock\n");
-+		return ret;
-+	}
-+
- 	ret = pwmchip_add(&chip->chip);
--	if (ret < 0)
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to add PWM chip\n");
- 		return ret;
-+	}
- 
- 	platform_set_drvdata(pdev, chip);
- 	return ret;
- }
- 
--static int __devexit pwm_remove(struct platform_device *pdev)
-+static int vt8500_pwm_remove(struct platform_device *pdev)
- {
- 	struct vt8500_chip *chip;
- 
-@@ -150,28 +196,22 @@ static int __devexit pwm_remove(struct platform_device *pdev)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
-+	clk_unprepare(chip->clk);
-+
- 	return pwmchip_remove(&chip->chip);
- }
- 
--static struct platform_driver pwm_driver = {
-+static struct platform_driver vt8500_pwm_driver = {
-+	.probe		= vt8500_pwm_probe,
-+	.remove		= vt8500_pwm_remove,
- 	.driver		= {
- 		.name	= "vt8500-pwm",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = vt8500_pwm_dt_ids,
- 	},
--	.probe		= pwm_probe,
--	.remove		= __devexit_p(pwm_remove),
- };
-+module_platform_driver(vt8500_pwm_driver);
- 
--static int __init pwm_init(void)
--{
--	return platform_driver_register(&pwm_driver);
--}
--arch_initcall(pwm_init);
--
--static void __exit pwm_exit(void)
--{
--	platform_driver_unregister(&pwm_driver);
--}
--module_exit(pwm_exit);
--
--MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("VT8500 PWM Driver");
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.9.5
+It isn't cache flushing, it's _queue_ flushing. You can call it queue draining, if 
+you like.
 
+Often there's a big difference where it's done: on the system side, or on the 
+storage side.
+
+Actually, performance improvements from NCQ in many cases are not because it 
+allows the drive to reorder requests, as it's commonly thought, but because it 
+allows to have internal drive's processing stages stay always busy without any 
+idle time. Drives often have a long internal pipeline.. Hence the need to keep 
+every stage of it always busy and hence why using ORDERED commands is important 
+for performance.
+
+> is not what's being asked for here. Just a
+> light-weight barrier.  My proposal works without having to add new
+> system calls: a) use a COW format, b) have background threads doing
+> fsync()s, c) in each transaction's root block note the last
+> known-committed (from a completed fsync()) transaction's root block,
+> d) have an array of well-known ubberblocks large enough to accommodate
+> as many transactions as possible without having to wait for any one
+> fsync() to complete, d) do not reclaim space from any one past
+> transaction until at least one subsequent transaction is fully
+> committed.  This obtains ACI- transaction semantics (survives power
+> failures but without durability for the last N transactions at
+> power-failure time) without requiring changes to the OS at all, and
+> with support for delayed D (durability) notification.
+
+I believe what you really want is to be able to send to the storage a sequence of 
+your favorite operations (FS operations, async IO operations, etc.) like:
+
+Write back caching disabled:
+
+data op11, ..., data op1N, ORDERED data op1, data op21, ..., data op2M, ...
+
+Write back caching enabled:
+
+data op11, ..., data op1N, ORDERED sync cache, ORDERED FUA data op1, data op21, 
+..., data op2M, ...
+
+Right?
+
+(ORDERED means that it is guaranteed that this ordered command never in any 
+circumstances will be executed before any previous command completed AND after any 
+subsequent command completed.)
+
+Vlad
