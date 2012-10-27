@@ -1,22 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966923Ab2J0AHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 20:07:46 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57894 "EHLO
+	id S1758449Ab2J0AXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 20:23:14 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:57902 "EHLO
 	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966897Ab2J0AHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 20:07:44 -0400
-Date: Fri, 26 Oct 2012 20:07:36 -0400
+	id S1752578Ab2J0AXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Oct 2012 20:23:13 -0400
+Date: Fri, 26 Oct 2012 20:22:58 -0400
 From: "Theodore Ts'o" <tytso@mit.edu>
-To: Martin <marogge@onlinehome.de>, linux-ext4@vger.kernel.org,
-        Nix <nix@esperi.org.uk>
-Subject: Re: ext4 issue after unclean shutdown and reboot
-Message-ID: <20121027000736.GA31030@thunk.org>
-References: <508B199E.6020107@onlinehome.de>
+To: Nix <nix@esperi.org.uk>
+Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Bryan Schumaker <bjschuma@netapp.com>, Peng Tao <bergwolf@gmail.com>,
+        Trond.Myklebust@netapp.com, gregkh@linuxfoundation.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121027002258.GB31030@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+	Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	"J. Bruce Fields" <bfields@fieldses.org>,
+	Bryan Schumaker <bjschuma@netapp.com>,
+	Peng Tao <bergwolf@gmail.com>, Trond.Myklebust@netapp.com,
+	gregkh@linuxfoundation.org, linux-nfs@vger.kernel.org
+References: <87mwzdnuww.fsf@spindle.srvr.nix>
+ <20121023143019.GA3040@fieldses.org>
+ <874nllxi7e.fsf_-_@spindle.srvr.nix>
+ <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+ <508AF3FA.4020506@redhat.com>
+ <87wqydx957.fsf@spindle.srvr.nix>
+ <20121026205618.GC8614@thunk.org>
+ <87objpx84k.fsf@spindle.srvr.nix>
+ <20121026211542.GE8614@thunk.org>
+ <87haphx76u.fsf@spindle.srvr.nix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508B199E.6020107@onlinehome.de>
+In-Reply-To: <87haphx76u.fsf@spindle.srvr.nix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: tytso@thunk.org
@@ -25,24 +46,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've bcc'ed stable@vger.kernel.org, LKML, and greg-kh, since I suspect
-they aren't interested in all of these details... we'll keep this on
-linux-ext4 for sanity's sake.
-
-On Sat, Oct 27, 2012 at 01:15:42AM +0200, Martin wrote:
+On Fri, Oct 26, 2012 at 10:19:21PM +0100, Nix wrote:
+> > prevent unwary civilians from coming across the feature and saying,
+> > "oooh, shiny!" and turning it on.  :-(
 > 
-> sorry for the repetition, but Theodore Ts'o asked me to re-post this
-> as a new mail thread in order to keep track of this more easily.
+> Or having it turned on by default either, which seems to be the case
+> now.
 
-1)  Is it repeatable?  This is what happened once.  Can you reliably reproduce it?
+Huh?  It's not turned on by default.  If you mount with no mount
+options, journal checksums are *not* turned on.
 
-2)  Can you send the full dmesg of the previous boot and the boot where
-you found the problem?
-
-3)  Can you send me the fsck logs?
-
-4)  Can you send me the output dumpe2fs on the file system in question?
-
-Thanks....
-
-						- Ted
+	 	 	       	     - Ted
