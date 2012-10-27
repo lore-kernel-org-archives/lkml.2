@@ -1,150 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759651Ab2J0WmT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 18:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759568Ab2J0WmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 18:42:17 -0400
-Message-ID: <508C633F.4070100@redhat.com>
-Date: Sat, 27 Oct 2012 17:42:07 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Nix <nix@esperi.org.uk>
-CC: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
- (and other stable branches?)
-References: <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com> <87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org> <87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org> <87haphx76u.fsf@spindle.srvr.nix> <20121027002258.GB31030@thunk.org> <873910xevu.fsf@spindle.srvr.nix> <20121027175534.GA7783@thunk.org> <87fw4zzra3.fsf@spindle.srvr.nix> <508C4FE5.1030102@redhat.com>
-In-Reply-To: <508C4FE5.1030102@redhat.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752103Ab2J0W6d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 18:58:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60446 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751710Ab2J0W6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 18:58:31 -0400
+Message-ID: <1351378708.21585.8.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 108/147] ALSA: hda - Fix internal mic for Lenovo Ideapad U300s
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Date: Sat, 27 Oct 2012 23:58:28 +0100
+In-Reply-To: <20121018185055.GC3025@herton-Z68MA-D2H-B3>
+References: <20121014143533.742627615@decadent.org.uk>
+	 <20121014143548.361462458@decadent.org.uk>
+	 <20121018185055.GC3025@herton-Z68MA-D2H-B3>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-dhwppUIBinSyNeJuSEi3"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/12 4:19 PM, Eric Sandeen wrote:
-> On 10/27/12 1:47 PM, Nix wrote:
->> On 27 Oct 2012, Theodore Ts'o said:
->>
->>> On Sat, Oct 27, 2012 at 01:45:25PM +0100, Nix wrote:
->>>> Ah! it's turned on by journal_async_commit. OK, that alone argues
->>>> against use of journal_async_commit, tested or not, and I'd not have
->>>> turned it on if I'd noticed that.
->>>>
->>>> (So, the combinations I'll be trying for effect on this bug are:
->>>>
->>>>  journal_async_commit (as now)
->>>>  journal_checksum
->>>>  none
->>>
->>> Can you also check and see whether the presence or absence of
->>> "nobarrier" makes a difference?
->>
->> Done. (Also checked the effect of your patches posted earlier this week:
->> no effect, I'm afraid, certainly not under the fails-even-on-3.6.1 test
->> I was carrying out, umount -l'ing /var as the very last thing I did
->> before /sbin/reboot -f.)
->>
->> nobarrier makes a difference that I, at least, did not expect:
->>
->> [no options]                    No corruption
->>
->> nobarrier                       No corruption
->>
->>           journal_checksum      Corruption
->>                                 Corrupted transaction, journal aborted
->>                                 
->> nobarrier,journal_checksum      Corruption
->>                                 Corrupted transaction, journal aborted
->>
->>           journal_async_commit  Corruption
->>                                 Corrupted transaction, journal aborted
->>
->> nobarrier,journal_async_commit  Corruption
->>                                 No corrupted transaction or aborted journal
-> 
-> That's what we needed.  Woulda been great a few days ago ;)
-> 
-> In my testing journal_checksum is broken, and my bisection seems to
-> implicate
-> 
-> commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31
-> Author: Theodore Ts'o <tytso@mit.edu>
-> Date:   Mon Feb 6 20:12:03 2012 -0500
-> 
->     ext4: fold ext4_claim_inode into ext4_new_inode
->     
-> as the culprit.  I haven't had time to look into why, yet.
 
-It looks like the inode_bitmap_bh is being modified outside a transaction:
+--=-dhwppUIBinSyNeJuSEi3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-                ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+On Thu, 2012-10-18 at 15:50 -0300, Herton Ronaldo Krzesinski wrote:
+> On Sun, Oct 14, 2012 at 03:37:21PM +0100, Ben Hutchings wrote:
+> > 3.2-stable review patch.  If anyone has any objections, please let me k=
+now.
+> >=20
+> > ------------------
+> >=20
+> > From: David Henningsson <david.henningsson@canonical.com>
+> >=20
+> > commit 18dcd3044e4c4b3ab6341c98e8d0e81e0d58d5e3 upstream.
+> >=20
+> > The internal mic input is phase inverted on one channel.
+> > To avoid people in userspace summing the channels together
+> > and get zero result, use a separate mixer control for the
+> > inverted channel.
+> >=20
+> > BugLink: https://bugs.launchpad.net/bugs/903853
+> > Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+> > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > [bwh: Backported to 3.2:
+> >  - Adjust context
+> >  - Change both invocations of apply_pin_fixup()]
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+>=20
+> I noted today that a follow up fix for this is needed to avoid an oops
+> in apply_fixup, please consider adding to the next 3.2 stable this:
+>=20
+> commit 83b0c6ba999643ee8ad6329f26e1cdc870e1a920
+> ALSA: hda - Fix oops caused by recent commit "Fix internal mic for Lenovo=
+ Ideapad U300s"
+[...]
 
-It needs a get_write_access / handle_dirty_metadata pair around it.
+Added to the queue, thanks.
 
-A hacky patch like this seems to work but it was done 5mins before I have
-to be out the door to dinner so it probably needs cleanup or at least
-scrutiny.
+Ben.
 
-[PATCH] ext4: fix unjournaled inode bitmap modification
+--=20
+Ben Hutchings
+Never attribute to conspiracy what can adequately be explained by stupidity=
+.
 
-commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 modified this function
-such that the inode bitmap was being modified outside a transaction,
-which could lead to corruption, and was discovered when journal_checksum
-found a bad checksum in the journal.
+--=-dhwppUIBinSyNeJuSEi3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
----
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
---- ialloc.c.reverted2	2012-10-27 17:31:20.351537073 -0500
-+++ ialloc.c	2012-10-27 17:40:18.643553576 -0500
-@@ -669,6 +669,10 @@
- 		inode_bitmap_bh = ext4_read_inode_bitmap(sb, group);
- 		if (!inode_bitmap_bh)
- 			goto fail;
-+		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
-+		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 
- repeat_in_this_group:
- 		ino = ext4_find_next_zero_bit((unsigned long *)
-@@ -690,6 +694,10 @@
- 		ino++;		/* the inode bitmap is zero-based */
- 		if (!ret2)
- 			goto got; /* we grabbed the inode! */
-+		BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
-+		err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 		if (ino < EXT4_INODES_PER_GROUP(sb))
- 			goto repeat_in_this_group;
- 	}
+iQIVAwUAUIxnFOe/yOyVhhEJAQqfJw//dSDNL3R104CNGntb2+ZDnVZXA0bdeH0g
+mqjdT+doa0nXSpEZ6IJB3d0b6jdg88c6L9/hZ94i4ePZHCQR+swDBVN2YCo1uOc3
+N9xZGFZ6ODOwG9O14gF8ODXM41LJnSGxqIiirZDuMsia0J1Z+EMy6tO8eRKqSl3e
+br0jU1Zc5UIyG5E5QdjuG5XaUorelZT59S+dfsfkgjH8XoiJ5X9pTMZPxz2Rd9CJ
+k80epElY5kslSr++Jx+ZCln3RwoYL8GQ+Q8pAiCckjpBZ+5cZNc++oBg/Ld2En3M
+spLPPUccUhzqbr0n1kPIDjbZtk6/SlucxtJPdQIx3HlCRfDv0UY9lOW61d0I/o28
+Hmg2/VeUjmFNw2TBziY28PGIIoigQWRNbYxlBWeZ1WNkckI9WsoD+2B1qMGbPgQp
+x3srmzoJ6VTgpgMw0iOhzeDUd0oxRuV+N3suBwtgRhv7bJuqxQ15fy+VG95Bb/0N
+UdGFYD+sS/J2IPrXb2nmvwyvSvvzD5XWngzUwUeMv1DoAVo9NLmJSLE9he6ZX2m8
+969A/rmdZUztZvmbotd+9avdP48INeoo+JC1RM4lC+8pRwTny87VrEkpaOVsGqW3
+kZpu4xvxcCm3MKWJ/wjolnXfcGBJwvFOAIIl0w0kIpeUJZoDIWulxcrNzlU2a7eh
+hYdFsH25vqY=
+=InMh
+-----END PGP SIGNATURE-----
 
-
-
-
-> -Eric
-> 
->> I didn't expect the last case at all, and it adequately explains why you
->> are mostly seeing corrupted journal messages in your tests but I was
->> not. It also explains why when I saw this for the first time I was able
->> to mount the resulting corrupted filesystem read-write and corrupt it
->> further before I noticed that anything was wrong.
->>
->> It is also clear that journal_checksum and all that relies on it is
->> worse than useless right now, as Eric reported while I was testing this.
->> It should probably be marked CONFIG_BROKEN in future 3.[346].* stable
->> kernels, if CONFIG_BROKEN existed anymore, which it doesn't.
->>
->> It's a shame journal_async_commit depends on a broken feature: it might
->> be notionally unsafe but on some of my systems (without nobarrier or
->> flashy caching controllers) it was associated with a noticeable speedup
->> of metadata-heavy workloads -- though that was way back in 2009...
->> however, "safety first" definitely applies in this case.
->>
-> 
-
+--=-dhwppUIBinSyNeJuSEi3--
