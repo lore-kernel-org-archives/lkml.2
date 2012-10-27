@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab2J0Mnc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:43:32 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:65280 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754182Ab2J0Mdz (ORCPT
+	id S1758090Ab2J0Mn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:43:58 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:53867 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab2J0Mdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:33:55 -0400
+	Sat, 27 Oct 2012 08:33:51 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 03/32] vfs: fix readlinkat to retry on ESTALE
-Date: Sat, 27 Oct 2012 08:33:10 -0400
-Message-Id: <1351341219-17837-4-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 01/32] vfs: add a retry_estale helper function to handle retries on ESTALE
+Date: Sat, 27 Oct 2012 08:33:08 -0400
+Message-Id: <1351341219-17837-2-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -22,50 +22,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This function is expected to be called from path-based syscalls to help
+them decide whether to try the lookup and call again in the event that
+they got an -ESTALE return back on an earier try.
+
+Currently, we only retry the call once on an ESTALE error, but in the
+event that we decide that that's not enough in the future, we should be
+able to change the logic in this helper without too much effort.
+
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/stat.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ include/linux/fs.h | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index c97a17e..452ee93 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -300,14 +300,21 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 	struct path path;
- 	int error;
- 	int empty = 0;
-+	unsigned int try = 0;
-+	unsigned int lookup_flags = LOOKUP_EMPTY;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index b33cfc9..01ff902 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2023,6 +2023,27 @@ extern int finish_open(struct file *file, struct dentry *dentry,
+ 			int *opened);
+ extern int finish_no_open(struct file *file, struct dentry *dentry);
  
- 	if (bufsiz <= 0)
- 		return -EINVAL;
- 
--	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
--	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+	do {
-+		struct inode *inode;
++/**
++ * retry_estale - determine whether the caller should retry an operation
++ *
++ * @error: the error we'll be returning
++ * @try: number of retries already performed
++ *
++ * Check to see if the error code was -ESTALE, and then determine whether
++ * to retry the call based on the number of retries so far. Currently, we only
++ * retry the call once.
++ *
++ * Returns true if the caller should try again.
++ */
++static inline bool
++retry_estale(const long error, const unsigned int try)
++{
++	if (likely(error != -ESTALE))
++		return false;
 +
-+		error = user_path_at_empty(dfd, pathname, lookup_flags,
-+					   &path, &empty);
-+		if (error)
-+			break;
++	return !try;
++}
++
+ /* fs/ioctl.c */
  
-+		inode = path.dentry->d_inode;
- 		error = empty ? -ENOENT : -EINVAL;
- 		if (inode->i_op->readlink) {
- 			error = security_inode_readlink(path.dentry);
-@@ -318,7 +325,8 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 			}
- 		}
- 		path_put(&path);
--	}
-+		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
- 	return error;
- }
- 
+ extern int ioctl_preallocate(struct file *filp, void __user *argp);
 -- 
 1.7.11.7
 
