@@ -1,79 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab2J0Bjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Oct 2012 21:39:40 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:51672 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758290Ab2J0Bjj (ORCPT
+	id S964895Ab2J0Btt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Oct 2012 21:49:49 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:63860 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab2J0Bts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Oct 2012 21:39:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6ozXuJcca0piSuoQwHJ3LfxTw8nsy+8oa=QmJ98_Ofug@mail.gmail.com>
-References: <CADCVGbTDD-4WOVJWwaGBvay5=of=3VKBCVacrrW-z12BYZ1xbQ@mail.gmail.com>
-	<CAErSpo7mcDkWUhUBvnZ6P+5TOYsE=j6zB7MHqfY1wvqyyE1CBQ@mail.gmail.com>
-	<508A9974.2090403@tilera.com>
-	<CAErSpo6ozXuJcca0piSuoQwHJ3LfxTw8nsy+8oa=QmJ98_Ofug@mail.gmail.com>
-Date: Sat, 27 Oct 2012 09:39:37 +0800
-Message-ID: <CADCVGbSph2X7T3cTiVW3TdDwvRhOY+k7XYoz=Sxu1CC58yVhWQ@mail.gmail.com>
-Subject: Re: PCIe IO space support on Tilera GX: Is there any one who can
- confirm my modification to fix it is OK?
-From: Cyberman Wu <cypher.w@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Oct 2012 21:49:48 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: thierry.reding@avionic-design.de
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH v5] pwm: vt8500: Update vt8500 PWM driver support
+Date: Sat, 27 Oct 2012 14:49:57 +1300
+Message-Id: <1351302597-4167-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 12:28 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Oct 26, 2012 at 8:08 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
->
->> Cyberman: it seems like your bias hack is working for you.  But, as Bjorn
->> says, this sounds like a driver bug.  What happens if you just revert your
->> changes, but then in mvsas.c change the "if (!res_start || !res_len)" to
->> just say "if (!res_len)"?  That seems like the true error test.  If that
->> works, you should submit that change to the community.
->
-> I don't *think* that is going to be enough, even with the kernel that
-> has some I/O space support, because both devices are assigned
-> identical resources:
->
->   pci 0000:01:00.0: BAR 2: assigned [io  0x0000-0x007f]
->   pci 0001:01:00.0: BAR 2: assigned [io  0x0000-0x007f]
->
-> The I/O space support that's there is broken because we think the same
-> I/O range is available on both root buses, which is probably not the
-> case:
->
->   pci_bus 0000:00: resource 0 [io  0x0000-0xffffffff]
->   pci_bus 0001:00: resource 0 [io  0x0000-0xffffffff]
->
-That's the problem I want to confirm what I've changed is correct. I've split
-the two RootComplex using separate I/O range, it seems works on our device,
-but since I'm not very clear about Linux kernel, I want some some to check it.
-For mvsas, I've already modified it some thing like Chris said when I began
-using MDE-4.0.0 GA release. I bring it out to see if there have some ideas
-about that issue.
+This patch updates pwm-vt8500.c to support devicetree probing and
+make use of the common clock subsystem.
 
-> If mvsas really doesn't need the I/O BAR, I think it's likely that
-> making it use pci_enable_device_mem() will make both devices work even
-> without I/O space support in the kernel.
->
->> Bjorn et al: does it seem reasonable to add a bias to the mappings so that
->> we never report a zero value as valid?  This may be sufficiently defensive
->> programming that it's just the right thing to do regardless of whether
->> drivers are technically at fault or not.  If so, what's a good bias?  (I'm
->> inclined to think 64K rather than 4K.)
->
-> I/O space is very limited to begin with (many architectures only
-> *have* 64K), so I hesitate to add a bias in the PCI core.  But we do
-> something similar in arch_remove_reservations(), and I think you could
-> implement it that way if you wanted to.
->
-> Bjorn
+A binding document describing the PWM controller found on
+arch-vt8500 is also included.
 
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+v4:
+return err from clk_enable rather than -EBUSY
+v5:
+replace IS_ERR_OR_NULL with IS_ERR as pointed out by Chris Brand
 
+ .../devicetree/bindings/pwm/vt8500-pwm.txt         |   17 ++++
+ drivers/pwm/pwm-vt8500.c                           |   86 ++++++++++++++------
+ 2 files changed, 80 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
 
+diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+new file mode 100644
+index 0000000..bcc6367
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
+@@ -0,0 +1,17 @@
++VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
++
++Required properties:
++- compatible: should be "via,vt8500-pwm"
++- reg: physical base address and length of the controller's registers
++- #pwm-cells: should be 2.  The first cell specifies the per-chip index
++  of the PWM to use and the second cell is the period in nanoseconds.
++- clocks: phandle to the PWM source clock
++
++Example:
++
++pwm1: pwm@d8220000 {
++	#pwm-cells = <2>;
++	compatible = "via,vt8500-pwm";
++	reg = <0xd8220000 0x1000>;
++	clocks = <&clkpwm>;
++};
+diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
+index ad14389..970b0c6 100644
+--- a/drivers/pwm/pwm-vt8500.c
++++ b/drivers/pwm/pwm-vt8500.c
+@@ -1,7 +1,8 @@
+ /*
+  * drivers/pwm/pwm-vt8500.c
+  *
+- *  Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
++ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+  *
+  * This software is licensed under the terms of the GNU General Public
+  * License version 2, as published by the Free Software Foundation, and
+@@ -21,14 +22,24 @@
+ #include <linux/io.h>
+ #include <linux/pwm.h>
+ #include <linux/delay.h>
++#include <linux/clk.h>
+ 
+ #include <asm/div64.h>
+ 
+-#define VT8500_NR_PWMS 4
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_address.h>
++
++/*
++ * SoC architecture allocates register space for 4 PWMs but only
++ * 2 are currently implemented.
++ */
++#define VT8500_NR_PWMS	2
+ 
+ struct vt8500_chip {
+ 	struct pwm_chip chip;
+ 	void __iomem *base;
++	struct clk *clk;
+ };
+ 
+ #define to_vt8500_chip(chip)	container_of(chip, struct vt8500_chip, chip)
+@@ -52,7 +63,7 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 	unsigned long long c;
+ 	unsigned long period_cycles, prescale, pv, dc;
+ 
+-	c = 25000000/2; /* wild guess --- need to implement clocks */
++	c = clk_get_rate(vt8500->clk);
+ 	c = c * period_ns;
+ 	do_div(c, 1000000000);
+ 	period_cycles = c;
+@@ -85,8 +96,15 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 
+ static int vt8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
++	int err;
+ 	struct vt8500_chip *vt8500 = to_vt8500_chip(chip);
+ 
++	err = clk_enable(vt8500->clk);
++	if (err < 0)
++		dev_err(chip->dev, "failed to enable clock\n");
++		return err;
++	};
++
+ 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
+ 	writel(5, vt8500->base + (pwm->hwpwm << 4));
+ 	return 0;
+@@ -98,6 +116,8 @@ static void vt8500_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ 	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
+ 	writel(0, vt8500->base + (pwm->hwpwm << 4));
++
++	clk_disable(vt8500->clk);
+ }
+ 
+ static struct pwm_ops vt8500_pwm_ops = {
+@@ -107,12 +127,24 @@ static struct pwm_ops vt8500_pwm_ops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
+-static int __devinit pwm_probe(struct platform_device *pdev)
++static const struct of_device_id vt8500_pwm_dt_ids[] = {
++	{ .compatible = "via,vt8500-pwm", },
++	{ /* Sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, vt8500_pwm_dt_ids);
++
++static int vt8500_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct vt8500_chip *chip;
+ 	struct resource *r;
++	struct device_node *np = pdev->dev.of_node;
+ 	int ret;
+ 
++	if (!np) {
++		dev_err(&pdev->dev, "invalid devicetree node\n");
++		return -EINVAL;
++	}
++
+ 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+ 	if (chip == NULL) {
+ 		dev_err(&pdev->dev, "failed to allocate memory\n");
+@@ -124,6 +156,12 @@ static int __devinit pwm_probe(struct platform_device *pdev)
+ 	chip->chip.base = -1;
+ 	chip->chip.npwm = VT8500_NR_PWMS;
+ 
++	chip->clk = devm_clk_get(&pdev->dev, NULL);
++	if (IS_ERR(chip->clk)) {
++		dev_err(&pdev->dev, "clock source not specified\n");
++		return PTR_ERR(chip->clk);
++	}
++
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+ 		dev_err(&pdev->dev, "no memory resource defined\n");
+@@ -131,18 +169,26 @@ static int __devinit pwm_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	chip->base = devm_request_and_ioremap(&pdev->dev, r);
+-	if (chip->base == NULL)
++	if (!chip->base)
+ 		return -EADDRNOTAVAIL;
+ 
++	ret = clk_prepare(chip->clk);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to prepare clock\n");
++		return ret;
++	}
++
+ 	ret = pwmchip_add(&chip->chip);
+-	if (ret < 0)
++	if (ret < 0) {
++		dev_err(&pdev->dev, "failed to add PWM chip\n");
+ 		return ret;
++	}
+ 
+ 	platform_set_drvdata(pdev, chip);
+ 	return ret;
+ }
+ 
+-static int __devexit pwm_remove(struct platform_device *pdev)
++static int vt8500_pwm_remove(struct platform_device *pdev)
+ {
+ 	struct vt8500_chip *chip;
+ 
+@@ -150,28 +196,22 @@ static int __devexit pwm_remove(struct platform_device *pdev)
+ 	if (chip == NULL)
+ 		return -ENODEV;
+ 
++	clk_unprepare(chip->clk);
++
+ 	return pwmchip_remove(&chip->chip);
+ }
+ 
+-static struct platform_driver pwm_driver = {
++static struct platform_driver vt8500_pwm_driver = {
++	.probe		= vt8500_pwm_probe,
++	.remove		= vt8500_pwm_remove,
+ 	.driver		= {
+ 		.name	= "vt8500-pwm",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = vt8500_pwm_dt_ids,
+ 	},
+-	.probe		= pwm_probe,
+-	.remove		= __devexit_p(pwm_remove),
+ };
++module_platform_driver(vt8500_pwm_driver);
+ 
+-static int __init pwm_init(void)
+-{
+-	return platform_driver_register(&pwm_driver);
+-}
+-arch_initcall(pwm_init);
+-
+-static void __exit pwm_exit(void)
+-{
+-	platform_driver_unregister(&pwm_driver);
+-}
+-module_exit(pwm_exit);
+-
+-MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("VT8500 PWM Driver");
++MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
++MODULE_LICENSE("GPL v2");
 -- 
-Cyberman Wu
+1.7.9.5
+
