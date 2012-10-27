@@ -1,110 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650Ab2J0MNK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:13:10 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57131 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab2J0MNI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:13:08 -0400
-Message-ID: <508BCFCF.70101@suse.cz>
-Date: Sat, 27 Oct 2012 14:13:03 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752957Ab2J0M2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:28:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50072 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752112Ab2J0M2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 08:28:15 -0400
+Message-ID: <508BD344.1090001@ti.com>
+Date: Sat, 27 Oct 2012 17:57:48 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Randy Dunlap <rdunlap@xenotime.net>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>,
-        linux-next@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: mmotm 2012-10-24-17-15 uploaded (uml)
-References: <20121025001628.1DEDE100047@wpzn3.hot.corp.google.com> <50889347.4070801@xenotime.net> <20121025134850.76cdb390565dfe5117bdef7e@canb.auug.org.au>
-In-Reply-To: <20121025134850.76cdb390565dfe5117bdef7e@canb.auug.org.au>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: multipart/mixed;
- boundary="------------060203010301090301010206"
+To: <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <b-cousson@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
+        <rdunlap@xenotime.net>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
+References: <1349675983-23803-1-git-send-email-kishon@ti.com> <1349675983-23803-2-git-send-email-kishon@ti.com> <20121016165043.GS15569@atomide.com> <20121025004806.GK11928@atomide.com> <20121025061722.GB4449@arwen.pp.htv.fi> <20121025174446.GT11928@atomide.com> <20121026064736.GA22206@arwen.pp.htv.fi> <20121026171655.GI11908@atomide.com> <20121026195915.GA29548@arwen.pp.htv.fi>
+In-Reply-To: <20121026195915.GA29548@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060203010301090301010206
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hi,
 
-On 10/25/2012 04:48 AM, Stephen Rothwell wrote:
-> Hi Randy,
-> 
-> On Wed, 24 Oct 2012 18:17:59 -0700 Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Saturday 27 October 2012 01:29 AM, Felipe Balbi wrote:
+> Hi,
+>
+> On Fri, Oct 26, 2012 at 10:16:55AM -0700, Tony Lindgren wrote:
+>> * Felipe Balbi <balbi@ti.com> [121025 23:55]:
+>>> On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
+>>>> * Felipe Balbi <balbi@ti.com> [121024 23:24]:
+>>>>> Hi,
+>>>>>
+>>>>> On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
+>>>>>> * Tony Lindgren <tony@atomide.com> [121016 09:53]:
+>>>>>>> * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+>>>>>>>> ocp2scp was not having pdata support which makes *musb* fail for non-dt
+>>>>>>>> boot in OMAP platform. The pdata will have information about the devices
+>>>>>>>> that is connected to ocp2scp. ocp2scp driver will now make use of this
+>>>>>>>> information to create the devices that is attached to ocp2scp.
+>>>>>>>>
+>>>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>>>
+>>>>>>> This fixes the regression on my panda es for musb port:
+>>>>>>>
+>>>>>>> Acked-by: Tony Lindgren <tony@atomide.com>
+>>>>>>
+>>>>>> Looks like nobody has picked this one up and we need it to
+>>>>>> fix the musb regression on omap, so I'll queue these up.
+>>>>>
+>>>>> I don't seem to have the patches around in any mailbox :-(
+>>>>
+>>>> Bounced them to you. Do you have any better ideas for the
+>>>> -rc cycle to fix the MUSB regression on omap4?
+>>>
+>>> Well, there are two regressions that I know of. One is caused by the
+>>> mode1 DMA changes, which I'll just revert, and the other is the
+>>> missing platform_data support on the new PHY driver which these patches
+>>> are supposed to solve, right ?
 >>
->> uml on x86_64 defconfig:
->>
->> arch/um/drivers/chan_kern.c: In function 'tty_receive_char':
->> arch/um/drivers/chan_kern.c:89:42: error: 'struct tty_struct' has no member named 'raw'
+>> Yes that's it AFAIK.
+>
+> Kishon, any other patches I need to take to get MUSB working on v3.7 ?
 
-Hmm, that code looks doing weird stuff. This patch should fix it. But
-I'm not sure why it was there at all, as n_tty should take care of the
-raw case perfectly right away. I cannot find any clues in the git log as
-to why it was added at all. It's there like since ever.
+These should be good enough to get MUSB working..
 
-Could anybody with working UML (I'm unable to run UML ATM, it crashes
-heavily during the bootup -- after terminals are shown) check whether
-the patch actually works?
-
-thanks,
--- 
-js
-suse labs
-
---------------060203010301090301010206
-Content-Type: text/x-patch;
- name="0001-UM.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-UM.patch"
-
->From 3f60aa996467bf4a1bd4e62f80cb714ea6569fde Mon Sep 17 00:00:00 2001
-From: Jiri Slaby <jslaby@suse.cz>
-Date: Thu, 25 Oct 2012 16:40:59 +0200
-Subject: [PATCH] UM:
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- arch/um/drivers/chan_kern.c | 17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
-
-diff --git a/arch/um/drivers/chan_kern.c b/arch/um/drivers/chan_kern.c
-index c3bba73..e9a0abc 100644
---- a/arch/um/drivers/chan_kern.c
-+++ b/arch/um/drivers/chan_kern.c
-@@ -83,21 +83,8 @@ static const struct chan_ops not_configged_ops = {
- 
- static void tty_receive_char(struct tty_struct *tty, char ch)
- {
--	if (tty == NULL)
--		return;
--
--	if (I_IXON(tty) && !I_IXOFF(tty) && !tty->raw) {
--		if (ch == STOP_CHAR(tty)) {
--			stop_tty(tty);
--			return;
--		}
--		else if (ch == START_CHAR(tty)) {
--			start_tty(tty);
--			return;
--		}
--	}
--
--	tty_insert_flip_char(tty, ch, TTY_NORMAL);
-+	if (tty)
-+		tty_insert_flip_char(tty, ch, TTY_NORMAL);
- }
- 
- static int open_one_chan(struct chan *chan)
--- 
-1.7.12.4
-
-
---------------060203010301090301010206--
+Thanks
+Kishon
