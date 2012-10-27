@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab2J0Mkv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:40:51 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:54525 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755283Ab2J0MeP (ORCPT
+	id S1755466Ab2J0MlJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:41:09 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:64114 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755171Ab2J0MeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:15 -0400
+	Sat, 27 Oct 2012 08:34:11 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 13/32] vfs: have do_sys_truncate retry once on an ESTALE error
-Date: Sat, 27 Oct 2012 08:33:20 -0400
-Message-Id: <1351341219-17837-14-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 11/32] vfs: make do_unlinkat retry on ESTALE errors
+Date: Sat, 27 Oct 2012 08:33:18 -0400
+Message-Id: <1351341219-17837-12-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -24,121 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/open.c | 86 +++++++++++++++++++++++++++++++++------------------------------
- 1 file changed, 45 insertions(+), 41 deletions(-)
+ fs/namei.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 94d5649..2a32d5c 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -66,62 +66,66 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
- 	struct path path;
- 	struct inode *inode;
- 	int error;
-+	unsigned int lookup_flags = LOOKUP_FOLLOW;
+diff --git a/fs/namei.c b/fs/namei.c
+index 7c9bb50..467b9f1 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3446,9 +3446,13 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	struct filename *name;
+ 	struct dentry *dentry;
+ 	struct nameidata nd;
+-	struct inode *inode = NULL;
++	struct inode *inode;
 +	unsigned int try = 0;
++	unsigned int lookup_flags = LOOKUP_PARENT;
  
--	error = -EINVAL;
- 	if (length < 0)	/* sorry, but loff_t says... */
--		goto out;
-+		return -EINVAL;
+-	name = user_path_parent(dfd, pathname, &nd, 0);
++retry:
++	inode = NULL;
++	name = user_path_parent(dfd, pathname, &nd, try);
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
  
--	error = user_path(pathname, &path);
--	if (error)
--		goto out;
--	inode = path.dentry->d_inode;
-+	do {
-+		error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
-+		if (error)
-+			break;
-+		inode = path.dentry->d_inode;
- 
--	/* For directories it's -EISDIR, for other non-regulars - -EINVAL */
--	error = -EISDIR;
--	if (S_ISDIR(inode->i_mode))
--		goto dput_and_out;
-+		/* For dirs, -EISDIR. For other non-regulars, -EINVAL */
-+		error = -EISDIR;
-+		if (S_ISDIR(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = -EINVAL;
--	if (!S_ISREG(inode->i_mode))
--		goto dput_and_out;
-+		error = -EINVAL;
-+		if (!S_ISREG(inode->i_mode))
-+			goto dput_and_out;
- 
--	error = mnt_want_write(path.mnt);
--	if (error)
--		goto dput_and_out;
-+		error = mnt_want_write(path.mnt);
-+		if (error)
-+			goto dput_and_out;
- 
--	error = inode_permission(inode, MAY_WRITE);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = inode_permission(inode, MAY_WRITE);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	error = -EPERM;
--	if (IS_APPEND(inode))
--		goto mnt_drop_write_and_out;
-+		error = -EPERM;
-+		if (IS_APPEND(inode))
-+			goto mnt_drop_write_and_out;
- 
--	error = get_write_access(inode);
--	if (error)
--		goto mnt_drop_write_and_out;
-+		error = get_write_access(inode);
-+		if (error)
-+			goto mnt_drop_write_and_out;
- 
--	/*
--	 * Make sure that there are no leases.  get_write_access() protects
--	 * against the truncate racing with a lease-granting setlease().
--	 */
--	error = break_lease(inode, O_WRONLY);
--	if (error)
--		goto put_write_and_out;
-+		/*
-+		 * Make sure that there are no leases. get_write_access()
-+		 * protects against the truncate racing with a lease-granting
-+		 * setlease().
-+		 */
-+		error = break_lease(inode, O_WRONLY);
-+		if (error)
-+			goto put_write_and_out;
- 
--	error = locks_verify_truncate(inode, NULL, length);
--	if (!error)
--		error = security_path_truncate(&path);
--	if (!error)
--		error = do_truncate(path.dentry, length, 0, NULL);
-+		error = locks_verify_truncate(inode, NULL, length);
-+		if (!error)
-+			error = security_path_truncate(&path);
-+		if (!error)
-+			error = do_truncate(path.dentry, length, 0, NULL);
- 
- put_write_and_out:
--	put_write_access(inode);
-+		put_write_access(inode);
- mnt_drop_write_and_out:
--	mnt_drop_write(path.mnt);
-+		mnt_drop_write(path.mnt);
- dput_and_out:
--	path_put(&path);
--out:
-+		path_put(&path);
+@@ -3486,6 +3490,10 @@ exit2:
+ exit1:
+ 	path_put(&nd.path);
+ 	putname(name);
++	if (retry_estale(error, try++)) {
 +		lookup_flags |= LOOKUP_REVAL;
-+	} while (retry_estale(error, try++));
++		goto retry;
++	}
  	return error;
- }
  
+ slashes:
 -- 
 1.7.11.7
 
