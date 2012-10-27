@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759448Ab2J0S0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 14:26:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58624 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758499Ab2J0S0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 14:26:42 -0400
-Message-ID: <1351362392.4834.17.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 60/85] xtensa: add missing system calls to the syscall table
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Chris Zankel <chris@zankel.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 27 Oct 2012 19:26:32 +0100
-In-Reply-To: <20121026000037.158689095@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-	 <20121026000037.158689095@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-hQcy/AqtblwcMx3rTtPs"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1759456Ab2J0Sah (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 14:30:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22437 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758499Ab2J0Sag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 14:30:36 -0400
+Message-ID: <508C283C.2090807@redhat.com>
+Date: Sat, 27 Oct 2012 13:30:20 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Nix <nix@esperi.org.uk>
+CC: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com> <87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org> <87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org> <87haphx76u.fsf@spindle.srvr.nix> <20121027002258.GB31030@thunk.org> <873910xevu.fsf@spindle.srvr.nix>
+In-Reply-To: <873910xevu.fsf@spindle.srvr.nix>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/27/12 7:45 AM, Nix wrote:
+> [nfs people purged from Cc]
+> 
+> On 27 Oct 2012, Theodore Ts'o verbalised:
+> 
+>> Huh?  It's not turned on by default.  If you mount with no mount
+>> options, journal checksums are *not* turned on.
+> 
+> ?! it's turned on for me, and though I use weird mount options I don't
+> use that one:
 
---=-hQcy/AqtblwcMx3rTtPs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+journal_async_commit implies journal_checksum:
 
-On Thu, 2012-10-25 at 17:06 -0700, Greg Kroah-Hartman wrote:
-> 3.6-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Chris Zankel <chris@zankel.net>
->=20
-> commit 7216cabfff5149670445cd65d415ed5db21314b4 upstream.
->=20
-> Add the following system calls to the syscall table:
-[...]
->  #define __NR_available287			287
-> -__SYSCALL(287, sys_faccessat, 0)
-> +__SYSCALL(287, sys_ni_syscall, 0)
-[...]
+        {Opt_journal_async_commit, (EXT4_MOUNT_JOURNAL_ASYNC_COMMIT |
+                                    EXT4_MOUNT_JOURNAL_CHECKSUM), MOPT_SET},
 
-Why was this one un-plumbed rather than properly numbered (#define
-__NR_faccessat)?
+journal_checksum seems to have broken, at least for me, between 3.3 & 3.4, I think I've narrowed down the commit but not sure yet what the flaw is, will investigate & report back later.  Busy Saturday.
 
-Ben.
+So anyway, turning on journal_async_commit (notionally unsafe) enables journal_checksum (apparently broken).
 
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
+-Eric
 
---=-hQcy/AqtblwcMx3rTtPs
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> /dev/main/var   /var        ext4        defaults,nobarrier,usrquota,grpquota,nosuid,nodev,relatime,journal_async_commit,commit=30,user_xattr,acl 1  2
+> Default mount options:    (none)
+> /dev/mapper/main-var /var ext4 rw,nosuid,nodev,relatime,journal_checksum,journal_async_commit,nobarrier,quota,usrquota,grpquota,commit=30,stripe=16,data=ordered,usrquota,grpquota 0 0
+> 
+> ...
+> 
+> Ah! it's turned on by journal_async_commit. OK, that alone argues
+> against use of journal_async_commit, tested or not, and I'd not have
+> turned it on if I'd noticed that.
+> 
+> (So, the combinations I'll be trying for effect on this bug are:
+> 
+>  journal_async_commit (as now)
+>  journal_checksum
+>  none
+> 
+> Technically to investigate all possibilities we should try
+> journal_async_commit,no_journal_checksum, but this seems so unlikely to
+> have ever been tested by anyone that it's not worth looking into...)
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUIwnWOe/yOyVhhEJAQrbCxAAxYSxzq1f4BGNQSLmRjLvrQSX+saE8C+2
-v3BKwVWrpEj3dQutZykVfjwDsoLeGfhcz3gpUMd6w9z2zeYOzx1wCG/4/6fbwX3A
-tB/GIxFYhlfRpYKwSLyFX/iMXuW80YncezWE7b1M8pIh/mXpG1u9eeHR6APBhX7O
-KLAyuNNt8W1V3tPqbapk/X18RXZAiPyk271N8Iw5x0xjObfvmRkNcsdB1vHa3GAL
-6OpW6NwjV/EOfomw5dRk+jcDRHs572zfBq52BsoFWG056aIMN47HlYieXj7nwTDn
-m8DJLQyVM4wXZk0I6bXrgO+nmfnw97z65BMa/ribR1dxELET8jubLGmnmlUkP5ZK
-VIfpXuJD6qwvaX8b6TohLEksnmVMq0ueZeopwEcf3ZdDpzOTXd3331fRAE15EvZj
-pWqTlqppUxZrgRdgwpSgm+mtCvqmeiaQbxIh7yCc/np46gwOLrG+QvJ2UK/EHXOr
-dr6kpNrjPFJdTRe7viTS4uV7XVuiUiSKT8HjnoKSOC5yz0O31sVr4epvVbYpRk0F
-KQScN69vlrLp5FKWiI9Lypi5e4LDUADHD0xhRARCbwAnKG2uETblGE6CwQXjT4Vb
-LjyPeVT2gNARV0CsLcQihxulNQZyhZ6X9/7gZvcBaHYmxCiGh9fVRALH7nWvKYMC
-0/u+1YaMgj0=
-=UaqA
------END PGP SIGNATURE-----
-
---=-hQcy/AqtblwcMx3rTtPs--
