@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab2J0Mev (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 08:34:51 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:33559 "EHLO
+	id S932098Ab2J0Mf1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 08:35:27 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:64624 "EHLO
 	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab2J0Meo (ORCPT
+	with ESMTP id S1756808Ab2J0Mem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 08:34:44 -0400
+	Sat, 27 Oct 2012 08:34:42 -0400
 From: Jeff Layton <jlayton@redhat.com>
 To: viro@zeniv.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, michael.brantley@deshaw.com,
         hch@infradead.org, miklos@szeredi.hu, pstaubach@exagrid.com
-Subject: [PATCH v8 32/32] vfs: make number of ESTALE retries tunable
-Date: Sat, 27 Oct 2012 08:33:39 -0400
-Message-Id: <1351341219-17837-33-git-send-email-jlayton@redhat.com>
+Subject: [PATCH v8 31/32] vfs: convert filename_lookup to use retry_estale helper
+Date: Sat, 27 Oct 2012 08:33:38 -0400
+Message-Id: <1351341219-17837-32-git-send-email-jlayton@redhat.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
 References: <1351341219-17837-1-git-send-email-jlayton@redhat.com>
@@ -24,63 +24,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- fs/namei.c         | 2 ++
- include/linux/fs.h | 4 +++-
- kernel/sysctl.c    | 7 +++++++
- 3 files changed, 12 insertions(+), 1 deletion(-)
+ fs/namei.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 6886630..1ae2c06 100644
+index c6173cc..6886630 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -110,6 +110,8 @@
-  * any extra contention...
-  */
- 
-+unsigned int estale_retries __read_mostly = 1;
-+
- /* In order to reduce some races, while at the same time doing additional
-  * checking and hopefully speeding things up, we copy filenames to the
-  * kernel data space before using them..
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 01ff902..119a0f0 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2023,6 +2023,8 @@ extern int finish_open(struct file *file, struct dentry *dentry,
- 			int *opened);
- extern int finish_no_open(struct file *file, struct dentry *dentry);
- 
-+extern unsigned int estale_retries;
-+
- /**
-  * retry_estale - determine whether the caller should retry an operation
-  *
-@@ -2041,7 +2043,7 @@ retry_estale(const long error, const unsigned int try)
- 	if (likely(error != -ESTALE))
- 		return false;
- 
--	return !try;
-+	return (try <= estale_retries);
- }
- 
- /* fs/ioctl.c */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 26f65ea..24735db 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1545,6 +1545,13 @@ static struct ctl_table fs_table[] = {
- 		.proc_handler	= &pipe_proc_fn,
- 		.extra1		= &pipe_min_size,
- 	},
-+	{
-+		.procname	= "estale_retries",
-+		.data		= &estale_retries,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- 	{ }
- };
+@@ -2020,10 +2020,11 @@ static int path_lookupat(int dfd, const char *name,
+ static int filename_lookup(int dfd, struct filename *name,
+ 				unsigned int flags, struct nameidata *nd)
+ {
++	unsigned int try = 0;
+ 	int retval = path_lookupat(dfd, name->name, flags | LOOKUP_RCU, nd);
+ 	if (unlikely(retval == -ECHILD))
+ 		retval = path_lookupat(dfd, name->name, flags, nd);
+-	if (unlikely(retval == -ESTALE))
++	while (retry_estale(retval, try++))
+ 		retval = path_lookupat(dfd, name->name,
+ 						flags | LOOKUP_REVAL, nd);
  
 -- 
 1.7.11.7
