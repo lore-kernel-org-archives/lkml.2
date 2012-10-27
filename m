@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab2J0VS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 17:18:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57699 "EHLO mx1.redhat.com"
+	id S1759459Ab2J0VTo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 17:19:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab2J0VSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 17:18:53 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 0/5] perf dso: Separate dso symbols to separate object
-Date: Sat, 27 Oct 2012 23:18:27 +0200
-Message-Id: <1351372712-21104-1-git-send-email-jolsa@redhat.com>
+	id S1759168Ab2J0VTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 17:19:42 -0400
+Message-ID: <508C4FE5.1030102@redhat.com>
+Date: Sat, 27 Oct 2012 16:19:33 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Nix <nix@esperi.org.uk>
+CC: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508AF3FA.4020506@redhat.com> <87wqydx957.fsf@spindle.srvr.nix> <20121026205618.GC8614@thunk.org> <87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org> <87haphx76u.fsf@spindle.srvr.nix> <20121027002258.GB31030@thunk.org> <873910xevu.fsf@spindle.srvr.nix> <20121027175534.GA7783@thunk.org> <87fw4zzra3.fsf@spindle.srvr.nix>
+In-Reply-To: <87fw4zzra3.fsf@spindle.srvr.nix>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-separating dso related stuff into dso object plus some other symbol
-object cleanup. It's just a code moving, no actual change was done.
+On 10/27/12 1:47 PM, Nix wrote:
+> On 27 Oct 2012, Theodore Ts'o said:
+> 
+>> On Sat, Oct 27, 2012 at 01:45:25PM +0100, Nix wrote:
+>>> Ah! it's turned on by journal_async_commit. OK, that alone argues
+>>> against use of journal_async_commit, tested or not, and I'd not have
+>>> turned it on if I'd noticed that.
+>>>
+>>> (So, the combinations I'll be trying for effect on this bug are:
+>>>
+>>>  journal_async_commit (as now)
+>>>  journal_checksum
+>>>  none
+>>
+>> Can you also check and see whether the presence or absence of
+>> "nobarrier" makes a difference?
+> 
+> Done. (Also checked the effect of your patches posted earlier this week:
+> no effect, I'm afraid, certainly not under the fails-even-on-3.6.1 test
+> I was carrying out, umount -l'ing /var as the very last thing I did
+> before /sbin/reboot -f.)
+> 
+> nobarrier makes a difference that I, at least, did not expect:
+> 
+> [no options]                    No corruption
+> 
+> nobarrier                       No corruption
+> 
+>           journal_checksum      Corruption
+>                                 Corrupted transaction, journal aborted
+>                                 
+> nobarrier,journal_checksum      Corruption
+>                                 Corrupted transaction, journal aborted
+> 
+>           journal_async_commit  Corruption
+>                                 Corrupted transaction, journal aborted
+> 
+> nobarrier,journal_async_commit  Corruption
+>                                 No corrupted transaction or aborted journal
 
-Attached patches:
-  1/5 perf tool: Move build_id__sprintf into build-id object
-  2/5 perf tool: Move BUILD_ID_SIZE into build-id object
-  3/5 perf tool: Move hex2u64 into util object
-  4/5 perf tool: Move strxfrchar into string object
-  5/5 perf tool: Move dso_* related functions into dso object
+That's what we needed.  Woulda been great a few days ago ;)
 
-Also available in:
-git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/linux.git
-perf/dso1
+In my testing journal_checksum is broken, and my bisection seems to
+implicate
 
-thanks,
-jirka
+commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31
+Author: Theodore Ts'o <tytso@mit.edu>
+Date:   Mon Feb 6 20:12:03 2012 -0500
 
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                |   2 +
- tools/perf/builtin-buildid-cache.c |   1 +
- tools/perf/util/annotate.c         |   1 +
- tools/perf/util/build-id.c         |  15 ++
- tools/perf/util/build-id.h         |   7 +-
- tools/perf/util/dso.c              | 594 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/dso.h              | 148 +++++++++++++++
- tools/perf/util/event.h            |   3 +-
- tools/perf/util/header.c           |   1 +
- tools/perf/util/map.c              |   1 +
- tools/perf/util/string.c           |  18 ++
- tools/perf/util/symbol.c           | 657 +------------------------------------------------------------------
- tools/perf/util/symbol.h           | 141 +--------------
- tools/perf/util/util.c             |  33 ++++
- tools/perf/util/util.h             |   2 +
- 15 files changed, 831 insertions(+), 793 deletions(-)
+    ext4: fold ext4_claim_inode into ext4_new_inode
+    
+as the culprit.  I haven't had time to look into why, yet.
+
+-Eric
+
+> I didn't expect the last case at all, and it adequately explains why you
+> are mostly seeing corrupted journal messages in your tests but I was
+> not. It also explains why when I saw this for the first time I was able
+> to mount the resulting corrupted filesystem read-write and corrupt it
+> further before I noticed that anything was wrong.
+> 
+> It is also clear that journal_checksum and all that relies on it is
+> worse than useless right now, as Eric reported while I was testing this.
+> It should probably be marked CONFIG_BROKEN in future 3.[346].* stable
+> kernels, if CONFIG_BROKEN existed anymore, which it doesn't.
+> 
+> It's a shame journal_async_commit depends on a broken feature: it might
+> be notionally unsafe but on some of my systems (without nobarrier or
+> flashy caching controllers) it was associated with a noticeable speedup
+> of metadata-heavy workloads -- though that was way back in 2009...
+> however, "safety first" definitely applies in this case.
+> 
+
