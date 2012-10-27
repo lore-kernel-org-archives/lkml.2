@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353Ab2J0RFL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 13:05:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56015 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab2J0RFE (ORCPT
+	id S1759344Ab2J0RHN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 13:07:13 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:59824 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab2J0RHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 13:05:04 -0400
+	Sat, 27 Oct 2012 13:07:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net>
-	<20121025041620.GH2616@ZenIV.linux.org.uk>
-	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
-	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-	<20121025120952.GI2616@ZenIV.linux.org.uk>
-	<20121025123843.GJ2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-	<20121026183601.GR2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
-Date: Sat, 27 Oct 2012 10:05:03 -0700
-X-Google-Sender-Auth: 1zSC-WndOKqVO9xaBso5ylSeG0k
-Message-ID: <CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-From: Kees Cook <keescook@chromium.org>
-To: P J P <ppandit@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+In-Reply-To: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
+References: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
+From: Mark Einon <mark.einon@gmail.com>
+Date: Sat, 27 Oct 2012 18:06:54 +0100
+Message-ID: <CANK3SE2BrcMAy1ikgHE7hX2k38qHfP6GqYY5XNJUMH3Zz3hLKQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: csr: Fix typo in csr/netdev.c
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 3:47 AM, P J P <ppandit@redhat.com> wrote:
-> +-- On Fri, 26 Oct 2012, Al Viro wrote --+
-> | > not. Module alias could dodge this though, I guess.
-> | "Could"?  Can you show a single module that would have name matching
-> | binfmt-[0-9a-f]*?  In other words, are they ever loaded _not_ via an
-> | alias?
+On 27 October 2012 15:53, Masanari Iida <standby24x7@gmail.com> wrote:
+> Correct spelling typo in trace message.
 >
->   I understand. I was wondering if alias information is accessible in the
-> kernel via any routine, alike find_module().
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/staging/csr/netdev.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 >
-> Just to get perspective about how many times request_module() would be called
-> with the latest patch, in general installations(or distributions), how
-> prevalent(in use) are binfmt-xxxx loadable modules?
+> diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
+> index 0e34020..878c3df 100644
+> --- a/drivers/staging/csr/netdev.c
+> +++ b/drivers/staging/csr/netdev.c
+> @@ -100,7 +100,7 @@
+>  #endif /* LINUX_VERSION_CODE */
+>
+>
+> -/* Wext handler is suported only if CSR_SUPPORT_WEXT is defined */
+> +/* Wext handler is supported only if CSR_SUPPORT_WEXT is defined */
+>  #ifdef CSR_SUPPORT_WEXT
+>  extern struct iw_handler_def unifi_iw_handler_def;
+>  #endif /* CSR_SUPPORT_WEXT */
+> @@ -146,7 +146,7 @@ typedef int (*tx_signal_handler)(unifi_priv_t *priv, struct sk_buff *skb, const
+>  /*
+>   * The driver uses the qdisc interface to buffer and control all
+>   * outgoing traffic. We create a root qdisc, register our qdisc operations
+> - * and later we create two subsiduary pfifo queues for the uncontrolled
+> + * and later we create two subsidiary pfifo queues for the uncontrolled
+>   * and controlled ports.
+>   *
+>   * The network stack delivers all outgoing packets in our enqueue handler.
+> @@ -1748,7 +1748,7 @@ send_ma_pkt_request(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
+>          return -1;
+>      }
+>
+> -    /* RA adrress must contain the immediate destination MAC address that is similiar to
+> +    /* RA adrress must contain the immediate destination MAC address that is similar to
 
-Al showed a list of them earlier in the thread. I don't have any on
-the various distros I checked.
+Hi Masanari,
 
-The problem I see here is that we only want to do module loading in
-the "no match" case. But that means that either we need to restart
-with the original bprm, or we need to keep bprm changes off the stack.
-Leading with a module load is going to wreck performance.
+You've also missed the fact that 'address' is spelt incorrectly in
+'RSA adrress' here.
 
--Kees
+Cheers,
 
--- 
-Kees Cook
-Chrome OS Security
+Mark
