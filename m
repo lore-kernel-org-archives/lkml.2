@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2J0Kri (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 06:47:38 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46251 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab2J0Krg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 06:47:36 -0400
+	id S1752483Ab2J0Krp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 06:47:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45135 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752072Ab2J0Krl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 06:47:41 -0400
+Date: Sat, 27 Oct 2012 16:17:09 +0530 (IST)
+From: P J P <ppandit@redhat.com>
+X-X-Sender: pjp@javelin.pnq.redhat.com
+To: Al Viro <viro@ZenIV.linux.org.uk>
+cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
+In-Reply-To: <20121026183601.GR2616@ZenIV.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
+References: <20121024232032.GA31129@www.outflux.net> <20121025041620.GH2616@ZenIV.linux.org.uk> <CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com> <alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz> <20121025120952.GI2616@ZenIV.linux.org.uk>
+ <20121025123843.GJ2616@ZenIV.linux.org.uk> <alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz> <20121026183601.GR2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20121026192517.GC24687@redhat.com>
-References: <1351226868-30063-1-git-send-email-robin.k.dong@gmail.com>
-	<1351226868-30063-2-git-send-email-robin.k.dong@gmail.com>
-	<20121026192517.GC24687@redhat.com>
-Date: Sat, 27 Oct 2012 18:47:36 +0800
-Message-ID: <CANsebLGyP10Ai9Sta2xqyeTj0xR6dog4uU79a_bQMEb8kXuLrg@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v4] block/throttle: Add IO submitted information in blkio.throttle
-From: Robin Dong <robin.k.dong@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Robin Dong <sanbai@taobao.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Tao Ma <boyu.mt@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/10/27 Vivek Goyal <vgoyal@redhat.com>:
-> On Fri, Oct 26, 2012 at 12:47:48PM +0800, Robin Dong wrote:
->
-> [..]
->> @@ -1084,6 +1114,16 @@ static struct cftype throtl_files[] = {
->>               .private = offsetof(struct tg_stats_cpu, serviced),
->>               .read_seq_string = tg_print_cpu_rwstat,
->>       },
->> +     {
->> +             .name = "throttle.io_submit_bytes",
->
-> Do we really need io_submit_bytes stats? Your need seems to be able to
-> figure out if there are pending IOs in the group and if you need to
-> increase the bandwidth. For that, isn't number of bios enough?
++-- On Fri, 26 Oct 2012, Al Viro wrote --+
+| > not. Module alias could dodge this though, I guess.
+| "Could"?  Can you show a single module that would have name matching
+| binfmt-[0-9a-f]*?  In other words, are they ever loaded _not_ via an
+| alias?
 
- I just want to be more consistent to "io_service_bytes" and "io_serviced" pair
+  I understand. I was wondering if alias information is accessible in the 
+kernel via any routine, alike find_module().
 
->
-> Also even if we retain bytes, let us change it to "io_submitted_bytes".
+Just to get perspective about how many times request_module() would be called 
+with the latest patch, in general installations(or distributions), how 
+prevalent(in use) are binfmt-xxxx loadable modules?
 
-Since "io_service_bytes" is "service", I use "io_submit_bytes"....
-Never mind, "io_submitted_bytes" is much better.
-
->
-> Thanks
-> Vivek
-
-
-
--- 
+Thank you.
 --
-Best Regard
-Robin Dong
+Prasad J Pandit / Red Hat Security Response Team
+DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
