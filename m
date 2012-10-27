@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759369Ab2J0RMK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 13:12:10 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:53596 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2J0RMI convert rfc822-to-8bit (ORCPT
+	id S1759376Ab2J0RRn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 13:17:43 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:57066 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759140Ab2J0RRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 13:12:08 -0400
-MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <1351265502.1619.13.camel@leonhard>
-References: <1351261913-28250-1-git-send-email-acme@infradead.org>
-	<20121026145451.GA14379@gmail.com>
-	<508AA709.7010202@gmail.com>
-	<1351265502.1619.13.camel@leonhard>
-Date: Sat, 27 Oct 2012 19:12:06 +0200
-Message-ID: <CAMsRxfLsMdrSSd4GQBuDDJGC7jc0=gJFvmMaFKzAafu53A6KBA@mail.gmail.com>
-Subject: Re: [GIT PULL 0/9] perf/core improvements and fixes
-From: stephane eranian <eranian@googlemail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Andrew Vagin <avagin@openvz.org>,
-        Borislav Petkov <bp@amd64.org>, David Howells <dhowells@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 27 Oct 2012 13:17:42 -0400
+Date: Sat, 27 Oct 2012 19:17:23 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: mvebu: support for the Globalscale Mirabox MBX0001
+ board
+Message-ID: <20121027191723.23a691a2@skate>
+In-Reply-To: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1351354965-23875-1-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 5:31 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> 2012-10-26 (금), 09:06 -0600, David Ahern:
->> On 10/26/12 8:54 AM, Ingo Molnar wrote:
->> >> perf/core improvements:
->> >>
->> >> . perf inject changes to allow showing where a task sleeps, from Andrew Vagin.
->> >>
->> >> . Makefile improvements from Namhyung Kim.
->> >
->> > These are really useful: there used to be a couple of seconds of
->> > wait time at the beginning of every perf build - these are now
->> > nicely explained with the various CHK entries.
->
-> Kudos to Jiri who did the real work!
->
->>
->> PERF-VERSION-GEN and specifically the git commands are the cause of more
->> delay than the config checks, especially when doing the build in a VM
->> with the kernel source on an NFS mount.
->
-> And I see a strange delay when compiling builtin-sched.o.  After
-> building perf tools, I deleted builtin-{sched,test,script}.o to rebuild
-> the only since they are largest ones.
->
-Yes, I see that delay on copiling builtin-sched.c on my IVB system.
-Don't know why it takes a significant number of seconds to compile
-this file. It did not use to be like that a few revisions back. It takes
-about 8 seconds on my OC'd IVB (> 4GHz).  I don't see much code
-in that file.
 
->   namhyung@leonhard:perf$ ls -lS *.c | head -3
->   -rw-r--r-- 1 namhyung namhyung 45522 2012-10-27 00:20 builtin-sched.c
->   -rw-r--r-- 1 namhyung namhyung 36372 2012-10-27 00:20 builtin-test.c
->   -rw-r--r-- 1 namhyung namhyung 35555 2012-10-27 00:20 builtin-script.c
->
->   namhyung@leonhard:perf$ rm builtin-{sched,test,script}.o
->
->
-> And then building each file with time command shows this:
->
->   namhyung@leonhard:perf$ time make builtin-script.o &> /dev/null
->
->   real  0m4.577s
->   user  0m2.755s
->   sys   0m1.655s
->
->   namhyung@leonhard:perf$ time make builtin-test.o &> /dev/null
->
->   real  0m4.486s
->   user  0m2.707s
->   sys   0m1.658s
->
->   namhyung@leonhard:perf$ time make builtin-sched.o &> /dev/null
->
->   real  0m16.936s
->   user  0m15.157s
->   sys   0m1.635s
->
-> You can see it easily when building perf without -j option. But I have
-> no idea why it takes so long..
->
-> Thanks,
-> Namhyung
->
->
+On Sat, 27 Oct 2012 18:22:45 +0200, Gregory CLEMENT wrote:
+> This platform, available from Globalscale has an Armada 370. For now,
+> only the serial port is supported. Support for network, USB and other
+> peripherals will be added as drivers for them become available for
+> Armada 370 in mainline.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/Makefile          |    3 ++-
+>  arch/arm/boot/dts/mbx001.dts        |   37 +++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mvebu/armada-370-xp.c |    1 +
+>  3 files changed, 40 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/mbx001.dts
+
+With the rename mbx001.dts -> mbx0001.dts, this works fine for me on
+the hardware platform, so:
+
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+
+Thomas
+-- 
+Thomas Petazzoni, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
