@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab2J0Pub (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 11:50:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34043 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759186Ab2J0PuI (ORCPT
+	id S1759166Ab2J0PuG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 11:50:06 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45626 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab2J0PuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 11:50:08 -0400
+	Sat, 27 Oct 2012 11:50:03 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [PATCH] async_tx: use memchr_inv
-Date: Sun, 28 Oct 2012 00:49:33 +0900
-Message-Id: <1351352973-3719-4-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Subject: [PATCH] dma: ste_dma40: use for_each_set_bit
+Date: Sun, 28 Oct 2012 00:49:30 +0900
+Message-Id: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
-References: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memchr_inv() to check the specified page is filled with zero.
+Replace open-coded loop with for_each_set_bit().
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
 ---
- crypto/async_tx/async_xor.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/dma/ste_dma40.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
-diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c
-index 154cc84..8ade0a0 100644
---- a/crypto/async_tx/async_xor.c
-+++ b/crypto/async_tx/async_xor.c
-@@ -230,9 +230,7 @@ EXPORT_SYMBOL_GPL(async_xor);
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index ae55091..08f5bfe 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1487,7 +1487,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
+ 	u32 regs[ARRAY_SIZE(il)];
+ 	u32 idx;
+ 	u32 row;
+-	long chan = -1;
++	long chan;
+ 	struct d40_chan *d40c;
+ 	unsigned long flags;
+ 	struct d40_base *base = data;
+@@ -1498,15 +1498,8 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
+ 	for (i = 0; i < ARRAY_SIZE(il); i++)
+ 		regs[i] = readl(base->virtbase + il[i].src);
  
- static int page_is_zero(struct page *p, unsigned int offset, size_t len)
- {
--	char *a = page_address(p) + offset;
--	return ((*(u32 *) a) == 0 &&
--		memcmp(a, a + 4, len - 4) == 0);
-+	return !memchr_inv(page_address(p) + offset, 0, len);
- }
+-	for (;;) {
+-
+-		chan = find_next_bit((unsigned long *)regs,
+-				     BITS_PER_LONG * ARRAY_SIZE(il), chan + 1);
+-
+-		/* No more set bits found? */
+-		if (chan == BITS_PER_LONG * ARRAY_SIZE(il))
+-			break;
+-
++	for_each_set_bit(chan, (unsigned long *)regs,
++			BITS_PER_LONG * ARRAY_SIZE(il)) {
+ 		row = chan / BITS_PER_LONG;
+ 		idx = chan & (BITS_PER_LONG - 1);
  
- static inline struct dma_chan *
 -- 
 1.7.11.7
 
