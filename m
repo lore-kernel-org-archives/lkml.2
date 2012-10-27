@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab2J0IAv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 04:00:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:41703 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751082Ab2J0IAu (ORCPT
+	id S1754862Ab2J0IFz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 04:05:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:32831 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab2J0IFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 04:00:50 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/VtM8tT4jVtO4TjN/5LFARNJFuIv7BstSc754ET5
-	Hsg9TjdGuduE0R
-Message-ID: <508B94AE.9050505@gmx.de>
-Date: Sat, 27 Oct 2012 10:00:46 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121022 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: RFC: kconfig option CONFIG_LBDAF should be auto-selected if EXT4
- is chosen
-References: <508A967F.4080802@gmx.de>
-In-Reply-To: <508A967F.4080802@gmx.de>
-X-Enigmail-Version: 1.5a1pre
-X-Forwarded-Message-Id: <508A967F.4080802@gmx.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Sat, 27 Oct 2012 04:05:48 -0400
+From: Yan Hong <clouds.yan@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Alessandro Rubini <rubini@gnudd.com>
+Subject: [PATCH 1/5] debugfs: pass NULL as the last parameter of debugfs_print_regs32()
+Date: Sat, 27 Oct 2012 16:05:25 +0800
+Message-Id: <1351325129-10097-1-git-send-email-clouds.yan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If 'prefix' is not used, pass NULL instead of empty string as the
+last parameter of debugfs_print_regs32().
 
-otherwise booting an EXT4 image won't work b/c the root fs can't be
-mounted read-write - and as a side effect no syslog messages might
-point the user to this issue (at least in my setup) ...
+Cc: Alessandro Rubini <rubini@gnudd.com>
 
-:-/
+Signed-off-by: Yan Hong <clouds.yan@gmail.com>
+---
 
+This function is only used (twice) by the author of it, and the
+'prefix' feature is never used. But it's a well-documented debugfs
+API. It's added one year ago and appeared in many documents. I still
+prefer to let this API stay unchanged and treat the empty string as
+typo.
+
+ drivers/usb/dwc3/debugfs.c |    2 +-
+ fs/debugfs/file.c          |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/dwc3/debugfs.c b/drivers/usb/dwc3/debugfs.c
+index d4a30f1..6557272 100644
+--- a/drivers/usb/dwc3/debugfs.c
++++ b/drivers/usb/dwc3/debugfs.c
+@@ -382,7 +382,7 @@ static int dwc3_regdump_show(struct seq_file *s, void *unused)
+ 
+ 	seq_printf(s, "DesignWare USB3 Core Register Dump\n");
+ 	debugfs_print_regs32(s, dwc3_regs, ARRAY_SIZE(dwc3_regs),
+-			     dwc->regs, "");
++			     dwc->regs, NULL);
+ 	return 0;
+ }
+ 
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..6bdd450 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -668,7 +668,8 @@ static int debugfs_show_regset32(struct seq_file *s, void *data)
+ {
+ 	struct debugfs_regset32 *regset = s->private;
+ 
+-	debugfs_print_regs32(s, regset->regs, regset->nregs, regset->base, "");
++	debugfs_print_regs32(s, regset->regs, regset->nregs,
++			regset->base, NULL);
+ 	return 0;
+ }
+ 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
+1.7.9.5
 
