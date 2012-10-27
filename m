@@ -1,102 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab2J0RS2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 13:18:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58189 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759140Ab2J0RS0 (ORCPT
+	id S1759396Ab2J0R3f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 13:29:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38176 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758740Ab2J0R3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 13:18:26 -0400
-Message-ID: <1351358293.4834.14.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 26/85] usb: host: xhci: New system added for Compliance Mode
- Patch on SN65LVPE502CP
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Alexis R. Cortes" <alexis.cortes@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 27 Oct 2012 18:18:13 +0100
-In-Reply-To: <20121026000033.747087636@linuxfoundation.org>
-References: <20121026000031.107227138@linuxfoundation.org>
-	 <20121026000033.747087636@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-IsfGMUsCSEs2kcQFj47V"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 27 Oct 2012 13:29:34 -0400
+Date: Sat, 27 Oct 2012 19:29:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>, stable@vger.kernel.org,
+        Carsten Emde <C.Emde@osadl.org>
+Subject: [PATCH] cpufreq: powernow-k8: Remove bogus smp_processor_id()
+ usage
+Message-ID: <alpine.LFD.2.02.1210271927170.2756@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+commit 6889125b (cpufreq/powernow-k8: workqueue user shouldn't migrate
+the kworker to another CPU) has a broken optimization of calling
+powernowk8_target_fn() directly from powernowk8_target() which
+results in the following splat:
 
---=-IsfGMUsCSEs2kcQFj47V
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+[   11.789468] BUG: using smp_processor_id() in preemptible [00000000] code:
+    	       modprobe/505
+[   11.809594] caller is powernowk8_target+0x20/0x48 [powernow_k8]
+[   12.001748] Pid: 505, comm: modprobe Not tainted 3.6.3 #3
+[   12.016836] Call Trace:
+[   12.025971]  [<ffffffff81241554>] debug_smp_processor_id+0xcc/0xe8
+[   12.042518]  [<ffffffffa05bb07f>] powernowk8_target+0x20/0x48 [powernow_k8]
+[   12.060733]  [<ffffffff813b3c23>] __cpufreq_driver_target+0x82/0x8a
+[   12.077550]  [<ffffffff813b64a9>] cpufreq_governor_userspace+0x265/0x2c0
+[   12.120378]  [<ffffffff81063c5c>] ? __blocking_notifier_call_chain+0x56/0x60
+[   12.138862]  [<ffffffff813b3d8b>] __cpufreq_governor+0x8c/0xc9
+[   12.155193]  [<ffffffff813b4031>] __cpufreq_set_policy+0x212/0x21e
+[   12.172148]  [<ffffffff813b501e>] cpufreq_add_dev_interface+0x2a2/0x2bc
+[   12.189855]  [<ffffffff813b602b>] ? cpufreq_update_policy+0x124/0x124
+[   12.207096]  [<ffffffff813b54dc>] cpufreq_add_dev+0x4a4/0x4b4
+[   12.223161]  [<ffffffff812f8136>] subsys_interface_register+0x95/0xc5
+[   12.240386]  [<ffffffff8149aaf9>] ? _raw_spin_lock_irqsave+0x24/0x46
+[   12.257477]  [<ffffffff813b5928>] cpufreq_register_driver+0xd2/0x1bf
+[   12.274545]  [<ffffffffa05bc087>] powernowk8_init+0x193/0x1dc [powernow_k8]
+[   12.292794]  [<ffffffffa05bbef4>] ? powernowk8_cpu_init+0xc53/0xc53 [powernow_k8]
+[   12.312004]  [<ffffffff81002195>] do_one_initcall+0x7f/0x136
+[   12.327594]  [<ffffffff8108f48f>] sys_init_module+0x17b0/0x197e
+[   12.343718]  [<ffffffff81249494>] ? ddebug_proc_write+0xde/0xde
+[   12.359767]  [<ffffffff8149f639>] system_call_fastpath+0x16/0x1b
 
-On Thu, 2012-10-25 at 17:05 -0700, Greg Kroah-Hartman wrote:
-> 3.6-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: "Alexis R. Cortes" <alexis.cortes@ti.com>
->=20
-> commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
->=20
-> This minor change adds a new system to which the "Fix Compliance Mode
-> on SN65LVPE502CP Hardware" patch has to be applied also.
->=20
-> System added:
-> Vendor: Hewlett-Packard. System Model: Z1
-[...]
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -479,7 +479,8 @@ static bool compliance_mode_recovery_tim
-> =20
->  	if (strstr(dmi_product_name, "Z420") ||
->  			strstr(dmi_product_name, "Z620") ||
-> -			strstr(dmi_product_name, "Z820"))
-> +			strstr(dmi_product_name, "Z820") ||
-> +			strstr(dmi_product_name, "Z1"))
+This is fully preemptible non cpu bound context though the comment in the
+code says:
 
-This will also match any future models with extra digits after the '1'.
-It might be worth using a slightly stricter match.
+	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
+	 * that we're bound to the current CPU and pol->cpu stays online.
 
-Ben.
+The core only guarantees that pol->cpu stays online, but it has no way
+to bind the thread and this needs to be fully preemptible context as
+powernowk8_target_fn() calls functions which might sleep.
 
->  		return true;
-> =20
->  	return false;
+So the correct solution is to always go through work_on_cpu().
+
+Reported-and-tested-by: Carsten Emde <C.Emde@osadl.org>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/cpufreq/powernow-k8.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/drivers/cpufreq/powernow-k8.c
+===================================================================
+--- linux-2.6.orig/drivers/cpufreq/powernow-k8.c
++++ linux-2.6/drivers/cpufreq/powernow-k8.c
+@@ -1053,13 +1053,12 @@ static int powernowk8_target(struct cpuf
+ 					     .relation = relation };
+ 
+ 	/*
+-	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
+-	 * that we're bound to the current CPU and pol->cpu stays online.
++	 * Must run on @pol->cpu. We queue it on the target cpu even
++	 * if we are currently on the target cpu. This is preemptible
++	 * non cpu bound context, so we can't call the target function
++	 * directly.
+ 	 */
+-	if (smp_processor_id() == pol->cpu)
+-		return powernowk8_target_fn(&pta);
+-	else
+-		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
++	return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+ }
+ 
+ /* Driver entry point to verify the policy and range of frequencies */
 
 
---=20
-Ben Hutchings
-Never attribute to conspiracy what can adequately be explained by stupidity=
-.
-
---=-IsfGMUsCSEs2kcQFj47V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUIwXVee/yOyVhhEJAQrKkhAAs6/ZHDKJZGy7F8nNdNzR8UAW/0ebThcv
-c1+8icrDl3mhP7KgVLU6E4XG9kW+Tzf5giAcBLNi5W4fUJApx/q1KrVmACZ4Oehm
-Ais17H0JfUlq0/yL+2gOr5Sx7g1j4DCALDTGSP7umgTOpoDST9Os2bu5jOi3opN8
-7H+KSpCd8DkbxIAsQaYcW3Vw4U9RfHSjmlUxzGxxdhcfsPqjilArsKbGQZ0oqrsx
-ZN5OtJ8VL8BasCSfQEh+hoJtJdnyUsFzIvZ9IfzZmbvGy+BNDTuJ1iKXOYmIOqGs
-bzhik6ih4IgmdfGhBZdXy9I51csbc3vOqXcAgG1VqxKYXctVIZ4otLmnQ4IVQhgM
-DgTx7yMEraPS2C/AH1qYwvSodjwDrds2otfIkZvv3noSr6Y53LCVR6N23q+rX1iC
-tbG8UIyS0exV2zAy+tqmYojgkyZEVzlL/arDhRLVjHaz1e96vKJyF28+z/PY6Sdo
-U8ozmItD97VJ6hZVu4M3kotVU6Y1zz0J9kTp8trMAvBtNndd2cguUHF9zZ2drIxY
-wLKgznea3I+R46hWjqkfppXVRPDsCkavqetgGxnEXEY1KcXK3YM3spTLBRnMPFPY
-ZHHPW6sk2uWbQrefbAOfvjG3QsJnQLUTQvqSPkCDMQsRmkH+6pFanGk1kXTCVUHF
-8NrTw6uqEU8=
-=MTIC
------END PGP SIGNATURE-----
-
---=-IsfGMUsCSEs2kcQFj47V--
