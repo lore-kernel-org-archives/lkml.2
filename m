@@ -1,73 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab2J0VOo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 17:14:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40300 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751451Ab2J0VOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 17:14:43 -0400
-Date: Sat, 27 Oct 2012 22:14:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, festevam@gmail.com
-Subject: Re: [PATCH] regmap: Fix printing of size_t variable
-Message-ID: <20121027211436.GB4564@opensource.wolfsonmicro.com>
-References: <1351181238-25568-1-git-send-email-fabio.estevam@freescale.com>
- <5089C2B0.6050900@xenotime.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8P1HSweYDcXXzwPJ"
-Content-Disposition: inline
-In-Reply-To: <5089C2B0.6050900@xenotime.net>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933322Ab2J0VS7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 17:18:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938Ab2J0VSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 17:18:53 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/5] perf tool: Move BUILD_ID_SIZE into build-id object
+Date: Sat, 27 Oct 2012 23:18:29 +0200
+Message-Id: <1351372712-21104-3-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1351372712-21104-1-git-send-email-jolsa@redhat.com>
+References: <1351372712-21104-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Moving BUILD_ID_SIZE define into build-id object,
+plus include related changes.
 
---8P1HSweYDcXXzwPJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-buildid-cache.c | 1 +
+ tools/perf/util/annotate.c         | 1 +
+ tools/perf/util/build-id.h         | 6 +++++-
+ tools/perf/util/event.h            | 3 +--
+ tools/perf/util/symbol.h           | 3 +--
+ 5 files changed, 9 insertions(+), 5 deletions(-)
 
-On Thu, Oct 25, 2012 at 03:52:32PM -0700, Randy Dunlap wrote:
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index edb26ea..fae8b25 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -14,6 +14,7 @@
+ #include "util/parse-options.h"
+ #include "util/strlist.h"
+ #include "util/build-id.h"
++#include "util/symbol.h"
+ 
+ static int build_id_cache__add_file(const char *filename, const char *debugdir)
+ {
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index f0a9103..7a34dd1 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -15,6 +15,7 @@
+ #include "debug.h"
+ #include "annotate.h"
+ #include <pthread.h>
++#include <linux/bitops.h>
+ 
+ const char 	*disassembler_style;
+ const char	*objdump_path;
+diff --git a/tools/perf/util/build-id.h b/tools/perf/util/build-id.h
+index f6d9ff9..a811f5c 100644
+--- a/tools/perf/util/build-id.h
++++ b/tools/perf/util/build-id.h
+@@ -1,9 +1,13 @@
+ #ifndef PERF_BUILD_ID_H_
+ #define PERF_BUILD_ID_H_ 1
+ 
+-#include "session.h"
++#define BUILD_ID_SIZE 20
++
++#include "tool.h"
++#include "types.h"
+ 
+ extern struct perf_tool build_id__mark_dso_hit_ops;
++struct dso;
+ 
+ int build_id__sprintf(const u8 *build_id, int len, char *bf);
+ char *dso__build_id_filename(struct dso *self, char *bf, size_t size);
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index da97aff..0d573ff 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -6,6 +6,7 @@
+ 
+ #include "../perf.h"
+ #include "map.h"
++#include "build-id.h"
+ 
+ /*
+  * PERF_SAMPLE_IP | PERF_SAMPLE_TID | *
+@@ -96,8 +97,6 @@ struct perf_sample {
+ 	struct stack_dump user_stack;
+ };
+ 
+-#define BUILD_ID_SIZE 20
+-
+ struct build_id_event {
+ 	struct perf_event_header header;
+ 	pid_t			 pid;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index d70f676..6eb7d3b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -11,6 +11,7 @@
+ #include <stdio.h>
+ #include <byteswap.h>
+ #include <libgen.h>
++#include "build-id.h"
+ 
+ #ifdef LIBELF_SUPPORT
+ #include <libelf.h>
+@@ -57,8 +58,6 @@ char *strxfrchar(char *s, char from, char to);
+ #define DMGL_ANSI        (1 << 1)       /* Include const, volatile, etc */
+ #endif
+ 
+-#define BUILD_ID_SIZE 20
+-
+ /** struct symbol - symtab entry
+  *
+  * @ignore - resolvable but tools ignore it (e.g. idle routines)
+-- 
+1.7.11.7
 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-There's not much point in doing this after a patch has been applied...
-
-> http://marc.info/?l=linux-kernel&m=135041943424273&w=2
-
-So, the difference between Fabio's patch and your patch is that he sent
-the patch in the normal fashion and didn't do the random extra stuff I
-keep mentioning when I apply your patches.  The things you do like the
-random recipient lists and CCs in the text of the mail get in the way
-and mean that for things like minor warning fixes the patch is likely to
-get deferred for a big mailbox cleanup or (like this time) superceeded
-by a version that's easier to deal with.
-
---8P1HSweYDcXXzwPJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQjE62AAoJELSic+t+oim9uwwP/0D185QNQCdpAtNOUhIo5Ous
-CKJ2QpdIK4FBQh2U6ZNqASb60eHTfNsruNC8lhD42Xt4OMljG37BUlOdicKqBXub
-ZTSqDPC45bMYR2lWj6UGii69Pjy77z/aTuNA+OSW32xjpbHZL2hGcrVtioFy6ipT
-Rj2TpQgtds5gfhXziUvA1A7VvEBmocW4ik6kZtyOnqg6sAMYYFt+u/kI5wDKj1FQ
-bjesRq6231zp9Me3jEb5a7+o5lf6+UJHuLuT0cNOXZhy5Nwcr/f2mdcggIqk4ER6
-7aQuLVQFQ909nUUX5b0MHuVSj+KiaiqJftqzeUHuMHnMv2MUk1o0ecXFnDdGySJK
-PmLDOJ+cqhicgM9/Vz8CPnsHzz1CIGXurx/pS4groS5RtCHCJoogebRWGbNkKp7K
-Bw1Ag6OfeQ7ZX/FRwEtdxJrwem1pUfoZ4GuEVznxfJLv/FNGvsM/XTTdOYdc9r+j
-YWTzd4lI5RajNb8SogXeeEoEvDdtEjlOr4kz5SEi+vYDtkR9ctImqjGTlUz34tbA
-71+MuJ7rjeU5GCrSuBcRFVRuYJWq8ytrcT/MDdzHkXbXARV3DCHcjMQlYPzavzVH
-RaqOXHxV0Zx0zRHqN3vyvFz/yC85Z4vx1rvxJe1ilI8Z14dQETMyQwVVBOdV1UsJ
-uJx6LWR7yCyLEZexcNnu
-=j8DA
------END PGP SIGNATURE-----
-
---8P1HSweYDcXXzwPJ--
