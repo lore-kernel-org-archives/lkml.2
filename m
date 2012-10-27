@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759481Ab2J0Vht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 17:37:49 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52443 "EHLO
+	id S1759509Ab2J0Vob (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 17:44:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58361 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758120Ab2J0Vhs (ORCPT
+	by vger.kernel.org with ESMTP id S1756323Ab2J0Voa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 17:37:48 -0400
-Date: Sat, 27 Oct 2012 22:37:45 +0100
+	Sat, 27 Oct 2012 17:44:30 -0400
+Date: Sat, 27 Oct 2012 22:44:26 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] gpiolib: Don't return -EPROBE_DEFER to sysfs, or for
- invalid gpios
-Message-ID: <20121027213744.GF4564@opensource.wolfsonmicro.com>
-References: <1351162983-27723-1-git-send-email-mathias.nyman@linux.intel.com>
- <CACRpkdYPbs34Ob+MN9tjevXPTwGnEYsyJG0LMjCqsfxP=S_FJA@mail.gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-omap@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 3.7-rc1] omap zoom2.c: Fix compile error by including
+ correct header files
+Message-ID: <20121027214421.GG4564@opensource.wolfsonmicro.com>
+References: <1349274686-45668-1-git-send-email-tim.gardner@canonical.com>
+ <506C5124.3050200@ti.com>
+ <20121003155900.GA4840@atomide.com>
+ <20121003163102.GB4840@atomide.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GV0iVqYguTV4Q9ER"
+	protocol="application/pgp-signature"; boundary="m972NQjnE83KvVa/"
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYPbs34Ob+MN9tjevXPTwGnEYsyJG0LMjCqsfxP=S_FJA@mail.gmail.com>
+In-Reply-To: <20121003163102.GB4840@atomide.com>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,49 +34,43 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---GV0iVqYguTV4Q9ER
+--m972NQjnE83KvVa/
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Oct 26, 2012 at 09:26:33AM +0200, Linus Walleij wrote:
-> On Thu, Oct 25, 2012 at 1:03 PM, Mathias Nyman
+On Wed, Oct 03, 2012 at 09:31:02AM -0700, Tony Lindgren wrote:
 
-> > gpios requested with invalid numbers, or gpios requested from userspace via sysfs
-> > should not try to be deferred on failure.
+> Actually we can also drop "#include <mach/hardware.h>" too,
+> it's now empty for mach-omap2. I've updated Tim's patch below
+> for you guys to queue via the ASoC fixes. It's against the
+> current linux next.
 
-> Very good catch. I applied this to my fixes branch and also
-> put the stable tag on this thing, it goes way back to the introduction
-> of deffered probe.
+Applied.  Tim, you should send patches using subject lines appropriate
+for the subsystem you're submitting against *especially* if the patch is
+to be deferred for some future time as it makes it harder to search for
+the patch.  If your changelog looks different to the other changelogs
+for the thing you're patching that should be a warning.
 
-> Mark: OK with this?
-
-The invalid numbers thing I'm a bit meh on.  It came up before and I
-personally wasn't sure if the issue wasn't with gpio_is_valid() only
-checking for "this number could possibly ever be a GPIO" and not doing
-any checking against the GPIOs that have actually been registered.  If
-it's the former then ideally at some point in the future we'll remove
-the big table and gpio_is_valid() will always be true.
-
---GV0iVqYguTV4Q9ER
+--m972NQjnE83KvVa/
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQjFQgAAoJELSic+t+oim9YaQP/jxa/Pij3+KcWJ7IiiWXu35G
-ZUUzHKIdvOavvNZaWTOSJB3TVfItvu8c+Fdj//3jtj2Zliwu4RLedpeOJTM7siKH
-j20Nk/1AJ68/Sa7V4I5CRjDD7ZFKyGEGfteW4Hh/Ot6z9IiCkXPkxtyAGTEk6tK4
-gOaTNIeL98yB9UedRGHVZ6YJS/BRHpLdNpvqOFis+3KDwCugAlnVxlfnTdyzNxnU
-JjNytfBF7E9t9n/VVC7vPI5mCAy3tI7CYjtvUI34+KmHAbR/KfyJdMznxDrdGFuR
-rBLK8bMoBRLUhZ/udxk/8HDXkBRHvhsmSPdO8zwQdQmQiGX0LgBrEg4badE9IBEI
-GCIhBONi7TOUibkVFHUzsL+yCT+jn9PT3C1FdjT2aJdBJPlqyKgrBU1oUZedKxem
-Fv5rC1P/2Xmqvx/uKAgDWP2Au9t9VaMfQo88t8JIvMEYhTddfdEncADgk4BgoxPl
-mZqkYFTu35Kthiwy/zqc5j8KeuArt1jgXMIR/tfZgLkwVUhWbKnfSUf61VE21XeN
-Kyk5MQJ1eFN5llbQ8qM0MwAaM8Z/15cH/7waOkWFf4NEAn54mYQyeI7no6NbxpoF
-Ds5HOv8jvS2k+xTS+EMUrBhZxprdAn7KWRdtlguciU5d+iFLLms8FIr/5XIIZKYt
-gIrfUBLMPb7xpwJYxPS2
-=20Kx
+iQIcBAEBAgAGBQJQjFWVAAoJELSic+t+oim9ibcP/R2yTacJ476LTN4hyrf0jACS
+M+oPVa51w9Ijj3WdnyiwZNlRwLLiaiALgq+u2bu1s73AeFteLp4C8L2JTDfZqf6V
+ZGhsQfgEdsl4swrPUvf6sj86lfIu95NtMkpdB/yPch/K3StEPXxS93GY/IIN8OF0
+f5X1pucHw5WuN19bOE67cLbQzEFGZZwh9PAPnxJ+2iT/m6hZCvtj0sAedl1qgI75
+ulyu90y0jAtOhoOpjJbS2VVIIS7cSK9Z3sP2BsIX8JOn4J9pauJaTosoqP9EVxVI
+6vISiKJPZ0YuOVFifMxpzONdOeMNT1mBpg9JcnckgoONg/GvafucDlsrJkRWtq72
+UI8i2P3VewciEOcF/pUJrX2VO2DPfUeiObyTFrIUWwDXsLk6MJmMsVZpmx5yCd4s
+JGcM9Fn+i538ldPji58l0tT82g/CG2t0hLB8bJw34zflRZY00wHyMkZL+5dNpR1E
+SB7D94PR5KpqXt2Cu+birTe3R4zC9MviWH7tnrfA260IATaUL0AFemKksFg2Z7Q4
+j0PhUAVTNyxV2ffDZv0vNs2W+PlYx/Nw12XLFFi1LyYFMgQ6+APmFI3A3RjAL97Y
+Nb6HCU1SXruKXaE6z2TCjtw/Q4VBCWhBYrFagcE6EQD2AHeBPha7IK8WNkCWCHWw
+zm2CtQakw89fbgMs6xcg
+=8ywV
 -----END PGP SIGNATURE-----
 
---GV0iVqYguTV4Q9ER--
+--m972NQjnE83KvVa/--
