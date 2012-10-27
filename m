@@ -1,174 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab2J0Ng5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 09:36:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35611 "EHLO bear.ext.ti.com"
+	id S1758515Ab2J0Niw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 09:38:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21241 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758252Ab2J0NgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 09:36:24 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <b-cousson@ti.com>,
-        <kishon@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
-        <rdunlap@xenotime.net>, <balbi@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 1/3] drivers: bus: ocp2scp: add pdata support
-Date: Sat, 27 Oct 2012 19:05:54 +0530
-Message-ID: <1351344956-22868-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351344956-22868-1-git-send-email-kishon@ti.com>
-References: <1351344956-22868-1-git-send-email-kishon@ti.com>
+	id S1758245Ab2J0Niu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 09:38:50 -0400
+Message-ID: <508BE459.2080406@redhat.com>
+Date: Sat, 27 Oct 2012 09:40:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121009 Thunderbird/16.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, florian@openwrt.org,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
+References: <20121025121617.617683848@chello.nl> <20121025124832.840241082@chello.nl> <CA+55aFxRh43832cEW39t0+d1Sdz46Up6Za9w641jpWukmi4zFw@mail.gmail.com> <5089F5B5.1050206@redhat.com> <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com> <508A0A0D.4090001@redhat.com> <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com> <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com> <m2pq45qu0s.fsf@firstfloor.org> <508A8D31.9000106@redhat.com> <20121026132601.GC9886@gmail.com> <20121026144502.6e94643e@dull> <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
+In-Reply-To: <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ocp2scp was not having pdata support which makes *musb* fail for non-dt
-boot in OMAP platform. The pdata will have information about the devices
-that is connected to ocp2scp. ocp2scp driver will now make use of this
-information to create the devices that is attached to ocp2scp.
+On 10/26/2012 05:12 PM, Alan Cox wrote:
+> On Fri, 26 Oct 2012 14:45:02 -0400
+> Rik van Riel <riel@redhat.com> wrote:
+>
+>> Intel has an architectural guarantee that the TLB entry causing
+>> a page fault gets invalidated automatically. This means
+>> we should be able to drop the local TLB invalidation.
+>>
+>> Because of the way other areas of the page fault code work,
+>> chances are good that all x86 CPUs do this.  However, if
+>> someone somewhere has an x86 CPU that does not invalidate
+>> the TLB entry causing a page fault, this one-liner should
+>> be easy to revert.
+>
+> This does not strike me as a good standard of validation for such a change
+>
+> At the very least we should have an ACK from AMD and from VIA, and
+> preferably ping RDC and some of the other embedded folks. Given an AMD
+> and VIA ACK I'd be fine. I doubt anyone knows any more what Cyrix CPUs
+> did or cared about and I imagine H Peter or Linus can answer for
+> Transmeta ;-)
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/bus/omap-ocp2scp.c                 |   67 ++++++++++++++++++++++++++--
- include/linux/platform_data/omap_ocp2scp.h |   31 +++++++++++++
- 2 files changed, 95 insertions(+), 3 deletions(-)
- create mode 100644 include/linux/platform_data/omap_ocp2scp.h
+Florian, would you happen to know who at RDC could be contacted
+to verify whether a TLB entry causing a page fault gets
+invalidated automatically, upon entering the page fault path?
 
-diff --git a/drivers/bus/omap-ocp2scp.c b/drivers/bus/omap-ocp2scp.c
-index ff63560..5db8297 100644
---- a/drivers/bus/omap-ocp2scp.c
-+++ b/drivers/bus/omap-ocp2scp.c
-@@ -22,6 +22,26 @@
- #include <linux/pm_runtime.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/platform_data/omap_ocp2scp.h>
-+
-+/**
-+ * _count_resources - count for the number of resources
-+ * @res: struct resource *
-+ *
-+ * Count and return the number of resources populated for the device that is
-+ * connected to ocp2scp.
-+ */
-+static unsigned _count_resources(struct resource *res)
-+{
-+	int cnt	= 0;
-+
-+	while (res->start != res->end) {
-+		cnt++;
-+		res++;
-+	}
-+
-+	return cnt;
-+}
- 
- static int ocp2scp_remove_devices(struct device *dev, void *c)
- {
-@@ -34,20 +54,61 @@ static int ocp2scp_remove_devices(struct device *dev, void *c)
- 
- static int __devinit omap_ocp2scp_probe(struct platform_device *pdev)
- {
--	int			ret;
--	struct device_node	*np = pdev->dev.of_node;
-+	int ret;
-+	unsigned res_cnt, i;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct platform_device *pdev_child;
-+	struct omap_ocp2scp_platform_data *pdata = pdev->dev.platform_data;
-+	struct omap_ocp2scp_dev *dev;
- 
- 	if (np) {
- 		ret = of_platform_populate(np, NULL, NULL, &pdev->dev);
- 		if (ret) {
--			dev_err(&pdev->dev, "failed to add resources for ocp2scp child\n");
-+			dev_err(&pdev->dev,
-+			    "failed to add resources for ocp2scp child\n");
- 			goto err0;
- 		}
-+	} else if (pdata) {
-+		for (i = 0, dev = *pdata->devices; i < pdata->dev_cnt; i++,
-+		    dev++) {
-+			res_cnt = _count_resources(dev->res);
-+
-+			pdev_child = platform_device_alloc(dev->drv_name, -1);
-+			if (!pdev_child) {
-+				dev_err(&pdev->dev,
-+				  "failed to allocate mem for ocp2scp child\n");
-+				goto err0;
-+			}
-+
-+			ret = platform_device_add_resources(pdev_child,
-+			    dev->res, res_cnt);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+				 "failed to add resources for ocp2scp child\n");
-+				goto err1;
-+			}
-+
-+			pdev_child->dev.parent	= &pdev->dev;
-+
-+			ret = platform_device_add(pdev_child);
-+			if (ret) {
-+				dev_err(&pdev->dev,
-+				   "failed to register ocp2scp child device\n");
-+				goto err1;
-+			}
-+		}
-+	} else {
-+		dev_err(&pdev->dev, "OCP2SCP initialized without plat data\n");
-+		return -EINVAL;
- 	}
-+
- 	pm_runtime_enable(&pdev->dev);
- 
- 	return 0;
- 
-+err1:
-+	platform_device_put(pdev_child);
-+
- err0:
- 	device_for_each_child(&pdev->dev, NULL, ocp2scp_remove_devices);
- 
-diff --git a/include/linux/platform_data/omap_ocp2scp.h b/include/linux/platform_data/omap_ocp2scp.h
-new file mode 100644
-index 0000000..5c6c393
---- /dev/null
-+++ b/include/linux/platform_data/omap_ocp2scp.h
-@@ -0,0 +1,31 @@
-+/*
-+ * omap_ocp2scp.h -- ocp2scp header file
-+ *
-+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * Author: Kishon Vijay Abraham I <kishon@ti.com>
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef __DRIVERS_OMAP_OCP2SCP_H
-+#define __DRIVERS_OMAP_OCP2SCP_H
-+
-+struct omap_ocp2scp_dev {
-+	const char			*drv_name;
-+	struct resource			*res;
-+};
-+
-+struct omap_ocp2scp_platform_data {
-+	int				dev_cnt;
-+	struct omap_ocp2scp_dev		**devices;
-+};
-+#endif /* __DRIVERS_OMAP_OCP2SCP_H */
--- 
-1.7.9.5
+Borislav, would you happen to know whether AMD (and VIA) CPUs
+automatically invalidate TLB entries that cause page faults?
+If you do not know, would you happen who to ask? :)
 
+If these CPUs do not invalidate a TLB entry causing a page
+fault (a write fault on a read-only PTE), then we may have to
+change the kernel so flush_tlb_fix_spurious_fault does
+something on the CPU models in question...
