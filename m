@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab2J1PfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 11:35:12 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:30269 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752233Ab2J1PfL (ORCPT
+	id S1752972Ab2J1Pl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 11:41:29 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:35727 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab2J1Pl2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 11:35:11 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] leds: leds-gpio: Defer probing in case of deferred gpio probing
-Date: Sun, 28 Oct 2012 16:34:59 +0100
-Message-Id: <1351438499-5343-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sun, 28 Oct 2012 11:41:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMuHMdUXKc03UrNiUaTmxeynAy1oDBDgVbjjDKcJor4vM+0P3w@mail.gmail.com>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+	<1351022666-6960-15-git-send-email-keescook@chromium.org>
+	<CAMuHMdUXKc03UrNiUaTmxeynAy1oDBDgVbjjDKcJor4vM+0P3w@mail.gmail.com>
+Date: Sun, 28 Oct 2012 08:41:27 -0700
+X-Google-Sender-Auth: 3HBcJpVaTNa402wAIOzQtGGmKtY
+Message-ID: <CAGXu5jLpM_qvP65rXgjC-UV7Hc=-Lg17jtv0=dVUGHYJ_jB+tQ@mail.gmail.com>
+Subject: Re: [PATCH 014/193] arch/m68k: remove CONFIG_EXPERIMENTAL
+From: Kees Cook <keescook@chromium.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes leds-gpio's probe() return -EPROBE_DEFER if any of the gpios
-to register are deferred themselves. This makes a change of
-gpio_leds_create_of()'s return value necessary: Instead of returning NULL on
-error, we now use ERR_PTR() error coding.
+On Sun, Oct 28, 2012 at 2:18 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> On Tue, Oct 23, 2012 at 10:01 PM, Kees Cook <keescook@chromium.org> wrote:
+>> This config item has not carried much meaning for a while now and is
+>> almost always enabled by default. As agreed during the Linux kernel
+>> summit, remove it.
+>>
+>> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>
+> Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>
+> Or do you want me to take this through the m68k tree?
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- drivers/leds/leds-gpio.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+Stephen Rothwell has mentioned he'd prefer maintainers take these
+patches into their trees, but I'm happy to carry them in mine if you
+want to avoid the hassle. I'm doing this for several areas already.
+It's up to you, but just let me know so I can either drop it from my
+tree or move it to my linux-next tree. :)
 
---- linux-2.6.orig/drivers/leds/leds-gpio.c
-+++ linux-2.6/drivers/leds/leds-gpio.c
-@@ -21,6 +21,7 @@
- #include <linux/workqueue.h>
- #include <linux/module.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/err.h>
- 
- struct gpio_led_data {
- 	struct led_classdev cdev;
-@@ -176,12 +177,16 @@ static struct gpio_leds_priv * __devinit
- 	/* count LEDs in this device, so we know how much to allocate */
- 	count = of_get_child_count(np);
- 	if (!count)
--		return NULL;
-+		return ERR_PTR(-ENODEV);
-+
-+	for_each_child_of_node(np, child)
-+		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
-+			return ERR_PTR(-EPROBE_DEFER);
- 
- 	priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
- 			GFP_KERNEL);
- 	if (!priv)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	for_each_child_of_node(np, child) {
- 		struct gpio_led led = {};
-@@ -216,7 +221,7 @@ static struct gpio_leds_priv * __devinit
- err:
- 	for (count = priv->num_leds - 2; count >= 0; count--)
- 		delete_gpio_led(&priv->leds[count]);
--	return NULL;
-+	return ERR_PTR(-ENODEV);
- }
- 
- static const struct of_device_id of_gpio_leds_match[] = {
-@@ -226,7 +231,7 @@ static const struct of_device_id of_gpio
- #else /* CONFIG_OF_GPIO */
- static struct gpio_leds_priv * __devinit gpio_leds_create_of(struct platform_device *pdev)
- {
--	return NULL;
-+	return ERR_PTR(-ENODEV);
- }
- #endif /* CONFIG_OF_GPIO */
- 
-@@ -264,8 +269,8 @@ static int __devinit gpio_led_probe(stru
- 		}
- 	} else {
- 		priv = gpio_leds_create_of(pdev);
--		if (!priv)
--			return -ENODEV;
-+		if (IS_ERR(priv))
-+			return PTR_ERR(priv);
- 	}
- 
- 	platform_set_drvdata(pdev, priv);
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
