@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab2J1XpE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:45:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41892 "EHLO
+	id S1756693Ab2J1XpB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:45:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41923 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756540Ab2J1X10 (ORCPT
+	by vger.kernel.org with ESMTP id S1756562Ab2J1X10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:26 -0400
-Message-Id: <20121028231603.353113832@decadent.org.uk>
+Message-Id: <20121028231602.112752191@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:01 +0000
+Date: Sun, 28 Oct 2012 23:16:57 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 085/105] USB: sierra: fix memory leak in probe error path
+Subject: [ 081/105] USB: opticon: fix DMA from stack
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,71 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 084817d79399ab5ccab2f90a148b0369912a8369 upstream.
+commit ea0dbebffe118724cd4df7d9b071ea8ee48d48f0 upstream.
 
-Move interface data allocation to attach so that it is deallocated on
-errors in usb-serial probe.
+Make sure to allocate the control-message buffer dynamically as some
+platforms cannot do DMA from stack.
+
+Note that only the first byte of the old buffer was used.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/sierra.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/usb/serial/opticon.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -171,7 +171,6 @@ static int sierra_probe(struct usb_seria
+diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+index 41b1647..459c288 100644
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -155,7 +155,11 @@ static int send_control_msg(struct usb_serial_port *port, u8 requesttype,
  {
- 	int result = 0;
- 	struct usb_device *udev;
--	struct sierra_intf_private *data;
- 	u8 ifnum;
- 
- 	udev = serial->dev;
-@@ -199,11 +198,6 @@ static int sierra_probe(struct usb_seria
- 		return -ENODEV;
- 	}
- 
--	data = serial->private = kzalloc(sizeof(struct sierra_intf_private), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--	spin_lock_init(&data->susp_lock);
--
- 	return result;
- }
- 
-@@ -915,6 +909,7 @@ static void sierra_dtr_rts(struct usb_se
- static int sierra_startup(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
-+	struct sierra_intf_private *intfdata;
- 	struct sierra_port_private *portdata;
- 	struct sierra_iface_info *himemoryp = NULL;
- 	int i;
-@@ -922,6 +917,14 @@ static int sierra_startup(struct usb_ser
- 
- 	dev_dbg(&serial->dev->dev, "%s\n", __func__);
- 
-+	intfdata = kzalloc(sizeof(*intfdata), GFP_KERNEL);
-+	if (!intfdata)
+ 	struct usb_serial *serial = port->serial;
+ 	int retval;
+-	u8 buffer[2];
++	u8 *buffer;
++
++	buffer = kzalloc(1, GFP_KERNEL);
++	if (!buffer)
 +		return -ENOMEM;
-+
-+	spin_lock_init(&intfdata->susp_lock);
-+
-+	usb_set_serial_data(serial, intfdata);
-+
- 	/* Set Device mode to D0 */
- 	sierra_set_power_state(serial->dev, 0x0000);
  
-@@ -979,6 +982,7 @@ err:
- 		portdata = usb_get_serial_port_data(serial->port[i]);
- 		kfree(portdata);
- 	}
-+	kfree(intfdata);
+ 	buffer[0] = val;
+ 	/* Send the message to the vendor control endpoint
+@@ -164,6 +168,7 @@ static int send_control_msg(struct usb_serial_port *port, u8 requesttype,
+ 				requesttype,
+ 				USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
+ 				0, 0, buffer, 1, 0);
++	kfree(buffer);
  
- 	return -ENOMEM;
+ 	return retval;
  }
 
 
