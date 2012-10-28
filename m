@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756737Ab2J1X3o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:29:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42243 "EHLO
+	id S1757257Ab2J1X3r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:29:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42246 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756988Ab2J1X2c (ORCPT
+	by vger.kernel.org with ESMTP id S1757064Ab2J1X2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:28:32 -0400
-Message-Id: <20121028231544.102674653@decadent.org.uk>
+Message-Id: <20121028231546.516941371@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:59 +0000
+Date: Sun, 28 Oct 2012 23:16:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        "Cyril B." <cbay@excellency.fr>
-Subject: [ 023/105] nfsd4: fix nfs4 stateid leak
+        "Hildner, Christian" <christian.hildner@siemens.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 031/105] timers: Fix endless looping between cascade() and
+ internal_add_timer()
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: "Hildner, Christian" <christian.hildner@siemens.com>
 
-commit cf9182e90b2af04245ac4fae497fe73fc71285b4 upstream.
+commit 26cff4e2aa4d666dc6a120ea34336b5057e3e187 upstream.
 
-Processes that open and close multiple files may end up setting this
-oo_last_closed_stid without freeing what was previously pointed to.
-This can result in a major leak, visible for example by watching the
-nfsd4_stateids line of /proc/slabinfo.
+Adding two (or more) timers with large values for "expires" (they have
+to reside within tv5 in the same list) leads to endless looping
+between cascade() and internal_add_timer() in case CONFIG_BASE_SMALL
+is one and jiffies are crossing the value 1 << 18. The bug was
+introduced between 2.6.11 and 2.6.12 (and survived for quite some
+time).
 
-Reported-by: Cyril B. <cbay@excellency.fr>
-Tested-by: Cyril B. <cbay@excellency.fr>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+This patch ensures that when cascade() is called timers within tv5 are
+not added endlessly to their own list again, instead they are added to
+the next lower tv level tv4 (as expected).
+
+Signed-off-by: Christian Hildner <christian.hildner@siemens.com>
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Link: http://lkml.kernel.org/r/98673C87CB31274881CFFE0B65ECC87B0F5FC1963E@DEFTHW99EA4MSX.ww902.siemens.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/timer.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3673,6 +3673,7 @@ nfsd4_close(struct svc_rqst *rqstp, stru
- 	memcpy(&close->cl_stateid, &stp->st_stid.sc_stateid, sizeof(stateid_t));
+diff --git a/kernel/timer.c b/kernel/timer.c
+index d5de1b2..367d008 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -63,6 +63,7 @@ EXPORT_SYMBOL(jiffies_64);
+ #define TVR_SIZE (1 << TVR_BITS)
+ #define TVN_MASK (TVN_SIZE - 1)
+ #define TVR_MASK (TVR_SIZE - 1)
++#define MAX_TVAL ((unsigned long)((1ULL << (TVR_BITS + 4*TVN_BITS)) - 1))
  
- 	nfsd4_close_open_stateid(stp);
-+	release_last_closed_stateid(oo);
- 	oo->oo_last_closed_stid = stp;
- 
- 	/* place unused nfs4_stateowners on so_close_lru list to be
+ struct tvec {
+ 	struct list_head vec[TVN_SIZE];
+@@ -359,11 +360,12 @@ __internal_add_timer(struct tvec_base *base, struct timer_list *timer)
+ 		vec = base->tv1.vec + (base->timer_jiffies & TVR_MASK);
+ 	} else {
+ 		int i;
+-		/* If the timeout is larger than 0xffffffff on 64-bit
+-		 * architectures then we use the maximum timeout:
++		/* If the timeout is larger than MAX_TVAL (on 64-bit
++		 * architectures or with CONFIG_BASE_SMALL=1) then we
++		 * use the maximum timeout.
+ 		 */
+-		if (idx > 0xffffffffUL) {
+-			idx = 0xffffffffUL;
++		if (idx > MAX_TVAL) {
++			idx = MAX_TVAL;
+ 			expires = idx + base->timer_jiffies;
+ 		}
+ 		i = (expires >> (TVR_BITS + 3 * TVN_BITS)) & TVN_MASK;
 
 
