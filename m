@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757128Ab2J1Xaj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:30:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42241 "EHLO
+	id S1757296Ab2J1Xa6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:30:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42248 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756978Ab2J1X2c (ORCPT
+	by vger.kernel.org with ESMTP id S1757062Ab2J1X2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:32 -0400
-Message-Id: <20121028231545.899327283@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:31 -0400
+Message-Id: <20121028231544.405054446@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:05 +0000
+Date: Sun, 28 Oct 2012 23:16:00 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lukas Czerner <lczerner@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 029/105] [SCSI] scsi_debug: Fix off-by-one bug when unmapping region
+        Daniel Drake <dsd@laptop.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [ 024/105] viafb: dont touch clock state on OLPC XO-1.5
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,48 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
+From: Daniel Drake <dsd@laptop.org>
 
-commit bc977749e967daa56de1922cf4cb38525631c51c upstream.
+commit 012a1211845eab69a5488d59eb87d24cc518c627 upstream.
 
-Currently it is possible to unmap one more block than user requested to
-due to the off-by-one error in unmap_region(). This is probably due to
-the fact that the end variable despite its name actually points to the
-last block to unmap + 1. However in the condition it is handled as the
-last block of the region to unmap.
+As detailed in the thread titled "viafb PLL/clock tweaking causes XO-1.5
+instability," enabling or disabling the IGA1/IGA2 clocks causes occasional
+stability problems during suspend/resume cycles on this platform.
 
-The bug was not previously spotted probably due to the fact that the
-region was not zeroed, which has changed with commit
-be1dd78de5686c062bb3103f9e86d444a10ed783. With that commit we were able
-to corrupt the ext4 file system on 256M scsi_debug device with LBPRZ
-enabled using fstrim.
+This is rather odd, as the documentation suggests that clocks have two
+states (on/off) and the default (stable) configuration is configured to
+enable the clock only when it is needed. However, explicitly enabling *or*
+disabling the clock triggers this system instability, suggesting that there
+is a 3rd state at play here.
 
-Since the 'end' semantic is the same in several functions there this
-commit just fixes the condition to use the 'end' variable correctly in
-that context.
+Leaving the clock enable/disable registers alone solves this problem.
+This fixes spurious reboots during suspend/resume behaviour introduced by
+commit b692a63a.
 
-Reported-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: adjust context; unwrap the if-statement]
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/scsi_debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/via/via_clock.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -2045,8 +2045,7 @@ static void unmap_region(sector_t lba, u
- 		block = lba + alignment;
- 		rem = do_div(block, granularity);
+diff --git a/drivers/video/via/via_clock.c b/drivers/video/via/via_clock.c
+index af8f26b..db1e392 100644
+--- a/drivers/video/via/via_clock.c
++++ b/drivers/video/via/via_clock.c
+@@ -25,6 +25,7 @@
  
--		if (rem == 0 && lba + granularity <= end &&
--		    block < map_size)
-+		if (rem == 0 && lba + granularity < end && block < map_size)
- 			clear_bit(block, map_storep);
+ #include <linux/kernel.h>
+ #include <linux/via-core.h>
++#include <asm/olpc.h>
+ #include "via_clock.h"
+ #include "global.h"
+ #include "debug.h"
+@@ -289,6 +290,10 @@ static void dummy_set_pll(struct via_pll_config config)
+ 	printk(KERN_INFO "Using undocumented set PLL.\n%s", via_slap);
+ }
  
- 		lba += granularity - rem;
++static void noop_set_clock_state(u8 state)
++{
++}
++
+ void via_clock_init(struct via_clock *clock, int gfx_chip)
+ {
+ 	switch (gfx_chip) {
+@@ -346,4 +351,18 @@ void via_clock_init(struct via_clock *clock, int gfx_chip)
+ 		break;
+ 
+ 	}
++
++	if (machine_is_olpc()) {
++		/* The OLPC XO-1.5 cannot suspend/resume reliably if the
++		 * IGA1/IGA2 clocks are set as on or off (memory rot
++		 * occasionally happens during suspend under such
++		 * configurations).
++		 *
++		 * The only known stable scenario is to leave this bits as-is,
++		 * which in their default states are documented to enable the
++		 * clock only when it is needed.
++		 */
++		clock->set_primary_clock_state = noop_set_clock_state;
++		clock->set_secondary_clock_state = noop_set_clock_state;
++	}
+ }
 
 
