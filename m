@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113Ab2J1X2g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42175 "EHLO
+	id S932075Ab2J1X2i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:28:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42177 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756979Ab2J1X2X (ORCPT
+	by vger.kernel.org with ESMTP id S1756983Ab2J1X2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:23 -0400
-Message-Id: <20121028231549.148020010@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:24 -0400
+Message-Id: <20121028231550.069142455@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:15 +0000
+Date: Sun, 28 Oct 2012 23:16:18 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Amerigo Wang <amwang@redhat.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 039/105] pktgen: fix crash when generating IPv6 packets
+Subject: [ 042/105] mips,kgdb: fix recursive page fault with CONFIG_KPROBES
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,44 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Jason Wessel <jason.wessel@windriver.com>
 
-commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
+commit f0a996eeeda214f4293e234df33b29bec003b536 upstream.
 
-For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
-expression will result negative:
+This fault was detected using the kgdb test suite on boot and it
+crashes recursively due to the fact that CONFIG_KPROBES on mips adds
+an extra die notifier in the page fault handler.  The crash signature
+looks like this:
 
-        datalen = pkt_dev->cur_pkt_size - 14 -
-                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
-                  pkt_dev->pkt_overhead;
+kgdbts:RUN bad memory access test
+KGDB: re-enter exception: ALL breakpoints killed
+Call Trace:
+[<807b7548>] dump_stack+0x20/0x54
+[<807b7548>] dump_stack+0x20/0x54
 
-And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
-passed as "datalen" is promoted to unsigned, therefore will cause
-a crash later.
+The fix for now is to have kgdb return immediately if the fault type
+is DIE_PAGE_FAULT and allow the kprobe code to decide what is supposed
+to happen.
 
-This is a quick fix by checking if "datalen" is negative. The following
-patch will increase the default value of 'min_pkt_size' for IPv6.
-
-This bug should exist for a long time, so Cc -stable too.
-
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/pktgen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/kernel/kgdb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2935,7 +2935,7 @@ static struct sk_buff *fill_packet_ipv6(
- 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
- 		  pkt_dev->pkt_overhead;
+--- a/arch/mips/kernel/kgdb.c
++++ b/arch/mips/kernel/kgdb.c
+@@ -283,6 +283,15 @@ static int kgdb_mips_notify(struct notif
+ 	struct pt_regs *regs = args->regs;
+ 	int trap = (regs->cp0_cause & 0x7c) >> 2;
  
--	if (datalen < sizeof(struct pktgen_hdr)) {
-+	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
- 		datalen = sizeof(struct pktgen_hdr);
- 		if (net_ratelimit())
- 			pr_info("increased datalen to %d\n", datalen);
++#ifdef CONFIG_KPROBES
++	/*
++	 * Return immediately if the kprobes fault notifier has set
++	 * DIE_PAGE_FAULT.
++	 */
++	if (cmd == DIE_PAGE_FAULT)
++		return NOTIFY_DONE;
++#endif /* CONFIG_KPROBES */
++
+ 	/* Userspace events, ignore. */
+ 	if (user_mode(regs))
+ 		return NOTIFY_DONE;
 
 
