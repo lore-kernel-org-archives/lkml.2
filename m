@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2J1Uir (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:38:47 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59454 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755346Ab2J1Uio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:38:44 -0400
-Message-ID: <1351456697.12271.113.camel@pasglop>
-Subject: Re: [RESEND PATCH 2/4] asm-generic: io: don't perform swab during
- {in,out} string functions
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Mike Frysinger <vapier@gentoo.org>
-Date: Mon, 29 Oct 2012 07:38:17 +1100
-In-Reply-To: <CAMuHMdXJaUD6u+m1ax1_QYVXDrdm-W7VDUq0VN6a_v9QAgP4og@mail.gmail.com>
-References: <1350488704-3711-1-git-send-email-will.deacon@arm.com>
-	 <1350488704-3711-3-git-send-email-will.deacon@arm.com>
-	 <CAMuHMdXcQjDyen+o5aH=1zUOkNX-cfT3aXBOgCpyop=V67jk7w@mail.gmail.com>
-	 <1350518655.4678.120.camel@pasglop>
-	 <CAMuHMdWH3GXJ_dW-FCAX=LAkBuQmQtwRUtNpcqg_afm-UFK_2g@mail.gmail.com>
-	 <1350955556.2728.18.camel@pasglop>
-	 <CAMuHMdXJaUD6u+m1ax1_QYVXDrdm-W7VDUq0VN6a_v9QAgP4og@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1755429Ab2J1UqA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:46:00 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48503 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755323Ab2J1Up7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 16:45:59 -0400
+Message-ID: <508D99F1.9080406@Gmail.com>
+Date: Sun, 28 Oct 2012 15:47:45 -0500
+From: Calvin Owens <jcalvinowens@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.9) Gecko/20121028 Thunderbird/10.0.9
+MIME-Version: 1.0
+To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
+        Martin Peres <martin.peres@labri.fr>
+CC: Calvin Owens <jcalvinowens@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [Bisected] nouveau: v3.7-rc breaks multi-monitor setup
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-10-28 at 10:28 +0100, Geert Uytterhoeven wrote:
+Hello all,
 
-> > This is due to how the PCI bus is wired to the CPU bus, which is called
-> > "byte address invariant". When doing a read of your byte 0, the CPU will
-> > effectively read 0 with byte enables picking 48. Since the CPU wants
-> > the first byte in the MSB, the bus must be wired up to the CPU such that
-> > the MSB is the first byte in address order.
-> 
-> According to
-> https://developer.apple.com/library/mac/#documentation/DeviceDrivers/Conceptual/WritingPCIDrivers/endianness/endianness.html
-> 
-> "Byte-invariant addressing is a property of the bus bridge itself."
+I have a somewhat unusual setup with 3 monitors, two connected to an
+NVIDIA GT9800, and one connected to the onboard graphics card (a Radeon
+HD4250, which is selected as the primary card in the BIOS). This has
+worked well for quite some time using nouveau, but the 3.7 merge window
+changes cause the two monitors attached to the NV card to appear blank.
 
-Right.
+The interesting thing is that X doesn't seem to even notice the
+difference under 3.7-rc: the screens are blank, but it reports no errors
+at all. Even the driver itself seems to happily go along writing to it's
+framebuffer (see log below).
 
-> and
-> 
-> "From the software designer’s perspective, this means that the
-> hardware does not byte swap the data. However, from the hardware
-> designer’s perspective, the hardware must byte swap all data."
-> 
-> So this depends on a correct hardware implementation in the PCI
-> host bridge?
+Also, the NV card *does* still work when I turn off the onboard gpu
+(by setting the NV card as the primary (The BIOS masks the onboard
+gpu in this case, so the 3-monitor configuration doesn't work)).
 
-Correct. It is also how AMBA works on BE for example, it's generally
-accepted that this is the "right" way to wire a bridge.
+It would seem as though there is some important initialization step that
+the BIOS does that nouveau used to do too, but isn't doing anymore.
+(Usually when kernel modesetting happens (or when the BIOS comes up if
+it's the primary card), the fan on the card quiets down, but now it just
+stays in blow-dryer mode.)
 
-> > Then something is horribly wrong in those m68k setups :-) Either in the
-> > way the busses are wired or in your implementation of either inw or
-> > insw.
-> 
-> On (classic) m68k all of this is not about PCI (Atari Hades PCI is no
-> more), but about ISA and PCMCIA. I.e. no PCI host bridge with a modern
-> understanding of how it should be wired correctly on a big endian platform.
+Here is a nouveau debug loglevel "spam" bootup under 3.7-rc2+:
+	* http://pastebin.com/Fysifmta
+(It was 180k lines long - I tried to condense it by cutting out large
+blocks of the same message)
 
-There's nothing modern about byte address invariance. The same rule
-applies to ISA and PCMCIA just the same. It's possible that your
-specific m68k platforms were designed by monkeys on crack, which seems
-to be a common breed among HW designers, but that doesn't make it
-right :-)
+I've bisected this to 77145f1 (which appears to be the last commit in a
+big restructuring of the nouveau source tree). Unfortunately, the 40
+commits before that one cause build errors, so narrowing it down will be
+more time-consuming...
+
+Other possibly relevant info:
+lspci:		http://pastebin.com/6yjUv5du
+Kconfig:	http://pastebin.com/eUPpNyJZ
+
+Information from "git-bisect":
+git output:	http://pastebin.com/DMRSr5AA
+git bisect log: http://pastebin.com/d8MRXRAC
+(77145f1 is the earliest build-able commit that causes the regression)
+
+Let me know if there's anything I can do to help, or any more info that
+would be useful to you.
 
 Cheers,
-Ben.
-
-
+Calvin Owens
