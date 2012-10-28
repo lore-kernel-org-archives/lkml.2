@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab2J1XuJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:50:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41782 "EHLO
+	id S1757080Ab2J1XuI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:50:08 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41777 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755915Ab2J1X1A (ORCPT
+	by vger.kernel.org with ESMTP id S1756287Ab2J1X1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:00 -0400
-Message-Id: <20121028231541.944810096@decadent.org.uk>
+Message-Id: <20121028231539.239101287@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:52 +0000
+Date: Sun, 28 Oct 2012 23:15:43 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Larry Finger <larry.finger@lwfinger.net>,
-        Jay Harbeston <jharbestonus@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 016/105] [media] au0828: fix case where STREAMOFF being called on stopped
- stream causes BUG()
+        Jiri Pirko <jpirko@redhat.com>, Ben Greear <greearb@candelatech.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        "Andrey Jr. Melnikov" <temnota@kmv.ru>
+Subject: [ 007/105] e1000: fix vlan processing regression
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,49 +31,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
+From: Jiri Pirko <jpirko@redhat.com>
 
-commit a595c1ce4c9d572cf53513570b9f1a263d7867f2 upstream.
+commit 52f5509fe8ccb607ff9b84ad618f244262336475 upstream.
 
-We weren't checking whether the resource was in use before calling
-res_free(), so applications which called STREAMOFF on a v4l2 device that
-wasn't already streaming would cause a BUG() to be hit (MythTV).
+This patch fixes a regression introduced by commit "e1000: do vlan
+cleanup (799d531)".
 
-Reported-by: Larry Finger <larry.finger@lwfinger.net>
-Reported-by: Jay Harbeston <jharbestonus@gmail.com>
-Signed-off-by: Devin Heitmueller <dheitmueller@kernellabs.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Apparently some e1000 chips (not mine) are sensitive about the order of
+setting vlan filter and vlan stripping/inserting functionality. So this
+patch changes the order so it's the same as before vlan cleanup.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+Tested-by: Ben Greear <greearb@candelatech.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+[Jonathan Nieder: It doesn't apply cleanly to kernels before
+v3.3-rc1~182^2~581 (net: introduce and use netdev_features_t for
+device features sets) but a backport is straightforward.]
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Tested-by: Andrey Jr. Melnikov <temnota@kmv.ru>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/video/au0828/au0828-video.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/intel/e1000/e1000_main.c | 76 +++++++++++++++------------
+ 1 file changed, 42 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/media/video/au0828/au0828-video.c b/drivers/media/video/au0828/au0828-video.c
-index df92322..4d5b670 100644
---- a/drivers/media/video/au0828/au0828-video.c
-+++ b/drivers/media/video/au0828/au0828-video.c
-@@ -1702,14 +1702,18 @@ static int vidioc_streamoff(struct file *file, void *priv,
- 			(AUVI_INPUT(i).audio_setup)(dev, 0);
- 		}
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -168,6 +168,8 @@ static int e1000_82547_fifo_workaround(s
  
--		videobuf_streamoff(&fh->vb_vidq);
--		res_free(fh, AU0828_RESOURCE_VIDEO);
-+		if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
-+			videobuf_streamoff(&fh->vb_vidq);
-+			res_free(fh, AU0828_RESOURCE_VIDEO);
-+		}
- 	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
- 		dev->vbi_timeout_running = 0;
- 		del_timer_sync(&dev->vbi_timeout);
+ static bool e1000_vlan_used(struct e1000_adapter *adapter);
+ static void e1000_vlan_mode(struct net_device *netdev, u32 features);
++static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
++				     bool filter_on);
+ static void e1000_vlan_rx_add_vid(struct net_device *netdev, u16 vid);
+ static void e1000_vlan_rx_kill_vid(struct net_device *netdev, u16 vid);
+ static void e1000_restore_vlan(struct e1000_adapter *adapter);
+@@ -1219,7 +1221,7 @@ static int __devinit e1000_probe(struct
+ 	if (err)
+ 		goto err_register;
  
--		videobuf_streamoff(&fh->vb_vbiq);
--		res_free(fh, AU0828_RESOURCE_VBI);
-+		if (res_check(fh, AU0828_RESOURCE_VBI)) {
-+			videobuf_streamoff(&fh->vb_vbiq);
-+			res_free(fh, AU0828_RESOURCE_VBI);
-+		}
- 	}
+-	e1000_vlan_mode(netdev, netdev->features);
++	e1000_vlan_filter_on_off(adapter, false);
  
- 	return 0;
+ 	/* print bus type/speed/width info */
+ 	e_info(probe, "(PCI%s:%dMHz:%d-bit) %pM\n",
+@@ -4553,6 +4555,21 @@ static bool e1000_vlan_used(struct e1000
+ 	return false;
+ }
+ 
++static void __e1000_vlan_mode(struct e1000_adapter *adapter, u32 features)
++{
++	struct e1000_hw *hw = &adapter->hw;
++	u32 ctrl;
++
++	ctrl = er32(CTRL);
++	if (features & NETIF_F_HW_VLAN_RX) {
++		/* enable VLAN tag insert/strip */
++		ctrl |= E1000_CTRL_VME;
++	} else {
++		/* disable VLAN tag insert/strip */
++		ctrl &= ~E1000_CTRL_VME;
++	}
++	ew32(CTRL, ctrl);
++}
+ static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
+ 				     bool filter_on)
+ {
+@@ -4562,6 +4579,7 @@ static void e1000_vlan_filter_on_off(str
+ 	if (!test_bit(__E1000_DOWN, &adapter->flags))
+ 		e1000_irq_disable(adapter);
+ 
++	__e1000_vlan_mode(adapter, adapter->netdev->features);
+ 	if (filter_on) {
+ 		/* enable VLAN receive filtering */
+ 		rctl = er32(RCTL);
+@@ -4584,21 +4602,11 @@ static void e1000_vlan_filter_on_off(str
+ static void e1000_vlan_mode(struct net_device *netdev, u32 features)
+ {
+ 	struct e1000_adapter *adapter = netdev_priv(netdev);
+-	struct e1000_hw *hw = &adapter->hw;
+-	u32 ctrl;
+ 
+ 	if (!test_bit(__E1000_DOWN, &adapter->flags))
+ 		e1000_irq_disable(adapter);
+ 
+-	ctrl = er32(CTRL);
+-	if (features & NETIF_F_HW_VLAN_RX) {
+-		/* enable VLAN tag insert/strip */
+-		ctrl |= E1000_CTRL_VME;
+-	} else {
+-		/* disable VLAN tag insert/strip */
+-		ctrl &= ~E1000_CTRL_VME;
+-	}
+-	ew32(CTRL, ctrl);
++	__e1000_vlan_mode(adapter, features);
+ 
+ 	if (!test_bit(__E1000_DOWN, &adapter->flags))
+ 		e1000_irq_enable(adapter);
 
 
