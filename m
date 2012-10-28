@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2J1OTH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 10:19:07 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:54328 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2J1OTE (ORCPT
+	id S1752712Ab2J1O0l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 10:26:41 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51971 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750860Ab2J1O0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 10:19:04 -0400
-From: Dmitry Osipenko <digetx@gmail.com>
-To: digetx@gmail.com
-Cc: vinod.koul@intel.com, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] dma: tegra20-apbdma: channel freeing correction
-Date: Sun, 28 Oct 2012 18:17:53 +0400
-Message-Id: <1351433873-14082-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 1.7.12
+	Sun, 28 Oct 2012 10:26:40 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1//EiBE4CL/YrvcRyr20tPapqqV7J1g9c5BuOkiuu
+	9sF+fPuf8M6NSS
+Message-ID: <1351434428.4595.3.camel@maggy.simpson.net>
+Subject: Re: [PATCH] sched, autogroup: fix crash on reboot when autogroup is
+ disabled
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Sun, 28 Oct 2012 07:27:08 -0700
+In-Reply-To: <20121028140544.GA28216@gmail.com>
+References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
+	 <1350654126.2768.5.camel@twins>
+	 <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
+	 <1350736696.5123.24.camel@maggy.simpson.net>
+	 <1351283371.16639.111.camel@maggy.simpson.net>
+	 <1351362370.4503.3.camel@maggy.simpson.net>
+	 <20121028102520.GA7711@gmail.com>
+	 <1351430004.8685.17.camel@maggy.simpson.net>
+	 <20121028131950.GA15159@gmail.com>
+	 <1351431201.8685.22.camel@maggy.simpson.net>
+	 <20121028140544.GA28216@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed channel "lock" after free.
+On Sun, 2012-10-28 at 15:05 +0100, Ingo Molnar wrote:
 
-Example: Channel 1 was allocated and prepared as slave_sg, used and freed. Now preparation of cyclic dma on channel 1 will fail with err "DMA
-configuration conflict" because tdc->isr_handler still selected to handle_once_dma_done.
+> I'd also suggest to still expose the state of autosched in 
+> /proc/sys, read-only, so that its status can be checked.
 
-This happens because tegra_dma_abort_all() won't be called on channel freeing if pending list is empty.
+(Aw poo, less pretty minus signs;)
 
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
----
- drivers/dma/tegra20-apb-dma.c | 1 +
- 1 file changed, 1 insertion(+)
+Ok, will do.
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index 4d816be..00c5dee 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -1147,6 +1147,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
- 
- 	if (tdc->busy)
- 		tegra_dma_terminate_all(dc);
-+	tdc->isr_handler = NULL;
- 
- 	spin_lock_irqsave(&tdc->lock, flags);
- 	list_splice_init(&tdc->pending_sg_req, &sg_req_list);
--- 
-1.7.12
+-Mike
 
