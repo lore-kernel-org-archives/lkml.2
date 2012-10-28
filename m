@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab2J1Urc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:47:32 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:49476 "EHLO
+	id S1755623Ab2J1Urj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:47:39 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:59718 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755347Ab2J1Ur3 (ORCPT
+	with ESMTP id S1755587Ab2J1Urg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:47:29 -0400
+	Sun, 28 Oct 2012 16:47:36 -0400
 From: Roland Stigge <stigge@antcom.de>
 To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
@@ -15,91 +15,462 @@ To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
         rmallon@gmail.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND 0/5 v6] gpio: Add block GPIO
-Date: Sun, 28 Oct 2012 21:46:45 +0100
-Message-Id: <1351457210-25222-1-git-send-email-stigge@antcom.de>
+Subject: [PATCH RESEND 1/5 v6] gpio: Add a block GPIO API to gpiolib
+Date: Sun, 28 Oct 2012 21:46:46 +0100
+Message-Id: <1351457210-25222-2-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351457210-25222-1-git-send-email-stigge@antcom.de>
+References: <1351457210-25222-1-git-send-email-stigge@antcom.de>
 X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches adds:
+The recurring task of providing simultaneous access to GPIO lines (especially
+for bit banging protocols) needs an appropriate API.
 
-* Block GPIO API to gpiolib
-* Sysfs support for GPIO API, to provide userland access
-* Devicetree support to instantiate GPIO blocks via DT
-* Example implementations in several gpio drivers since they need
-  special accessor functions for block wise GPIO access
-* Fix for race condition in gpiolib on device creation
+This patch adds a kernel internal "Block GPIO" API that enables simultaneous
+access to several GPIOs. This is done by abstracting GPIOs to an n-bit word:
+Once requested, it provides access to a group of GPIOs which can range over
+multiple GPIO chips.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
---
+---
 
-Changes since v5:
-* Documented sysfs: elaborated on "exported" and "values" attributes
-* Documented sysfs: gpiochip is a separate class now
-* Aggregated driver support patches for block gpio into one single patch
-* Added gpio block driver support for twl6040 and pch
+ Documentation/gpio.txt     |   47 +++++++++
+ drivers/gpio/gpiolib.c     |  217 +++++++++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/gpio.h |   15 +++
+ include/linux/gpio.h       |   74 +++++++++++++++
+ 4 files changed, 353 insertions(+)
 
-Changes since v4:
-* Documented word width
-* Bugfix: export/unexport on register/unregister
-* Using default dev_attrs for gpio_block_class
-* Fix gpiolib: race condition on device creation
-* Added driver support for ucb14500, vt8500, xilinx
-
-Changes since v3:
-* Added driver support for pca953x, em, pl061, max732x, pcf857x
-* Coding style improvements
-* Fixed krealloc memory leak in error case
-* sysfs: values in hex
-* Register blocks in a list
-* Narrowing lock scope
-* Use S_IWUSR and S_IRUGO instead of direct octal values
-* Use for_each_set_bit()
-* Change from unsigned to unsigned long for masks and values
-
-Changes since v2:
-* Added sysfs support
-* Added devicetree support
-* Added support for lpc32xx, generic
-* Added functions for GPIO block registration
-* Added more error checking
-* Bit remapping bugfix
-
-Changes since v1:
-* API change to 32/64 bit word, bit masks
-
-Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
-Plagniol-Villard, Mark Brown and Greg Kroah-Hartman for reviewing!
-
-Roland Stigge (5):
- gpio: Add a block GPIO API to gpiolib
- gpio: Add sysfs support to block GPIO API
- gpiolib: Fix default attributes for class
- gpio: Add device tree support to block GPIO API
- gpio: Add block gpio to several gpio drivers
+--- linux-2.6.orig/Documentation/gpio.txt
++++ linux-2.6/Documentation/gpio.txt
+@@ -439,6 +439,53 @@ slower clock delays the rising edge of S
+ signaling rate accordingly.
  
- Documentation/ABI/testing/sysfs-gpio                  |   29 +
- Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 +
- Documentation/gpio.txt                                |   47 +
- drivers/gpio/Makefile                                 |    1 
- drivers/gpio/gpio-em.c                                |   23 
- drivers/gpio/gpio-generic.c                           |   56 +
- drivers/gpio/gpio-lpc32xx.c                           |   82 ++
- drivers/gpio/gpio-max730x.c                           |   61 ++
- drivers/gpio/gpio-max732x.c                           |   59 ++
- drivers/gpio/gpio-pca953x.c                           |   64 ++
- drivers/gpio/gpio-pcf857x.c                           |   24 
- drivers/gpio/gpio-pch.c                               |   27 
- drivers/gpio/gpio-pl061.c                             |   17 
- drivers/gpio/gpio-twl6040.c                           |   32 +
- drivers/gpio/gpio-ucb1400.c                           |   23 
- drivers/gpio/gpio-vt8500.c                            |   24 
- drivers/gpio/gpio-xilinx.c                            |   44 +
- drivers/gpio/gpioblock-of.c                           |   84 ++
- drivers/gpio/gpiolib.c                                |  510 ++++++++++++++++--
- include/asm-generic/gpio.h                            |   26 
- include/linux/gpio.h                                  |   87 +++
- 21 files changed, 1311 insertions(+), 45 deletions(-)
+ 
++Block GPIO
++----------
++
++The above described interface concentrates on handling single GPIOs.  However,
++in applications where it is critical to set several GPIOs at once, this
++interface doesn't work well, e.g. bit-banging protocols via grouped GPIO lines.
++Consider a GPIO controller that is connected via a slow I2C line. When
++switching two or more GPIOs one after another, there can be considerable time
++between those events. This is solved by an interface called Block GPIO:
++
++struct gpio_block *gpio_block_create(unsigned int *gpios, size_t size);
++
++This creates a new block of GPIOs as a list of GPIO numbers with the specified
++size which are accessible via the returned struct gpio_block and the accessor
++functions described below. Please note that you need to request the GPIOs
++separately via gpio_request(). An arbitrary list of globally valid GPIOs can be
++specified, even ranging over several gpio_chips. Actual handling of I/O
++operations will be done on a best effort base, i.e. simultaneous I/O only where
++possible by hardware and implemented in the respective GPIO driver. The number
++of GPIOs in one block is limited to the number of bits in an unsigned long, or
++BITS_PER_LONG, of the respective platform, i.e. typically at least 32 on a 32
++bit system, and at least 64 on a 64 bit system. However, several blocks can be
++defined at once.
++
++unsigned gpio_block_get(struct gpio_block *block);
++void gpio_block_set(struct gpio_block *block, unsigned value);
++
++With those accessor functions, setting and getting the GPIO values is possible,
++analogous to gpio_get_value() and gpio_set_value(). Each bit in the return
++value of gpio_block_get() and in the value argument of gpio_block_set()
++corresponds to a bit specified on gpio_block_create(). Block operations in
++hardware are only possible where the respective GPIO driver implements it,
++falling back to using single GPIO operations where the driver only implements
++single GPIO access.
++
++void gpio_block_free(struct gpio_block *block);
++
++After the GPIO block isn't used anymore, it should be free'd via
++gpio_block_free().
++
++int gpio_block_register(struct gpio_block *block);
++void gpio_block_unregister(struct gpio_block *block);
++
++These functions can be used to register a GPIO block. Blocks registered this
++way will be available via sysfs.
++
++
+ What do these conventions omit?
+ ===============================
+ One of the biggest things these conventions omit is pin multiplexing, since
+--- linux-2.6.orig/drivers/gpio/gpiolib.c
++++ linux-2.6/drivers/gpio/gpiolib.c
+@@ -83,6 +83,8 @@ static inline void desc_set_label(struct
+ #endif
+ }
+ 
++static LIST_HEAD(gpio_block_list);
++
+ /* Warn when drivers omit gpio_request() calls -- legal but ill-advised
+  * when setting direction, and otherwise illegal.  Until board setup code
+  * and drivers use explicit requests everywhere (which won't happen when
+@@ -1676,6 +1678,221 @@ void __gpio_set_value(unsigned gpio, int
+ }
+ EXPORT_SYMBOL_GPL(__gpio_set_value);
+ 
++static int gpio_block_chip_index(struct gpio_block *block, struct gpio_chip *gc)
++{
++	int i;
++
++	for (i = 0; i < block->nchip; i++) {
++		if (block->gbc[i].gc == gc)
++			return i;
++	}
++	return -1;
++}
++
++struct gpio_block *gpio_block_create(unsigned *gpios, size_t size,
++				     const char *name)
++{
++	struct gpio_block *block;
++	struct gpio_block_chip *gbc;
++	struct gpio_remap *remap;
++	void *tmp;
++	int i;
++
++	if (size < 1 || size > sizeof(unsigned long) * 8)
++		return ERR_PTR(-EINVAL);
++
++	for (i = 0; i < size; i++)
++		if (!gpio_is_valid(gpios[i]))
++			return ERR_PTR(-EINVAL);
++
++	block = kzalloc(sizeof(struct gpio_block), GFP_KERNEL);
++	if (!block)
++		return ERR_PTR(-ENOMEM);
++
++	block->name = name;
++	block->ngpio = size;
++	block->gpio = kzalloc(sizeof(*block->gpio) * size, GFP_KERNEL);
++	if (!block->gpio)
++		goto err1;
++
++	memcpy(block->gpio, gpios, sizeof(*block->gpio) * size);
++
++	for (i = 0; i < size; i++) {
++		struct gpio_chip *gc = gpio_to_chip(gpios[i]);
++		int bit = gpios[i] - gc->base;
++		int index = gpio_block_chip_index(block, gc);
++
++		if (index < 0) {
++			block->nchip++;
++			tmp = krealloc(block->gbc,
++				       sizeof(struct gpio_block_chip) *
++				       block->nchip, GFP_KERNEL);
++			if (!tmp) {
++				kfree(block->gbc);
++				goto err2;
++			}
++			block->gbc = tmp;
++			gbc = &block->gbc[block->nchip - 1];
++			gbc->gc = gc;
++			gbc->remap = NULL;
++			gbc->nremap = 0;
++			gbc->mask = 0;
++		} else {
++			gbc = &block->gbc[index];
++		}
++		/* represents the mask necessary on calls to the driver's
++		 * .get_block() and .set_block()
++		 */
++		gbc->mask |= BIT(bit);
++
++		/* collect gpios that are specified together, represented by
++		 * neighboring bits
++		 *
++		 * Note that even though in setting remap is given a negative
++		 * index, the next lines guard that the potential out-of-bounds
++		 * pointer is not dereferenced when out of bounds.
++		 */
++		remap = &gbc->remap[gbc->nremap - 1];
++		if (!gbc->nremap || (bit - i != remap->offset)) {
++			gbc->nremap++;
++			tmp = krealloc(gbc->remap,
++					      sizeof(struct gpio_remap) *
++					      gbc->nremap, GFP_KERNEL);
++			if (!tmp) {
++				kfree(gbc->remap);
++				goto err3;
++			}
++			gbc->remap = tmp;
++			remap = &gbc->remap[gbc->nremap - 1];
++			remap->offset = bit - i;
++			remap->mask = 0;
++		}
++
++		/* represents the mask necessary for bit reordering between
++		 * gpio_block (i.e. as specified on gpio_block_get() and
++		 * gpio_block_set()) and gpio_chip domain (i.e. as specified on
++		 * the driver's .set_block() and .get_block())
++		 */
++		remap->mask |= BIT(i);
++	}
++
++	return block;
++err3:
++	for (i = 0; i < block->nchip - 1; i++)
++		kfree(block->gbc[i].remap);
++	kfree(block->gbc);
++err2:
++	kfree(block->gpio);
++err1:
++	kfree(block);
++	return ERR_PTR(-ENOMEM);
++}
++EXPORT_SYMBOL_GPL(gpio_block_create);
++
++void gpio_block_free(struct gpio_block *block)
++{
++	int i;
++
++	for (i = 0; i < block->nchip; i++)
++		kfree(block->gbc[i].remap);
++	kfree(block->gpio);
++	kfree(block->gbc);
++	kfree(block);
++}
++EXPORT_SYMBOL_GPL(gpio_block_free);
++
++unsigned long gpio_block_get(const struct gpio_block *block)
++{
++	struct gpio_block_chip *gbc;
++	int i, j;
++	unsigned long values = 0;
++
++	for (i = 0; i < block->nchip; i++) {
++		unsigned long remapped = 0;
++
++		gbc = &block->gbc[i];
++
++		if (gbc->gc->get_block) {
++			remapped = gbc->gc->get_block(gbc->gc, gbc->mask);
++		} else {
++			/* emulate */
++			for_each_set_bit(j, &gbc->mask, BITS_PER_LONG)
++				remapped |= gbc->gc->get(gbc->gc,
++						gbc->gc->base + j) << j;
++		}
++
++		for (j = 0; j < gbc->nremap; j++) {
++			struct gpio_remap *gr = &gbc->remap[j];
++
++			values |= (remapped >> gr->offset) & gr->mask;
++		}
++	}
++
++	return values;
++}
++EXPORT_SYMBOL_GPL(gpio_block_get);
++
++void gpio_block_set(struct gpio_block *block, unsigned long values)
++{
++	struct gpio_block_chip *gbc;
++	int i, j;
++
++	for (i = 0; i < block->nchip; i++) {
++		unsigned long remapped = 0;
++
++		gbc = &block->gbc[i];
++
++		for (j = 0; j < gbc->nremap; j++) {
++			struct gpio_remap *gr = &gbc->remap[j];
++
++			remapped |= (values & gr->mask) << gr->offset;
++		}
++		if (gbc->gc->set_block) {
++			gbc->gc->set_block(gbc->gc, gbc->mask, remapped);
++		} else {
++			/* emulate */
++			for_each_set_bit(j, &gbc->mask, BITS_PER_LONG)
++				gbc->gc->set(gbc->gc, gbc->gc->base + j,
++					     (remapped >> j) & 1);
++		}
++	}
++}
++EXPORT_SYMBOL_GPL(gpio_block_set);
++
++struct gpio_block *gpio_block_find_by_name(const char *name)
++{
++	struct gpio_block *i;
++
++	list_for_each_entry(i, &gpio_block_list, list)
++		if (!strcmp(i->name, name))
++			return i;
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(gpio_block_find_by_name);
++
++int gpio_block_register(struct gpio_block *block)
++{
++	if (gpio_block_find_by_name(block->name))
++		return -EBUSY;
++
++	list_add(&block->list, &gpio_block_list);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(gpio_block_register);
++
++void gpio_block_unregister(struct gpio_block *block)
++{
++	struct gpio_block *i;
++
++	list_for_each_entry(i, &gpio_block_list, list)
++		if (i == block) {
++			list_del(&i->list);
++			break;
++		}
++}
++EXPORT_SYMBOL_GPL(gpio_block_unregister);
++
+ /**
+  * __gpio_cansleep() - report whether gpio value access will sleep
+  * @gpio: gpio in question
+--- linux-2.6.orig/include/asm-generic/gpio.h
++++ linux-2.6/include/asm-generic/gpio.h
+@@ -43,6 +43,7 @@ static inline bool gpio_is_valid(int num
+ 
+ struct device;
+ struct gpio;
++struct gpio_block;
+ struct seq_file;
+ struct module;
+ struct device_node;
+@@ -105,6 +106,8 @@ struct gpio_chip {
+ 						unsigned offset);
+ 	int			(*get)(struct gpio_chip *chip,
+ 						unsigned offset);
++	unsigned long		(*get_block)(struct gpio_chip *chip,
++					     unsigned long mask);
+ 	int			(*direction_output)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
+ 	int			(*set_debounce)(struct gpio_chip *chip,
+@@ -112,6 +115,9 @@ struct gpio_chip {
+ 
+ 	void			(*set)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
++	void			(*set_block)(struct gpio_chip *chip,
++					     unsigned long mask,
++					     unsigned long values);
+ 
+ 	int			(*to_irq)(struct gpio_chip *chip,
+ 						unsigned offset);
+@@ -171,6 +177,15 @@ extern void gpio_set_value_cansleep(unsi
+ extern int __gpio_get_value(unsigned gpio);
+ extern void __gpio_set_value(unsigned gpio, int value);
+ 
++extern struct gpio_block *gpio_block_create(unsigned *gpio, size_t size,
++					    const char *name);
++extern void gpio_block_free(struct gpio_block *block);
++extern unsigned long gpio_block_get(const struct gpio_block *block);
++extern void gpio_block_set(struct gpio_block *block, unsigned long values);
++extern struct gpio_block *gpio_block_find_by_name(const char *name);
++extern int gpio_block_register(struct gpio_block *block);
++extern void gpio_block_unregister(struct gpio_block *block);
++
+ extern int __gpio_cansleep(unsigned gpio);
+ 
+ extern int __gpio_to_irq(unsigned gpio);
+--- linux-2.6.orig/include/linux/gpio.h
++++ linux-2.6/include/linux/gpio.h
+@@ -2,6 +2,8 @@
+ #define __LINUX_GPIO_H
+ 
+ #include <linux/errno.h>
++#include <linux/types.h>
++#include <linux/list.h>
+ 
+ /* see Documentation/gpio.txt */
+ 
+@@ -39,6 +41,43 @@ struct gpio {
+ 	const char	*label;
+ };
+ 
++/*
++ * struct gpio_remap - a structure for describing a bit mapping
++ * @mask:	a bit mask
++ * @offset:	how many bits to shift to the left (negative: to the right)
++ *
++ * When we are mapping bit values from one word to another (here: from GPIO
++ * block domain to GPIO driver domain) we first mask them out with mask and
++ * shift them as specified with offset. More complicated mappings are done by
++ * grouping several of those structs and adding the results together.
++ */
++struct gpio_remap {
++	unsigned long		mask;
++	int			offset;
++};
++
++struct gpio_block_chip {
++	struct gpio_chip	*gc;
++	struct gpio_remap	*remap;
++	int			nremap;
++	unsigned long		mask;
++};
++
++/**
++ * struct gpio_block - a structure describing a list of GPIOs for simultaneous
++ *                     operations
++ */
++struct gpio_block {
++	struct gpio_block_chip	*gbc;
++	size_t			nchip;
++	const char		*name;
++
++	int			ngpio;
++	unsigned		*gpio;
++
++	struct list_head	list;
++};
++
+ #ifdef CONFIG_GENERIC_GPIO
+ 
+ #ifdef CONFIG_ARCH_HAVE_CUSTOM_GPIO_H
+@@ -169,6 +208,41 @@ static inline void gpio_set_value(unsign
+ 	WARN_ON(1);
+ }
+ 
++static inline
++struct gpio_block *gpio_block_create(unsigned *gpios, size_t size,
++				     const char *name)
++{
++	WARN_ON(1);
++	return NULL;
++}
++
++static inline void gpio_block_free(struct gpio_block *block)
++{
++	WARN_ON(1);
++}
++
++static inline unsigned long gpio_block_get(const struct gpio_block *block)
++{
++	WARN_ON(1);
++	return 0;
++}
++
++static inline void gpio_block_set(struct gpio_block *block, unsigned long value)
++{
++	WARN_ON(1);
++}
++
++static inline int gpio_block_register(struct gpio_block *block)
++{
++	WARN_ON(1);
++	return 0;
++}
++
++static inline void gpio_block_unregister(struct gpio_block *block)
++{
++	WARN_ON(1);
++}
++
+ static inline int gpio_cansleep(unsigned gpio)
+ {
+ 	/* GPIO can never have been requested or set as {in,out}put */
