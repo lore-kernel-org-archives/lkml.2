@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab2J1Xd1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:33:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42201 "EHLO
+	id S1757338Ab2J1Xdp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:33:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42189 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757004Ab2J1X20 (ORCPT
+	by vger.kernel.org with ESMTP id S1756996Ab2J1X2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:26 -0400
-Message-Id: <20121028231547.444433266@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:25 -0400
+Message-Id: <20121028231548.468654149@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:10 +0000
+Date: Sun, 28 Oct 2012 23:16:13 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Sage Weil <sage@inktank.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: [ 034/105] tmpfs,ceph,gfs2,isofs,reiserfs,xfs: fix fh_len checking
+        Michal Hocko <mhocko@suse.cz>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 037/105] nohz: Fix idle ticks in cpu summary line of /proc/stat
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,207 +30,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 35c2a7f4908d404c9124c2efc6ada4640ca4d5d5 upstream.
+commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f upstream.
 
-Fuzzing with trinity oopsed on the 1st instruction of shmem_fh_to_dentry(),
-	u64 inum = fid->raw[2];
-which is unhelpfully reported as at the end of shmem_alloc_inode():
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+conditional" introduced a bug in regard to cpu hotplug. The effect is
+that the number of idle ticks in the cpu summary line in /proc/stat is
+still counting ticks for offline cpus.
 
-BUG: unable to handle kernel paging request at ffff880061cd3000
-IP: [<ffffffff812190d0>] shmem_alloc_inode+0x40/0x40
-Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Call Trace:
- [<ffffffff81488649>] ? exportfs_decode_fh+0x79/0x2d0
- [<ffffffff812d77c3>] do_handle_open+0x163/0x2c0
- [<ffffffff812d792c>] sys_open_by_handle_at+0xc/0x10
- [<ffffffff83a5f3f8>] tracesys+0xe1/0xe6
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
 
-Right, tmpfs is being stupid to access fid->raw[2] before validating that
-fh_len includes it: the buffer kmalloc'ed by do_sys_name_to_handle() may
-fall at the end of a page, and the next page not be present.
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,
+%0.0 st
 
-But some other filesystems (ceph, gfs2, isofs, reiserfs, xfs) are being
-careless about fh_len too, in fh_to_dentry() and/or fh_to_parent(), and
-could oops in the same way: add the missing fh_len checks to those.
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this we should make sure that the cpu is online when calling
+get_cpu_idle_time_us and get_cpu_iowait_time_us.
 
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sage Weil <sage@inktank.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[Srivatsa: Rebased to current mainline]
+
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20121010061820.8999.57245.stgit@srivatsabhat.in.ibm.com
+Cc: deepthi@linux.vnet.ibm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ceph/export.c    |   18 ++++++++++++++----
- fs/gfs2/export.c    |    4 ++++
- fs/isofs/export.c   |    2 +-
- fs/reiserfs/inode.c |    6 +++++-
- fs/xfs/xfs_export.c |    3 +++
- mm/shmem.c          |    6 ++++--
- 6 files changed, 31 insertions(+), 8 deletions(-)
+ fs/proc/stat.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ceph/export.c b/fs/ceph/export.c
-index 8e1b60e..02ce909 100644
---- a/fs/ceph/export.c
-+++ b/fs/ceph/export.c
-@@ -99,7 +99,7 @@ static int ceph_encode_fh(struct inode *inode, u32 *rawfh, int *max_len,
-  * FIXME: we should try harder by querying the mds for the ino.
-  */
- static struct dentry *__fh_to_dentry(struct super_block *sb,
--				     struct ceph_nfs_fh *fh)
-+				     struct ceph_nfs_fh *fh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -107,6 +107,9 @@ static struct dentry *__fh_to_dentry(struct super_block *sb,
- 	struct ceph_vino vino;
- 	int err;
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -24,11 +24,14 @@
  
-+	if (fh_len < sizeof(*fh) / 4)
-+		return ERR_PTR(-ESTALE);
+ static cputime64_t get_idle_time(int cpu)
+ {
+-	u64 idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle_time = -1ULL;
+ 	cputime64_t idle;
+ 
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
 +
- 	dout("__fh_to_dentry %llx\n", fh->ino);
- 	vino.ino = fh->ino;
- 	vino.snap = CEPH_NOSNAP;
-@@ -150,7 +153,7 @@ static struct dentry *__fh_to_dentry(struct super_block *sb,
-  * convert connectable fh to dentry
-  */
- static struct dentry *__cfh_to_dentry(struct super_block *sb,
--				      struct ceph_nfs_confh *cfh)
-+				      struct ceph_nfs_confh *cfh, int fh_len)
- {
- 	struct ceph_mds_client *mdsc = ceph_sb_to_client(sb)->mdsc;
- 	struct inode *inode;
-@@ -158,6 +161,9 @@ static struct dentry *__cfh_to_dentry(struct super_block *sb,
- 	struct ceph_vino vino;
- 	int err;
+ 	if (idle_time == -1ULL) {
+-		/* !NO_HZ so we can rely on cpustat.idle */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+ 		idle = kstat_cpu(cpu).cpustat.idle;
+ 		idle = cputime64_add(idle, arch_idle_time(cpu));
+ 	} else
+@@ -39,11 +42,14 @@ static cputime64_t get_idle_time(int cpu
  
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
+ static cputime64_t get_iowait_time(int cpu)
+ {
+-	u64 iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait_time = -1ULL;
+ 	cputime64_t iowait;
+ 
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
 +
- 	dout("__cfh_to_dentry %llx (%llx/%x)\n",
- 	     cfh->ino, cfh->parent_ino, cfh->parent_name_hash);
- 
-@@ -207,9 +213,11 @@ static struct dentry *ceph_fh_to_dentry(struct super_block *sb, struct fid *fid,
- 					int fh_len, int fh_type)
- {
- 	if (fh_type == 1)
--		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw);
-+		return __fh_to_dentry(sb, (struct ceph_nfs_fh *)fid->raw,
-+								fh_len);
+ 	if (iowait_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.iowait */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+ 		iowait = kstat_cpu(cpu).cpustat.iowait;
  	else
--		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw);
-+		return __cfh_to_dentry(sb, (struct ceph_nfs_confh *)fid->raw,
-+								fh_len);
- }
- 
- /*
-@@ -230,6 +238,8 @@ static struct dentry *ceph_fh_to_parent(struct super_block *sb,
- 
- 	if (fh_type == 1)
- 		return ERR_PTR(-ESTALE);
-+	if (fh_len < sizeof(*cfh) / 4)
-+		return ERR_PTR(-ESTALE);
- 
- 	pr_debug("fh_to_parent %llx/%d\n", cfh->parent_ino,
- 		 cfh->parent_name_hash);
-diff --git a/fs/gfs2/export.c b/fs/gfs2/export.c
-index e8ed6d4..4767774 100644
---- a/fs/gfs2/export.c
-+++ b/fs/gfs2/export.c
-@@ -161,6 +161,8 @@ static struct dentry *gfs2_fh_to_dentry(struct super_block *sb, struct fid *fid,
- 	case GFS2_SMALL_FH_SIZE:
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_SMALL_FH_SIZE)
-+			return NULL;
- 		this.no_formal_ino = ((u64)be32_to_cpu(fh[0])) << 32;
- 		this.no_formal_ino |= be32_to_cpu(fh[1]);
- 		this.no_addr = ((u64)be32_to_cpu(fh[2])) << 32;
-@@ -180,6 +182,8 @@ static struct dentry *gfs2_fh_to_parent(struct super_block *sb, struct fid *fid,
- 	switch (fh_type) {
- 	case GFS2_LARGE_FH_SIZE:
- 	case GFS2_OLD_FH_SIZE:
-+		if (fh_len < GFS2_LARGE_FH_SIZE)
-+			return NULL;
- 		parent.no_formal_ino = ((u64)be32_to_cpu(fh[4])) << 32;
- 		parent.no_formal_ino |= be32_to_cpu(fh[5]);
- 		parent.no_addr = ((u64)be32_to_cpu(fh[6])) << 32;
-diff --git a/fs/isofs/export.c b/fs/isofs/export.c
-index 1d38044..2b4f235 100644
---- a/fs/isofs/export.c
-+++ b/fs/isofs/export.c
-@@ -175,7 +175,7 @@ static struct dentry *isofs_fh_to_parent(struct super_block *sb,
- {
- 	struct isofs_fid *ifid = (struct isofs_fid *)fid;
- 
--	if (fh_type != 2)
-+	if (fh_len < 2 || fh_type != 2)
- 		return NULL;
- 
- 	return isofs_export_iget(sb,
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index 4648555..f27f01a 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -1573,8 +1573,10 @@ struct dentry *reiserfs_fh_to_dentry(struct super_block *sb, struct fid *fid,
- 			reiserfs_warning(sb, "reiserfs-13077",
- 				"nfsd/reiserfs, fhtype=%d, len=%d - odd",
- 				fh_type, fh_len);
--		fh_type = 5;
-+		fh_type = fh_len;
- 	}
-+	if (fh_len < 2)
-+		return NULL;
- 
- 	return reiserfs_get_dentry(sb, fid->raw[0], fid->raw[1],
- 		(fh_type == 3 || fh_type >= 5) ? fid->raw[2] : 0);
-@@ -1583,6 +1585,8 @@ struct dentry *reiserfs_fh_to_dentry(struct super_block *sb, struct fid *fid,
- struct dentry *reiserfs_fh_to_parent(struct super_block *sb, struct fid *fid,
- 		int fh_len, int fh_type)
- {
-+	if (fh_type > fh_len)
-+		fh_type = fh_len;
- 	if (fh_type < 4)
- 		return NULL;
- 
-diff --git a/fs/xfs/xfs_export.c b/fs/xfs/xfs_export.c
-index 4267922..8c6d1d7 100644
---- a/fs/xfs/xfs_export.c
-+++ b/fs/xfs/xfs_export.c
-@@ -189,6 +189,9 @@ xfs_fs_fh_to_parent(struct super_block *sb, struct fid *fid,
- 	struct xfs_fid64	*fid64 = (struct xfs_fid64 *)fid;
- 	struct inode		*inode = NULL;
- 
-+	if (fh_len < xfs_fileid_length(fileid_type))
-+		return NULL;
-+
- 	switch (fileid_type) {
- 	case FILEID_INO32_GEN_PARENT:
- 		inode = xfs_nfs_get_inode(sb, fid->i32.parent_ino,
-diff --git a/mm/shmem.c b/mm/shmem.c
-index cc12072f..67afba5 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2220,12 +2220,14 @@ static struct dentry *shmem_fh_to_dentry(struct super_block *sb,
- {
- 	struct inode *inode;
- 	struct dentry *dentry = NULL;
--	u64 inum = fid->raw[2];
--	inum = (inum << 32) | fid->raw[1];
-+	u64 inum;
- 
- 	if (fh_len < 3)
- 		return NULL;
- 
-+	inum = fid->raw[2];
-+	inum = (inum << 32) | fid->raw[1];
-+
- 	inode = ilookup5(sb, (unsigned long)(inum + fid->raw[0]),
- 			shmem_match, fid->raw);
- 	if (inode) {
+ 		iowait = usecs_to_cputime64(iowait_time);
 
 
