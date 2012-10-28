@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2J1X1h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41890 "EHLO
+	id S1755508Ab2J1XnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:43:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41975 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756536Ab2J1X1X (ORCPT
+	by vger.kernel.org with ESMTP id S1756537Ab2J1X1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:23 -0400
-Message-Id: <20121028231603.665324273@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:35 -0400
+Message-Id: <20121028231601.191944870@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:02 +0000
+Date: Sun, 28 Oct 2012 23:16:54 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 086/105] USB: mos7840: fix urb leak at release
+Subject: [ 078/105] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat() instead of
+ strcat()
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,29 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 65a4cdbb170e4ec1a7fa0e94936d47e24a17b0e8 upstream.
+commit 66081a72517a131430dcf986775f3268aafcb546 upstream.
 
-Make sure control urb is freed at release.
+The warning check for duplicate sysfs entries can cause a buffer overflow
+when printing the warning, as strcat() doesn't check buffer sizes.
+Use strlcat() instead.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Since strlcat() doesn't return a pointer to the passed buffer, unlike
+strcat(), I had to convert the nested concatenation in sysfs_add_one() to
+an admittedly more obscure comma operator construct, to avoid emitting code
+for the concatenation if CONFIG_BUG is disabled.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/mos7840.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/sysfs/dir.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2661,6 +2661,7 @@ static void mos7840_release(struct usb_s
- 		mos7840_port = mos7840_get_port_private(serial->port[i]);
- 		dbg("mos7840_port %d = %p", i, mos7840_port);
- 		if (mos7840_port) {
-+			usb_free_urb(mos7840_port->control_urb);
- 			kfree(mos7840_port->ctrl_buf);
- 			kfree(mos7840_port->dr);
- 			kfree(mos7840_port);
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 6b0bb00..2fbdff6 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -485,20 +485,18 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ /**
+  *	sysfs_pathname - return full path to sysfs dirent
+  *	@sd: sysfs_dirent whose path we want
+- *	@path: caller allocated buffer
++ *	@path: caller allocated buffer of size PATH_MAX
+  *
+  *	Gives the name "/" to the sysfs_root entry; any path returned
+  *	is relative to wherever sysfs is mounted.
+- *
+- *	XXX: does no error checking on @path size
+  */
+ static char *sysfs_pathname(struct sysfs_dirent *sd, char *path)
+ {
+ 	if (sd->s_parent) {
+ 		sysfs_pathname(sd->s_parent, path);
+-		strcat(path, "/");
++		strlcat(path, "/", PATH_MAX);
+ 	}
+-	strcat(path, sd->s_name);
++	strlcat(path, sd->s_name, PATH_MAX);
+ 	return path;
+ }
+ 
+@@ -531,9 +529,11 @@ int sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ 		char *path = kzalloc(PATH_MAX, GFP_KERNEL);
+ 		WARN(1, KERN_WARNING
+ 		     "sysfs: cannot create duplicate filename '%s'\n",
+-		     (path == NULL) ? sd->s_name :
+-		     strcat(strcat(sysfs_pathname(acxt->parent_sd, path), "/"),
+-		            sd->s_name));
++		     (path == NULL) ? sd->s_name
++				    : (sysfs_pathname(acxt->parent_sd, path),
++				       strlcat(path, "/", PATH_MAX),
++				       strlcat(path, sd->s_name, PATH_MAX),
++				       path));
+ 		kfree(path);
+ 	}
+ 
 
 
