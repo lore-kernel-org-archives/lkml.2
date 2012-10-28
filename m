@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2J1U57 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:57:59 -0400
-Received: from nm11.access.bullet.mail.sp2.yahoo.com ([98.139.44.138]:24688
-	"EHLO nm11.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755779Ab2J1U5Q (ORCPT
+	id S1755940Ab2J1U6R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:58:17 -0400
+Received: from nm30.access.bullet.mail.mud.yahoo.com ([66.94.237.95]:37174
+	"EHLO nm30.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755739Ab2J1U5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:57:16 -0400
-X-Yahoo-Newman-Id: 897975.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
+	Sun, 28 Oct 2012 16:57:14 -0400
+X-Yahoo-Newman-Id: 744310.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Z7xYwlgVM1nhv7pF3JGcthvFBoEx.D83mP1lmDIy5Twa.LN
- i2LNe5fPWbfkQCf76EOJD51vJTFRxXl9IRRCuuBp4rtbE14TD8oqjq_vazzQ
- H6Xk6SFjqvNJGKfMZYKg14axOBHc8_R5WDA_H9cu5e_ztgNxTSf0fYfmrr.o
- rFUXwiaL.rJwf2t3tpECgBak.cZ8VAXrtbSCgjP3z7s0nEAdahBHw1Gm8OHc
- PPUWo0eHw0begxfUoOxXIhmbGGNJAJ20rdy0mp_nOIuGSHmHZfaxXPvbn0hL
- GGL7Zjp5zzkUDJ0BIeDr7YaBiij1IPn7A0QHu_oMV14Vb9r7LjpEEUWtOfYA
- 2OsNPiGPs2aFQFeHETCQeLlzmNPNyZMEwpEoO.i9ggIYg_gr_wfhDPxBnZ9l
- wqBIwOhAajdrY2RD14b03plqA.4qCezRECc3Y6ylRv8nKr3tO96iePvHLTe5
- vvutpTRwVkM6FPVYA0T1_ZvheAYNMmNFCfyB0.7A-
+X-YMail-OSG: zy9q_QYVM1nqev8.E6ow_N_cJ9vKjMb2khOvREPrQuv53lr
+ PARmskixIFGfj2zPaSyKfHIDbLxKpkrEldx0xmTagBVHWaIKMElgxleZh8Tc
+ UVu55TA9TLGZUWx72..ehlbXHOLPbw3paSL11AJNQcznd39VcAKyJFLmBMZx
+ nht7c66hXQ.HJlaK8rfdjiI5fsJGeHXjApiKiCLjFQM2pfaF_RtgP6.ULMZH
+ uw1WViBjfiZWCwwTANxnytq_TvRo39FgB.7IG6fHWLKZcK9QcCbB0FcXnicg
+ 1JqxH7ELc6Tl2b_Qm8ZmOVJVnAljAxo0.XCyqd1F_k6yG6aB_3orXgDbDopK
+ A0bkdMqcti_iyzzG4KkqE0mZdwS9I0XaBrghSuI8.UchexqWHJ1h5ndQT2G8
+ BBbDrzI4dCjbp2Wl0Vyzc5U.sxv2.zWodlBhtLqqnIhI_ID3q1Tsr
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -35,9 +34,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 7/9] bug.h: Fix BUILD_BUG_ON macro in __CHECKER__
-Date: Sun, 28 Oct 2012 15:57:13 -0500
-Message-Id: <1351457835-7553-7-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v4 5/9] bug.h: Make BUILD_BUG_ON generate compile-time error
+Date: Sun, 28 Oct 2012 15:57:11 -0500
+Message-Id: <1351457835-7553-5-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
 References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
@@ -45,28 +44,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When __CHECKER__ is defined, we disable all of the BUILD_BUG.* macros.
-However, BUILD_BUG_ON was evaluating to nothing in this case, and we
-want (0) since this is a function-like macro that will be followed by a
-semicolon.
+Negative sized arrays wont create a compile-time error in some cases
+starting with gcc 4.4 (e.g., inlined functions), but gcc 4.3 introduced
+the error function attribute that will.  This patch modifies
+BUILD_BUG_ON to behave like BUILD_BUG already does, using the error
+function attribute so that you don't have to build the entire kernel to
+discover that you have a problem, and then enjoy trying to track it down
+from a link-time error.
+
+Also, we are only including asm/bug.h and then expecting that
+linux/compiler.h will eventually be included to define __linktime_error
+(used in BUILD_BUG_ON). This patch includes it directly for clarity and
+to avoid the possibility of changes in <arch>/*/include/asm/bug.h being
+changed or not including linux/compiler.h for some reason.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
+Acked-by: Borislav Petkov <bp@alien8.de>
 ---
- include/linux/bug.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/bug.h |   30 ++++++++++++++++++------------
+ 1 files changed, 18 insertions(+), 12 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index da03dc1..6c38988 100644
+index 298a916..03259d7 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -16,7 +16,7 @@ struct pt_regs;
- #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
- #define BUILD_BUG_ON_ZERO(e) (0)
- #define BUILD_BUG_ON_NULL(e) ((void*)0)
--#define BUILD_BUG_ON(condition)
-+#define BUILD_BUG_ON(condition) (0)
- #define BUILD_BUG() (0)
- #else /* __CHECKER__ */
+@@ -2,6 +2,7 @@
+ #define _LINUX_BUG_H
+ 
+ #include <asm/bug.h>
++#include <linux/compiler.h>
+ 
+ enum bug_trap_type {
+ 	BUG_TRAP_TYPE_NONE = 0,
+@@ -42,24 +43,29 @@ struct pt_regs;
+  * @condition: the condition which the compiler should know is false.
+  *
+  * If you have some code which relies on certain constants being equal, or
+- * other compile-time-evaluated condition, you should use BUILD_BUG_ON to
++ * some other compile-time-evaluated condition, you should use BUILD_BUG_ON to
+  * detect if someone changes it.
+  *
+- * The implementation uses gcc's reluctance to create a negative array, but
+- * gcc (as of 4.4) only emits that error for obvious cases (eg. not arguments
+- * to inline functions).  So as a fallback we use the optimizer; if it can't
+- * prove the condition is false, it will cause a link error on the undefined
+- * "__build_bug_on_failed".  This error message can be harder to track down
+- * though, hence the two different methods.
++ * The implementation uses gcc's reluctance to create a negative array, but gcc
++ * (as of 4.4) only emits that error for obvious cases (e.g. not arguments to
++ * inline functions).  Luckily, in 4.3 they added the "error" function
++ * attribute just for this type of case.  Thus, we use a negative sized array
++ * (should always create an error on gcc versions older than 4.4) and then call
++ * an undefined function with the error attribute (should always create an
++ * error on gcc 4.3 and later).  If for some reason, neither creates a
++ * compile-time error, we'll still have a link-time error, which is harder to
++ * track down.
+  */
+ #ifndef __OPTIMIZE__
+ #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+ #else
+-extern int __build_bug_on_failed;
+-#define BUILD_BUG_ON(condition)					\
+-	do {							\
+-		((void)sizeof(char[1 - 2*!!(condition)]));	\
+-		if (condition) __build_bug_on_failed = 1;	\
++#define BUILD_BUG_ON(condition)						\
++	do {								\
++		extern void __build_bug_on_failed(void)			\
++			__compiletime_error("BUILD_BUG_ON failed");	\
++		((void)sizeof(char[1 - 2*!!(condition)]));		\
++		if (condition)						\
++			__build_bug_on_failed();			\
+ 	} while(0)
+ #endif
  
 -- 
 1.7.3.4
