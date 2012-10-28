@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab2J1Xvb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:51:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41774 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280Ab2J1X07 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756292Ab2J1X07 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 28 Oct 2012 19:26:59 -0400
-Message-Id: <20121028231539.577253718@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41747 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755915Ab2J1X04 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 19:26:56 -0400
+Message-Id: <20121028231538.636389099@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:44 +0000
+Date: Sun, 28 Oct 2012 23:15:41 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 008/105] SUNRPC: Set alloc_slot for backchannel tcp ops
+        Brian Norris <computersforpeace@gmail.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 005/105] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,48 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 84e28a307e376f271505af65a7b7e212dd6f61f4 upstream.
+commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
 
-f39c1bfb5a03e2d255451bff05be0d7255298fa4 (SUNRPC: Fix a UDP transport
-regression) introduced the "alloc_slot" function for xprt operations,
-but never created one for the backchannel operations.  This patch fixes
-a null pointer dereference when mounting NFS over v4.1.
+The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
+silently masks off at least one flag that might be set by the driver
+(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
+others.
 
-Call Trace:
- [<ffffffffa0207957>] ? xprt_reserve+0x47/0x50 [sunrpc]
- [<ffffffffa02023a4>] call_reserve+0x34/0x60 [sunrpc]
- [<ffffffffa020e280>] __rpc_execute+0x90/0x400 [sunrpc]
- [<ffffffffa020e61a>] rpc_async_schedule+0x2a/0x40 [sunrpc]
- [<ffffffff81073589>] process_one_work+0x139/0x500
- [<ffffffff81070e70>] ? alloc_worker+0x70/0x70
- [<ffffffffa020e5f0>] ? __rpc_execute+0x400/0x400 [sunrpc]
- [<ffffffff81073d1e>] worker_thread+0x15e/0x460
- [<ffffffff8145c839>] ? preempt_schedule+0x49/0x70
- [<ffffffff81073bc0>] ? rescuer_thread+0x230/0x230
- [<ffffffff81079603>] kthread+0x93/0xa0
- [<ffffffff81465d04>] kernel_thread_helper+0x4/0x10
- [<ffffffff81079570>] ? kthread_freezable_should_stop+0x70/0x70
- [<ffffffff81465d00>] ? gs_change+0x13/0x13
+Really, as long as driver writers exercise a small amount of care with
+NAND_* options, this mask is not necessary at all; it was only here to
+prevent certain options from accidentally being set by the driver. But the
+original thought turns out to be a bad idea occasionally. Thus, kill it.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-[bwh: Backported to 3.2: adjust context]
+Note, this patch fixes some major gpmi-nand breakage.
+
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Tested-by: Huang Shijie <shijie8@gmail.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+[Brian Norris: This is a backport for v3.2 stable.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/xprtsock.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mtd/nand/nand_base.c |    9 +++------
+ include/linux/mtd/nand.h     |    3 ---
+ 2 files changed, 3 insertions(+), 9 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -2488,6 +2488,7 @@ static struct rpc_xprt_ops xs_tcp_ops =
- static struct rpc_xprt_ops bc_tcp_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xprt_release_xprt,
-+	.alloc_slot		= xprt_alloc_slot,
- 	.buf_alloc		= bc_malloc,
- 	.buf_free		= bc_free,
- 	.send_request		= bc_send_request,
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 3ed9c5e..daed698 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2903,9 +2903,7 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
+ 	if (le16_to_cpu(p->features) & 1)
+ 		*busw = NAND_BUSWIDTH_16;
+ 
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= (NAND_NO_READRDY |
+-			NAND_NO_AUTOINCR) & NAND_CHIPOPTIONS_MSK;
++	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
+ 
+ 	return 1;
+ }
+@@ -3069,9 +3067,8 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+ 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
+ 		}
+ 	}
+-	/* Get chip options, preserve non chip based options */
+-	chip->options &= ~NAND_CHIPOPTIONS_MSK;
+-	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
++	/* Get chip options */
++	chip->options |= type->options;
+ 
+ 	/*
+ 	 * Check if chip is not a Samsung device. Do not clear the
+diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
+index 904131b..b25b09b 100644
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -215,9 +215,6 @@ typedef enum {
+ #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
+ 					&& (chip->page_shift > 9))
+ 
+-/* Mask to zero out the chip options, which come from the id table */
+-#define NAND_CHIPOPTIONS_MSK	(0x0000ffff & ~NAND_NO_AUTOINCR)
+-
+ /* Non chip related options */
+ /* This option skips the bbt scan during initialization. */
+ #define NAND_SKIP_BBTSCAN	0x00010000
 
 
