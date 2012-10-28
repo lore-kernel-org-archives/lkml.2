@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757058Ab2J1X2a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42173 "EHLO
+	id S1757034Ab2J1X21 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:28:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42172 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756978Ab2J1X2X (ORCPT
+	by vger.kernel.org with ESMTP id S1756934Ab2J1X2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:28:23 -0400
-Message-Id: <20121028231550.941789248@decadent.org.uk>
+Message-Id: <20121028231553.071436947@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:21 +0000
+Date: Sun, 28 Oct 2012 23:16:28 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arnd Bergmann <arnd@arndb.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Pavel Machek <pavel@suse.cz>, Jochen Friedrich <jochen@scram.de>
-Subject: [ 045/105] pcmcia: sharpsl: dont discard sharpsl_pcmcia_ops
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ben Blum <bblum@andrew.cmu.edu>, Li Zefan <lizefan@huawei.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [ 052/105] cgroup: notify_on_release may not be triggered in some cases
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,48 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-commit fdc858a466b738d35d3492bc7cf77b1dac98bf7c upstream.
+commit 1f5320d5972aa50d3e8d2b227b636b370e608359 upstream.
 
-The sharpsl_pcmcia_ops structure gets passed into
-sa11xx_drv_pcmcia_probe, where it gets accessed at run-time,
-unlike all other pcmcia drivers that pass their structures
-into platform_device_add_data, which makes a copy.
+notify_on_release must be triggered when the last process in a cgroup is
+move to another. But if the first(and only) process in a cgroup is moved to
+another, notify_on_release is not triggered.
 
-This means the gcc warning is valid and the structure
-must not be marked as __initdata.
+	# mkdir /cgroup/cpu/SRC
+	# mkdir /cgroup/cpu/DST
+	#
+	# echo 1 >/cgroup/cpu/SRC/notify_on_release
+	# echo 1 >/cgroup/cpu/DST/notify_on_release
+	#
+	# sleep 300 &
+	[1] 8629
+	#
+	# echo 8629 >/cgroup/cpu/SRC/tasks
+	# echo 8629 >/cgroup/cpu/DST/tasks
+	-> notify_on_release for /SRC must be triggered at this point,
+	   but it isn't.
 
-Without this patch, building collie_defconfig results in:
+This is because put_css_set() is called before setting CGRP_RELEASABLE
+in cgroup_task_migrate(), and is a regression introduce by the
+commit:74a1166d(cgroups: make procs file writable), which was merged
+into v3.0.
 
-drivers/pcmcia/pxa2xx_sharpsl.c:22:31: fatal error: mach-pxa/hardware.h: No such file or directory
-compilation terminated.
-make[3]: *** [drivers/pcmcia/pxa2xx_sharpsl.o] Error 1
-make[2]: *** [drivers/pcmcia] Error 2
-make[1]: *** [drivers] Error 2
-make: *** [sub-make] Error 2
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Pavel Machek <pavel@suse.cz>
-Cc: linux-pcmcia@lists.infradead.org
-Cc: Jochen Friedrich <jochen@scram.de>
+Cc: Ben Blum <bblum@andrew.cmu.edu>
+Acked-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pcmcia/pxa2xx_sharpsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/cgroup.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/pcmcia/pxa2xx_sharpsl.c
-+++ b/drivers/pcmcia/pxa2xx_sharpsl.c
-@@ -219,7 +219,7 @@ static void sharpsl_pcmcia_socket_suspen
- 	sharpsl_pcmcia_init_reset(skt);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1803,9 +1803,8 @@ static int cgroup_task_migrate(struct cg
+ 	 * trading it for newcg is protected by cgroup_mutex, we're safe to drop
+ 	 * it here; it will be freed under RCU.
+ 	 */
+-	put_css_set(oldcg);
+-
+ 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
++	put_css_set(oldcg);
+ 	return 0;
  }
  
--static struct pcmcia_low_level sharpsl_pcmcia_ops __initdata = {
-+static struct pcmcia_low_level sharpsl_pcmcia_ops = {
- 	.owner                  = THIS_MODULE,
- 	.hw_init                = sharpsl_pcmcia_hw_init,
- 	.hw_shutdown            = sharpsl_pcmcia_hw_shutdown,
 
 
