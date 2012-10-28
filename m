@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2J1TGA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:06:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35797 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755102Ab2J1TF6 (ORCPT
+	id S1755156Ab2J1TGV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:06:21 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49120 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab2J1TGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:05:58 -0400
-Date: Sun, 28 Oct 2012 20:05:51 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, eranian@google.com,
-        mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 33/33] perf, tools: List kernel supplied event aliases in perf list v2
-Message-ID: <20121028190551.GN16230@one.firstfloor.org>
-References: <1351283415-13170-1-git-send-email-andi@firstfloor.org> <1351283415-13170-34-git-send-email-andi@firstfloor.org> <20121027202021.GA9099@krava.redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121027202021.GA9099@krava.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 28 Oct 2012 15:06:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
+References: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
+Date: Sun, 28 Oct 2012 20:06:17 +0100
+Message-ID: <CACRpkdYiMu7fRGAhEfy7YfLon0CbC=6c5SwJ2kNP5JnwNaaKPw@mail.gmail.com>
+Subject: Re: [PATCH] dma: ste_dma40: use for_each_set_bit
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>,
+        Per Forlin <per.forlin@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 10:20:21PM +0200, Jiri Olsa wrote:
-> On Fri, Oct 26, 2012 at 01:30:15PM -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > List the kernel supplied pmu event aliases in perf list
-> > 
-> > It's better when the users can actually see them.
-> 
-> with the HW events being part of PMU 'events' dir
-> we get single HW events listed twice
+On Sat, Oct 27, 2012 at 5:49 PM, Akinobu Mita <akinobu.mita@gmail.com> wrote:
 
-Cannot change it. Not listing at all is no alternative.
+> Replace open-coded loop with for_each_set_bit().
+>
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
 
-In theory could do a dedup step but I don't think it's worth it.
+Makes perfect sense to me,
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
--Andi
+Yours,
+Linus Walleij
