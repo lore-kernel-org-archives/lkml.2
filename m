@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab2J1XuM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:50:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41765 "EHLO
+	id S1757186Ab2J1XuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:50:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41782 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756263Ab2J1X07 (ORCPT
+	by vger.kernel.org with ESMTP id S1755915Ab2J1X1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:26:59 -0400
-Message-Id: <20121028231542.885062831@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:00 -0400
+Message-Id: <20121028231541.944810096@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:55 +0000
+Date: Sun, 28 Oct 2012 23:15:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Florian Zumbiehl <florz@florz.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 019/105] vlan: dont deliver frames for unknown vlans to  protocols
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Larry Finger <larry.finger@lwfinger.net>,
+        Jay Harbeston <jharbestonus@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 016/105] [media] au0828: fix case where STREAMOFF being called on stopped
+ stream causes BUG()
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,138 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Zumbiehl <florz@florz.de>
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
 
-[ Upstream commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e ]
+commit a595c1ce4c9d572cf53513570b9f1a263d7867f2 upstream.
 
-6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
-vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
-there was an rx_handler, as the rx_handler could cause the frame to be received
-on a different (virtual) vlan-capable interface where that vlan might be
-configured.
+We weren't checking whether the resource was in use before calling
+res_free(), so applications which called STREAMOFF on a v4l2 device that
+wasn't already streaming would cause a BUG() to be hit (MythTV).
 
-As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
-frames for unknown vlans to be delivered to the protocol stack as if they had
-been received untagged.
-
-For example, if an ipv6 router advertisement that's tagged for a locally not
-configured vlan is received on an interface with macvlan interfaces attached,
-macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
-macvlan interfaces, which caused it to be passed to the protocol stack, leading
-to ipv6 addresses for the announced prefix being configured even though those
-are completely unusable on the underlying interface.
-
-The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
-rx_handler, if there is one, sees the frame unchanged, but afterwards,
-before the frame is delivered to the protocol stack, it gets marked whether
-there is an rx_handler or not.
-
-Signed-off-by: Florian Zumbiehl <florz@florz.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Larry Finger <larry.finger@lwfinger.net>
+Reported-by: Jay Harbeston <jharbestonus@gmail.com>
+Signed-off-by: Devin Heitmueller <dheitmueller@kernellabs.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/if_vlan.h |  8 ++++----
- net/8021q/vlan_core.c   | 10 ++--------
- net/core/dev.c          |  7 +++++--
- 3 files changed, 11 insertions(+), 14 deletions(-)
+ drivers/media/video/au0828/au0828-video.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index 12d5543..c944c4f 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -97,6 +97,8 @@ static inline int is_vlan_dev(struct net_device *dev)
- }
+diff --git a/drivers/media/video/au0828/au0828-video.c b/drivers/media/video/au0828/au0828-video.c
+index df92322..4d5b670 100644
+--- a/drivers/media/video/au0828/au0828-video.c
++++ b/drivers/media/video/au0828/au0828-video.c
+@@ -1702,14 +1702,18 @@ static int vidioc_streamoff(struct file *file, void *priv,
+ 			(AUVI_INPUT(i).audio_setup)(dev, 0);
+ 		}
  
- #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
-+#define vlan_tx_nonzero_tag_present(__skb) \
-+	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
- #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
+-		videobuf_streamoff(&fh->vb_vidq);
+-		res_free(fh, AU0828_RESOURCE_VIDEO);
++		if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
++			videobuf_streamoff(&fh->vb_vidq);
++			res_free(fh, AU0828_RESOURCE_VIDEO);
++		}
+ 	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
+ 		dev->vbi_timeout_running = 0;
+ 		del_timer_sync(&dev->vbi_timeout);
  
- #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
-@@ -106,7 +108,7 @@ extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
- extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
- extern u16 vlan_dev_vlan_id(const struct net_device *dev);
+-		videobuf_streamoff(&fh->vb_vbiq);
+-		res_free(fh, AU0828_RESOURCE_VBI);
++		if (res_check(fh, AU0828_RESOURCE_VBI)) {
++			videobuf_streamoff(&fh->vb_vbiq);
++			res_free(fh, AU0828_RESOURCE_VBI);
++		}
+ 	}
  
--extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
-+extern bool vlan_do_receive(struct sk_buff **skb);
- extern struct sk_buff *vlan_untag(struct sk_buff *skb);
- 
- #else
-@@ -128,10 +130,8 @@ static inline u16 vlan_dev_vlan_id(const struct net_device *dev)
  	return 0;
- }
- 
--static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
-+static inline bool vlan_do_receive(struct sk_buff **skb)
- {
--	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
--		(*skb)->pkt_type = PACKET_OTHERHOST;
- 	return false;
- }
- 
-diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
-index 9ddbd4e..e860a4f 100644
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -5,7 +5,7 @@
- #include <linux/export.h>
- #include "vlan.h"
- 
--bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
-+bool vlan_do_receive(struct sk_buff **skbp)
- {
- 	struct sk_buff *skb = *skbp;
- 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
- 	struct vlan_pcpu_stats *rx_stats;
- 
- 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
--	if (!vlan_dev) {
--		/* Only the last call to vlan_do_receive() should change
--		 * pkt_type to PACKET_OTHERHOST
--		 */
--		if (vlan_id && last_handler)
--			skb->pkt_type = PACKET_OTHERHOST;
-+	if (!vlan_dev)
- 		return false;
--	}
- 
- 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
- 	if (unlikely(!skb))
-diff --git a/net/core/dev.c b/net/core/dev.c
-index abe1147..f500a69 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3278,18 +3278,18 @@ another_round:
- ncls:
- #endif
- 
--	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (vlan_tx_tag_present(skb)) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
- 			pt_prev = NULL;
- 		}
--		if (vlan_do_receive(&skb, !rx_handler))
-+		if (vlan_do_receive(&skb))
- 			goto another_round;
- 		else if (unlikely(!skb))
- 			goto out;
- 	}
- 
-+	rx_handler = rcu_dereference(skb->dev->rx_handler);
- 	if (rx_handler) {
- 		if (pt_prev) {
- 			ret = deliver_skb(skb, pt_prev, orig_dev);
-@@ -3309,6 +3309,9 @@ ncls:
- 		}
- 	}
- 
-+	if (vlan_tx_nonzero_tag_present(skb))
-+		skb->pkt_type = PACKET_OTHERHOST;
-+
- 	/* deliver only exact match when indicated */
- 	null_or_dev = deliver_exact ? skb->dev : NULL;
- 
 
 
