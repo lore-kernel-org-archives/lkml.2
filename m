@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab2J1XuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:50:08 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41777 "EHLO
+	id S1757014Ab2J1XuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:50:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41767 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756287Ab2J1X1A (ORCPT
+	by vger.kernel.org with ESMTP id S1756269Ab2J1X1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:00 -0400
-Message-Id: <20121028231539.239101287@decadent.org.uk>
+Message-Id: <20121028231538.953434444@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:43 +0000
+Date: Sun, 28 Oct 2012 23:15:42 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Pirko <jpirko@redhat.com>, Ben Greear <greearb@candelatech.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        "Andrey Jr. Melnikov" <temnota@kmv.ru>
-Subject: [ 007/105] e1000: fix vlan processing regression
+        David Henningsson <david.henningsson@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 006/105] ALSA: hda - Fix oops caused by recent commit "Fix internal mic for
+ Lenovo Ideapad U300s"
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,104 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jpirko@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 52f5509fe8ccb607ff9b84ad618f244262336475 upstream.
+commit 83b0c6ba999643ee8ad6329f26e1cdc870e1a920 upstream.
 
-This patch fixes a regression introduced by commit "e1000: do vlan
-cleanup (799d531)".
+Make sure we don't dereference the "quirk" pointer when it is null.
 
-Apparently some e1000 chips (not mine) are sensitive about the order of
-setting vlan filter and vlan stripping/inserting functionality. So this
-patch changes the order so it's the same as before vlan cleanup.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Jiri Pirko <jpirko@redhat.com>
-Tested-by: Ben Greear <greearb@candelatech.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-[Jonathan Nieder: It doesn't apply cleanly to kernels before
-v3.3-rc1~182^2~581 (net: introduce and use netdev_features_t for
-device features sets) but a backport is straightforward.]
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Tested-by: Andrey Jr. Melnikov <temnota@kmv.ru>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/intel/e1000/e1000_main.c | 76 +++++++++++++++------------
- 1 file changed, 42 insertions(+), 34 deletions(-)
+ sound/pci/hda/patch_conexant.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -168,6 +168,8 @@ static int e1000_82547_fifo_workaround(s
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index cbe115b..abb59f4 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4441,7 +4441,9 @@ static void apply_fixup(struct hda_codec *codec,
+ 	struct conexant_spec *spec = codec->spec;
  
- static bool e1000_vlan_used(struct e1000_adapter *adapter);
- static void e1000_vlan_mode(struct net_device *netdev, u32 features);
-+static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
-+				     bool filter_on);
- static void e1000_vlan_rx_add_vid(struct net_device *netdev, u16 vid);
- static void e1000_vlan_rx_kill_vid(struct net_device *netdev, u16 vid);
- static void e1000_restore_vlan(struct e1000_adapter *adapter);
-@@ -1219,7 +1221,7 @@ static int __devinit e1000_probe(struct
- 	if (err)
- 		goto err_register;
- 
--	e1000_vlan_mode(netdev, netdev->features);
-+	e1000_vlan_filter_on_off(adapter, false);
- 
- 	/* print bus type/speed/width info */
- 	e_info(probe, "(PCI%s:%dMHz:%d-bit) %pM\n",
-@@ -4553,6 +4555,21 @@ static bool e1000_vlan_used(struct e1000
- 	return false;
- }
- 
-+static void __e1000_vlan_mode(struct e1000_adapter *adapter, u32 features)
-+{
-+	struct e1000_hw *hw = &adapter->hw;
-+	u32 ctrl;
-+
-+	ctrl = er32(CTRL);
-+	if (features & NETIF_F_HW_VLAN_RX) {
-+		/* enable VLAN tag insert/strip */
-+		ctrl |= E1000_CTRL_VME;
-+	} else {
-+		/* disable VLAN tag insert/strip */
-+		ctrl &= ~E1000_CTRL_VME;
-+	}
-+	ew32(CTRL, ctrl);
-+}
- static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter,
- 				     bool filter_on)
- {
-@@ -4562,6 +4579,7 @@ static void e1000_vlan_filter_on_off(str
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_disable(adapter);
- 
-+	__e1000_vlan_mode(adapter, adapter->netdev->features);
- 	if (filter_on) {
- 		/* enable VLAN receive filtering */
- 		rctl = er32(RCTL);
-@@ -4584,21 +4602,11 @@ static void e1000_vlan_filter_on_off(str
- static void e1000_vlan_mode(struct net_device *netdev, u32 features)
- {
- 	struct e1000_adapter *adapter = netdev_priv(netdev);
--	struct e1000_hw *hw = &adapter->hw;
--	u32 ctrl;
- 
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_disable(adapter);
- 
--	ctrl = er32(CTRL);
--	if (features & NETIF_F_HW_VLAN_RX) {
--		/* enable VLAN tag insert/strip */
--		ctrl |= E1000_CTRL_VME;
--	} else {
--		/* disable VLAN tag insert/strip */
--		ctrl &= ~E1000_CTRL_VME;
--	}
--	ew32(CTRL, ctrl);
-+	__e1000_vlan_mode(adapter, features);
- 
- 	if (!test_bit(__E1000_DOWN, &adapter->flags))
- 		e1000_irq_enable(adapter);
+ 	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
+-	if (quirk && table[quirk->value]) {
++	if (!quirk)
++		return;
++	if (table[quirk->value]) {
+ 		snd_printdd(KERN_INFO "hda_codec: applying pincfg for %s\n",
+ 			    quirk->name);
+ 		apply_pincfg(codec, table[quirk->value]);
 
 
