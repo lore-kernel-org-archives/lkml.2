@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab2J1XeG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:34:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42186 "EHLO
+	id S1757325Ab2J1XeD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:34:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42184 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756989Ab2J1X2Y (ORCPT
+	by vger.kernel.org with ESMTP id S1756985Ab2J1X2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:28:24 -0400
-Message-Id: <20121028231549.451898184@decadent.org.uk>
+Message-Id: <20121028231549.745388506@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:16 +0000
+Date: Sun, 28 Oct 2012 23:16:17 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>, NeilBrown <neilb@suse.de>
-Subject: [ 040/105] md/raid10: use correct limit variable
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 041/105] Bluetooth: SMP: Fix setting unknown auth_req bits
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,35 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 91502f099dfc5a1e8812898e26ee280713e1d002 upstream.
+commit 065a13e2cc665f6547dc7e8a9d6b6565badf940a upstream.
 
-Clang complains that we are assigning a variable to itself.  This should
-be using bad_sectors like the similar earlier check does.
+When sending a pairing request or response we should not just blindly
+copy the value that the remote device sent. Instead we should at least
+make sure to mask out any unknown bits. This is particularly critical
+from the upcoming LE Secure Connections feature perspective as
+incorrectly indicating support for it (by copying the remote value)
+would cause a failure to pair with devices that support it.
 
-Bug has been present since 3.1-rc1.  It is minor but could
-conceivably cause corruption or other bad behaviour.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/raid10.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/smp.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index 146749b..867d1b4 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3218,7 +3218,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
- 				else {
- 					bad_sectors -= (sector - first_bad);
- 					if (max_sync > bad_sectors)
--						max_sync = max_sync;
-+						max_sync = bad_sectors;
- 					continue;
- 				}
- 			}
+--- a/net/bluetooth/smp.c
++++ b/net/bluetooth/smp.c
+@@ -30,6 +30,8 @@
+ 
+ #define SMP_TIMEOUT 30000 /* 30 seconds */
+ 
++#define AUTH_REQ_MASK   0x07
++
+ static inline void swap128(u8 src[16], u8 dst[16])
+ {
+ 	int i;
+@@ -206,7 +208,7 @@ static void build_pairing_cmd(struct l2c
+ 		req->max_key_size = SMP_MAX_ENC_KEY_SIZE;
+ 		req->init_key_dist = dist_keys;
+ 		req->resp_key_dist = dist_keys;
+-		req->auth_req = authreq;
++		req->auth_req = (authreq & AUTH_REQ_MASK);
+ 		return;
+ 	}
+ 
+@@ -215,7 +217,7 @@ static void build_pairing_cmd(struct l2c
+ 	rsp->max_key_size = SMP_MAX_ENC_KEY_SIZE;
+ 	rsp->init_key_dist = req->init_key_dist & dist_keys;
+ 	rsp->resp_key_dist = req->resp_key_dist & dist_keys;
+-	rsp->auth_req = authreq;
++	rsp->auth_req = (authreq & AUTH_REQ_MASK);
+ }
+ 
+ static u8 check_enc_key_size(struct l2cap_conn *conn, __u8 max_key_size)
 
 
