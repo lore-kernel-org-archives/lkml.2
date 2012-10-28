@@ -1,47 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2J1Mb6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 08:31:58 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:49475 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2J1Mb5 (ORCPT
+	id S1752158Ab2J1Mlf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 08:41:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:34509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2J1Mld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 08:31:57 -0400
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
-In-Reply-To: <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at>
-Cc: Dave Airlie <airlied@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-X-Mailer: iPhone Mail (9B206)
-From: Norbert Preining <preining@logic.at>
-Subject: Re: drm i915 hangs on heavy io load
-Date: Sun, 28 Oct 2012 21:32:53 +0900
-To: Chris Wilson <chris@chris-wilson.co.uk>
+	Sun, 28 Oct 2012 08:41:33 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, mark.einon@gmail.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/v2] staging : csr: Fix typo in csr/netdev.c
+Date: Sun, 28 Oct 2012 21:41:28 +0900
+Message-Id: <1351428088-5740-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
+In-Reply-To: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
+References: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+Correct spelling typos in csr/netdev.c
 
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/staging/csr/netdev.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> so can you
-> please file a bug on bugzilla.freedesktop.org (or bugzilla.kernel.org)
-> so that we don't lose track of it.
+diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
+index 113f2c1..56875ec 100644
+--- a/drivers/staging/csr/netdev.c
++++ b/drivers/staging/csr/netdev.c
+@@ -54,7 +54,7 @@
+ #include <net/pkt_sched.h>
+ 
+ 
+-/* Wext handler is suported only if CSR_SUPPORT_WEXT is defined */
++/* Wext handler is supported only if CSR_SUPPORT_WEXT is defined */
+ #ifdef CSR_SUPPORT_WEXT
+ extern struct iw_handler_def unifi_iw_handler_def;
+ #endif /* CSR_SUPPORT_WEXT */
+@@ -88,7 +88,7 @@ typedef int (*tx_signal_handler)(unifi_priv_t *priv, struct sk_buff *skb, const
+ /*
+  * The driver uses the qdisc interface to buffer and control all
+  * outgoing traffic. We create a root qdisc, register our qdisc operations
+- * and later we create two subsiduary pfifo queues for the uncontrolled
++ * and later we create two subsidiary pfifo queues for the uncontrolled
+  * and controlled ports.
+  *
+  * The network stack delivers all outgoing packets in our enqueue handler.
+@@ -1581,7 +1581,7 @@ send_ma_pkt_request(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
+         return -1;
+     }
+ 
+-    /* RA adrress must contain the immediate destination MAC address that is similiar to
++    /* RA address must contain the immediate destination MAC address that is similar to
+      * the Address 1 field of 802.11 Mac header here 4 is: (sizeof(framecontrol) + sizeof (durationID))
+      * which is address 1 field
+      */
+@@ -2558,7 +2558,7 @@ static void process_ma_packet_ind(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_d
+         return;
+     }
+     /* For monitor mode we need to pass this indication to the registered application
+-    handle this seperately*/
++    handle this separately*/
+     /* MIC failure is already taken care of so no need to send the PDUs which are not successfully received in non-monitor mode*/
+     if(pkt_ind->ReceptionStatus != CSR_RX_SUCCESS)
+     {
+@@ -3099,13 +3099,13 @@ static void update_expected_sn(unifi_priv_t *priv,
+     u16 gap;
+ 
+     gap = (sn - ba_session->expected_sn) & 0xFFF;
+-    unifi_trace(priv, UDBG6, "%s: proccess the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
++    unifi_trace(priv, UDBG6, "%s: process the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
+     for(j = 0; j < gap && j < ba_session->wind_size; j++) {
+         i = SN_TO_INDEX(ba_session, ba_session->expected_sn);
+-        unifi_trace(priv, UDBG6, "%s: proccess the slot index = %d\n", __FUNCTION__, i);
++        unifi_trace(priv, UDBG6, "%s: process the slot index = %d\n", __FUNCTION__, i);
+         if(ba_session->buffer[i].active) {
+             add_frame_to_ba_complete(priv, interfacePriv, &ba_session->buffer[i]);
+-            unifi_trace(priv, UDBG6, "%s: proccess the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
++            unifi_trace(priv, UDBG6, "%s: process the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
+             FREE_BUFFER_SLOT(ba_session, i);
+         } else {
+             unifi_trace(priv, UDBG6, "%s: empty slot at index = %d\n", __FUNCTION__, i);
+-- 
+1.8.0.rc3.16.g8ead1bf
 
-Will do when I'm back from the mountains.
-
-> If your have the option, can you switch the ddx between using SNA and
-> UXA.
-
-??? Is that a BIOS option? Or kernel?
-I can try both.
-
-Norbert
-
-(on mobile)
