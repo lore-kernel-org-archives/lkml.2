@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2J1TP5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:15:57 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:41783 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab2J1TPT (ORCPT
+	id S1754533Ab2J1TSL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:18:11 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59342 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab2J1TSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:15:19 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: [PATCH 5/5] mm, highmem: get virtual address of the page using PKMAP_ADDR()
-Date: Mon, 29 Oct 2012 04:12:56 +0900
-Message-Id: <1351451576-2611-6-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351451576-2611-1-git-send-email-js1304@gmail.com>
-References: <Yes>
- <1351451576-2611-1-git-send-email-js1304@gmail.com>
+	Sun, 28 Oct 2012 15:18:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com>
+	<1351181518-11882-2-git-send-email-m-karicheri2@ti.com>
+Date: Sun, 28 Oct 2012 20:18:08 +0100
+Message-ID: <CACRpkdaa8f7N90hknaqZmNeYD1SjQx6Fm35nS34CxwnH+fwEfg@mail.gmail.com>
+Subject: Re: [PATCH v3 01/11] clk: davinci - add main PLL clock driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Murali Karicheri <m-karicheri2@ti.com>
+Cc: mturquette@linaro.org, arnd@arndb.de, akpm@linux-foundation.org,
+        shawn.guo@linaro.org, rob.herring@calxeda.com, viresh.linux@gmail.com,
+        linux-kernel@vger.kernel.org, nsekhar@ti.com, khilman@ti.com,
+        linux@arm.linux.org.uk, sshtylyov@mvista.com,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, linux-keystone@list.ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In flush_all_zero_pkmaps(), we have an index of the pkmap associated the page.
-Using this index, we can simply get virtual address of the page.
-So change it.
+On Thu, Oct 25, 2012 at 6:11 PM, Murali Karicheri <m-karicheri2@ti.com> wrote:
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> This is the driver for the main PLL clock hardware found on DM SoCs.
+> This driver borrowed code from arch/arm/mach-davinci/clock.c and
+> implemented the driver as per common clock provider API. The main PLL
+> hardware typically has a multiplier, a pre-divider and a post-divider.
+> Some of the SoCs has the divider fixed meaning they can not be
+> configured through a register. HAS_PREDIV and HAS_POSTDIV flags are used
+> to tell the driver if a hardware has these dividers present or not.
+> Driver is configured through the struct clk_pll_data that has the
+> SoC specific clock data.
+>
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index 65beb9a..1417f4f 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -137,8 +137,7 @@ static int flush_all_zero_pkmaps(void)
- 		 * So no dangers, even with speculative execution.
- 		 */
- 		page = pte_page(pkmap_page_table[i]);
--		pte_clear(&init_mm, (unsigned long)page_address(page),
--			  &pkmap_page_table[i]);
-+		pte_clear(&init_mm, PKMAP_ADDR(i), &pkmap_page_table[i]);
- 
- 		set_page_address(page, NULL);
- 		index = i;
--- 
-1.7.9.5
+This looks good to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
