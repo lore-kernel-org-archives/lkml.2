@@ -1,155 +1,674 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab2J1LF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 07:05:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45341 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab2J1LFz (ORCPT
+	id S1751913Ab2J1LJF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 07:09:05 -0400
+Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:38770 "HELO
+	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751644Ab2J1LJB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 07:05:55 -0400
-MIME-Version: 1.0
-Date: Sun, 28 Oct 2012 12:05:54 +0100
-Message-ID: <CAPVoSvQLE4jdz514CamS0d9zedo1A1gYHpgN2dD4XUQOdwOagA@mail.gmail.com>
-Subject: Hang with swap / mempool / md on 3.7.0-rc2
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 28 Oct 2012 07:09:01 -0400
+Subject: Re: [PATCH 04/16 v2] f2fs: add super block operations
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+In-Reply-To: <001401cdb0c5$e9a7da30$bcf78e90$%kim@samsung.com>
+Date: Sun, 28 Oct 2012 15:08:36 +0300
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, viro@zeniv.linux.org.uk, arnd@arndb.de,
+        tytso@mit.edu, chur.lee@samsung.com, cm224.lee@samsung.com,
+        jooyoung.hwang@samsung.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E66693E0-B302-4E67-AB37-24D481C7AC8D@dubeyko.com>
+References: <001001cdb0c5$2ac96520$805c2f60$%kim@samsung.com> <001401cdb0c5$e9a7da30$bcf78e90$%kim@samsung.com>
+To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+X-Mailer: Apple Mail (2.1085)
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 46.39.244.28 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While 3.7.0-rc1 and -rc2 otherwise worked fine for me, today my system
-experienced a hang, trying to write to its disks.
 
-Source of the problem seems to be a hang in kswapd0, after that many
-more processes got stuck trying to do IO. Even an emergency sync via
-SysRq+S did no longer complete.
+On Oct 23, 2012, at 6:27 AM, Jaegeuk Kim wrote:
 
-The hang (that was still correctly logged to disk):
-Oct 28 09:40:16 thoregon kernel: [141366.412179] INFO: task
-kswapd0:724 blocked for more than 120 seconds.
-Oct 28 09:40:16 thoregon kernel: [141366.412186] "echo 0 >
-/proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Oct 28 09:40:16 thoregon kernel: [141366.412191] kswapd0         D
-ffff880337d112c0     0   724      2 0x00000000
-Oct 28 09:40:16 thoregon kernel: [141366.412200]  ffff880329b8efa0
-0000000000000046 0000000000000800 ffff88032986d240
-Oct 28 09:40:16 thoregon kernel: [141366.412210]  ffff880329183fd8
-ffff880329183fd8 ffff880329183fd8 ffff880329b8efa0
-Oct 28 09:40:16 thoregon kernel: [141366.412217]  0000000000000246
-ffff880329947680 ffff880329947400 00000000ffffffff
-Oct 28 09:40:16 thoregon kernel: [141366.412224] Call Trace:
-Oct 28 09:40:16 thoregon kernel: [141366.412239]  [<ffffffff814a6fbd>]
-? md_super_wait+0x4d/0x80
-Oct 28 09:40:16 thoregon kernel: [141366.412249]  [<ffffffff81054340>]
-? add_wait_queue+0x60/0x60
-Oct 28 09:40:16 thoregon kernel: [141366.412257]  [<ffffffff814ad283>]
-? bitmap_unplug+0x153/0x160
-Oct 28 09:40:16 thoregon kernel: [141366.412265]  [<ffffffff810cb3dc>]
-? new_slab+0x1ec/0x220
-Oct 28 09:40:16 thoregon kernel: [141366.412273]  [<ffffffff81497fc8>]
-? raid1_unplug+0xb8/0x110
-Oct 28 09:40:16 thoregon kernel: [141366.412281]  [<ffffffff81238180>]
-? blk_flush_plug_list+0xb0/0x210
-Oct 28 09:40:16 thoregon kernel: [141366.412288]  [<ffffffff816289e2>]
-? io_schedule_timeout+0x82/0xf0
-Oct 28 09:40:16 thoregon kernel: [141366.412296]  [<ffffffff81097882>]
-? mempool_alloc+0x122/0x150
-Oct 28 09:40:16 thoregon kernel: [141366.412302]  [<ffffffff81054340>]
-? add_wait_queue+0x60/0x60
-Oct 28 09:40:16 thoregon kernel: [141366.412309]  [<ffffffff811025fe>]
-? bio_alloc_bioset+0x4e/0x120
-Oct 28 09:40:16 thoregon kernel: [141366.412315]  [<ffffffff81102802>]
-? bio_clone_bioset+0x12/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412322]  [<ffffffff8149be16>]
-? make_request+0x416/0xb70
-Oct 28 09:40:16 thoregon kernel: [141366.412328]  [<ffffffff810cb3dc>]
-? new_slab+0x1ec/0x220
-Oct 28 09:40:16 thoregon kernel: [141366.412336]  [<ffffffff8123b9e1>]
-? blk_recount_segments+0x21/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412343]  [<ffffffff814a0a0f>]
-? md_make_request+0xbf/0x1e0
-Oct 28 09:40:16 thoregon kernel: [141366.412349]  [<ffffffff81236d9a>]
-? generic_make_request+0xba/0xf0
-Oct 28 09:40:16 thoregon kernel: [141366.412355]  [<ffffffff81236e31>]
-? submit_bio+0x61/0x110
-Oct 28 09:40:16 thoregon kernel: [141366.412363]  [<ffffffff811a8415>]
-? _xfs_buf_ioapply+0x1e5/0x270
-Oct 28 09:40:16 thoregon kernel: [141366.412370]  [<ffffffff8105f3c0>]
-? try_to_wake_up+0x280/0x280
-Oct 28 09:40:16 thoregon kernel: [141366.412377]  [<ffffffff811a9535>]
-? xfs_buf_iorequest+0x25/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412383]  [<ffffffff811f2666>]
-? xlog_bdstrat+0x16/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412389]  [<ffffffff811f398d>]
-? xlog_sync+0x1bd/0x390
-Oct 28 09:40:16 thoregon kernel: [141366.412394]  [<ffffffff811f40e9>]
-? xlog_assign_tail_lsn_locked+0x19/0x50
-Oct 28 09:40:16 thoregon kernel: [141366.412400]  [<ffffffff811f4b64>]
-? xlog_write+0x554/0x6f0
-Oct 28 09:40:16 thoregon kernel: [141366.412408]  [<ffffffff811bd1f2>]
-? kmem_zone_zalloc+0x32/0x50
-Oct 28 09:40:16 thoregon kernel: [141366.412415]  [<ffffffff811f5fed>]
-? xlog_cil_push+0x26d/0x350
-Oct 28 09:40:16 thoregon kernel: [141366.412421]  [<ffffffff811f67b0>]
-? xlog_cil_force_lsn+0x130/0x140
-Oct 28 09:40:16 thoregon kernel: [141366.412427]  [<ffffffff81061b02>]
-? dequeue_task_fair+0x52/0x180
-Oct 28 09:40:16 thoregon kernel: [141366.412433]  [<ffffffff811f5157>]
-? _xfs_log_force_lsn+0x47/0x2d0
-Oct 28 09:40:16 thoregon kernel: [141366.412439]  [<ffffffff8162265a>]
-? __slab_free+0x17d/0x293
-Oct 28 09:40:16 thoregon kernel: [141366.412446]  [<ffffffff81087481>]
-? delayacct_end+0x81/0xa0
-Oct 28 09:40:16 thoregon kernel: [141366.412452]  [<ffffffff811f53eb>]
-? xfs_log_force_lsn+0xb/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412458]  [<ffffffff811e6733>]
-? xfs_iunpin_wait+0x93/0xf0
-Oct 28 09:40:16 thoregon kernel: [141366.412465]  [<ffffffff81054370>]
-? autoremove_wake_function+0x30/0x30
-Oct 28 09:40:16 thoregon kernel: [141366.412471]  [<ffffffff811b85db>]
-? xfs_reclaim_inode+0x11b/0x300
-Oct 28 09:40:16 thoregon kernel: [141366.412478]  [<ffffffff811b8d9b>]
-? xfs_reclaim_inodes_ag+0x1bb/0x2c0
-Oct 28 09:40:16 thoregon kernel: [141366.412486]  [<ffffffff811b8fbc>]
-? xfs_reclaim_inodes_nr+0x2c/0x40
-Oct 28 09:40:16 thoregon kernel: [141366.412493]  [<ffffffff810d80e3>]
-? prune_super+0x113/0x1b0
-Oct 28 09:40:16 thoregon kernel: [141366.412499]  [<ffffffff810a1829>]
-? shrink_slab+0x119/0x1c0
-Oct 28 09:40:16 thoregon kernel: [141366.412506]  [<ffffffff810a3d82>]
-? kswapd+0x682/0x9a0
-Oct 28 09:40:16 thoregon kernel: [141366.412513]  [<ffffffff81054340>]
-? add_wait_queue+0x60/0x60
-Oct 28 09:40:16 thoregon kernel: [141366.412519]  [<ffffffff810a3700>]
-? shrink_lruvec+0x540/0x540
-Oct 28 09:40:16 thoregon kernel: [141366.412525]  [<ffffffff81053bd3>]
-? kthread+0xb3/0xc0
-Oct 28 09:40:16 thoregon kernel: [141366.412531]  [<ffffffff81053b20>]
-? flush_kthread_worker+0xa0/0xa0
-Oct 28 09:40:16 thoregon kernel: [141366.412538]  [<ffffffff81629bec>]
-? ret_from_fork+0x7c/0xb0
-Oct 28 09:40:16 thoregon kernel: [141366.412544]  [<ffffffff81053b20>]
-? flush_kthread_worker+0xa0/0xa0
+> This adds the implementation of superblock operations for f2fs, which includes
+> - init_f2fs_fs/exit_f2fs_fs
+> - f2fs_mount
+> - super_operations of f2fs
+> 
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+> fs/f2fs/super.c |  590 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> 1 file changed, 590 insertions(+)
+> create mode 100644 fs/f2fs/super.c
+> 
+> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+> new file mode 100644
+> index 0000000..8e608a0
+> --- /dev/null
+> +++ b/fs/f2fs/super.c
+> @@ -0,0 +1,590 @@
+> +/**
+> + * fs/f2fs/super.c
+> + *
+> + * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+> + *             http://www.samsung.com/
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/fs.h>
+> +#include <linux/statfs.h>
+> +#include <linux/proc_fs.h>
+> +#include <linux/buffer_head.h>
+> +#include <linux/backing-dev.h>
+> +#include <linux/kthread.h>
+> +#include <linux/parser.h>
+> +#include <linux/mount.h>
+> +#include <linux/seq_file.h>
+> +#include <linux/f2fs_fs.h>
+> +
+> +#include "f2fs.h"
+> +#include "node.h"
+> +#include "xattr.h"
+> +
+> +static struct kmem_cache *f2fs_inode_cachep;
+> +static struct proc_dir_entry *f2fs_proc_root;
+> +
+> +enum {
+> +	Opt_gc_background_off,
+> +	Opt_disable_roll_forward,
+> +	Opt_discard,
+> +	Opt_noheap,
+> +	Opt_nouser_xattr,
+> +	Opt_noacl,
+> +	Opt_active_logs,
+> +	Opt_disable_ext_identify,
+> +	Opt_err,
+> +};
+> +
+> +static match_table_t f2fs_tokens = {
+> +	{Opt_gc_background_off, "background_gc_off"},
+> +	{Opt_disable_roll_forward, "disable_roll_forward"},
+> +	{Opt_discard, "discard"},
+> +	{Opt_noheap, "no_heap"},
+> +	{Opt_nouser_xattr, "nouser_xattr"},
+> +	{Opt_noacl, "noacl"},
+> +	{Opt_active_logs, "active_logs=%u"},
+> +	{Opt_disable_ext_identify, "disable_ext_identify"},
+> +	{Opt_err, NULL},
+> +};
+> +
+> +static void init_once(void *foo)
+> +{
+> +	struct f2fs_inode_info *fi = (struct f2fs_inode_info *) foo;
+> +
+> +	memset(fi, 0, sizeof(*fi));
+> +	inode_init_once(&fi->vfs_inode);
+> +}
+> +
+> +static struct inode *f2fs_alloc_inode(struct super_block *sb)
+> +{
+> +	struct f2fs_inode_info *fi;
+> +
+> +	fi = kmem_cache_alloc(f2fs_inode_cachep, GFP_NOFS | __GFP_ZERO);
+> +	if (!fi)
+> +		return NULL;
+> +
+> +	init_once((void *) fi);
+> +
+> +	/* Initilize f2fs-specific inode info */
+> +	fi->vfs_inode.i_version = 1;
+> +	atomic_set(&fi->dirty_dents, 0);
+> +	fi->current_depth = 1;
+> +	fi->i_advise = 0;
+> +	rwlock_init(&fi->ext.ext_lock);
+> +
+> +	set_inode_flag(fi, FI_NEW_INODE);
+> +
+> +	return &fi->vfs_inode;
+> +}
+> +
+> +static void f2fs_i_callback(struct rcu_head *head)
+> +{
+> +	struct inode *inode = container_of(head, struct inode, i_rcu);
+> +	kmem_cache_free(f2fs_inode_cachep, F2FS_I(inode));
+> +}
+> +
+> +void f2fs_destroy_inode(struct inode *inode)
+> +{
+> +	call_rcu(&inode->i_rcu, f2fs_i_callback);
+> +}
+> +
+> +static void f2fs_put_super(struct super_block *sb)
+> +{
+> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+> +
+> +#ifdef CONFIG_F2FS_STAT_FS
+> +	if (sbi->s_proc) {
+> +		f2fs_stat_exit(sbi);
+> +		remove_proc_entry(sb->s_id, f2fs_proc_root);
+> +	}
+> +#endif
+> +	stop_gc_thread(sbi);
+> +
+> +	write_checkpoint(sbi, false, true);
+> +
+> +	iput(sbi->node_inode);
+> +	iput(sbi->meta_inode);
+> +
+> +	/* destroy f2fs internal modules */
+> +	destroy_gc_manager(sbi);
+> +	destroy_node_manager(sbi);
+> +	destroy_segment_manager(sbi);
+> +
+> +	kfree(sbi->ckpt);
+> +
+> +	sb->s_fs_info = NULL;
+> +	brelse(sbi->raw_super_buf);
+> +	kfree(sbi);
+> +}
+> +
+> +int f2fs_sync_fs(struct super_block *sb, int sync)
+> +{
+> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+> +	int ret = 0;
+> +
+> +	if (!sbi->s_dirty && !get_pages(sbi, F2FS_DIRTY_NODES))
+> +		return 0;
+> +
+> +	if (sync)
+> +		write_checkpoint(sbi, false, false);
+> +
+> +	return ret;
+> +}
+> +
+> +static int f2fs_statfs(struct dentry *dentry, struct kstatfs *buf)
+> +{
+> +	struct super_block *sb = dentry->d_sb;
+> +	struct f2fs_sb_info *sbi = F2FS_SB(sb);
+> +	block_t total_count, user_block_count, start_count, ovp_count;
+> +
+> +	total_count = le64_to_cpu(sbi->raw_super->block_count);
+> +	user_block_count = sbi->user_block_count;
+> +	start_count = le32_to_cpu(sbi->raw_super->segment0_blkaddr);
+> +	ovp_count = sbi->gc_info->overp_segment_count
+> +					<< sbi->log_blocks_per_seg;
+> +	buf->f_type = F2FS_SUPER_MAGIC;
+> +	buf->f_bsize = sbi->blocksize;
+> +
+> +	buf->f_blocks = total_count - start_count;
+> +	buf->f_bfree = buf->f_blocks - valid_user_blocks(sbi) - ovp_count;
+> +	buf->f_bavail = user_block_count - valid_user_blocks(sbi);
+> +
+> +	buf->f_files = valid_inode_count(sbi);
+> +	buf->f_ffree = sbi->total_node_count - valid_node_count(sbi);
+> +
+> +	buf->f_namelen = F2FS_MAX_NAME_LEN;
+> +
+> +	return 0;
+> +}
+> +
+> +static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+> +{
+> +	struct f2fs_sb_info *sbi = F2FS_SB(root->d_sb);
+> +
+> +	if (test_opt(sbi, BG_GC))
+> +		seq_puts(seq, ",background_gc_on");
+> +	else
+> +		seq_puts(seq, ",background_gc_off");
+> +	if (test_opt(sbi, DISABLE_ROLL_FORWARD))
+> +		seq_puts(seq, ",disable_roll_forward");
+> +	if (test_opt(sbi, DISCARD))
+> +		seq_puts(seq, ",discard");
+> +	if (test_opt(sbi, NOHEAP))
+> +		seq_puts(seq, ",no_heap_alloc");
+> +#ifdef CONFIG_F2FS_FS_XATTR
+> +	if (test_opt(sbi, XATTR_USER))
+> +		seq_puts(seq, ",user_xattr");
+> +	else
+> +		seq_puts(seq, ",nouser_xattr");
+> +#endif
+> +#ifdef CONFIG_F2FS_FS_POSIX_ACL
+> +	if (test_opt(sbi, POSIX_ACL))
+> +		seq_puts(seq, ",acl");
+> +	else
+> +		seq_puts(seq, ",noacl");
+> +#endif
+> +	if (test_opt(sbi, DISABLE_EXT_IDENTIFY))
+> +		seq_puts(seq, ",disable_ext_indentify");
+> +
+> +	seq_printf(seq, ",active_logs=%u", sbi->active_logs);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct super_operations f2fs_sops = {
+> +	.alloc_inode	= f2fs_alloc_inode,
+> +	.destroy_inode	= f2fs_destroy_inode,
+> +	.write_inode	= f2fs_write_inode,
+> +	.show_options	= f2fs_show_options,
+> +	.evict_inode	= f2fs_evict_inode,
+> +	.put_super	= f2fs_put_super,
+> +	.sync_fs	= f2fs_sync_fs,
+> +	.statfs		= f2fs_statfs,
+> +};
+> +
+> +static int parse_options(struct f2fs_sb_info *sbi, char *options)
+> +{
+> +	substring_t args[MAX_OPT_ARGS];
+> +	char *p;
+> +	int arg = 0;
+> +
+> +	if (!options)
+> +		return 0;
+> +
+> +	while ((p = strsep(&options, ",")) != NULL) {
+> +		int token;
+> +		if (!*p)
+> +			continue;
+> +		/*
+> +		 * Initialize args struct so we know whether arg was
+> +		 * found; some options take optional arguments.
+> +		 */
+> +		args[0].to = args[0].from = NULL;
+> +		token = match_token(p, f2fs_tokens, args);
+> +
+> +		switch (token) {
+> +		case Opt_gc_background_off:
+> +			clear_opt(sbi, BG_GC);
+> +			break;
+> +		case Opt_disable_roll_forward:
+> +			set_opt(sbi, DISABLE_ROLL_FORWARD);
+> +			break;
+> +		case Opt_discard:
+> +			set_opt(sbi, DISCARD);
+> +			break;
+> +		case Opt_noheap:
+> +			set_opt(sbi, NOHEAP);
+> +			break;
+> +#ifdef CONFIG_F2FS_FS_XATTR
+> +		case Opt_nouser_xattr:
+> +			clear_opt(sbi, XATTR_USER);
+> +			break;
+> +#else
+> +		case Opt_nouser_xattr:
+> +			pr_info("nouser_xattr options not supported\n");
+> +			break;
+> +#endif
+> +#ifdef CONFIG_F2FS_FS_POSIX_ACL
+> +		case Opt_noacl:
+> +			clear_opt(sbi, POSIX_ACL);
+> +			break;
+> +#else
+> +		case Opt_noacl:
+> +			pr_info("noacl options not supported\n");
+> +			break;
+> +#endif
+> +		case Opt_active_logs:
+> +			if (args->from && match_int(args, &arg))
+> +				return -EINVAL;
+> +			if (arg != 2 && arg != 4 && arg != 6)
+> +				return -EINVAL;
+> +			sbi->active_logs = arg;
+> +			break;
+> +		case Opt_disable_ext_identify:
+> +			set_opt(sbi, DISABLE_EXT_IDENTIFY);
+> +			break;
+> +		default:
+> +			return -EINVAL;
+> +		}
+> +	}
+> +	return 0;
+> +}
+> +
+> +static loff_t max_file_size(unsigned bits)
+> +{
+> +	loff_t result = ADDRS_PER_INODE;
+> +	loff_t leaf_count = ADDRS_PER_BLOCK;
+> +
+> +	result += (leaf_count * 2);
+> +
+> +	leaf_count *= NIDS_PER_BLOCK;
+> +	result += (leaf_count * 2);
+> +
+> +	leaf_count *= NIDS_PER_BLOCK;
+> +	result += (leaf_count * 2);
+> +
+> +	result <<= bits;
+> +	return result;
+> +}
 
-After that xfsaild/md4, flush-9:4 and several user processes also got
-such an hang message, these look like they just got stuck on some
-locks that kswapd was also using.
+I think that it needs to comment logic of max_file_size() function. It is not so clear why it needs to multiply leaf_count on 2.
 
-At that time the system had some memory pressure from compiling
-firefox on an tmpfs, but usage of swap was still pretty minimal,
-because the system as 12G of RAM.
-Might be relevant:
-CONFIG_CLEANCACHE=y
-CONFIG_FRONTSWAP=y
-CONFIG_ZCACHE=y
+> +
+> +static int sanity_check_raw_super(struct f2fs_super_block *raw_super)
+> +{
+> +	unsigned int blocksize;
+> +
+> +	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic))
+> +		return 1;
+> +
+> +	/* Currently, support only 4KB block size */
+> +	blocksize = 1 << le32_to_cpu(raw_super->log_blocksize);
+> +	if (blocksize != PAGE_CACHE_SIZE)
+> +		return 1;
+> +	if (le32_to_cpu(raw_super->log_sectorsize) != 9)
 
-As I can not reproduce this on demand (This was the first time it
-happened since the release of 3.7.0-rc1), would it be useful to enable
-LOCKDEP?
+I think it makes sense to have special declaration for hardcoded 9.
 
-Please ask, if you need other informations. I will try to provide them.
+> +		return 1;
+> +	if (le32_to_cpu(raw_super->log_sectors_per_block) != 3)
 
-Thank for looking,
+I think it makes sense to have special declaration for hardcoded 3.
 
-Torsten
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static int sanity_check_ckpt(struct f2fs_super_block *raw_super,
+> +				struct f2fs_checkpoint *ckpt)
+> +{
+> +	unsigned int total, fsmeta;
+> +
+> +	total = le32_to_cpu(raw_super->segment_count);
+> +	fsmeta = le32_to_cpu(raw_super->segment_count_ckpt);
+> +	fsmeta += le32_to_cpu(raw_super->segment_count_sit);
+> +	fsmeta += le32_to_cpu(raw_super->segment_count_nat);
+> +	fsmeta += le32_to_cpu(ckpt->rsvd_segment_count);
+> +	fsmeta += le32_to_cpu(raw_super->segment_count_ssa);
+> +
+> +	if (fsmeta >= total)
+> +		return 1;
+> +	return 0;
+> +}
+> +
+> +static void init_sb_info(struct f2fs_sb_info *sbi)
+> +{
+> +	struct f2fs_super_block *raw_super = sbi->raw_super;
+> +	int i;
+> +
+> +	sbi->log_sectorsize = le32_to_cpu(raw_super->log_sectorsize);
+> +	sbi->log_sectors_per_block =
+> +		le32_to_cpu(raw_super->log_sectors_per_block);
+> +	sbi->log_blocksize = le32_to_cpu(raw_super->log_blocksize);
+> +	sbi->blocksize = 1 << sbi->log_blocksize;
+> +	sbi->log_blocks_per_seg = le32_to_cpu(raw_super->log_blocks_per_seg);
+> +	sbi->blocks_per_seg = 1 << sbi->log_blocks_per_seg;
+> +	sbi->segs_per_sec = le32_to_cpu(raw_super->segs_per_sec);
+> +	sbi->secs_per_zone = le32_to_cpu(raw_super->secs_per_zone);
+> +	sbi->total_sections = le32_to_cpu(raw_super->section_count);
+> +	sbi->total_node_count =
+> +		(le32_to_cpu(raw_super->segment_count_nat) / 2)
+> +			* sbi->blocks_per_seg * NAT_ENTRY_PER_BLOCK;
+> +	sbi->root_ino_num = le32_to_cpu(raw_super->root_ino);
+> +	sbi->node_ino_num = le32_to_cpu(raw_super->node_ino);
+> +	sbi->meta_ino_num = le32_to_cpu(raw_super->meta_ino);
+> +
+> +	for (i = 0; i < NR_COUNT_TYPE; i++)
+> +		atomic_set(&sbi->nr_pages[i], 0);
+> +}
+> +
+> +static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+> +{
+> +	struct f2fs_sb_info *sbi;
+> +	struct f2fs_super_block *raw_super;
+> +	struct buffer_head *raw_super_buf;
+> +	struct inode *root;
+> +	int i;
+> +
+> +	/* allocate memory for f2fs-specific super block info */
+> +	sbi = kzalloc(sizeof(struct f2fs_sb_info), GFP_KERNEL);
+> +	if (!sbi)
+> +		return -ENOMEM;
+> +
+> +	/* set a temporary block size */
+> +	if (!sb_set_blocksize(sb, F2FS_BLKSIZE))
+> +		goto free_sbi;
+> +
+> +	/* read f2fs raw super block */
+> +	raw_super_buf = sb_bread(sb, F2FS_SUPER_OFFSET);
+> +	if (!raw_super_buf)
+> +		goto free_sbi;
+> +	raw_super = (struct f2fs_super_block *) ((char *)raw_super_buf->b_data);
+> +
+> +	/* init some FS parameters */
+> +	sbi->active_logs = NR_CURSEG_TYPE;
+> +
+> +	set_opt(sbi, BG_GC);
+> +
+> +#ifdef CONFIG_F2FS_FS_XATTR
+> +	set_opt(sbi, XATTR_USER);
+> +#endif
+> +#ifdef CONFIG_F2FS_FS_POSIX_ACL
+> +	set_opt(sbi, POSIX_ACL);
+> +#endif
+> +	/* parse mount options */
+> +	if (parse_options(sbi, (char *)data))
+> +		goto free_sb_buf;
+> +
+> +	/* sanity checking of raw super */
+> +	if (sanity_check_raw_super(raw_super))
+> +		goto free_sb_buf;
+> +
+> +	sb->s_maxbytes = max_file_size(raw_super->log_blocksize);
+> +	sb->s_max_links = F2FS_LINK_MAX;
+> +
+> +	sb->s_op = &f2fs_sops;
+> +	sb->s_xattr = f2fs_xattr_handlers;
+> +	sb->s_magic = F2FS_SUPER_MAGIC;
+> +	sb->s_fs_info = sbi;
+> +	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+> +		(test_opt(sbi, POSIX_ACL) ? MS_POSIXACL : 0);
+> +
+> +	/* init f2fs-specific super block info */
+> +	sbi->sb = sb;
+> +	sbi->raw_super = raw_super;
+> +	sbi->raw_super_buf = raw_super_buf;
+> +	mutex_init(&sbi->gc_mutex);
+> +	mutex_init(&sbi->write_inode);
+> +	mutex_init(&sbi->writepages);
+> +	mutex_init(&sbi->cp_mutex);
+> +	for (i = 0; i < NR_LOCK_TYPE; i++)
+> +		mutex_init(&sbi->fs_lock[i]);
+> +	sbi->por_doing = 0;
+> +	spin_lock_init(&sbi->stat_lock);
+> +	init_rwsem(&sbi->bio_sem);
+> +	init_sb_info(sbi);
+> +
+> +	/* get an inode for meta space */
+> +	sbi->meta_inode = f2fs_iget(sb, F2FS_META_INO(sbi));
+> +	if (IS_ERR(sbi->meta_inode))
+> +		goto free_sb_buf;
+> +
+> +	if (get_valid_checkpoint(sbi))
+> +		goto free_meta_inode;
+> +
+> +	/* sanity checking of checkpoint */
+> +	if (sanity_check_ckpt(raw_super, sbi->ckpt))
+> +		goto free_cp;
+> +
+> +	sbi->total_valid_node_count =
+> +				le32_to_cpu(sbi->ckpt->valid_node_count);
+> +	sbi->total_valid_inode_count =
+> +				le32_to_cpu(sbi->ckpt->valid_inode_count);
+> +	sbi->user_block_count = le64_to_cpu(sbi->ckpt->user_block_count);
+> +	sbi->total_valid_block_count =
+> +				le64_to_cpu(sbi->ckpt->valid_block_count);
+> +	sbi->last_valid_block_count = sbi->total_valid_block_count;
+> +	sbi->alloc_valid_block_count = 0;
+> +	INIT_LIST_HEAD(&sbi->dir_inode_list);
+> +	spin_lock_init(&sbi->dir_inode_lock);
+> +
+> +	/* init super block */
+> +	if (!sb_set_blocksize(sb, sbi->blocksize))
+> +		goto free_cp;
+> +
+> +	init_orphan_info(sbi);
+> +
+> +	/* setup f2fs internal modules */
+> +	if (build_segment_manager(sbi))
+> +		goto free_sm;
+> +	if (build_node_manager(sbi))
+> +		goto free_nm;
+> +	if (build_gc_manager(sbi))
+> +		goto free_gc;
+> +
+> +	/* get an inode for node space */
+> +	sbi->node_inode = f2fs_iget(sb, F2FS_NODE_INO(sbi));
+> +	if (IS_ERR(sbi->node_inode))
+> +		goto free_gc;
+> +
+> +	/* if there are nt orphan nodes free them */
+> +	if (recover_orphan_inodes(sbi))
+> +		goto free_node_inode;
+> +
+> +	/* read root inode and dentry */
+> +	root = f2fs_iget(sb, F2FS_ROOT_INO(sbi));
+> +	if (IS_ERR(root))
+> +		goto free_node_inode;
+> +	if (!S_ISDIR(root->i_mode) || !root->i_blocks || !root->i_size)
+> +		goto free_root_inode;
+> +
+> +	sb->s_root = d_make_root(root); /* allocate root dentry */
+> +	if (!sb->s_root)
+> +		goto free_root_inode;
+> +
+> +	/* recover fsynced data */
+> +	if (!test_opt(sbi, DISABLE_ROLL_FORWARD))
+> +		recover_fsync_data(sbi);
+> +
+> +	/* After POR, we can run background GC thread */
+> +	if (start_gc_thread(sbi))
+> +		goto fail;
+> +
+> +#ifdef CONFIG_F2FS_STAT_FS
+> +	if (f2fs_proc_root) {
+> +		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
+> +		if (f2fs_stat_init(sbi))
+> +			goto fail;
+> +	}
+> +#endif
+> +	return 0;
+> +fail:
+> +	stop_gc_thread(sbi);
+> +free_root_inode:
+> +	make_bad_inode(root);
+> +	iput(root);
+> +free_node_inode:
+> +	make_bad_inode(sbi->node_inode);
+> +	iput(sbi->node_inode);
+> +free_gc:
+> +	destroy_gc_manager(sbi);
+> +free_nm:
+> +	destroy_node_manager(sbi);
+> +free_sm:
+> +	destroy_segment_manager(sbi);
+> +free_cp:
+> +	kfree(sbi->ckpt);
+> +free_meta_inode:
+> +	make_bad_inode(sbi->meta_inode);
+> +	iput(sbi->meta_inode);
+> +free_sb_buf:
+> +	brelse(raw_super_buf);
+> +free_sbi:
+> +	kfree(sbi);
+> +	return -EINVAL;
+
+The reason of failing in fill_super() can be different but this function report -EINVAL always, as I understand. I think that it is not fully correct way of reporting about failing.
+
+> +}
+> +
+> +static struct dentry *f2fs_mount(struct file_system_type *fs_type, int flags,
+> +			const char *dev_name, void *data)
+> +{
+> +	return mount_bdev(fs_type, flags, dev_name, data, f2fs_fill_super);
+> +}
+> +
+> +static struct file_system_type f2fs_fs_type = {
+> +	.owner		= THIS_MODULE,
+> +	.name		= "f2fs",
+> +	.mount		= f2fs_mount,
+> +	.kill_sb	= kill_block_super,
+> +	.fs_flags	= FS_REQUIRES_DEV,
+> +};
+> +
+> +static int init_inodecache(void)
+> +{
+> +	f2fs_inode_cachep = f2fs_kmem_cache_create("f2fs_inode_cache",
+> +			sizeof(struct f2fs_inode_info), NULL);
+> +	if (f2fs_inode_cachep == NULL)
+> +		return -ENOMEM;
+> +	return 0;
+> +}
+> +
+> +static void destroy_inodecache(void)
+> +{
+> +	/*
+> +	 * Make sure all delayed rcu free inodes are flushed before we
+> +	 * destroy cache.
+> +	 */
+> +	rcu_barrier();
+> +	kmem_cache_destroy(f2fs_inode_cachep);
+> +}
+> +
+> +static int __init init_f2fs_fs(void)
+> +{
+> +	if (init_inodecache())
+> +		goto fail;
+> +	if (create_node_manager_caches())
+> +		goto fail;
+> +	if (create_gc_caches())
+> +		goto fail;
+> +	if (create_checkpoint_caches())
+> +		goto fail;
+> +	if (register_filesystem(&f2fs_fs_type))
+> +		return -EBUSY;
+
+Why EBUSY? Usually, it returns error code from register_filesystem().
+
+> +
+> +	f2fs_proc_root = proc_mkdir("fs/f2fs", NULL);
+> +	return 0;
+> +fail:
+> +	return -ENOMEM;
+> +}
+> +
+> +static void __exit exit_f2fs_fs(void)
+> +{
+> +	remove_proc_entry("fs/f2fs", NULL);
+> +	unregister_filesystem(&f2fs_fs_type);
+> +	destroy_checkpoint_caches();
+> +	destroy_gc_caches();
+> +	destroy_node_manager_caches();
+> +	destroy_inodecache();
+> +}
+> +
+> +module_init(init_f2fs_fs)
+> +module_exit(exit_f2fs_fs)
+> +
+> +MODULE_AUTHOR("Samsung Electronics's Praesto Team");
+> +MODULE_DESCRIPTION("Flash Friendly File System");
+> +MODULE_LICENSE("GPL");
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
+> 
+> ---
+> Jaegeuk Kim
+> Samsung
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+With the best regards,
+Vyacheslav Dubeyko.
+
