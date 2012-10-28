@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab2J1X1t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41985 "EHLO
+	id S1756847Ab2J1Xjf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:39:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42028 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756707Ab2J1X1j (ORCPT
+	by vger.kernel.org with ESMTP id S1756775Ab2J1X1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:39 -0400
-Message-Id: <20121028231600.184354174@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:48 -0400
+Message-Id: <20121028231557.321897014@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:51 +0000
+Date: Sun, 28 Oct 2012 23:16:42 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Johan Hovold <jhovold@gmail.com>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 075/105] USB: serial: Fix memory leak in sierra_release()
+Subject: [ 066/105] usb hub: send clear_tt_buffer_complete events when canceling TT
+ clear work
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,32 +30,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Octavian Purdila <octavian.purdila@intel.com>
 
-commit f7bc5051667b74c3861f79eed98c60d5c3b883f7 upstream.
+commit 3b6054da68f9b0d5ed6a7ed0f42a79e61904352c upstream.
 
-I found a memory leak in sierra_release() (well sierra_probe() I guess)
-that looses 8 bytes each time the driver releases a device.
+There is a race condition in the USB hub code with regard to handling
+TT clear requests that can get the HCD driver in a deadlock. Usually
+when an TT clear request is scheduled it will be executed immediately:
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+<7>[    6.077583] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[    6.078041] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[    6.078299] hub_tt_work:731
+<7>[    9.309089] usb 2-1.5: link qh1-0e01/f4d506c0 start 0 [1/2 us]
+<7>[    9.324526] ehci_hcd 0000:00:1d.0: reused qh f4d4db00 schedule
+<7>[    9.324539] usb 2-1.3: link qh1-0e01/f4d4db00 start 0 [1/2 us]
+<7>[    9.341530] usb 1-1.1: link qh4-0e01/f397aec0 start 2 [1/2 us]
+<7>[   10.116159] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[   10.116459] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[   10.116537] hub_tt_work:731
+
+However, if a suspend operation is triggered before hub_tt_work is
+scheduled, hub_quiesce will cancel the work without notifying the HCD
+driver:
+
+<3>[   35.033941] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d80
+<5>[   35.034022] sd 0:0:0:0: [sda] Stopping disk
+<7>[   35.034039] hub 2-1:1.0: hub_suspend
+<7>[   35.034067] usb 2-1: unlink qh256-0001/f3b1ab00 start 1 [1/0 us]
+<7>[   35.035085] hub 1-0:1.0: hub_suspend
+<7>[   35.035102] usb usb1: bus suspend, wakeup 0
+<7>[   35.035106] ehci_hcd 0000:00:1a.0: suspend root hub
+<7>[   35.035298] hub 2-0:1.0: hub_suspend
+<7>[   35.035313] usb usb2: bus suspend, wakeup 0
+<7>[   35.035315] ehci_hcd 0000:00:1d.0: suspend root hub
+<6>[   35.250017] PM: suspend of devices complete after 216.979 msecs
+<6>[   35.250822] PM: late suspend of devices complete after 0.799 msecs
+<7>[   35.252343] ehci_hcd 0000:00:1d.0: wakeup: 1
+<7>[   35.262923] ehci_hcd 0000:00:1d.0: --> PCI D3hot
+<7>[   35.263302] ehci_hcd 0000:00:1a.0: wakeup: 1
+<7>[   35.273912] ehci_hcd 0000:00:1a.0: --> PCI D3hot
+<6>[   35.274254] PM: noirq suspend of devices complete after 23.442 msecs
+<6>[   35.274975] ACPI: Preparing to enter system sleep state S3
+<6>[   35.292666] PM: Saving platform NVS memory
+<7>[   35.295030] Disabling non-boot CPUs ...
+<6>[   35.297351] CPU 1 is now offline
+<6>[   35.300345] CPU 2 is now offline
+<6>[   35.303929] CPU 3 is now offline
+<7>[   35.303931] lockdep: fixing up alternatives.
+<6>[   35.304825] Extended CMOS year: 2000
+
+When the device will resume the EHCI driver will get stuck in
+ehci_endpoint_disable waiting for the tt_clearing flag to reset:
+
+<0>[   47.610967] usb 2-1.3: **** DPM device timeout ****
+<7>[   47.610972]  f2f11c60 00000092 f2f11c0c c10624a5 00000003 f4c6e880 c1c8a4c0 c1c8a4c0
+<7>[   47.610983]  15c55698 0000000b f56b34c0 f2a45b70 f4c6e880 00000082 f2a4602c f2f11c30
+<7>[   47.610993]  c10787f8 f4cac000 f2a45b70 00000000 f4cac010 f2f11c58 00000046 00000001
+<7>[   47.611004] Call Trace:
+<7>[   47.611006]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611019]  [<c10787f8>] ? lock_release_holdtime.part.22+0x88/0xf0
+<7>[   47.611026]  [<c103ed46>] ? lock_timer_base.isra.35+0x26/0x50
+<7>[   47.611034]  [<c17592d3>] ? schedule_timeout+0x133/0x290
+<7>[   47.611044]  [<c175b43e>] schedule+0x1e/0x50
+<7>[   47.611051]  [<c17592d8>] schedule_timeout+0x138/0x290
+<7>[   47.611057]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611063]  [<c103e560>] ? usleep_range+0x40/0x40
+<7>[   47.611070]  [<c1759445>] schedule_timeout_uninterruptible+0x15/0x20
+<7>[   47.611077]  [<c14935f4>] ehci_endpoint_disable+0x64/0x160
+<7>[   47.611084]  [<c147d1ee>] ? usb_hcd_flush_endpoint+0x10e/0x1d0
+<7>[   47.611092]  [<c1165663>] ? sysfs_add_file+0x13/0x20
+<7>[   47.611100]  [<c147d5a9>] usb_hcd_disable_endpoint+0x29/0x40
+<7>[   47.611107]  [<c147fafc>] usb_disable_endpoint+0x5c/0x80
+<7>[   47.611111]  [<c147fb57>] usb_disable_interface+0x37/0x50
+<7>[   47.611116]  [<c1477650>] usb_reset_and_verify_device+0x4b0/0x640
+<7>[   47.611122]  [<c1474665>] ? hub_port_status+0xb5/0x100
+<7>[   47.611129]  [<c147a975>] usb_port_resume+0xd5/0x220
+<7>[   47.611136]  [<c148877f>] generic_resume+0xf/0x30
+<7>[   47.611142]  [<c14821a3>] usb_resume+0x133/0x180
+<7>[   47.611147]  [<c1473b10>] ? usb_dev_thaw+0x10/0x10
+<7>[   47.611152]  [<c1473b1d>] usb_dev_resume+0xd/0x10
+<7>[   47.611157]  [<c13baa60>] dpm_run_callback+0x40/0xb0
+<7>[   47.611164]  [<c13bdb03>] ? pm_runtime_enable+0x43/0x70
+<7>[   47.611171]  [<c13bafc6>] device_resume+0x1a6/0x2c0
+<7>[   47.611177]  [<c13ba940>] ? dpm_show_time+0xe0/0xe0
+<7>[   47.611183]  [<c13bb0f9>] async_resume+0x19/0x40
+<7>[   47.611189]  [<c10580c4>] async_run_entry_fn+0x64/0x160
+<7>[   47.611196]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611203]  [<c104a24c>] ? process_one_work+0x10c/0x480
+<7>[   47.611209]  [<c104a2c0>] process_one_work+0x180/0x480
+<7>[   47.611215]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611220]  [<c1058060>] ? async_schedule+0x10/0x10
+<7>[   47.611226]  [<c104c15c>] worker_thread+0x11c/0x2f0
+<7>[   47.611233]  [<c104c040>] ? manage_workers.isra.27+0x1f0/0x1f0
+<7>[   47.611239]  [<c10507f8>] kthread+0x78/0x80
+<7>[   47.611244]  [<c1750000>] ? timer_cpu_notify+0xd6/0x20d
+<7>[   47.611253]  [<c1050780>] ? __init_kthread_worker+0x60/0x60
+<7>[   47.611258]  [<c176357e>] kernel_thread_helper+0x6/0xd
+<7>[   47.611283] ------------[ cut here ]------------
+
+This patch changes hub_quiesce behavior to flush the TT clear work
+instead of canceling it, to make sure that no TT clear request remains
+uncompleted before suspend.
+
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hub.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 01d882c..76ef95b 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -959,6 +959,7 @@ static void sierra_release(struct usb_serial *serial)
- 			continue;
- 		kfree(portdata);
- 	}
-+	kfree(serial->private);
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 64854d7..1181e91 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -739,13 +739,16 @@ static void hub_tt_work(struct work_struct *work)
+ 	int			limit = 100;
+ 
+ 	spin_lock_irqsave (&hub->tt.lock, flags);
+-	while (--limit && !list_empty (&hub->tt.clear_list)) {
++	while (!list_empty(&hub->tt.clear_list)) {
+ 		struct list_head	*next;
+ 		struct usb_tt_clear	*clear;
+ 		struct usb_device	*hdev = hub->hdev;
+ 		const struct hc_driver	*drv;
+ 		int			status;
+ 
++		if (!hub->quiescing && --limit < 0)
++			break;
++
+ 		next = hub->tt.clear_list.next;
+ 		clear = list_entry (next, struct usb_tt_clear, clear_list);
+ 		list_del (&clear->clear_list);
+@@ -1210,7 +1213,7 @@ static void hub_quiesce(struct usb_hub *hub, enum hub_quiescing_type type)
+ 	if (hub->has_indicators)
+ 		cancel_delayed_work_sync(&hub->leds);
+ 	if (hub->tt.hub)
+-		cancel_work_sync(&hub->tt.clear_work);
++		flush_work_sync(&hub->tt.clear_work);
  }
  
- #ifdef CONFIG_PM
+ /* caller has locked the hub device */
 
 
