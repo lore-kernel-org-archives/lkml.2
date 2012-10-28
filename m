@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2J1Vle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 17:41:34 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:41762 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756041Ab2J1Vlc convert rfc822-to-8bit (ORCPT
+	id S1756104Ab2J1Vm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 17:42:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35607 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab2J1Vm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 17:41:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: maciej.rutecki@gmail.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, pavel@ucw.cz, linux-pm@vger.kernel.org
-Subject: Re: [REGRESSION] 3.7-rc2 kernel BUG at kernel/power/snapshot.c:517!
-Date: Sun, 28 Oct 2012 22:45:26 +0100
-Message-ID: <1552872.pfLgNj3qcY@vostro.rjw.lan>
-User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
-In-Reply-To: <201210282212.50282.maciej.rutecki@gmail.com>
-References: <201210211712.28571.maciej.rutecki@gmail.com> <201210282212.50282.maciej.rutecki@gmail.com>
+	Sun, 28 Oct 2012 17:42:56 -0400
+Message-ID: <508DA6DC.4070601@gmail.com>
+Date: Sun, 28 Oct 2012 22:42:52 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.6esrpre) Gecko/20120817 Icedove/10.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Ben Dooks <ben-linux@fluff.org>,
+        Ian Molton <ian.molton@codethink.co.uk>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Li Li <li.li@canonical.com>,
+        Ike Pan <ike.pan@canonical.com>,
+        Jani Monoses <jani.monoses@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/3] clk: mvebu: add armada-370-xp specific clocks
+References: <1350303499-30868-1-git-send-email-gregory.clement@free-electrons.com> <1350303499-30868-2-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1350303499-30868-2-git-send-email-gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 28, 2012 10:12:49 PM Maciej Rutecki wrote:
-> On niedziela, 21 października 2012 o 17:12:28 Maciej Rutecki wrote:
-> > Error: kernel BUG at kernel/power/snapshot.c:517!
-> > 
-> > Last known good: 3.6.1
-> > Bad: 3.7-rc2
-> > 
-> > Steps to reproduce:
-> > 1. Boot system with 3.7-rc2 kernel
-> > 2. Try suspend to disk (s2ram works OK)
-> > 
-> > System dies on message:
-> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/DSCN0280.jpg
-> > 
-> > lspci:
-> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/lspci.txt
-> > 
-> > dmesg:
-> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/dmesg-3.7-rc2.txt
-> 
-> Still present in -rc3
+On 10/15/2012 02:18 PM, Gregory CLEMENT wrote:
+> Add Armada 370/XP specific clocks: core clocks and CPU clocks.
+>
+> The CPU clocks are only for Armada XP for the SMP mode.
+>
+> ...
+> +static struct core_clk_fn armada_370_clk_fn = {
+> +	.get_tclk_freq = armada_370_get_tclk_freq,
+> +	.get_pck_freq = armada_370_get_pck_freq,
+> +	.get_fab_freq_opt = armada_370_get_fab_freq_opt,
+> +};
+> +
+> +static struct core_clk_fn armada_xp_clk_fn = {
+> +	.get_tclk_freq = armada_xp_get_tclk_freq,
+> +	.get_pck_freq = armada_xp_get_pck_freq,
+> +	.get_fab_freq_opt = armada_xp_get_fab_freq_opt,
+> +};
+> +
+> +static const __initconst struct of_device_id clk_match[] = {
+> +	{
+> +	 .compatible = "marvell,armada-370-core-clockctrl",
+> +	 .data =&armada_370_clk_fn,
+> +	 },
+> +
+> +	{
+> +	 .compatible = "marvell,armada-xp-core-clockctrl",
+> +	 .data =&armada_xp_clk_fn,
+> +	 },
+> +	{
+> +	 /* sentinel */
+> +	 }
+> +};
 
-This appears to be a memory allocation error and I have no idea what
-the reason of it is.
+Gregory,
 
-Any chance to bisect?
+armada_370_clk_fn and armada_xp_clk_fn cause section mismatches
+as they are referenced within __initconst.
 
-Does "echo disk > /sys/power/state" work?
+You should either rename them to armada_xp_clk_ops or annotate them
+with the appropriate attribute.
 
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Sebastian
