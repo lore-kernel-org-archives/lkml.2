@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab2J1TNP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:13:15 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35813 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753689Ab2J1TNO (ORCPT
+	id S1754476Ab2J1TPJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:15:09 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60478 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2J1TPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:13:14 -0400
-Date: Sun, 28 Oct 2012 20:13:13 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, eranian@google.com,
-        mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 27/33] tools, perf: Add a precise event qualifier
-Message-ID: <20121028191313.GP16230@one.firstfloor.org>
-References: <1351283415-13170-1-git-send-email-andi@firstfloor.org> <1351283415-13170-28-git-send-email-andi@firstfloor.org> <20121027193544.GC1039@krava.redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121027193544.GC1039@krava.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Sun, 28 Oct 2012 15:15:07 -0400
+From: Joonsoo Kim <js1304@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH 0/5] minor clean-up and optimize highmem related code
+Date: Mon, 29 Oct 2012 04:12:51 +0900
+Message-Id: <1351451576-2611-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Yes>
+References: <Yes>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 09:35:44PM +0200, Jiri Olsa wrote:
-> On Fri, Oct 26, 2012 at 01:30:09PM -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > Add a precise qualifier, like cpu/event=0x3c,precise=1/
-> hm, I think this works already via 'p' modifier like:
->    cpu/event=0x3c/p
+This patchset clean-up and optimize highmem related code.
 
-Not for kernel specified events, which is why this was needed.
+[1] is just clean-up and doesn't introduce any functional change.
+[2-3] are for clean-up and optimization.
+These eliminate an useless lock opearation and list management.
+[4-5] is for optimization related to flush_all_zero_pkmaps().
 
--Andi
+Joonsoo Kim (5):
+  mm, highmem: use PKMAP_NR() to calculate an index of pkmap
+  mm, highmem: remove useless pool_lock
+  mm, highmem: remove page_address_pool list
+  mm, highmem: makes flush_all_zero_pkmaps() return index of last
+    flushed entry
+  mm, highmem: get virtual address of the page using PKMAP_ADDR()
+
+ include/linux/highmem.h |    1 +
+ mm/highmem.c            |  102 ++++++++++++++++++++---------------------------
+ 2 files changed, 45 insertions(+), 58 deletions(-)
+
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.9.5
+
