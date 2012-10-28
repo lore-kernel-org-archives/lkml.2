@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2J1HTk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 03:19:40 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2J1HTh (ORCPT
+	id S1752747Ab2J1HTo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 03:19:44 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51191 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab2J1HTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 03:19:37 -0400
+	Sun, 28 Oct 2012 03:19:41 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH 2/9] uuid: use random32_get_bytes()
-Date: Sun, 28 Oct 2012 16:18:59 +0900
-Message-Id: <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: [PATCH 4/9] mtd: nandsim: use random32_get_bytes
+Date: Sun, 28 Oct 2012 16:19:01 +0900
+Message-Id: <1351408746-8623-4-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
 References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
@@ -20,32 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use random32_get_bytes() to generate 16 bytes of pseudo-random bytes.
+This also removes unnecessary memset call which is immediately overwritten
+with random bytes.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
 ---
- lib/uuid.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ drivers/mtd/nand/nandsim.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/lib/uuid.c b/lib/uuid.c
-index 52a6fe6..697f867 100644
---- a/lib/uuid.c
-+++ b/lib/uuid.c
-@@ -25,13 +25,7 @@
+diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
+index a932c48..d074b4c 100644
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -1397,10 +1397,7 @@ int do_read_error(struct nandsim *ns, int num)
+ 	unsigned int page_no = ns->regs.row;
  
- static void __uuid_gen_common(__u8 b[16])
- {
--	int i;
--	u32 r;
--
--	for (i = 0; i < 4; i++) {
--		r = random32();
--		memcpy(b + i * 4, &r, 4);
--	}
-+	random32_get_bytes(b, 16);
- 	/* reversion 0b10 */
- 	b[8] = (b[8] & 0x3F) | 0x80;
- }
+ 	if (read_error(page_no)) {
+-		int i;
+-		memset(ns->buf.byte, 0xFF, num);
+-		for (i = 0; i < num; ++i)
+-			ns->buf.byte[i] = random32();
++		random32_get_bytes(ns->buf.byte, num);
+ 		NS_WARN("simulating read error in page %u\n", page_no);
+ 		return 1;
+ 	}
 -- 
 1.7.11.7
 
