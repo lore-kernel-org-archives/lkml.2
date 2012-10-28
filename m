@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab2J1X1v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41998 "EHLO
+	id S1756871Ab2J1X16 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42064 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756532Ab2J1X1m (ORCPT
+	by vger.kernel.org with ESMTP id S1756532Ab2J1X1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:42 -0400
-Message-Id: <20121028231559.221965031@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:53 -0400
+Message-Id: <20121028231556.114406452@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:48 +0000
+Date: Sun, 28 Oct 2012 23:16:38 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chris Perl <chris.perl@gmail.com>
-Subject: [ 072/105] SUNRPC: Prevent races in xs_abort_connection()
+        David Vrabel <david.vrabel@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 062/105] xen/x86: dont corrupt %eip when returning from a signal handler
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,64 +30,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 4bc1e68ed6a8b59be8a79eb719be515a55c7bc68 upstream.
+commit a349e23d1cf746f8bdc603dcc61fae9ee4a695f6 upstream.
 
-The call to xprt_disconnect_done() that is triggered by a successful
-connection reset will trigger another automatic wakeup of all tasks
-on the xprt->pending rpc_wait_queue. In particular it will cause an
-early wake up of the task that called xprt_connect().
+In 32 bit guests, if a userspace process has %eax == -ERESTARTSYS
+(-512) or -ERESTARTNOINTR (-513) when it is interrupted by an event
+/and/ the process has a pending signal then %eip (and %eax) are
+corrupted when returning to the main process after handling the
+signal.  The application may then crash with SIGSEGV or a SIGILL or it
+may have subtly incorrect behaviour (depending on what instruction it
+returned to).
 
-All we really want to do here is clear all the socket-specific state
-flags, so we split that functionality out of xs_sock_mark_closed()
-into a helper that can be called by xs_abort_connection()
+The occurs because handle_signal() is incorrectly thinking that there
+is a system call that needs to restarted so it adjusts %eip and %eax
+to re-execute the system call instruction (even though user space had
+not done a system call).
 
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Chris Perl <chris.perl@gmail.com>
+If %eax == -514 (-ERESTARTNOHAND (-514) or -ERESTART_RESTARTBLOCK
+(-516) then handle_signal() only corrupted %eax (by setting it to
+-EINTR).  This may cause the application to crash or have incorrect
+behaviour.
+
+handle_signal() assumes that regs->orig_ax >= 0 means a system call so
+any kernel entry point that is not for a system call must push a
+negative value for orig_ax.  For example, for physical interrupts on
+bare metal the inverse of the vector is pushed and page_fault() sets
+regs->orig_ax to -1, overwriting the hardware provided error code.
+
+xen_hypervisor_callback() was incorrectly pushing 0 for orig_ax
+instead of -1.
+
+Classic Xen kernels pushed %eax which works as %eax cannot be both
+non-negative and -RESTARTSYS (etc.), but using -1 is consistent with
+other non-system call entry points and avoids some of the tests in
+handle_signal().
+
+There were similar bugs in xen_failsafe_callback() of both 32 and
+64-bit guests. If the fault was corrected and the normal return path
+was used then 0 was incorrectly pushed as the value for orig_ax.
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Jan Beulich <JBeulich@suse.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/xprtsock.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/x86/kernel/entry_32.S |    8 +++++---
+ arch/x86/kernel/entry_64.S |    2 +-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 7e2dd0d..1f105c2 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1453,7 +1453,7 @@ static void xs_tcp_cancel_linger_timeout(struct rpc_xprt *xprt)
- 	xprt_clear_connecting(xprt);
- }
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 623f288..8f8e8ee 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1016,7 +1016,7 @@ ENTRY(xen_sysenter_target)
  
--static void xs_sock_mark_closed(struct rpc_xprt *xprt)
-+static void xs_sock_reset_connection_flags(struct rpc_xprt *xprt)
- {
- 	smp_mb__before_clear_bit();
- 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
-@@ -1461,6 +1461,11 @@ static void xs_sock_mark_closed(struct rpc_xprt *xprt)
- 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
- 	clear_bit(XPRT_CLOSING, &xprt->state);
- 	smp_mb__after_clear_bit();
-+}
-+
-+static void xs_sock_mark_closed(struct rpc_xprt *xprt)
-+{
-+	xs_sock_reset_connection_flags(xprt);
- 	/* Mark transport as closed and wake up all pending tasks */
- 	xprt_disconnect_done(xprt);
- }
-@@ -2051,10 +2056,8 @@ static void xs_abort_connection(struct sock_xprt *transport)
- 	any.sa_family = AF_UNSPEC;
- 	result = kernel_connect(transport->sock, &any, sizeof(any), 0);
- 	if (!result)
--		xs_sock_mark_closed(&transport->xprt);
--	else
--		dprintk("RPC:       AF_UNSPEC connect return code %d\n",
--				result);
-+		xs_sock_reset_connection_flags(&transport->xprt);
-+	dprintk("RPC:       AF_UNSPEC connect return code %d\n", result);
- }
+ ENTRY(xen_hypervisor_callback)
+ 	CFI_STARTPROC
+-	pushl_cfi $0
++	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
+ 	TRACE_IRQS_OFF
  
- static void xs_tcp_reuse_connection(struct sock_xprt *transport)
+@@ -1058,14 +1058,16 @@ ENTRY(xen_failsafe_callback)
+ 2:	mov 8(%esp),%es
+ 3:	mov 12(%esp),%fs
+ 4:	mov 16(%esp),%gs
++	/* EAX == 0 => Category 1 (Bad segment)
++	   EAX != 0 => Category 2 (Bad IRET) */
+ 	testl %eax,%eax
+ 	popl_cfi %eax
+ 	lea 16(%esp),%esp
+ 	CFI_ADJUST_CFA_OFFSET -16
+ 	jz 5f
+ 	addl $16,%esp
+-	jmp iret_exc		# EAX != 0 => Category 2 (Bad IRET)
+-5:	pushl_cfi $0		# EAX == 0 => Category 1 (Bad segment)
++	jmp iret_exc
++5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
+ 	jmp ret_from_exception
+ 	CFI_ENDPROC
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 69babd8..dcdd0ea 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1363,7 +1363,7 @@ ENTRY(xen_failsafe_callback)
+ 	CFI_RESTORE r11
+ 	addq $0x30,%rsp
+ 	CFI_ADJUST_CFA_OFFSET -0x30
+-	pushq_cfi $0
++	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
+ 	SAVE_ALL
+ 	jmp error_exit
+ 	CFI_ENDPROC
 
 
