@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab2J1IHX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 04:07:23 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35900 "EHLO
+	id S1755114Ab2J1IHg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 04:07:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:44729 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750821Ab2J1IHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 04:07:05 -0400
+	id S1755047Ab2J1IHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 04:07:30 -0400
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Subject: [PATCH 01/16] tile: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-Date: Sun, 28 Oct 2012 01:05:39 -0700
-Message-Id: <c7c947ee63de15e20b7a7e2f47aee66ef02ca50f.1351411047.git.joe@perches.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/16] ata: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
+Date: Sun, 28 Oct 2012 01:05:40 -0700
+Message-Id: <ff89ae9b42c644728575a3cf606184ab9875d6e9.1351411047.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1351411047.git.joe@perches.com>
 References: <cover.1351411047.git.joe@perches.com>
@@ -25,49 +25,31 @@ Coalesce formats for easier grep.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/tile/kernel/pci_gx.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+ drivers/ata/pata_cmd64x.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
-index 2ba6d05..cf1b378 100644
---- a/arch/tile/kernel/pci_gx.c
-+++ b/arch/tile/kernel/pci_gx.c
-@@ -1454,9 +1454,8 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
- 	 * Most PCIe endpoint devices do support 64-bit message addressing.
- 	 */
- 	if (desc->msi_attrib.is_64 == 0) {
--		dev_printk(KERN_INFO, &pdev->dev,
--			"64-bit MSI message address not supported, "
--			"falling back to legacy interrupts.\n");
-+		dev_info(&pdev->dev,
-+			 "64-bit MSI message address not supported, falling back to legacy interrupts\n");
+diff --git a/drivers/ata/pata_cmd64x.c b/drivers/ata/pata_cmd64x.c
+index 7ba0141..2949cfc 100644
+--- a/drivers/ata/pata_cmd64x.c
++++ b/drivers/ata/pata_cmd64x.c
+@@ -474,14 +474,14 @@ static int cmd64x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* check for enabled ports */
+ 	pci_read_config_byte(pdev, CNTRL, &reg);
+ 	if (!port_ok)
+-		dev_printk(KERN_NOTICE, &pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
++		dev_notice(&pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
+ 	if (port_ok && cntrl_ch0_ok && !(reg & CNTRL_CH0)) {
+-		dev_printk(KERN_NOTICE, &pdev->dev, "Primary port is disabled\n");
++		dev_notice(&pdev->dev, "Primary port is disabled\n");
+ 		ppi[0] = &ata_dummy_port_info;
  
- 		ret = -ENOMEM;
- 		goto is_64_failure;
-@@ -1475,11 +1474,9 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
- 	 */
- 	mem_map = gxio_trio_alloc_memory_maps(trio_context, 1, 0, 0);
- 	if (mem_map < 0) {
--		dev_printk(KERN_INFO, &pdev->dev,
--			"%s Mem-Map alloc failure. "
--			"Failed to initialize MSI interrupts. "
--			"Falling back to legacy interrupts.\n",
--			desc->msi_attrib.is_msix ? "MSI-X" : "MSI");
-+		dev_info(&pdev->dev,
-+			 "%s Mem-Map alloc failure. Failed to initialize MSI interrupts. Falling back to legacy interrupts.\n",
-+			 desc->msi_attrib.is_msix ? "MSI-X" : "MSI");
- 
- 		ret = -ENOMEM;
- 		goto msi_mem_map_alloc_failure;
-@@ -1501,7 +1498,7 @@ int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
- 					mem_map, mem_map_base, mem_map_limit,
- 					trio_context->asid);
- 	if (ret < 0) {
--		dev_printk(KERN_INFO, &pdev->dev, "HV MSI config failed.\n");
-+		dev_info(&pdev->dev, "HV MSI config failed\n");
- 
- 		goto hv_msi_config_failure;
  	}
+ 	if (port_ok && !(reg & CNTRL_CH1)) {
+-		dev_printk(KERN_NOTICE, &pdev->dev, "Secondary port is disabled\n");
++		dev_notice(&pdev->dev, "Secondary port is disabled\n");
+ 		ppi[1] = &ata_dummy_port_info;
+ 	}
+ 
 -- 
 1.7.8.112.g3fd21
 
