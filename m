@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab2J1X1D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41763 "EHLO
+	id S1756637Ab2J1Xs4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:48:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41804 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756245Ab2J1X06 (ORCPT
+	by vger.kernel.org with ESMTP id S1756315Ab2J1X1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:26:58 -0400
-Message-Id: <20121028231541.377182464@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:03 -0400
+Message-Id: <20121028231609.609499647@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:50 +0000
+Date: Sun, 28 Oct 2012 23:17:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 014/105] sparc64: do not clobber personality flags in  sys_sparc64_personality()
+        Jean-Christian de Rivaz <jc@eclis.ch>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 105/105] Add CDC-ACM support for the CX93010-2x UCMxx USB Modem
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,52 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Jean-Christian de Rivaz <jc@eclis.ch>
 
-[ Upstream commit a27032eee8cb6e16516f13c8a9752e9d5d4cc430 ]
+commit e7d491a19d3e3aac544070293891a2542ae0c565 upstream.
 
-There are multiple errors in how sys_sparc64_personality() handles
-personality flags stored in top three bytes.
+This USB V.92/V.32bis Controllered Modem have the USB vendor ID 0x0572
+and device ID 0x1340. It need the NO_UNION_NORMAL quirk to be recognized.
 
-- directly comparing current->personality against PER_LINUX32 doesn't work
-  in cases when any of the personality flags stored in the top three bytes
-  are used.
-- directly forcefully setting personality to PER_LINUX32 or PER_LINUX
-  discards any flags stored in the top three bytes
+Reference:
+http://www.conexant.com/servlets/DownloadServlet/DSH-201723-005.pdf?docid=1725&revid=5
+See idVendor and idProduct in table 6-1. Device Descriptors
 
-Fix the first one by properly using personality() macro to compare only
-PER_MASK bytes.
-Fix the second one by setting only the bits that should be set, instead of
-overwriting the whole value.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jean-Christian de Rivaz <jc@eclis.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/kernel/sys_sparc_64.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
-index 441521a..5e4252b 100644
---- a/arch/sparc/kernel/sys_sparc_64.c
-+++ b/arch/sparc/kernel/sys_sparc_64.c
-@@ -519,12 +519,12 @@ SYSCALL_DEFINE1(sparc64_personality, unsigned long, personality)
- {
- 	int ret;
- 
--	if (current->personality == PER_LINUX32 &&
--	    personality == PER_LINUX)
--		personality = PER_LINUX32;
-+	if (personality(current->personality) == PER_LINUX32 &&
-+	    personality(personality) == PER_LINUX)
-+		personality |= PER_LINUX32;
- 	ret = sys_personality(personality);
--	if (ret == PER_LINUX32)
--		ret = PER_LINUX;
-+	if (personality(ret) == PER_LINUX32)
-+		ret &= ~PER_LINUX32;
- 
- 	return ret;
- }
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1551,6 +1551,9 @@ static const struct usb_device_id acm_id
+ 					   Maybe we should define a new
+ 					   quirk for this. */
+ 	},
++	{ USB_DEVICE(0x0572, 0x1340), /* Conexant CX93010-2x UCMxx */
++	.driver_info = NO_UNION_NORMAL,
++	},
+ 	{ USB_DEVICE(0x1bbb, 0x0003), /* Alcatel OT-I650 */
+ 	.driver_info = NO_UNION_NORMAL, /* reports zero length descriptor */
+ 	},
 
 
