@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab2J1Bxz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 21:53:55 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46212 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2J1Bxx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 21:53:53 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: hirofumi@mail.parknet.co.jp, akpm@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 5/5] fat: add mutex lock to fat_build_inode
-Date: Sun, 28 Oct 2012 10:53:43 +0900
-Message-Id: <1351389223-2628-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752987Ab2J1B6V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 21:58:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750874Ab2J1B6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 21:58:20 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Tony Luck <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, "Luck, Tony" <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+Date: Sat, 27 Oct 2012 21:57:38 -0400
+Message-Id: <1351389458-5279-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20121027221626.GA9161@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Hi Ted,
 
-fat_nfs_get_inode does not hold i_mutex of parent directory.So add
-lock to fat_build_inode.
+On Sat, Oct 27, 2012 at 06:16:26PM -0400, Theodore Ts'o wrote:
+> On Fri, Oct 26, 2012 at 10:24:23PM +0000, Luck, Tony wrote:
+> > > Well, we could set a new attribute bit on the file which indicates
+> > > that the file has been corrupted, and this could cause any attempts to
+> > > open the file to return some error until the bit has been cleared.
+> > 
+> > That sounds a lot better than renaming/moving the file.
+> 
+> What I would recommend is adding a 
+> 
+> #define FS_CORRUPTED_FL		0x01000000 /* File is corrupted */
+> 
+> ... and which could be accessed and cleared via the lsattr and chattr
+> programs.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/fat/fat.h   |    1 +
- fs/fat/inode.c |   15 +++++++++++++++
- 2 files changed, 16 insertions(+)
+Thank you for the info. This could help my next work.
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 177e94e..811267c 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -75,6 +75,7 @@ struct msdos_sb_info {
- 	unsigned long fsinfo_sector;  /* sector number of FAT32 fsinfo */
- 	struct mutex fat_lock;
- 	struct mutex s_lock;
-+	struct mutex nfs_build_inode_lock;
- 	unsigned int prev_free;      /* previously allocated cluster number */
- 	unsigned int free_clusters;  /* -1 if undefined */
- 	unsigned int free_clus_valid; /* is free_clusters valid? */
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 63e0883..a1650ef 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -443,12 +443,25 @@ static int fat_fill_inode(struct inode *inode, struct msdos_dir_entry *de)
- 	return 0;
- }
- 
-+static inline void fat_lock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_lock(&sbi->nfs_build_inode_lock);
-+}
-+
-+static inline void fat_unlock_build_inode(struct msdos_sb_info *sbi)
-+{
-+	if (sbi->options.nfs == FAT_NFS_NOSTALE_RO)
-+		mutex_unlock(&sbi->nfs_build_inode_lock);
-+}
-+
- struct inode *fat_build_inode(struct super_block *sb,
- 			struct msdos_dir_entry *de, loff_t i_pos)
- {
- 	struct inode *inode;
- 	int err;
- 
-+	fat_lock_build_inode(MSDOS_SB(sb));
- 	inode = fat_iget(sb, i_pos);
- 	if (inode)
- 		goto out;
-@@ -468,6 +481,7 @@ struct inode *fat_build_inode(struct super_block *sb,
- 	fat_attach(inode, i_pos);
- 	insert_inode_hash(inode);
- out:
-+	fat_unlock_build_inode(MSDOS_SB(sb));
- 	return inode;
- }
- 
-@@ -1173,6 +1187,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sb->s_magic = MSDOS_SUPER_MAGIC;
- 	sb->s_op = &fat_sops;
- 	sb->s_export_op = &fat_export_ops;
-+	mutex_init(&sbi->nfs_build_inode_lock);
- 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
- 			     DEFAULT_RATELIMIT_BURST);
- 
--- 
-1.7.9.5
+> > > Application programs could also get very confused when any attempt to
+> > > open or read from a file suddenly returned some new error code (EIO,
+> > > or should we designate a new errno code for this purpose, so there is
+> > > a better indication of what the heck was going on?)
+> > 
+> > EIO sounds wrong ... but it is perhaps the best of the existing codes. Adding
+> > a new one is also challenging too.
+> 
+> I think we really need a different error code from EIO; it's already
+> horribly overloaded already, and if this is new behavior when the
+> customers get confused and call up the distribution help desk, they
+> won't thank us if we further overload EIO.  This is abusing one of the
+> System V stream errno's, but no one else is using it:
+> 
+> #define EADV		 68  /* Advertise error */
+> 
+> I note that we've already added a new error code:
+> 
+> #define EHWPOISON 133	  /* Memory page has hardware error */
+> 
+> ... although the glibc shipping with Debian testing hasn't been taught
+> what it is, so strerror(EHWPOISON) returns "Unknown error 133".  We
+> could simply allow open(2) and stat(2) return this error, although I
+> wonder if we're just better off defining a new error code.
 
+Whether we use EIO or EHWPOISON seems to be controversial. Andi likes
+to use EIO because we can handle memory errors and legacy I/O errors in
+the similar and integrated manner.
+But personally, it's OK for me to use EHWPOISON. Obviously defining this
+error code in glibc is a necessary step if we go in this direction.
+
+Thanks,
+Naoya
