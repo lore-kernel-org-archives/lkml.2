@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2J1RRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 13:17:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47901 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab2J1RRN (ORCPT
+	id S1753547Ab2J1RaZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 13:30:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36427 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2J1RaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 13:17:13 -0400
-Date: Sun, 28 Oct 2012 10:16:39 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-9b718e758ac91f28b6cdd354ad5ee9c767daae74@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, peterz@infradead.org, schwidefsky@de.ibm.com,
-        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de, sfr@canb.auug.org.au
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, schwidefsky@de.ibm.com, peterz@infradead.org,
-        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
-        heiko.carstens@de.ibm.com, sfr@canb.auug.org.au, tglx@linutronix.de
-In-Reply-To: <20121028131014.GA10754@gmail.com>
-References: <20121028131014.GA10754@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm, s390/thp: Add pmd_mknotpresent()
-Git-Commit-ID: 9b718e758ac91f28b6cdd354ad5ee9c767daae74
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 28 Oct 2012 13:30:23 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 28 Oct 2012 10:16:46 -0700 (PDT)
+In-Reply-To: <20121024135834.GA4368@breakpoint.cc>
+References: <1349729943-28995-1-git-send-email-milinevskyy@gmail.com> <20121024135834.GA4368@breakpoint.cc>
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Date: Sun, 28 Oct 2012 18:30:02 +0100
+X-Google-Sender-Auth: nTfQt-_B95Fnnn9wacx9exIiJJQ
+Message-ID: <CAOUdcc9PwMg34n_W14ctgW2qqP1P+STan6JBH3uyO+y+jWZ0FQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: ncm: correct endianess conversion
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9b718e758ac91f28b6cdd354ad5ee9c767daae74
-Gitweb:     http://git.kernel.org/tip/9b718e758ac91f28b6cdd354ad5ee9c767daae74
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Sun, 28 Oct 2012 14:10:14 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 28 Oct 2012 17:31:21 +0100
+Hi Sebastian,
+I was trying to keep 2 tabs but checkpatch didn't accept long line
+that's why I killed extra tab.
 
-sched, numa, mm, s390/thp: Add pmd_mknotpresent()
+>How does it work? Is the test on host side not strict enough?
+The host part(cdc_ncm) does not check this field.
+However I agree that at least on device side this should be corrected.
 
-We'd like to make use of pmd_mknotpresent() in mm/, but
-not all architectures have it. This patch adds the s390
-version.
+Felipe, do you want me to send another patch or resend previous one
+with this correction?
 
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Link: http://lkml.kernel.org/r/20121028131014.GA10754@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/s390/include/asm/pgtable.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Thanks,
+-- dmytro
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 098fc5a..b820ff1 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1310,6 +1310,12 @@ static inline pmd_t pmd_mkyoung(pmd_t pmd)
- 	return pmd;
- }
- 
-+static inline pmd_t pmd_mknotpresent(pmd_t pmd)
-+{
-+	pmd_val(pmd) &= ~_SEGMENT_ENTRY_ORIGIN;
-+	return pmd;
-+}
-+
- #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
- static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
- 					    unsigned long address, pmd_t *pmdp)
+On Wed, Oct 24, 2012 at 3:58 PM, Sebastian Andrzej Siewior
+<sebastian@breakpoint.cc> wrote:
+> On Mon, Oct 08, 2012 at 11:59:03PM +0300, Dmytro Milinevskyy wrote:
+>> Convert USB descriptor's fields to CPU byte order before using locally in USB NCM gadget driver.
+>> Tested on MIPS32 big-endian device.
+>>
+>> Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
+>> ---
+>>  drivers/usb/gadget/f_ncm.c | 10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/usb/gadget/f_ncm.c b/drivers/usb/gadget/f_ncm.c
+>> index b651b52..fce45ab 100644
+>> --- a/drivers/usb/gadget/f_ncm.c
+>> +++ b/drivers/usb/gadget/f_ncm.c
+>> @@ -869,11 +869,11 @@ static struct sk_buff *ncm_wrap_ntb(struct gether *port,
+>>       struct sk_buff  *skb2;
+>>       int             ncb_len = 0;
+>>       __le16          *tmp;
+>> -     int             div = ntb_parameters.wNdpInDivisor;
+>> -     int             rem = ntb_parameters.wNdpInPayloadRemainder;
+>> -     int             pad;
+>> -     int             ndp_align = ntb_parameters.wNdpInAlignment;
+>> -     int             ndp_pad;
+>> +     int     div = le16_to_cpu(ntb_parameters.wNdpInDivisor);
+>> +     int     rem = le16_to_cpu(ntb_parameters.wNdpInPayloadRemainder);
+>> +     int     pad;
+>> +     int     ndp_align = le16_to_cpu(ntb_parameters.wNdpInAlignment);
+>> +     int     ndp_pad;
+>
+> It would be nice to keep the two tabs between int and variable. One question:
+> In ntb_parameters the member wLength is 16bit and not using cpu_to_le16(). How
+> does it work? Is the test on host side not strict enough?
+>
+>>       unsigned        max_size = ncm->port.fixed_in_len;
+>>       struct ndp_parser_opts *opts = ncm->parser_opts;
+>>       unsigned        crc_len = ncm->is_crc ? sizeof(uint32_t) : 0;
+>
+> Sebastian
