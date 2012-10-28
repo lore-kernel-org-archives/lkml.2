@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab2J1Xps (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:45:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41908 "EHLO
+	id S1756704Ab2J1Xpr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:45:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41916 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756558Ab2J1X1Z (ORCPT
+	by vger.kernel.org with ESMTP id S1756305Ab2J1X1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:25 -0400
-Message-Id: <20121028231605.897184835@decadent.org.uk>
+Message-Id: <20121028231602.445158429@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:09 +0000
+Date: Sun, 28 Oct 2012 23:16:58 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 093/105] freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 082/105] USB: opticon: fix memory leak in error path
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b40a79591ca918e7b91b0d9b6abd5d00f2e88c19 upstream.
+commit acbf0e5263de563e25f7c104868e4490b9e72b13 upstream.
 
-flush_old_exec() clears PF_KTHREAD but forgets about PF_NOFREEZE.
+Fix memory leak in write error path.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-[bwh: Backported to 3.2: PF_FORKNOEXEC is cleared elsewhere]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/exec.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/opticon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1095,7 +1095,7 @@ int flush_old_exec(struct linux_binprm *
- 	bprm->mm = NULL;		/* We're using it now */
+diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+index 459c288..6aba731 100644
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -286,7 +286,7 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
+ 	if (!dr) {
+ 		dev_err(&port->dev, "out of memory\n");
+ 		count = -ENOMEM;
+-		goto error;
++		goto error_no_dr;
+ 	}
  
- 	set_fs(USER_DS);
--	current->flags &= ~(PF_RANDOMIZE | PF_KTHREAD);
-+	current->flags &= ~(PF_RANDOMIZE | PF_KTHREAD | PF_NOFREEZE);
- 	flush_thread();
- 	current->personality &= ~bprm->per_clear;
+ 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
+@@ -316,6 +316,8 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
  
+ 	return count;
+ error:
++	kfree(dr);
++error_no_dr:
+ 	usb_free_urb(urb);
+ error_no_urb:
+ 	kfree(buffer);
 
 
