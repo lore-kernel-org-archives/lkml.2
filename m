@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab2J1X1T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41874 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756419Ab2J1X1Q (ORCPT
+	id S1756497Ab2J1X1O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:14 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:34235 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab2J1X1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:16 -0400
-Message-Id: <20121028231605.598223284@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:08 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 092/105] xhci: Fix potential NULL ptr deref in command cancellation.
-In-Reply-To: <20121028231536.970033833@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 28 Oct 2012 19:27:09 -0400
+Date: Mon, 29 Oct 2012 00:05:23 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Cyril Brulebois <kibi@debian.org>
+Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: Fix WoL on RTL8168d/8111d.
+Message-ID: <20121028230523.GA26778@electric-eye.fr.zoreil.com>
+References: <1351392414-32219-1-git-send-email-kibi@debian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351392414-32219-1-git-send-email-kibi@debian.org>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Cyril Brulebois <kibi@debian.org> :
+> This regression was spotted between Debian squeeze and Debian wheezy
+> kernels (respectively based on 2.6.32 and 3.2). The fix was inspired
+> by <http://www.spinics.net/lists/netdev/msg178543.html>, using
+> RTL_GIGA_MAC_VER_{25,26} for the RTL8168d/8111d chipset.
 
-------------------
+If someone experiences problems or has questions about WoL with
+Realtek's 816x chipsets, http://marc.info/?t=132079219400004 would
+imho be a better reference.
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[...]
+> Tested on top of a 3.2.23 kernel.
 
-commit 43a09f7fb01fa1e091416a2aa49b6c666458c1ee upstream.
+It should still be relevant for current kernel. I'll give it a try.
 
-The command cancellation code doesn't check whether find_trb_seg()
-couldn't find the segment that contains the TRB to be canceled.  This
-could cause a NULL pointer deference later in the function when next_trb
-is called.  It's unlikely to happen unless something is wrong with the
-command ring pointers, so add some debugging in case it happens.
+[...]
+> It looks like RTL_GIGA_MAC_VER_{25,26} are kinda supposed to go
+> together so I kept both. Florent's testing gave the following results:
+>  - RTL_GIGA_MAC_VER_25 only: FAIL.
+>  - RTL_GIGA_MAC_VER_26 only: SUCCESS.
+>  - RTL_GIGA_MAC_VER_25 + RTL_GIGA_MAC_VER_26: SUCCESS.
 
-This patch should be backported to stable kernels as old as 3.0, that
-contain the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI:
-handle command after aborting the command ring".
+I don't understand the VER_25 vs VER_26 difference.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/host/xhci-ring.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index c6ebb17..4e1a894 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1228,6 +1228,17 @@ static void xhci_cmd_to_noop(struct xhci_hcd *xhci, struct xhci_cd *cur_cd)
- 	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
- 			xhci->cmd_ring->dequeue, &cycle_state);
- 
-+	if (!cur_seg) {
-+		xhci_warn(xhci, "Command ring mismatch, dequeue = %p %llx (dma)\n",
-+				xhci->cmd_ring->dequeue,
-+				(unsigned long long)
-+				xhci_trb_virt_to_dma(xhci->cmd_ring->deq_seg,
-+					xhci->cmd_ring->dequeue));
-+		xhci_debug_ring(xhci, xhci->cmd_ring);
-+		xhci_dbg_ring_ptrs(xhci, xhci->cmd_ring);
-+		return;
-+	}
-+
- 	/* find the command trb matched by cd from command ring */
- 	for (cmd_trb = xhci->cmd_ring->dequeue;
- 			cmd_trb != xhci->cmd_ring->enqueue;
-
-
+-- 
+Ueimor
