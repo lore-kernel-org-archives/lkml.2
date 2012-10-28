@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab2J1Ual (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:30:41 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:34177 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752891Ab2J1Uak (ORCPT
+	id S1755437Ab2J1Ufo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:35:44 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:60409 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755323Ab2J1Ufn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:30:40 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl/nomadik: db8500: fix kp pin group
-Date: Sun, 28 Oct 2012 21:29:47 +0100
-Message-ID: <1351456187-15111-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 28 Oct 2012 16:35:43 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: tglx@linutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        benh@kernel.crashing.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 1/3] ARM: LPC32xx: Remove superfluous irq_alloc_descs()
+Date: Sun, 28 Oct 2012 21:35:20 +0100
+Message-Id: <1351456522-22309-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Chotard <patrice.chotard@stericsson.com>
+This patch removes the call to irq_alloc_descs() which always returns an error
+since the descriptors are always preallocated already.
 
-kp_a_2 pin group was defined but was not declared
-as a group of kp function.
-
-Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 ---
- drivers/pinctrl/pinctrl-nomadik-db8500.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-lpc32xx/irq.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik-db8500.c b/drivers/pinctrl/pinctrl-nomadik-db8500.c
-index ef6f26d..6de52e7 100644
---- a/drivers/pinctrl/pinctrl-nomadik-db8500.c
-+++ b/drivers/pinctrl/pinctrl-nomadik-db8500.c
-@@ -691,6 +691,7 @@ static const struct nmk_pingroup nmk_db8500_groups[] = {
- 	DB8500_PIN_GROUP(i2c0_a_1, NMK_GPIO_ALT_A),
- 	DB8500_PIN_GROUP(ipgpio0_a_1, NMK_GPIO_ALT_A),
- 	DB8500_PIN_GROUP(ipgpio1_a_1, NMK_GPIO_ALT_A),
-+	DB8500_PIN_GROUP(kp_a_2, NMK_GPIO_ALT_A),
- 	DB8500_PIN_GROUP(msp2sck_a_1, NMK_GPIO_ALT_A),
- 	DB8500_PIN_GROUP(msp2_a_1, NMK_GPIO_ALT_A),
- 	DB8500_PIN_GROUP(mc4_a_1, NMK_GPIO_ALT_A),
-@@ -834,7 +835,7 @@ DB8500_FUNC_GROUPS(msp1, "msp1txrx_a_1", "msp1_a_1", "msp1txrx_b_1");
- DB8500_FUNC_GROUPS(lcdb, "lcdb_a_1");
- DB8500_FUNC_GROUPS(lcd, "lcdvsi0_a_1", "lcdvsi1_a_1", "lcd_d0_d7_a_1",
- 	"lcd_d8_d11_a_1", "lcd_d12_d23_a_1", "lcd_b_1");
--DB8500_FUNC_GROUPS(kp, "kp_a_1", "kp_b_1", "kp_b_2", "kp_c_1", "kp_oc1_1");
-+DB8500_FUNC_GROUPS(kp, "kp_a_1", "kp_a_2", "kp_b_1", "kp_b_2", "kp_c_1", "kp_oc1_1");
- DB8500_FUNC_GROUPS(mc2, "mc2_a_1", "mc2rstn_c_1");
- DB8500_FUNC_GROUPS(ssp1, "ssp1_a_1");
- DB8500_FUNC_GROUPS(ssp0, "ssp0_a_1");
--- 
-1.7.11.3
-
+--- linux-2.6.orig/arch/arm/mach-lpc32xx/irq.c
++++ linux-2.6/arch/arm/mach-lpc32xx/irq.c
+@@ -412,7 +412,6 @@ static const struct of_device_id mic_of_
+ void __init lpc32xx_init_irq(void)
+ {
+ 	unsigned int i;
+-	int irq_base;
+ 
+ 	/* Setup MIC */
+ 	__raw_writel(0, LPC32XX_INTC_MASK(LPC32XX_MIC_BASE));
+@@ -475,15 +474,8 @@ void __init lpc32xx_init_irq(void)
+ 
+ 	of_irq_init(mic_of_match);
+ 
+-	irq_base = irq_alloc_descs(-1, 0, NR_IRQS, 0);
+-	if (irq_base < 0) {
+-		pr_warn("Cannot allocate irq_descs, assuming pre-allocated\n");
+-		irq_base = 0;
+-	}
+-
+ 	lpc32xx_mic_domain = irq_domain_add_legacy(lpc32xx_mic_np, NR_IRQS,
+-						   irq_base, 0,
+-						   &irq_domain_simple_ops,
++						   0, 0, &irq_domain_simple_ops,
+ 						   NULL);
+ 	if (!lpc32xx_mic_domain)
+ 		panic("Unable to add MIC irq domain\n");
