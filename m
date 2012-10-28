@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2J1HTy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 03:19:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41153 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab2J1HTu (ORCPT
+	id S1753873Ab2J1HUp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 03:20:45 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51191 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab2J1HTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 03:19:50 -0400
+	Sun, 28 Oct 2012 03:19:46 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
         Artem Bityutskiy <dedekind1@gmail.com>,
         David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 9/9] mtd: mtd_subpagetest: convert to use prandom32_get_bytes()
-Date: Sun, 28 Oct 2012 16:19:06 +0900
-Message-Id: <1351408746-8623-9-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH 7/9] mtd: mtd_pagetest: convert to use prandom32_get_bytes()
+Date: Sun, 28 Oct 2012 16:19:04 +0900
+Message-Id: <1351408746-8623-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
 References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
@@ -30,22 +30,22 @@ Cc: Artem Bityutskiy <dedekind1@gmail.com>
 Cc: David Woodhouse <dwmw2@infradead.org>
 Cc: linux-mtd@lists.infradead.org
 ---
- drivers/mtd/tests/mtd_subpagetest.c | 42 +++++++++++--------------------------
- 1 file changed, 12 insertions(+), 30 deletions(-)
+ drivers/mtd/tests/mtd_pagetest.c | 43 ++++++++++++----------------------------
+ 1 file changed, 13 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/mtd/tests/mtd_subpagetest.c b/drivers/mtd/tests/mtd_subpagetest.c
-index 9667bf5..86a7140 100644
---- a/drivers/mtd/tests/mtd_subpagetest.c
-+++ b/drivers/mtd/tests/mtd_subpagetest.c
-@@ -26,6 +26,7 @@
+diff --git a/drivers/mtd/tests/mtd_pagetest.c b/drivers/mtd/tests/mtd_pagetest.c
+index 252ddb0..ae390c3 100644
+--- a/drivers/mtd/tests/mtd_pagetest.c
++++ b/drivers/mtd/tests/mtd_pagetest.c
+@@ -27,6 +27,7 @@
  #include <linux/mtd/mtd.h>
  #include <linux/slab.h>
  #include <linux/sched.h>
 +#include <linux/random.h>
  
- #define PRINT_PREF KERN_INFO "mtd_subpagetest: "
+ #define PRINT_PREF KERN_INFO "mtd_pagetest: "
  
-@@ -43,26 +44,7 @@ static int bufsize;
+@@ -45,26 +46,7 @@ static int bufsize;
  static int ebcnt;
  static int pgcnt;
  static int errcnt;
@@ -71,95 +71,94 @@ index 9667bf5..86a7140 100644
 -}
 +static struct rnd_state rnd_state;
  
- static inline void clear_data(unsigned char *buf, size_t len)
+ static int erase_eraseblock(int ebnum)
  {
-@@ -119,7 +101,7 @@ static int write_eraseblock(int ebnum)
- 	int err = 0;
+@@ -98,7 +80,7 @@ static int write_eraseblock(int ebnum)
+ 	size_t written;
  	loff_t addr = ebnum * mtd->erasesize;
  
--	set_random_data(writebuf, subpgsize);
-+	prandom32_get_bytes(&rnd_state, writebuf, subpgsize);
- 	err = mtd_write(mtd, addr, subpgsize, &written, writebuf);
- 	if (unlikely(err || written != subpgsize)) {
- 		printk(PRINT_PREF "error: write failed at %#llx\n",
-@@ -133,7 +115,7 @@ static int write_eraseblock(int ebnum)
+-	set_random_data(writebuf, mtd->erasesize);
++	prandom32_get_bytes(&rnd_state, writebuf, mtd->erasesize);
+ 	cond_resched();
+ 	err = mtd_write(mtd, addr, mtd->erasesize, &written, writebuf);
+ 	if (err || written != mtd->erasesize)
+@@ -124,7 +106,7 @@ static int verify_eraseblock(int ebnum)
+ 	for (i = 0; i < ebcnt && bbt[ebcnt - i - 1]; ++i)
+ 		addrn -= mtd->erasesize;
  
- 	addr += subpgsize;
- 
--	set_random_data(writebuf, subpgsize);
-+	prandom32_get_bytes(&rnd_state, writebuf, subpgsize);
- 	err = mtd_write(mtd, addr, subpgsize, &written, writebuf);
- 	if (unlikely(err || written != subpgsize)) {
- 		printk(PRINT_PREF "error: write failed at %#llx\n",
-@@ -157,7 +139,7 @@ static int write_eraseblock2(int ebnum)
- 	for (k = 1; k < 33; ++k) {
- 		if (addr + (subpgsize * k) > (ebnum + 1) * mtd->erasesize)
- 			break;
--		set_random_data(writebuf, subpgsize * k);
-+		prandom32_get_bytes(&rnd_state, writebuf, subpgsize * k);
- 		err = mtd_write(mtd, addr, subpgsize * k, &written, writebuf);
- 		if (unlikely(err || written != subpgsize * k)) {
- 			printk(PRINT_PREF "error: write failed at %#llx\n",
-@@ -193,7 +175,7 @@ static int verify_eraseblock(int ebnum)
- 	int err = 0;
- 	loff_t addr = ebnum * mtd->erasesize;
- 
--	set_random_data(writebuf, subpgsize);
-+	prandom32_get_bytes(&rnd_state, writebuf, subpgsize);
- 	clear_data(readbuf, subpgsize);
- 	err = mtd_read(mtd, addr, subpgsize, &read, readbuf);
- 	if (unlikely(err || read != subpgsize)) {
-@@ -220,7 +202,7 @@ static int verify_eraseblock(int ebnum)
- 
- 	addr += subpgsize;
- 
--	set_random_data(writebuf, subpgsize);
-+	prandom32_get_bytes(&rnd_state, writebuf, subpgsize);
- 	clear_data(readbuf, subpgsize);
- 	err = mtd_read(mtd, addr, subpgsize, &read, readbuf);
- 	if (unlikely(err || read != subpgsize)) {
-@@ -257,7 +239,7 @@ static int verify_eraseblock2(int ebnum)
- 	for (k = 1; k < 33; ++k) {
- 		if (addr + (subpgsize * k) > (ebnum + 1) * mtd->erasesize)
- 			break;
--		set_random_data(writebuf, subpgsize * k);
-+		prandom32_get_bytes(&rnd_state, writebuf, subpgsize * k);
- 		clear_data(readbuf, subpgsize * k);
- 		err = mtd_read(mtd, addr, subpgsize * k, &read, readbuf);
- 		if (unlikely(err || read != subpgsize * k)) {
-@@ -430,7 +412,7 @@ static int __init mtd_subpagetest_init(void)
- 		goto out;
- 
- 	printk(PRINT_PREF "writing whole device\n");
--	simple_srand(1);
-+	prandom32_seed(&rnd_state, 1);
- 	for (i = 0; i < ebcnt; ++i) {
- 		if (bbt[i])
- 			continue;
-@@ -443,7 +425,7 @@ static int __init mtd_subpagetest_init(void)
+-	set_random_data(writebuf, mtd->erasesize);
++	prandom32_get_bytes(&rnd_state, writebuf, mtd->erasesize);
+ 	for (j = 0; j < pgcnt - 1; ++j, addr += pgsize) {
+ 		/* Do a read to set the internal dataRAMs to different data */
+ 		err = mtd_read(mtd, addr0, bufsize, &read, twopages);
+@@ -160,7 +142,8 @@ static int verify_eraseblock(int ebnum)
  	}
- 	printk(PRINT_PREF "written %u eraseblocks\n", i);
+ 	/* Check boundary between eraseblocks */
+ 	if (addr <= addrn - pgsize - pgsize && !bbt[ebnum + 1]) {
+-		unsigned long oldnext = next;
++		struct rnd_state old_state = rnd_state;
++
+ 		/* Do a read to set the internal dataRAMs to different data */
+ 		err = mtd_read(mtd, addr0, bufsize, &read, twopages);
+ 		if (mtd_is_bitflip(err))
+@@ -188,13 +171,13 @@ static int verify_eraseblock(int ebnum)
+ 			return err;
+ 		}
+ 		memcpy(boundary, writebuf + mtd->erasesize - pgsize, pgsize);
+-		set_random_data(boundary + pgsize, pgsize);
++		prandom32_get_bytes(&rnd_state, boundary + pgsize, pgsize);
+ 		if (memcmp(twopages, boundary, bufsize)) {
+ 			printk(PRINT_PREF "error: verify failed at %#llx\n",
+ 			       (long long)addr);
+ 			errcnt += 1;
+ 		}
+-		next = oldnext;
++		rnd_state = old_state;
+ 	}
+ 	return err;
+ }
+@@ -326,7 +309,7 @@ static int erasecrosstest(void)
+ 		return err;
  
--	simple_srand(1);
-+	prandom32_seed(&rnd_state, 1);
- 	printk(PRINT_PREF "verifying all eraseblocks\n");
- 	for (i = 0; i < ebcnt; ++i) {
- 		if (bbt[i])
-@@ -466,7 +448,7 @@ static int __init mtd_subpagetest_init(void)
- 		goto out;
+ 	printk(PRINT_PREF "writing 1st page of block %d\n", ebnum);
+-	set_random_data(writebuf, pgsize);
++	prandom32_get_bytes(&rnd_state, writebuf, pgsize);
+ 	strcpy(writebuf, "There is no data like this!");
+ 	err = mtd_write(mtd, addr0, pgsize, &written, writebuf);
+ 	if (err || written != pgsize) {
+@@ -359,7 +342,7 @@ static int erasecrosstest(void)
+ 		return err;
+ 
+ 	printk(PRINT_PREF "writing 1st page of block %d\n", ebnum);
+-	set_random_data(writebuf, pgsize);
++	prandom32_get_bytes(&rnd_state, writebuf, pgsize);
+ 	strcpy(writebuf, "There is no data like this!");
+ 	err = mtd_write(mtd, addr0, pgsize, &written, writebuf);
+ 	if (err || written != pgsize) {
+@@ -417,7 +400,7 @@ static int erasetest(void)
+ 		return err;
+ 
+ 	printk(PRINT_PREF "writing 1st page of block %d\n", ebnum);
+-	set_random_data(writebuf, pgsize);
++	prandom32_get_bytes(&rnd_state, writebuf, pgsize);
+ 	err = mtd_write(mtd, addr0, pgsize, &written, writebuf);
+ 	if (err || written != pgsize) {
+ 		printk(PRINT_PREF "error: write failed at %#llx\n",
+@@ -565,7 +548,7 @@ static int __init mtd_pagetest_init(void)
+ 	printk(PRINT_PREF "erased %u eraseblocks\n", i);
  
  	/* Write all eraseblocks */
--	simple_srand(3);
-+	prandom32_seed(&rnd_state, 3);
+-	simple_srand(1);
++	prandom32_seed(&rnd_state, 1);
  	printk(PRINT_PREF "writing whole device\n");
  	for (i = 0; i < ebcnt; ++i) {
  		if (bbt[i])
-@@ -481,7 +463,7 @@ static int __init mtd_subpagetest_init(void)
+@@ -580,7 +563,7 @@ static int __init mtd_pagetest_init(void)
  	printk(PRINT_PREF "written %u eraseblocks\n", i);
  
  	/* Check all eraseblocks */
--	simple_srand(3);
-+	prandom32_seed(&rnd_state, 3);
+-	simple_srand(1);
++	prandom32_seed(&rnd_state, 1);
  	printk(PRINT_PREF "verifying all eraseblocks\n");
  	for (i = 0; i < ebcnt; ++i) {
  		if (bbt[i])
