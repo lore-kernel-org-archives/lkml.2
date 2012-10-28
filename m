@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab2J1X0q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:26:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41725 "EHLO
+	id S1756278Ab2J1XxM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:53:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41737 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754990Ab2J1X0i (ORCPT
+	by vger.kernel.org with ESMTP id S1756126Ab2J1X0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:26:38 -0400
-Message-Id: <20121028231537.707269968@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:45 -0400
+Message-Id: <20121028231538.333796499@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:38 +0000
+Date: Sun, 28 Oct 2012 23:15:40 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Corentin Chary <corentincj@iksaif.net>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [ 002/105] samsung-laptop: dont handle backlight if handled by acpi/video
+        Jan Kara <jack@suse.cz>, Josef Bacik <jbacik@fusionio.com>
+Subject: [ 004/105] jbd: Fix assertion failure in commit code due to lacking transaction
+ credits
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,94 +28,233 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corentin Chary <corentincj@iksaif.net>
+From: Jan Kara <jack@suse.cz>
 
-commit f34cd9ca9320876e9c12764f052004628a03ba2d upstream.
+commit 09e05d4805e6c524c1af74e524e5d0528bb3fef3 upstream.
 
-samsung-laptop is not at all related to ACPI, but since this interface
-is not documented at all, and the driver has to use it at load to
-understand how it works on the laptop, I think it's a good idea to
-disable it if a better solution is available.
+ext3 users of data=journal mode with blocksize < pagesize were occasionally
+hitting assertion failure in journal_commit_transaction() checking whether the
+transaction has at least as many credits reserved as buffers attached.  The
+core of the problem is that when a file gets truncated, buffers that still need
+checkpointing or that are attached to the committing transaction are left with
+buffer_mapped set. When this happens to buffers beyond i_size attached to a
+page stradding i_size, subsequent write extending the file will see these
+buffers and as they are mapped (but underlying blocks were freed) things go
+awry from here.
 
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context, and change return to goto, since we do not have commit
-   5dea7a2 ('samsung-laptop: move code into init/exit functions')
- - Use static variable since we do not have commit a6df489
-   ('samsung-laptop: put all local variables in a single structure')]
+The assertion failure just coincidentally (and in this case luckily as we would
+start corrupting filesystem) triggers due to journal_head not being properly
+cleaned up as well.
+
+Under some rare circumstances this bug could even hit data=ordered mode users.
+There the assertion won't trigger and we would end up corrupting the
+filesystem.
+
+We fix the problem by unmapping buffers if possible (in lots of cases we just
+need a buffer attached to a transaction as a place holder but it must not be
+written out anyway). And in one case, we just have to bite the bullet and wait
+for transaction commit to finish.
+
+Reviewed-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -21,6 +21,7 @@
- #include <linux/dmi.h>
- #include <linux/platform_device.h>
- #include <linux/rfkill.h>
-+#include <linux/acpi.h>
+ fs/jbd/commit.c      |   45 ++++++++++++++++++++++++++---------
+ fs/jbd/transaction.c |   64 ++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 78 insertions(+), 31 deletions(-)
+
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index 52c15c7..86b39b1 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -86,7 +86,12 @@ nope:
+ static void release_data_buffer(struct buffer_head *bh)
+ {
+ 	if (buffer_freed(bh)) {
++		WARN_ON_ONCE(buffer_dirty(bh));
+ 		clear_buffer_freed(bh);
++		clear_buffer_mapped(bh);
++		clear_buffer_new(bh);
++		clear_buffer_req(bh);
++		bh->b_bdev = NULL;
+ 		release_buffer_page(bh);
+ 	} else
+ 		put_bh(bh);
+@@ -866,17 +871,35 @@ restart_loop:
+ 		 * there's no point in keeping a checkpoint record for
+ 		 * it. */
  
- /*
-  * This driver is needed because a number of Samsung laptops do not hook
-@@ -226,6 +227,7 @@ static struct backlight_device *backligh
- static struct mutex sabi_mutex;
- static struct platform_device *sdev;
- static struct rfkill *rfk;
-+static bool handle_backlight;
- static bool has_stepping_quirk;
+-		/* A buffer which has been freed while still being
+-		 * journaled by a previous transaction may end up still
+-		 * being dirty here, but we want to avoid writing back
+-		 * that buffer in the future after the "add to orphan"
+-		 * operation been committed,  That's not only a performance
+-		 * gain, it also stops aliasing problems if the buffer is
+-		 * left behind for writeback and gets reallocated for another
+-		 * use in a different page. */
+-		if (buffer_freed(bh) && !jh->b_next_transaction) {
+-			clear_buffer_freed(bh);
+-			clear_buffer_jbddirty(bh);
++		/*
++		 * A buffer which has been freed while still being journaled by
++		 * a previous transaction.
++		 */
++		if (buffer_freed(bh)) {
++			/*
++			 * If the running transaction is the one containing
++			 * "add to orphan" operation (b_next_transaction !=
++			 * NULL), we have to wait for that transaction to
++			 * commit before we can really get rid of the buffer.
++			 * So just clear b_modified to not confuse transaction
++			 * credit accounting and refile the buffer to
++			 * BJ_Forget of the running transaction. If the just
++			 * committed transaction contains "add to orphan"
++			 * operation, we can completely invalidate the buffer
++			 * now. We are rather throughout in that since the
++			 * buffer may be still accessible when blocksize <
++			 * pagesize and it is attached to the last partial
++			 * page.
++			 */
++			jh->b_modified = 0;
++			if (!jh->b_next_transaction) {
++				clear_buffer_freed(bh);
++				clear_buffer_jbddirty(bh);
++				clear_buffer_mapped(bh);
++				clear_buffer_new(bh);
++				clear_buffer_req(bh);
++				bh->b_bdev = NULL;
++			}
+ 		}
  
- static int force;
-@@ -602,6 +604,15 @@ static int __init samsung_init(void)
- 	int retval;
+ 		if (buffer_jbddirty(bh)) {
+diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
+index febc10d..78b7f84 100644
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -1843,15 +1843,16 @@ static int __dispose_buffer(struct journal_head *jh, transaction_t *transaction)
+  * We're outside-transaction here.  Either or both of j_running_transaction
+  * and j_committing_transaction may be NULL.
+  */
+-static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
++static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh,
++				int partial_page)
+ {
+ 	transaction_t *transaction;
+ 	struct journal_head *jh;
+ 	int may_free = 1;
+-	int ret;
  
- 	mutex_init(&sabi_mutex);
-+	handle_backlight = true;
+ 	BUFFER_TRACE(bh, "entry");
+ 
++retry:
+ 	/*
+ 	 * It is safe to proceed here without the j_list_lock because the
+ 	 * buffers cannot be stolen by try_to_free_buffers as long as we are
+@@ -1879,10 +1880,18 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
+ 	 * clear the buffer dirty bit at latest at the moment when the
+ 	 * transaction marking the buffer as freed in the filesystem
+ 	 * structures is committed because from that moment on the
+-	 * buffer can be reallocated and used by a different page.
++	 * block can be reallocated and used by a different page.
+ 	 * Since the block hasn't been freed yet but the inode has
+ 	 * already been added to orphan list, it is safe for us to add
+ 	 * the buffer to BJ_Forget list of the newest transaction.
++	 *
++	 * Also we have to clear buffer_mapped flag of a truncated buffer
++	 * because the buffer_head may be attached to the page straddling
++	 * i_size (can happen only when blocksize < pagesize) and thus the
++	 * buffer_head can be reused when the file is extended again. So we end
++	 * up keeping around invalidated buffers attached to transactions'
++	 * BJ_Forget list just to stop checkpointing code from cleaning up
++	 * the transaction this buffer was modified in.
+ 	 */
+ 	transaction = jh->b_transaction;
+ 	if (transaction == NULL) {
+@@ -1909,13 +1918,9 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
+ 			 * committed, the buffer won't be needed any
+ 			 * longer. */
+ 			JBUFFER_TRACE(jh, "checkpointed: add to BJ_Forget");
+-			ret = __dispose_buffer(jh,
++			may_free = __dispose_buffer(jh,
+ 					journal->j_running_transaction);
+-			journal_put_journal_head(jh);
+-			spin_unlock(&journal->j_list_lock);
+-			jbd_unlock_bh_state(bh);
+-			spin_unlock(&journal->j_state_lock);
+-			return ret;
++			goto zap_buffer;
+ 		} else {
+ 			/* There is no currently-running transaction. So the
+ 			 * orphan record which we wrote for this file must have
+@@ -1923,13 +1928,9 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
+ 			 * the committing transaction, if it exists. */
+ 			if (journal->j_committing_transaction) {
+ 				JBUFFER_TRACE(jh, "give to committing trans");
+-				ret = __dispose_buffer(jh,
++				may_free = __dispose_buffer(jh,
+ 					journal->j_committing_transaction);
+-				journal_put_journal_head(jh);
+-				spin_unlock(&journal->j_list_lock);
+-				jbd_unlock_bh_state(bh);
+-				spin_unlock(&journal->j_state_lock);
+-				return ret;
++				goto zap_buffer;
+ 			} else {
+ 				/* The orphan record's transaction has
+ 				 * committed.  We can cleanse this buffer */
+@@ -1950,10 +1951,24 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
+ 		}
+ 		/*
+ 		 * The buffer is committing, we simply cannot touch
+-		 * it. So we just set j_next_transaction to the
+-		 * running transaction (if there is one) and mark
+-		 * buffer as freed so that commit code knows it should
+-		 * clear dirty bits when it is done with the buffer.
++		 * it. If the page is straddling i_size we have to wait
++		 * for commit and try again.
++		 */
++		if (partial_page) {
++			tid_t tid = journal->j_committing_transaction->t_tid;
 +
-+#ifdef CONFIG_ACPI
-+	/* Don't handle backlight here if the acpi video already handle it */
-+	if (acpi_video_backlight_support()) {
-+		pr_info("Backlight controlled by ACPI video driver\n");
-+		handle_backlight = false;
-+	}
-+#endif
- 
- 	if (!force && !dmi_check_system(samsung_dmi_table))
- 		return -ENODEV;
-@@ -661,7 +672,8 @@ static int __init samsung_init(void)
- 		printk(KERN_DEBUG "ifaceP = 0x%08x\n", ifaceP);
- 		printk(KERN_DEBUG "sabi_iface = %p\n", sabi_iface);
- 
--		test_backlight();
-+		if (handle_backlight)
-+			test_backlight();
- 		test_wireless();
- 
- 		retval = sabi_get_command(sabi_config->commands.get_brightness,
-@@ -680,13 +692,17 @@ static int __init samsung_init(void)
++			journal_put_journal_head(jh);
++			spin_unlock(&journal->j_list_lock);
++			jbd_unlock_bh_state(bh);
++			spin_unlock(&journal->j_state_lock);
++			log_wait_commit(journal, tid);
++			goto retry;
++		}
++		/*
++		 * OK, buffer won't be reachable after truncate. We just set
++		 * j_next_transaction to the running transaction (if there is
++		 * one) and mark buffer as freed so that commit code knows it
++		 * should clear dirty bits when it is done with the buffer.
+ 		 */
+ 		set_buffer_freed(bh);
+ 		if (journal->j_running_transaction && buffer_jbddirty(bh))
+@@ -1976,6 +1991,14 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
  	}
  
- 	/* Check for stepping quirk */
--	check_for_stepping_quirk();
-+	if (handle_backlight)
-+		check_for_stepping_quirk();
- 
- 	/* knock up a platform device to hang stuff off of */
- 	sdev = platform_device_register_simple("samsung", -1, NULL, 0);
- 	if (IS_ERR(sdev))
- 		goto error_no_platform;
- 
-+	if (!handle_backlight)
-+		goto skip_backlight;
-+
- 	/* create a backlight device to talk to this one */
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_PLATFORM;
-@@ -702,6 +718,7 @@ static int __init samsung_init(void)
- 	backlight_device->props.power = FB_BLANK_UNBLANK;
- 	backlight_update_status(backlight_device);
- 
-+skip_backlight:
- 	retval = init_wireless(sdev);
- 	if (retval)
- 		goto error_no_rfk;
+ zap_buffer:
++	/*
++	 * This is tricky. Although the buffer is truncated, it may be reused
++	 * if blocksize < pagesize and it is attached to the page straddling
++	 * EOF. Since the buffer might have been added to BJ_Forget list of the
++	 * running transaction, journal_get_write_access() won't clear
++	 * b_modified and credit accounting gets confused. So clear b_modified
++	 * here. */
++	jh->b_modified = 0;
+ 	journal_put_journal_head(jh);
+ zap_buffer_no_jh:
+ 	spin_unlock(&journal->j_list_lock);
+@@ -2024,7 +2047,8 @@ void journal_invalidatepage(journal_t *journal,
+ 		if (offset <= curr_off) {
+ 			/* This block is wholly outside the truncation point */
+ 			lock_buffer(bh);
+-			may_free &= journal_unmap_buffer(journal, bh);
++			may_free &= journal_unmap_buffer(journal, bh,
++							 offset > 0);
+ 			unlock_buffer(bh);
+ 		}
+ 		curr_off = next_off;
 
 
