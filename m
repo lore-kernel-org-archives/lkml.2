@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab2J1Xmk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:42:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41983 "EHLO
+	id S1756685Ab2J1X1h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:37 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41890 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756536Ab2J1X1i (ORCPT
+	by vger.kernel.org with ESMTP id S1756536Ab2J1X1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:38 -0400
-Message-Id: <20121028231600.588481260@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:23 -0400
+Message-Id: <20121028231603.665324273@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:52 +0000
+Date: Sun, 28 Oct 2012 23:17:02 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michael Shigorin <mike@osdn.org.ua>,
-        Oleksandr Chumachenko <ledest@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 076/105] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
+Subject: [ 086/105] USB: mos7840: fix urb leak at release
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,41 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Shigorin <mike@osdn.org.ua>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
+commit 65a4cdbb170e4ec1a7fa0e94936d47e24a17b0e8 upstream.
 
-This commit sets removable subclass for Casio EX-N1 digital camera.
+Make sure control urb is freed at release.
 
-The patch has been tested within an ALT Linux kernel:
-http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
-
-See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
-
-Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
-Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/mos7840.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 779cd95..d305a5a 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9999,
- 		USB_SC_8070, USB_PR_CB, NULL,
- 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
- 
-+/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
-+UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
-+		"Casio",
-+		"EX-N1 DigitalCamera",
-+		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
-+
- /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
- UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
- 		"Samsung",
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2661,6 +2661,7 @@ static void mos7840_release(struct usb_s
+ 		mos7840_port = mos7840_get_port_private(serial->port[i]);
+ 		dbg("mos7840_port %d = %p", i, mos7840_port);
+ 		if (mos7840_port) {
++			usb_free_urb(mos7840_port->control_urb);
+ 			kfree(mos7840_port->ctrl_buf);
+ 			kfree(mos7840_port->dr);
+ 			kfree(mos7840_port);
 
 
