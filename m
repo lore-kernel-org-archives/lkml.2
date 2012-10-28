@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472Ab2J1X1N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41854 "EHLO
+	id S1756367Ab2J1X1G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41759 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756375Ab2J1X1J (ORCPT
+	by vger.kernel.org with ESMTP id S1756236Ab2J1X06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:09 -0400
-Message-Id: <20121028231607.762079593@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:58 -0400
+Message-Id: <20121028231540.448748688@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:15 +0000
+Date: Sun, 28 Oct 2012 23:15:47 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 099/105] Revert "lockd: use rpc clients cl_nodename for id encoding"
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 011/105] sparc64: fix ptrace interaction with  force_successful_syscall_return()
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,44 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-This reverts 5ff39e971c87ea9f4c4c7b253898abafa960e32b which was commit
-303a7ce92064c285a04c870f2dc0192fdb2968cb upstream.
+[ Upstream commit 55c2770e413e96871147b9406a9c41fe9bc5209c ]
 
-It is not necessary for kernel versions without per-netns RPC clients.
+we want syscall_trace_leave() called on exit from any syscall;
+skipping its call in case we'd done force_successful_syscall_return()
+is broken...
 
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/lockd/mon.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/sparc/kernel/syscalls.S | 32 ++++++++++++++------------------
+ 1 file changed, 14 insertions(+), 18 deletions(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -40,7 +40,6 @@ struct nsm_args {
- 	u32			proc;
+diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
+index 1d7e274..7f5f65d 100644
+--- a/arch/sparc/kernel/syscalls.S
++++ b/arch/sparc/kernel/syscalls.S
+@@ -212,24 +212,20 @@ linux_sparc_syscall:
+ 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+ ret_sys_call:
+ 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
+-	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	sra	%o0, 0, %o0
+ 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
+ 	sllx	%g2, 32, %g2
  
- 	char			*mon_name;
--	char			*nodename;
- };
+-	/* Check if force_successful_syscall_return()
+-	 * was invoked.
+-	 */
+-	ldub	[%g6 + TI_SYS_NOERROR], %l2
+-	brnz,a,pn %l2, 80f
+-	 stb	%g0, [%g6 + TI_SYS_NOERROR]
+-
+ 	cmp	%o0, -ERESTART_RESTARTBLOCK
+ 	bgeu,pn	%xcc, 1f
+-	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6
+-80:
++	 andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %g0
++	ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
++
++2:
++	stb	%g0, [%g6 + TI_SYS_NOERROR]
+ 	/* System call success, clear Carry condition code. */
+ 	andn	%g3, %g2, %g3
++3:
+ 	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]	
+ 	bne,pn	%icc, linux_syscall_trace2
+ 	 add	%l1, 0x4, %l2			! npc = npc+4
+@@ -238,20 +234,20 @@ ret_sys_call:
+ 	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
  
- struct nsm_res {
-@@ -94,7 +93,6 @@ static int nsm_mon_unmon(struct nsm_hand
- 		.vers		= 3,
- 		.proc		= NLMPROC_NSM_NOTIFY,
- 		.mon_name	= nsm->sm_mon_name,
--		.nodename	= utsname()->nodename,
- 	};
- 	struct rpc_message msg = {
- 		.rpc_argp	= &args,
-@@ -431,7 +429,7 @@ static void encode_my_id(struct xdr_stre
- {
- 	__be32 *p;
+ 1:
++	/* Check if force_successful_syscall_return()
++	 * was invoked.
++	 */
++	ldub	[%g6 + TI_SYS_NOERROR], %l2
++	brnz,pn %l2, 2b
++	 ldx	[%sp + PTREGS_OFF + PT_V9_TNPC], %l1 ! pc = npc
+ 	/* System call failure, set Carry condition code.
+ 	 * Also, get abs(errno) to return to the process.
+ 	 */
+-	andcc	%l0, (_TIF_SYSCALL_TRACE|_TIF_SECCOMP|_TIF_SYSCALL_AUDIT|_TIF_SYSCALL_TRACEPOINT), %l6	
+ 	sub	%g0, %o0, %o0
+-	or	%g3, %g2, %g3
+ 	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
+-	stx	%g3, [%sp + PTREGS_OFF + PT_V9_TSTATE]
+-	bne,pn	%icc, linux_syscall_trace2
+-	 add	%l1, 0x4, %l2			! npc = npc+4
+-	stx	%l1, [%sp + PTREGS_OFF + PT_V9_TPC]
++	ba,pt	%xcc, 3b
++	 or	%g3, %g2, %g3
  
--	encode_nsm_string(xdr, argp->nodename);
-+	encode_nsm_string(xdr, utsname()->nodename);
- 	p = xdr_reserve_space(xdr, 4 + 4 + 4);
- 	*p++ = cpu_to_be32(argp->prog);
- 	*p++ = cpu_to_be32(argp->vers);
+-	b,pt	%xcc, rtrap
+-	 stx	%l2, [%sp + PTREGS_OFF + PT_V9_TNPC]
+ linux_syscall_trace2:
+ 	call	syscall_trace_leave
+ 	 add	%sp, PTREGS_OFF, %o0
 
 
