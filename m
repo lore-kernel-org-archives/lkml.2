@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754012Ab2J1HVe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 03:21:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38566 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab2J1HTj (ORCPT
+	id S1752367Ab2J1HYm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 03:24:42 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:24336 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab2J1HYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 03:19:39 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 3/9] mtd: mtd_nandecctest: use random32_get_bytes instead of get_random_bytes()
-Date: Sun, 28 Oct 2012 16:19:00 +0900
-Message-Id: <1351408746-8623-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
+	Sun, 28 Oct 2012 03:24:40 -0400
+Date: Sun, 28 Oct 2012 08:24:38 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>, Jon Loeliger <jdl@jdl.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V4 REPOST 1/2] kbuild: centralize .dts->.dtb rule
+Message-ID: <20121028072438.GA3879@merkur.ravnborg.org>
+References: <1351279797-16450-1-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351279797-16450-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using random32_get_bytes() is enough.  Because this data is only used
-for testing, not used for cryptographic use.
+On Fri, Oct 26, 2012 at 01:29:56PM -0600, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> All architectures that use cmd_dtc do so in the same way. Move the build
+> rule to a central location to avoid duplication.
+> 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
----
- drivers/mtd/tests/mtd_nandecctest.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is missing documentation of the new rule in Documentation/kbuild/makefiles.txt
 
-diff --git a/drivers/mtd/tests/mtd_nandecctest.c b/drivers/mtd/tests/mtd_nandecctest.c
-index a5fb9b0..0ddcbec 100644
---- a/drivers/mtd/tests/mtd_nandecctest.c
-+++ b/drivers/mtd/tests/mtd_nandecctest.c
-@@ -253,7 +253,7 @@ static int nand_ecc_test_run(const size_t size)
- 		goto error;
- 	}
- 
--	get_random_bytes(correct_data, size);
-+	random32_get_bytes(correct_data, size);
- 	__nand_calculate_ecc(correct_data, size, correct_ecc);
- 
- 	for (i = 0; i < ARRAY_SIZE(nand_ecc_test); i++) {
--- 
-1.7.11.7
-
+	Sam
