@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab2J1X1O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:14 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:34235 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab2J1X1J (ORCPT
+	id S1756655Ab2J1X1e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41893 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756537Ab2J1X1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:09 -0400
-Date: Mon, 29 Oct 2012 00:05:23 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Cyril Brulebois <kibi@debian.org>
-Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r8169: Fix WoL on RTL8168d/8111d.
-Message-ID: <20121028230523.GA26778@electric-eye.fr.zoreil.com>
-References: <1351392414-32219-1-git-send-email-kibi@debian.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351392414-32219-1-git-send-email-kibi@debian.org>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Sun, 28 Oct 2012 19:27:23 -0400
+Message-Id: <20121028231603.046691837@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Sun, 28 Oct 2012 23:17:00 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 084/105] USB: sierra: fix memory leak in attach error path
+In-Reply-To: <20121028231536.970033833@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyril Brulebois <kibi@debian.org> :
-> This regression was spotted between Debian squeeze and Debian wheezy
-> kernels (respectively based on 2.6.32 and 3.2). The fix was inspired
-> by <http://www.spinics.net/lists/netdev/msg178543.html>, using
-> RTL_GIGA_MAC_VER_{25,26} for the RTL8168d/8111d chipset.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-If someone experiences problems or has questions about WoL with
-Realtek's 816x chipsets, http://marc.info/?t=132079219400004 would
-imho be a better reference.
+------------------
 
-[...]
-> Tested on top of a 3.2.23 kernel.
+From: Johan Hovold <jhovold@gmail.com>
 
-It should still be relevant for current kernel. I'll give it a try.
+commit 7e41f9bcdd2e813ea2a3c40db291d87ea06b559f upstream.
 
-[...]
-> It looks like RTL_GIGA_MAC_VER_{25,26} are kinda supposed to go
-> together so I kept both. Florent's testing gave the following results:
->  - RTL_GIGA_MAC_VER_25 only: FAIL.
->  - RTL_GIGA_MAC_VER_26 only: SUCCESS.
->  - RTL_GIGA_MAC_VER_25 + RTL_GIGA_MAC_VER_26: SUCCESS.
+Make sure port private data is deallocated on errors in attach.
 
-I don't understand the VER_25 vs VER_26 difference.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/usb/serial/sierra.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
--- 
-Ueimor
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index 76ef95b..2cb27e4 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -905,7 +905,7 @@ static int sierra_startup(struct usb_serial *serial)
+ 			dev_dbg(&port->dev, "%s: kmalloc for "
+ 				"sierra_port_private (%d) failed!\n",
+ 				__func__, i);
+-			return -ENOMEM;
++			goto err;
+ 		}
+ 		spin_lock_init(&portdata->lock);
+ 		init_usb_anchor(&portdata->active);
+@@ -942,6 +942,13 @@ static int sierra_startup(struct usb_serial *serial)
+ 	}
+ 
+ 	return 0;
++err:
++	for (--i; i >= 0; --i) {
++		portdata = usb_get_serial_port_data(serial->port[i]);
++		kfree(portdata);
++	}
++
++	return -ENOMEM;
+ }
+ 
+ static void sierra_release(struct usb_serial *serial)
+
+
