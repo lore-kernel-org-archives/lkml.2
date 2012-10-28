@@ -1,102 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2J1DcR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 23:32:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:57160 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754589Ab2J1DcP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 23:32:15 -0400
+	id S1751220Ab2J1EYL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 00:24:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750931Ab2J1EYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 00:24:09 -0400
+Message-ID: <508CB35D.9080102@redhat.com>
+Date: Sat, 27 Oct 2012 23:23:57 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
-References: <20121024232032.GA31129@www.outflux.net>
-	<20121025041620.GH2616@ZenIV.linux.org.uk>
-	<CAGXu5jLwvcpyMp8RcF8aFySKkkj+17ovNOvC_r88+D0fQW7CsQ@mail.gmail.com>
-	<alpine.LFD.2.02.1210251636480.23155@wniryva.cad.erqung.pbz>
-	<20121025120952.GI2616@ZenIV.linux.org.uk>
-	<20121025123843.GJ2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210262242310.6224@wniryva.cad.erqung.pbz>
-	<20121026183601.GR2616@ZenIV.linux.org.uk>
-	<alpine.LFD.2.02.1210271450570.15637@wniryva.cad.erqung.pbz>
-	<CAGXu5j+JdbehZK1KXHMZGJ8_d10Z25oDQ7V=J3OGXKmF-=wg6Q@mail.gmail.com>
-	<alpine.LFD.2.02.1210272337550.22424@wniryva.cad.erqung.pbz>
-Date: Sat, 27 Oct 2012 20:32:14 -0700
-X-Google-Sender-Auth: oa_PY4GurSeAnTfQGaAF_LYavyI
-Message-ID: <CAGXu5jJNZH4fQ6U197+A0nJeawHk+8yNnQj+mKft65L9o6_z7A@mail.gmail.com>
-Subject: Re: [PATCH] exec: do not leave bprm->interp on stack
-From: Kees Cook <keescook@chromium.org>
-To: P J P <ppandit@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-fsdevel@vger.kernel.org, halfdog <me@halfdog.net>
+To: Nix <nix@esperi.org.uk>
+CC: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: [PATCH] ext4: fix unjournaled inode bitmap modification
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+In-Reply-To: <87pq48nbyz.fsf_-_@spindle.srvr.nix>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 1:16 PM, P J P <ppandit@redhat.com> wrote:
-> +-- On Sat, 27 Oct 2012, Kees Cook wrote --+
-> | Al showed a list of them earlier in the thread.
->
->   Yeah, the list Al showed and I came across mostly has - binfmt_aout - entry.
-> Do people still use - a.out - format? (considering ELF has been the default
-> standard for so many years)
+commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
+ext4_new_inode() such that the inode bitmap was being modified
+outside a transaction, which could lead to corruption, and was
+discovered when journal_checksum found a bad checksum in the
+journal during log replay.
 
-No one sane has CONFIG_BINFMT_AOUT any more. :)
+Nix ran into this when using the journal_async_commit mount
+option, which enables journal checksumming.  The ensuing
+journal replay failures due to the bad checksums led to
+filesystem corruption reported as the now infamous
+"Apparent serious progressive ext4 data corruption bug"
 
-> | I don't have any on the various distros I checked.
->
->   Same here, my F17 machine has no entries for binfmt-xxxx modules, in fact I
-> don't even have the /etc/modprobe.d/aliases.conf file.
->
-> Documentation/binfmt_misc.txt talks about executing Java, Python, DOSEMU and
-> Windows programs which could be supported by loadable modules.
+I've tested this by mounting with journal_checksum and
+running fsstress then dropping power; I've also tested by
+hacking DM to create snapshots w/o first quiescing, which
+allows me to test journal replay repeatedly w/o actually
+power-cycling the box.  Without the patch I hit a journal
+checksum error every time.  With this fix it survives
+many iterations.
 
-Right, but those are all registered from userspace and binfmt_misc
-will catch them.
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+cc: Nix <nix@esperi.org.uk>
+---
 
-> | The problem I see here is that we only want to do module loading in the "no
-> | match" case. But that means that either we need to restart with the original
-> | bprm, or we need to keep bprm changes off the stack. Leading with a module
-> | load is going to wreck performance.
->
->   I beg to *slightly* differ here. I agree we currently have a small overhead
-> of find_module() -> request_module() only when binfmt_xxxx module is already
-> loaded, partly because find_module can not resolve aliases.
+A little more going on here to try to properly handle error
+cases & moving to the next group; despite
+ext4_handle_release_buffer being a no-op, I've tried
+to sprinkle it in at the right places.  Double checking
+on review is probably a fine idea ;)
 
-Al's point here is that non of the binfmts are named "binfmt-NNNN".
-Those are only aliases, and those are only visible from userspace,
-even after they're loaded, so the find_module() call in your example
-will never match anything. Which means if there is a non-printable in
-a binary, the kernel will exec modprobe even if there is already a
-binfmt that will load it.
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 4facdd2..1d18fba 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -706,10 +706,17 @@ got_group:
+ 			continue;
+ 		}
+ 
+-		brelse(inode_bitmap_bh);
++		if (inode_bitmap_bh) {
++			ext4_handle_release_buffer(handle, inode_bitmap_bh);
++			brelse(inode_bitmap_bh);
++		}
+ 		inode_bitmap_bh = ext4_read_inode_bitmap(sb, group);
+ 		if (!inode_bitmap_bh)
+ 			goto fail;
++		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
++		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
++		if (err)
++			goto fail;
+ 
+ repeat_in_this_group:
+ 		ino = ext4_find_next_zero_bit((unsigned long *)
+@@ -734,10 +741,16 @@ repeat_in_this_group:
+ 		if (ino < EXT4_INODES_PER_GROUP(sb))
+ 			goto repeat_in_this_group;
+ 	}
++	ext4_handle_release_buffer(handle, inode_bitmap_bh);
+ 	err = -ENOSPC;
+ 	goto out;
+ 
+ got:
++	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
++	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
++	if (err)
++		goto fail;
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+@@ -771,11 +784,6 @@ got:
+ 			goto fail;
+ 	}
+ 
+-	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
+-	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
+-	if (err)
+-		goto fail;
+-
+ 	BUFFER_TRACE(group_desc_bh, "get_write_access");
+ 	err = ext4_journal_get_write_access(handle, group_desc_bh);
+ 	if (err)
+@@ -823,11 +831,6 @@ got:
+ 	}
+ 	ext4_unlock_group(sb, group);
+ 
+-	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
+-	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
+-	if (err)
+-		goto fail;
+-
+ 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
+ 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
+ 	if (err)
 
-> I guess this small overhead is worth it if it helps to make things less
-> confusing and easy to follow. Besides this overhead does not exist for regular
-> executables ELFs and scripts alike.
->
-> If the required module is missing, a call to request_module() will anyway
-> happen and its cost remains the same whether it happens before or after the
-> "match".
-
-Well, we'll always do the modprobe call-out on a missing binfmt (so
-for that reason I like the addition of the printk, though it should
-probably be rate-limited), but we still need to only load modules at
-fall-back time. Which means means we need to return from the recursive
-loading attempt, which means we need to restart the bprm (slow) or we
-need to do a heap alloc for the changed interp (less slow).
-
-If we change binfmt_script to not make a recursive call, then we still
-need to keep the interp change somewhere off the stack. I still think
-my patchset is the least bad.
-
-Al, do you have something else in mind?
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
