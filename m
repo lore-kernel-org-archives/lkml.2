@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab2J1X3K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:29:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42269 "EHLO
+	id S1757149Ab2J1X33 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:29:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42276 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756982Ab2J1X2f (ORCPT
+	by vger.kernel.org with ESMTP id S1757095Ab2J1X2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:35 -0400
-Message-Id: <20121028231543.196824194@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:34 -0400
+Message-Id: <20121028231543.802487177@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:56 +0000
+Date: Sun, 28 Oct 2012 23:15:58 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "jeff.liu" <jeff.liu@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>
-Subject: [ 020/105] RDS: fix rds-ping spinlock recursion
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 022/105] staging: comedi: amplc_pc236: fix invalid register access during detach
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,47 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "jeff.liu" <jeff.liu@oracle.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-[ Upstream commit 5175a5e76bbdf20a614fb47ce7a38f0f39e70226 ]
+commit aaeb61a97b7159ebe30b18a422d04eeabfa8790b upstream.
 
-This is the revised patch for fixing rds-ping spinlock recursion
-according to Venkat's suggestions.
+`pc236_detach()` is called by the comedi core if it attempted to attach
+a device and failed.  `pc236_detach()` calls `pc236_intr_disable()` if
+the comedi device private data pointer (`devpriv`) is non-null.  This
+test is insufficient as `pc236_intr_disable()` accesses hardware
+registers and the attach routine may have failed before it has saved
+their I/O base addresses.
 
-RDS ping/pong over TCP feature has been broken for years(2.6.39 to
-3.6.0) since we have to set TCP cork and call kernel_sendmsg() between
-ping/pong which both need to lock "struct sock *sk". However, this
-lock has already been hold before rds_tcp_data_ready() callback is
-triggerred. As a result, we always facing spinlock resursion which
-would resulting in system panic.
+Fix it by checking `dev->iobase` is non-zero before calling
+`pc236_intr_disable()` as that means the I/O base addresses have been
+saved and the hardware registers can be accessed.  It also implies the
+comedi device private data pointer is valid, so there is no need to
+check it.
 
-Given that RDS ping is only used to test the connectivity and not for
-serious performance measurements, we can queue the pong transmit to
-rds_wq as a delayed response.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: James Morris <james.l.morris@oracle.com>
-Signed-off-by: Jie Liu <jeff.liu@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+[Ian Abbott: This patch is for the stable 3.0 kernel.]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/rds/send.c | 2 +-
+ drivers/staging/comedi/drivers/amplc_pc236.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/rds/send.c b/net/rds/send.c
-index 96531d4..88eace5 100644
---- a/net/rds/send.c
-+++ b/net/rds/send.c
-@@ -1122,7 +1122,7 @@ rds_send_pong(struct rds_connection *conn, __be16 dport)
- 	rds_stats_inc(s_send_pong);
+diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
+index 48246cd..b4311bf 100644
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -470,7 +470,7 @@ static int pc236_detach(struct comedi_device *dev)
+ {
+ 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+ 	       PC236_DRIVER_NAME);
+-	if (devpriv)
++	if (dev->iobase)
+ 		pc236_intr_disable(dev);
  
- 	if (!test_bit(RDS_LL_SEND_FULL, &conn->c_flags))
--		rds_send_xmit(conn);
-+		queue_delayed_work(rds_wq, &conn->c_send_w, 0);
- 
- 	rds_message_put(rm);
- 	return 0;
+ 	if (dev->irq)
 
 
