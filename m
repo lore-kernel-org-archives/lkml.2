@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab2J1Qy5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 12:54:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47508 "EHLO
+	id S1753562Ab2J1RFF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 13:05:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47669 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab2J1Qy4 (ORCPT
+	with ESMTP id S1753380Ab2J1RFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 12:54:56 -0400
-Date: Sun, 28 Oct 2012 09:54:38 -0700
-From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-83babc0d2944e2c72063a83f4acf3689c071afdf@git.kernel.org>
+	Sun, 28 Oct 2012 13:05:01 -0400
+Date: Sun, 28 Oct 2012 10:04:35 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-70bc6583401e9a8ad946e9a80df5cb2627c879b5@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, a.p.zijlstra@chello.nl, pjt@google.com,
-        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
+        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, pjt@google.com,
-        riel@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de
+        cl@linux.com, riel@redhat.com, akpm@linux-foundation.org,
+        Lee.Schermerhorn@hp.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] mm/pgprot: Move the pgprot_modify()
-  fallback definition to mm.h
-Git-Commit-ID: 83babc0d2944e2c72063a83f4acf3689c071afdf
+Subject: [tip:numa/core] sched, numa, mm/mpol:
+  Make mempolicy home-node aware
+Git-Commit-ID: 70bc6583401e9a8ad946e9a80df5cb2627c879b5
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,78 +30,105 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 28 Oct 2012 09:54:45 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 28 Oct 2012 10:04:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  83babc0d2944e2c72063a83f4acf3689c071afdf
-Gitweb:     http://git.kernel.org/tip/83babc0d2944e2c72063a83f4acf3689c071afdf
-Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Wed, 26 Sep 2012 11:48:08 +0200
+Commit-ID:  70bc6583401e9a8ad946e9a80df5cb2627c879b5
+Gitweb:     http://git.kernel.org/tip/70bc6583401e9a8ad946e9a80df5cb2627c879b5
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Sat, 3 Mar 2012 17:05:54 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 28 Oct 2012 17:30:58 +0100
+CommitDate: Sun, 28 Oct 2012 17:31:09 +0100
 
-mm/pgprot: Move the pgprot_modify() fallback definition to mm.h
+sched, numa, mm/mpol: Make mempolicy home-node aware
 
-pgprot_modify() is available on x86, but on other architectures it only
-gets defined in mm/mprotect.c - breaking the build if anything outside
-of mprotect.c tries to make use of this function.
+Add another layer of fallback policy to make the home node concept
+useful from a memory allocation PoV.
 
-Move it to the generic pgprot area in mm.h, so that an upcoming patch
-can make use of it.
+This changes the mpol order to:
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>
+ - vma->vm_ops->get_policy	[if applicable]
+ - vma->vm_policy		[if applicable]
+ - task->mempolicy
+ - tsk_home_node() preferred	[NEW]
+ - default_policy
+
+Note that the tsk_home_node() policy has Migrate-on-Fault enabled to
+facilitate efficient on-demand memory migration.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Turner <pjt@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-nfvarGMj9gjavowroorkizb4@git.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-ybn5oygsqXZa6jtwpwjywmdu@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm.h |   13 +++++++++++++
- mm/mprotect.c      |    7 -------
- 2 files changed, 13 insertions(+), 7 deletions(-)
+ mm/mempolicy.c |   29 +++++++++++++++++++++++++++--
+ 1 files changed, 27 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fa06804..2a32cf8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -164,6 +164,19 @@ extern pgprot_t protection_map[16];
- #define FAULT_FLAG_TRIED	0x40	/* second try */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 5ee326c..97e6d99 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -117,6 +117,22 @@ static struct mempolicy default_policy = {
+ 	.flags = MPOL_F_LOCAL,
+ };
  
- /*
-+ * Some architectures (such as x86) may need to preserve certain pgprot
-+ * bits, without complicating generic pgprot code.
-+ *
-+ * Most architectures don't care:
-+ */
-+#ifndef pgprot_modify
-+static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
-+{
-+	return newprot;
-+}
-+#endif
++static struct mempolicy preferred_node_policy[MAX_NUMNODES];
 +
-+/*
-  * vm_fault is filled by the the pagefault handler and passed to the vma's
-  * ->fault function. The vma's ->fault is responsible for returning a bitmask
-  * of VM_FAULT_xxx flags that give details about how the fault was handled.
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index a409926..e97b0d6 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -28,13 +28,6 @@
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
++static struct mempolicy *get_task_policy(struct task_struct *p)
++{
++	struct mempolicy *pol = p->mempolicy;
++	int node;
++
++	if (!pol) {
++		node = tsk_home_node(p);
++		if (node != -1)
++			pol = &preferred_node_policy[node];
++	}
++
++	return pol;
++}
++
+ static const struct mempolicy_operations {
+ 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
+ 	/*
+@@ -1565,7 +1581,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
+ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 		struct vm_area_struct *vma, unsigned long addr)
+ {
+-	struct mempolicy *pol = task->mempolicy;
++	struct mempolicy *pol = get_task_policy(task);
  
--#ifndef pgprot_modify
--static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
--{
--	return newprot;
--}
--#endif
--
- static void change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
+ 	if (vma) {
+ 		if (vma->vm_ops && vma->vm_ops->get_policy) {
+@@ -1988,7 +2004,7 @@ retry_cpuset:
+  */
+ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
+ {
+-	struct mempolicy *pol = current->mempolicy;
++	struct mempolicy *pol = get_task_policy(current);
+ 	struct page *page;
+ 	unsigned int cpuset_mems_cookie;
+ 
+@@ -2450,6 +2466,15 @@ void __init numa_policy_init(void)
+ 				     sizeof(struct sp_node),
+ 				     0, SLAB_PANIC, NULL);
+ 
++	for_each_node(nid) {
++		preferred_node_policy[nid] = (struct mempolicy) {
++			.refcnt = ATOMIC_INIT(1),
++			.mode = MPOL_PREFERRED,
++			.flags = MPOL_F_MOF,
++			.v = { .preferred_node = nid, },
++		};
++	}
++
+ 	/*
+ 	 * Set interleaving policy for system init. Interleaving is only
+ 	 * enabled across suitably sized nodes (default is >= 16MB), or
