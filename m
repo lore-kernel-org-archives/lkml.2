@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab2J1XqU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:46:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41897 "EHLO
+	id S932130Ab2J1XqT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:46:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41905 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756542Ab2J1X1Z (ORCPT
+	by vger.kernel.org with ESMTP id S1756553Ab2J1X1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:25 -0400
-Message-Id: <20121028231607.161726644@decadent.org.uk>
+Message-Id: <20121028231602.732600498@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:13 +0000
+Date: Sun, 28 Oct 2012 23:16:59 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, Michal Marek <mmarek@suse.cz>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 097/105] gen_init_cpio: avoid stack overflow when expanding
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 083/105] USB: mct_u232: fix broken close
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,98 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 20f1de659b77364d55d4e7fad2ef657e7730323f upstream.
+commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
 
-Fix possible overflow of the buffer used for expanding environment
-variables when building file list.
+Make sure generic close is called at close.
 
-In the extremely unlikely case of an attacker having control over the
-environment variables visible to gen_init_cpio, control over the
-contents of the file gen_init_cpio parses, and gen_init_cpio was built
-without compiler hardening, the attacker can gain arbitrary execution
-control via a stack buffer overflow.
+The driver relies on the generic write implementation but did not call
+generic close.
 
-  $ cat usr/crash.list
-  file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
-  $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
-  *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+Note that the call to kill the read urb is not redundant, as mct_u232
+uses an interrupt urb from the second port as the read urb and that
+generic close therefore fails to kill it.
 
-This also replaces the space-indenting with tabs.
+Compile-only tested.
 
-Patch based on existing fix extracted from grsecurity.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- usr/gen_init_cpio.c |   43 +++++++++++++++++++++++--------------------
- 1 file changed, 23 insertions(+), 20 deletions(-)
+ drivers/usb/serial/mct_u232.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
-index af0f22f..aca6edc 100644
---- a/usr/gen_init_cpio.c
-+++ b/usr/gen_init_cpio.c
-@@ -303,7 +303,7 @@ static int cpio_mkfile(const char *name, const char *location,
- 	int retval;
- 	int rc = -1;
- 	int namesize;
--	int i;
-+	unsigned int i;
- 
- 	mode |= S_IFREG;
- 
-@@ -381,25 +381,28 @@ error:
- 
- static char *cpio_replace_env(char *new_location)
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -577,12 +577,14 @@ static void mct_u232_close(struct usb_se
  {
--       char expanded[PATH_MAX + 1];
--       char env_var[PATH_MAX + 1];
--       char *start;
--       char *end;
--
--       for (start = NULL; (start = strstr(new_location, "${")); ) {
--               end = strchr(start, '}');
--               if (start < end) {
--                       *env_var = *expanded = '\0';
--                       strncat(env_var, start + 2, end - start - 2);
--                       strncat(expanded, new_location, start - new_location);
--                       strncat(expanded, getenv(env_var), PATH_MAX);
--                       strncat(expanded, end + 1, PATH_MAX);
--                       strncpy(new_location, expanded, PATH_MAX);
--               } else
--                       break;
--       }
--
--       return new_location;
-+	char expanded[PATH_MAX + 1];
-+	char env_var[PATH_MAX + 1];
-+	char *start;
-+	char *end;
+ 	dbg("%s port %d", __func__, port->number);
+ 
+-	if (port->serial->dev) {
+-		/* shutdown our urbs */
+-		usb_kill_urb(port->write_urb);
+-		usb_kill_urb(port->read_urb);
+-		usb_kill_urb(port->interrupt_in_urb);
+-	}
++	/*
++	 * Must kill the read urb as it is actually an interrupt urb, which
++	 * generic close thus fails to kill.
++	 */
++	usb_kill_urb(port->read_urb);
++	usb_kill_urb(port->interrupt_in_urb);
 +
-+	for (start = NULL; (start = strstr(new_location, "${")); ) {
-+		end = strchr(start, '}');
-+		if (start < end) {
-+			*env_var = *expanded = '\0';
-+			strncat(env_var, start + 2, end - start - 2);
-+			strncat(expanded, new_location, start - new_location);
-+			strncat(expanded, getenv(env_var),
-+				PATH_MAX - strlen(expanded));
-+			strncat(expanded, end + 1,
-+				PATH_MAX - strlen(expanded));
-+			strncpy(new_location, expanded, PATH_MAX);
-+			new_location[PATH_MAX] = 0;
-+		} else
-+			break;
-+	}
-+
-+	return new_location;
- }
++	usb_serial_generic_close(port);
+ } /* mct_u232_close */
  
  
 
