@@ -1,90 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab2J1Mlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 08:41:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34509 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab2J1Mld (ORCPT
+	id S1752347Ab2J1Mys (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 08:54:48 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:59221 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219Ab2J1Myr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 08:41:33 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, mark.einon@gmail.com
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] staging : csr: Fix typo in csr/netdev.c
-Date: Sun, 28 Oct 2012 21:41:28 +0900
-Message-Id: <1351428088-5740-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
-In-Reply-To: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
-References: <1351349616-22974-1-git-send-email-standby24x7@gmail.com>
+	Sun, 28 Oct 2012 08:54:47 -0400
+Message-ID: <508D2B15.2050601@tilera.com>
+Date: Sun, 28 Oct 2012 08:54:45 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/16] tile: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
+References: <cover.1351411047.git.joe@perches.com> <c7c947ee63de15e20b7a7e2f47aee66ef02ca50f.1351411047.git.joe@perches.com>
+In-Reply-To: <c7c947ee63de15e20b7a7e2f47aee66ef02ca50f.1351411047.git.joe@perches.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct spelling typos in csr/netdev.c
+On 10/28/2012 4:05 AM, Joe Perches wrote:
+> dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
+> and reducing object size is good.
+> Coalesce formats for easier grep.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/tile/kernel/pci_gx.c |   15 ++++++---------
+>  1 files changed, 6 insertions(+), 9 deletions(-)
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- drivers/staging/csr/netdev.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-diff --git a/drivers/staging/csr/netdev.c b/drivers/staging/csr/netdev.c
-index 113f2c1..56875ec 100644
---- a/drivers/staging/csr/netdev.c
-+++ b/drivers/staging/csr/netdev.c
-@@ -54,7 +54,7 @@
- #include <net/pkt_sched.h>
- 
- 
--/* Wext handler is suported only if CSR_SUPPORT_WEXT is defined */
-+/* Wext handler is supported only if CSR_SUPPORT_WEXT is defined */
- #ifdef CSR_SUPPORT_WEXT
- extern struct iw_handler_def unifi_iw_handler_def;
- #endif /* CSR_SUPPORT_WEXT */
-@@ -88,7 +88,7 @@ typedef int (*tx_signal_handler)(unifi_priv_t *priv, struct sk_buff *skb, const
- /*
-  * The driver uses the qdisc interface to buffer and control all
-  * outgoing traffic. We create a root qdisc, register our qdisc operations
-- * and later we create two subsiduary pfifo queues for the uncontrolled
-+ * and later we create two subsidiary pfifo queues for the uncontrolled
-  * and controlled ports.
-  *
-  * The network stack delivers all outgoing packets in our enqueue handler.
-@@ -1581,7 +1581,7 @@ send_ma_pkt_request(unifi_priv_t *priv, struct sk_buff *skb, const struct ethhdr
-         return -1;
-     }
- 
--    /* RA adrress must contain the immediate destination MAC address that is similiar to
-+    /* RA address must contain the immediate destination MAC address that is similar to
-      * the Address 1 field of 802.11 Mac header here 4 is: (sizeof(framecontrol) + sizeof (durationID))
-      * which is address 1 field
-      */
-@@ -2558,7 +2558,7 @@ static void process_ma_packet_ind(unifi_priv_t *priv, CSR_SIGNAL *signal, bulk_d
-         return;
-     }
-     /* For monitor mode we need to pass this indication to the registered application
--    handle this seperately*/
-+    handle this separately*/
-     /* MIC failure is already taken care of so no need to send the PDUs which are not successfully received in non-monitor mode*/
-     if(pkt_ind->ReceptionStatus != CSR_RX_SUCCESS)
-     {
-@@ -3099,13 +3099,13 @@ static void update_expected_sn(unifi_priv_t *priv,
-     u16 gap;
- 
-     gap = (sn - ba_session->expected_sn) & 0xFFF;
--    unifi_trace(priv, UDBG6, "%s: proccess the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
-+    unifi_trace(priv, UDBG6, "%s: process the frames up to new_expected_sn = %d gap = %d\n", __FUNCTION__, sn, gap);
-     for(j = 0; j < gap && j < ba_session->wind_size; j++) {
-         i = SN_TO_INDEX(ba_session, ba_session->expected_sn);
--        unifi_trace(priv, UDBG6, "%s: proccess the slot index = %d\n", __FUNCTION__, i);
-+        unifi_trace(priv, UDBG6, "%s: process the slot index = %d\n", __FUNCTION__, i);
-         if(ba_session->buffer[i].active) {
-             add_frame_to_ba_complete(priv, interfacePriv, &ba_session->buffer[i]);
--            unifi_trace(priv, UDBG6, "%s: proccess the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
-+            unifi_trace(priv, UDBG6, "%s: process the frame at index = %d expected_sn = %d\n", __FUNCTION__, i, ba_session->expected_sn);
-             FREE_BUFFER_SLOT(ba_session, i);
-         } else {
-             unifi_trace(priv, UDBG6, "%s: empty slot at index = %d\n", __FUNCTION__, i);
 -- 
-1.8.0.rc3.16.g8ead1bf
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
