@@ -1,121 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220Ab2J1EYL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 00:24:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931Ab2J1EYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 00:24:09 -0400
-Message-ID: <508CB35D.9080102@redhat.com>
-Date: Sat, 27 Oct 2012 23:23:57 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Nix <nix@esperi.org.uk>
-CC: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: [PATCH] ext4: fix unjournaled inode bitmap modification
-References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix>
-In-Reply-To: <87pq48nbyz.fsf_-_@spindle.srvr.nix>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751328Ab2J1Eqw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 00:46:52 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40519 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751040Ab2J1Eqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 00:46:51 -0400
+Message-ID: <1351399596.13495.3.camel@joe-AO722>
+Subject: [PATCH v2] checkpatch: Warn on unnecessary line continuations
+From: Joe Perches <joe@perches.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>,
+        David Howells <dhowells@redhat.com>,
+        "Ken O'Brien" <kernel@kenobrien.org>, gregkh@linuxfoundation.org,
+        swetland@google.com, arve@android.com, viro@zeniv.linux.org.uk,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1350924315.7502.6.camel@joe-AO722>
+References: <1350781512.16706.3.camel@joe-AO722>
+	 <1350772400-12347-1-git-send-email-kernel@kenobrien.org>
+	 <18159.1350898659@warthog.procyon.org.uk>
+	 <1350908109.5931.28.camel@joe-AO722> <1350910971.28457.3.camel@thor>
+	 <1350911803.7502.4.camel@joe-AO722> <1350924315.7502.6.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 27 Oct 2012 21:46:36 -0700
+Mime-Version: 1.0
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
-ext4_new_inode() such that the inode bitmap was being modified
-outside a transaction, which could lead to corruption, and was
-discovered when journal_checksum found a bad checksum in the
-journal during log replay.
+When the previous line is not a line continuation and the
+current line has a line continuation but is not a #define,
+emit a warning.
 
-Nix ran into this when using the journal_async_commit mount
-option, which enables journal checksumming.  The ensuing
-journal replay failures due to the bad checksums led to
-filesystem corruption reported as the now infamous
-"Apparent serious progressive ext4 data corruption bug"
-
-I've tested this by mounting with journal_checksum and
-running fsstress then dropping power; I've also tested by
-hacking DM to create snapshots w/o first quiescing, which
-allows me to test journal replay repeatedly w/o actually
-power-cycling the box.  Without the patch I hit a journal
-checksum error every time.  With this fix it survives
-many iterations.
-
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-cc: Nix <nix@esperi.org.uk>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+ scripts/checkpatch.pl |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-A little more going on here to try to properly handle error
-cases & moving to the next group; despite
-ext4_handle_release_buffer being a no-op, I've tried
-to sprinkle it in at the right places.  Double checking
-on review is probably a fine idea ;)
-
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 4facdd2..1d18fba 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -706,10 +706,17 @@ got_group:
- 			continue;
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f18750e..d4f61a6 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3013,6 +3013,15 @@ sub process {
+ 					      "Macros with complex values should be enclosed in parenthesis\n" . "$herectx");
+ 				}
+ 			}
++
++# check for line continuations outside of #defines
++
++		} else {
++			if ($prevline !~ /^..*\\$/ &&
++			    $line =~ /^\+.*\\$/) {
++				WARN("LINE_CONTINUATIONS",
++				     "Avoid unnecessary line continuations\n" . $herecurr);
++			}
  		}
  
--		brelse(inode_bitmap_bh);
-+		if (inode_bitmap_bh) {
-+			ext4_handle_release_buffer(handle, inode_bitmap_bh);
-+			brelse(inode_bitmap_bh);
-+		}
- 		inode_bitmap_bh = ext4_read_inode_bitmap(sb, group);
- 		if (!inode_bitmap_bh)
- 			goto fail;
-+		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
-+		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 
- repeat_in_this_group:
- 		ino = ext4_find_next_zero_bit((unsigned long *)
-@@ -734,10 +741,16 @@ repeat_in_this_group:
- 		if (ino < EXT4_INODES_PER_GROUP(sb))
- 			goto repeat_in_this_group;
- 	}
-+	ext4_handle_release_buffer(handle, inode_bitmap_bh);
- 	err = -ENOSPC;
- 	goto out;
- 
- got:
-+	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
-+	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-+	if (err)
-+		goto fail;
-+
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -771,11 +784,6 @@ got:
- 			goto fail;
- 	}
- 
--	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "get_write_access");
- 	err = ext4_journal_get_write_access(handle, group_desc_bh);
- 	if (err)
-@@ -823,11 +831,6 @@ got:
- 	}
- 	ext4_unlock_group(sb, group);
- 
--	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
- 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
- 	if (err)
+ # do {} while (0) macro tests:
+
 
