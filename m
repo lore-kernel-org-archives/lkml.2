@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab2J1RfD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 13:35:03 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40960 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab2J1RfB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 13:35:01 -0400
-Date: Sun, 28 Oct 2012 18:34:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        paul.gortmaker@windriver.com, benh@kernel.crashing.org
-Subject: Re: irq_set_chained_handler() called too early for hwirq to be
- initialized
-In-Reply-To: <508D55C9.3030702@antcom.de>
-Message-ID: <alpine.LFD.2.02.1210281810390.2756@ionos>
-References: <508D55C9.3030702@antcom.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753883Ab2J1Rif (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 13:38:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34493 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752110Ab2J1Rie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 13:38:34 -0400
+Date: Sun, 28 Oct 2012 18:39:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+	do_notify_resume()
+Message-ID: <20121028173925.GA14642@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121028173900.GA14621@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Oct 2012, Roland Stigge wrote:
-> 
-> consider arch/arm/mach-lpc32xx/irq.c: irq_set_chained_handler() is
-> called at a point where it accesses
-> irq_to_desc(IRQ_LPC32XX_SUB2IRQ)->irq_data.hwirq but which is not yet
-> initialized.
+Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
 
-None of the functions which are called inside of
-irq_set_chained_handler() touches desc->irq_data.hwirq.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/powerpc/kernel/signal.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-So what are you talking about?
+diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+index a2dc757..3b99711 100644
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+ 
+ void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+ {
+-	if (thread_info_flags & _TIF_UPROBE) {
+-		clear_thread_flag(TIF_UPROBE);
++	if (thread_info_flags & _TIF_UPROBE)
+ 		uprobe_notify_resume(regs);
+-	}
+ 
+ 	if (thread_info_flags & _TIF_SIGPENDING)
+ 		do_signal(regs);
+-- 
+1.5.5.1
 
-I just had a look into that lpc32xx irq code. At the end of
-lpc32xx_init_irq():
-
-        irq_base = irq_alloc_descs(-1, 0, NR_IRQS, 0);
-        if (irq_base < 0) {
-                pr_warn("Cannot allocate irq_descs, assuming pre-allocated\n");
-                irq_base = 0;
-        }
-
-That's just hilarious.
-
-Of course are the interrupts preallocated, simply because
-machine_desc->nr_irqs is 0 and therefor the ARM core code allocates
-NR_IRQS irq descriptors in the early setup way before
-lpc32xx_init_irq() is called.
-
-If those interrupts would not be preallocated, then the code would
-fail to initialize any interrupt at all. And of course nothing would
-notice as all function calls to set_irq_* do not check the return
-value.
-
-That brilliant thing came in via commit f5c42271 (ARM: LPC32xx: Device
-tree support). I have no idea from where you copied that and why you
-thought putting it at the end of the init function would be a good
-idea.
-
-Though, that has nothing todo with your problem description above.
-
-Thanks,
-
-	tglx
