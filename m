@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab2J1CsA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 22:48:00 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:34989 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab2J1Cr6 (ORCPT
+	id S1754640Ab2J1DAi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 23:00:38 -0400
+Received: from glenfiddich.mraw.org ([88.191.124.82]:51980 "EHLO
+	glenfiddich.mraw.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab2J1DAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 22:47:58 -0400
-Date: Sun, 28 Oct 2012 11:47:53 +0900
-From: Norbert Preining <preining@logic.at>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: drm i915 hangs on heavy io load
-Message-ID: <20121028024753.GA4254@gamma.logic.tuwien.ac.at>
-References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b94cdc$72fm1r@fmsmga001.fm.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 27 Oct 2012 23:00:37 -0400
+X-Greylist: delayed 805 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Oct 2012 23:00:37 EDT
+From: Cyril Brulebois <kibi@debian.org>
+To: nic_swsd@realtek.com, romieu@fr.zoreil.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cyril Brulebois <kibi@debian.org>
+Subject: [PATCH] r8169: Fix WoL on RTL8168d/8111d.
+Date: Sun, 28 Oct 2012 03:46:54 +0100
+Message-Id: <1351392414-32219-1-git-send-email-kibi@debian.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+This regression was spotted between Debian squeeze and Debian wheezy
+kernels (respectively based on 2.6.32 and 3.2). The fix was inspired
+by <http://www.spinics.net/lists/netdev/msg178543.html>, using
+RTL_GIGA_MAC_VER_{25,26} for the RTL8168d/8111d chipset.
 
-I haven't answered due to several reboots necessary (sometimes 
-I have to work on Win***) and no effect, but ..
+Probable regression from d4ed95d796e5126bba51466dc07e287cebc8bd19;
+more chipsets are likely affected.
 
-On Mi, 24 Okt 2012, Chris Wilson wrote:
-> > > http://cgit.freedesktop.org/~danvet/drm/commit/?h=ilk-wa-pile&id=0d5fed2de763b49bb1a90140758153481f043757
-> > > is the missing ingredient.
-> > 
-> > I am compiling a kernel with this patch based on current git now.
-> > Should I still use the above kernel cmd argument (i915...rc6=0)
-> > or try without it?
-> 
-> Without any rc6 parameter would be best. But if rc6=0 wasn't the
-> solution for you, then I may have identified the wrong w/a. Can I ask
-> you try the patches in that branch until you find one (or more perhaps)
-> that stabilise your system?
+Tested on top of a 3.2.23 kernel.
 
-I pulled the whole branch into my compile branch, and removed everything
-from kernel cmd line regarding rc6, and got the
-	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-	[drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
-	[drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-	[drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
-	[drm:i915_reset] *ERROR* Failed to reset chip.
-new i915_error_state.gz at the same place.
+Reported-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Tested-by: Florent Fourcot <florent.fourcot@enst-bretagne.fr>
+Signed-off-by: Cyril Brulebois <kibi@debian.org>
+---
+ drivers/net/ethernet/realtek/r8169.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-So it seems that the patches in the ilk-wa-pile branch do not help.
 
-All the best
+It looks like RTL_GIGA_MAC_VER_{25,26} are kinda supposed to go
+together so I kept both. Florent's testing gave the following results:
+ - RTL_GIGA_MAC_VER_25 only: FAIL.
+ - RTL_GIGA_MAC_VER_26 only: SUCCESS.
+ - RTL_GIGA_MAC_VER_25 + RTL_GIGA_MAC_VER_26: SUCCESS.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SCRONKEY (n.)
-Something that hits the window as a result of a violent sneeze.
-			--- Douglas Adams, The Meaning of Liff
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index e7ff886..eb6a5e4 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3827,6 +3827,8 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	void __iomem *ioaddr = tp->mmio_addr;
+ 
+ 	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_25:
++	case RTL_GIGA_MAC_VER_26:
+ 	case RTL_GIGA_MAC_VER_29:
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_32:
+-- 
+1.7.10.4
+
