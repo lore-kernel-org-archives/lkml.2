@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab2J1Nh0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 09:37:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31972 "EHLO mx1.redhat.com"
+	id S1752750Ab2J1Non (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 09:44:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752464Ab2J1NhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 09:37:25 -0400
-Date: Sun, 28 Oct 2012 11:37:02 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf tool: Move dso_* related functions into dso
- object
-Message-ID: <20121028133702.GA6754@infradead.org>
-References: <1351372712-21104-1-git-send-email-jolsa@redhat.com>
- <1351372712-21104-6-git-send-email-jolsa@redhat.com>
+	id S1752464Ab2J1Nol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 09:44:41 -0400
+Date: Sun, 28 Oct 2012 14:45:33 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to
+	use freezable_schedule()
+Message-ID: <20121028134533.GA30847@redhat.com>
+References: <20121023153919.GA16201@redhat.com> <20121024185710.GA12182@atj.dyndns.org> <20121025163941.GA3801@redhat.com> <20121025163959.GB3801@redhat.com> <20121025171812.GE11442@htj.dyndns.org> <20121025173433.GA7650@redhat.com> <20121025173632.GI11442@htj.dyndns.org> <20121026174545.GA21639@redhat.com> <20121026174606.GB21639@redhat.com> <1351376558.21585.1.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1351372712-21104-6-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1351376558.21585.1.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Oct 27, 2012 at 11:18:32PM +0200, Jiri Olsa escreveu:
-> Moving dso_* related functions into dso object.
-> 
-> Keeping symbol loading related functions still in the symbol
-> object as it seems more convenient.
+On 10/27, Ben Hutchings wrote:
+>
+> On Fri, 2012-10-26 at 19:46 +0200, Oleg Nesterov wrote:
+> > try_to_freeze_tasks() and cgroup_freezer rely on scheduler locks
+> > to ensure that a task doing STOPPED/TRACED -> RUNNING transition
+> > can't escape freezing. This mostly works, but ptrace_stop() does
+> > not necessarily call schedule(), it can change task->state back to
+> > RUNNING and check freezing() without any lock/barrier in between.
+> >
+> > We could add the necessary barrier, but this patch changes
+> > ptrace_stop() and do_signal_stop() to use freezable_schedule().
+> > This fixes the race, freezer_count() and freezer_should_skip()
+> > carefully avoid the race.
+> >
+> > And this simplifies the code, try_to_freeze_tasks/update_if_frozen
+> > no longer need to use task_is_stopped_or_traced() checks with the
+> > non trivial assumptions. We can rely on the mechanism which was
+> > specially designed to mark the sleeping task as "frozen enough".
+> >
+> > v2: As Tejun pointed out, we can also change get_signal_to_deliver()
+> > and move try_to_freeze() up before 'relock' label.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> [...]
+>
+> This is not the correct way to submit a change to stable.  Please see
+> Documentation/stable_kernel_rules.txt
 
-Please resubmit after you fix this: The other 4 patches I already applied to my local tree.
+Sorry for confusion, it is not for stable@, it was cc'ed by mistake.
 
-- Arnaldo
+Oleg.
 
-    CC /home/acme/git/build/perf/util/dso-test-data.o
-In file included from util/dso.c:2:
-util/dso.h:87: error: ‘BUILD_ID_SIZE’ undeclared here (not in a function)
-    CC /home/acme/git/build/perf/util/color.o
-cc1: warnings being treated as errors
-util/dso.c: In function ‘dso__binary_type_file’:
-util/dso.c:45: error: implicit declaration of function ‘filename__read_debuglink’
-util/dso.c:45: error: nested extern declaration of ‘filename__read_debuglink’
-util/dso.c:51: error: ‘symbol_conf’ undeclared (first use in this function)
-util/dso.c:51: error: (Each undeclared identifier is reported only once
-util/dso.c:51: error: for each function it appears in.)
-util/dso.c: In function ‘dso__delete’:
-util/dso.c:435: error: implicit declaration of function ‘symbols__delete’
-util/dso.c:435: error: nested extern declaration of ‘symbols__delete’
-util/dso.c: In function ‘dso__read_running_kernel_build_id’:
-util/dso.c:462: error: implicit declaration of function ‘sysfs__read_build_id’
-util/dso.c:462: error: nested extern declaration of ‘sysfs__read_build_id’
-util/dso.c: In function ‘__dsos__read_build_ids’:
-util/dso.c:500: error: implicit declaration of function ‘filename__read_build_id’
-util/dso.c:500: error: nested extern declaration of ‘filename__read_build_id’
-util/dso.c: In function ‘dso__fprintf’:
-util/dso.c:589: error: dereferencing pointer to incomplete type
-util/dso.c:589: error: type defaults to ‘int’ in declaration of ‘__mptr’
-util/dso.c:589: error: initialization from incompatible pointer type
-util/dso.c:589: error: invalid use of undefined type ‘struct symbol’
-util/dso.c:590: error: implicit declaration of function ‘symbol__fprintf’
-util/dso.c:590: error: nested extern declaration of ‘symbol__fprintf’
-make: *** [/home/acme/git/build/perf/util/dso.o] Error 1
-make: *** Waiting for unfinished jobs....
-make: Leaving directory `/home/git/linux/tools/perf'
-[acme@sandy linux]$ 
