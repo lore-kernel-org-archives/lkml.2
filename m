@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755766Ab2J1U5O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:57:14 -0400
-Received: from nm30-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.194]:44492
-	"EHLO nm30-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755722Ab2J1U5K (ORCPT
+	id S1755826Ab2J1U5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:57:18 -0400
+Received: from nm27.access.bullet.mail.mud.yahoo.com ([66.94.237.92]:23792
+	"EHLO nm27.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755722Ab2J1U5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:57:10 -0400
-X-Yahoo-Newman-Id: 585251.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
+	Sun, 28 Oct 2012 16:57:15 -0400
+X-Yahoo-Newman-Id: 304948.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0NDVMXgVM1lNuYifRTFoK9IL33IysA9kfDgrxBMgAJCXt.I
- ntcsn.vBGvhnIUJKBSYkPx_6xqn.9a8Ba0cKcQ32_GRw0xqMaZliCu_.etay
- FIE6jGK_sf8l_m.zfGW5AgWXp5Qily5yJzARti4xhTyZrBjiTweC5L7nZWuG
- ENWp2LKC98WM56ukvVpmHfd4SkNWn0QnR3ckuzFJ8gqz8OxOdRI3XTVN2r1O
- ITTkPHHF8pl_0ZxsCIdlWpAW2KoLpGJknRb8.lf6Gkw6yh8jxhoZkaehQuIh
- UoiOD5Z7YTNnFEZuOnji5rFJzqxL3AXrswUtt4r98JmfuZGmWUi_N.4Kyf1G
- PDHz5tmPJUKRQgJahu.KTxjoT6WxwpvjLQkkNYZBjexGqzGyF9nnG.i.x4FX
- u3H_mDhhdBUxiH8nxT3ts8W2vLsNNsPv07.UBQRfsE_oFEEUDo11F6l.BZm0
- y285Jyso0VKnBeM114zpsWAoWD19wUQ--
+X-YMail-OSG: 8q1j.wsVM1m9YwThdbvPshnYq0RSY6Izj1dtkx6ZGQ4xzEV
+ q0FUwRfVrKSo.atDtrIIlmoylYC7VZ83P7t_XtgI8xgfXqXmwxiYHnBMOiQz
+ Z4B44cDKRnU5lVKLP3y1y6NsMAuWKCewCcX6cEgBZlcZOVq3QLvpGnM5JazG
+ uJBTJxNrqSI1izf9lCDrdy2.2.tUO1EY66lpNcR_YUaQdslps3K7xJp44c7Y
+ 9gkl.WgfCDLqZ_s57RTmHR2SlguVsnzdMdGqHYs.PjmKblQ019r2dJotjIOF
+ hVUFV8eG5N9IGpnImxOQfcjmqxKutFEbq2.ATG9Ihk3AG2BF5NzlffYbdC65
+ Hl15Z8ALPWmmJ5oWAQmpoTNjE2RTzcY3Xh615bsBXyzVRBD44MTyf6Qf_PGD
+ aeS4BNM123adI4ZJYPiEl79UVmG37poPy9G9bHK0mTt3mVIHzn8NNtfGICLl
+ BqYtK3WyeFyQUxdi2aQqQT6SvIpcA
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -35,9 +35,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 3/9] compiler-gcc{3,4}.h: Use GCC_VERSION macro
-Date: Sun, 28 Oct 2012 15:57:09 -0500
-Message-Id: <1351457835-7553-3-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v4 6/9] compiler.h, bug.h: Prevent double error messages with BUILD_BUG{,_ON}
+Date: Sun, 28 Oct 2012 15:57:12 -0500
+Message-Id: <1351457835-7553-6-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
 References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
@@ -45,101 +45,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using GCC_VERSION reduces complexity, is easier to read and is GCC's
-recommended mechanism for doing version checks. (Just don't ask me why
-they didn't define it in the first place.)  This also makes it easy to
-merge compiler-gcc{,3,4}.h should somebody want to.
+Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
+creating compile-time errors required a little trickery.
+BUILD_BUG{,_ON} uses this attribute when available to generate
+compile-time errors, but also uses the negative-sized array trick for
+older compilers, resulting in two error messages in some cases.  The
+reason it's "some" cases is that as of gcc 4.4, the negative-sized array
+will not create an error in some situations, like inline functions.
+
+This patch replaces the negative-sized array code with the new
+__compiletime_error_fallback() macro which expands to the same thing
+unless the the error attribute is available, in which case it expands to
+do{}while(0), resulting in exactly one compile-time error on all
+versions of gcc.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Borislav Petkov <bp@alien8.de>
 ---
- include/linux/compiler-gcc3.h |    8 ++++----
- include/linux/compiler-gcc4.h |   14 +++++++-------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ include/linux/bug.h      |    4 ++--
+ include/linux/compiler.h |    7 +++++++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/compiler-gcc3.h b/include/linux/compiler-gcc3.h
-index 37d4124..7d89feb 100644
---- a/include/linux/compiler-gcc3.h
-+++ b/include/linux/compiler-gcc3.h
-@@ -2,22 +2,22 @@
- #error "Please don't include <linux/compiler-gcc3.h> directly, include <linux/compiler.h> instead."
- #endif
- 
--#if __GNUC_MINOR__ < 2
-+#if GCC_VERSION < 30200
- # error Sorry, your compiler is too old - please upgrade it.
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 30300
- # define __used			__attribute__((__used__))
- #else
- # define __used			__attribute__((__unused__))
- #endif
- 
--#if __GNUC_MINOR__ >= 4
-+#if GCC_VERSION >= 30400
- #define __must_check		__attribute__((warn_unused_result))
- #endif
- 
- #ifdef CONFIG_GCOV_KERNEL
--# if __GNUC_MINOR__ < 4
-+# if GCC_VERSION < 30400
- #   error "GCOV profiling support for gcc versions below 3.4 not included"
- # endif /* __GNUC_MINOR__ */
- #endif /* CONFIG_GCOV_KERNEL */
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 8914293..9755029 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -4,7 +4,7 @@
- 
- /* GCC 4.1.[01] miscompiles __weak */
- #ifdef __KERNEL__
--# if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
-+# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
- #  error Your version of gcc miscompiles the __weak directive
- # endif
- #endif
-@@ -13,11 +13,11 @@
- #define __must_check 		__attribute__((warn_unused_result))
- #define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
- 
--#if __GNUC_MINOR__ > 0
-+#if GCC_VERSION >= 40100
- # define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
- #endif
- 
--#if __GNUC_MINOR__ >= 3
-+#if GCC_VERSION >= 40300
- /* Mark functions as cold. gcc will assume any path leading to a call
-    to them will be unlikely.  This means a lot of manual unlikely()s
-    are unnecessary now for any paths leading to the usual suspects
-@@ -39,9 +39,9 @@
- # define __compiletime_warning(message) __attribute__((warning(message)))
- # define __compiletime_error(message) __attribute__((error(message)))
- #endif /* __CHECKER__ */
--#endif /* __GNUC_MINOR__ >= 3 */
-+#endif /* GCC_VERSION >= 40300 */
- 
--#if __GNUC_MINOR__ >= 5
-+#if GCC_VERSION >= 40500
- /*
-  * Mark a position in code as unreachable.  This can be used to
-  * suppress control flow warnings after asm blocks that transfer
-@@ -56,9 +56,9 @@
- /* Mark a function definition as prohibited from being cloned. */
- #define __noclone	__attribute__((__noclone__))
- 
--#endif /* __GNUC_MINOR__ >= 5 */
-+#endif /* GCC_VERSION >= 40500 */
- 
--#if __GNUC_MINOR__ >= 6
-+#if GCC_VERSION >= 40600
- /*
-  * Tell the optimizer that something else uses this function or variable.
+diff --git a/include/linux/bug.h b/include/linux/bug.h
+index 03259d7..da03dc1 100644
+--- a/include/linux/bug.h
++++ b/include/linux/bug.h
+@@ -57,13 +57,13 @@ struct pt_regs;
+  * track down.
   */
+ #ifndef __OPTIMIZE__
+-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
++#define BUILD_BUG_ON(condition) __compiletime_error_fallback(condition)
+ #else
+ #define BUILD_BUG_ON(condition)						\
+ 	do {								\
+ 		extern void __build_bug_on_failed(void)			\
+ 			__compiletime_error("BUILD_BUG_ON failed");	\
+-		((void)sizeof(char[1 - 2*!!(condition)]));		\
++		__compiletime_error_fallback(condition);		\
+ 		if (condition)						\
+ 			__build_bug_on_failed();			\
+ 	} while(0)
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index cbf6d9d..84926f2 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -298,6 +298,13 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #endif
+ #ifndef __compiletime_error
+ # define __compiletime_error(message)
++# define __compiletime_error_fallback(condition)		\
++	do {							\
++		((void)sizeof(char[1 - 2*!!(condition)]));	\
++	} while (0)
++#endif
++#ifndef __compiletime_error_fallback
++# define __compiletime_error_fallback(condition) do { } while (0)
+ #endif
+ /*
+  * Prevent the compiler from merging or refetching accesses.  The compiler
 -- 
 1.7.3.4
 
