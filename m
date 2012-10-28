@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab2J1Xtf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:49:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41795 "EHLO
+	id S1757313Ab2J1XuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:50:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41765 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755668Ab2J1X1B (ORCPT
+	by vger.kernel.org with ESMTP id S1756263Ab2J1X07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:01 -0400
-Message-Id: <20121028231606.216765974@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:59 -0400
+Message-Id: <20121028231542.885062831@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:10 +0000
+Date: Sun, 28 Oct 2012 23:15:55 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 094/105] mm: fix XFS oops due to dirty pages without buffers on s390
+        Florian Zumbiehl <florz@florz.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 019/105] vlan: dont deliver frames for unknown vlans to  protocols
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,106 +28,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Florian Zumbiehl <florz@florz.de>
 
-commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
+[ Upstream commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e ]
 
-On s390 any write to a page (even from kernel itself) sets architecture
-specific page dirty bit.  Thus when a page is written to via buffered
-write, HW dirty bit gets set and when we later map and unmap the page,
-page_remove_rmap() finds the dirty bit and calls set_page_dirty().
+6a32e4f9dd9219261f8856f817e6655114cfec2f made the vlan code skip marking
+vlan-tagged frames for not locally configured vlans as PACKET_OTHERHOST if
+there was an rx_handler, as the rx_handler could cause the frame to be received
+on a different (virtual) vlan-capable interface where that vlan might be
+configured.
 
-Dirtying of a page which shouldn't be dirty can cause all sorts of
-problems to filesystems.  The bug we observed in practice is that
-buffers from the page get freed, so when the page gets later marked as
-dirty and writeback writes it, XFS crashes due to an assertion
-BUG_ON(!PagePrivate(page)) in page_buffers() called from
-xfs_count_page_state().
+As rx_handlers do not necessarily return RX_HANDLER_ANOTHER, this could cause
+frames for unknown vlans to be delivered to the protocol stack as if they had
+been received untagged.
 
-Similar problem can also happen when zero_user_segment() call from
-xfs_vm_writepage() (or block_write_full_page() for that matter) set the
-hardware dirty bit during writeback, later buffers get freed, and then
-page unmapped.
+For example, if an ipv6 router advertisement that's tagged for a locally not
+configured vlan is received on an interface with macvlan interfaces attached,
+macvlan's rx_handler returns RX_HANDLER_PASS after delivering the frame to the
+macvlan interfaces, which caused it to be passed to the protocol stack, leading
+to ipv6 addresses for the announced prefix being configured even though those
+are completely unusable on the underlying interface.
 
-Fix the issue by ignoring s390 HW dirty bit for page cache pages of
-mappings with mapping_cap_account_dirty().  This is safe because for
-such mappings when a page gets marked as writeable in PTE it is also
-marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
-cleared by clear_page_dirty_for_io(), the page gets writeprotected in
-page_mkclean().  So pagecache page is writeable if and only if it is
-dirty.
+The fix moves marking as PACKET_OTHERHOST after the rx_handler so the
+rx_handler, if there is one, sees the frame unchanged, but afterwards,
+before the frame is delivered to the protocol stack, it gets marked whether
+there is an rx_handler or not.
 
-Thanks to Hugh Dickins for pointing out mapping has to have
-mapping_cap_account_dirty() for things to work and proposing a cleaned
-up variant of the patch.
-
-The patch has survived about two hours of running fsx-linux on tmpfs
-while heavily swapping and several days of running on out build machines
-where the original problem was triggered.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context; in particular there is no local
- 'anon' in page_remove_rmap()]
+Signed-off-by: Florian Zumbiehl <florz@florz.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -56,6 +56,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
+ include/linux/if_vlan.h |  8 ++++----
+ net/8021q/vlan_core.c   | 10 ++--------
+ net/core/dev.c          |  7 +++++--
+ 3 files changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
+index 12d5543..c944c4f 100644
+--- a/include/linux/if_vlan.h
++++ b/include/linux/if_vlan.h
+@@ -97,6 +97,8 @@ static inline int is_vlan_dev(struct net_device *dev)
+ }
  
- #include <asm/tlbflush.h>
+ #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
++#define vlan_tx_nonzero_tag_present(__skb) \
++	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
+ #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
  
-@@ -935,11 +936,8 @@ int page_mkclean(struct page *page)
+ #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
+@@ -106,7 +108,7 @@ extern struct net_device *__vlan_find_dev_deep(struct net_device *real_dev,
+ extern struct net_device *vlan_dev_real_dev(const struct net_device *dev);
+ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
  
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
+-extern bool vlan_do_receive(struct sk_buff **skb, bool last_handler);
++extern bool vlan_do_receive(struct sk_buff **skb);
+ extern struct sk_buff *vlan_untag(struct sk_buff *skb);
+ 
+ #else
+@@ -128,10 +130,8 @@ static inline u16 vlan_dev_vlan_id(const struct net_device *dev)
+ 	return 0;
+ }
+ 
+-static inline bool vlan_do_receive(struct sk_buff **skb, bool last_handler)
++static inline bool vlan_do_receive(struct sk_buff **skb)
+ {
+-	if (((*skb)->vlan_tci & VLAN_VID_MASK) && last_handler)
+-		(*skb)->pkt_type = PACKET_OTHERHOST;
+ 	return false;
+ }
+ 
+diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
+index 9ddbd4e..e860a4f 100644
+--- a/net/8021q/vlan_core.c
++++ b/net/8021q/vlan_core.c
+@@ -5,7 +5,7 @@
+ #include <linux/export.h>
+ #include "vlan.h"
+ 
+-bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
++bool vlan_do_receive(struct sk_buff **skbp)
+ {
+ 	struct sk_buff *skb = *skbp;
+ 	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
+@@ -13,14 +13,8 @@ bool vlan_do_receive(struct sk_buff **skbp, bool last_handler)
+ 	struct vlan_pcpu_stats *rx_stats;
+ 
+ 	vlan_dev = vlan_find_dev(skb->dev, vlan_id);
+-	if (!vlan_dev) {
+-		/* Only the last call to vlan_do_receive() should change
+-		 * pkt_type to PACKET_OTHERHOST
+-		 */
+-		if (vlan_id && last_handler)
+-			skb->pkt_type = PACKET_OTHERHOST;
++	if (!vlan_dev)
+ 		return false;
+-	}
+ 
+ 	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
+ 	if (unlikely(!skb))
+diff --git a/net/core/dev.c b/net/core/dev.c
+index abe1147..f500a69 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3278,18 +3278,18 @@ another_round:
+ ncls:
+ #endif
+ 
+-	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (vlan_tx_tag_present(skb)) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+ 			pt_prev = NULL;
+ 		}
+-		if (vlan_do_receive(&skb, !rx_handler))
++		if (vlan_do_receive(&skb))
+ 			goto another_round;
+ 		else if (unlikely(!skb))
+ 			goto out;
  	}
  
- 	return ret;
-@@ -1120,6 +1118,8 @@ void page_add_file_rmap(struct page *pag
-  */
- void page_remove_rmap(struct page *page)
- {
-+	struct address_space *mapping = page_mapping(page);
++	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+ 		if (pt_prev) {
+ 			ret = deliver_skb(skb, pt_prev, orig_dev);
+@@ -3309,6 +3309,9 @@ ncls:
+ 		}
+ 	}
+ 
++	if (vlan_tx_nonzero_tag_present(skb))
++		skb->pkt_type = PACKET_OTHERHOST;
 +
- 	/* page still mapped by someone else? */
- 	if (!atomic_add_negative(-1, &page->_mapcount))
- 		return;
-@@ -1130,8 +1130,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!PageAnon(page) || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
+ 	/* deliver only exact match when indicated */
+ 	null_or_dev = deliver_exact ? skb->dev : NULL;
+ 
 
 
