@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756514Ab2J1XsU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:48:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41820 "EHLO
+	id S1756560Ab2J1Xsj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:48:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41823 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756245Ab2J1X1F (ORCPT
+	by vger.kernel.org with ESMTP id S1756337Ab2J1X1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:05 -0400
-Message-Id: <20121028231606.517511273@decadent.org.uk>
+Message-Id: <20121028231609.281019399@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:11 +0000
+Date: Sun, 28 Oct 2012 23:17:20 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 095/105] genalloc: stop crashing the system when destroying a pool
+        Maxim Kachur <mcdebugger@duganet.ru>, Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 104/105] ALSA: emu10k1: add chip details for E-mu 1010 PCIe card
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,130 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+From: Maxim Kachur <mcdebugger@duganet.ru>
 
-commit eedce141cd2dad8d0cefc5468ef41898949a7031 upstream.
+commit 10f571d09106c3eb85951896522c9650596eff2e upstream.
 
-The genalloc code uses the bitmap API from include/linux/bitmap.h and
-lib/bitmap.c, which is based on long values.  Both bitmap_set from
-lib/bitmap.c and bitmap_set_ll, which is the lockless version from
-genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
-the bitmap.
+Add chip details for E-mu 1010 PCIe card. It has the same
+chip as found in E-mu 1010b but it uses different PCI id.
 
-That one uses (1 << bits) - 1, 0b111, if you are setting the first three
-bits.  This means that the API counts from the least significant bits
-(LSB from now on) to the MSB.  The LSB in the first long is bit 0, then.
-The same works for the lookup functions.
+Signed-off-by: Maxim Kachur <mcdebugger@duganet.ru>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-The genalloc code uses longs for the bitmap, as it should.  In
-include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
-bits[0] as its last member.  When allocating the struct, genalloc should
-reserve enough space for the bitmap.  This should be a proper number of
-longs that can fit the amount of bits in the bitmap.
-
-However, genalloc allocates an integer number of bytes that fit the
-amount of bits, but may not be an integer amount of longs.  9 bytes, for
-example, could be allocated for 70 bits.
-
-This is a problem in itself if the Least Significat Bit in a long is in
-the byte with the largest address, which happens in Big Endian machines.
-This means genalloc is not allocating the byte in which it will try to
-set or check for a bit.
-
-This may end up in memory corruption, where genalloc will try to set the
-bits it has not allocated.  In fact, genalloc may not set these bits
-because it may find them already set, because they were not zeroed since
-they were not allocated.  And that's what causes a BUG when
-gen_pool_destroy is called and check for any set bits.
-
-What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
-on gen_pool_add_virt.  With SLAB and SLUB, this means the whole slab
-will be cleared, not only the requested bytes.  Since struct
-gen_pool_chunk has a size that is a multiple of 8, and slab sizes are
-multiples of 8, we get lucky and allocate and clear the right amount of
-bytes.
-
-Hower, this is not the case with SLOB or with older code that did memset
-after allocating instead of using __GFP_ZERO.
-
-So, a simple module as this (running 3.6.0), will cause a crash when
-rmmod'ed.
-
-  [root@phantom-lp2 foo]# cat foo.c
-  #include <linux/kernel.h>
-  #include <linux/module.h>
-  #include <linux/init.h>
-  #include <linux/genalloc.h>
-
-  MODULE_LICENSE("GPL");
-  MODULE_VERSION("0.1");
-
-  static struct gen_pool *foo_pool;
-
-  static __init int foo_init(void)
-  {
-          int ret;
-          foo_pool = gen_pool_create(10, -1);
-          if (!foo_pool)
-                  return -ENOMEM;
-          ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
-          if (ret) {
-                  gen_pool_destroy(foo_pool);
-                  return ret;
-          }
-          return 0;
-  }
-
-  static __exit void foo_exit(void)
-  {
-          gen_pool_destroy(foo_pool);
-  }
-
-  module_init(foo_init);
-  module_exit(foo_exit);
-  [root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
-  CONFIG_SLOB=y
-  [root@phantom-lp2 foo]# insmod ./foo.ko
-  [root@phantom-lp2 foo]# rmmod foo
-  ------------[ cut here ]------------
-  kernel BUG at lib/genalloc.c:243!
-  cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
-      pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
-      lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
-      sp: c0000000bb0e7be0
-     msr: 8000000000029032
-    current = 0xc0000000bb0e0000
-    paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
-      pid   = 13044, comm = rmmod
-  kernel BUG at lib/genalloc.c:243!
-  [c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
-  [c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
-  [c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
-  --- Exception: c00 (System Call) at 000000800753d1a0
-  SP (fffd0b0e640) is in userspace
-
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/genalloc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/emu10k1/emu10k1_main.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index ca208a9..5492043 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -178,7 +178,7 @@ int gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phy
- 	struct gen_pool_chunk *chunk;
- 	int nbits = size >> pool->min_alloc_order;
- 	int nbytes = sizeof(struct gen_pool_chunk) +
--				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
-+				BITS_TO_LONGS(nbits) * sizeof(long);
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
+--- a/sound/pci/emu10k1/emu10k1_main.c
++++ b/sound/pci/emu10k1/emu10k1_main.c
+@@ -1416,6 +1416,15 @@ static struct snd_emu_chip_details emu_c
+ 	 .ca0108_chip = 1,
+ 	 .spk71 = 1,
+ 	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 new revision */
++	/* Tested by Maxim Kachur <mcdebugger@duganet.ru> 17th Oct 2012. */
++	/* This is MAEM8986, 0202 is MAEM8980 */
++	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x40071102,
++	 .driver = "Audigy2", .name = "E-mu 1010 PCIe [MAEM8986]",
++	 .id = "EMU1010",
++	 .emu10k2_chip = 1,
++	 .ca0108_chip = 1,
++	 .spk71 = 1,
++	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 PCIe */
+ 	/* Tested by James@superbug.co.uk 8th July 2005. */
+ 	/* This is MAEM8810, 0202 is MAEM8820 */
+ 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x40011102,
 
 
