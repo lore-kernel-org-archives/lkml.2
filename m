@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab2J1XqT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:46:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41905 "EHLO
+	id S1756752Ab2J1Xqr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:46:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41895 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756553Ab2J1X1Z (ORCPT
+	by vger.kernel.org with ESMTP id S1756455Ab2J1X1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:25 -0400
-Message-Id: <20121028231602.732600498@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:24 -0400
+Message-Id: <20121028231607.455980544@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:59 +0000
+Date: Sun, 28 Oct 2012 23:17:14 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 083/105] USB: mct_u232: fix broken close
+        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 098/105] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,51 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
+commit 12176503366885edd542389eed3aaf94be163fdb upstream.
 
-Make sure generic close is called at close.
+The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
+while converting ioctl arguments.  This could lead to leaking kernel
+stack contents into userspace.
 
-The driver relies on the generic write implementation but did not call
-generic close.
+Patch extracted from existing fix in grsecurity.
 
-Note that the call to kill the read urb is not redundant, as mct_u232
-uses an interrupt urb from the second port as the read urb and that
-generic close therefore fails to kill it.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/mct_u232.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ fs/compat_ioctl.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -577,12 +577,14 @@ static void mct_u232_close(struct usb_se
- {
- 	dbg("%s port %d", __func__, port->number);
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index f505402..4c6285f 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -210,6 +210,8 @@ static int do_video_set_spu_palette(unsigned int fd, unsigned int cmd,
  
--	if (port->serial->dev) {
--		/* shutdown our urbs */
--		usb_kill_urb(port->write_urb);
--		usb_kill_urb(port->read_urb);
--		usb_kill_urb(port->interrupt_in_urb);
--	}
-+	/*
-+	 * Must kill the read urb as it is actually an interrupt urb, which
-+	 * generic close thus fails to kill.
-+	 */
-+	usb_kill_urb(port->read_urb);
-+	usb_kill_urb(port->interrupt_in_urb);
-+
-+	usb_serial_generic_close(port);
- } /* mct_u232_close */
+ 	err  = get_user(palp, &up->palette);
+ 	err |= get_user(length, &up->length);
++	if (err)
++		return -EFAULT;
  
- 
+ 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
+ 	err  = put_user(compat_ptr(palp), &up_native->palette);
 
 
