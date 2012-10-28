@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab2J1ROA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 13:14:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47828 "EHLO
+	id S1753912Ab2J1RRQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 13:17:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47901 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab2J1RN6 (ORCPT
+	with ESMTP id S1753547Ab2J1RRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 13:13:58 -0400
-Date: Sun, 28 Oct 2012 10:13:40 -0700
+	Sun, 28 Oct 2012 13:17:13 -0400
+Date: Sun, 28 Oct 2012 10:16:39 -0700
 From: tip-bot for Ingo Molnar <mingo@kernel.org>
-Message-ID: <tip-5c56968cc6eb8fc94a92b38478d5bd0e0f25c8c2@git.kernel.org>
+Message-ID: <tip-9b718e758ac91f28b6cdd354ad5ee9c767daae74@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org, riel@redhat.com,
-        akpm@linux-foundation.org, aarcange@redhat.com, tglx@linutronix.de
-Reply-To: riel@redhat.com, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        aarcange@redhat.com, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, peterz@infradead.org, schwidefsky@de.ibm.com,
+        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de, sfr@canb.auug.org.au
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, schwidefsky@de.ibm.com, peterz@infradead.org,
+        gerald.schaefer@de.ibm.com, ralf@linux-mips.org,
+        heiko.carstens@de.ibm.com, sfr@canb.auug.org.au, tglx@linutronix.de
+In-Reply-To: <20121028131014.GA10754@gmail.com>
+References: <20121028131014.GA10754@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm: Add NUMA_MIGRATION feature flag
-Git-Commit-ID: 5c56968cc6eb8fc94a92b38478d5bd0e0f25c8c2
+Subject: [tip:numa/core] sched, numa, mm, s390/thp: Add pmd_mknotpresent()
+Git-Commit-ID: 9b718e758ac91f28b6cdd354ad5ee9c767daae74
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,71 +31,52 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 28 Oct 2012 10:13:46 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 28 Oct 2012 10:16:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5c56968cc6eb8fc94a92b38478d5bd0e0f25c8c2
-Gitweb:     http://git.kernel.org/tip/5c56968cc6eb8fc94a92b38478d5bd0e0f25c8c2
+Commit-ID:  9b718e758ac91f28b6cdd354ad5ee9c767daae74
+Gitweb:     http://git.kernel.org/tip/9b718e758ac91f28b6cdd354ad5ee9c767daae74
 Author:     Ingo Molnar <mingo@kernel.org>
-AuthorDate: Sat, 20 Oct 2012 22:20:19 +0200
+AuthorDate: Sun, 28 Oct 2012 14:10:14 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 28 Oct 2012 17:31:18 +0100
+CommitDate: Sun, 28 Oct 2012 17:31:21 +0100
 
-sched, numa, mm: Add NUMA_MIGRATION feature flag
+sched, numa, mm, s390/thp: Add pmd_mknotpresent()
 
-After this patch, doing:
-
-   # echo NO_NUMA_MIGRATION > /sys/kernel/debug/sched_features
-
-Will turn off the NUMA placement logic/policy - but keeps the
-working set sampling faults in place.
-
-This allows the debugging of the WSS facility, by using it
-but keeping vanilla, non-NUMA CPU and memory placement
-policies.
-
-Default enabled. Generates on extra code on !CONFIG_SCHED_DEBUG.
+We'd like to make use of pmd_mknotpresent() in mm/, but
+not all architectures have it. This patch adds the s390
+version.
 
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Link: http://lkml.kernel.org/n/tip-xjt7bqjlphxRfjXxasqm4cdv@git.kernel.org
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Link: http://lkml.kernel.org/r/20121028131014.GA10754@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c     |    3 +++
- kernel/sched/features.h |    3 +++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ arch/s390/include/asm/pgtable.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 91cc1a5..b607bc8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6002,6 +6002,9 @@ void sched_setnode(struct task_struct *p, int node)
- 	int on_rq, running;
- 	struct rq *rq;
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index 098fc5a..b820ff1 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1310,6 +1310,12 @@ static inline pmd_t pmd_mkyoung(pmd_t pmd)
+ 	return pmd;
+ }
  
-+	if (!sched_feat(NUMA_MIGRATION))
-+		return;
++static inline pmd_t pmd_mknotpresent(pmd_t pmd)
++{
++	pmd_val(pmd) &= ~_SEGMENT_ENTRY_ORIGIN;
++	return pmd;
++}
 +
- 	rq = task_rq_lock(p, &flags);
- 	on_rq = p->on_rq;
- 	running = task_current(rq, p);
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index f8a7aeb..1d11f6c 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -63,7 +63,10 @@ SCHED_FEAT(RT_RUNTIME_SHARE, true)
- SCHED_FEAT(LB_MIN, false)
- 
- #ifdef CONFIG_SCHED_NUMA
-+/* Do the working set probing faults: */
- SCHED_FEAT(NUMA,           true)
-+/* Do actual migration/placement based on the working set information: */
-+SCHED_FEAT(NUMA_MIGRATION, true)
- SCHED_FEAT(NUMA_HOT,       true)
- SCHED_FEAT(NUMA_TTWU_BIAS, false)
- SCHED_FEAT(NUMA_TTWU_TO,   false)
+ #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
+ static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
+ 					    unsigned long address, pmd_t *pmdp)
