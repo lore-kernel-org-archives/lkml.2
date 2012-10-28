@@ -1,88 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab2J1N7c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 09:59:32 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:45461 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751528Ab2J1N7b (ORCPT
+	id S1752814Ab2J1OFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 10:05:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64367 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751528Ab2J1OFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 09:59:31 -0400
-From: Nix <nix@esperi.org.uk>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] ext4: fix unjournaled inode bitmap modification
-References: <87objupjlr.fsf@spindle.srvr.nix>
-	<20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix>
-	<20121023143019.GA3040@fieldses.org>
-	<874nllxi7e.fsf_-_@spindle.srvr.nix>
-	<87pq48nbyz.fsf_-_@spindle.srvr.nix> <508CB35D.9080102@redhat.com>
-Emacs: (setq software-quality (/ 1 number-of-authors))
-Date: Sun, 28 Oct 2012 13:59:17 +0000
-In-Reply-To: <508CB35D.9080102@redhat.com> (Eric Sandeen's message of "Sat, 27
-	Oct 2012 23:23:57 -0500")
-Message-ID: <87mwz6hf4a.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	Sun, 28 Oct 2012 10:05:49 -0400
+Date: Sun, 28 Oct 2012 15:05:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] sched, autogroup: fix crash on reboot when autogroup is
+ disabled
+Message-ID: <20121028140544.GA28216@gmail.com>
+References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
+ <1350654126.2768.5.camel@twins>
+ <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
+ <1350736696.5123.24.camel@maggy.simpson.net>
+ <1351283371.16639.111.camel@maggy.simpson.net>
+ <1351362370.4503.3.camel@maggy.simpson.net>
+ <20121028102520.GA7711@gmail.com>
+ <1351430004.8685.17.camel@maggy.simpson.net>
+ <20121028131950.GA15159@gmail.com>
+ <1351431201.8685.22.camel@maggy.simpson.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-x.dcc-servers-Metrics: spindle 104; Body=5 Fuz1=5 Fuz2=5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351431201.8685.22.camel@maggy.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 Oct 2012, Eric Sandeen outgrape:
 
-> I've tested this by mounting with journal_checksum and
-> running fsstress then dropping power; I've also tested by
-> hacking DM to create snapshots w/o first quiescing, which
-> allows me to test journal replay repeatedly w/o actually
-> power-cycling the box.  Without the patch I hit a journal
-> checksum error every time.  With this fix it survives
-> many iterations.
+* Mike Galbraith <efault@gmx.de> wrote:
 
-Works for me too. Looks like you fixed it.
+> On Sun, 2012-10-28 at 14:19 +0100, Ingo Molnar wrote: 
+> > * Mike Galbraith <efault@gmx.de> wrote:
+> > 
+> > > On Sun, 2012-10-28 at 11:25 +0100, Ingo Molnar wrote: 
+> > > > * Mike Galbraith <efault@gmx.de> wrote:
+> > > > 
+> > > 
+> > > > > No knobs, no glitz, nada, just a cute little thing folks can turn
+> > > > > on if they don't want to muck about with cgroups and/or systemd.
+> > > > 
+> > > > Please also keep the Kconfig switch and reuse it to turn on 
+> > > > the 'autogroups' knob.
+> > > > 
+> > > > That way people with existing .config's don't have to change 
+> > > > a thing to get this functionality.
+> > > 
+> > > The Kconfig option is still there.  The noautogroup -> 
+> > > autogroup arg change just makes it off by default (since an 
+> > > on/off switch would have to be a full move everybody thing 
+> > > post 8323f26ce race fix), so distros can make it available in 
+> > > their swiss army knife config, but it'll be out of the way 
+> > > unless specifically asked for by the user at boot.
+> > > 
+> > > I can make it default 'on' by removing that arg change if you 
+> > > think that's the better way to go, but opt in at boot sounded 
+> > > better to me given there is no runtime on/off switch at all 
+> > > now.
+> > 
+> > If I got your patch right then adding a command line option to 
+> > turn it on will disable it in essence for pretty much everyone 
+> > who has CONFIG_SCHED_AUTOGROUP=y in their .config today.
+> 
+> With no user intervention, yes.
 
+'No user intervention' is what happens with new kernel 
+commandline options, in 99.9999% of the cases.
 
-btw, I dug back through my old notes and found the reason I turned on
-journal_async_commit in the first place, back in 2009. It's got nothing
-to do with performance: I was trying to save power.
+> > The patch should not change the defaults for existing 
+> > .config's.
+> > 
+> > I.e. if autogroups was off, it should stay off, but if 
+> > autogroups was enabled in the .config and the kernel booted 
+> > with it enabled, then it should continue to do so in the 
+> > future as well.
+> > 
+> > Adding a boot tweak and removing the runtime knobs is OK - 
+> > changing the current default functionality is not.
+> 
+> Ok, I'll whack the arg change and respin.
 
-The server that's been having all this trouble has four WD GreenPower
-disks. These are rightly maligned for leaving the way they save power
-undocumented, changing it without notice, and having most of those
-power-saving methods be extremely silly (e.g. complete spindowns, with a
-nonresponsive disk for N seconds until it spins up again). But I was
-lucky and got disks that actually did save power without being damaged.
+Thanks!
 
-By observing the machine's power draw I was able to guess that they spin
-partway down (rumour says to ~2500rpm) after about eight seconds with no
-activity at all, following which it takes a fairly large burst of
-activity to get them to spin up again: they can service low loads
-without spinning up.
+I'd also suggest to still expose the state of autosched in 
+/proc/sys, read-only, so that its status can be checked.
 
-Unfortunately back in 2009 ext4's journalling was preventing them from
-ever spinning down, since even on idle rw-mounted filesystems it was
-touching the disk with what blktrace said was something journal-related
-once every five seconds, so the disks decided they should never spin
-down, costing me about 10W of power. Now laptop_mode would have solved
-this problem, but laptop_mode makes other changes that I didn't want
-(e.g. changing the way dirty writeout is done so that all writeout is
-lumpy: smooth dirty writeout is fine, I just don't want the disks
-touched all the time when the system is actually idle).
-
-So I turned on commit=30... and nothing changed, a steady pulse of
-commits every five seconds. Only when I threw caution to the wind and
-tried turning on journal_async_commit (even though the description of
-its function seemed quite unrelated) did the commit rate slow to one
-every 30s as the commit interval suggested.
-
-I now suspect this was a bug, or multiple bugs, and I should have
-reported it rather than flailing around to try to get things working --
-but whatever the problem it has by now been fixed: journal committing is
-now working rather better, one commit every 15s, even with async commit
-turned off. (It is peculiar that I'm seeing one commit every 15s when I
-asked for commit=30, but it's less often than once every 8s and that's
-what matters to me.)
-
--- 
-NULL && (void)
+	Ingo
