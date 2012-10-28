@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756967Ab2J1XgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:36:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42132 "EHLO
+	id S1757073Ab2J1Xgl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:36:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42126 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756912Ab2J1X2I (ORCPT
+	by vger.kernel.org with ESMTP id S1756904Ab2J1X2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:08 -0400
-Message-Id: <20121028231552.457274284@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:07 -0400
+Message-Id: <20121028231552.773428037@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:26 +0000
+Date: Sun, 28 Oct 2012 23:16:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 050/105] net/wireless: ipw2200: Fix panic occurring in
- ipw_handle_promiscuous_tx()
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [ 051/105] iwlwifi: fix 6000 series channel switch command
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,45 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit bf11315eeda510ea4fc1a2bf972d8155d31d89b4 upstream.
+commit 8f7b8db6e0557c8437adf9371e020cd89a7e85dc upstream.
 
-The driver does not count space of radiotap fields when allocating skb for
-radiotap packet. This leads to kernel panic with the following call trace:
+The channel switch command for 6000 series devices
+is larger than the maximum inline command size of
+320 bytes. The command is therefore refused with a
+warning. Fix this by allocating the command and
+using the NOCOPY mechanism.
 
-...
-[67607.676067] [<c152f90f>] error_code+0x67/0x6c
-[67607.676067] [<c142f831>] ? skb_put+0x91/0xa0
-[67607.676067] [<f8cf5e5b>] ? ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf5e5b>] ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf899b>] ipw_net_hard_start_xmit+0x8b/0x90 [ipw2200]
-[67607.676067] [<f8741c5a>] libipw_xmit+0x55a/0x980 [libipw]
-[67607.676067] [<c143d3e8>] dev_hard_start_xmit+0x218/0x4d0
-...
-
-This bug was found by VittGam.
-https://bugzilla.kernel.org/show_bug.cgi?id=43255
-
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2: adjust filename, context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ipw2x00/ipw2200.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-6000.c |   39 +++++++++++++++++-----------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
-index 935120f..768bf61 100644
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -10472,7 +10472,7 @@ static void ipw_handle_promiscuous_tx(struct ipw_priv *priv,
- 		} else
- 			len = src->len;
+--- a/drivers/net/wireless/iwlwifi/iwl-6000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
+@@ -193,7 +193,7 @@ static int iwl6000_hw_channel_switch(str
+ 	 * See iwlagn_mac_channel_switch.
+ 	 */
+ 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+-	struct iwl6000_channel_switch_cmd cmd;
++	struct iwl6000_channel_switch_cmd *cmd;
+ 	const struct iwl_channel_info *ch_info;
+ 	u32 switch_time_in_usec, ucode_switch_time;
+ 	u16 ch;
+@@ -203,18 +203,25 @@ static int iwl6000_hw_channel_switch(str
+ 	struct ieee80211_vif *vif = ctx->vif;
+ 	struct iwl_host_cmd hcmd = {
+ 		.id = REPLY_CHANNEL_SWITCH,
+-		.len = { sizeof(cmd), },
++		.len = { sizeof(*cmd), },
+ 		.flags = CMD_SYNC,
+-		.data = { &cmd, },
++		.dataflags[0] = IWL_HCMD_DFL_NOCOPY,
+ 	};
++	int err;
  
--		dst = alloc_skb(len + sizeof(*rt_hdr), GFP_ATOMIC);
-+		dst = alloc_skb(len + sizeof(*rt_hdr) + sizeof(u16)*2, GFP_ATOMIC);
- 		if (!dst)
- 			continue;
+-	cmd.band = priv->band == IEEE80211_BAND_2GHZ;
++	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
++	if (!cmd)
++		return -ENOMEM;
++
++	hcmd.data[0] = cmd;
++
++	cmd->band = priv->band == IEEE80211_BAND_2GHZ;
+ 	ch = ch_switch->channel->hw_value;
+ 	IWL_DEBUG_11H(priv, "channel switch from %u to %u\n",
+ 		      ctx->active.channel, ch);
+-	cmd.channel = cpu_to_le16(ch);
+-	cmd.rxon_flags = ctx->staging.flags;
+-	cmd.rxon_filter_flags = ctx->staging.filter_flags;
++	cmd->channel = cpu_to_le16(ch);
++	cmd->rxon_flags = ctx->staging.flags;
++	cmd->rxon_filter_flags = ctx->staging.filter_flags;
+ 	switch_count = ch_switch->count;
+ 	tsf_low = ch_switch->timestamp & 0x0ffffffff;
+ 	/*
+@@ -230,30 +237,32 @@ static int iwl6000_hw_channel_switch(str
+ 			switch_count = 0;
+ 	}
+ 	if (switch_count <= 1)
+-		cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
++		cmd->switch_time = cpu_to_le32(priv->ucode_beacon_time);
+ 	else {
+ 		switch_time_in_usec =
+ 			vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
+ 		ucode_switch_time = iwl_usecs_to_beacons(priv,
+ 							 switch_time_in_usec,
+ 							 beacon_interval);
+-		cmd.switch_time = iwl_add_beacon_time(priv,
+-						      priv->ucode_beacon_time,
+-						      ucode_switch_time,
+-						      beacon_interval);
++		cmd->switch_time = iwl_add_beacon_time(priv,
++						       priv->ucode_beacon_time,
++						       ucode_switch_time,
++						       beacon_interval);
+ 	}
+ 	IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
+-		      cmd.switch_time);
++		      cmd->switch_time);
+ 	ch_info = iwl_get_channel_info(priv, priv->band, ch);
+ 	if (ch_info)
+-		cmd.expect_beacon = is_channel_radar(ch_info);
++		cmd->expect_beacon = is_channel_radar(ch_info);
+ 	else {
+ 		IWL_ERR(priv, "invalid channel switch from %u to %u\n",
+ 			ctx->active.channel, ch);
+ 		return -EFAULT;
+ 	}
  
+-	return iwl_trans_send_cmd(trans(priv), &hcmd);
++	err = iwl_trans_send_cmd(trans(priv), &hcmd);
++	kfree(cmd);
++	return err;
+ }
+ 
+ static struct iwl_lib_ops iwl6000_lib = {
 
 
