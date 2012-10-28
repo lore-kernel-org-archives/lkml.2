@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2J1M03 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 08:26:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50697 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751551Ab2J1M01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 08:26:27 -0400
-Message-ID: <1351426335.2008.6.camel@joe-AO722>
-Subject: Re: [PATCH 00/16] treewide: Convert dev_printk(KERN_<LEVEL> to
- dev_<level>(
-From: Joe Perches <joe@perches.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dri-devel@lists.freedesktop.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pcmcia@lists.infradead.org, linux-scsi@vger.kernel.org,
-        devel@open-fcoe.org, virtualization@lists.linux-foundation.org,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org
-In-Reply-To: <508D0ECA.8040008@mvista.com>
-References: <cover.1351411047.git.joe@perches.com>
-	 <508D0ECA.8040008@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Sun, 28 Oct 2012 05:12:15 -0700
-Mime-Version: 1.0
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1752145Ab2J1Mb6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 08:31:58 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:49475 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2J1Mb5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 08:31:57 -0400
+References: <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <6c3329$6sai31@orsmga002.jf.intel.com> <20121023053830.GA30776@gamma.logic.tuwien.ac.at> <CAPM=9txr4TzuG-BbL0bXeEK6AzkOK9pH0kh-nP=Njv53sgFZew@mail.gmail.com> <20121024003659.GA30962@gamma.logic.tuwien.ac.at> <b94cdc$72fm1r@fmsmga001.fm.intel.com> <20121028024753.GA4254@gamma.logic.tuwien.ac.at> <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
+In-Reply-To: <eeac1e$4q1mqm@AZSMGA002.ch.intel.com>
+Mime-Version: 1.0 (1.0)
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <A941F80C-7EDB-4FCF-A8DE-4AE5532D2CB5@logic.at>
+Cc: Dave Airlie <airlied@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+X-Mailer: iPhone Mail (9B206)
+From: Norbert Preining <preining@logic.at>
+Subject: Re: drm i915 hangs on heavy io load
+Date: Sun, 28 Oct 2012 21:32:53 +0900
+To: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-10-28 at 14:54 +0400, Sergei Shtylyov wrote:
-> Hello.
-
-Hi Sergei.
-
-> On 28-10-2012 12:05, Joe Perches wrote:
-> 
-> > dev_<level> create smaller objects than dev_printk(KERN_<LEVEL>.
-> > Convert non-debug calls to this form.
-> 
-> > Joe Perches (16):
-> >    tile: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-> [...]
-> >    tile: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-> [...]
-> >    tile: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-> 
->     Hm, somehow this patch is repeated thrice?
-
-Nope, I forgot to edit the 0000 file after I edited
-patches locally when I noticed I forgot to update
-the subject lines.  Patches are corrected, 0000 not.
-
-I don't think it's a bit deal, I could repost just the 0000
-if you want though.
-
-cheers, Joe
+Hi Chris,
 
 
+> so can you
+> please file a bug on bugzilla.freedesktop.org (or bugzilla.kernel.org)
+> so that we don't lose track of it.
 
+Will do when I'm back from the mountains.
+
+> If your have the option, can you switch the ddx between using SNA and
+> UXA.
+
+??? Is that a BIOS option? Or kernel?
+I can try both.
+
+Norbert
+
+(on mobile)
