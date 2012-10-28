@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab2J1XoA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:44:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41953 "EHLO
+	id S1756678Ab2J1Xn5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:43:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41958 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756614Ab2J1X13 (ORCPT
+	by vger.kernel.org with ESMTP id S1756327Ab2J1X1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:29 -0400
-Message-Id: <20121028231601.798138720@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:30 -0400
+Message-Id: <20121028231601.505603893@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:56 +0000
+Date: Sun, 28 Oct 2012 23:16:55 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, <support@connecttech.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 080/105] USB: whiteheat: fix memory leak in error path
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 079/105] vhost: fix mergeable bufs on BE hosts
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,31 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit c129197c99550d356cf5f69b046994dd53cd1b9d upstream.
+commit 910a578f7e9400a78a3b13aba0b4d2df16a2cb05 upstream.
 
-Make sure command buffer is deallocated in case of errors during attach.
+We copy head count to a 16 bit field, this works by chance on LE but on
+BE guest gets 0. Fix it up.
 
-Cc: <support@connecttech.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/whiteheat.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/vhost/net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
-index 346c7ef..cfd155e 100644
---- a/drivers/usb/serial/whiteheat.c
-+++ b/drivers/usb/serial/whiteheat.c
-@@ -333,6 +333,7 @@ no_firmware:
- 		"%s: please contact support@connecttech.com\n",
- 		serial->type->description);
- 	kfree(result);
-+	kfree(command);
- 	return -ENODEV;
- 
- no_command_private:
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 072cbba..7f93f34 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -379,7 +379,8 @@ static void handle_rx(struct vhost_net *net)
+ 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
+ 	};
+ 	size_t total_len = 0;
+-	int err, headcount, mergeable;
++	int err, mergeable;
++	s16 headcount;
+ 	size_t vhost_hlen, sock_hlen;
+ 	size_t vhost_len, sock_len;
+ 	/* TODO: check that we are running from vhost_worker? */
 
 
