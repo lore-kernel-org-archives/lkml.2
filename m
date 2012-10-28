@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2J1Xhq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:37:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42090 "EHLO
+	id S1756862Ab2J1XiX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:38:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42080 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756853Ab2J1X15 (ORCPT
+	by vger.kernel.org with ESMTP id S1756837Ab2J1X14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:57 -0400
-Message-Id: <20121028231554.587226007@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:56 -0400
+Message-Id: <20121028231554.908880456@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:33 +0000
+Date: Sun, 28 Oct 2012 23:16:34 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolas Boullis <nboullis@debian.org>, Oliver Neukum <oneukum@suse.de>,
+        "Alexis R. Cortes" <alexis.cortes@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 057/105] usb: acm: fix the computation of the number of data bits
+Subject: [ 058/105] usb: host: xhci: New system added for Compliance Mode Patch on
+ SN65LVPE502CP
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,58 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Boullis <nboullis@debian.org>
+From: "Alexis R. Cortes" <alexis.cortes@ti.com>
 
-commit 301a29da6e891e7eb95c843af0ecdbe86d01f723 upstream.
+commit 470809741a28c3092279f4e1f3f432e534d46068 upstream.
 
-The current code assumes that CSIZE is 0000060, which appears to be
-wrong on some arches (such as powerpc).
+This minor change adds a new system to which the "Fix Compliance Mode
+on SN65LVPE502CP Hardware" patch has to be applied also.
 
-Signed-off-by: Nicolas Boullis <nboullis@debian.org>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+System added:
+Vendor: Hewlett-Packard. System Model: Z1
+
+Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/class/cdc-acm.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 572f4e7..6e49ec6 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -817,10 +817,6 @@ static const __u32 acm_tty_speed[] = {
- 	2500000, 3000000, 3500000, 4000000
- };
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 8d7fcbb..7d462bf 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -479,7 +479,8 @@ static bool compliance_mode_recovery_timer_quirk_check(void)
  
--static const __u8 acm_tty_size[] = {
--	5, 6, 7, 8
--};
--
- static void acm_tty_set_termios(struct tty_struct *tty,
- 						struct ktermios *termios_old)
- {
-@@ -834,7 +830,21 @@ static void acm_tty_set_termios(struct tty_struct *tty,
- 	newline.bParityType = termios->c_cflag & PARENB ?
- 				(termios->c_cflag & PARODD ? 1 : 2) +
- 				(termios->c_cflag & CMSPAR ? 2 : 0) : 0;
--	newline.bDataBits = acm_tty_size[(termios->c_cflag & CSIZE) >> 4];
-+	switch (termios->c_cflag & CSIZE) {
-+	case CS5:
-+		newline.bDataBits = 5;
-+		break;
-+	case CS6:
-+		newline.bDataBits = 6;
-+		break;
-+	case CS7:
-+		newline.bDataBits = 7;
-+		break;
-+	case CS8:
-+	default:
-+		newline.bDataBits = 8;
-+		break;
-+	}
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+ 	if (strstr(dmi_product_name, "Z420") ||
+ 			strstr(dmi_product_name, "Z620") ||
+-			strstr(dmi_product_name, "Z820"))
++			strstr(dmi_product_name, "Z820") ||
++			strstr(dmi_product_name, "Z1"))
+ 		return true;
  
+ 	return false;
 
 
