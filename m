@@ -1,140 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab2J1TIh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:08:37 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46599 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab2J1TDN (ORCPT
+	id S1754323Ab2J1TJV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:09:21 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:37282 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2J1TJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:03:13 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: torvalds@linux-foundation.org
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com,
-        mathieu.desnoyers@efficios.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH v7 03/16] mm,ksm: use new hashtable implementation
-Date: Sun, 28 Oct 2012 15:02:15 -0400
-Message-Id: <1351450948-15618-3-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+	Sun, 28 Oct 2012 15:09:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <1351360392-8669-2-git-send-email-plagnioj@jcrosoft.com>
+References: <1351360392-8669-1-git-send-email-plagnioj@jcrosoft.com>
+	<1351360392-8669-2-git-send-email-plagnioj@jcrosoft.com>
+Date: Sun, 28 Oct 2012 20:09:17 +0100
+Message-ID: <CACRpkdbwk0kdU7kuu84F9JYXa1sfDsiOy4keWFK1PU5uGDX9FQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] MAINTAINERS: add pinctrl atmel at91 entry
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch ksm to use the new hashtable implementation. This reduces the amount of
-generic unrelated code in the ksm module.
+On Sat, Oct 27, 2012 at 7:53 PM, Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com> wrote:
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- mm/ksm.c | 33 +++++++++++++++------------------
- 1 file changed, 15 insertions(+), 18 deletions(-)
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 31ae5ea..36ba1a8 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,7 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
--#include <linux/hash.h>
-+#include <linux/hashtable.h>
- #include <linux/freezer.h>
- #include <linux/oom.h>
- 
-@@ -156,9 +156,8 @@ struct rmap_item {
- static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
- 
--#define MM_SLOTS_HASH_SHIFT 10
--#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
--static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
-+#define MM_SLOTS_HASH_BITS 10
-+static DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -275,26 +274,21 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
--	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
- 	struct hlist_node *node;
-+	struct mm_slot *slot;
-+
-+	hash_for_each_possible(mm_slots_hash, slot, node, link, (unsigned long)mm) 
-+		if (slot->mm == mm)
-+			return slot;
- 
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
--	hlist_for_each_entry(mm_slot, node, bucket, link) {
--		if (mm == mm_slot->mm)
--			return mm_slot;
--	}
- 	return NULL;
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->link, bucket);
-+	hash_add(mm_slots_hash, &mm_slot->link, (unsigned long)mm);
- }
- 
- static inline int in_stable_tree(struct rmap_item *rmap_item)
-@@ -647,7 +641,7 @@ static int unmerge_and_remove_all_rmap_items(void)
- 		ksm_scan.mm_slot = list_entry(mm_slot->mm_list.next,
- 						struct mm_slot, mm_list);
- 		if (ksm_test_exit(mm)) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1392,7 +1386,7 @@ next_mm:
- 		 * or when all VM_MERGEABLE areas have been unmapped (and
- 		 * mmap_sem then protects against race with MADV_MERGEABLE).
- 		 */
--		hlist_del(&slot->link);
-+		hash_del(&slot->link);
- 		list_del(&slot->mm_list);
- 		spin_unlock(&ksm_mmlist_lock);
- 
-@@ -1559,7 +1553,7 @@ void __ksm_exit(struct mm_struct *mm)
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && ksm_scan.mm_slot != mm_slot) {
- 		if (!mm_slot->rmap_list) {
--			hlist_del(&mm_slot->link);
-+			hash_del(&mm_slot->link);
- 			list_del(&mm_slot->mm_list);
- 			easy_to_free = 1;
- 		} else {
-@@ -2038,6 +2032,9 @@ static int __init ksm_init(void)
- 	 */
- 	hotplug_memory_notifier(ksm_memory_callback, 100);
- #endif
-+
-+	hash_init(mm_slots_hash);
-+
- 	return 0;
- 
- out_free:
--- 
-1.7.12.4
+I applied this to my at91 pinctrl branch as well, hope that's OK...
 
+Yours,
+Linus Walleij
