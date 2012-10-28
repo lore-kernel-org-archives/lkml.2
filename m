@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab2J1U7A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:59:00 -0400
-Received: from nm19-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.172]:38163
-	"EHLO nm19-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755566Ab2J1U5I (ORCPT
+	id S1755749Ab2J1VC2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 17:02:28 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:46572 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2J1VC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:57:08 -0400
-X-Yahoo-Newman-Id: 936128.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: C_0IDDsVM1mLw9NWW6jl1fH9nIrL2TYpTfiBtW2d6JTm7yv
- D5ShFnxlZ_TpFoObZ2.5WSpdAYhSNUD0PZibLQG8Cvdp.dJlg_uLG4Sc7swF
- phk7luOqKh7VCWjrzwIMEw5opoFy.3dstqS2ydOMbu048jvtN1_WxGTJ.hNU
- cloc_bSn4q37Ui56.KYZeJM.mE2i_NJvtxNw4imQFDXiEzHEl6Lt3VSdO1iU
- jgkvNsevH.QbhvzI5MT9vEQRa.MDGbzwobiszdvH7NWB.yNCQjnt_weFxX82
- DQDZAGLvp_Oon8XIbFg3j8pCZvNyB8RP7ikMbmf8QiC58CJAzvvADzQpcYKP
- .7Gg4_QuiJFMrXJTrYvIag39OEr7YfwTetOz4yqMBufn.ZiH83Z3lK6L9Q4U
- l3Mes4m5O_eLWDxudvUwy_5gMfC53yMLGmdbkfRLCfkDNi9zvUIgpOWz882L
- 85MjEWZrPVlCVwRYsUrAiL1aUrtNfaAULY2dbDf.IXwiDQEYuPxPGB99sKVq
- lDXCezDaYb42CFj_hnnTsO3u_NwbOzYdRZMVFNa3jhlQ-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-From: danielfsantos@att.net
-To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christopher Li <sparse@chrisli.org>,
-        Daniel Santos <daniel.santos@pobox.com>,
-        David Daney <david.daney@cavium.com>,
-        David Howells <dhowells@redhat.com>, Joe Perches <joe@perches.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        linux-sparse@vger.kernel.org, Michel Lespinasse <walken@google.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Pavel Pisa <pisa@cmp.felk.cvut.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 2/9] compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
-Date: Sun, 28 Oct 2012 15:57:08 -0500
-Message-Id: <1351457835-7553-2-git-send-email-daniel.santos@pobox.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
-References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
+	Sun, 28 Oct 2012 17:02:26 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: 3.6.0 ext4 dump/filemap_fault?
+Date: Sun, 28 Oct 2012 17:02:17 -0400
+Message-ID: <015201cdb54f$844487e0$8ccd97a0$@lucidpixels.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac21T1su4AFmAffsTjaUcL9ELpApoA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Throughout compiler*.h, many version checks are made.  These can be
-simplified by using the macro that gcc's documentation recommends.
-However, my primary reason for adding this is that I need bug-check
-macros that are enabled at certain gcc versions and it's cleaner to use
-this macro than the tradition method:
+Hello,
 
-if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+Any idea what happened here (during a backup)?
+Partition is ext4.
 
-If you add patch level, it gets this ugly:
+[116868.118797] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+this message.
+[116868.118798] dump            D ffff88003d32a5c0     0 21219  21214
+0x00000000
+[116868.118801]  ffff880584631d28 0000000000000082 ffff880584631d48
+ffff880584631fd8
+[116868.118803]  ffff880584631fd8 0000000000004000 ffffffff81a14420
+ffff88003d32a5c0
+[116868.118804]  ffff8807d41449c0 ffff88081bcea828 ffff880584631cb8
+ffffffff810b88a7
+[116868.118806] Call Trace:
+[116868.118812]  [<ffffffff810b88a7>] ? filemap_fault+0x87/0x430
+[116868.118814]  [<ffffffff8108786a>] ? __dequeue_entity+0x2a/0x50
+[116868.118817]  [<ffffffff815fc734>] schedule+0x24/0x70
+[116868.118820]  [<ffffffff815fadcc>] schedule_timeout+0x17c/0x1d0
+[116868.118822]  [<ffffffff81082dd5>] ? check_preempt_curr+0x75/0xa0
+[116868.118823]  [<ffffffff81082e12>] ? ttwu_do_wakeup+0x12/0x90
+[116868.118824]  [<ffffffff81082f31>] ?
+ttwu_do_activate.constprop.60+0x61/0x70
+[116868.118826]  [<ffffffff815fbca2>] wait_for_common+0xc2/0x150
+[116868.118827]  [<ffffffff81085a70>] ? try_to_wake_up+0x2d0/0x2d0
+[116868.118829]  [<ffffffff8111bfe0>] ? fdatawrite_one_bdev+0x20/0x20
+[116868.118830]  [<ffffffff815fc7a8>] wait_for_completion+0x18/0x20
+[116868.118832]  [<ffffffff8111873e>] sync_inodes_sb+0x9e/0x1b0
+[116868.118834]  [<ffffffff8111bfe0>] ? fdatawrite_one_bdev+0x20/0x20
+[116868.118835]  [<ffffffff8111bff9>] sync_inodes_one_sb+0x19/0x20
+[116868.118837]  [<ffffffff810f6cb1>] iterate_supers+0xe1/0xf0
+[116868.118838]  [<ffffffff8111c120>] sys_sync+0x30/0x90
+[116868.118839]  [<ffffffff815fe226>] system_call_fastpath+0x1a/0x1f
 
-if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
-   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
-
-As opposed to:
-
-if GCC_VERSION >= 40201
-
-While having separate headers for gcc 3 & 4 eliminates some of this
-verbosity, they can still be cleaned up by this.
-
-See also:
-http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
-
-Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: Borislav Petkov <bp@alien8.de>
-Acked-by: David Rientjes <rientjes@google.com>
----
- include/linux/compiler-gcc.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
-index 6a6d7ae..24545cd 100644
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -5,6 +5,9 @@
- /*
-  * Common definitions for all gcc versions go here.
-  */
-+#define GCC_VERSION (__GNUC__ * 10000 \
-+		   + __GNUC_MINOR__ * 100 \
-+		   + __GNUC_PATCHLEVEL__)
- 
- 
- /* Optimization barrier */
--- 
-1.7.3.4
+Justin.
 
