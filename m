@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757149Ab2J1X33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:29:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42276 "EHLO
+	id S1756737Ab2J1X3o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:29:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42243 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757095Ab2J1X2e (ORCPT
+	by vger.kernel.org with ESMTP id S1756988Ab2J1X2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:34 -0400
-Message-Id: <20121028231543.802487177@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:32 -0400
+Message-Id: <20121028231544.102674653@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:58 +0000
+Date: Sun, 28 Oct 2012 23:15:59 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 022/105] staging: comedi: amplc_pc236: fix invalid register access during detach
+        "J. Bruce Fields" <bfields@redhat.com>,
+        "Cyril B." <cbay@excellency.fr>
+Subject: [ 023/105] nfsd4: fix nfs4 stateid leak
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,42 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit aaeb61a97b7159ebe30b18a422d04eeabfa8790b upstream.
+commit cf9182e90b2af04245ac4fae497fe73fc71285b4 upstream.
 
-`pc236_detach()` is called by the comedi core if it attempted to attach
-a device and failed.  `pc236_detach()` calls `pc236_intr_disable()` if
-the comedi device private data pointer (`devpriv`) is non-null.  This
-test is insufficient as `pc236_intr_disable()` accesses hardware
-registers and the attach routine may have failed before it has saved
-their I/O base addresses.
+Processes that open and close multiple files may end up setting this
+oo_last_closed_stid without freeing what was previously pointed to.
+This can result in a major leak, visible for example by watching the
+nfsd4_stateids line of /proc/slabinfo.
 
-Fix it by checking `dev->iobase` is non-zero before calling
-`pc236_intr_disable()` as that means the I/O base addresses have been
-saved and the hardware registers can be accessed.  It also implies the
-comedi device private data pointer is valid, so there is no need to
-check it.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-[Ian Abbott: This patch is for the stable 3.0 kernel.]
+Reported-by: Cyril B. <cbay@excellency.fr>
+Tested-by: Cyril B. <cbay@excellency.fr>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/amplc_pc236.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfsd/nfs4state.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
-index 48246cd..b4311bf 100644
---- a/drivers/staging/comedi/drivers/amplc_pc236.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc236.c
-@@ -470,7 +470,7 @@ static int pc236_detach(struct comedi_device *dev)
- {
- 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
- 	       PC236_DRIVER_NAME);
--	if (devpriv)
-+	if (dev->iobase)
- 		pc236_intr_disable(dev);
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3673,6 +3673,7 @@ nfsd4_close(struct svc_rqst *rqstp, stru
+ 	memcpy(&close->cl_stateid, &stp->st_stid.sc_stateid, sizeof(stateid_t));
  
- 	if (dev->irq)
+ 	nfsd4_close_open_stateid(stp);
++	release_last_closed_stateid(oo);
+ 	oo->oo_last_closed_stid = stp;
+ 
+ 	/* place unused nfs4_stateowners on so_close_lru list to be
 
 
