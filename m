@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab2J1X2J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:09 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42111 "EHLO
+	id S1756946Ab2J1X2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:28:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42136 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756500Ab2J1X2B (ORCPT
+	by vger.kernel.org with ESMTP id S1756917Ab2J1X2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:01 -0400
-Message-Id: <20121028231553.979646162@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:09 -0400
+Message-Id: <20121028231551.854649466@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:31 +0000
+Date: Sun, 28 Oct 2012 23:16:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <levinsasha928@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 055/105] SUNRPC: Prevent kernel stack corruption on long values of flush
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 048/105] mac80211: check if key has TKIP type before updating IV
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,55 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <levinsasha928@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
+commit 4045f72bcf3c293c7c5932ef001742d8bb5ded76 upstream.
 
-The buffer size in read_flush() is too small for the longest possible values
-for it. This can lead to a kernel stack corruption:
+This patch fix corruption which can manifest itself by following crash
+when switching on rfkill switch with rt2x00 driver:
+https://bugzilla.redhat.com/attachment.cgi?id=615362
 
-[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
-[   43.047329]
-[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
-[   43.050038] Call Trace:
-[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
-[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
-[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
-[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
-[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
-[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
-[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
-[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
-[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
-[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
-[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
-[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
-[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
+Pointer key->u.ccmp.tfm of group key get corrupted in:
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+ieee80211_rx_h_michael_mic_verify():
+
+        /* update IV in key information to be able to detect replays */
+        rx->key->u.tkip.rx[rx->security_idx].iv32 = rx->tkip_iv32;
+        rx->key->u.tkip.rx[rx->security_idx].iv16 = rx->tkip_iv16;
+
+because rt2x00 always set RX_FLAG_MMIC_STRIPPED, even if key is not TKIP.
+
+We already check type of the key in different path in
+ieee80211_rx_h_michael_mic_verify() function, so adding additional
+check here is reasonable.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/cache.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/wpa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 2a68bb3..fc2f7aa 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
- 			  size_t count, loff_t *ppos,
- 			  struct cache_detail *cd)
- {
--	char tbuf[20];
-+	char tbuf[22];
- 	unsigned long p = *ppos;
- 	size_t len;
+diff --git a/net/mac80211/wpa.c b/net/mac80211/wpa.c
+index bdb53ab..e72562a 100644
+--- a/net/mac80211/wpa.c
++++ b/net/mac80211/wpa.c
+@@ -106,7 +106,8 @@ ieee80211_rx_h_michael_mic_verify(struct ieee80211_rx_data *rx)
+ 		if (status->flag & RX_FLAG_MMIC_ERROR)
+ 			goto mic_fail;
  
--	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
-+	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
- 	len = strlen(tbuf);
- 	if (p >= len)
- 		return 0;
+-		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
++		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key &&
++		    rx->key->conf.cipher == WLAN_CIPHER_SUITE_TKIP)
+ 			goto update_iv;
+ 
+ 		return RX_CONTINUE;
 
 
