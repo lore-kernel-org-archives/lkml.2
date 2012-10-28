@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab2J1LcX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 07:32:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:38833 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab2J1LcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 07:32:21 -0400
-Message-ID: <508D1791.1040806@ti.com>
-Date: Sun, 28 Oct 2012 17:01:29 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Matt Porter <mporter@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
-        Chris Ball <cjb@laptop.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Documentation List <linux-doc@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux SPI Devel List 
-	<spi-devel-general@lists.sourceforge.net>,
-        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [RFC PATCH v3 16/16] ARM: dts: add AM33XX SPI support
-References: <1350566815-409-1-git-send-email-mporter@ti.com> <1350566815-409-17-git-send-email-mporter@ti.com>
-In-Reply-To: <1350566815-409-17-git-send-email-mporter@ti.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751977Ab2J1LpV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 07:45:21 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:10493 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab2J1LpT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 07:45:19 -0400
+Date: Sun, 28 Oct 2012 12:45:10 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        "Wolfram Sang (embedded platforms)" <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 08/16] i2c: Convert dev_printk(KERN_<LEVEL> to
+ dev_<level>(
+Message-ID: <20121028124510.76e23bd5@endymion.delvare>
+In-Reply-To: <3e4988b083a8b5d03a458aabc18042cedb3dbd8a.1351411047.git.joe@perches.com>
+References: <cover.1351411047.git.joe@perches.com>
+	<3e4988b083a8b5d03a458aabc18042cedb3dbd8a.1351411047.git.joe@perches.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/18/2012 6:56 PM, Matt Porter wrote:
-> Adds AM33XX SPI support for am335x-bone and am335x-evm.
+Hi Joe,
+
+On Sun, 28 Oct 2012 01:05:46 -0700, Joe Perches wrote:
+> dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
+> and reducing object size is good.
+> Coalesce formats for easier grep.
 > 
-> Signed-off-by: Matt Porter <mporter@ti.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  arch/arm/boot/dts/am335x-bone.dts |   17 +++++++++++++++
->  arch/arm/boot/dts/am335x-evm.dts  |    9 ++++++++
->  arch/arm/boot/dts/am33xx.dtsi     |   43 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 69 insertions(+)
+>  drivers/i2c/busses/i2c-piix4.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/am335x-bone.dts b/arch/arm/boot/dts/am335x-bone.dts
-> index 5510979..23edfd8 100644
-> --- a/arch/arm/boot/dts/am335x-bone.dts
-> +++ b/arch/arm/boot/dts/am335x-bone.dts
-> @@ -18,6 +18,17 @@
->  		reg = <0x80000000 0x10000000>; /* 256 MB */
->  	};
->  
-> +	am3358_pinmux: pinmux@44e10800 {
-> +		spi1_pins: pinmux_spi1_pins {
-> +			pinctrl-single,pins = <
-> +				0x190 0x13	/* mcasp0_aclkx.spi1_sclk, OUTPUT_PULLUP | MODE3 */
-> +				0x194 0x33	/* mcasp0_fsx.spi1_d0, INPUT_PULLUP | MODE3 */
-> +				0x198 0x13	/* mcasp0_axr0.spi1_d1, OUTPUT_PULLUP | MODE3 */
-> +				0x19c 0x13	/* mcasp0_ahclkr.spi1_cs0, OUTPUT_PULLUP | MODE3 */
-> +			>;
+> diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+> index 8bbd6ec..f7216ed 100644
+> --- a/drivers/i2c/busses/i2c-piix4.c
+> +++ b/drivers/i2c/busses/i2c-piix4.c
+> @@ -204,9 +204,8 @@ static int __devinit piix4_setup(struct pci_dev *PIIX4_dev,
+>  			 */
+>  			pci_write_config_byte(PIIX4_dev, SMBHSTCFG,
+>  					      temp | 1);
+> -			dev_printk(KERN_NOTICE, &PIIX4_dev->dev,
+> -				"WARNING: SMBus interface has been "
+> -				"FORCEFULLY ENABLED!\n");
+> +			dev_notice(&PIIX4_dev->dev,
+> +				   "WARNING: SMBus interface has been FORCEFULLY ENABLED!\n");
+>  		} else {
+>  			dev_err(&PIIX4_dev->dev,
+>  				"Host SMBus controller not enabled!\n");
 
-Is there a single pinmux setting that provides SPI functionality on the
-bone headers? Or this is specific to a cape you tested with?
+Applied, thanks.
 
-Thanks,
-Sekhar
+-- 
+Jean Delvare
