@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab2J1Vtb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 17:49:31 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49131 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756075Ab2J1Vt3 (ORCPT
+	id S1754354Ab2J1VvN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 17:51:13 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:41778 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751349Ab2J1VvL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 17:49:29 -0400
-Message-ID: <508DA864.8020503@linaro.org>
-Date: Sun, 28 Oct 2012 22:49:24 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 28 Oct 2012 17:51:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: maciej.rutecki@gmail.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, pavel@ucw.cz, linux-pm@vger.kernel.org
+Subject: Re: [REGRESSION] 3.7-rc2 kernel BUG at kernel/power/snapshot.c:517!
+Date: Sun, 28 Oct 2012 22:55:11 +0100
+Message-ID: <6638433.SFcaNLWS2z@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1552872.pfLgNj3qcY@vostro.rjw.lan>
+References: <201210211712.28571.maciej.rutecki@gmail.com> <201210282212.50282.maciej.rutecki@gmail.com> <1552872.pfLgNj3qcY@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: add missing header include
-References: <001401cdb332$93ffe450$bbffacf0$%han@samsung.com>
-In-Reply-To: <001401cdb332$93ffe450$bbffacf0$%han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 06:30 AM, Jingoo Han wrote:
-> This patch adds missing device.h header to fix build warnings as below:
+On Sunday, October 28, 2012 10:45:26 PM Rafael J. Wysocki wrote:
+> On Sunday, October 28, 2012 10:12:49 PM Maciej Rutecki wrote:
+> > On niedziela, 21 października 2012 o 17:12:28 Maciej Rutecki wrote:
+> > > Error: kernel BUG at kernel/power/snapshot.c:517!
+> > > 
+> > > Last known good: 3.6.1
+> > > Bad: 3.7-rc2
+> > > 
+> > > Steps to reproduce:
+> > > 1. Boot system with 3.7-rc2 kernel
+> > > 2. Try suspend to disk (s2ram works OK)
+> > > 
+> > > System dies on message:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/DSCN0280.jpg
+> > > 
+> > > lspci:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/lspci.txt
+> > > 
+> > > dmesg:
+> > > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/dmesg-3.7-rc2.txt
+> > 
+> > Still present in -rc3
 > 
-> drivers/cpuidle/cpuidle.h:26:41: warning: 'struct device' declared inside parameter list [enabled by default]
-> drivers/cpuidle/cpuidle.h:26:41: warning: its scope is only this definition or declaration, which is probably not what you want
-> [enabled by default]
-> drivers/cpuidle/cpuidle.h:27:45: warning: 'struct device' declared inside parameter list [enabled by default]
-> In file included from drivers/cpuidle/driver.c:15:0:
-> drivers/cpuidle/cpuidle.h:26:41: warning: 'struct device' declared inside parameter list [enabled by default]
-> drivers/cpuidle/cpuidle.h:26:41: warning: its scope is only this definition or declaration, which is probably not what you want
-> [enabled by default]
-> drivers/cpuidle/cpuidle.h:27:45: warning: 'struct device' declared inside parameter list [enabled by default]
-> 
-> This build warning is introduced by commit efeca1b
-> "cpuidle / sysfs: change function parameter".
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
+> This appears to be a memory allocation error and I have no idea what
 
-Jingoo, could you copy-pastebin your config file. I don't have this
-warning and I would like to understand why.
+I mean memory management, sorry.
 
-Thanks
-  -- Daniel
-
->  drivers/cpuidle/cpuidle.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> the reason of it is.
 > 
-> diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
-> index a5bbd1c..2120d9e 100644
-> --- a/drivers/cpuidle/cpuidle.h
-> +++ b/drivers/cpuidle/cpuidle.h
-> @@ -5,6 +5,8 @@
->  #ifndef __DRIVER_CPUIDLE_H
->  #define __DRIVER_CPUIDLE_H
->  
-> +#include <linux/device.h>
-> +
->  /* For internal use only */
->  extern struct cpuidle_governor *cpuidle_curr_governor;
->  extern struct list_head cpuidle_governors;
+> Any chance to bisect?
+> 
+> Does "echo disk > /sys/power/state" work?
+
+Thanks,
+Rafael
 
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
