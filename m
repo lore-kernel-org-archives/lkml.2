@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756415Ab2J1IKp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 04:10:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:35890 "EHLO
+	id S1756511Ab2J1IK6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 04:10:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:35831 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751058Ab2J1IKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 04:10:37 -0400
+	id S1756047Ab2J1IKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 04:10:50 -0400
 From: Joe Perches <joe@perches.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/16] watchdog: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-Date: Sun, 28 Oct 2012 01:05:53 -0700
-Message-Id: <e77e06add16c9cb82fd359b68f63d7b9f4597ed3.1351411048.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 16/16] sound: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
+Date: Sun, 28 Oct 2012 01:05:54 -0700
+Message-Id: <b3001ed99fc8f583ad8a5c6b53900489e43dfa69.1351411048.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1351411047.git.joe@perches.com>
 References: <cover.1351411047.git.joe@perches.com>
@@ -21,71 +22,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
 and reducing object size is good.
+Coalesce multiline formats for easier grep.
+Coalesce segmented single line formats too.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/watchdog/mpcore_wdt.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
+ sound/pci/asihpi/hpidspcd.c |   22 +++++++++-------------
+ sound/pci/asihpi/hpioctl.c  |   17 ++++++++---------
+ 2 files changed, 17 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/watchdog/mpcore_wdt.c b/drivers/watchdog/mpcore_wdt.c
-index 7c741dc..24388c2 100644
---- a/drivers/watchdog/mpcore_wdt.c
-+++ b/drivers/watchdog/mpcore_wdt.c
-@@ -80,8 +80,7 @@ static irqreturn_t mpcore_wdt_fire(int irq, void *arg)
+diff --git a/sound/pci/asihpi/hpidspcd.c b/sound/pci/asihpi/hpidspcd.c
+index 456a758..ac91637 100644
+--- a/sound/pci/asihpi/hpidspcd.c
++++ b/sound/pci/asihpi/hpidspcd.c
+@@ -49,14 +49,12 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
+ 	err = request_firmware(&firmware, fw_name, &dev->dev);
  
- 	/* Check it really was our interrupt */
- 	if (readl(wdt->base + TWD_WDOG_INTSTAT)) {
--		dev_printk(KERN_CRIT, wdt->dev,
--					"Triggered - Reboot ignored.\n");
-+		dev_crit(wdt->dev, "Triggered - Reboot ignored\n");
- 		/* Clear the interrupt on the watchdog */
- 		writel(1, wdt->base + TWD_WDOG_INTSTAT);
- 		return IRQ_HANDLED;
-@@ -123,7 +122,7 @@ static void mpcore_wdt_stop(struct mpcore_wdt *wdt)
- 
- static void mpcore_wdt_start(struct mpcore_wdt *wdt)
- {
--	dev_printk(KERN_INFO, wdt->dev, "enabling watchdog.\n");
-+	dev_info(wdt->dev, "enabling watchdog\n");
- 
- 	/* This loads the count register but does NOT start the count yet */
- 	mpcore_wdt_keepalive(wdt);
-@@ -180,8 +179,8 @@ static int mpcore_wdt_release(struct inode *inode, struct file *file)
- 	if (wdt->expect_close == 42)
- 		mpcore_wdt_stop(wdt);
- 	else {
--		dev_printk(KERN_CRIT, wdt->dev,
--				"unexpected close, not stopping watchdog!\n");
-+		dev_crit(wdt->dev,
-+			 "unexpected close, not stopping watchdog!\n");
- 		mpcore_wdt_keepalive(wdt);
+ 	if (err || !firmware) {
+-		dev_printk(KERN_ERR, &dev->dev,
+-			"%d, request_firmware failed for  %s\n", err,
+-			fw_name);
++		dev_err(&dev->dev, "%d, request_firmware failed for %s\n",
++			err, fw_name);
+ 		goto error1;
  	}
- 	clear_bit(0, &wdt->timer_alive);
-@@ -351,9 +350,9 @@ static int __devinit mpcore_wdt_probe(struct platform_device *pdev)
- 		ret = devm_request_irq(wdt->dev, wdt->irq, mpcore_wdt_fire, 0,
- 				"mpcore_wdt", wdt);
- 		if (ret) {
--			dev_printk(KERN_ERR, wdt->dev,
--					"cannot register IRQ%d for watchdog\n",
--					wdt->irq);
-+			dev_err(wdt->dev,
-+				"cannot register IRQ%d for watchdog\n",
-+				wdt->irq);
- 			return ret;
- 		}
+ 	if (firmware->size < sizeof(header)) {
+-		dev_printk(KERN_ERR, &dev->dev, "Header size too small %s\n",
+-			fw_name);
++		dev_err(&dev->dev, "Header size too small %s\n", fw_name);
+ 		goto error2;
  	}
-@@ -365,9 +364,9 @@ static int __devinit mpcore_wdt_probe(struct platform_device *pdev)
- 	mpcore_wdt_miscdev.parent = &pdev->dev;
- 	ret = misc_register(&mpcore_wdt_miscdev);
- 	if (ret) {
--		dev_printk(KERN_ERR, wdt->dev,
-+		dev_err(wdt->dev,
- 			"cannot register miscdev on minor=%d (err=%d)\n",
--							WATCHDOG_MINOR, ret);
-+			WATCHDOG_MINOR, ret);
- 		return ret;
+ 	memcpy(&header, firmware->data, sizeof(header));
+@@ -64,7 +62,7 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
+ 	if ((header.type != 0x45444F43) ||	/* "CODE" */
+ 		(header.adapter != adapter)
+ 		|| (header.size != firmware->size)) {
+-		dev_printk(KERN_ERR, &dev->dev,
++		dev_err(&dev->dev,
+ 			"Invalid firmware header size %d != file %zd\n",
+ 			header.size, firmware->size);
+ 		goto error2;
+@@ -72,17 +70,15 @@ short hpi_dsp_code_open(u32 adapter, void *os_data, struct dsp_code *dsp_code,
+ 
+ 	if ((header.version >> 9) != (HPI_VER >> 9)) {
+ 		/* Consider even and subsequent odd minor versions to be compatible */
+-		dev_printk(KERN_ERR, &dev->dev,
+-			"Incompatible firmware version "
+-			"DSP image %X != Driver %X\n", header.version,
+-			HPI_VER);
++		dev_err(&dev->dev, "Incompatible firmware version DSP image %X != Driver %X\n",
++			header.version, HPI_VER);
+ 		goto error2;
  	}
  
+ 	if (header.version != HPI_VER) {
+-		dev_printk(KERN_INFO, &dev->dev,
+-			"Firmware: release version mismatch  DSP image %X != Driver %X\n",
+-			header.version, HPI_VER);
++		dev_info(&dev->dev,
++			 "Firmware: release version mismatch  DSP image %X != Driver %X\n",
++			 header.version, HPI_VER);
+ 	}
+ 
+ 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);
+diff --git a/sound/pci/asihpi/hpioctl.c b/sound/pci/asihpi/hpioctl.c
+index 6091562..8f96749 100644
+--- a/sound/pci/asihpi/hpioctl.c
++++ b/sound/pci/asihpi/hpioctl.c
+@@ -326,7 +326,7 @@ int __devinit asihpi_adapter_probe(struct pci_dev *pci_dev,
+ 		pci_dev->subsystem_device, pci_dev->devfn);
+ 
+ 	if (pci_enable_device(pci_dev) < 0) {
+-		dev_printk(KERN_ERR, &pci_dev->dev,
++		dev_err(&pci_dev->dev,
+ 			"pci_enable_device failed, disabling device\n");
+ 		return -EIO;
+ 	}
+@@ -398,9 +398,8 @@ int __devinit asihpi_adapter_probe(struct pci_dev *pci_dev,
+ 	mutex_init(&adapters[adapter_index].mutex);
+ 	pci_set_drvdata(pci_dev, &adapters[adapter_index]);
+ 
+-	dev_printk(KERN_INFO, &pci_dev->dev,
+-		"probe succeeded for ASI%04X HPI index %d\n",
+-		adapter.adapter->type, adapter_index);
++	dev_info(&pci_dev->dev, "probe succeeded for ASI%04X HPI index %d\n",
++		 adapter.adapter->type, adapter_index);
+ 
+ 	return 0;
+ 
+@@ -448,11 +447,11 @@ void __devexit asihpi_adapter_remove(struct pci_dev *pci_dev)
+ 
+ 	pci_set_drvdata(pci_dev, NULL);
+ 	if (1)
+-		dev_printk(KERN_INFO, &pci_dev->dev,
+-			"remove %04x:%04x,%04x:%04x,%04x," " HPI index %d.\n",
+-			pci_dev->vendor, pci_dev->device,
+-			pci_dev->subsystem_vendor, pci_dev->subsystem_device,
+-			pci_dev->devfn, pa->adapter->index);
++		dev_info(&pci_dev->dev,
++			 "remove %04x:%04x,%04x:%04x,%04x, HPI index %d\n",
++			 pci_dev->vendor, pci_dev->device,
++			 pci_dev->subsystem_vendor, pci_dev->subsystem_device,
++			 pci_dev->devfn, pa->adapter->index);
+ 
+ 	memset(pa, 0, sizeof(*pa));
+ }
 -- 
 1.7.8.112.g3fd21
 
