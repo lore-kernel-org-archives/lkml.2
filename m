@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2J1Xtg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:49:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41789 "EHLO
+	id S1756865Ab2J1Xtf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:49:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41795 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756301Ab2J1X1B (ORCPT
+	by vger.kernel.org with ESMTP id S1755668Ab2J1X1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:27:01 -0400
-Message-Id: <20121028231608.081582306@decadent.org.uk>
+Message-Id: <20121028231606.216765974@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:16 +0000
+Date: Sun, 28 Oct 2012 23:17:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>,
-        David Miller <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 100/105] netfilter: nf_conntrack: fix racy timer handling with  reliable events
+        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 094/105] mm: fix XFS oops due to dirty pages without buffers on s390
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,85 +30,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pablo Neira Ayuso <pablo@netfilter.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 5b423f6a40a0327f9d40bc8b97ce9be266f74368 upstream.
+commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
 
-Existing code assumes that del_timer returns true for alive conntrack
-entries. However, this is not true if reliable events are enabled.
-In that case, del_timer may return true for entries that were
-just inserted in the dying list. Note that packets / ctnetlink may
-hold references to conntrack entries that were just inserted to such
-list.
+On s390 any write to a page (even from kernel itself) sets architecture
+specific page dirty bit.  Thus when a page is written to via buffered
+write, HW dirty bit gets set and when we later map and unmap the page,
+page_remove_rmap() finds the dirty bit and calls set_page_dirty().
 
-This patch fixes the issue by adding an independent timer for
-event delivery. This increases the size of the ecache extension.
-Still we can revisit this later and use variable size extensions
-to allocate this area on demand.
+Dirtying of a page which shouldn't be dirty can cause all sorts of
+problems to filesystems.  The bug we observed in practice is that
+buffers from the page get freed, so when the page gets later marked as
+dirty and writeback writes it, XFS crashes due to an assertion
+BUG_ON(!PagePrivate(page)) in page_buffers() called from
+xfs_count_page_state().
 
-Tested-by: Oliver Smith <olipro@8.c.9.b.0.7.4.0.1.0.0.2.ip6.arpa>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Acked-by: David Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Similar problem can also happen when zero_user_segment() call from
+xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+hardware dirty bit during writeback, later buffers get freed, and then
+page unmapped.
+
+Fix the issue by ignoring s390 HW dirty bit for page cache pages of
+mappings with mapping_cap_account_dirty().  This is safe because for
+such mappings when a page gets marked as writeable in PTE it is also
+marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
+cleared by clear_page_dirty_for_io(), the page gets writeprotected in
+page_mkclean().  So pagecache page is writeable if and only if it is
+dirty.
+
+Thanks to Hugh Dickins for pointing out mapping has to have
+mapping_cap_account_dirty() for things to work and proposing a cleaned
+up variant of the patch.
+
+The patch has survived about two hours of running fsx-linux on tmpfs
+while heavily swapping and several days of running on out build machines
+where the original problem was triggered.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context; in particular there is no local
+ 'anon' in page_remove_rmap()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/netfilter/nf_conntrack_ecache.h |    1 +
- net/netfilter/nf_conntrack_core.c           |   16 +++++++++++-----
- 2 files changed, 12 insertions(+), 5 deletions(-)
-
---- a/include/net/netfilter/nf_conntrack_ecache.h
-+++ b/include/net/netfilter/nf_conntrack_ecache.h
-@@ -18,6 +18,7 @@ struct nf_conntrack_ecache {
- 	u16 ctmask;		/* bitmask of ct events to be delivered */
- 	u16 expmask;		/* bitmask of expect events to be delivered */
- 	u32 pid;		/* netlink pid of destroyer */
-+	struct timer_list timeout;
- };
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -56,6 +56,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/migrate.h>
+ #include <linux/hugetlb.h>
++#include <linux/backing-dev.h>
  
- static inline struct nf_conntrack_ecache *
---- a/net/netfilter/nf_conntrack_core.c
-+++ b/net/netfilter/nf_conntrack_core.c
-@@ -247,12 +247,15 @@ static void death_by_event(unsigned long
- {
- 	struct nf_conn *ct = (void *)ul_conntrack;
- 	struct net *net = nf_ct_net(ct);
-+	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
-+
-+	BUG_ON(ecache == NULL);
+ #include <asm/tlbflush.h>
  
- 	if (nf_conntrack_event(IPCT_DESTROY, ct) < 0) {
- 		/* bad luck, let's retry again */
--		ct->timeout.expires = jiffies +
-+		ecache->timeout.expires = jiffies +
- 			(random32() % net->ct.sysctl_events_retry_timeout);
--		add_timer(&ct->timeout);
-+		add_timer(&ecache->timeout);
- 		return;
+@@ -935,11 +936,8 @@ int page_mkclean(struct page *page)
+ 
+ 	if (page_mapped(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		if (mapping) {
++		if (mapping)
+ 			ret = page_mkclean_file(mapping, page);
+-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+-				ret = 1;
+-		}
  	}
- 	/* we've got the event delivered, now it's dying */
-@@ -266,6 +269,9 @@ static void death_by_event(unsigned long
- void nf_ct_insert_dying_list(struct nf_conn *ct)
+ 
+ 	return ret;
+@@ -1120,6 +1118,8 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
  {
- 	struct net *net = nf_ct_net(ct);
-+	struct nf_conntrack_ecache *ecache = nf_ct_ecache_find(ct);
++	struct address_space *mapping = page_mapping(page);
 +
-+	BUG_ON(ecache == NULL);
- 
- 	/* add this conntrack to the dying list */
- 	spin_lock_bh(&nf_conntrack_lock);
-@@ -273,10 +279,10 @@ void nf_ct_insert_dying_list(struct nf_c
- 			     &net->ct.dying);
- 	spin_unlock_bh(&nf_conntrack_lock);
- 	/* set a new timer to retry event delivery */
--	setup_timer(&ct->timeout, death_by_event, (unsigned long)ct);
--	ct->timeout.expires = jiffies +
-+	setup_timer(&ecache->timeout, death_by_event, (unsigned long)ct);
-+	ecache->timeout.expires = jiffies +
- 		(random32() % net->ct.sysctl_events_retry_timeout);
--	add_timer(&ct->timeout);
-+	add_timer(&ecache->timeout);
- }
- EXPORT_SYMBOL_GPL(nf_ct_insert_dying_list);
- 
+ 	/* page still mapped by someone else? */
+ 	if (!atomic_add_negative(-1, &page->_mapcount))
+ 		return;
+@@ -1130,8 +1130,19 @@ void page_remove_rmap(struct page *page)
+ 	 * this if the page is anon, so about to be freed; but perhaps
+ 	 * not if it's in swapcache - there might be another pte slot
+ 	 * containing the swap entry, but page not yet written to swap.
++	 *
++	 * And we can skip it on file pages, so long as the filesystem
++	 * participates in dirty tracking; but need to catch shm and tmpfs
++	 * and ramfs pages which have been modified since creation by read
++	 * fault.
++	 *
++	 * Note that mapping must be decided above, before decrementing
++	 * mapcount (which luckily provides a barrier): once page is unmapped,
++	 * it could be truncated and page->mapping reset to NULL at any moment.
++	 * Note also that we are relying on page_mapping(page) to set mapping
++	 * to &swapper_space when PageSwapCache(page).
+ 	 */
+-	if ((!PageAnon(page) || PageSwapCache(page)) &&
++	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+ 		set_page_dirty(page);
+ 	/*
 
 
