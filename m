@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2J1VRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 17:17:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21516 "EHLO mx1.redhat.com"
+	id S1756087Ab2J1Vle (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 17:41:34 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:41762 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755513Ab2J1VRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 17:17:07 -0400
-Date: Sun, 28 Oct 2012 19:16:46 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 5/5] perf tool: Move dso_* related functions into dso
- object
-Message-ID: <20121028211646.GB6754@infradead.org>
-References: <1351372712-21104-1-git-send-email-jolsa@redhat.com>
- <1351372712-21104-6-git-send-email-jolsa@redhat.com>
- <20121028133702.GA6754@infradead.org>
- <20121028184200.GB1599@krava.redhat.com>
+	id S1756041Ab2J1Vlc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 17:41:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: maciej.rutecki@gmail.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, pavel@ucw.cz, linux-pm@vger.kernel.org
+Subject: Re: [REGRESSION] 3.7-rc2 kernel BUG at kernel/power/snapshot.c:517!
+Date: Sun, 28 Oct 2012 22:45:26 +0100
+Message-ID: <1552872.pfLgNj3qcY@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <201210282212.50282.maciej.rutecki@gmail.com>
+References: <201210211712.28571.maciej.rutecki@gmail.com> <201210282212.50282.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121028184200.GB1599@krava.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Oct 28, 2012 at 07:42:01PM +0100, Jiri Olsa escreveu:
-> On Sun, Oct 28, 2012 at 11:37:02AM -0200, Arnaldo Carvalho de Melo wrote:
-> >     CC /home/acme/git/build/perf/util/dso-test-data.o
-> > In file included from util/dso.c:2:
-> > util/dso.h:87: error: ‘BUILD_ID_SIZE’ undeclared here (not in a function)
-> >     CC /home/acme/git/build/perf/util/color.o
-> > cc1: warnings being treated as errors
-> > util/dso.c: In function ‘dso__binary_type_file’:
-> > util/dso.c:45: error: implicit declaration of function ‘filename__read_debuglink’
-> > util/dso.c:45: error: nested extern declaration of ‘filename__read_debuglink’
-> > util/dso.c:51: error: ‘symbol_conf’ undeclared (first use in this function)
-> > util/dso.c:51: error: (Each undeclared identifier is reported only once
-> > util/dso.c:51: error: for each function it appears in.)
-> > util/dso.c: In function ‘dso__delete’:
-> > util/dso.c:435: error: implicit declaration of function ‘symbols__delete’
-> > util/dso.c:435: error: nested extern declaration of ‘symbols__delete’
-> > util/dso.c: In function ‘dso__read_running_kernel_build_id’:
-> > util/dso.c:462: error: implicit declaration of function ‘sysfs__read_build_id’
-> > util/dso.c:462: error: nested extern declaration of ‘sysfs__read_build_id’
-> > util/dso.c: In function ‘__dsos__read_build_ids’:
-> > util/dso.c:500: error: implicit declaration of function ‘filename__read_build_id’
-> > util/dso.c:500: error: nested extern declaration of ‘filename__read_build_id’
-> > util/dso.c: In function ‘dso__fprintf’:
-> > util/dso.c:589: error: dereferencing pointer to incomplete type
-> > util/dso.c:589: error: type defaults to ‘int’ in declaration of ‘__mptr’
-> > util/dso.c:589: error: initialization from incompatible pointer type
-> > util/dso.c:589: error: invalid use of undefined type ‘struct symbol’
-> > util/dso.c:590: error: implicit declaration of function ‘symbol__fprintf’
-> > util/dso.c:590: error: nested extern declaration of ‘symbol__fprintf’
-> > make: *** [/home/acme/git/build/perf/util/dso.o] Error 1
+On Sunday, October 28, 2012 10:12:49 PM Maciej Rutecki wrote:
+> On niedziela, 21 października 2012 o 17:12:28 Maciej Rutecki wrote:
+> > Error: kernel BUG at kernel/power/snapshot.c:517!
+> > 
+> > Last known good: 3.6.1
+> > Bad: 3.7-rc2
+> > 
+> > Steps to reproduce:
+> > 1. Boot system with 3.7-rc2 kernel
+> > 2. Try suspend to disk (s2ram works OK)
+> > 
+> > System dies on message:
+> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/DSCN0280.jpg
+> > 
+> > lspci:
+> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/lspci.txt
+> > 
+> > dmesg:
+> > http://mrutecki.pl/download/kernel/3.7-rc2/swinka/dmesg-3.7-rc2.txt
 > 
-> ugh.. I have it rebased to your perf/core and it builds cleanly
-> 
-> Any chance there's something not pushed yet?
+> Still present in -rc3
 
-The only thing besides the four first patches in your series is one that
-you acked:
+This appears to be a memory allocation error and I have no idea what
+the reason of it is.
 
-commit 9175ce1f1244edd9f4d39605aa06ce5b0a50b8e0
-Author: Andi Kleen <ak@linux.intel.com>
-Date:   Fri Oct 26 13:30:06 2012 -0700
+Any chance to bisect?
 
-    perf tools: Move parse_events error printing to parse_events_options
+Does "echo disk > /sys/power/state" work?
+
+Rafael
 
 
----------------
-
-
-
-
-[acme@sandy linux]$ cat /etc/redhat-release 
-Red Hat Enterprise Linux Server release 6.3 (Santiago)
-
-- Arnaldo
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
