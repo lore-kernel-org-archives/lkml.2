@@ -1,159 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab2JaXOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 19:14:55 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:53996 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab2JaXOv (ORCPT
+	id S1756587Ab2KACW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 31 Oct 2012 22:22:59 -0400
+Received: from host2.northwestnissans.com ([173.199.143.79]:55373 "EHLO
+	host.northwestnissans.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab2KACW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 19:14:51 -0400
-Message-Id: <1dc81a3260da0a911dbcabd737547b7bff16a99c.1351721190.git.josh.cartwright@ni.com>
-In-Reply-To: <cover.1351721190.git.josh.cartwright@ni.com>
-References: <cover.1351721190.git.josh.cartwright@ni.com>
-From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Wed, 31 Oct 2012 12:24:48 -0600
-Subject: [PATCH 4/8] ARM: zynq: dts: split up device tree
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@ti.com>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Linn <John.Linn@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-serial@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/31/2012 06:12:28 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/31/2012 06:12:28 PM,
-	Serialize complete at 10/31/2012 06:12:28 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-31_03:2012-10-31,2012-10-31,1970-01-01 signatures=0
+	Wed, 31 Oct 2012 22:22:57 -0400
+To: linux-kernel@vger.kernel.org
+Subject: How Are You Doing Today.
+X-PHP-Script: www.terra2imports.ca/wp-includes/feed-resl.php for 208.131.144.44
+From: Leung Andrew <captainan@email.org>
+Reply-To: captainan@e-mail.ua
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E1TSZmq-00008W-G4@host.northwestnissans.com>
+Date: Sun, 28 Oct 2012 15:48:48 -0500
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host.northwestnissans.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [613 32003] / [47 12]
+X-AntiAbuse: Sender Address Domain - host.northwestnissans.com
+X-Get-Message-Sender-Via: host.northwestnissans.com: authenticated_id: terra2/only user confirmed/virtual account not confirmed
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of the created zynq-7000.dtsi file is to describe the
-hardware common to all Zynq 7000-based boards.  Also, get rid of the
-zynq-ep107 device tree, since it is not hardware anyone can purchase.
+I am a Canadian Army my name is Captain Andrew Leung. 090209-M-3450C-014
+II Marine Expeditionary of Multinational Division Center base in
+Kabul,Afghanistan, of the NATO Marine Force on Monitoring and Peace
+keeping mission in Afghanistan,On May 7,2012! we were alerted on the
+sudden presence of some Terrorists camping in Marzar Sharif . a suburb not
+too far from Kabul here in Afghanistan. After Immediate intervention, we
+captured three (3) of the Terrorists,(7) injured.In the process of torture
+they confessed being re! bels for Abu Baqir a Taliban sub-commander and
+al-Qaida group leader, and they took us to a cave in Marzar Sharif. which
+served as their camp.Here we recovered several guns and other Ammunitions
+including some boxes among which two contains nuclear weapons, and the
+other contains some millions of US Dollars and i have in my possession the
+sum of 9.7 million U.S. dollars as my share.
 
-Add a zc702 dts file based on the zynq-7000.dtsi.  Add it to the
-dts/Makefile so it is built with the 'dtbs' target.
+I am in keen need of a Reliable and Trust worthy person like you who would
+receive the MONEY,secure and protect the box which contains the US Dollars
+for me because in 3 weeks time some U.S.Army will replace our UNIT in
+Afghanistan and i will soon come back and finish the deal and reloc! ate my
+family to your country. I assure and promise to give! you 30% of this fund
+and you keep 70%for me, however feel free to negotiate what you wish to
+have as your percentage in this business.
 
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
----
- arch/arm/boot/dts/Makefile                         |  1 +
- .../boot/dts/{zynq-ep107.dts => zynq-7000.dtsi}    | 19 +++-----------
- arch/arm/boot/dts/zynq-zc702.dts                   | 30 ++++++++++++++++++++++
- arch/arm/mach-zynq/common.c                        |  3 ++-
- 4 files changed, 36 insertions(+), 17 deletions(-)
- rename arch/arm/boot/dts/{zynq-ep107.dts => zynq-7000.dtsi} (79%)
- create mode 100644 arch/arm/boot/dts/zynq-zc702.dts
+It is never a stolen money or illegal money but because were ! on duty to
+bring peace in Afghanistan many soldiers lost th! eir life and no amount of
+compensation that may bring back the life of dead soldier then consider
+how the family will feel,that is the reasons my unit decided to share the
+money among us but return all the guns and ammunition's to our Camp,it is
+official and that's the reason i need your assistance to ship the box to
+any save location of your choice.
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index f37cf9f..76ed11e 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -103,5 +103,6 @@ dtb-$(CONFIG_ARCH_VEXPRESS) += vexpress-v2p-ca5s.dtb \
- dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
- 	wm8505-ref.dtb \
- 	wm8650-mid.dtb
-+dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
- 
- endif
-diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-7000.dtsi
-similarity index 79%
-rename from arch/arm/boot/dts/zynq-ep107.dts
-rename to arch/arm/boot/dts/zynq-7000.dtsi
-index 5caf100..8b30e59 100644
---- a/arch/arm/boot/dts/zynq-ep107.dts
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -10,29 +10,16 @@
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  */
-+/include/ "skeleton.dtsi"
- 
--/dts-v1/;
- / {
--	model = "Xilinx Zynq EP107";
--	compatible = "xlnx,zynq-ep107";
--	#address-cells = <1>;
--	#size-cells = <1>;
--	interrupt-parent = <&intc>;
--
--	memory {
--		device_type = "memory";
--		reg = <0x0 0x10000000>;
--	};
--
--	chosen {
--		bootargs = "console=ttyPS0,9600 root=/dev/ram rw initrd=0x800000,8M earlyprintk";
--		linux,stdout-path = &uart0;
--	};
-+	compatible = "xlnx,zynq-7000";
- 
- 	amba {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
- 		#size-cells = <1>;
-+		interrupt-parent = <&intc>;
- 		ranges;
- 
- 		intc: interrupt-controller@f8f01000 {
-diff --git a/arch/arm/boot/dts/zynq-zc702.dts b/arch/arm/boot/dts/zynq-zc702.dts
-new file mode 100644
-index 0000000..e25a307
---- /dev/null
-+++ b/arch/arm/boot/dts/zynq-zc702.dts
-@@ -0,0 +1,30 @@
-+/*
-+ *  Copyright (C) 2011 Xilinx
-+ *  Copyright (C) 2012 National Instruments Corp.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+/dts-v1/;
-+/include/ "zynq-7000.dtsi"
-+
-+/ {
-+	model = "Zynq ZC702 Development Board";
-+	compatible = "xlnx,zynq-zc702", "xlnx,zynq-7000";
-+
-+	memory {
-+		device_type = "memory";
-+		reg = <0x0 0x40000000>;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyPS1,115200 earlyprintk";
-+	};
-+
-+};
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index 0279ea7..447904b 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -115,7 +115,8 @@ static void __init xilinx_map_io(void)
- }
- 
- static const char *xilinx_dt_match[] = {
--	"xlnx,zynq-ep107",
-+	"xlnx,zynq-zc702",
-+	"xlnx,zynq-7000",
- 	NULL
- };
- 
--- 
-1.8.0
+Please, i trust you to maintain absolute secrecy and confidentiality to
+protect my job,myself and the money. In less than 5 days the box should be
+in your possession and i will give you further instructions.But you must
+know that i have taken precautionary measures to secure the money.The box
+is coded with high secu! rity gadget so am the only one that has the right
+combination to unlock it.Please send the following information me so i can
+proceed.
+
+Your full name ............................
+Your full address ..........................
+Your direct phone number ................
+Your Age .......................
+
+Regards,
+Captain Andrew Leung
 
 
