@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab2J1Xsj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:48:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41823 "EHLO
+	id S1756331Ab2J1X1D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:27:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41763 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756337Ab2J1X1F (ORCPT
+	by vger.kernel.org with ESMTP id S1756245Ab2J1X06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:05 -0400
-Message-Id: <20121028231609.281019399@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:58 -0400
+Message-Id: <20121028231541.377182464@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:20 +0000
+Date: Sun, 28 Oct 2012 23:15:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Maxim Kachur <mcdebugger@duganet.ru>, Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 104/105] ALSA: emu10k1: add chip details for E-mu 1010 PCIe card
+        Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 014/105] sparc64: do not clobber personality flags in  sys_sparc64_personality()
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Kachur <mcdebugger@duganet.ru>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 10f571d09106c3eb85951896522c9650596eff2e upstream.
+[ Upstream commit a27032eee8cb6e16516f13c8a9752e9d5d4cc430 ]
 
-Add chip details for E-mu 1010 PCIe card. It has the same
-chip as found in E-mu 1010b but it uses different PCI id.
+There are multiple errors in how sys_sparc64_personality() handles
+personality flags stored in top three bytes.
 
-Signed-off-by: Maxim Kachur <mcdebugger@duganet.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+- directly comparing current->personality against PER_LINUX32 doesn't work
+  in cases when any of the personality flags stored in the top three bytes
+  are used.
+- directly forcefully setting personality to PER_LINUX32 or PER_LINUX
+  discards any flags stored in the top three bytes
 
+Fix the first one by properly using personality() macro to compare only
+PER_MASK bytes.
+Fix the second one by setting only the bits that should be set, instead of
+overwriting the whole value.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/emu10k1/emu10k1_main.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/sparc/kernel/sys_sparc_64.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/sound/pci/emu10k1/emu10k1_main.c
-+++ b/sound/pci/emu10k1/emu10k1_main.c
-@@ -1416,6 +1416,15 @@ static struct snd_emu_chip_details emu_c
- 	 .ca0108_chip = 1,
- 	 .spk71 = 1,
- 	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 new revision */
-+	/* Tested by Maxim Kachur <mcdebugger@duganet.ru> 17th Oct 2012. */
-+	/* This is MAEM8986, 0202 is MAEM8980 */
-+	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x40071102,
-+	 .driver = "Audigy2", .name = "E-mu 1010 PCIe [MAEM8986]",
-+	 .id = "EMU1010",
-+	 .emu10k2_chip = 1,
-+	 .ca0108_chip = 1,
-+	 .spk71 = 1,
-+	 .emu_model = EMU_MODEL_EMU1010B}, /* EMU 1010 PCIe */
- 	/* Tested by James@superbug.co.uk 8th July 2005. */
- 	/* This is MAEM8810, 0202 is MAEM8820 */
- 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x40011102,
+diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
+index 441521a..5e4252b 100644
+--- a/arch/sparc/kernel/sys_sparc_64.c
++++ b/arch/sparc/kernel/sys_sparc_64.c
+@@ -519,12 +519,12 @@ SYSCALL_DEFINE1(sparc64_personality, unsigned long, personality)
+ {
+ 	int ret;
+ 
+-	if (current->personality == PER_LINUX32 &&
+-	    personality == PER_LINUX)
+-		personality = PER_LINUX32;
++	if (personality(current->personality) == PER_LINUX32 &&
++	    personality(personality) == PER_LINUX)
++		personality |= PER_LINUX32;
+ 	ret = sys_personality(personality);
+-	if (ret == PER_LINUX32)
+-		ret = PER_LINUX;
++	if (personality(ret) == PER_LINUX32)
++		ret &= ~PER_LINUX32;
+ 
+ 	return ret;
+ }
 
 
