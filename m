@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab2J1Xnn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:43:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41945 "EHLO
+	id S1756716Ab2J1XoA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:44:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41953 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756236Ab2J1X1a (ORCPT
+	by vger.kernel.org with ESMTP id S1756614Ab2J1X13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:30 -0400
-Message-Id: <20121028231606.861699734@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:29 -0400
+Message-Id: <20121028231601.798138720@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:12 +0000
+Date: Sun, 28 Oct 2012 23:16:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Luebbe <jlu@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roland Stigge <stigge@antcom.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 096/105] drivers/rtc/rtc-imxdi.c: add missing spin lock initialization
+        Johan Hovold <jhovold@gmail.com>, <support@connecttech.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 080/105] USB: whiteheat: fix memory leak in error path
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,36 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Luebbe <jlu@pengutronix.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit fee0de7791f967c2c5f0d43eb7b7261761b45e64 upstream.
+commit c129197c99550d356cf5f69b046994dd53cd1b9d upstream.
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Roland Stigge <stigge@antcom.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Make sure command buffer is deallocated in case of errors during attach.
+
+Cc: <support@connecttech.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/rtc/rtc-imxdi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/whiteheat.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
-index 891cd6c..4eed510 100644
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -392,6 +392,8 @@ static int dryice_rtc_probe(struct platform_device *pdev)
- 	if (imxdi->ioaddr == NULL)
- 		return -ENOMEM;
+diff --git a/drivers/usb/serial/whiteheat.c b/drivers/usb/serial/whiteheat.c
+index 346c7ef..cfd155e 100644
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -333,6 +333,7 @@ no_firmware:
+ 		"%s: please contact support@connecttech.com\n",
+ 		serial->type->description);
+ 	kfree(result);
++	kfree(command);
+ 	return -ENODEV;
  
-+	spin_lock_init(&imxdi->irq_lock);
-+
- 	imxdi->irq = platform_get_irq(pdev, 0);
- 	if (imxdi->irq < 0)
- 		return imxdi->irq;
+ no_command_private:
 
 
