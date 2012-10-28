@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2J1X07 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:26:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41747 "EHLO
+	id S1756987Ab2J1Xvt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:51:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41755 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755915Ab2J1X04 (ORCPT
+	by vger.kernel.org with ESMTP id S1756234Ab2J1X07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:26:56 -0400
-Message-Id: <20121028231538.636389099@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:59 -0400
+Message-Id: <20121028231541.648888107@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:41 +0000
+Date: Sun, 28 Oct 2012 23:15:51 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brian Norris <computersforpeace@gmail.com>,
-        Huang Shijie <shijie8@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 005/105] mtd: nand: allow NAND_NO_SUBPAGE_WRITE to be set from driver
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 015/105] sparc64: Be less verbose during vmemmap population.
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,74 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Norris <computersforpeace@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit bf7a01bf7987b63b121d572b240c132ec44129c4 upstream.
+[ Upstream commit 2856cc2e4d0852c3ddaae9dcb19cb9396512eb08 ]
 
-The NAND_CHIPOPTIONS_MSK has limited utility and is causing real bugs. It
-silently masks off at least one flag that might be set by the driver
-(NAND_NO_SUBPAGE_WRITE). This breaks the GPMI NAND driver and possibly
-others.
+On a 2-node machine with 256GB of ram we get 512 lines of
+console output, which is just too much.
 
-Really, as long as driver writers exercise a small amount of care with
-NAND_* options, this mask is not necessary at all; it was only here to
-prevent certain options from accidentally being set by the driver. But the
-original thought turns out to be a bad idea occasionally. Thus, kill it.
+This mimicks Yinghai Lu's x86 commit c2b91e2eec9678dbda274e906cc32ea8f711da3b
+(x86_64/mm: check and print vmemmap allocation continuous) except that
+we aren't ever going to get contiguous block pointers in between calls
+so just print when the virtual address or node changes.
 
-Note, this patch fixes some major gpmi-nand breakage.
+This decreases the output by an order of 16.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Tested-by: Huang Shijie <shijie8@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-[Brian Norris: This is a backport for v3.2 stable.]
+Also demote this to KERN_DEBUG.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mtd/nand/nand_base.c |    9 +++------
- include/linux/mtd/nand.h     |    3 ---
- 2 files changed, 3 insertions(+), 9 deletions(-)
+ arch/sparc/mm/init_64.c | 28 +++++++++++++++++++++++-----
+ 1 file changed, 23 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 3ed9c5e..daed698 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2903,9 +2903,7 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
- 	if (le16_to_cpu(p->features) & 1)
- 		*busw = NAND_BUSWIDTH_16;
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index 8e073d8..6ff4d78 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2118,6 +2118,9 @@ EXPORT_SYMBOL(_PAGE_CACHE);
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ unsigned long vmemmap_table[VMEMMAP_SIZE];
  
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= (NAND_NO_READRDY |
--			NAND_NO_AUTOINCR) & NAND_CHIPOPTIONS_MSK;
-+	chip->options |= NAND_NO_READRDY | NAND_NO_AUTOINCR;
++static long __meminitdata addr_start, addr_end;
++static int __meminitdata node_start;
++
+ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
+ {
+ 	unsigned long vstart = (unsigned long) start;
+@@ -2148,15 +2151,30 @@ int __meminit vmemmap_populate(struct page *start, unsigned long nr, int node)
  
- 	return 1;
- }
-@@ -3069,9 +3067,8 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 			mtd->erasesize <<= ((id_data[3] & 0x03) << 1);
+ 			*vmem_pp = pte_base | __pa(block);
+ 
+-			printk(KERN_INFO "[%p-%p] page_structs=%lu "
+-			       "node=%d entry=%lu/%lu\n", start, block, nr,
+-			       node,
+-			       addr >> VMEMMAP_CHUNK_SHIFT,
+-			       VMEMMAP_SIZE);
++			/* check to see if we have contiguous blocks */
++			if (addr_end != addr || node_start != node) {
++				if (addr_start)
++					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
++					       addr_start, addr_end-1, node_start);
++				addr_start = addr;
++				node_start = node;
++			}
++			addr_end = addr + VMEMMAP_CHUNK;
  		}
  	}
--	/* Get chip options, preserve non chip based options */
--	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--	chip->options |= type->options & NAND_CHIPOPTIONS_MSK;
-+	/* Get chip options */
-+	chip->options |= type->options;
+ 	return 0;
+ }
++
++void __meminit vmemmap_populate_print_last(void)
++{
++	if (addr_start) {
++		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
++		       addr_start, addr_end-1, node_start);
++		addr_start = 0;
++		addr_end = 0;
++		node_start = 0;
++	}
++}
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
  
- 	/*
- 	 * Check if chip is not a Samsung device. Do not clear the
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index 904131b..b25b09b 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -215,9 +215,6 @@ typedef enum {
- #define NAND_SUBPAGE_READ(chip) ((chip->ecc.mode == NAND_ECC_SOFT) \
- 					&& (chip->page_shift > 9))
- 
--/* Mask to zero out the chip options, which come from the id table */
--#define NAND_CHIPOPTIONS_MSK	(0x0000ffff & ~NAND_NO_AUTOINCR)
--
- /* Non chip related options */
- /* This option skips the bbt scan during initialization. */
- #define NAND_SKIP_BBTSCAN	0x00010000
+ static void prot_init_common(unsigned long page_none,
 
 
