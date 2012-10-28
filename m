@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab2J1X2O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42136 "EHLO
+	id S1757113Ab2J1X2g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:28:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42175 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756917Ab2J1X2J (ORCPT
+	by vger.kernel.org with ESMTP id S1756979Ab2J1X2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:09 -0400
-Message-Id: <20121028231551.854649466@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:23 -0400
+Message-Id: <20121028231549.148020010@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:24 +0000
+Date: Sun, 28 Oct 2012 23:16:15 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 048/105] mac80211: check if key has TKIP type before updating IV
+        Amerigo Wang <amwang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 039/105] pktgen: fix crash when generating IPv6 packets
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,48 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit 4045f72bcf3c293c7c5932ef001742d8bb5ded76 upstream.
+commit 5aa8b572007c4bca1e6d3dd4c4820f1ae49d6bb2 upstream.
 
-This patch fix corruption which can manifest itself by following crash
-when switching on rfkill switch with rt2x00 driver:
-https://bugzilla.redhat.com/attachment.cgi?id=615362
+For IPv6, sizeof(struct ipv6hdr) = 40, thus the following
+expression will result negative:
 
-Pointer key->u.ccmp.tfm of group key get corrupted in:
+        datalen = pkt_dev->cur_pkt_size - 14 -
+                  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+                  pkt_dev->pkt_overhead;
 
-ieee80211_rx_h_michael_mic_verify():
+And,  the check "if (datalen < sizeof(struct pktgen_hdr))" will be
+passed as "datalen" is promoted to unsigned, therefore will cause
+a crash later.
 
-        /* update IV in key information to be able to detect replays */
-        rx->key->u.tkip.rx[rx->security_idx].iv32 = rx->tkip_iv32;
-        rx->key->u.tkip.rx[rx->security_idx].iv16 = rx->tkip_iv16;
+This is a quick fix by checking if "datalen" is negative. The following
+patch will increase the default value of 'min_pkt_size' for IPv6.
 
-because rt2x00 always set RX_FLAG_MMIC_STRIPPED, even if key is not TKIP.
+This bug should exist for a long time, so Cc -stable too.
 
-We already check type of the key in different path in
-ieee80211_rx_h_michael_mic_verify() function, so adding additional
-check here is reasonable.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/wpa.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/pktgen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/mac80211/wpa.c b/net/mac80211/wpa.c
-index bdb53ab..e72562a 100644
---- a/net/mac80211/wpa.c
-+++ b/net/mac80211/wpa.c
-@@ -106,7 +106,8 @@ ieee80211_rx_h_michael_mic_verify(struct ieee80211_rx_data *rx)
- 		if (status->flag & RX_FLAG_MMIC_ERROR)
- 			goto mic_fail;
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2935,7 +2935,7 @@ static struct sk_buff *fill_packet_ipv6(
+ 		  sizeof(struct ipv6hdr) - sizeof(struct udphdr) -
+ 		  pkt_dev->pkt_overhead;
  
--		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
-+		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key &&
-+		    rx->key->conf.cipher == WLAN_CIPHER_SUITE_TKIP)
- 			goto update_iv;
- 
- 		return RX_CONTINUE;
+-	if (datalen < sizeof(struct pktgen_hdr)) {
++	if (datalen < 0 || datalen < sizeof(struct pktgen_hdr)) {
+ 		datalen = sizeof(struct pktgen_hdr);
+ 		if (net_ratelimit())
+ 			pr_info("increased datalen to %d\n", datalen);
 
 
