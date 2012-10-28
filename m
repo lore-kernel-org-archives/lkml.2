@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975Ab2J1U6l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 16:58:41 -0400
-Received: from nm19-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.25]:31061
-	"EHLO nm19-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755732Ab2J1U5M (ORCPT
+	id S1755868Ab2J1U7A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 16:59:00 -0400
+Received: from nm19-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.172]:38163
+	"EHLO nm19-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755566Ab2J1U5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 16:57:12 -0400
-X-Yahoo-Newman-Id: 117994.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
+	Sun, 28 Oct 2012 16:57:08 -0400
+X-Yahoo-Newman-Id: 936128.16106.bm@smtp105.sbc.mail.ne1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: eaFCvhwVM1ltq8FNWO5abH3PKAtQUESuR9J4Bhf3U690ezL
- FL3UYdW5fM2mjwXzhcdVM9QrNQ1QWvuvbZZrXM.kJaqSs84JqHO42sO_aGM.
- J__uUCsCpP7MURVjAoF0Fu67iOL3DiS6Rs7D683v7S93ughgRur8.o0E6BlM
- Tb9GfFAw1vpuEBAmjr9HR11z0BFDuyUV8zGzuMHOArMug3DBuOnTzqSY4miy
- knSSk0ouHziqrP9NS5GKYs5I8cp9smKSCAckvTJuvnZOess46eyXRmlohyDx
- ksbS51xdaaoP1KVEwh8zIPSUvEMho8BRQ2BPkt_mAINmyHUgwgzD8zSsrB4o
- xHX_3_nRC2XUYRK.geeooSKMi5vRDrzbAyBXSZUOZmQKUcQzjdvXHu50tyaE
- QAOzfPc3BTkP6o3Kid7qp3_Kf_rT_j8MudvmxgU3ZGxwL87nxXDrfwg--
+X-YMail-OSG: C_0IDDsVM1mLw9NWW6jl1fH9nIrL2TYpTfiBtW2d6JTm7yv
+ D5ShFnxlZ_TpFoObZ2.5WSpdAYhSNUD0PZibLQG8Cvdp.dJlg_uLG4Sc7swF
+ phk7luOqKh7VCWjrzwIMEw5opoFy.3dstqS2ydOMbu048jvtN1_WxGTJ.hNU
+ cloc_bSn4q37Ui56.KYZeJM.mE2i_NJvtxNw4imQFDXiEzHEl6Lt3VSdO1iU
+ jgkvNsevH.QbhvzI5MT9vEQRa.MDGbzwobiszdvH7NWB.yNCQjnt_weFxX82
+ DQDZAGLvp_Oon8XIbFg3j8pCZvNyB8RP7ikMbmf8QiC58CJAzvvADzQpcYKP
+ .7Gg4_QuiJFMrXJTrYvIag39OEr7YfwTetOz4yqMBufn.ZiH83Z3lK6L9Q4U
+ l3Mes4m5O_eLWDxudvUwy_5gMfC53yMLGmdbkfRLCfkDNi9zvUIgpOWz882L
+ 85MjEWZrPVlCVwRYsUrAiL1aUrtNfaAULY2dbDf.IXwiDQEYuPxPGB99sKVq
+ lDXCezDaYb42CFj_hnnTsO3u_NwbOzYdRZMVFNa3jhlQ-
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -34,9 +36,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 4/9] compiler{,-gcc4}.h, bug.h: Remove duplicate macros
-Date: Sun, 28 Oct 2012 15:57:10 -0500
-Message-Id: <1351457835-7553-4-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v4 2/9] compiler-gcc.h: Add gcc-recommended GCC_VERSION macro
+Date: Sun, 28 Oct 2012 15:57:08 -0500
+Message-Id: <1351457835-7553-2-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
 References: <1351457648-7453-1-git-send-email-daniel.santos@pobox.com>
@@ -44,61 +46,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__linktime_error() does the same thing as __compiletime_error() and is
-only used in bug.h.  Since the macro defines a function attribute that
-will cause a failure at compile-time (not link-time), it makes more
-sense to keep __compiletime_error(), which is also neatly mated with
-__compiletime_warning().
+Throughout compiler*.h, many version checks are made.  These can be
+simplified by using the macro that gcc's documentation recommends.
+However, my primary reason for adding this is that I need bug-check
+macros that are enabled at certain gcc versions and it's cleaner to use
+this macro than the tradition method:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ => 2)
+
+If you add patch level, it gets this ugly:
+
+if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 2 || \
+   __GNUC_MINOR__ == 2 __GNUC_PATCHLEVEL__ >= 1))
+
+As opposed to:
+
+if GCC_VERSION >= 40201
+
+While having separate headers for gcc 3 & 4 eliminates some of this
+verbosity, they can still be cleaned up by this.
+
+See also:
+http://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: David Rientjes <rientjes@google.com>
 Acked-by: Borislav Petkov <bp@alien8.de>
+Acked-by: David Rientjes <rientjes@google.com>
 ---
- include/linux/bug.h           |    2 +-
- include/linux/compiler-gcc4.h |    2 --
- include/linux/compiler.h      |    3 ---
- 3 files changed, 1 insertions(+), 6 deletions(-)
+ include/linux/compiler-gcc.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/bug.h b/include/linux/bug.h
-index aaac4bb..298a916 100644
---- a/include/linux/bug.h
-+++ b/include/linux/bug.h
-@@ -73,7 +73,7 @@ extern int __build_bug_on_failed;
- #define BUILD_BUG()						\
- 	do {							\
- 		extern void __build_bug_failed(void)		\
--			__linktime_error("BUILD_BUG failed");	\
-+			__compiletime_error("BUILD_BUG failed");\
- 		__build_bug_failed();				\
- 	} while (0)
- 
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index 9755029..7f143ac 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -33,8 +33,6 @@
-    the kernel context */
- #define __cold			__attribute__((__cold__))
- 
--#define __linktime_error(message) __attribute__((__error__(message)))
--
- #ifndef __CHECKER__
- # define __compiletime_warning(message) __attribute__((warning(message)))
- # define __compiletime_error(message) __attribute__((error(message)))
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index b121554..cbf6d9d 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -299,9 +299,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- #ifndef __compiletime_error
- # define __compiletime_error(message)
- #endif
--#ifndef __linktime_error
--# define __linktime_error(message)
--#endif
+diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
+index 6a6d7ae..24545cd 100644
+--- a/include/linux/compiler-gcc.h
++++ b/include/linux/compiler-gcc.h
+@@ -5,6 +5,9 @@
  /*
-  * Prevent the compiler from merging or refetching accesses.  The compiler
-  * is also forbidden from reordering successive instances of ACCESS_ONCE(),
+  * Common definitions for all gcc versions go here.
+  */
++#define GCC_VERSION (__GNUC__ * 10000 \
++		   + __GNUC_MINOR__ * 100 \
++		   + __GNUC_PATCHLEVEL__)
+ 
+ 
+ /* Optimization barrier */
 -- 
 1.7.3.4
 
