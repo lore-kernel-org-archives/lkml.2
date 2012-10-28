@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752400Ab2J1NKW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 09:10:22 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51994 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab2J1NKU (ORCPT
+	id S1752481Ab2J1NM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 09:12:57 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:55080 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752223Ab2J1NM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 09:10:20 -0400
-Date: Sun, 28 Oct 2012 14:10:14 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] s390: Add pmd_mknotpresent()
-Message-ID: <20121028131014.GA10754@gmail.com>
-References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
- <20121018182642.2a541275@thinkpad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121018182642.2a541275@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 28 Oct 2012 09:12:56 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18aHngU+Aoa5kDpCAeDvlhhp04ZLl6bf6i90rpc7u
+	BInsPOFCB6lpUj
+Message-ID: <1351430004.8685.17.camel@maggy.simpson.net>
+Subject: Re: [PATCH] sched, autogroup: fix crash on reboot when autogroup is
+ disabled
+From: Mike Galbraith <efault@gmx.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Sun, 28 Oct 2012 06:13:24 -0700
+In-Reply-To: <20121028102520.GA7711@gmail.com>
+References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
+	 <1350654126.2768.5.camel@twins>
+	 <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
+	 <1350736696.5123.24.camel@maggy.simpson.net>
+	 <1351283371.16639.111.camel@maggy.simpson.net>
+	 <1351362370.4503.3.camel@maggy.simpson.net>
+	 <20121028102520.GA7711@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-10-28 at 11:25 +0100, Ingo Molnar wrote: 
+> * Mike Galbraith <efault@gmx.de> wrote:
+> 
 
-There's a related problem on s390: other THP implementations 
-have pmd_mknotpresent() while s390 not, resulting in:
+> > No knobs, no glitz, nada, just a cute little thing folks can turn
+> > on if they don't want to muck about with cgroups and/or systemd.
+> 
+> Please also keep the Kconfig switch and reuse it to turn on the 
+> 'autogroups' knob.
+> 
+> That way people with existing .config's don't have to change a 
+> thing to get this functionality.
 
-  mm/huge_memory.c:1543:2: error: implicit declaration of function 'pmd_mknotpresent'
+The Kconfig option is still there.  The noautogroup -> autogroup arg
+change just makes it off by default (since an on/off switch would have
+to be a full move everybody thing post 8323f26ce race fix), so distros
+can make it available in their swiss army knife config, but it'll be out
+of the way unless specifically asked for by the user at boot.
 
-The (untested!) patch below adds the s390 version of this 
-method.
+I can make it default 'on' by removing that arg change if you think
+that's the better way to go, but opt in at boot sounded better to me
+given there is no runtime on/off switch at all now.
 
-Gerald, Martin, did I get the S390 details right?
+-Mike
 
-Thanks,
-
-	Ingo
-
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 098fc5a..b820ff1 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1310,6 +1310,12 @@ static inline pmd_t pmd_mkyoung(pmd_t pmd)
- 	return pmd;
- }
- 
-+static inline pmd_t pmd_mknotpresent(pmd_t pmd)
-+{
-+	pmd_val(pmd) &= ~_SEGMENT_ENTRY_ORIGIN;
-+	return pmd;
-+}
-+
- #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
- static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
- 					    unsigned long address, pmd_t *pmdp)
