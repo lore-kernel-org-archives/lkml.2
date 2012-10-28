@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2J1RjB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 13:39:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54172 "EHLO mx1.redhat.com"
+	id S1753993Ab2J1Rph (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 13:45:37 -0400
+Received: from antcom.de ([188.40.178.216]:37295 "EHLO chuck.antcom.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918Ab2J1Riq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 13:38:46 -0400
-Date: Sun, 28 Oct 2012 18:39:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] uprobes/x86: Cleanup the single-stepping code
-Message-ID: <20121028173931.GA14652@redhat.com>
+	id S1752321Ab2J1Rpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 13:45:36 -0400
+Message-ID: <508D6F17.4000405@antcom.de>
+Date: Sun, 28 Oct 2012 18:44:55 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121028173900.GA14621@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+CC: davem@davemloft.net, edumazet@google.com, djduanjiong@gmail.com,
+        aletes.xgr@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/net/ethernet/nxp/lpc_eth.c: Call mdiobus_unregister
+ before mdiobus_free
+References: <1351440721-9121-1-git-send-email-peter.senna@gmail.com>
+In-Reply-To: <1351440721-9121-1-git-send-email-peter.senna@gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes.
+On 28/10/12 17:12, Peter Senna Tschudin wrote:
+> Based on commit b27393aecf66199f5ddad37c302d3e0cfadbe6c0
+> 
+> Calling mdiobus_free without calling mdiobus_unregister causes
+> BUG_ON(). This patch fixes the issue.
+> 
+> The semantic patch that found this issue(http://coccinelle.lip6.fr/):
+> // <smpl>
+> @@
+> expression E;
+> @@
+>   ... when != mdiobus_unregister(E);
+> 
+> + mdiobus_unregister(E);
+>   mdiobus_free(E);
+> // </smpl>
+> 
+> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
 
-Now that default arch_uprobe_enable/disable_step() helpers do nothing,
-x86 has no reason to reimplement them. Change arch_uprobe_*_xol() hooks
-to do the necessary work and remove the x86-specific hooks.
+Tested-by: Roland Stigge <stigge@antcom.de>
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |   54 +++++++++++++++-----------------------------
- 1 files changed, 19 insertions(+), 35 deletions(-)
+Thanks for the patch!
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index aafa555..c71025b 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -478,6 +478,11 @@ int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	regs->ip = current->utask->xol_vaddr;
- 	pre_xol_rip_insn(auprobe, regs, autask);
- 
-+	autask->saved_tf = !!(regs->flags & X86_EFLAGS_TF);
-+	regs->flags |= X86_EFLAGS_TF;
-+	if (test_tsk_thread_flag(current, TIF_BLOCKSTEP))
-+		set_task_blockstep(current, false);
-+
- 	return 0;
- }
- 
-@@ -603,6 +608,16 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	if (auprobe->fixups & UPROBE_FIX_CALL)
- 		result = adjust_ret_addr(regs->sp, correction);
- 
-+	/*
-+	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
-+	 * so we can get an extra SIGTRAP if we do not clear TF. We need
-+	 * to examine the opcode to make it right.
-+	 */
-+	if (utask->autask.saved_tf)
-+		send_sig(SIGTRAP, current, 0);
-+	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
-+		regs->flags &= ~X86_EFLAGS_TF;
-+
- 	return result;
- }
- 
-@@ -647,6 +662,10 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	current->thread.trap_nr = utask->autask.saved_trap_nr;
- 	handle_riprel_post_xol(auprobe, regs, NULL);
- 	instruction_pointer_set(regs, utask->vaddr);
-+
-+	/* clear TF if it was set by us in arch_uprobe_pre_xol() */
-+	if (!utask->autask.saved_tf)
-+		regs->flags &= ~X86_EFLAGS_TF;
- }
- 
- /*
-@@ -676,38 +695,3 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		send_sig(SIGTRAP, current, 0);
- 	return ret;
- }
--
--void arch_uprobe_enable_step(struct arch_uprobe *auprobe)
--{
--	struct task_struct *task = current;
--	struct arch_uprobe_task	*autask	= &task->utask->autask;
--	struct pt_regs *regs = task_pt_regs(task);
--
--	autask->saved_tf = !!(regs->flags & X86_EFLAGS_TF);
--
--	regs->flags |= X86_EFLAGS_TF;
--	if (test_tsk_thread_flag(task, TIF_BLOCKSTEP))
--		set_task_blockstep(task, false);
--}
--
--void arch_uprobe_disable_step(struct arch_uprobe *auprobe)
--{
--	struct task_struct *task = current;
--	struct arch_uprobe_task	*autask	= &task->utask->autask;
--	bool trapped = (task->utask->state == UTASK_SSTEP_TRAPPED);
--	struct pt_regs *regs = task_pt_regs(task);
--	/*
--	 * The state of TIF_BLOCKSTEP was not saved so we can get an extra
--	 * SIGTRAP if we do not clear TF. We need to examine the opcode to
--	 * make it right.
--	 */
--	if (unlikely(trapped)) {
--		if (!autask->saved_tf)
--			regs->flags &= ~X86_EFLAGS_TF;
--	} else {
--		if (autask->saved_tf)
--			send_sig(SIGTRAP, task, 0);
--		else if (!(auprobe->fixups & UPROBE_FIX_SETF))
--			regs->flags &= ~X86_EFLAGS_TF;
--	}
--}
--- 
-1.5.5.1
+Roland
+
+> ---
+> This problem is somewhat mystifying. If the patch is correct, there were
+> probably many OOPSese caused by not calling mdiobus_unregister...
+> Reporting anyway...
+> 
+>  drivers/net/ethernet/nxp/lpc_eth.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/net/ethernet/nxp/lpc_eth.c b/drivers/net/ethernet/nxp/lpc_eth.c
+> index 53743f7..af8b414 100644
+> --- a/drivers/net/ethernet/nxp/lpc_eth.c
+> +++ b/drivers/net/ethernet/nxp/lpc_eth.c
+> @@ -1524,6 +1524,7 @@ static int lpc_eth_drv_remove(struct platform_device *pdev)
+>  				  pldat->dma_buff_base_p);
+>  	free_irq(ndev->irq, ndev);
+>  	iounmap(pldat->net_base);
+> +	mdiobus_unregister(pldat->mii_bus);
+>  	mdiobus_free(pldat->mii_bus);
+>  	clk_disable(pldat->clk);
+>  	clk_put(pldat->clk);
 
