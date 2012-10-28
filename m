@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab2J1XfO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:35:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42150 "EHLO
+	id S932096Ab2J1XgE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:36:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42144 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756928Ab2J1X2M (ORCPT
+	by vger.kernel.org with ESMTP id S1756500Ab2J1X2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:12 -0400
-Message-Id: <20121028231550.351774066@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:11 -0400
+Message-Id: <20121028231551.559258973@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:19 +0000
+Date: Sun, 28 Oct 2012 23:16:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 043/105] xen/bootup: allow read_tscp call for Xen PV guests.
+        Egbert Eich <eich@suse.de>, Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 047/105] drm/radeon: Dont destroy I2C Bus Rec in
+ radeon_ext_tmds_enc_destroy().
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Egbert Eich <eich@suse.de>
 
-commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
+commit 082918471139b07964967cfe5f70230909c82ae1 upstream.
 
-The hypervisor will trap it. However without this patch,
-we would crash as the .read_tscp is set to NULL. This patch
-fixes it and sets it to the native_read_tscp call.
+radeon_i2c_fini() walks thru the list of I2C bus recs rdev->i2c_bus[]
+to destroy each of them.
+radeon_ext_tmds_enc_destroy() however also has code to destroy it's
+associated I2C bus rec which has been obtained by radeon_i2c_lookup()
+and is therefore also in the i2c_bus[] list.
+This causes a double free resulting in a kernel panic when unloading
+the radeon driver.
+Removing destroy code from radeon_ext_tmds_enc_destroy() fixes this
+problem.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+agd5f: fix compiler warning
+
+Signed-off-by: Egbert Eich <eich@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/enlighten.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 70f1404..668bbfe 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1164,6 +1164,8 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
- 	.read_tsc = native_read_tsc,
- 	.read_pmc = native_read_pmc,
- 
-+	.read_tscp = native_read_tscp,
-+
- 	.iret = xen_iret,
- 	.irq_enable_sysexit = xen_sysexit,
- #ifdef CONFIG_X86_64
+diff --git a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+index fb15b62..a13ad9d 100644
+--- a/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
++++ b/drivers/gpu/drm/radeon/radeon_legacy_encoders.c
+@@ -991,11 +991,7 @@ static void radeon_legacy_tmds_ext_mode_set(struct drm_encoder *encoder,
+ static void radeon_ext_tmds_enc_destroy(struct drm_encoder *encoder)
+ {
+ 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+-	struct radeon_encoder_ext_tmds *tmds = radeon_encoder->enc_priv;
+-	if (tmds) {
+-		if (tmds->i2c_bus)
+-			radeon_i2c_destroy(tmds->i2c_bus);
+-	}
++	/* don't destroy the i2c bus record here, this will be done in radeon_i2c_fini */
+ 	kfree(radeon_encoder->enc_priv);
+ 	drm_encoder_cleanup(encoder);
+ 	kfree(radeon_encoder);
 
 
