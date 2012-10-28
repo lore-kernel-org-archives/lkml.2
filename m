@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065Ab2J1Tdp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:33:45 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47534 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab2J1Tdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:33:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPgLHd8wKSubYtsnSm28-5R7aJ6uKcO1K31LCJCWTnU2A8+iPA@mail.gmail.com>
-References: <CAPgLHd8wKSubYtsnSm28-5R7aJ6uKcO1K31LCJCWTnU2A8+iPA@mail.gmail.com>
-Date: Sun, 28 Oct 2012 20:33:42 +0100
-Message-ID: <CACRpkdZOizwF85viBS+PVKRtUmcBYC8BT7ffGPHQ2p-B8Ef7+A@mail.gmail.com>
-Subject: Re: [PATCH -next] ARM: at91: remove unused variable in at91_dt_node_to_map()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752368Ab2J1Ton (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:44:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57139 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752185Ab2J1Tol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 15:44:41 -0400
+Date: Sun, 28 Oct 2012 17:44:23 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antti Palosaari <crope@iki.fi>
+Subject: Re: linux-next: build warning in Linus' tree
+Message-ID: <20121028174423.45b67cab@redhat.com>
+In-Reply-To: <20121024134333.baf0c90a323a831675ed7e79@canb.auug.org.au>
+References: <20121024134333.baf0c90a323a831675ed7e79@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 4:54 PM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+Em Wed, 24 Oct 2012 13:43:33 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> The variable pin is initialized but never used
-> otherwise, so remove the unused variable.
->
-> dpatch engine is used to auto generate this patch.
-> (https://github.com/weiyj/dpatch)
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Hi Mauro,
+> 
+> After merging the origin tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+> 
+> drivers/media/usb/dvb-usb-v2/dvb_usb_core.c: In function 'dvb_usb_ctrl_feed':
+> drivers/media/usb/dvb-usb-v2/dvb_usb_core.c:291:12: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]
+> 
+> Which points out some badly formatted and blocked code ...
+> 
+> Probably introduced by commit 62a5f449cab5 ("[media] dvb_usb_v2: refactor
+> dvb_usb_ctrl_feed() logic").
 
-Thanks, patch applied to my AT91 branch.
 
-BTW I will change the subject from ARM: AT91 to pinctrl/at91 on
-all of them.
+Hi Stephen,
 
-Of future mailings please include Mr. Jean-Christophe Plaiginol-Villard
-on patches to the AT91 pinctrl driver.
+Thanks for pointing it. It took me some time, but I applied today
+a bunch of patches that are fixing all warnings on everything
+at drivers/media and drivers/staging/media, with:
+	make ARCH=i386 W=1
+(allyesconfig, gcc 4.7.2)
 
-Yours,
-Linus Walleij
+Maybe there are still a few ones with random configs and other
+archs, but at least on my usual testing environment, we're
+warnings-free on drivers/media for now, probably up to the
+next gcc version.
+
+-- 
+Regards,
+Mauro
