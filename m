@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab2J1IHg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 04:07:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44729 "EHLO
+	id S1755042Ab2J1IHu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 04:07:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33142 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755047Ab2J1IHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 04:07:30 -0400
+	id S1754128Ab2J1IHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 04:07:42 -0400
 From: Joe Perches <joe@perches.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/16] ata: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
-Date: Sun, 28 Oct 2012 01:05:40 -0700
-Message-Id: <ff89ae9b42c644728575a3cf606184ab9875d6e9.1351411047.git.joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 03/16] drivers: base: Convert dev_printk(KERN_<LEVEL> to dev_<level>(
+Date: Sun, 28 Oct 2012 01:05:41 -0700
+Message-Id: <0d0291f61e04007d9af7eb69138420b46a38eec1.1351411047.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
 In-Reply-To: <cover.1351411047.git.joe@perches.com>
 References: <cover.1351411047.git.joe@perches.com>
@@ -21,35 +21,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 dev_<level> calls take less code than dev_printk(KERN_<LEVEL>
 and reducing object size is good.
-Coalesce formats for easier grep.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/ata/pata_cmd64x.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/attribute_container.c |    2 +-
+ drivers/base/devres.c              |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/pata_cmd64x.c b/drivers/ata/pata_cmd64x.c
-index 7ba0141..2949cfc 100644
---- a/drivers/ata/pata_cmd64x.c
-+++ b/drivers/ata/pata_cmd64x.c
-@@ -474,14 +474,14 @@ static int cmd64x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
- 	/* check for enabled ports */
- 	pci_read_config_byte(pdev, CNTRL, &reg);
- 	if (!port_ok)
--		dev_printk(KERN_NOTICE, &pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
-+		dev_notice(&pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
- 	if (port_ok && cntrl_ch0_ok && !(reg & CNTRL_CH0)) {
--		dev_printk(KERN_NOTICE, &pdev->dev, "Primary port is disabled\n");
-+		dev_notice(&pdev->dev, "Primary port is disabled\n");
- 		ppi[0] = &ata_dummy_port_info;
+diff --git a/drivers/base/attribute_container.c b/drivers/base/attribute_container.c
+index 8fc200b..d78b204 100644
+--- a/drivers/base/attribute_container.c
++++ b/drivers/base/attribute_container.c
+@@ -158,7 +158,7 @@ attribute_container_add_device(struct device *dev,
  
- 	}
- 	if (port_ok && !(reg & CNTRL_CH1)) {
--		dev_printk(KERN_NOTICE, &pdev->dev, "Secondary port is disabled\n");
-+		dev_notice(&pdev->dev, "Secondary port is disabled\n");
- 		ppi[1] = &ata_dummy_port_info;
- 	}
+ 		ic = kzalloc(sizeof(*ic), GFP_KERNEL);
+ 		if (!ic) {
+-			dev_printk(KERN_ERR, dev, "failed to allocate class container\n");
++			dev_err(dev, "failed to allocate class container\n");
+ 			continue;
+ 		}
  
+diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+index 8731979..6683906 100644
+--- a/drivers/base/devres.c
++++ b/drivers/base/devres.c
+@@ -50,8 +50,8 @@ static void devres_log(struct device *dev, struct devres_node *node,
+ 		       const char *op)
+ {
+ 	if (unlikely(log_devres))
+-		dev_printk(KERN_ERR, dev, "DEVRES %3s %p %s (%lu bytes)\n",
+-			   op, node, node->name, (unsigned long)node->size);
++		dev_err(dev, "DEVRES %3s %p %s (%lu bytes)\n",
++			op, node, node->name, (unsigned long)node->size);
+ }
+ #else /* CONFIG_DEBUG_DEVRES */
+ #define set_node_dbginfo(node, n, s)	do {} while (0)
 -- 
 1.7.8.112.g3fd21
 
