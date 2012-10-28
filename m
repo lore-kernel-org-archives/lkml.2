@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab2J1Xle (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:41:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42008 "EHLO
+	id S1753333Ab2J1XmT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:42:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42000 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756741Ab2J1X1p (ORCPT
+	by vger.kernel.org with ESMTP id S1756734Ab2J1X1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:45 -0400
-Message-Id: <20121028231559.531583035@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:43 -0400
+Message-Id: <20121028231559.842457412@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:49 +0000
+Date: Sun, 28 Oct 2012 23:16:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chris Perl <chris.perl@gmail.com>
-Subject: [ 073/105] SUNRPC: Get rid of the xs_error_report socket callback
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 074/105] Revert "ath9k_hw: Updated AR9003 tx gain table for 5GHz"
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,106 +28,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit f878b657ce8e7d3673afe48110ec208a29e38c4a upstream.
+commit 73b26df5fa1a6245d6fc982362518b620bc7c2fe upstream.
 
-Chris Perl reports that we're seeing races between the wakeup call in
-xs_error_report and the connect attempts. Basically, Chris has shown
-that in certain circumstances, the call to xs_error_report causes the
-rpc_task that is responsible for reconnecting to wake up early, thus
-triggering a disconnect and retry.
+This reverts commit a240dc7b3c7463bd60cf0a9b2a90f52f78aae0fd.
 
-Since the sk->sk_error_report() calls in the socket layer are always
-followed by a tcp_done() in the cases where we care about waking up
-the rpc_tasks, just let the state_change callbacks take responsibility
-for those wake ups.
+This commit is reducing tx power by at least 10 db on some devices,
+e.g. the Buffalo WZR-HP-G450H.
 
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Cc: rmanohar@qca.qualcomm.com
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/xprtsock.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
+ .../net/wireless/ath/ath9k/ar9003_2p2_initvals.h   |  164 ++++++++++----------
+ 1 file changed, 82 insertions(+), 82 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 1f105c2..75853ca 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -254,7 +254,6 @@ struct sock_xprt {
- 	void			(*old_data_ready)(struct sock *, int);
- 	void			(*old_state_change)(struct sock *);
- 	void			(*old_write_space)(struct sock *);
--	void			(*old_error_report)(struct sock *);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+index 89bf94d..6f7cf49 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -534,107 +534,107 @@ static const u32 ar9300_2p2_baseband_core[][2] = {
+ 
+ static const u32 ar9300Modes_high_power_tx_gain_table_2p2[][5] = {
+ 	/* Addr      5G_HT20     5G_HT40     2G_HT40     2G_HT20   */
+-	{0x0000a2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000a2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000a2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000a2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000a2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000a2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000a2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+ 	{0x0000a410, 0x000050d9, 0x000050d9, 0x000050d9, 0x000050d9},
+ 	{0x0000a500, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000a504, 0x06000003, 0x06000003, 0x04000002, 0x04000002},
+ 	{0x0000a508, 0x0a000020, 0x0a000020, 0x08000004, 0x08000004},
+ 	{0x0000a50c, 0x10000023, 0x10000023, 0x0b000200, 0x0b000200},
+-	{0x0000a510, 0x15000028, 0x15000028, 0x0f000202, 0x0f000202},
+-	{0x0000a514, 0x1b00002b, 0x1b00002b, 0x12000400, 0x12000400},
+-	{0x0000a518, 0x1f020028, 0x1f020028, 0x16000402, 0x16000402},
+-	{0x0000a51c, 0x2502002b, 0x2502002b, 0x19000404, 0x19000404},
+-	{0x0000a520, 0x2a04002a, 0x2a04002a, 0x1c000603, 0x1c000603},
+-	{0x0000a524, 0x2e06002a, 0x2e06002a, 0x21000a02, 0x21000a02},
+-	{0x0000a528, 0x3302202d, 0x3302202d, 0x25000a04, 0x25000a04},
+-	{0x0000a52c, 0x3804202c, 0x3804202c, 0x28000a20, 0x28000a20},
+-	{0x0000a530, 0x3c06202c, 0x3c06202c, 0x2c000e20, 0x2c000e20},
+-	{0x0000a534, 0x4108202d, 0x4108202d, 0x30000e22, 0x30000e22},
+-	{0x0000a538, 0x4506402d, 0x4506402d, 0x34000e24, 0x34000e24},
+-	{0x0000a53c, 0x4906222d, 0x4906222d, 0x38001640, 0x38001640},
+-	{0x0000a540, 0x4d062231, 0x4d062231, 0x3c001660, 0x3c001660},
+-	{0x0000a544, 0x50082231, 0x50082231, 0x3f001861, 0x3f001861},
+-	{0x0000a548, 0x5608422e, 0x5608422e, 0x43001a81, 0x43001a81},
+-	{0x0000a54c, 0x5a08442e, 0x5a08442e, 0x47001a83, 0x47001a83},
+-	{0x0000a550, 0x5e0a4431, 0x5e0a4431, 0x4a001c84, 0x4a001c84},
+-	{0x0000a554, 0x640a4432, 0x640a4432, 0x4e001ce3, 0x4e001ce3},
+-	{0x0000a558, 0x680a4434, 0x680a4434, 0x52001ce5, 0x52001ce5},
+-	{0x0000a55c, 0x6c0a6434, 0x6c0a6434, 0x56001ce9, 0x56001ce9},
+-	{0x0000a560, 0x6f0a6633, 0x6f0a6633, 0x5a001ceb, 0x5a001ceb},
+-	{0x0000a564, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a568, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a56c, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a570, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a574, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a578, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a57c, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
++	{0x0000a510, 0x16000220, 0x16000220, 0x0f000202, 0x0f000202},
++	{0x0000a514, 0x1c000223, 0x1c000223, 0x12000400, 0x12000400},
++	{0x0000a518, 0x21002220, 0x21002220, 0x16000402, 0x16000402},
++	{0x0000a51c, 0x27002223, 0x27002223, 0x19000404, 0x19000404},
++	{0x0000a520, 0x2b022220, 0x2b022220, 0x1c000603, 0x1c000603},
++	{0x0000a524, 0x2f022222, 0x2f022222, 0x21000a02, 0x21000a02},
++	{0x0000a528, 0x34022225, 0x34022225, 0x25000a04, 0x25000a04},
++	{0x0000a52c, 0x3a02222a, 0x3a02222a, 0x28000a20, 0x28000a20},
++	{0x0000a530, 0x3e02222c, 0x3e02222c, 0x2c000e20, 0x2c000e20},
++	{0x0000a534, 0x4202242a, 0x4202242a, 0x30000e22, 0x30000e22},
++	{0x0000a538, 0x4702244a, 0x4702244a, 0x34000e24, 0x34000e24},
++	{0x0000a53c, 0x4b02244c, 0x4b02244c, 0x38001640, 0x38001640},
++	{0x0000a540, 0x4e02246c, 0x4e02246c, 0x3c001660, 0x3c001660},
++	{0x0000a544, 0x52022470, 0x52022470, 0x3f001861, 0x3f001861},
++	{0x0000a548, 0x55022490, 0x55022490, 0x43001a81, 0x43001a81},
++	{0x0000a54c, 0x59022492, 0x59022492, 0x47001a83, 0x47001a83},
++	{0x0000a550, 0x5d022692, 0x5d022692, 0x4a001c84, 0x4a001c84},
++	{0x0000a554, 0x61022892, 0x61022892, 0x4e001ce3, 0x4e001ce3},
++	{0x0000a558, 0x65024890, 0x65024890, 0x52001ce5, 0x52001ce5},
++	{0x0000a55c, 0x69024892, 0x69024892, 0x56001ce9, 0x56001ce9},
++	{0x0000a560, 0x6e024c92, 0x6e024c92, 0x5a001ceb, 0x5a001ceb},
++	{0x0000a564, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a568, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a56c, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a570, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a574, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a578, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a57c, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
+ 	{0x0000a580, 0x00800000, 0x00800000, 0x00800000, 0x00800000},
+ 	{0x0000a584, 0x06800003, 0x06800003, 0x04800002, 0x04800002},
+ 	{0x0000a588, 0x0a800020, 0x0a800020, 0x08800004, 0x08800004},
+ 	{0x0000a58c, 0x10800023, 0x10800023, 0x0b800200, 0x0b800200},
+-	{0x0000a590, 0x15800028, 0x15800028, 0x0f800202, 0x0f800202},
+-	{0x0000a594, 0x1b80002b, 0x1b80002b, 0x12800400, 0x12800400},
+-	{0x0000a598, 0x1f820028, 0x1f820028, 0x16800402, 0x16800402},
+-	{0x0000a59c, 0x2582002b, 0x2582002b, 0x19800404, 0x19800404},
+-	{0x0000a5a0, 0x2a84002a, 0x2a84002a, 0x1c800603, 0x1c800603},
+-	{0x0000a5a4, 0x2e86002a, 0x2e86002a, 0x21800a02, 0x21800a02},
+-	{0x0000a5a8, 0x3382202d, 0x3382202d, 0x25800a04, 0x25800a04},
+-	{0x0000a5ac, 0x3884202c, 0x3884202c, 0x28800a20, 0x28800a20},
+-	{0x0000a5b0, 0x3c86202c, 0x3c86202c, 0x2c800e20, 0x2c800e20},
+-	{0x0000a5b4, 0x4188202d, 0x4188202d, 0x30800e22, 0x30800e22},
+-	{0x0000a5b8, 0x4586402d, 0x4586402d, 0x34800e24, 0x34800e24},
+-	{0x0000a5bc, 0x4986222d, 0x4986222d, 0x38801640, 0x38801640},
+-	{0x0000a5c0, 0x4d862231, 0x4d862231, 0x3c801660, 0x3c801660},
+-	{0x0000a5c4, 0x50882231, 0x50882231, 0x3f801861, 0x3f801861},
+-	{0x0000a5c8, 0x5688422e, 0x5688422e, 0x43801a81, 0x43801a81},
+-	{0x0000a5cc, 0x5a88442e, 0x5a88442e, 0x47801a83, 0x47801a83},
+-	{0x0000a5d0, 0x5e8a4431, 0x5e8a4431, 0x4a801c84, 0x4a801c84},
+-	{0x0000a5d4, 0x648a4432, 0x648a4432, 0x4e801ce3, 0x4e801ce3},
+-	{0x0000a5d8, 0x688a4434, 0x688a4434, 0x52801ce5, 0x52801ce5},
+-	{0x0000a5dc, 0x6c8a6434, 0x6c8a6434, 0x56801ce9, 0x56801ce9},
+-	{0x0000a5e0, 0x6f8a6633, 0x6f8a6633, 0x5a801ceb, 0x5a801ceb},
+-	{0x0000a5e4, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5e8, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5ec, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f0, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f4, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f8, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5fc, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
++	{0x0000a590, 0x16800220, 0x16800220, 0x0f800202, 0x0f800202},
++	{0x0000a594, 0x1c800223, 0x1c800223, 0x12800400, 0x12800400},
++	{0x0000a598, 0x21802220, 0x21802220, 0x16800402, 0x16800402},
++	{0x0000a59c, 0x27802223, 0x27802223, 0x19800404, 0x19800404},
++	{0x0000a5a0, 0x2b822220, 0x2b822220, 0x1c800603, 0x1c800603},
++	{0x0000a5a4, 0x2f822222, 0x2f822222, 0x21800a02, 0x21800a02},
++	{0x0000a5a8, 0x34822225, 0x34822225, 0x25800a04, 0x25800a04},
++	{0x0000a5ac, 0x3a82222a, 0x3a82222a, 0x28800a20, 0x28800a20},
++	{0x0000a5b0, 0x3e82222c, 0x3e82222c, 0x2c800e20, 0x2c800e20},
++	{0x0000a5b4, 0x4282242a, 0x4282242a, 0x30800e22, 0x30800e22},
++	{0x0000a5b8, 0x4782244a, 0x4782244a, 0x34800e24, 0x34800e24},
++	{0x0000a5bc, 0x4b82244c, 0x4b82244c, 0x38801640, 0x38801640},
++	{0x0000a5c0, 0x4e82246c, 0x4e82246c, 0x3c801660, 0x3c801660},
++	{0x0000a5c4, 0x52822470, 0x52822470, 0x3f801861, 0x3f801861},
++	{0x0000a5c8, 0x55822490, 0x55822490, 0x43801a81, 0x43801a81},
++	{0x0000a5cc, 0x59822492, 0x59822492, 0x47801a83, 0x47801a83},
++	{0x0000a5d0, 0x5d822692, 0x5d822692, 0x4a801c84, 0x4a801c84},
++	{0x0000a5d4, 0x61822892, 0x61822892, 0x4e801ce3, 0x4e801ce3},
++	{0x0000a5d8, 0x65824890, 0x65824890, 0x52801ce5, 0x52801ce5},
++	{0x0000a5dc, 0x69824892, 0x69824892, 0x56801ce9, 0x56801ce9},
++	{0x0000a5e0, 0x6e824c92, 0x6e824c92, 0x5a801ceb, 0x5a801ceb},
++	{0x0000a5e4, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5e8, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5ec, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f0, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f4, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f8, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5fc, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
+ 	{0x0000a600, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000a604, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+-	{0x0000a608, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a60c, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a610, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a614, 0x01804601, 0x01804601, 0x01404000, 0x01404000},
+-	{0x0000a618, 0x01804601, 0x01804601, 0x01404501, 0x01404501},
+-	{0x0000a61c, 0x01804601, 0x01804601, 0x02008501, 0x02008501},
+-	{0x0000a620, 0x03408d02, 0x03408d02, 0x0280ca03, 0x0280ca03},
+-	{0x0000a624, 0x0300cc03, 0x0300cc03, 0x03010c04, 0x03010c04},
+-	{0x0000a628, 0x03410d04, 0x03410d04, 0x04014c04, 0x04014c04},
+-	{0x0000a62c, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a630, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a634, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a638, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a63c, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000b2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000b2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000b2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000a608, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a60c, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a610, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a614, 0x02004000, 0x02004000, 0x01404000, 0x01404000},
++	{0x0000a618, 0x02004801, 0x02004801, 0x01404501, 0x01404501},
++	{0x0000a61c, 0x02808a02, 0x02808a02, 0x02008501, 0x02008501},
++	{0x0000a620, 0x0380ce03, 0x0380ce03, 0x0280ca03, 0x0280ca03},
++	{0x0000a624, 0x04411104, 0x04411104, 0x03010c04, 0x03010c04},
++	{0x0000a628, 0x04411104, 0x04411104, 0x04014c04, 0x04014c04},
++	{0x0000a62c, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a630, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a634, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a638, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a63c, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000b2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000b2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000b2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000b2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+-	{0x0000c2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000c2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000c2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000c2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000c2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000c2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000c2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+ 	{0x00016044, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016048, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016048, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016068, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
+ 	{0x00016444, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016448, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016448, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016468, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
+ 	{0x00016844, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016848, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016848, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016868, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
  };
  
- /*
-@@ -781,7 +780,6 @@ static void xs_save_old_callbacks(struct sock_xprt *transport, struct sock *sk)
- 	transport->old_data_ready = sk->sk_data_ready;
- 	transport->old_state_change = sk->sk_state_change;
- 	transport->old_write_space = sk->sk_write_space;
--	transport->old_error_report = sk->sk_error_report;
- }
- 
- static void xs_restore_old_callbacks(struct sock_xprt *transport, struct sock *sk)
-@@ -789,7 +787,6 @@ static void xs_restore_old_callbacks(struct sock_xprt *transport, struct sock *s
- 	sk->sk_data_ready = transport->old_data_ready;
- 	sk->sk_state_change = transport->old_state_change;
- 	sk->sk_write_space = transport->old_write_space;
--	sk->sk_error_report = transport->old_error_report;
- }
- 
- static void xs_reset_transport(struct sock_xprt *transport)
-@@ -1546,25 +1543,6 @@ static void xs_tcp_state_change(struct sock *sk)
- 	read_unlock_bh(&sk->sk_callback_lock);
- }
- 
--/**
-- * xs_error_report - callback mainly for catching socket errors
-- * @sk: socket
-- */
--static void xs_error_report(struct sock *sk)
--{
--	struct rpc_xprt *xprt;
--
--	read_lock_bh(&sk->sk_callback_lock);
--	if (!(xprt = xprt_from_sock(sk)))
--		goto out;
--	dprintk("RPC:       %s client %p...\n"
--			"RPC:       error %d\n",
--			__func__, xprt, sk->sk_err);
--	xprt_wake_pending_tasks(xprt, -EAGAIN);
--out:
--	read_unlock_bh(&sk->sk_callback_lock);
--}
--
- static void xs_write_space(struct sock *sk)
- {
- 	struct socket *sock;
-@@ -1864,7 +1842,6 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
- 		sk->sk_user_data = xprt;
- 		sk->sk_data_ready = xs_local_data_ready;
- 		sk->sk_write_space = xs_udp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
- 		xprt_clear_connected(xprt);
-@@ -1989,7 +1966,6 @@ static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
- 		sk->sk_user_data = xprt;
- 		sk->sk_data_ready = xs_udp_data_ready;
- 		sk->sk_write_space = xs_udp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_no_check = UDP_CSUM_NORCV;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
-@@ -2102,7 +2078,6 @@ static int xs_tcp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
- 		sk->sk_data_ready = xs_tcp_data_ready;
- 		sk->sk_state_change = xs_tcp_state_change;
- 		sk->sk_write_space = xs_tcp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
- 		/* socket options */
 
 
