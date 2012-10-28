@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab2J1X16 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42064 "EHLO
+	id S1756920Ab2J1X2J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:28:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42111 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756532Ab2J1X1x (ORCPT
+	by vger.kernel.org with ESMTP id S1756500Ab2J1X2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:53 -0400
-Message-Id: <20121028231556.114406452@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:01 -0400
+Message-Id: <20121028231553.979646162@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:38 +0000
+Date: Sun, 28 Oct 2012 23:16:31 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Vrabel <david.vrabel@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 062/105] xen/x86: dont corrupt %eip when returning from a signal handler
+        Sasha Levin <levinsasha928@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 055/105] SUNRPC: Prevent kernel stack corruption on long values of flush
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,100 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Sasha Levin <levinsasha928@gmail.com>
 
-commit a349e23d1cf746f8bdc603dcc61fae9ee4a695f6 upstream.
+commit 212ba90696ab4884e2025b0b13726d67aadc2cd4 upstream.
 
-In 32 bit guests, if a userspace process has %eax == -ERESTARTSYS
-(-512) or -ERESTARTNOINTR (-513) when it is interrupted by an event
-/and/ the process has a pending signal then %eip (and %eax) are
-corrupted when returning to the main process after handling the
-signal.  The application may then crash with SIGSEGV or a SIGILL or it
-may have subtly incorrect behaviour (depending on what instruction it
-returned to).
+The buffer size in read_flush() is too small for the longest possible values
+for it. This can lead to a kernel stack corruption:
 
-The occurs because handle_signal() is incorrectly thinking that there
-is a system call that needs to restarted so it adjusts %eip and %eax
-to re-execute the system call instruction (even though user space had
-not done a system call).
+[   43.047329] Kernel panic - not syncing: stack-protector: Kernel stack is corrupted in: ffffffff833e64b4
+[   43.047329]
+[   43.049030] Pid: 6015, comm: trinity-child18 Tainted: G        W    3.5.0-rc7-next-20120716-sasha #221
+[   43.050038] Call Trace:
+[   43.050435]  [<ffffffff836c60c2>] panic+0xcd/0x1f4
+[   43.050931]  [<ffffffff833e64b4>] ? read_flush.isra.7+0xe4/0x100
+[   43.051602]  [<ffffffff810e94e6>] __stack_chk_fail+0x16/0x20
+[   43.052206]  [<ffffffff833e64b4>] read_flush.isra.7+0xe4/0x100
+[   43.052951]  [<ffffffff833e6500>] ? read_flush_pipefs+0x30/0x30
+[   43.053594]  [<ffffffff833e652c>] read_flush_procfs+0x2c/0x30
+[   43.053596]  [<ffffffff812b9a8c>] proc_reg_read+0x9c/0xd0
+[   43.053596]  [<ffffffff812b99f0>] ? proc_reg_write+0xd0/0xd0
+[   43.053596]  [<ffffffff81250d5b>] do_loop_readv_writev+0x4b/0x90
+[   43.053596]  [<ffffffff81250fd6>] do_readv_writev+0xf6/0x1d0
+[   43.053596]  [<ffffffff812510ee>] vfs_readv+0x3e/0x60
+[   43.053596]  [<ffffffff812511b8>] sys_readv+0x48/0xb0
+[   43.053596]  [<ffffffff8378167d>] system_call_fastpath+0x1a/0x1f
 
-If %eax == -514 (-ERESTARTNOHAND (-514) or -ERESTART_RESTARTBLOCK
-(-516) then handle_signal() only corrupted %eax (by setting it to
--EINTR).  This may cause the application to crash or have incorrect
-behaviour.
-
-handle_signal() assumes that regs->orig_ax >= 0 means a system call so
-any kernel entry point that is not for a system call must push a
-negative value for orig_ax.  For example, for physical interrupts on
-bare metal the inverse of the vector is pushed and page_fault() sets
-regs->orig_ax to -1, overwriting the hardware provided error code.
-
-xen_hypervisor_callback() was incorrectly pushing 0 for orig_ax
-instead of -1.
-
-Classic Xen kernels pushed %eax which works as %eax cannot be both
-non-negative and -RESTARTSYS (etc.), but using -1 is consistent with
-other non-system call entry points and avoids some of the tests in
-handle_signal().
-
-There were similar bugs in xen_failsafe_callback() of both 32 and
-64-bit guests. If the fault was corrected and the normal return path
-was used then 0 was incorrectly pushed as the value for orig_ax.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Jan Beulich <JBeulich@suse.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/entry_32.S |    8 +++++---
- arch/x86/kernel/entry_64.S |    2 +-
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ net/sunrpc/cache.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 623f288..8f8e8ee 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -1016,7 +1016,7 @@ ENTRY(xen_sysenter_target)
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 2a68bb3..fc2f7aa 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1409,11 +1409,11 @@ static ssize_t read_flush(struct file *file, char __user *buf,
+ 			  size_t count, loff_t *ppos,
+ 			  struct cache_detail *cd)
+ {
+-	char tbuf[20];
++	char tbuf[22];
+ 	unsigned long p = *ppos;
+ 	size_t len;
  
- ENTRY(xen_hypervisor_callback)
- 	CFI_STARTPROC
--	pushl_cfi $0
-+	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	TRACE_IRQS_OFF
- 
-@@ -1058,14 +1058,16 @@ ENTRY(xen_failsafe_callback)
- 2:	mov 8(%esp),%es
- 3:	mov 12(%esp),%fs
- 4:	mov 16(%esp),%gs
-+	/* EAX == 0 => Category 1 (Bad segment)
-+	   EAX != 0 => Category 2 (Bad IRET) */
- 	testl %eax,%eax
- 	popl_cfi %eax
- 	lea 16(%esp),%esp
- 	CFI_ADJUST_CFA_OFFSET -16
- 	jz 5f
- 	addl $16,%esp
--	jmp iret_exc		# EAX != 0 => Category 2 (Bad IRET)
--5:	pushl_cfi $0		# EAX == 0 => Category 1 (Bad segment)
-+	jmp iret_exc
-+5:	pushl_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp ret_from_exception
- 	CFI_ENDPROC
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 69babd8..dcdd0ea 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1363,7 +1363,7 @@ ENTRY(xen_failsafe_callback)
- 	CFI_RESTORE r11
- 	addq $0x30,%rsp
- 	CFI_ADJUST_CFA_OFFSET -0x30
--	pushq_cfi $0
-+	pushq_cfi $-1 /* orig_ax = -1 => not a system call */
- 	SAVE_ALL
- 	jmp error_exit
- 	CFI_ENDPROC
+-	sprintf(tbuf, "%lu\n", convert_to_wallclock(cd->flush_time));
++	snprintf(tbuf, sizeof(tbuf), "%lu\n", convert_to_wallclock(cd->flush_time));
+ 	len = strlen(tbuf);
+ 	if (p >= len)
+ 		return 0;
 
 
