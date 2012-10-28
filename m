@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab2J1X13 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:27:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41880 "EHLO
+	id S1756661Ab2J1Xoj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:44:39 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41900 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756419Ab2J1X1W (ORCPT
+	by vger.kernel.org with ESMTP id S1756583Ab2J1X12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:22 -0400
-Message-Id: <20121028231608.402217142@decadent.org.uk>
+	Sun, 28 Oct 2012 19:27:28 -0400
+Message-Id: <20121028231605.285247032@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:17:17 +0000
+Date: Sun, 28 Oct 2012 23:17:07 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peter.huewe@infineon.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
+        Anisse Astier <anisse@astier.eu>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 101/105] tpm: Propagate error from tpm_transmit to fix a timeout hang
+Subject: [ 091/105] ehci: Add yet-another Lucid nohandoff pci quirk
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,95 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peter.huewe@infineon.com>
+From: Anisse Astier <anisse@astier.eu>
 
-commit abce9ac292e13da367bbd22c1f7669f988d931ac upstream.
+commit 8daf8b6086f9d575200cd0aa3797e26137255609 upstream.
 
-tpm_write calls tpm_transmit without checking the return value and
-assigns the return value unconditionally to chip->pending_data, even if
-it's an error value.
-This causes three bugs.
+Board name changed on another shipping Lucid tablet.
 
-So if we write to /dev/tpm0 with a tpm_param_size bigger than
-TPM_BUFSIZE=0x1000 (e.g. 0x100a)
-and a bufsize also bigger than TPM_BUFSIZE (e.g. 0x100a)
-tpm_transmit returns -E2BIG which is assigned to chip->pending_data as
--7, but tpm_write returns that TPM_BUFSIZE bytes have been successfully
-been written to the TPM, altough this is not true (bug #1).
-
-As we did write more than than TPM_BUFSIZE bytes but tpm_write reports
-that only TPM_BUFSIZE bytes have been written the vfs tries to write
-the remaining bytes (in this case 10 bytes) to the tpm device driver via
-tpm_write which then blocks at
-
- /* cannot perform a write until the read has cleared
- either via tpm_read or a user_read_timer timeout */
- while (atomic_read(&chip->data_pending) != 0)
-	 msleep(TPM_TIMEOUT);
-
-for 60 seconds, since data_pending is -7 and nobody is able to
-read it (since tpm_read luckily checks if data_pending is greater than
-0) (#bug 2).
-
-After that the remaining bytes are written to the TPM which are
-interpreted by the tpm as a normal command. (bug #3)
-So if the last bytes of the command stream happen to be a e.g.
-tpm_force_clear this gets accidentally sent to the TPM.
-
-This patch fixes all three bugs, by propagating the error code of
-tpm_write and returning -E2BIG if the input buffer is too big,
-since the response from the tpm for a truncated value is bogus anyway.
-Moreover it returns -EBUSY to userspace if there is a response ready to be
-read.
-
-Signed-off-by: Peter Huewe <peter.huewe@infineon.com>
-Signed-off-by: Kent Yoder <key@linux.vnet.ibm.com>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/char/tpm/tpm.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
+ drivers/usb/host/pci-quirks.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1186,17 +1186,20 @@ ssize_t tpm_write(struct file *file, con
- 		  size_t size, loff_t *off)
- {
- 	struct tpm_chip *chip = file->private_data;
--	size_t in_size = size, out_size;
-+	size_t in_size = size;
-+	ssize_t out_size;
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index ead4525..39f9e4a 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -548,6 +548,13 @@ static const struct dmi_system_id __devinitconst ehci_dmi_nohandoff_table[] = {
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/*  Pegatron Lucid (Ordissimo) */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "Ordissimo"),
++			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
++		},
++	},
+ 	{ }
+ };
  
- 	/* cannot perform a write until the read has cleared
--	   either via tpm_read or a user_read_timer timeout */
--	while (atomic_read(&chip->data_pending) != 0)
--		msleep(TPM_TIMEOUT);
--
--	mutex_lock(&chip->buffer_mutex);
-+	   either via tpm_read or a user_read_timer timeout.
-+	   This also prevents splitted buffered writes from blocking here.
-+	*/
-+	if (atomic_read(&chip->data_pending) != 0)
-+		return -EBUSY;
- 
- 	if (in_size > TPM_BUFSIZE)
--		in_size = TPM_BUFSIZE;
-+		return -E2BIG;
-+
-+	mutex_lock(&chip->buffer_mutex);
- 
- 	if (copy_from_user
- 	    (chip->data_buffer, (void __user *) buf, in_size)) {
-@@ -1206,6 +1209,10 @@ ssize_t tpm_write(struct file *file, con
- 
- 	/* atomic tpm command send and result receive */
- 	out_size = tpm_transmit(chip, chip->data_buffer, TPM_BUFSIZE);
-+	if (out_size < 0) {
-+		mutex_unlock(&chip->buffer_mutex);
-+		return out_size;
-+	}
- 
- 	atomic_set(&chip->data_pending, out_size);
- 	mutex_unlock(&chip->buffer_mutex);
 
 
