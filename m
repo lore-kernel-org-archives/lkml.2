@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757389Ab2J1XfP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:35:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42149 "EHLO
+	id S1757362Ab2J1XfO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:35:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42150 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756927Ab2J1X2M (ORCPT
+	by vger.kernel.org with ESMTP id S1756928Ab2J1X2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Oct 2012 19:28:12 -0400
-Message-Id: <20121028231551.244992820@decadent.org.uk>
+Message-Id: <20121028231550.351774066@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:22 +0000
+Date: Sun, 28 Oct 2012 23:16:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: [ 046/105] oprofile, x86: Fix wrapping bug in op_x86_get_ctrl()
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 043/105] xen/bootup: allow read_tscp call for Xen PV guests.
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 44009105081b51417f311f4c3be0061870b6b8ed upstream.
+commit cd0608e71e9757f4dae35bcfb4e88f4d1a03a8ab upstream.
 
-The "event" variable is a u16 so the shift will always wrap to zero
-making the line a no-op.
+The hypervisor will trap it. However without this patch,
+we would crash as the .read_tscp is set to NULL. This patch
+fixes it and sets it to the native_read_tscp call.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/oprofile/nmi_int.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/enlighten.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 26b8a85..48768df 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -55,7 +55,7 @@ u64 op_x86_get_ctrl(struct op_x86_model_spec const *model,
- 	val |= counter_config->extra;
- 	event &= model->event_mask ? model->event_mask : 0xFF;
- 	val |= event & 0xFF;
--	val |= (event & 0x0F00) << 24;
-+	val |= (u64)(event & 0x0F00) << 24;
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 70f1404..668bbfe 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1164,6 +1164,8 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
+ 	.read_tsc = native_read_tsc,
+ 	.read_pmc = native_read_pmc,
  
- 	return val;
- }
++	.read_tscp = native_read_tscp,
++
+ 	.iret = xen_iret,
+ 	.irq_enable_sysexit = xen_sysexit,
+ #ifdef CONFIG_X86_64
 
 
