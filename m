@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab2J1O0l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 10:26:41 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51971 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750860Ab2J1O0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 10:26:40 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1//EiBE4CL/YrvcRyr20tPapqqV7J1g9c5BuOkiuu
-	9sF+fPuf8M6NSS
-Message-ID: <1351434428.4595.3.camel@maggy.simpson.net>
-Subject: Re: [PATCH] sched, autogroup: fix crash on reboot when autogroup is
- disabled
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Sun, 28 Oct 2012 07:27:08 -0700
-In-Reply-To: <20121028140544.GA28216@gmail.com>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-	 <1350654126.2768.5.camel@twins>
-	 <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-	 <1350736696.5123.24.camel@maggy.simpson.net>
-	 <1351283371.16639.111.camel@maggy.simpson.net>
-	 <1351362370.4503.3.camel@maggy.simpson.net>
-	 <20121028102520.GA7711@gmail.com>
-	 <1351430004.8685.17.camel@maggy.simpson.net>
-	 <20121028131950.GA15159@gmail.com>
-	 <1351431201.8685.22.camel@maggy.simpson.net>
-	 <20121028140544.GA28216@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752571Ab2J1PB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 11:01:29 -0400
+Received: from londo.lunn.ch ([80.238.139.98]:57590 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751016Ab2J1PB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 11:01:27 -0400
+From: Andrew Lunn <andrew@lunn.ch>
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com
+Cc: linux-kernel@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH] Regulator: core: Unregister when gpio request fails.
+Date: Sun, 28 Oct 2012 16:01:11 +0100
+Message-Id: <1351436471-17210-1-git-send-email-andrew@lunn.ch>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-10-28 at 15:05 +0100, Ingo Molnar wrote:
+If the gpio_request_one() fails, or returns EPROBE_DEFER, the
+regulator must be device_unregister()ed. When this is not done,
+there are WARNING: from sysfs:
 
-> I'd also suggest to still expose the state of autosched in 
-> /proc/sys, read-only, so that its status can be checked.
+WARNING: at fs/sysfs/file.c:343 sysfs_open_file+0x238/0x268()
 
-(Aw poo, less pretty minus signs;)
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+---
+ drivers/regulator/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Ok, will do.
-
--Mike
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 5c4829c..aa4d28b 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3365,7 +3365,7 @@ regulator_register(const struct regulator_desc *regulator_desc,
+ 		if (ret != 0) {
+ 			rdev_err(rdev, "Failed to request enable GPIO%d: %d\n",
+ 				 config->ena_gpio, ret);
+-			goto clean;
++			goto wash;
+ 		}
+ 
+ 		rdev->ena_gpio = config->ena_gpio;
+@@ -3449,6 +3449,7 @@ scrub:
+ 	if (rdev->ena_gpio)
+ 		gpio_free(rdev->ena_gpio);
+ 	kfree(rdev->constraints);
++wash:
+ 	device_unregister(&rdev->dev);
+ 	/* device core frees rdev */
+ 	rdev = ERR_PTR(ret);
+-- 
+1.7.10.4
 
