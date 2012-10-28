@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2J1X2W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42155 "EHLO
+	id S1757375Ab2J1XeH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:34:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42182 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756934Ab2J1X2N (ORCPT
+	by vger.kernel.org with ESMTP id S1756987Ab2J1X2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:13 -0400
-Message-Id: <20121028231552.159739105@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:24 -0400
+Message-Id: <20121028231548.824652288@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:25 +0000
+Date: Sun, 28 Oct 2012 23:16:14 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Piotr Haber <phaber@broadcom.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 049/105] bcma: fix unregistration of cores
+        David Henningsson <david.henningsson@canonical.com>,
+        Da Fox <da.fox.mail@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 038/105] ALSA: hda - do not detect jack on internal speakers for Realtek
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,38 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Piotr Haber <phaber@broadcom.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 1fffa905adffbf0d3767fc978ef09afb830275eb upstream.
+commit f7f4b2322bf7b8c5929b7eb5a667091f32592580 upstream.
 
-When cores are unregistered, entries
-need to be removed from cores list in a safe manner.
+This caused the internal speaker to mute itself because it was
+present, which happened after powersave.
+It was found on Dell XPS 15 (L502x), ALC665.
 
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Arend Van Spriel <arend@broadcom.com>
-Signed-off-by: Piotr Haber <phaber@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Da Fox <da.fox.mail@gmail.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bcma/main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/bcma/main.c b/drivers/bcma/main.c
-index 432aeee..d865470 100644
---- a/drivers/bcma/main.c
-+++ b/drivers/bcma/main.c
-@@ -158,9 +158,10 @@ static int bcma_register_cores(struct bcma_bus *bus)
- 
- static void bcma_unregister_cores(struct bcma_bus *bus)
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 7bec68c..8253b4e 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -611,6 +611,8 @@ static void alc_line_automute(struct hda_codec *codec, struct hda_jack_tbl *jack
  {
--	struct bcma_device *core;
-+	struct bcma_device *core, *tmp;
+ 	struct alc_spec *spec = codec->spec;
  
--	list_for_each_entry(core, &bus->cores, list) {
-+	list_for_each_entry_safe(core, tmp, &bus->cores, list) {
-+		list_del(&core->list);
- 		if (core->dev_registered)
- 			device_unregister(&core->dev);
- 	}
++	if (spec->autocfg.line_out_type == AUTO_PIN_SPEAKER_OUT)
++		return;
+ 	/* check LO jack only when it's different from HP */
+ 	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0])
+ 		return;
 
 
