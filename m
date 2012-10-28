@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab2J1X2F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:28:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42115 "EHLO
+	id S932117Ab2J1Xg6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:36:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42123 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756532Ab2J1X2C (ORCPT
+	by vger.kernel.org with ESMTP id S1756532Ab2J1X2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:28:02 -0400
-Message-Id: <20121028231553.676959201@decadent.org.uk>
+	Sun, 28 Oct 2012 19:28:06 -0400
+Message-Id: <20121028231553.368916470@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:16:30 +0000
+Date: Sun, 28 Oct 2012 23:16:29 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Larry McVoy <lm@bitmover.com>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 054/105] NLM: nlm_lookup_file() may return NLMv4-specific error codes
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 053/105] ALSA: hda - Always check array bounds in alc_get_line_out_pfx
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit cd0b16c1c3cda12dbed1f8de8f1a9b0591990724 upstream.
+commit 71aa5ebe36a4e936eff281b375a4707b6a8320f2 upstream.
 
-If the filehandle is stale, or open access is denied for some reason,
-nlm_fopen() may return one of the NLMv4-specific error codes nlm4_stale_fh
-or nlm4_failed. These get passed right through nlm_lookup_file(),
-and so when nlmsvc_retrieve_args() calls the latter, it needs to filter
-the result through the cast_status() machinery.
+Even when CONFIG_SND_DEBUG is not enabled, we don't want to
+return an arbitrary memory location when the channel count is
+larger than we expected.
 
-Failure to do so, will trigger the BUG_ON() in encode_nlm_stat...
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Reported-by: Larry McVoy <lm@bitmover.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/lockd/clntxdr.c |    2 +-
- fs/lockd/svcproc.c |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/lockd/clntxdr.c b/fs/lockd/clntxdr.c
-index d269ada..982d267 100644
---- a/fs/lockd/clntxdr.c
-+++ b/fs/lockd/clntxdr.c
-@@ -223,7 +223,7 @@ static void encode_nlm_stat(struct xdr_stream *xdr,
- {
- 	__be32 *p;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 8253b4e..48d9d60 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -2598,8 +2598,10 @@ static const char *alc_get_line_out_pfx(struct alc_spec *spec, int ch,
+ 			return "PCM";
+ 		break;
+ 	}
+-	if (snd_BUG_ON(ch >= ARRAY_SIZE(channel_name)))
++	if (ch >= ARRAY_SIZE(channel_name)) {
++		snd_BUG();
+ 		return "PCM";
++	}
  
--	BUG_ON(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
-+	WARN_ON_ONCE(be32_to_cpu(stat) > NLM_LCK_DENIED_GRACE_PERIOD);
- 	p = xdr_reserve_space(xdr, 4);
- 	*p = stat;
+ 	return channel_name[ch];
  }
-diff --git a/fs/lockd/svcproc.c b/fs/lockd/svcproc.c
-index 3009a36..21171f0 100644
---- a/fs/lockd/svcproc.c
-+++ b/fs/lockd/svcproc.c
-@@ -68,7 +68,8 @@ nlmsvc_retrieve_args(struct svc_rqst *rqstp, struct nlm_args *argp,
- 
- 	/* Obtain file pointer. Not used by FREE_ALL call. */
- 	if (filp != NULL) {
--		if ((error = nlm_lookup_file(rqstp, &file, &lock->fh)) != 0)
-+		error = cast_status(nlm_lookup_file(rqstp, &file, &lock->fh));
-+		if (error != 0)
- 			goto no_locks;
- 		*filp = file;
- 
 
 
