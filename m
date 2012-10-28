@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab2J1XuD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 19:50:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41787 "EHLO
+	id S1756589Ab2J1Xvb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 19:51:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:41774 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756300Ab2J1X1A (ORCPT
+	by vger.kernel.org with ESMTP id S1756280Ab2J1X07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 19:27:00 -0400
-Message-Id: <20121028231542.256308645@decadent.org.uk>
+	Sun, 28 Oct 2012 19:26:59 -0400
+Message-Id: <20121028231539.577253718@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Sun, 28 Oct 2012 23:15:53 +0000
+Date: Sun, 28 Oct 2012 23:15:44 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "ramesh.nagappa@gmail.com" <ramesh.nagappa@gmail.com>,
-        Ramesh Nagappa <ramesh.nagappa@ericsson.com>,
-        Shawn Lu <shawn.lu@ericsson.com>,
-        Robert Coulson <robert.coulson@ericsson.com>,
-        Billie Alsup <billie.alsup@ericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 017/105] net: Fix skb_under_panic oops in neigh_resolve_output
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 008/105] SUNRPC: Set alloc_slot for backchannel tcp ops
 In-Reply-To: <20121028231536.970033833@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,56 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "ramesh.nagappa@gmail.com" <ramesh.nagappa@gmail.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-[ Upstream commit e1f165032c8bade3a6bdf546f8faf61fda4dd01c ]
+commit 84e28a307e376f271505af65a7b7e212dd6f61f4 upstream.
 
-The retry loop in neigh_resolve_output() and neigh_connected_output()
-call dev_hard_header() with out reseting the skb to network_header.
-This causes the retry to fail with skb_under_panic. The fix is to
-reset the network_header within the retry loop.
+f39c1bfb5a03e2d255451bff05be0d7255298fa4 (SUNRPC: Fix a UDP transport
+regression) introduced the "alloc_slot" function for xprt operations,
+but never created one for the backchannel operations.  This patch fixes
+a null pointer dereference when mounting NFS over v4.1.
 
-Signed-off-by: Ramesh Nagappa <ramesh.nagappa@ericsson.com>
-Reviewed-by: Shawn Lu <shawn.lu@ericsson.com>
-Reviewed-by: Robert Coulson <robert.coulson@ericsson.com>
-Reviewed-by: Billie Alsup <billie.alsup@ericsson.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Call Trace:
+ [<ffffffffa0207957>] ? xprt_reserve+0x47/0x50 [sunrpc]
+ [<ffffffffa02023a4>] call_reserve+0x34/0x60 [sunrpc]
+ [<ffffffffa020e280>] __rpc_execute+0x90/0x400 [sunrpc]
+ [<ffffffffa020e61a>] rpc_async_schedule+0x2a/0x40 [sunrpc]
+ [<ffffffff81073589>] process_one_work+0x139/0x500
+ [<ffffffff81070e70>] ? alloc_worker+0x70/0x70
+ [<ffffffffa020e5f0>] ? __rpc_execute+0x400/0x400 [sunrpc]
+ [<ffffffff81073d1e>] worker_thread+0x15e/0x460
+ [<ffffffff8145c839>] ? preempt_schedule+0x49/0x70
+ [<ffffffff81073bc0>] ? rescuer_thread+0x230/0x230
+ [<ffffffff81079603>] kthread+0x93/0xa0
+ [<ffffffff81465d04>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81079570>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81465d00>] ? gs_change+0x13/0x13
+
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/core/neighbour.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ net/sunrpc/xprtsock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 7aafaed..5b9709f 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -1254,8 +1254,6 @@ int neigh_resolve_output(struct neighbour *neigh, struct sk_buff *skb)
- 	if (!dst)
- 		goto discard;
- 
--	__skb_pull(skb, skb_network_offset(skb));
--
- 	if (!neigh_event_send(neigh, skb)) {
- 		int err;
- 		struct net_device *dev = neigh->dev;
-@@ -1265,6 +1263,7 @@ int neigh_resolve_output(struct neighbour *neigh, struct sk_buff *skb)
- 			neigh_hh_init(neigh, dst);
- 
- 		do {
-+			__skb_pull(skb, skb_network_offset(skb));
- 			seq = read_seqbegin(&neigh->ha_lock);
- 			err = dev_hard_header(skb, dev, ntohs(skb->protocol),
- 					      neigh->ha, NULL, skb->len);
-@@ -1295,9 +1294,8 @@ int neigh_connected_output(struct neighbour *neigh, struct sk_buff *skb)
- 	unsigned int seq;
- 	int err;
- 
--	__skb_pull(skb, skb_network_offset(skb));
--
- 	do {
-+		__skb_pull(skb, skb_network_offset(skb));
- 		seq = read_seqbegin(&neigh->ha_lock);
- 		err = dev_hard_header(skb, dev, ntohs(skb->protocol),
- 				      neigh->ha, NULL, skb->len);
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2488,6 +2488,7 @@ static struct rpc_xprt_ops xs_tcp_ops =
+ static struct rpc_xprt_ops bc_tcp_ops = {
+ 	.reserve_xprt		= xprt_reserve_xprt,
+ 	.release_xprt		= xprt_release_xprt,
++	.alloc_slot		= xprt_alloc_slot,
+ 	.buf_alloc		= bc_malloc,
+ 	.buf_free		= bc_free,
+ 	.send_request		= bc_send_request,
 
 
