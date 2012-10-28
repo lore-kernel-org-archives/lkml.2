@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab2J0Xrs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Oct 2012 19:47:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16871 "EHLO mx1.redhat.com"
+	id S1754381Ab2J1AMS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Oct 2012 20:12:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:41074 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab2J0Xrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Oct 2012 19:47:47 -0400
-Date: Sun, 28 Oct 2012 01:47:28 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [BUG] perf parser: does not support arbitrary new sysfs events
-Message-ID: <20121027234728.GA22073@krava.redhat.com>
-References: <CABPqkBRBcYqBqhitAF0u6o1+TZqaRREMvb+ie_bbTaK3JdAB3Q@mail.gmail.com>
- <20121027203427.GB9099@krava.redhat.com>
- <CABPqkBSetRgY-+p6O1WK7=YgDzNZksU=deBnrbvWKipyJHQUTw@mail.gmail.com>
+	id S1752528Ab2J1AMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Oct 2012 20:12:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] freezer: change ptrace_stop/do_signal_stop to use freezable_schedule()
+Date: Sun, 28 Oct 2012 02:16:15 +0200
+Message-ID: <3398462.AB3BSRdprj@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.6.3-8-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121026212909.GW11442@htj.dyndns.org>
+References: <20121023153919.GA16201@redhat.com> <2718983.vORnrfWdbE@vostro.rjw.lan> <20121026212909.GW11442@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSetRgY-+p6O1WK7=YgDzNZksU=deBnrbvWKipyJHQUTw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 01:13:59AM +0200, Stephane Eranian wrote:
-> On Sat, Oct 27, 2012 at 10:34 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Fri, Oct 26, 2012 at 10:23:09PM +0200, Stephane Eranian wrote:
-> >> Hi,
-> >>
-> >> The latest round of perf parser changes broke my PEBS-LL patch series
-> >> (at the last minute). For PEBS-LL, I need to add to generic events but I want
-> >> to keep them PMU specific. As such, they need to live in the sysfs events
-> >> subdir: /sys/devices/cpu/events/mem-loads, sys/devices/cpu/events/mem-stores.
-> >>
-> >> Given your latest rounds of sysfs event changes, I had to modify my kernel
-> >> patches to fit those two new events within your perf_pmu_events_attr tables.
-> >>
-> >> But now, when I try to do:
-> >>
-> >> $ perf record -e cpu/mem-loads/ ....
-> >
-> > I can try this only on on uncore events and hw events aliases and that seems to work
-> >
-> I know it works there. I don't understand why it does not work with cpu/.
+On Friday, October 26, 2012 02:29:09 PM Tejun Heo wrote:
+> Hello,
 > 
-> Just add an encoding that has no hardcoded equivalent. I bet you will
-> reproduce the problem.
+> On Fri, Oct 26, 2012 at 11:29:56PM +0200, Rafael J. Wysocki wrote:
+> > Actually, what tree is it supposed to apply to?
+> > 
+> > The change in kernel/cgroup_freezer.c doesn't look like anything in
+> > the current Linus' tree to me.
 > 
-> In my patch set, I have extended your perf_pmu_events_attr struct to
-> also accept an already preformed event_str. I can send you that extension
-> if you want.
+> Ooh, right.  This depends on the earlier cgroup_freezer changes.
+> Sorry about the confusion.  I'll apply it to the following branch (the
+> same one used for the previous cgroup_freezer updates).
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git cgroup-freezer
 
-that would be great
+OK
 
-jirka
+I haven't merged it yet, so I'll get this fix along with the rest.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
