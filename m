@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761268Ab2J2Vhn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:37:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47711 "EHLO mail.kernel.org"
+	id S1761343Ab2J2Vhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:37:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47698 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761181Ab2J2Vhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:34 -0400
+	id S1761118Ab2J2Vhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 054/101] USB: opticon: fix DMA from stack
-Date: Mon, 29 Oct 2012 14:35:07 -0700
-Message-Id: <20121029213246.263267203@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>
+Subject: [ 060/101] USB: quatech2: fix port-data memory leaks
+Date: Mon, 29 Oct 2012 14:35:13 -0700
+Message-Id: <20121029213246.946563785@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,42 +27,228 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit ea0dbebffe118724cd4df7d9b071ea8ee48d48f0 upstream.
+commit 40d04738491d7ac1aa708ba434ff3480ec9e1b96 upstream.
 
-Make sure to allocate the control-message buffer dynamically as some
-platforms cannot do DMA from stack.
+Fix port-data memory leak by moving port data allocation and
+deallocation to port_probe and port_remove.
 
-Note that only the first byte of the old buffer was used.
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
+
+Note that this also fixes memory leaks in the error path of attach where
+the write urbs were not freed on errors.
+
+Make sure all interface-data deallocation is done in release by moving
+the read urb deallocation from disconnect.
+
+Note that the write urb is killed during close so that the call in
+disconnect was superfluous.
+
+Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/opticon.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/serial/quatech2.c |  121 +++++++++++++++++-------------------------
+ 1 file changed, 51 insertions(+), 70 deletions(-)
 
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -158,7 +158,11 @@ static int send_control_msg(struct usb_s
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -145,12 +145,12 @@ static void qt2_read_bulk_callback(struc
+ 
+ static void qt2_release(struct usb_serial *serial)
  {
- 	struct usb_serial *serial = port->serial;
- 	int retval;
--	u8 buffer[2];
-+	u8 *buffer;
-+
-+	buffer = kzalloc(1, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
+-	int i;
++	struct qt2_serial_private *serial_priv;
  
- 	buffer[0] = val;
- 	/* Send the message to the vendor control endpoint
-@@ -167,6 +171,7 @@ static int send_control_msg(struct usb_s
- 				requesttype,
- 				USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
- 				0, 0, buffer, 1, 0);
-+	kfree(buffer);
+-	kfree(usb_get_serial_data(serial));
++	serial_priv = usb_get_serial_data(serial);
  
- 	return retval;
+-	for (i = 0; i < serial->num_ports; i++)
+-		kfree(usb_get_serial_port_data(serial->port[i]));
++	usb_free_urb(serial_priv->read_urb);
++	kfree(serial_priv);
  }
+ 
+ static inline int calc_baud_divisor(int baudrate)
+@@ -466,21 +466,9 @@ static void qt2_close(struct usb_serial_
+ static void qt2_disconnect(struct usb_serial *serial)
+ {
+ 	struct qt2_serial_private *serial_priv = usb_get_serial_data(serial);
+-	struct qt2_port_private *port_priv;
+-	int i;
+ 
+ 	if (serial_priv->read_urb->status == -EINPROGRESS)
+ 		usb_kill_urb(serial_priv->read_urb);
+-
+-	usb_free_urb(serial_priv->read_urb);
+-
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port_priv = usb_get_serial_port_data(serial->port[i]);
+-
+-		if (port_priv->write_urb->status == -EINPROGRESS)
+-			usb_kill_urb(port_priv->write_urb);
+-		usb_free_urb(port_priv->write_urb);
+-	}
+ }
+ 
+ static int get_serial_info(struct usb_serial_port *port,
+@@ -775,11 +763,9 @@ static void qt2_read_bulk_callback(struc
+ 
+ static int qt2_setup_urbs(struct usb_serial *serial)
+ {
+-	struct usb_serial_port *port;
+ 	struct usb_serial_port *port0;
+ 	struct qt2_serial_private *serial_priv;
+-	struct qt2_port_private *port_priv;
+-	int pcount, status;
++	int status;
+ 
+ 	port0 = serial->port[0];
+ 
+@@ -797,30 +783,6 @@ static int qt2_setup_urbs(struct usb_ser
+ 			  sizeof(serial_priv->read_buffer),
+ 			  qt2_read_bulk_callback, serial);
+ 
+-	/* setup write_urb for each port */
+-	for (pcount = 0; pcount < serial->num_ports; pcount++) {
+-
+-		port = serial->port[pcount];
+-		port_priv = usb_get_serial_port_data(port);
+-
+-		port_priv->write_urb = usb_alloc_urb(0, GFP_KERNEL);
+-		if (!port_priv->write_urb) {
+-			dev_err(&serial->dev->dev,
+-				"failed to alloc write_urb for port %i\n",
+-				pcount);
+-			return -ENOMEM;
+-		}
+-
+-		usb_fill_bulk_urb(port_priv->write_urb,
+-				  serial->dev,
+-				  usb_sndbulkpipe(serial->dev,
+-						  port0->
+-						  bulk_out_endpointAddress),
+-				  port_priv->write_buffer,
+-				  sizeof(port_priv->write_buffer),
+-				  qt2_write_bulk_callback, port);
+-	}
+-
+ 	status = usb_submit_urb(serial_priv->read_urb, GFP_KERNEL);
+ 	if (status != 0) {
+ 		dev_err(&serial->dev->dev,
+@@ -830,14 +792,12 @@ static int qt2_setup_urbs(struct usb_ser
+ 	}
+ 
+ 	return 0;
+-
+ }
+ 
+ static int qt2_attach(struct usb_serial *serial)
+ {
+ 	struct qt2_serial_private *serial_priv;
+-	struct qt2_port_private *port_priv;
+-	int status, pcount;
++	int status;
+ 
+ 	/* power on unit */
+ 	status = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+@@ -857,26 +817,6 @@ static int qt2_attach(struct usb_serial
+ 
+ 	usb_set_serial_data(serial, serial_priv);
+ 
+-	for (pcount = 0; pcount < serial->num_ports; pcount++) {
+-		port_priv = kzalloc(sizeof(*port_priv), GFP_KERNEL);
+-		if (!port_priv) {
+-			dev_err(&serial->dev->dev,
+-				"%s- kmalloc(%Zd) failed.\n", __func__,
+-				sizeof(*port_priv));
+-			pcount--;
+-			status = -ENOMEM;
+-			goto attach_failed;
+-		}
+-
+-		spin_lock_init(&port_priv->lock);
+-		spin_lock_init(&port_priv->urb_lock);
+-		init_waitqueue_head(&port_priv->delta_msr_wait);
+-
+-		port_priv->port = serial->port[pcount];
+-
+-		usb_set_serial_port_data(serial->port[pcount], port_priv);
+-	}
+-
+ 	status = qt2_setup_urbs(serial);
+ 	if (status != 0)
+ 		goto attach_failed;
+@@ -884,14 +824,53 @@ static int qt2_attach(struct usb_serial
+ 	return 0;
+ 
+ attach_failed:
+-	for (/* empty */; pcount >= 0; pcount--) {
+-		port_priv = usb_get_serial_port_data(serial->port[pcount]);
+-		kfree(port_priv);
+-	}
+ 	kfree(serial_priv);
+ 	return status;
+ }
+ 
++static int qt2_port_probe(struct usb_serial_port *port)
++{
++	struct usb_serial *serial = port->serial;
++	struct qt2_port_private *port_priv;
++	u8 bEndpointAddress;
++
++	port_priv = kzalloc(sizeof(*port_priv), GFP_KERNEL);
++	if (!port_priv)
++		return -ENOMEM;
++
++	spin_lock_init(&port_priv->lock);
++	spin_lock_init(&port_priv->urb_lock);
++	init_waitqueue_head(&port_priv->delta_msr_wait);
++	port_priv->port = port;
++
++	port_priv->write_urb = usb_alloc_urb(0, GFP_KERNEL);
++	if (!port_priv->write_urb) {
++		kfree(port_priv);
++		return -ENOMEM;
++	}
++	bEndpointAddress = serial->port[0]->bulk_out_endpointAddress;
++	usb_fill_bulk_urb(port_priv->write_urb, serial->dev,
++				usb_sndbulkpipe(serial->dev, bEndpointAddress),
++				port_priv->write_buffer,
++				sizeof(port_priv->write_buffer),
++				qt2_write_bulk_callback, port);
++
++	usb_set_serial_port_data(port, port_priv);
++
++	return 0;
++}
++
++static int qt2_port_remove(struct usb_serial_port *port)
++{
++	struct qt2_port_private *port_priv;
++
++	port_priv = usb_get_serial_port_data(port);
++	usb_free_urb(port_priv->write_urb);
++	kfree(port_priv);
++
++	return 0;
++}
++
+ static int qt2_tiocmget(struct tty_struct *tty)
+ {
+ 	struct usb_serial_port *port = tty->driver_data;
+@@ -1130,6 +1109,8 @@ static struct usb_serial_driver qt2_devi
+ 	.attach              = qt2_attach,
+ 	.release             = qt2_release,
+ 	.disconnect          = qt2_disconnect,
++	.port_probe          = qt2_port_probe,
++	.port_remove         = qt2_port_remove,
+ 	.dtr_rts             = qt2_dtr_rts,
+ 	.break_ctl           = qt2_break_ctl,
+ 	.tiocmget            = qt2_tiocmget,
 
 
