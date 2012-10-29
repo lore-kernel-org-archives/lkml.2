@@ -1,173 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759350Ab2J2PMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:12:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42157 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759143Ab2J2PJc (ORCPT
+	id S1756831Ab2J2PNs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:13:48 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58627 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752265Ab2J2PNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:09:32 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Feng Tang <feng.tang@intel.com>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/14] perf script: Add more filter to find_scripts()
-Date: Mon, 29 Oct 2012 13:09:07 -0200
-Message-Id: <1351523353-27982-9-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1351523353-27982-1-git-send-email-acme@infradead.org>
-References: <1351523353-27982-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="utf-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 29 Oct 2012 11:13:46 -0400
+Date: Mon, 29 Oct 2012 11:13:43 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, tj@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 09/16] SUNRPC/cache: use new hashtable implementation
+Message-ID: <20121029151343.GA17722@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-9-git-send-email-levinsasha928@gmail.com> <20121029124229.GC11733@Krystal> <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Mon, Oct 29, 2012 at 5:42 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> >
+> > So defining e.g.:
+> >
+> > #include <linux/log2.h>
+> >
+> > #define DFR_HASH_BITS  (PAGE_SHIFT - ilog2(BITS_PER_LONG))
+> >
+> > would keep the intended behavior in all cases: use one page for the hash
+> > array.
+> 
+> Well, since that wasn't true before either because of the long-time
+> bug you point out, clearly the page size isn't all that important. I
+> think it's more important to have small and simple code, and "9" is
+> certainly that, compared to playing ilog2 games with not-so-obvious
+> things.
+> 
+> Because there's no reason to believe that '9' is in any way a worse
+> random number than something page-shift-related, is there? And getting
+> away from *previous* overly-complicated size calculations that had
+> been broken because they were too complicated and random, sounds like
+> a good idea.
 
-As suggested by Arnaldo, many scripts have their own usages and need
-capture specific events or tracepoints, so only those scripts whose
-target events match the events in current perf data file should be
-listed in the script browser menu.
+Good point. I agree that unless we really care about the precise number
+of TLB entries and cache lines used by this hash table, we might want to
+stay away from page-size and pointer-size based calculation.
 
-This patch will add the event match checking, by opening "xxx-record"
-script to cherry pick out all events name and comparing them with
-those inside the perf data file.
+It might not hurt to explain this in the patch changelog though.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1351569369-26732-3-git-send-email-feng.tang@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-script.c |   82 +++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 79 insertions(+), 3 deletions(-)
+Thanks,
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7c6e4b2..b363e7b 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -1030,6 +1030,68 @@ static int list_available_scripts(const struct option *opt __maybe_unused,
- }
- 
- /*
-+ * Some scripts specify the required events in their "xxx-record" file,
-+ * this function will check if the events in perf.data match those
-+ * mentioned in the "xxx-record".
-+ *
-+ * Fixme: All existing "xxx-record" are all in good formats "-e event ",
-+ * which is covered well now. And new parsing code should be added to
-+ * cover the future complexing formats like event groups etc.
-+ */
-+static int check_ev_match(char *dir_name, char *scriptname,
-+			struct perf_session *session)
-+{
-+	char filename[MAXPATHLEN], evname[128];
-+	char line[BUFSIZ], *p;
-+	struct perf_evsel *pos;
-+	int match, len;
-+	FILE *fp;
-+
-+	sprintf(filename, "%s/bin/%s-record", dir_name, scriptname);
-+
-+	fp = fopen(filename, "r");
-+	if (!fp)
-+		return -1;
-+
-+	while (fgets(line, sizeof(line), fp)) {
-+		p = ltrim(line);
-+		if (*p == '#')
-+			continue;
-+
-+		while (strlen(p)) {
-+			p = strstr(p, "-e");
-+			if (!p)
-+				break;
-+
-+			p += 2;
-+			p = ltrim(p);
-+			len = strcspn(p, " \t");
-+			if (!len)
-+				break;
-+
-+			snprintf(evname, len + 1, "%s", p);
-+
-+			match = 0;
-+			list_for_each_entry(pos,
-+					&session->evlist->entries, node) {
-+				if (!strcmp(perf_evsel__name(pos), evname)) {
-+					match = 1;
-+					break;
-+				}
-+			}
-+
-+			if (!match) {
-+				fclose(fp);
-+				return -1;
-+			}
-+		}
-+	}
-+
-+	fclose(fp);
-+	return 0;
-+}
-+
-+/*
-  * Return -1 if none is found, otherwise the actual scripts number.
-  *
-  * Currently the only user of this function is the script browser, which
-@@ -1039,17 +1101,23 @@ static int list_available_scripts(const struct option *opt __maybe_unused,
- int find_scripts(char **scripts_array, char **scripts_path_array)
- {
- 	struct dirent *script_next, *lang_next, script_dirent, lang_dirent;
--	char scripts_path[MAXPATHLEN];
-+	char scripts_path[MAXPATHLEN], lang_path[MAXPATHLEN];
- 	DIR *scripts_dir, *lang_dir;
--	char lang_path[MAXPATHLEN];
-+	struct perf_session *session;
- 	char *temp;
- 	int i = 0;
- 
-+	session = perf_session__new(input_name, O_RDONLY, 0, false, NULL);
-+	if (!session)
-+		return -1;
-+
- 	snprintf(scripts_path, MAXPATHLEN, "%s/scripts", perf_exec_path());
- 
- 	scripts_dir = opendir(scripts_path);
--	if (!scripts_dir)
-+	if (!scripts_dir) {
-+		perf_session__delete(session);
- 		return -1;
-+	}
- 
- 	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
- 		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
-@@ -1077,10 +1145,18 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
- 			snprintf(scripts_array[i],
- 				(temp - script_dirent.d_name) + 1,
- 				"%s", script_dirent.d_name);
-+
-+			if (check_ev_match(lang_path,
-+					scripts_array[i], session))
-+				continue;
-+
- 			i++;
- 		}
-+		closedir(lang_dir);
- 	}
- 
-+	closedir(scripts_dir);
-+	perf_session__delete(session);
- 	return i;
- }
- 
+Mathieu
+
 -- 
-1.7.9.2.358.g22243
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
