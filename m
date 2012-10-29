@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab2J2QYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:24:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932495Ab2J2QYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:24:42 -0400
-Date: Mon, 29 Oct 2012 12:23:44 -0400
-From: David Teigland <teigland@redhat.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
-        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 10/16] dlm: use new hashtable implementation
-Message-ID: <20121029162344.GC3516@redhat.com>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-10-git-send-email-levinsasha928@gmail.com>
- <20121029124655.GD11733@Krystal>
- <20121029130736.GF11733@Krystal>
- <CA+1xoqfxgB+8BybPpf+jwT-ObfGPxnbKvkz1MUMuJuR8NDSNaw@mail.gmail.com>
- <20121029160710.GA18944@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029160710.GA18944@Krystal>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932747Ab2J2QZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:25:06 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:58229 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932694Ab2J2QYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:24:44 -0400
+Date: Mon, 29 Oct 2012 16:29:47 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Guillaume Juan <guillaume.juan@sagemcom.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] n_gsm: prevent crash due to dereferencing NULL gsm->tty
+Message-ID: <20121029162947.6270b4da@pyramind.ukuu.org.uk>
+In-Reply-To: <26026_1351239109_508A45C4_26026_63_1_508A45C1.3010407@sagemcom.com>
+References: <26026_1351239109_508A45C4_26026_63_1_508A45C1.3010407@sagemcom.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:07:10PM -0400, Mathieu Desnoyers wrote:
-> I'm fine with turning a direct + modulo mapping into a dispersed hash as
-> long as there are no underlying assumptions about sequentiality of value
-> accesses.
+On Fri, 26 Oct 2012 10:11:45 +0200
+Guillaume Juan <guillaume.juan@sagemcom.com> wrote:
+
+> From: Guillaume Juan <guillaume.juan@sagemcom.com>
 > 
-> If the access pattern would happen to be typically sequential, then
-> adding dispersion could hurt performances significantly, turning a
-> frequent L1 access into a L2 access for instance.
-  
-> All I'm asking is: have you made sure that this hash table is not
-> deliberately kept sequential (without dispersion) to accelerate specific
-> access patterns ? This should at least be documented in the changelog.
+> If gsm->tty happens to be NULL in gsmld_output, avoid crashing the kernel (the crash is replaced by a warning dump).
 
-It was not intentional.  I don't expect any benefit would be lost by
-making it non-sequential.
+More important is fixing the bug completely. I agree there is a bug I
+don't think your fix is sufficient however.
 
+
+You no longer set dlci->dead before doing the dlci release so what stops
+a SABM from the other end racing this ?
+
+Also moving the gsm_dlci_release seems to have no value at all because
+there is no locking in the code concerned so viewed from any other thread
+you've changed nothing but timings. Yes its probably way harder to hit.
+
+I can see two ways of tackling it both of which basically come down to
+the same thing. In gsmld_detach_gsm after the gsm_cleanup_mux we need to
+
+- be sure the thing cannot re-open
+- wait until all the DLCIs are dead
+
+then do the tty_kref_put and gsm->tty = NULL
+
+Thoughts ?
+
+Alan
