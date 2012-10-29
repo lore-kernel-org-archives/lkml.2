@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237Ab2J2VmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:42:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48989 "EHLO mail.kernel.org"
+	id S933218Ab2J2VmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:42:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48919 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933175Ab2J2VmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:42:09 -0400
+	id S933141Ab2J2Vl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 53/54] x86, mm: Use memblock memory loop instead of e820_RAM
-Date: Mon, 29 Oct 2012 14:40:54 -0700
-Message-Id: <20121029213808.697197788@linuxfoundation.org>
+Subject: [ 49/54] x86, mm: Undo incorrect revert in arch/x86/mm/init.c
+Date: Mon, 29 Oct 2012 14:40:50 -0700
+Message-Id: <20121029213808.235026558@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -28,51 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yinghai Lu <yinghai@kernel.org>
 
-commit 1f2ff682ac951ed82cc043cf140d2851084512df upstream.
+commit f82f64dd9f485e13f29f369772d4a0e868e5633a upstream.
 
-We need to handle E820_RAM and E820_RESERVED_KERNEL at the same time.
+Commit
 
-Also memblock has page aligned range for ram, so we could avoid mapping
-partial pages.
+    844ab6f9 x86, mm: Find_early_table_space based on ranges that are actually being mapped
+
+added back some lines back wrongly that has been removed in commit
+
+    7b16bbf97 Revert "x86/mm: Fix the size calculation of mapping tables"
+
+remove them again.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com
+Link: http://lkml.kernel.org/r/CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com
 Acked-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/setup.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/mm/init.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -928,18 +928,19 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
- 		int i;
--		for (i = 0; i < e820.nr_map; i++) {
--			struct e820entry *ei = &e820.map[i];
-+		unsigned long start, end;
-+		unsigned long start_pfn, end_pfn;
- 
--			if (ei->addr + ei->size <= 1UL << 32)
--				continue;
-+		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
-+							 NULL) {
- 
--			if (ei->type == E820_RESERVED)
-+			end = PFN_PHYS(end_pfn);
-+			if (end <= (1UL<<32))
- 				continue;
- 
-+			start = PFN_PHYS(start_pfn);
- 			max_pfn_mapped = init_memory_mapping(
--				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
--				ei->addr + ei->size);
-+						max((1UL<<32), start), end);
- 		}
- 
- 		/* can we preseve max_low_pfn ?*/
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -65,10 +65,6 @@ static void __init find_early_table_spac
+ #ifdef CONFIG_X86_32
+ 			extra += PMD_SIZE;
+ #endif
+-			/* The first 2/4M doesn't use large pages. */
+-			if (mr[i].start < PMD_SIZE)
+-				extra += range;
+-
+ 			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 		} else {
+ 			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
 
