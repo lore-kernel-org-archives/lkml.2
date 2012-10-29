@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2J2WKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:10:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47555 "EHLO mail.kernel.org"
+	id S933532Ab2J2WL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:11:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47504 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761234Ab2J2VhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:20 -0400
+	id S1761223Ab2J2VhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 048/101] USB: option: fix interface-data memory leak in error path
-Date: Mon, 29 Oct 2012 14:35:01 -0700
-Message-Id: <20121029213245.605874387@linuxfoundation.org>
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 042/101] usb hub: send clear_tt_buffer_complete events when canceling TT clear work
+Date: Mon, 29 Oct 2012 14:34:55 -0700
+Message-Id: <20121029213244.929625006@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,80 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Octavian Purdila <octavian.purdila@intel.com>
 
-commit c2dd4a8eac7821fed2c2d19e4607d0986b53b0fe upstream.
+commit 3b6054da68f9b0d5ed6a7ed0f42a79e61904352c upstream.
 
-Move interface data allocation to attach so that it is deallocated
-should usb-serial probe fail.
+There is a race condition in the USB hub code with regard to handling
+TT clear requests that can get the HCD driver in a deadlock. Usually
+when an TT clear request is scheduled it will be executed immediately:
 
-Note that the usb device id is stored at probe so that it can be used
-in attach to determine send-setup blacklisting.
+<7>[    6.077583] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[    6.078041] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[    6.078299] hub_tt_work:731
+<7>[    9.309089] usb 2-1.5: link qh1-0e01/f4d506c0 start 0 [1/2 us]
+<7>[    9.324526] ehci_hcd 0000:00:1d.0: reused qh f4d4db00 schedule
+<7>[    9.324539] usb 2-1.3: link qh1-0e01/f4d4db00 start 0 [1/2 us]
+<7>[    9.341530] usb 1-1.1: link qh4-0e01/f397aec0 start 2 [1/2 us]
+<7>[   10.116159] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[   10.116459] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[   10.116537] hub_tt_work:731
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+However, if a suspend operation is triggered before hub_tt_work is
+scheduled, hub_quiesce will cancel the work without notifying the HCD
+driver:
+
+<3>[   35.033941] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d80
+<5>[   35.034022] sd 0:0:0:0: [sda] Stopping disk
+<7>[   35.034039] hub 2-1:1.0: hub_suspend
+<7>[   35.034067] usb 2-1: unlink qh256-0001/f3b1ab00 start 1 [1/0 us]
+<7>[   35.035085] hub 1-0:1.0: hub_suspend
+<7>[   35.035102] usb usb1: bus suspend, wakeup 0
+<7>[   35.035106] ehci_hcd 0000:00:1a.0: suspend root hub
+<7>[   35.035298] hub 2-0:1.0: hub_suspend
+<7>[   35.035313] usb usb2: bus suspend, wakeup 0
+<7>[   35.035315] ehci_hcd 0000:00:1d.0: suspend root hub
+<6>[   35.250017] PM: suspend of devices complete after 216.979 msecs
+<6>[   35.250822] PM: late suspend of devices complete after 0.799 msecs
+<7>[   35.252343] ehci_hcd 0000:00:1d.0: wakeup: 1
+<7>[   35.262923] ehci_hcd 0000:00:1d.0: --> PCI D3hot
+<7>[   35.263302] ehci_hcd 0000:00:1a.0: wakeup: 1
+<7>[   35.273912] ehci_hcd 0000:00:1a.0: --> PCI D3hot
+<6>[   35.274254] PM: noirq suspend of devices complete after 23.442 msecs
+<6>[   35.274975] ACPI: Preparing to enter system sleep state S3
+<6>[   35.292666] PM: Saving platform NVS memory
+<7>[   35.295030] Disabling non-boot CPUs ...
+<6>[   35.297351] CPU 1 is now offline
+<6>[   35.300345] CPU 2 is now offline
+<6>[   35.303929] CPU 3 is now offline
+<7>[   35.303931] lockdep: fixing up alternatives.
+<6>[   35.304825] Extended CMOS year: 2000
+
+When the device will resume the EHCI driver will get stuck in
+ehci_endpoint_disable waiting for the tt_clearing flag to reset:
+
+<0>[   47.610967] usb 2-1.3: **** DPM device timeout ****
+<7>[   47.610972]  f2f11c60 00000092 f2f11c0c c10624a5 00000003 f4c6e880 c1c8a4c0 c1c8a4c0
+<7>[   47.610983]  15c55698 0000000b f56b34c0 f2a45b70 f4c6e880 00000082 f2a4602c f2f11c30
+<7>[   47.610993]  c10787f8 f4cac000 f2a45b70 00000000 f4cac010 f2f11c58 00000046 00000001
+<7>[   47.611004] Call Trace:
+<7>[   47.611006]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611019]  [<c10787f8>] ? lock_release_holdtime.part.22+0x88/0xf0
+<7>[   47.611026]  [<c103ed46>] ? lock_timer_base.isra.35+0x26/0x50
+<7>[   47.611034]  [<c17592d3>] ? schedule_timeout+0x133/0x290
+<7>[   47.611044]  [<c175b43e>] schedule+0x1e/0x50
+<7>[   47.611051]  [<c17592d8>] schedule_timeout+0x138/0x290
+<7>[   47.611057]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611063]  [<c103e560>] ? usleep_range+0x40/0x40
+<7>[   47.611070]  [<c1759445>] schedule_timeout_uninterruptible+0x15/0x20
+<7>[   47.611077]  [<c14935f4>] ehci_endpoint_disable+0x64/0x160
+<7>[   47.611084]  [<c147d1ee>] ? usb_hcd_flush_endpoint+0x10e/0x1d0
+<7>[   47.611092]  [<c1165663>] ? sysfs_add_file+0x13/0x20
+<7>[   47.611100]  [<c147d5a9>] usb_hcd_disable_endpoint+0x29/0x40
+<7>[   47.611107]  [<c147fafc>] usb_disable_endpoint+0x5c/0x80
+<7>[   47.611111]  [<c147fb57>] usb_disable_interface+0x37/0x50
+<7>[   47.611116]  [<c1477650>] usb_reset_and_verify_device+0x4b0/0x640
+<7>[   47.611122]  [<c1474665>] ? hub_port_status+0xb5/0x100
+<7>[   47.611129]  [<c147a975>] usb_port_resume+0xd5/0x220
+<7>[   47.611136]  [<c148877f>] generic_resume+0xf/0x30
+<7>[   47.611142]  [<c14821a3>] usb_resume+0x133/0x180
+<7>[   47.611147]  [<c1473b10>] ? usb_dev_thaw+0x10/0x10
+<7>[   47.611152]  [<c1473b1d>] usb_dev_resume+0xd/0x10
+<7>[   47.611157]  [<c13baa60>] dpm_run_callback+0x40/0xb0
+<7>[   47.611164]  [<c13bdb03>] ? pm_runtime_enable+0x43/0x70
+<7>[   47.611171]  [<c13bafc6>] device_resume+0x1a6/0x2c0
+<7>[   47.611177]  [<c13ba940>] ? dpm_show_time+0xe0/0xe0
+<7>[   47.611183]  [<c13bb0f9>] async_resume+0x19/0x40
+<7>[   47.611189]  [<c10580c4>] async_run_entry_fn+0x64/0x160
+<7>[   47.611196]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611203]  [<c104a24c>] ? process_one_work+0x10c/0x480
+<7>[   47.611209]  [<c104a2c0>] process_one_work+0x180/0x480
+<7>[   47.611215]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611220]  [<c1058060>] ? async_schedule+0x10/0x10
+<7>[   47.611226]  [<c104c15c>] worker_thread+0x11c/0x2f0
+<7>[   47.611233]  [<c104c040>] ? manage_workers.isra.27+0x1f0/0x1f0
+<7>[   47.611239]  [<c10507f8>] kthread+0x78/0x80
+<7>[   47.611244]  [<c1750000>] ? timer_cpu_notify+0xd6/0x20d
+<7>[   47.611253]  [<c1050780>] ? __init_kthread_worker+0x60/0x60
+<7>[   47.611258]  [<c176357e>] kernel_thread_helper+0x6/0xd
+<7>[   47.611283] ------------[ cut here ]------------
+
+This patch changes hub_quiesce behavior to flush the TT clear work
+instead of canceling it, to make sure that no TT clear request remains
+uncompleted before suspend.
+
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -47,6 +47,7 @@
- /* Function prototypes */
- static int  option_probe(struct usb_serial *serial,
- 			const struct usb_device_id *id);
-+static int option_attach(struct usb_serial *serial);
- static void option_release(struct usb_serial *serial);
- static int option_send_setup(struct usb_serial_port *port);
- static void option_instat_callback(struct urb *urb);
-@@ -1288,6 +1289,7 @@ static struct usb_serial_driver option_1
- 	.tiocmget          = usb_wwan_tiocmget,
- 	.tiocmset          = usb_wwan_tiocmset,
- 	.ioctl             = usb_wwan_ioctl,
-+	.attach            = option_attach,
- 	.release           = option_release,
- 	.port_probe        = usb_wwan_port_probe,
- 	.port_remove	   = usb_wwan_port_remove,
-@@ -1337,8 +1339,6 @@ static bool is_blacklisted(const u8 ifnu
- static int option_probe(struct usb_serial *serial,
- 			const struct usb_device_id *id)
- {
--	struct usb_wwan_intf_private *data;
--	struct option_private *priv;
- 	struct usb_interface_descriptor *iface_desc =
- 				&serial->interface->cur_altsetting->desc;
- 	struct usb_device_descriptor *dev_desc = &serial->dev->descriptor;
-@@ -1376,6 +1376,19 @@ static int option_probe(struct usb_seria
- 		iface_desc->bInterfaceClass != USB_CLASS_CDC_DATA)
- 		return -ENODEV;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -730,13 +730,16 @@ static void hub_tt_work(struct work_stru
+ 	int			limit = 100;
  
-+	/* Store device id so we can use it during attach. */
-+	usb_set_serial_data(serial, (void *)id);
-+
-+	return 0;
-+}
-+
-+static int option_attach(struct usb_serial *serial)
-+{
-+	struct usb_interface_descriptor *iface_desc;
-+	const struct usb_device_id *id;
-+	struct usb_wwan_intf_private *data;
-+	struct option_private *priv;
-+
- 	data = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
-@@ -1386,6 +1399,10 @@ static int option_probe(struct usb_seria
- 		return -ENOMEM;
- 	}
+ 	spin_lock_irqsave (&hub->tt.lock, flags);
+-	while (--limit && !list_empty (&hub->tt.clear_list)) {
++	while (!list_empty(&hub->tt.clear_list)) {
+ 		struct list_head	*next;
+ 		struct usb_tt_clear	*clear;
+ 		struct usb_device	*hdev = hub->hdev;
+ 		const struct hc_driver	*drv;
+ 		int			status;
  
-+	/* Retrieve device id stored at probe. */
-+	id = usb_get_serial_data(serial);
-+	iface_desc = &serial->interface->cur_altsetting->desc;
++		if (!hub->quiescing && --limit < 0)
++			break;
 +
- 	priv->bInterfaceNumber = iface_desc->bInterfaceNumber;
- 	data->private = priv;
+ 		next = hub->tt.clear_list.next;
+ 		clear = list_entry (next, struct usb_tt_clear, clear_list);
+ 		list_del (&clear->clear_list);
+@@ -1201,7 +1204,7 @@ static void hub_quiesce(struct usb_hub *
+ 	if (hub->has_indicators)
+ 		cancel_delayed_work_sync(&hub->leds);
+ 	if (hub->tt.hub)
+-		cancel_work_sync(&hub->tt.clear_work);
++		flush_work_sync(&hub->tt.clear_work);
+ }
  
+ /* caller has locked the hub device */
 
 
