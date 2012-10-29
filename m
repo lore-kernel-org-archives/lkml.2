@@ -1,198 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab2J2OU7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:20:59 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49473 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab2J2OUx (ORCPT
+	id S1759093Ab2J2OW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:22:57 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:25069 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753418Ab2J2OWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:20:53 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 1/2] xen/hypercall: fix hypercall fallback code for very old hypervisors
-Date: Mon, 29 Oct 2012 10:08:17 -0400
-Message-Id: <1351519698-11069-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
-References: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 29 Oct 2012 10:22:55 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAG6Zu08YNPuJ/2dsb2JhbAANN4UtsgEBAQEBAyMEUQEQCw4GBAICBRYLAgIJAwIBAgE0EQYNAQUCAQGIFacDknuBJolihCiBFAOWKoldiAmBQw
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="203066637"
+Message-ID: <508E913D.2080104@teksavvy.com>
+Date: Mon, 29 Oct 2012 10:22:53 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Willy Tarreau <w@1wt.eu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
+References: <508E002B.4090200@teksavvy.com> <20121029064643.GE574@1wt.eu>
+In-Reply-To: <20121029064643.GE574@1wt.eu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <jbeulich@suse.com>
+On 12-10-29 02:46 AM, Willy Tarreau wrote:
+> On Mon, Oct 29, 2012 at 12:03:55AM -0400, Mark Lord wrote:
+>> My server here runs the 3.4.xx series of "stable" kernels.
+>> Until today, it was running 3.4.9.
+>> Today I tried to upgrade it to 3.4.16.
+>> It hangs in setup.c.
+>>
+>> I've isolated the fault down to this specific change
+>> that was made between 3.4.9 and 3.4.16.
+>> Reverting this change allows the system to boot/run normally again.
+>>
+>>
+>> --- linux-3.4.9/arch/x86/kernel/setup.c	2012-08-15 11:17:17.000000000 -0400
+>> +++ linux-3.4.16/arch/x86/kernel/setup.c	2012-10-28 13:36:33.000000000 -0400
+>> @@ -927,8 +927,21 @@
+>>
+>>  #ifdef CONFIG_X86_64
+>>  	if (max_pfn > max_low_pfn) {
+>> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
+>> -						     max_pfn<<PAGE_SHIFT);
+>> +		int i;
+>> +		for (i = 0; i < e820.nr_map; i++) {
+>> +			struct e820entry *ei = &e820.map[i];
+>> +
+>> +			if (ei->addr + ei->size <= 1UL << 32)
+>> +				continue;
+>> +
+>> +			if (ei->type == E820_RESERVED)
+>> +				continue;
+>> +
+>> +			max_pfn_mapped = init_memory_mapping(
+>> +				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
+>> +				ei->addr + ei->size);
+>> +		}
+>> +
+>>  		/* can we preseve max_low_pfn ?*/
+>>  		max_low_pfn = max_pfn;
+>>  	}
+> 
+> For the record, it is this commit introduced in 3.4.16 :
+> 
+> commit efd5fa0c1a1d1b46846ea6e8d1a783d0d8a6a721
+> Author: Jacob Shin <jacob.shin@amd.com>
+> Date:   Thu Oct 20 16:15:26 2011 -0500
+> 
+>     x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+>     
+>     commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
+>     
+>     On systems with very large memory (1 TB in our case), BIOS may report a
+>     reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+>     these from the direct mapping.
+>     
+>     [ hpa: this should be done not just for > 4 GB but for everything above the legacy
+>       region (1 MB), at the very least.  That, however, turns out to require significant
+>       restructuring.  That work is well underway, but is not suitable for rc/stable. ]
+>     
+>     Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+>     Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> Willy
 
-While copying the argument structures in HYPERVISOR_event_channel_op()
-and HYPERVISOR_physdev_op() into the local variable is sufficiently
-safe even if the actual structure is smaller than the container one,
-copying back eventual output values the same way isn't: This may
-collide with on-stack variables (particularly "rc") which may change
-between the first and second memcpy() (i.e. the second memcpy() could
-discard that change).
 
-Move the fallback code into out-of-line functions, and handle all of
-the operations known by this old a hypervisor individually: Some don't
-require copying back anything at all, and for the rest use the
-individual argument structures' sizes rather than the container's.
+Thanks, Willy.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-[v2: Reduce #define/#undef usage in HYPERVISOR_physdev_op_compat().]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/xen/hypercall.h |   21 +++------
- drivers/xen/Makefile                 |    2 +-
- drivers/xen/fallback.c               |   78 ++++++++++++++++++++++++++++++++++
- 3 files changed, 86 insertions(+), 15 deletions(-)
- create mode 100644 drivers/xen/fallback.c
+I've also now downloaded linux-3.7.0-rc3, and it boots/runs without need for patching.
+So there's a fix somewhere in between that perhaps could also get backported to -stable.
 
-diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
-index 59c226d..c812360 100644
---- a/arch/x86/include/asm/xen/hypercall.h
-+++ b/arch/x86/include/asm/xen/hypercall.h
-@@ -359,18 +359,14 @@ HYPERVISOR_update_va_mapping(unsigned long va, pte_t new_val,
- 		return _hypercall4(int, update_va_mapping, va,
- 				   new_val.pte, new_val.pte >> 32, flags);
- }
-+int __must_check HYPERVISOR_event_channel_op_compat(int, void *);
- 
- static inline int
- HYPERVISOR_event_channel_op(int cmd, void *arg)
- {
- 	int rc = _hypercall2(int, event_channel_op, cmd, arg);
--	if (unlikely(rc == -ENOSYS)) {
--		struct evtchn_op op;
--		op.cmd = cmd;
--		memcpy(&op.u, arg, sizeof(op.u));
--		rc = _hypercall1(int, event_channel_op_compat, &op);
--		memcpy(arg, &op.u, sizeof(op.u));
--	}
-+	if (unlikely(rc == -ENOSYS))
-+		rc = HYPERVISOR_event_channel_op_compat(cmd, arg);
- 	return rc;
- }
- 
-@@ -386,17 +382,14 @@ HYPERVISOR_console_io(int cmd, int count, char *str)
- 	return _hypercall3(int, console_io, cmd, count, str);
- }
- 
-+int __must_check HYPERVISOR_physdev_op_compat(int, void *);
-+
- static inline int
- HYPERVISOR_physdev_op(int cmd, void *arg)
- {
- 	int rc = _hypercall2(int, physdev_op, cmd, arg);
--	if (unlikely(rc == -ENOSYS)) {
--		struct physdev_op op;
--		op.cmd = cmd;
--		memcpy(&op.u, arg, sizeof(op.u));
--		rc = _hypercall1(int, physdev_op_compat, &op);
--		memcpy(arg, &op.u, sizeof(op.u));
--	}
-+	if (unlikely(rc == -ENOSYS))
-+		rc = HYPERVISOR_physdev_op_compat(cmd, arg);
- 	return rc;
- }
- 
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 0e863703..46de6cd 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -2,7 +2,7 @@ ifneq ($(CONFIG_ARM),y)
- obj-y	+= manage.o balloon.o
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
--obj-y	+= grant-table.o features.o events.o
-+obj-y	+= grant-table.o features.o events.o fallback.o
- obj-y	+= xenbus/
- 
- nostackp := $(call cc-option, -fno-stack-protector)
-diff --git a/drivers/xen/fallback.c b/drivers/xen/fallback.c
-new file mode 100644
-index 0000000..0bdc468
---- /dev/null
-+++ b/drivers/xen/fallback.c
-@@ -0,0 +1,78 @@
-+#include <linux/kernel.h>
-+#include <linux/string.h>
-+#include <linux/bug.h>
-+#include <asm/hypervisor.h>
-+#include <asm/xen/hypercall.h>
-+
-+int HYPERVISOR_event_channel_op_compat(int cmd, void *arg)
-+{
-+	struct evtchn_op op;
-+	int rc;
-+
-+	op.cmd = cmd;
-+	memcpy(&op.u, arg, sizeof(op.u));
-+	rc = _hypercall1(int, event_channel_op_compat, &op);
-+
-+	switch (cmd) {
-+	case EVTCHNOP_close:
-+	case EVTCHNOP_send:
-+	case EVTCHNOP_bind_vcpu:
-+	case EVTCHNOP_unmask:
-+		/* no output */
-+		break;
-+
-+#define COPY_BACK(eop) \
-+	case EVTCHNOP_##eop: \
-+		memcpy(arg, &op.u.eop, sizeof(op.u.eop)); \
-+		break
-+
-+	COPY_BACK(bind_interdomain);
-+	COPY_BACK(bind_virq);
-+	COPY_BACK(bind_pirq);
-+	COPY_BACK(status);
-+	COPY_BACK(alloc_unbound);
-+	COPY_BACK(bind_ipi);
-+#undef COPY_BACK
-+
-+	default:
-+		WARN_ON(rc != -ENOSYS);
-+		break;
-+	}
-+
-+	return rc;
-+}
-+
-+int HYPERVISOR_physdev_op_compat(int cmd, void *arg)
-+{
-+	struct physdev_op op;
-+	int rc;
-+
-+	op.cmd = cmd;
-+	memcpy(&op.u, arg, sizeof(op.u));
-+	rc = _hypercall1(int, physdev_op_compat, &op);
-+
-+	switch (cmd) {
-+	case PHYSDEVOP_IRQ_UNMASK_NOTIFY:
-+	case PHYSDEVOP_set_iopl:
-+	case PHYSDEVOP_set_iobitmap:
-+	case PHYSDEVOP_apic_write:
-+		/* no output */
-+		break;
-+
-+#define COPY_BACK(pop, fld) \
-+	case PHYSDEVOP_##pop: \
-+		memcpy(arg, &op.u.fld, sizeof(op.u.fld)); \
-+		break
-+
-+	COPY_BACK(irq_status_query, irq_status_query);
-+	COPY_BACK(apic_read, apic_op);
-+	COPY_BACK(ASSIGN_VECTOR, irq_op);
-+#undef COPY_BACK
-+
-+	default:
-+		WARN_ON(rc != -ENOSYS);
-+		break;
-+	}
-+
-+	return rc;
-+}
--- 
-1.7.7.6
+-ml
 
