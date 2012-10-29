@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab2J2KjT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:39:19 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:3385 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751285Ab2J2KjS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:39:18 -0400
-Message-ID: <1351507155.1339.10.camel@x61.thuisdomein>
-Subject: Re: [PATCH] mvsas: use correct named constants
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Oct 2012 11:39:15 +0100
-In-Reply-To: <1348229466.1581.21.camel@x61.thuisdomein>
-References: <1348229466.1581.21.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Oct 2012 10:39:16.0613 (UTC) FILETIME=[A50EAB50:01CDB5C1]
-X-RcptDomain: vger.kernel.org
+	id S1756736Ab2J2Kjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:39:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51518 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846Ab2J2Kjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:39:53 -0400
+Date: Mon, 29 Oct 2012 11:39:50 +0100
+From: Jan Kara <jack@suse.cz>
+To: Zhao Hongjiang <zhaohongjiang37@gmail.com>
+Cc: jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext3: get rid of the duplicate code on ext3_fill_super
+Message-ID: <20121029103950.GA18767@quack.suse.cz>
+References: <508E3007.1070902@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508E3007.1070902@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-09-21 at 14:11 +0200, Paul Bolle wrote:
-> Building the mvsas driver triggers these GCC warnings:
->     drivers/scsi/mvsas/mv_sas.c:1156:34: warning: comparison between 'enum sas_device_type' and 'enum sas_dev_type' [-Wenum-compare]
->     drivers/scsi/mvsas/mv_sas.c:1159:39: warning: comparison between 'enum sas_device_type' and 'enum sas_dev_type' [-Wenum-compare]
+On Mon 29-10-12 15:28:07, Zhao Hongjiang wrote:
+> From: Zhao Hongjiang <zhaohongjiang@huawei.com>
 > 
-> Silence these warnings by using the named constants from enum
-> sas_device_type with the same value as the currently used named
-> constants.
+> Clean the duplicate code on ext3_fill_super cause the bellow
+> also have it.
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
+  Thanks. I've merged the patch to my tree with somewhat updated changelog:
+Setting s_mount_opt to 0 is unnecessary because we use kzalloc() for sb
+allocation. s_resuid and s_resgid are set again few lines below based on
+values in on disk superblock.
+
+								Honza
+
 > ---
-> 0) I noticed these warnings while building v3.6-rc6 on current Fedora
-> 17, using Fedora's default config.
-
-Identical warnings can be seen while building v3.7-rc3. What's the
-status of my patch? Did anyone found some time to have a look at it?
-
-
-Paul Bolle
-
+>  fs/ext3/super.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> index 5366393..6e50223 100644
+> --- a/fs/ext3/super.c
+> +++ b/fs/ext3/super.c
+> @@ -1661,9 +1661,6 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+>  		return -ENOMEM;
+>  	}
+>  	sb->s_fs_info = sbi;
+> -	sbi->s_mount_opt = 0;
+> -	sbi->s_resuid = make_kuid(&init_user_ns, EXT3_DEF_RESUID);
+> -	sbi->s_resgid = make_kgid(&init_user_ns, EXT3_DEF_RESGID);
+>  	sbi->s_sb_block = sb_block;
+> 
+>  	blocksize = sb_min_blocksize(sb, EXT3_MIN_BLOCK_SIZE);
+> -- 1.7.1
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
