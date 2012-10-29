@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447Ab2J2WI0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:08:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47632 "EHLO mail.kernel.org"
+	id S933480Ab2J2WIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:08:47 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47614 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761271Ab2J2Vh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:29 -0400
+	id S1761263Ab2J2Vh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 056/101] USB: metro-usb: fix port-data memory leak
-Date: Mon, 29 Oct 2012 14:35:09 -0700
-Message-Id: <20121029213246.488506694@linuxfoundation.org>
+Subject: [ 046/101] USB: mct_u232: fix port-data memory leak
+Date: Mon, 29 Oct 2012 14:34:59 -0700
+Message-Id: <20121029213245.384991630@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,7 +27,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 50dde8686eec41bf3d7cbec7a6f76c073ab01903 upstream.
+commit a8f2ae7a3aa59079d7e7e1ddf5007f03532f458c upstream.
 
 Fix port-data memory leak by moving port data allocation and
 deallocation to port_probe and port_remove.
@@ -36,7 +36,7 @@ Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
 driver is bound) the port private data is no longer freed at release as
 it is no longer accessible.
 
-Note that the call to metrousb_clean (close) in shutdown was redundant.
+Note that the write waitqueue was initialised but never used.
 
 Compile-only tested.
 
@@ -44,84 +44,89 @@ Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/metro-usb.c |   50 ++++++++++-------------------------------
- 1 file changed, 13 insertions(+), 37 deletions(-)
+ drivers/usb/serial/mct_u232.c |   45 +++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 20 deletions(-)
 
---- a/drivers/usb/serial/metro-usb.c
-+++ b/drivers/usb/serial/metro-usb.c
-@@ -280,51 +280,27 @@ static int metrousb_set_modem_ctrl(struc
- 	return retval;
- }
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -51,7 +51,8 @@ static bool debug;
+  * Function prototypes
+  */
+ static int  mct_u232_startup(struct usb_serial *serial);
+-static void mct_u232_release(struct usb_serial *serial);
++static int  mct_u232_port_probe(struct usb_serial_port *port);
++static int  mct_u232_port_remove(struct usb_serial_port *remove);
+ static int  mct_u232_open(struct tty_struct *tty, struct usb_serial_port *port);
+ static void mct_u232_close(struct usb_serial_port *port);
+ static void mct_u232_dtr_rts(struct usb_serial_port *port, int on);
+@@ -101,7 +102,8 @@ static struct usb_serial_driver mct_u232
+ 	.tiocmget =	     mct_u232_tiocmget,
+ 	.tiocmset =	     mct_u232_tiocmset,
+ 	.attach =	     mct_u232_startup,
+-	.release =	     mct_u232_release,
++	.port_probe =        mct_u232_port_probe,
++	.port_remove =       mct_u232_port_remove,
+ 	.ioctl =             mct_u232_ioctl,
+ 	.get_icount =        mct_u232_get_icount,
+ };
+@@ -392,18 +394,8 @@ static void mct_u232_msr_to_state(unsign
  
--static void metrousb_shutdown(struct usb_serial *serial)
-+static int metrousb_port_probe(struct usb_serial_port *port)
+ static int mct_u232_startup(struct usb_serial *serial)
  {
--	int i = 0;
-+	struct metrousb_private *metro_priv;
+-	struct mct_u232_private *priv;
+ 	struct usb_serial_port *port, *rport;
  
--	dev_dbg(&serial->dev->dev, "%s\n", __func__);
-+	metro_priv = kzalloc(sizeof(*metro_priv), GFP_KERNEL);
-+	if (!metro_priv)
+-	priv = kzalloc(sizeof(struct mct_u232_private), GFP_KERNEL);
+-	if (!priv)
+-		return -ENOMEM;
+-	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->msr_wait);
+-	usb_set_serial_port_data(serial->port[0], priv);
+-
+-	init_waitqueue_head(&serial->port[0]->write_wait);
+-
+ 	/* Puh, that's dirty */
+ 	port = serial->port[0];
+ 	rport = serial->port[1];
+@@ -416,18 +408,31 @@ static int mct_u232_startup(struct usb_s
+ 	return 0;
+ } /* mct_u232_startup */
+ 
++static int mct_u232_port_probe(struct usb_serial_port *port)
++{
++	struct mct_u232_private *priv;
++
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
 +		return -ENOMEM;
  
--	/* Stop reading and writing on all ports. */
--	for (i = 0; i < serial->num_ports; ++i) {
--		/* Close any open urbs. */
--		metrousb_cleanup(serial->port[i]);
-+	spin_lock_init(&metro_priv->lock);
- 
--		/* Free memory. */
--		kfree(usb_get_serial_port_data(serial->port[i]));
--		usb_set_serial_port_data(serial->port[i], NULL);
-+	usb_set_serial_port_data(port, metro_priv);
- 
--		dev_dbg(&serial->dev->dev, "%s - freed port number=%d\n",
--			__func__, serial->port[i]->number);
--	}
+-static void mct_u232_release(struct usb_serial *serial)
++	spin_lock_init(&priv->lock);
++	init_waitqueue_head(&priv->msr_wait);
++
++	usb_set_serial_port_data(port, priv);
++
 +	return 0;
- }
- 
--static int metrousb_startup(struct usb_serial *serial)
-+static int metrousb_port_remove(struct usb_serial_port *port)
++}
++
++static int mct_u232_port_remove(struct usb_serial_port *port)
  {
- 	struct metrousb_private *metro_priv;
--	struct usb_serial_port *port;
--	int i = 0;
--
--	dev_dbg(&serial->dev->dev, "%s\n", __func__);
+ 	struct mct_u232_private *priv;
+-	int i;
  
--	/* Loop through the serial ports setting up the private structures.
--	 * Currently we only use one port. */
 -	for (i = 0; i < serial->num_ports; ++i) {
--		port = serial->port[i];
--
--		/* Declare memory. */
--		metro_priv = kzalloc(sizeof(struct metrousb_private), GFP_KERNEL);
--		if (!metro_priv)
--			return -ENOMEM;
--
--		/* Initialize memory. */
--		spin_lock_init(&metro_priv->lock);
--		usb_set_serial_port_data(port, metro_priv);
--
--		dev_dbg(&serial->dev->dev, "%s - port number=%d\n ",
--			__func__, port->number);
+-		/* My special items, the standard routines free my urbs */
+-		priv = usb_get_serial_port_data(serial->port[i]);
+-		kfree(priv);
 -	}
-+	metro_priv = usb_get_serial_port_data(port);
-+	kfree(metro_priv);
+-} /* mct_u232_release */
++	priv = usb_get_serial_port_data(port);
++	kfree(priv);
++
++	return 0;
++}
  
- 	return 0;
- }
-@@ -423,8 +399,8 @@ static struct usb_serial_driver metrousb
- 	.close			= metrousb_cleanup,
- 	.read_int_callback	= metrousb_read_int_callback,
- 	.write_int_callback	= metrousb_write_int_callback,
--	.attach			= metrousb_startup,
--	.release		= metrousb_shutdown,
-+	.port_probe		= metrousb_port_probe,
-+	.port_remove		= metrousb_port_remove,
- 	.throttle		= metrousb_throttle,
- 	.unthrottle		= metrousb_unthrottle,
- 	.tiocmget		= metrousb_tiocmget,
+ static int  mct_u232_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
 
 
