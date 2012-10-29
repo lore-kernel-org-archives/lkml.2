@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761611Ab2J2VzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:55:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48485 "EHLO mail.kernel.org"
+	id S1761587Ab2J2Vzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:55:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48472 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761525Ab2J2VlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:17 -0400
+	id S1761519Ab2J2VlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jan Luebbe <jlu@pengutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Roland Stigge <stigge@antcom.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 10/54] mm: fix XFS oops due to dirty pages without buffers on s390
-Date: Mon, 29 Oct 2012 14:40:11 -0700
-Message-Id: <20121029213803.907280277@linuxfoundation.org>
+Subject: [ 06/54] drivers/rtc/rtc-imxdi.c: add missing spin lock initialization
+Date: Mon, 29 Oct 2012 14:40:07 -0700
+Message-Id: <20121029213803.446532587@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -29,107 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jan Luebbe <jlu@pengutronix.de>
 
-commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
+commit fee0de7791f967c2c5f0d43eb7b7261761b45e64 upstream.
 
-On s390 any write to a page (even from kernel itself) sets architecture
-specific page dirty bit.  Thus when a page is written to via buffered
-write, HW dirty bit gets set and when we later map and unmap the page,
-page_remove_rmap() finds the dirty bit and calls set_page_dirty().
-
-Dirtying of a page which shouldn't be dirty can cause all sorts of
-problems to filesystems.  The bug we observed in practice is that
-buffers from the page get freed, so when the page gets later marked as
-dirty and writeback writes it, XFS crashes due to an assertion
-BUG_ON(!PagePrivate(page)) in page_buffers() called from
-xfs_count_page_state().
-
-Similar problem can also happen when zero_user_segment() call from
-xfs_vm_writepage() (or block_write_full_page() for that matter) set the
-hardware dirty bit during writeback, later buffers get freed, and then
-page unmapped.
-
-Fix the issue by ignoring s390 HW dirty bit for page cache pages of
-mappings with mapping_cap_account_dirty().  This is safe because for
-such mappings when a page gets marked as writeable in PTE it is also
-marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
-cleared by clear_page_dirty_for_io(), the page gets writeprotected in
-page_mkclean().  So pagecache page is writeable if and only if it is
-dirty.
-
-Thanks to Hugh Dickins for pointing out mapping has to have
-mapping_cap_account_dirty() for things to work and proposing a cleaned
-up variant of the patch.
-
-The patch has survived about two hours of running fsx-linux on tmpfs
-while heavily swapping and several days of running on out build machines
-where the original problem was triggered.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Roland Stigge <stigge@antcom.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Tested-by: Roland Stigge <stigge@antcom.de>
+Cc: Sascha Hauer <kernel@pengutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ drivers/rtc/rtc-imxdi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -56,6 +56,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
+--- a/drivers/rtc/rtc-imxdi.c
++++ b/drivers/rtc/rtc-imxdi.c
+@@ -392,6 +392,8 @@ static int dryice_rtc_probe(struct platf
+ 	if (imxdi->ioaddr == NULL)
+ 		return -ENOMEM;
  
- #include <asm/tlbflush.h>
- 
-@@ -977,11 +978,8 @@ int page_mkclean(struct page *page)
- 
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
- 	}
- 
- 	return ret;
-@@ -1167,6 +1165,7 @@ void page_add_file_rmap(struct page *pag
-  */
- void page_remove_rmap(struct page *page)
- {
-+	struct address_space *mapping = page_mapping(page);
- 	bool anon = PageAnon(page);
- 	bool locked;
- 	unsigned long flags;
-@@ -1189,8 +1188,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!anon || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
++	spin_lock_init(&imxdi->irq_lock);
++
+ 	imxdi->irq = platform_get_irq(pdev, 0);
+ 	if (imxdi->irq < 0)
+ 		return imxdi->irq;
 
 
