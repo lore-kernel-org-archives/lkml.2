@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761378Ab2J2WPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:15:12 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47422 "EHLO mail.kernel.org"
+	id S1761483Ab2J2WPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:15:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47411 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761067Ab2J2VhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:05 -0400
+	id S932962Ab2J2VhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peterhuewe@gmx.de>, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [ 035/101] extcon: Unregister compat class at module unload to fix oops
-Date: Mon, 29 Oct 2012 14:34:48 -0700
-Message-Id: <20121029213244.132790213@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 034/101] staging: comedi: amplc_pc236: fix possible NULL deref during detach
+Date: Mon, 29 Oct 2012 14:34:47 -0700
+Message-Id: <20121029213244.023015684@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,159 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peterhuewe@gmx.de>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 0dc77b6dabec8fd298392018cc0de5214af2dc43 upstream.
+commit 2db012bd40b889d8e5483d3daa07af04c4c109d8 upstream.
 
-If you compile extcon with CONFIG_ANDROID and then load and unload the
-module you get a simple oops as the driver does not unregister its
-compat class and thus cannot register it again.
+`pc236_detach()` is called by the comedi core to clean up if either
+`pc236_attach()` or `pc236_attach_pci()` returns an error.  It sets
+`thisboard` to the return value of `comedi_board(dev)` and assumes it is
+non-null.  This is a valid assumption if `pc236_attach()` fails, but not
+if `pc236_attach_pci()` fails, leading to a possible NULL pointer
+dereference.
 
-Full trace:
+Check `thisboard` at the top of `pc236_detach()` and return early if it
+is `NULL`.  This is okay because the only other thing that could have
+been allocated is `dev->private` and that is freed by the comedi core,
+not by this function.
 
-root@(none):~# modprobe extcon_class
-root@(none):~# rmmod extcon_class
-root@(none):~# modprobe extcon_class
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xde/0x100()
-sysfs: cannot create duplicate filename '/class/switch'
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451a00:  [<602a58bc>] printk+0x0/0xa8
-9f451a18:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451a28:  [<6012c6de>] sysfs_add_one+0xde/0x100
-9f451a50:  [<601d3d90>] strcat+0x0/0x40
-9f451a68:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451a90:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ab0:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451ac0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ae8:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
-9f451b00:  [<601d3d90>] strcat+0x0/0x40
-9f451b18:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
-9f451b48:  [<6012c6de>] sysfs_add_one+0xde/0x100
-9f451b78:  [<6012c96f>] create_dir+0x8f/0x100
-9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
-9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
-9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
-9f451c18:  [<601cf396>] kobject_add_internal+0x96/0x280
-9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
-9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
-9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
-9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
-9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
-9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c367 ]---
-------------[ cut here ]------------
-WARNING: at lib/kobject.c:196 kobject_add_internal+0x26e/0x280()
-kobject_add_internal failed for switch with -EEXIST, don't try to
-register things with the same name in the same directory.
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451ad0:  [<602a58bc>] printk+0x0/0xa8
-9f451ae8:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451af8:  [<601cf56e>] kobject_add_internal+0x26e/0x280
-9f451b18:  [<601cf140>] kobject_put+0x0/0x70
-9f451b20:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451b38:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451b88:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
-9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
-9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
-9f451c18:  [<601cf56e>] kobject_add_internal+0x26e/0x280
-9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
-9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
-9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
-9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
-9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
-9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c368 ]---
-kobject_create_and_add: kobject_add error: -17
-------------[ cut here ]------------
-WARNING: at drivers/extcon/extcon_class.c:545
-create_extcon_class+0xbc/0xd0 [extcon_class]()
-cannot allocate
-Modules linked in: extcon_class(+) [last unloaded: extcon_class]
-Call Trace:
-9f451c80:  [<602a58bc>] printk+0x0/0xa8
-9f451c98:  [<60039b43>] warn_slowpath_common+0x93/0xd0
-9f451ca0:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451ca8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
-9f451cd0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
-9f451ce8:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
-9f451d20:  [<6002fe32>] unblock_signals+0x0/0x84
-9f451d28:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
-9f451d48:  [<6002fffc>] set_signals+0x29/0x3f
-9f451d58:  [<601cf172>] kobject_put+0x32/0x70
-9f451d78:  [<600c22c3>] kfree+0xb3/0x100
-9f451da8:  [<601fbe9a>] class_compat_register+0x7a/0x80
-9f451dc8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
-9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
-9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
-9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
-9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
-9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
-9f451ea8:  [<60033370>] userspace+0x405/0x531
-9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
-9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
-9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
-
----[ end trace dd512cc03fe1c369 ]---
-FATAL: Error inserting extcon_class
-(/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
-Cannot allocate memory
-
-This patch fixes this.
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/extcon/extcon_class.c |    3 +++
+ drivers/staging/comedi/drivers/amplc_pc236.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -821,6 +821,9 @@ module_init(extcon_class_init);
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -577,8 +577,11 @@ static int __devinit pc236_attach_pci(st
  
- static void __exit extcon_class_exit(void)
+ static void pc236_detach(struct comedi_device *dev)
  {
-+#if defined(CONFIG_ANDROID)
-+	class_compat_unregister(switch_class);
-+#endif
- 	class_destroy(extcon_class);
- }
- module_exit(extcon_class_exit);
++	const struct pc236_board *thisboard = comedi_board(dev);
+ 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
+ 
++	if (!thisboard)
++		return;
+ 	if (dev->iobase)
+ 		pc236_intr_disable(dev);
+ 	if (dev->irq)
 
 
