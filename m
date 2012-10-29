@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab2J2WIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:08:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47623 "EHLO mail.kernel.org"
+	id S1761132Ab2J2Vh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:37:26 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47546 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760691Ab2J2Vh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:27 -0400
+	id S1760691Ab2J2VhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 055/101] USB: opticon: fix memory leak in error path
-Date: Mon, 29 Oct 2012 14:35:08 -0700
-Message-Id: <20121029213246.384131779@linuxfoundation.org>
+Subject: [ 047/101] USB: mct_u232: fix broken close
+Date: Mon, 29 Oct 2012 14:35:00 -0700
+Message-Id: <20121029213245.498794722@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,36 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit acbf0e5263de563e25f7c104868e4490b9e72b13 upstream.
+commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
 
-Fix memory leak in write error path.
+Make sure generic close is called at close.
+
+The driver relies on the generic write implementation but did not call
+generic close.
+
+Note that the call to kill the read urb is not redundant, as mct_u232
+uses an interrupt urb from the second port as the read urb and that
+generic close therefore fails to kill it.
+
+Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/opticon.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/serial/mct_u232.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -289,7 +289,7 @@ static int opticon_write(struct tty_stru
- 	if (!dr) {
- 		dev_err(&port->dev, "out of memory\n");
- 		count = -ENOMEM;
--		goto error;
-+		goto error_no_dr;
- 	}
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -524,12 +524,14 @@ static void mct_u232_dtr_rts(struct usb_
  
- 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
-@@ -319,6 +319,8 @@ static int opticon_write(struct tty_stru
+ static void mct_u232_close(struct usb_serial_port *port)
+ {
+-	if (port->serial->dev) {
+-		/* shutdown our urbs */
+-		usb_kill_urb(port->write_urb);
+-		usb_kill_urb(port->read_urb);
+-		usb_kill_urb(port->interrupt_in_urb);
+-	}
++	/*
++	 * Must kill the read urb as it is actually an interrupt urb, which
++	 * generic close thus fails to kill.
++	 */
++	usb_kill_urb(port->read_urb);
++	usb_kill_urb(port->interrupt_in_urb);
++
++	usb_serial_generic_close(port);
+ } /* mct_u232_close */
  
- 	return count;
- error:
-+	kfree(dr);
-+error_no_dr:
- 	usb_free_urb(urb);
- error_no_urb:
- 	kfree(buffer);
+ 
 
 
