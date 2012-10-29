@@ -1,392 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758977Ab2J2Na4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:30:56 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42297 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756620Ab2J2N23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:28:29 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 3/9] irq_work: Move irq_work_raise() declaration/default definition to arch headers
-Date: Mon, 29 Oct 2012 14:28:10 +0100
-Message-Id: <1351517296-9173-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
-References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
+	id S1759041Ab2J2NbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:31:06 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:51836 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757314Ab2J2NbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 09:31:01 -0400
+Date: Mon, 29 Oct 2012 18:58:33 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+	do_notify_resume()
+Message-ID: <20121029132833.GA14033@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20121028173900.GA14621@redhat.com> <20121028173925.GA14642@redhat.com> <20121029052707.GA3400@in.ibm.com> <20121029124325.GA31397@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029124325.GA31397@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102913-8974-0000-0000-000010448CFE
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00186672; UDB=6.00042285; UTC=2012-10-29
+ 13:30:45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This optimization doesn't matter much. But this prepares the
-arch headers that we need to add a new API in order to detect
-when the arch can trigger self IPIs to implement the irq work.
+On Mon, Oct 29, 2012 at 01:43:25PM +0100, Oleg Nesterov wrote:
+> On 10/29, Ananth N Mavinakayanahalli wrote:
+> >
+> > On Sun, Oct 28, 2012 at 06:39:25PM +0100, Oleg Nesterov wrote:
+> >
+> > Hi Oleg,
+> >
+> > > Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
+> > >
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > > ---
+> > >  arch/powerpc/kernel/signal.c |    4 +---
+> > >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > >
+> > > diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+> > > index a2dc757..3b99711 100644
+> > > --- a/arch/powerpc/kernel/signal.c
+> > > +++ b/arch/powerpc/kernel/signal.c
+> > > @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+> > >
+> > >  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+> >
+> > But this _is_ do_notify_resume()...
+> 
+> Argh. I'll fix the changelog, see v2 below.
+> 
+> > I don't see this flag cleared
+> > anywhere else.
+> >
+> > Did you have something else in mind?
+> 
+> Sorry for confusion.
+> 
+> As Srikar explained, it is cleared by uprobe_notify_resume(). See db023ea5
+> "uprobes: Move clear_thread_flag(TIF_UPROBE) to uprobe_notify_resume()", it
+> is already in Linus's tree.
 
-This is necessary later to make printk working in nohz CPUs.
+I was looking at rc2.. that explains it.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/alpha/include/asm/irq_work.h      |    6 ++++++
- arch/arm/include/asm/irq_work.h        |    1 +
- arch/arm64/include/asm/irq_work.h      |    1 +
- arch/avr32/include/asm/irq_work.h      |    1 +
- arch/blackfin/include/asm/irq_work.h   |    1 +
- arch/c6x/include/asm/irq_work.h        |    1 +
- arch/cris/include/asm/irq_work.h       |    1 +
- arch/frv/include/asm/irq_work.h        |    1 +
- arch/h8300/include/asm/irq_work.h      |    1 +
- arch/hexagon/include/asm/irq_work.h    |    1 +
- arch/ia64/include/asm/irq_work.h       |    1 +
- arch/m32r/include/asm/irq_work.h       |    1 +
- arch/m68k/include/asm/irq_work.h       |    1 +
- arch/microblaze/include/asm/irq_work.h |    1 +
- arch/mips/include/asm/irq_work.h       |    1 +
- arch/mn10300/include/asm/irq_work.h    |    1 +
- arch/openrisc/include/asm/irq_work.h   |    1 +
- arch/parisc/include/asm/irq_work.h     |    1 +
- arch/powerpc/include/asm/irq_work.h    |    6 ++++++
- arch/s390/include/asm/irq_work.h       |    1 +
- arch/score/include/asm/irq_work.h      |    1 +
- arch/sh/include/asm/irq_work.h         |    1 +
- arch/sparc/include/asm/irq_work.h      |    6 ++++++
- arch/tile/include/asm/irq_work.h       |    1 +
- arch/um/include/asm/irq_work.h         |    1 +
- arch/unicore32/include/asm/irq_work.h  |    1 +
- arch/x86/include/asm/irq_work.h        |   10 ++++++++++
- arch/x86/kernel/irq_work.c             |    4 ++--
- arch/xtensa/include/asm/irq_work.h     |    1 +
- include/asm-generic/irq_work.h         |    9 +++++++++
- include/linux/irq_work.h               |    1 +
- kernel/irq_work.c                      |    7 -------
- 32 files changed, 64 insertions(+), 9 deletions(-)
- create mode 100644 arch/alpha/include/asm/irq_work.h
- create mode 100644 arch/arm/include/asm/irq_work.h
- create mode 100644 arch/arm64/include/asm/irq_work.h
- create mode 100644 arch/avr32/include/asm/irq_work.h
- create mode 100644 arch/blackfin/include/asm/irq_work.h
- create mode 100644 arch/c6x/include/asm/irq_work.h
- create mode 100644 arch/cris/include/asm/irq_work.h
- create mode 100644 arch/frv/include/asm/irq_work.h
- create mode 100644 arch/h8300/include/asm/irq_work.h
- create mode 100644 arch/hexagon/include/asm/irq_work.h
- create mode 100644 arch/ia64/include/asm/irq_work.h
- create mode 100644 arch/m32r/include/asm/irq_work.h
- create mode 100644 arch/m68k/include/asm/irq_work.h
- create mode 100644 arch/microblaze/include/asm/irq_work.h
- create mode 100644 arch/mips/include/asm/irq_work.h
- create mode 100644 arch/mn10300/include/asm/irq_work.h
- create mode 100644 arch/openrisc/include/asm/irq_work.h
- create mode 100644 arch/parisc/include/asm/irq_work.h
- create mode 100644 arch/powerpc/include/asm/irq_work.h
- create mode 100644 arch/s390/include/asm/irq_work.h
- create mode 100644 arch/score/include/asm/irq_work.h
- create mode 100644 arch/sh/include/asm/irq_work.h
- create mode 100644 arch/sparc/include/asm/irq_work.h
- create mode 100644 arch/tile/include/asm/irq_work.h
- create mode 100644 arch/um/include/asm/irq_work.h
- create mode 100644 arch/unicore32/include/asm/irq_work.h
- create mode 100644 arch/x86/include/asm/irq_work.h
- create mode 100644 arch/xtensa/include/asm/irq_work.h
- create mode 100644 include/asm-generic/irq_work.h
+> Oleg.
+> 
+> ------------------------------------------------------------------------------
+> Subject: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in do_notify_resume()
+> 
+> Cleanup. No need to clear TIF_UPROBE, uprobe_notify_resume() does this.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-diff --git a/arch/alpha/include/asm/irq_work.h b/arch/alpha/include/asm/irq_work.h
-new file mode 100644
-index 0000000..814ff3d
---- /dev/null
-+++ b/arch/alpha/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef _ALPHA_IRQ_WORK_H
-+#define _ALPHA_IRQ_WORK_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/arm/include/asm/irq_work.h b/arch/arm/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/arm/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/arm64/include/asm/irq_work.h b/arch/arm64/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/arm64/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/avr32/include/asm/irq_work.h b/arch/avr32/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/avr32/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/blackfin/include/asm/irq_work.h b/arch/blackfin/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/blackfin/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/c6x/include/asm/irq_work.h b/arch/c6x/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/c6x/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/cris/include/asm/irq_work.h b/arch/cris/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/cris/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/frv/include/asm/irq_work.h b/arch/frv/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/frv/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/h8300/include/asm/irq_work.h b/arch/h8300/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/h8300/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/hexagon/include/asm/irq_work.h b/arch/hexagon/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/hexagon/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/ia64/include/asm/irq_work.h b/arch/ia64/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/ia64/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/m32r/include/asm/irq_work.h b/arch/m32r/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/m32r/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/m68k/include/asm/irq_work.h b/arch/m68k/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/m68k/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/microblaze/include/asm/irq_work.h b/arch/microblaze/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/microblaze/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/mips/include/asm/irq_work.h b/arch/mips/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/mips/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/mn10300/include/asm/irq_work.h b/arch/mn10300/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/mn10300/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/openrisc/include/asm/irq_work.h b/arch/openrisc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/openrisc/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/parisc/include/asm/irq_work.h b/arch/parisc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/parisc/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/powerpc/include/asm/irq_work.h b/arch/powerpc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..8b9927f
---- /dev/null
-+++ b/arch/powerpc/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef _ASM_POWERPC_IRQ_WORK_H
-+#define _ASM_POWERPC_IRQ_WORK_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/s390/include/asm/irq_work.h b/arch/s390/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/s390/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/score/include/asm/irq_work.h b/arch/score/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/score/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/sh/include/asm/irq_work.h b/arch/sh/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/sh/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/sparc/include/asm/irq_work.h b/arch/sparc/include/asm/irq_work.h
-new file mode 100644
-index 0000000..1d062a6
---- /dev/null
-+++ b/arch/sparc/include/asm/irq_work.h
-@@ -0,0 +1,6 @@
-+#ifndef ___ASM_SPARC_IRQ_H
-+#define ___ASM_SPARC_IRQ_H
-+
-+extern void arch_irq_work_raise(void);
-+
-+#endif
-diff --git a/arch/tile/include/asm/irq_work.h b/arch/tile/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/tile/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/um/include/asm/irq_work.h b/arch/um/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/um/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/unicore32/include/asm/irq_work.h b/arch/unicore32/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/unicore32/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/arch/x86/include/asm/irq_work.h b/arch/x86/include/asm/irq_work.h
-new file mode 100644
-index 0000000..38eed96
---- /dev/null
-+++ b/arch/x86/include/asm/irq_work.h
-@@ -0,0 +1,10 @@
-+#ifndef _ASM_X86_IRQ_WORK_H
-+#define _ASM_X86_IRQ_WORK_H
-+
-+#ifndef CONFIG_X86_LOCAL_APIC
-+#include <asm-generic/irq_work.h>
-+# else
-+extern void arch_irq_work_raise(void);
-+#endif
-+
-+#endif
-diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
-index ca8f703..95f5d4e 100644
---- a/arch/x86/kernel/irq_work.c
-+++ b/arch/x86/kernel/irq_work.c
-@@ -18,13 +18,13 @@ void smp_irq_work_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+#ifdef CONFIG_X86_LOCAL_APIC
- void arch_irq_work_raise(void)
- {
--#ifdef CONFIG_X86_LOCAL_APIC
- 	if (!cpu_has_apic)
- 		return;
- 
- 	apic->send_IPI_self(IRQ_WORK_VECTOR);
- 	apic_wait_icr_idle();
--#endif
- }
-+#endif
-diff --git a/arch/xtensa/include/asm/irq_work.h b/arch/xtensa/include/asm/irq_work.h
-new file mode 100644
-index 0000000..f1bffa2
---- /dev/null
-+++ b/arch/xtensa/include/asm/irq_work.h
-@@ -0,0 +1 @@
-+#include <asm-generic/irq_work.h>
-diff --git a/include/asm-generic/irq_work.h b/include/asm-generic/irq_work.h
-new file mode 100644
-index 0000000..a2d4108
---- /dev/null
-+++ b/include/asm-generic/irq_work.h
-@@ -0,0 +1,9 @@
-+#ifndef __ASM_GENERIC_ATOMIC_H
-+#define __ASM_GENERIC_ATOMIC_H
-+
-+/*
-+ * Lame architectures will get the timer tick callback
-+ */
-+static inline void arch_irq_work_raise(void) { }
-+
-+#endif
-diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index 6a9e8f5..b39ea0b 100644
---- a/include/linux/irq_work.h
-+++ b/include/linux/irq_work.h
-@@ -2,6 +2,7 @@
- #define _LINUX_IRQ_WORK_H
- 
- #include <linux/llist.h>
-+#include <asm/irq_work.h>
- 
- struct irq_work {
- 	unsigned long flags;
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 679c13e..d00011c 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -56,13 +56,6 @@ static bool irq_work_claim(struct irq_work *work)
- 	return true;
- }
- 
--void __weak arch_irq_work_raise(void)
--{
--	/*
--	 * Lame architectures will get the timer tick callback
--	 */
--}
--
- /*
-  * Queue the entry and raise the IPI if needed.
-  */
--- 
-1.7.5.4
+Thanks Oleg!
+
+Ananth
 
