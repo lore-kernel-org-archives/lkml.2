@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932802Ab2J2Rxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:53:38 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41849 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608Ab2J2Rxf (ORCPT
+	id S932846Ab2J2RzE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:55:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39102 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119Ab2J2RzB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:53:35 -0400
-Date: Mon, 29 Oct 2012 18:53:25 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <linux@roeck-us.net>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>
-Cc: lm-sensors@lm-sensors.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        oprofile-list@lists.sf.net, Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
-Subject: [PATCH 4/4] MAINTAINERS: Update email address for Robert Richter
-Message-ID: <20121029175325.GE5024@tweety>
-References: <20121029174924.GA5024@tweety>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029174924.GA5024@tweety>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Oct 2012 13:55:01 -0400
+Message-ID: <1351533280.24721.46.camel@twins>
+Subject: Re: [PATCH V2 RFC 3/3] kvm: Check system load and handle different
+ commit cases accordingly
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
+Date: Mon, 29 Oct 2012 18:54:40 +0100
+In-Reply-To: <20121029140717.15448.83182.sendpatchset@codeblue>
+References: <20121029140621.15448.92083.sendpatchset@codeblue>
+	 <20121029140717.15448.83182.sendpatchset@codeblue>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <rric@kernel.org>
+On Mon, 2012-10-29 at 19:37 +0530, Raghavendra K T wrote:
+> +/*
+> + * A load of 2048 corresponds to 1:1 overcommit
+> + * undercommit threshold is half the 1:1 overcommit
+> + * overcommit threshold is 1.75 times of 1:1 overcommit threshold
+> + */
+> +#define COMMIT_THRESHOLD (FIXED_1)
+> +#define UNDERCOMMIT_THRESHOLD (COMMIT_THRESHOLD >> 1)
+> +#define OVERCOMMIT_THRESHOLD ((COMMIT_THRESHOLD << 1) -
+> (COMMIT_THRESHOLD >> 2))
+> +
+> +unsigned long kvm_system_load(void)
+> +{
+> +       unsigned long load;
+> +
+> +       load = avenrun[0] + FIXED_1/200;
+> +       load = load / num_online_cpus();
+> +
+> +       return load;
+> +} 
 
-Signed-off-by: Robert Richter <rric@kernel.org>
-Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
----
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ARGH.. no that's wrong.. very wrong.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 5a66583..5b8935b 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5363,7 +5363,7 @@ S:	Maintained
- F:	sound/drivers/opl4/
- 
- OPROFILE
--M:	Robert Richter <robert.richter@amd.com>
-+M:	Robert Richter <rric@kernel.org>
- L:	oprofile-list@lists.sf.net
- S:	Maintained
- F:	arch/*/include/asm/oprofile*.h
--- 
-1.7.9.5
+ 1) avenrun[] EXPORT_SYMBOL says it should be removed, that's not a
+joke.
+
+ 2) avenrun[] is a global load, do not ever use a global load measure
+
+ 3) avenrun[] has nothing what so ever to do with runqueue lengths,
+someone with a gazillion tasks in D state will get a huge load but the
+cpu is very idle.
+
 
