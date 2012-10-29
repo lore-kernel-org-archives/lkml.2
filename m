@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761444Ab2J2ViS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:38:18 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48110 "EHLO mail.kernel.org"
+	id S1761402Ab2J2Vi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:38:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48148 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761423Ab2J2ViO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:14 -0400
+	id S1751822Ab2J2ViR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marko Kohtala <marko.kohtala@gmail.com>, Maxim Kammerer <mk@dee.su>,
-        Olof Johansson <olof@lixom.net>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 098/101] x86: efi: Turn off efi_enabled after setup on mixed fw/kernel
-Date: Mon, 29 Oct 2012 14:35:51 -0700
-Message-Id: <20121029213251.191731353@linuxfoundation.org>
+        Peng Tao <tao.peng@emc.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 101/101] pnfsblock: fix non-aligned DIO write
+Date: Mon, 29 Oct 2012 14:35:54 -0700
+Message-Id: <20121029213251.546009848@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -29,140 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olof Johansson <olof@lixom.net>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c upstream.
+commit 96c9eae638765c2bf2ca4f5a6325484f9bb69aa7 upstream.
 
-When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
-efi_enabled once setup is done. Beyond setup, it is normally used to
-determine if runtime services are available and we will have none.
+For DIO writes, if it is not blocksize aligned, we need to do
+internal serialization. It may slow down writers anyway. So we
+just bail them out and resend to MDS.
 
-This will resolve issues stemming from efivars modprobe panicking on a
-32/64-bit setup, as well as some reboot issues on similar setups.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45991
-
-Reported-by: Marko Kohtala <marko.kohtala@gmail.com>
-Reported-by: Maxim Kammerer <mk@dee.su>
-Signed-off-by: Olof Johansson <olof@lixom.net>
-Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/efi.h  |    1 +
- arch/x86/kernel/setup.c     |   12 ++++++++++++
- arch/x86/platform/efi/efi.c |   18 ++++++++++--------
- 3 files changed, 23 insertions(+), 8 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c |   34 +++++++++++++++++++++++++++++++---
+ 1 file changed, 31 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -98,6 +98,7 @@ extern void efi_set_executable(efi_memor
- extern int efi_memblock_x86_reserve_range(void);
- extern void efi_call_phys_prelog(void);
- extern void efi_call_phys_epilog(void);
-+extern void efi_unmap_memmap(void);
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -685,7 +685,7 @@ bl_write_pagelist(struct nfs_write_data
+ 	struct bio *bio = NULL;
+ 	struct pnfs_block_extent *be = NULL, *cow_read = NULL;
+ 	sector_t isect, last_isect = 0, extent_length = 0;
+-	struct parallel_io *par;
++	struct parallel_io *par = NULL;
+ 	loff_t offset = wdata->args.offset;
+ 	size_t count = wdata->args.count;
+ 	unsigned int pg_offset, pg_len, saved_len;
+@@ -697,6 +697,13 @@ bl_write_pagelist(struct nfs_write_data
+ 	    NFS_SERVER(header->inode)->pnfs_blksize >> PAGE_CACHE_SHIFT;
  
- #ifndef CONFIG_EFI
- /*
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1047,6 +1047,18 @@ void __init setup_arch(char **cmdline_p)
- 	mcheck_init();
- 
- 	arch_init_ideal_nops();
+ 	dprintk("%s enter, %Zu@%lld\n", __func__, count, offset);
 +
-+#ifdef CONFIG_EFI
-+	/* Once setup is done above, disable efi_enabled on mismatched
-+	 * firmware/kernel archtectures since there is no support for
-+	 * runtime services.
-+	 */
-+	if (efi_enabled && IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
-+		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
-+		efi_unmap_memmap();
-+		efi_enabled = 0;
++	if (header->dreq != NULL &&
++	    (!IS_ALIGNED(offset, NFS_SERVER(header->inode)->pnfs_blksize) ||
++	     !IS_ALIGNED(count, NFS_SERVER(header->inode)->pnfs_blksize))) {
++		dprintk("pnfsblock nonblock aligned DIO writes. Resend MDS\n");
++		goto out_mds;
 +	}
-+#endif
+ 	/* At this point, wdata->pages is a (sequential) list of nfs_pages.
+ 	 * We want to write each, and if there is an error set pnfs_error
+ 	 * to have it redone using nfs.
+@@ -1197,6 +1204,27 @@ bl_pg_test_read(struct nfs_pageio_descri
+ 	return pnfs_generic_pg_test(pgio, prev, req);
  }
  
- #ifdef CONFIG_X86_32
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -69,11 +69,15 @@ EXPORT_SYMBOL(efi);
- struct efi_memory_map memmap;
- 
- bool efi_64bit;
--static bool efi_native;
- 
- static struct efi efi_phys __initdata;
- static efi_system_table_t efi_systab __initdata;
- 
-+static inline bool efi_is_native(void)
++void
++bl_pg_init_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *req)
 +{
-+	return IS_ENABLED(CONFIG_X86_64) == efi_64bit;
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, PAGE_CACHE_SIZE))
++		nfs_pageio_reset_write_mds(pgio);
++	else
++		pnfs_generic_pg_init_write(pgio, req);
 +}
 +
- static int __init setup_noefi(char *arg)
- {
- 	efi_enabled = 0;
-@@ -419,7 +423,7 @@ void __init efi_reserve_boot_services(vo
- 	}
- }
++static bool
++bl_pg_test_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev,
++		 struct nfs_page *req)
++{
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, PAGE_CACHE_SIZE))
++		return false;
++
++	return pnfs_generic_pg_test(pgio, prev, req);
++}
++
+ static const struct nfs_pageio_ops bl_pg_read_ops = {
+ 	.pg_init = bl_pg_init_read,
+ 	.pg_test = bl_pg_test_read,
+@@ -1204,8 +1232,8 @@ static const struct nfs_pageio_ops bl_pg
+ };
  
--static void __init efi_unmap_memmap(void)
-+void __init efi_unmap_memmap(void)
- {
- 	if (memmap.map) {
- 		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
-@@ -431,7 +435,7 @@ void __init efi_free_boot_services(void)
- {
- 	void *p;
+ static const struct nfs_pageio_ops bl_pg_write_ops = {
+-	.pg_init = pnfs_generic_pg_init_write,
+-	.pg_test = pnfs_generic_pg_test,
++	.pg_init = bl_pg_init_write,
++	.pg_test = bl_pg_test_write,
+ 	.pg_doio = pnfs_generic_pg_writepages,
+ };
  
--	if (!efi_native)
-+	if (!efi_is_native())
- 		return;
- 
- 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
-@@ -683,12 +687,10 @@ void __init efi_init(void)
- 		return;
- 	}
- 	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
--	efi_native = !efi_64bit;
- #else
- 	efi_phys.systab = (efi_system_table_t *)
- 			  (boot_params.efi_info.efi_systab |
- 			  ((__u64)boot_params.efi_info.efi_systab_hi<<32));
--	efi_native = efi_64bit;
- #endif
- 
- 	if (efi_systab_init(efi_phys.systab)) {
-@@ -722,7 +724,7 @@ void __init efi_init(void)
- 	 * that doesn't match the kernel 32/64-bit mode.
- 	 */
- 
--	if (!efi_native)
-+	if (!efi_is_native())
- 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
- 	else if (efi_runtime_init()) {
- 		efi_enabled = 0;
-@@ -734,7 +736,7 @@ void __init efi_init(void)
- 		return;
- 	}
- #ifdef CONFIG_X86_32
--	if (efi_native) {
-+	if (efi_is_native()) {
- 		x86_platform.get_wallclock = efi_get_time;
- 		x86_platform.set_wallclock = efi_set_rtc_mmss;
- 	}
-@@ -800,7 +802,7 @@ void __init efi_enter_virtual_mode(void)
- 	 * non-native EFI
- 	 */
- 
--	if (!efi_native) {
-+	if (!efi_is_native()) {
- 		efi_unmap_memmap();
- 		return;
- 	}
 
 
