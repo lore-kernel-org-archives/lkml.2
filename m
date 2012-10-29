@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761505Ab2J2WEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:04:31 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47809 "EHLO mail.kernel.org"
+	id S1761513Ab2J2WFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:05:07 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47791 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761333Ab2J2Vho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:44 -0400
+	id S1761323Ab2J2Vhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 071/101] vhost: fix mergeable bufs on BE hosts
-Date: Mon, 29 Oct 2012 14:35:24 -0700
-Message-Id: <20121029213248.178104182@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 061/101] USB: quatech2: fix close and disconnect urb handling
+Date: Mon, 29 Oct 2012 14:35:14 -0700
+Message-Id: <20121029213247.065871482@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,33 +25,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 910a578f7e9400a78a3b13aba0b4d2df16a2cb05 upstream.
+commit 8e512ab0b675da20e023439a5811e3f2554e6852 upstream.
 
-We copy head count to a 16 bit field, this works by chance on LE but on
-BE guest gets 0. Fix it up.
+Kill urbs unconditionally at close and disconnect.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Note that URB status is not valid outside of completion handler.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/quatech2.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -379,7 +379,8 @@ static void handle_rx(struct vhost_net *
- 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
- 	};
- 	size_t total_len = 0;
--	int err, headcount, mergeable;
-+	int err, mergeable;
-+	s16 headcount;
- 	size_t vhost_hlen, sock_hlen;
- 	size_t vhost_len, sock_len;
- 	/* TODO: check that we are running from vhost_worker? */
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -425,8 +425,7 @@ static void qt2_close(struct usb_serial_
+ 	port_priv->is_open = false;
+ 
+ 	spin_lock_irqsave(&port_priv->urb_lock, flags);
+-	if (port_priv->write_urb->status == -EINPROGRESS)
+-		usb_kill_urb(port_priv->write_urb);
++	usb_kill_urb(port_priv->write_urb);
+ 	port_priv->urb_in_use = false;
+ 	spin_unlock_irqrestore(&port_priv->urb_lock, flags);
+ 
+@@ -467,8 +466,7 @@ static void qt2_disconnect(struct usb_se
+ {
+ 	struct qt2_serial_private *serial_priv = usb_get_serial_data(serial);
+ 
+-	if (serial_priv->read_urb->status == -EINPROGRESS)
+-		usb_kill_urb(serial_priv->read_urb);
++	usb_kill_urb(serial_priv->read_urb);
+ }
+ 
+ static int get_serial_info(struct usb_serial_port *port,
 
 
