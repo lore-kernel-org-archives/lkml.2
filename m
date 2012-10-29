@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760972Ab2J2Vby (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:31:54 -0400
-Received: from antcom.de ([188.40.178.216]:56734 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755419Ab2J2Vbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:31:53 -0400
-Message-ID: <508EF59D.6040202@antcom.de>
-Date: Mon, 29 Oct 2012 22:31:09 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120922 Icedove/10.0.7
+	id S1760986Ab2J2Vca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:32:30 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64221 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754754Ab2J2Vc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:32:28 -0400
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: kernel@pengutronix.de, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
-References: <1351164400-27940-1-git-send-email-stigge@antcom.de> <1351164400-27940-2-git-send-email-stigge@antcom.de> <20121029212043.GA1641@pengutronix.de>
-In-Reply-To: <20121029212043.GA1641@pengutronix.de>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <20121029211615.GL2266@tassilo.jf.intel.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	<1351523752-4215-5-git-send-email-eranian@google.com>
+	<20121029194203.GK2266@tassilo.jf.intel.com>
+	<CABPqkBQ3pdvhV=tYjmdaAFyZFvUsM0PkvVw385c1cLA9_Z3KoQ@mail.gmail.com>
+	<20121029211615.GL2266@tassilo.jf.intel.com>
+Date: Mon, 29 Oct 2012 22:32:27 +0100
+Message-ID: <CABPqkBTwoVQw8yb1dbYcyV=11U3_xYDNdQQLhuJgn9iJ2Ar65g@mail.gmail.com>
+Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load Latency
+From: Stephane Eranian <eranian@google.com>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/12 22:20, Sascha Hauer wrote:
-> Roland,
-> 
-> Do you have updates on this one? I think this patch is wrong, specifying
-> the clock rate in the devicetree is only for PowerPC, so I think this
-> needs further investigation.
-
-Please ignore it for now. As discussed with Marc, the issue seemed to be
-caused by me (wrongfully) using the "clock-frequency" dt property which
-caused probe() to ignore the clocks.
-
-A colleague of mine will notify me if the problem surfaces again. So for
-now I assume it's gone.
-
-Maybe the above strategy regarding "clock-frequency" needs to be
-documented better or changed, though, to prevent more confusion like in
-the above case.
-
-Thanks,
-
-Roland
-
-> On Thu, Oct 25, 2012 at 01:26:40PM +0200, Roland Stigge wrote:
->> This patch fixes CAN clocking on i.MX53.
+On Mon, Oct 29, 2012 at 10:16 PM, Andi Kleen <ak@linux.intel.com> wrote:
+>> > Why do you need to replace the whole table?
+>> >
+>> Because I am extending them with one or two events based on cpu
+>> model. That was the easiest way of doing this instead of playing
+>> some kind of malloc+copy trick.
+>
+> I did malloc and copy.
+>
 >>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->>
->> ---
->>  arch/arm/mach-imx/clk-imx51-imx53.c |    8 ++++----
->>  1 file changed, 4 insertions(+), 4 deletions(-)
->>
->> --- linux-2.6.orig/arch/arm/mach-imx/clk-imx51-imx53.c
->> +++ linux-2.6/arch/arm/mach-imx/clk-imx51-imx53.c
->> @@ -426,10 +426,10 @@ int __init mx53_clocks_init(unsigned lon
->>  	clk[usb_phy2_gate] = imx_clk_gate2("usb_phy2_gate", "usb_phy_sel", MXC_CCM_CCGR4, 12);
->>  	clk[can_sel] = imx_clk_mux("can_sel", MXC_CCM_CSCMR2, 6, 2,
->>  				mx53_can_sel, ARRAY_SIZE(mx53_can_sel));
->> -	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR6, 22);
->> -	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR6, 20);
->> -	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 8);
->> -	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 6);
->> +	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
->> +	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
->> +	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
->> +	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
->>  	clk[i2c3_gate] = imx_clk_gate2("i2c3_gate", "per_root", MXC_CCM_CCGR1, 22);
->>  
->>  	for (i = 0; i < ARRAY_SIZE(clk); i++)
->>
-> 
+>> > BTW I still think my approach in the v4 Haswell patchkit
+>> > is simpler and didn't rely on hardcoding these events.
+>> >
+>> I don't care about those events. As I found out, they are not even
+>> used by perf because they are all hardcoded and that's what gets
+>> used. I assume they are exposed for reference only. I don't object
+>> to that. But I think the right mechanism would be one where you
+>> can add events at boot time based on CPU model. It could be used
+>> to add the common events as well in the common part of the init
+>> code.
+>
+> Yes that's what I did.
+>
+> I don't think copying everything for everything new is a good
+> approach.
+>
+I agree. I did that because it was the easiest thing I could think of.
+Discovered I had to deal with all of this just two days ago when I
+rebased. Wasn't too happy to have to deal with this at the last minute.
 
+In any case, if you have something, then looks like I need to wait until
+it's in before I can adjust this patch set.
+
+
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
