@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2J2F1P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 01:27:15 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:42791 "EHLO e3.ny.us.ibm.com"
+	id S1752722Ab2J2Fdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:33:50 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41985 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab2J2F1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 01:27:14 -0400
-Date: Mon, 29 Oct 2012 10:57:07 +0530
+	id S1751456Ab2J2Fds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 01:33:48 -0400
+Date: Mon, 29 Oct 2012 11:03:40 +0530
 From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
@@ -15,61 +15,38 @@ Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
-	do_notify_resume()
-Message-ID: <20121029052707.GA3400@in.ibm.com>
+Subject: Re: [PATCH 2/4] uprobes/powerpc: Do not use arch_uprobe_*_step()
+	helpers
+Message-ID: <20121029053340.GB3400@in.ibm.com>
 Reply-To: ananth@in.ibm.com
-References: <20121028173900.GA14621@redhat.com> <20121028173925.GA14642@redhat.com>
+References: <20121028173900.GA14621@redhat.com> <20121028173928.GA14649@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121028173925.GA14642@redhat.com>
+In-Reply-To: <20121028173928.GA14649@redhat.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102905-8974-0000-0000-0000104194FC
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00186576; UDB=6.00042264; UTC=2012-10-29
- 05:27:12
+x-cbid: 12102905-5806-0000-0000-00001B22B9C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 06:39:25PM +0100, Oleg Nesterov wrote:
-
-Hi Oleg,
-
-> Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
+On Sun, Oct 28, 2012 at 06:39:28PM +0100, Oleg Nesterov wrote:
+> No functional changes.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/powerpc/kernel/signal.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
+> powerpc is the only user of arch_uprobe_enable/disable_step() helpers,
+> but they should die. They can not be used correctly, every arch needs
+> its own implementation (like x86 does). And they do not really help
+> even as initial-and-almost-working code, arch_uprobe_*_xol() hooks can
+> easily use user_enable/disable_single_step() directly.
 > 
-> diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
-> index a2dc757..3b99711 100644
-> --- a/arch/powerpc/kernel/signal.c
-> +++ b/arch/powerpc/kernel/signal.c
-> @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
-> 
->  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+> Change arch_uprobe_*_step() to do nothing, and convert powerpc to use
+> ptrace helpers. This is equally wrong, powerpc needs the arch-specific
+> fixes.
 
-But this _is_ do_notify_resume()... I don't see this flag cleared
-anywhere else.
+Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Did you have something else in mind?
+I will send a powerpc patch to directly use the MSR bits for stepping.
 
 Ananth
-
->  {
-> -	if (thread_info_flags & _TIF_UPROBE) {
-> -		clear_thread_flag(TIF_UPROBE);
-> +	if (thread_info_flags & _TIF_UPROBE)
->  		uprobe_notify_resume(regs);
-> -	}
-> 
->  	if (thread_info_flags & _TIF_SIGPENDING)
->  		do_signal(regs);
-> -- 
-> 1.5.5.1
 
