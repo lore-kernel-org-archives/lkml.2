@@ -1,152 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757851Ab2J2Cmy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:42:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757748Ab2J2Cmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:42:52 -0400
-Message-ID: <508DEDA2.9030503@redhat.com>
-Date: Mon, 29 Oct 2012 10:44:50 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 00/31] numa/core patches
-References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121028175615.GC29827@cmpxchg.org>
-In-Reply-To: <20121028175615.GC29827@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757792Ab2J2DAq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 23:00:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52750 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756308Ab2J2DAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 23:00:45 -0400
+Date: Mon, 29 Oct 2012 14:00:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: manual merge of the signal tree with the sparc tree
+Message-Id: <20121029140032.4019da59dbc50a9be8df9ebc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Oct_2012_14_00_32_+1100_oAlS627FKtqZruV9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 01:56 AM, Johannes Weiner wrote:
-> On Fri, Oct 26, 2012 at 11:08:00AM +0200, Peter Zijlstra wrote:
->> On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
->>> [  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
->>> [  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
->>> [  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
->>> [  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
->>> [  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
->>> [  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
->>> [  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
->>> [  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
->>> [  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30
->> Johannes, this looks like the thp migration memcg hookery gone bad,
->> could you have a look at this?
-> Oops.  Here is an incremental fix, feel free to fold it into #31.
+--Signature=_Mon__29_Oct_2012_14_00_32_+1100_oAlS627FKtqZruV9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Johannes,
+Hi Al,
 
-Tested the below patch, and I'm sure it has fixed the above issue, thank 
-you.
+Today's linux-next merge of the signal tree got a conflict in
+arch/sparc/kernel/sys_sparc_64.c between commit 517ffce4e1a0 ("sparc64:
+Make montmul/montsqr/mpmul usable in 32-bit threads") from the sparc tree
+and commit 2f12af35a988 ("sparc64: switch to generic kernel_execve()")
+from the signal tree.
 
-  Zhouping
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
->
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 5c30a14..0d7ebd3 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -801,8 +801,6 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   	if (!new_page)
->   		goto alloc_fail;
->   
-> -	mem_cgroup_prepare_migration(page, new_page, &memcg);
-> -
->   	lru = PageLRU(page);
->   
->   	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
-> @@ -835,6 +833,14 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   
->   		return;
->   	}
-> +	/*
-> +	 * Traditional migration needs to prepare the memcg charge
-> +	 * transaction early to prevent the old page from being
-> +	 * uncharged when installing migration entries.  Here we can
-> +	 * save the potential rollback and start the charge transfer
-> +	 * only when migration is already known to end successfully.
-> +	 */
-> +	mem_cgroup_prepare_migration(page, new_page, &memcg);
->   
->   	entry = mk_pmd(new_page, vma->vm_page_prot);
->   	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-> @@ -845,6 +851,12 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   	set_pmd_at(mm, haddr, pmd, entry);
->   	update_mmu_cache_pmd(vma, address, entry);
->   	page_remove_rmap(page);
-> +	/*
-> +	 * Finish the charge transaction under the page table lock to
-> +	 * prevent split_huge_page() from dividing up the charge
-> +	 * before it's fully transferred to the new page.
-> +	 */
-> +	mem_cgroup_end_migration(memcg, page, new_page, true);
->   	spin_unlock(&mm->page_table_lock);
->   
->   	put_page(page);			/* Drop the rmap reference */
-> @@ -856,18 +868,14 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   
->   	unlock_page(new_page);
->   
-> -	mem_cgroup_end_migration(memcg, page, new_page, true);
-> -
->   	unlock_page(page);
->   	put_page(page);			/* Drop the local reference */
->   
->   	return;
->   
->   alloc_fail:
-> -	if (new_page) {
-> -		mem_cgroup_end_migration(memcg, page, new_page, false);
-> +	if (new_page)
->   		put_page(new_page);
-> -	}
->   
->   	unlock_page(page);
->   
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7acf43b..011e510 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3255,15 +3255,18 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
->   				  struct mem_cgroup **memcgp)
->   {
->   	struct mem_cgroup *memcg = NULL;
-> +	unsigned int nr_pages = 1;
->   	struct page_cgroup *pc;
->   	enum charge_type ctype;
->   
->   	*memcgp = NULL;
->   
-> -	VM_BUG_ON(PageTransHuge(page));
->   	if (mem_cgroup_disabled())
->   		return;
->   
-> +	if (PageTransHuge(page))
-> +		nr_pages <<= compound_order(page);
-> +
->   	pc = lookup_page_cgroup(page);
->   	lock_page_cgroup(pc);
->   	if (PageCgroupUsed(pc)) {
-> @@ -3325,7 +3328,7 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
->   	 * charged to the res_counter since we plan on replacing the
->   	 * old one and only one page is going to be left afterwards.
->   	 */
-> -	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
-> +	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
->   }
->   
->   /* remove redundant charge if migration failed*/
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/sparc/kernel/sys_sparc_64.c
+index 878ef3d,adfe60e..0000000
+--- a/arch/sparc/kernel/sys_sparc_64.c
++++ b/arch/sparc/kernel/sys_sparc_64.c
+@@@ -729,30 -729,3 +729,8 @@@ SYSCALL_DEFINE5(rt_sigaction, int, sig
+ =20
+  	return ret;
+  }
+ +
+- /*
+-  * Do a system call from kernel instead of calling sys_execve so we
+-  * end up with proper pt_regs.
+-  */
+- int kernel_execve(const char *filename,
+- 		  const char *const argv[],
+- 		  const char *const envp[])
+- {
+- 	long __res;
+- 	register long __g1 __asm__ ("g1") =3D __NR_execve;
+- 	register long __o0 __asm__ ("o0") =3D (long)(filename);
+- 	register long __o1 __asm__ ("o1") =3D (long)(argv);
+- 	register long __o2 __asm__ ("o2") =3D (long)(envp);
+- 	asm volatile ("t 0x6d\n\t"
+- 		      "sub %%g0, %%o0, %0\n\t"
+- 		      "movcc %%xcc, %%o0, %0\n\t"
+- 		      : "=3Dr" (__res), "=3D&r" (__o0)
+- 		      : "1" (__o0), "r" (__o1), "r" (__o2), "r" (__g1)
+- 		      : "cc");
+- 	return __res;
+- }
+-=20
+ +asmlinkage long sys_kern_features(void)
+ +{
+ +	return KERN_FEATURE_MIXED_MODE_STACK;
+ +}
+
+--Signature=_Mon__29_Oct_2012_14_00_32_+1100_oAlS627FKtqZruV9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQjfFQAAoJEECxmPOUX5FE0tcP/jdoZEGXlYP2jEfY48gltygc
+luwMR6pkHYE5+YrA0n8SH4p7liWlqS5wc8tB4nw/nAYXDVbawE2iYDL/JRR7KniA
+ns09UYZRpi8RBn5gHmtM8JLbfMVsgP1SizJPosHZXbAE6xMAanWBjm0c2uzFqOtx
+JI7/v97eEp4tG/MxweE8BNRjrcqCdEjl+nfMJuYK2VUT5K7cD0GF5Ro1Kuoy5Wte
+eQA6CHt/2w29pWIIvA0mkAj7XY2wTFiZwvyJFd4IbhPYnvztx5pzQzM8h1oUrtLb
+P4TM18UGIdDTdMJ98fXci0rIBHLRvxBG3cW5/67nsWp+StwRyb78ysaVYEiWMIwV
+ujwnGbYKz6YRsCPscCnghBHKf5+TpsbTMW1AUeQJ4oAI4Kg8JV1JP4ToiCTm5z+n
+YGLbQznVFP6btWdl2GG6lZK8qmZqXfD0X4WpoE2cX+lb6qf+OYUZYX1gVa9T6EVW
++8j2mtf7+HgZuyphcT2y8Gx7oFS+a/bP3viRJSD66IeIOPvanQPd+txBpjG7lftR
+FMNur7RTdeUBfSW+Cgc+1rzkCYx37DnRZH4JhBkiJPexPKxR1/WDHkjZD14Y7Ng4
+I+1X4rv8Pad4o/oiweDMmmatJsi9UT5nA5C47bVuofZRwaeBK+beQWDqpVpMzry+
+DnUTf8FxAdIRexR1HV85
+=O01t
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Oct_2012_14_00_32_+1100_oAlS627FKtqZruV9--
