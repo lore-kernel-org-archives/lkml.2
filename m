@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab2J2QAD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:00:03 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58708 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756011Ab2J2QAA (ORCPT
+	id S1759630Ab2J2QB3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:01:29 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:43566 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759528Ab2J2QB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:00:00 -0400
-Date: Mon, 29 Oct 2012 11:59:57 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 15/16] openvswitch: use new hashtable implementation
-Message-ID: <20121029155957.GB18834@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-15-git-send-email-levinsasha928@gmail.com> <20121029132931.GC16391@Krystal> <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com>
+	Mon, 29 Oct 2012 12:01:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18HE8u/0hflwnSbJt7YDiDL
+Date: Mon, 29 Oct 2012 09:01:23 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux@arm.linux.org.uk, tim.bird@am.sony.com,
+        pandaboard@googlegroups.com,
+        Santosh Shilimkar OMAP <santosh.shilimkar@ti.com>, nsekhar@ti.com
+Subject: Re: [PATCH] Add FDT support to Pandaboard initialization
+Message-ID: <20121029160122.GB11908@atomide.com>
+References: <1351363800-28744-1-git-send-email-const@MakeLinux.com>
+ <20121029061427.GP17570@arwen.pp.htv.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121029061427.GP17570@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> Hi Mathieu,
+* Felipe Balbi <balbi@ti.com> [121028 23:22]:
+> On Sat, Oct 27, 2012 at 08:50:00PM +0200, Constantine Shulyupin wrote:
+> > From: Constantine Shulyupin <const@MakeLinux.com>
+> > 
+> > Problem:
+> > - FDT is supported only by generic OMAP board initialization in arch/arm/mach-omap2/board-generic.c and lacks some configurations, which are not yet configured in FDT (USB for example).
+> > Solution:
+> > - arch/arm/mach-omap2/board-omap4panda.c supports initialization with FDT and without it.
+> > 
+> > Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
 > 
-> On Mon, Oct 29, 2012 at 9:29 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * Sasha Levin (levinsasha928@gmail.com) wrote:
-> > [...]
-> >> -static struct hlist_head *hash_bucket(struct net *net, const char *name)
-> >> -{
-> >> -     unsigned int hash = jhash(name, strlen(name), (unsigned long) net);
-> >> -     return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
-> >> -}
-> >> -
-> >>  /**
-> >>   *   ovs_vport_locate - find a port that has already been created
-> >>   *
-> >> @@ -84,13 +76,12 @@ static struct hlist_head *hash_bucket(struct net *net, const char *name)
-> >>   */
-> >>  struct vport *ovs_vport_locate(struct net *net, const char *name)
-> >>  {
-> >> -     struct hlist_head *bucket = hash_bucket(net, name);
-> >>       struct vport *vport;
-> >>       struct hlist_node *node;
-> >> +     int key = full_name_hash(name, strlen(name));
-> >>
-> >> -     hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
-> >> -             if (!strcmp(name, vport->ops->get_name(vport)) &&
-> >> -                 net_eq(ovs_dp_get_net(vport->dp), net))
-> >> +     hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
-> >
-> > Is applying hash_32() on top of full_name_hash() needed and expected ?
-> 
-> Since this was pointed out in several of the patches, I'll answer it
-> just once here.
-> 
-> I've intentionally "allowed" double hashing with hash_32 to keep the
-> code simple.
-> 
-> hash_32() is pretty simple and gcc optimizes it to be almost nothing,
-> so doing that costs us a multiplication and a shift. On the other
-> hand, we benefit from keeping our code simple - how would we avoid
-> doing this double hash? adding a different hashtable function for
-> strings? or a new function for already hashed keys? I think we benefit
-> a lot from having to mul/shr instead of adding extra lines of code
-> here.
+> NAK, the whole idea of DT is to drop board-*.c. It would be best to see
+> the "missing initialization" being added to board-generic/dts files.
 
-This could be done, as I pointed out in another email within this
-thread, by changing the "key" argument from add/for_each_possible to an
-expected "hash" value, and let the caller invoke hash_32() if they want.
-I doubt this would add a significant amount of complexity for users of
-this API, but would allow much more flexibility to choose hash
-functions.
+Yes I agree, let's rather get board-generic.c to work with panda.
 
-Thanks,
+The other board-*.c files will be dropped as soon as we have
+things usable with devicetree. And we're only two board-*.c files
+away from making omap4 device tree only ;)
 
-Mathieu
+I think we are only missing DSS, USB and WLAN bindings to
+have blaze and panda usable with device tree to the point
+where everything else can be added later on.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Regards,
+
+Tony
