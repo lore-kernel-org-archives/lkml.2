@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760106Ab2J2Q47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:56:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46762 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab2J2Q45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:56:57 -0400
-Date: Mon, 29 Oct 2012 17:57:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Rik van Riel <riel@redhat.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, florian@openwrt.org,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 2/3] x86,mm: drop TLB flush from ptep_set_access_flags
-Message-ID: <20121029165705.GA4693@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Rik van Riel <riel@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Ingo Molnar <mingo@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-	Michel Lespinasse <walken@google.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-	florian@openwrt.org, Borislav Petkov <borislav.petkov@amd.com>
-References: <CA+55aFwcj=nh1RUmEXUk6W3XwfbdQdQofkkCstbLGVo1EoKryA@mail.gmail.com>
- <508A0A0D.4090001@redhat.com>
- <CA+55aFx2fSdDcFxYmu00JP9rHiZ1BjH3tO4CfYXOhf_rjRP_Eg@mail.gmail.com>
- <CANN689EHj2inp+wjJGcqMHZQUV3Xm+3dAkLPOsnV4RZU+Kq5nA@mail.gmail.com>
- <m2pq45qu0s.fsf@firstfloor.org>
- <508A8D31.9000106@redhat.com>
- <20121026132601.GC9886@gmail.com>
- <20121026144502.6e94643e@dull>
- <20121026221254.7d32c8bf@pyramind.ukuu.org.uk>
- <508BE459.2080406@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <508BE459.2080406@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760095Ab2J2Q6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:58:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37402 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab2J2Q6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:58:12 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: davem@davemloft.net
+Cc: linaro-dev@lists.linaro.org, patches@linaro.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] net: dsa/slave: Fix compilation warnings
+Date: Mon, 29 Oct 2012 22:27:56 +0530
+Message-Id: <5afab1ebe83e4361f1fd75bbea0c559af195bf02.1351529738.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 09:40:41AM -0400, Rik van Riel wrote:
-> Borislav, would you happen to know whether AMD (and VIA) CPUs
-> automatically invalidate TLB entries that cause page faults? If you do
-> not know, would you happen who to ask? :)
+Currently when none of CONFIG_NET_DSA_TAG_DSA, CONFIG_NET_DSA_TAG_EDSA and
+CONFIG_NET_DSA_TAG_TRAILER is defined, we get following compilation warnings:
 
-Short answer: yes.
+net/dsa/slave.c:51:12: warning: 'dsa_slave_init' defined but not used [-Wunused-function]
+net/dsa/slave.c:60:12: warning: 'dsa_slave_open' defined but not used [-Wunused-function]
+net/dsa/slave.c:98:12: warning: 'dsa_slave_close' defined but not used [-Wunused-function]
+net/dsa/slave.c:116:13: warning: 'dsa_slave_change_rx_flags' defined but not used [-Wunused-function]
+net/dsa/slave.c:127:13: warning: 'dsa_slave_set_rx_mode' defined but not used [-Wunused-function]
+net/dsa/slave.c:136:12: warning: 'dsa_slave_set_mac_address' defined but not used [-Wunused-function]
+net/dsa/slave.c:164:12: warning: 'dsa_slave_ioctl' defined but not used [-Wunused-function]
 
-Long answer (from APM v2, section 5.5.2):
+Fix them by enclosing these routines under #ifdef,endif.
 
-Use of Cached Entries When Reporting a Page Fault Exception.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ net/dsa/slave.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-On current AMD64 processors, when any type of page fault exception is
-encountered by the MMU, any cached upper-level entries that lead to the
-faulting entry are flushed (along with the TLB entry, if already cached)
-and the table walk is repeated to confirm the page fault using the
-table entries in memory. This is done because a table entry is allowed
-to be upgraded (by marking it as present, or by removing its write,
-execute or supervisor restrictions) without explicitly maintaining TLB
-coherency. Such an upgrade will be found when the table is re-walked,
-which resolves the fault. If the fault is confirmed on the re-walk
-however, a page fault exception is reported, and upper level entries
-that may have been cached on the re-walk are flushed.
-
-HTH.
-
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index e32083d..5606fae 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -48,6 +48,8 @@ void dsa_slave_mii_bus_init(struct dsa_switch *ds)
+ 
+ 
+ /* slave device handling ****************************************************/
++#if defined(CONFIG_NET_DSA_TAG_DSA) || defined(CONFIG_NET_DSA_TAG_EDSA) || \
++		defined(CONFIG_NET_DSA_TAG_TRAILER)
+ static int dsa_slave_init(struct net_device *dev)
+ {
+ 	struct dsa_slave_priv *p = netdev_priv(dev);
+@@ -170,6 +172,8 @@ static int dsa_slave_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 
+ 	return -EOPNOTSUPP;
+ }
++#endif /* defined(CONFIG_NET_DSA_TAG_DSA) || defined(CONFIG_NET_DSA_TAG_EDSA ||
++		defined(CONFIG_NET_DSA_TAG_TRAILER) */
+ 
+ 
+ /* ethtool operations *******************************************************/
 -- 
-Regards/Gruss,
-Boris.
+1.7.12.rc2.18.g61b472e
+
