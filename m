@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab2J2E7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:59:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44040 "EHLO
+	id S1753739Ab2J2FGy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:06:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44095 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab2J2E7G (ORCPT
+	with ESMTP id S1752760Ab2J2FGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:59:06 -0400
-Subject: Re: [PATCH v2 3/4] DMA: PL330: Balance module remove function with
- probe
+	Mon, 29 Oct 2012 01:06:53 -0400
+Subject: Re: [PATCH] async_tx: use memchr_inv
 From: Vinod Koul <vkoul@infradead.org>
-To: Inderpal Singh <inderpal.singh@linaro.org>
-Cc: vinod.koul@intel.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jassisinghbrar@gmail.com,
-        boojin.kim@samsung.com, patches@linaro.org, kgene.kim@samsung.com
-In-Reply-To: <CAG17yqTx6MnmpYLZCxeJ9gC_ha6i3Bp3Fc+=9L7EJEJoNwCFtQ@mail.gmail.com>
-References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
-	 <1349432276-22919-4-git-send-email-inderpal.singh@linaro.org>
-	 <1351052091.5263.19.camel@vkoul-udesk3>
-	 <CAG17yqQBep4Y3YOGVFr6s_apX9f0YeTC7dxDcTQM7ahxnr1B4w@mail.gmail.com>
-	 <1351226723.7077.14.camel@vkoul-udesk3>
-	 <CAG17yqTx6MnmpYLZCxeJ9gC_ha6i3Bp3Fc+=9L7EJEJoNwCFtQ@mail.gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Dan Williams <djbw@fb.com>
+In-Reply-To: <1351352973-3719-4-git-send-email-akinobu.mita@gmail.com>
+References: <1351352973-3719-1-git-send-email-akinobu.mita@gmail.com>
+	 <1351352973-3719-4-git-send-email-akinobu.mita@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Oct 2012 10:15:43 +0530
-Message-ID: <1351485943.7077.30.camel@vkoul-udesk3>
+Date: Mon, 29 Oct 2012 10:23:43 +0530
+Message-ID: <1351486423.7077.31.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -31,71 +25,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-10-27 at 15:50 +0530, Inderpal Singh wrote:
-> Hi Vinod,
+On Sun, 2012-10-28 at 00:49 +0900, Akinobu Mita wrote:
+> Use memchr_inv() to check the specified page is filled with zero.
 > 
-> On 26 October 2012 10:15, Vinod Koul <vkoul@infradead.org> wrote:
-> > On Thu, 2012-10-25 at 16:53 +0530, Inderpal Singh wrote:
-> >>
-> >> This code will get executed only in case of force removal of the
-> >> module which was discussed in the first version of the patch at [1].
-> >> Now, if we do not have to think about force removal then this patch
-> >> will go back to the first version.
-> > But why are you doing force removal of driver even when client is
-> > holding a reference to you.
-> >
-> > What happens when client finally tries to free the channel?
-> Since we return EBUSY so forced removal won't succeed. Client can free
-> the channel eventually.
-And that is my concern. You have forcefully removed the dma module.
-What happens then? How will the free calll get executed, wont you hit a
-panic.
-> 
-> >
-> > What is the problem you are trying to solve?
-> >>
-> 
-> There was a long discussion about it in the first version of the
-> patch. Allow me to explain it to you.
-> 
-> The existing driver does DMA_TERMINATE_ALL and frees resources for all
-> the channels in the _remove function.
-Which for starters may not be right thing to do. Shouldn't you first
-make sure client has freed all references to your driver and then only
-remove. Freeing resources in .remove without keeping client in sync
-doesn't sound to be good idea to me.
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> ---
+Looks fine to me, need Dan;s ack before applying
 
->  The first version of patch
-> removed this flushing and freeing of channel resources because they
-> are not getting allocated in the probe. Jassi pointed out that manual
-> flushing is needed if a force removal happens and some client is
-> queued. Then it was agreed that flushing is not needed, instead we
-> should return EBUSY if client is queued on some channel (this will
-> happen only in force removal case). Hence this additional check in v2
-> version so that force removal does not succeeds if any client is
-> queued.
+>  crypto/async_tx/async_xor.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
 > 
-> If you think force removal is not a practical scenario and we should
-> not be bothering about it, this check can be removed and the patch
-> will go back to first version which just removes flushing and freeing
-> of channels beacues they are not getting allocated in probe.
-> 
-> Let me know your view.
-> 
-> Regards,
-> Inder
-> 
-> 
-> >> Let me know your view.
-> >>
-> >> [1] https://patchwork.kernel.org/patch/1503171/
-> >>
-> >
-> >
-> > --
-> > Vinod Koul
-> > Intel Corp.
-> >
+> diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c
+> index 154cc84..8ade0a0 100644
+> --- a/crypto/async_tx/async_xor.c
+> +++ b/crypto/async_tx/async_xor.c
+> @@ -230,9 +230,7 @@ EXPORT_SYMBOL_GPL(async_xor);
+>  
+>  static int page_is_zero(struct page *p, unsigned int offset, size_t len)
+>  {
+> -	char *a = page_address(p) + offset;
+> -	return ((*(u32 *) a) == 0 &&
+> -		memcmp(a, a + 4, len - 4) == 0);
+> +	return !memchr_inv(page_address(p) + offset, 0, len);
+>  }
+>  
+>  static inline struct dma_chan *
 
 
 -- 
