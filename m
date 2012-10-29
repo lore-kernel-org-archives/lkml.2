@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760702Ab2J2UPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:15:23 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42691 "EHLO mail.kernel.org"
+	id S1760708Ab2J2UPw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:15:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42648 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760659Ab2J2UJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:02 -0400
+	id S1760585Ab2J2UI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Len Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 18/34] USB: serial: Fix memory leak in sierra_release()
-Date: Mon, 29 Oct 2012 13:07:49 -0700
-Message-Id: <20121029200422.593103939@linuxfoundation.org>
+        Oleksandr Chumachenko <ledest@gmail.com>,
+        Michael Shigorin <mike@osdn.org.ua>
+Subject: [ 13/34] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
+Date: Mon, 29 Oct 2012 13:07:44 -0700
+Message-Id: <20121029200422.029374325@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,30 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+From: Michael Shigorin <mike@osdn.org.ua>
 
-commit f7bc5051667b74c3861f79eed98c60d5c3b883f7 upstream.
+commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
 
-I found a memory leak in sierra_release() (well sierra_probe() I guess)
-that looses 8 bytes each time the driver releases a device.
+This commit sets removable subclass for Casio EX-N1 digital camera.
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+The patch has been tested within an ALT Linux kernel:
+http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
+
+See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
+
+Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
+Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/storage/unusual_devs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -993,6 +993,7 @@ static void sierra_release(struct usb_se
- 			continue;
- 		kfree(portdata);
- 	}
-+	kfree(serial->private);
- }
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9
+ 		USB_SC_8070, USB_PR_CB, NULL,
+ 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
  
- #ifdef CONFIG_PM
++/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
++UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
++		"Casio",
++		"EX-N1 DigitalCamera",
++		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
++
+ /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
+ UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
+ 		"Samsung",
 
 
