@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab2J2RkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:40:08 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33365 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752276Ab2J2RkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:40:05 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 3/3] MAINTAINERS: Change Boris' email address
-Date: Mon, 29 Oct 2012 18:40:10 +0100
-Message-Id: <1351532410-4887-3-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1351532410-4887-1-git-send-email-bp@alien8.de>
-References: <1351532410-4887-1-git-send-email-bp@alien8.de>
+	id S1757156Ab2J2Rll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:41:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33508 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab2J2Rli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 13:41:38 -0400
+Date: Mon, 29 Oct 2012 17:41:31 +0000
+From: Matthew Garrett <mjg@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org
+Subject: Re: [RFC] Second attempt at kernel secure boot support
+Message-ID: <20121029174131.GC7580@srcf.ucam.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+ <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1210290848450.10392@twin.jikos.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move to private mail address.
+On Mon, Oct 29, 2012 at 08:49:41AM +0100, Jiri Kosina wrote:
+> On Thu, 20 Sep 2012, Matthew Garrett wrote:
+> 
+> > This is pretty much identical to the first patchset, but with the capability
+> > renamed (CAP_COMPROMISE_KERNEL) and the kexec patch dropped. If anyone wants
+> > to deploy these then they should disable kexec until support for signed
+> > kexec payloads has been merged.
+> 
+> Apparently your patchset currently doesn't handle device firmware loading, 
+> nor do you seem to mention in in the comments.
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
----
- MAINTAINERS | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Correct.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1fa907441f8f..e775b8749205 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2707,10 +2707,10 @@ F:	include/linux/edac.h
- 
- EDAC-AMD64
- M:	Doug Thompson <dougthompson@xmission.com>
--M:	Borislav Petkov <borislav.petkov@amd.com>
-+M:	Borislav Petkov <bp@alien8.de>
- L:	linux-edac@vger.kernel.org
- W:	bluesmoke.sourceforge.net
--S:	Supported
-+S:	Maintained
- F:	drivers/edac/amd64_edac*
- 
- EDAC-E752X
-@@ -3703,7 +3703,7 @@ S:	Maintained
- F:	drivers/platform/x86/ideapad-laptop.c
- 
- IDE/ATAPI DRIVERS
--M:	Borislav Petkov <petkovbb@gmail.com>
-+M:	Borislav Petkov <bp@alien8.de>
- L:	linux-ide@vger.kernel.org
- S:	Maintained
- F:	Documentation/cdrom/ide-cd
-@@ -8147,7 +8147,7 @@ F:	drivers/platform/x86
- 
- X86 MCE INFRASTRUCTURE
- M:	Tony Luck <tony.luck@intel.com>
--M:	Borislav Petkov <bp@amd64.org>
-+M:	Borislav Petkov <bp@alien8.de>
- L:	linux-edac@vger.kernel.org
- S:	Maintained
- F:	arch/x86/kernel/cpu/mcheck/*
+> I believe signed firmware loading should be put on plate as well, right?
+
+I think that's definitely something that should be covered. I hadn't 
+worried about it immediately as any attack would be limited to machines 
+with a specific piece of hardware, and the attacker would need to expend 
+a significant amount of reverse engineering work on the firmware - and 
+we'd probably benefit from them doing that in the long run...
+
+Having said that, yes, we should worry about this. Firmware distribution 
+licenses often forbid any distribution of modified versions, so 
+signatures would probably need to be detached. udev could easily glue 
+together a signature and firmware when loading, but if we're moving 
+towards an in-kernel firmware loader for the common case then it'll need 
+to be implemented there as well.
+
 -- 
-1.8.0
-
+Matthew Garrett | mjg59@srcf.ucam.org
