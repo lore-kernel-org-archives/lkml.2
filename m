@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab2J2PSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:18:02 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33945 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759227Ab2J2PR6 (ORCPT
+	id S1759450Ab2J2PST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:18:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41179 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757906Ab2J2PSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:17:58 -0400
-Message-ID: <508E9E22.6030201@wwwdotorg.org>
-Date: Mon, 29 Oct 2012 09:17:54 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] spi: tegra: add spi driver for SLINK controller
-References: <1350557233-31234-1-git-send-email-ldewangan@nvidia.com> <5085A667.2000100@wwwdotorg.org> <508ADB1C.6040602@nvidia.com>
-In-Reply-To: <508ADB1C.6040602@nvidia.com>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Oct 2012 11:18:15 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] md: Fix typo in drivers/md
+Date: Tue, 30 Oct 2012 00:18:08 +0900
+Message-Id: <1351523888-16579-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.rc3.16.g8ead1bf
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 12:49 PM, Laxman Dewangan wrote:
-> Thanks Stephen for review.
-> I have taken care of almost all feedback. Some of having my below comments.
-> 
-> On Tuesday 23 October 2012 01:32 AM, Stephen Warren wrote:
->> On 10/18/2012 04:47 AM, Laxman Dewangan wrote:
->>> Tegra20/Tegra30 supports the spi interface through its SLINK
->>> controller. Add spi driver for SLINK controller.
+Correct spelling typo in drivers/md.
 
->>> +     val_write = SLINK_RDY;
->>> +     val_write |= (val&  SLINK_FIFO_ERROR);
->> Why not just always set SLINK_FIFO_ERROR; does it have to be set in the
->> write only if the status was previously asserted? If that is true, how
->> do you avoid a race condition where the bit gets set in SLINK_STATUS
->> after you read it but before you write to clear it?
->
-> Status gets updated together. There is no steps of updating status.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/md/md.c                               | 2 +-
+ drivers/md/persistent-data/dm-block-manager.c | 4 ++--
+ drivers/md/persistent-data/dm-btree.h         | 2 +-
+ drivers/md/raid5.c                            | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-Sorry, I don't understand this answer.
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 12293a0..c131744 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -4124,7 +4124,7 @@ static struct md_sysfs_entry md_size =
+ __ATTR(component_size, S_IRUGO|S_IWUSR, size_show, size_store);
+ 
+ 
+-/* Metdata version.
++/* Metadata version.
+  * This is one of
+  *   'none' for arrays with no metadata (good luck...)
+  *   'external' for arrays with externally managed metadata,
+diff --git a/drivers/md/persistent-data/dm-block-manager.c b/drivers/md/persistent-data/dm-block-manager.c
+index 5ba2777..a3ae091 100644
+--- a/drivers/md/persistent-data/dm-block-manager.c
++++ b/drivers/md/persistent-data/dm-block-manager.c
+@@ -25,7 +25,7 @@
+  * may be held at once.  This is just an implementation detail.
+  *
+  * ii) Recursive locking attempts are detected and return EINVAL.  A stack
+- * trace is also emitted for the previous lock aquisition.
++ * trace is also emitted for the previous lock acquisition.
+  *
+  * iii) Priority is given to write locks.
+  */
+@@ -109,7 +109,7 @@ static int __check_holder(struct block_lock *lock)
+ 			DMERR("previously held here:");
+ 			print_stack_trace(lock->traces + i, 4);
+ 
+-			DMERR("subsequent aquisition attempted here:");
++			DMERR("subsequent acquisition attempted here:");
+ 			t.nr_entries = 0;
+ 			t.max_entries = MAX_STACK;
+ 			t.entries = entries;
+diff --git a/drivers/md/persistent-data/dm-btree.h b/drivers/md/persistent-data/dm-btree.h
+index ae02c84..a2cd5044 100644
+--- a/drivers/md/persistent-data/dm-btree.h
++++ b/drivers/md/persistent-data/dm-btree.h
+@@ -35,7 +35,7 @@ struct dm_transaction_manager;
+  */
+ 
+ /*
+- * Infomation about the values stored within the btree.
++ * Information about the values stored within the btree.
+  */
+ struct dm_btree_value_type {
+ 	void *context;
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 8f2a2ff..320df0c 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1612,7 +1612,7 @@ static int resize_stripes(struct r5conf *conf, int newsize)
+ 	 * This happens in stages:
+ 	 * 1/ create a new kmem_cache and allocate the required number of
+ 	 *    stripe_heads.
+-	 * 2/ gather all the old stripe_heads and tranfer the pages across
++	 * 2/ gather all the old stripe_heads and transfer the pages across
+ 	 *    to the new stripe_heads.  This will have the side effect of
+ 	 *    freezing the array as once all stripe_heads have been collected,
+ 	 *    no IO will be possible.  Old stripe heads are freed once their
+-- 
+1.8.0.rc3.16.g8ead1bf
 
->>> +     spin_lock_irqsave(&tspi->lock, flags);
->>> +     if (err) {
->>> +             dev_err(tspi->dev,
->>> +                     "DmaXfer: ERROR bit set 0x%x\n",
->>> tspi->status_reg);
->>> +             dev_err(tspi->dev,
->>> +                     "DmaXfer 0x%08x:0x%08x:0x%08x\n",
->>> tspi->command_reg,
->>> +                             tspi->command2_reg,
->>> tspi->dma_control_reg);
->>> +             tegra_periph_reset_assert(tspi->clk);
->>> +             udelay(2);
->>> +             tegra_periph_reset_deassert(tspi->clk);
->> Do we /have/ to reset the SPI block; can't we just disable it in the
->> control register, clear all status, and re-program it from scratch?
->>
->> If at all possible, I would like to avoid introducing any new use of
->> tegra_periph_reset_{,de}assert, since that API has no standard subsystem
->> equivalent (or if it does, isn't hooked into the standard subsystem
->> yet), and hence means this driver relies on a header file currently in
->> arch/arm/mach-tegra/include/mach, and we need to move or delete all such
->> headers in order to support single zImage.
-> 
-> Is there a way to support the reset of controller. We will need this
-> functionality.
-
-Why do we need to reset the controller at all; can't we simply program
-all the (few) configuration registers? Are there HW bugs that hang the
-controller and require a reset or something?
