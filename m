@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab2J2QcN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:32:13 -0400
+	id S1760076Ab2J2QcT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:32:19 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52623 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760005Ab2J2QcI (ORCPT
+	with ESMTP id S1759737Ab2J2QcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:32:08 -0400
+	Mon, 29 Oct 2012 12:32:16 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 2/9] perf top: make use of perf_record_opts
-Date: Mon, 29 Oct 2012 10:31:42 -0600
-Message-Id: <1351528309-87705-3-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 3/9] perf evlist: introduce open counters method
+Date: Mon, 29 Oct 2012 10:31:43 -0600
+Message-Id: <1351528309-87705-4-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
 References: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
@@ -21,8 +21,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes top code to use the perf_record_opts struct. Stepping stone to
-consolidating the open counters code.
+Superset of the open counters code in perf-top and perf-record -
+combining retry handling and error handling. Should be functionally
+equivalent.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -30,329 +31,168 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- tools/perf/builtin-top.c |   84 ++++++++++++++++++++++++----------------------
- tools/perf/util/top.c    |   20 +++++------
- tools/perf/util/top.h    |    9 +----
- 3 files changed, 54 insertions(+), 59 deletions(-)
+ tools/perf/util/evlist.c |  131 +++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/evlist.h |    3 ++
+ 2 files changed, 133 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index f2ecd49..a6954ba8 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -591,7 +591,7 @@ static void *display_thread_tui(void *arg)
- 	 * via --uid.
- 	 */
- 	list_for_each_entry(pos, &top->evlist->entries, node)
--		pos->hists.uid_filter_str = top->target.uid_str;
-+		pos->hists.uid_filter_str = top->opts.target.uid_str;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index a41dc4a..b24ebc1 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -15,7 +15,7 @@
+ #include "evlist.h"
+ #include "evsel.h"
+ #include <unistd.h>
+-
++#include "debug.h"
+ #include "parse-events.h"
  
- 	perf_evlist__tui_browse_hists(top->evlist, help,
- 				      perf_top__sort_new_samples,
-@@ -891,7 +891,7 @@ static void perf_top__start_counters(struct perf_top *top)
- 	struct perf_evsel *counter;
- 	struct perf_evlist *evlist = top->evlist;
+ #include <sys/mman.h>
+@@ -838,3 +838,132 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp)
  
--	if (top->group)
-+	if (top->opts.group)
- 		perf_evlist__set_leader(evlist);
+ 	return printed + fprintf(fp, "\n");;
+ }
++
++int perf_evlist__open_counters(struct perf_evlist *evlist,
++			       struct perf_record_opts *opts)
++{
++	struct perf_evsel *pos;
++	int rc = 0;
++
++	list_for_each_entry(pos, &evlist->entries, node) {
++		struct perf_event_attr *attr = &pos->attr;
++
++		/*
++		 * Carried over from perf-record:
++		 * Check if parse_single_tracepoint_event has already asked for
++		 * PERF_SAMPLE_TIME.
++		 *
++		 * XXX this is kludgy but short term fix for problems introduced by
++		 * eac23d1c that broke 'perf script' by having different sample_types
++		 * when using multiple tracepoint events when we use a perf binary
++		 * that tries to use sample_id_all on an older kernel.
++		 *
++		 * We need to move counter creation to perf_session, support
++		 * different sample_types, etc.
++		 */
++		bool time_needed = attr->sample_type & PERF_SAMPLE_TIME;
++
++fallback_missing_features:
++		if (opts->exclude_guest_missing)
++			attr->exclude_guest = attr->exclude_host = 0;
++retry_sample_id:
++		attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
++try_again:
++		if (perf_evsel__open(pos, evlist->cpus, evlist->threads) < 0) {
++			int err = errno;
++
++			if (err == EPERM || err == EACCES) {
++				ui__error_paranoid();
++				rc = -err;
++				goto out;
++			} else if (err ==  ENODEV && opts->target.cpu_list) {
++				pr_err("No such device - did you specify"
++				       " an out-of-range profile CPU?\n");
++				rc = -err;
++				goto out;
++			} else if (err == EINVAL) {
++				if (!opts->exclude_guest_missing &&
++				    (attr->exclude_guest || attr->exclude_host)) {
++					pr_debug("Old kernel, cannot exclude "
++						 "guest or host samples.\n");
++					opts->exclude_guest_missing = true;
++					goto fallback_missing_features;
++				} else if (!opts->sample_id_all_missing) {
++					/*
++					 * Old kernel, no attr->sample_id_type_all field
++					 */
++					opts->sample_id_all_missing = true;
++					if (!opts->sample_time &&
++					    !opts->raw_samples &&
++					    !time_needed)
++						attr->sample_type &= ~PERF_SAMPLE_TIME;
++					goto retry_sample_id;
++				}
++			}
++
++			/*
++			 * If it's cycles then fall back to hrtimer
++			 * based cpu-clock-tick sw counter, which
++			 * is always available even if no PMU support:
++			 *
++			 * PPC returns ENXIO until 2.6.37 (behavior changed
++			 * with commit b0a873e).
++			 */
++			if ((err == ENOENT || err == ENXIO) &&
++			    (attr->type == PERF_TYPE_HARDWARE) &&
++			    (attr->config == PERF_COUNT_HW_CPU_CYCLES)) {
++
++				if (verbose)
++					ui__warning("Cycles event not supported,\n"
++						    "trying to fall back to cpu-clock-ticks\n");
++
++				attr->type = PERF_TYPE_SOFTWARE;
++				attr->config = PERF_COUNT_SW_CPU_CLOCK;
++				if (pos->name) {
++					free(pos->name);
++					pos->name = NULL;
++				}
++				goto try_again;
++			}
++
++			if (err == ENOENT) {
++				ui__error("The %s event is not supported.\n",
++					  perf_evsel__name(pos));
++				rc = -err;
++				goto out;
++			} else if (err == EMFILE) {
++				ui__error("Too many events are opened.\n"
++					  "Try again after reducing the number of events\n");
++				rc = -err;
++				goto out;
++			} else if ((err == EOPNOTSUPP) && (attr->precise_ip)) {
++				ui__error("\'precise\' request may not be supported. "
++					  "Try removing 'p' modifier\n");
++				goto out;
++			}
++
++			ui__error("sys_perf_event_open() syscall returned with "
++				  "%d (%s) for event %s.  /bin/dmesg may provide"
++				  "additional information.\n",
++				  err, strerror(err), perf_evsel__name(pos));
++
++#if defined(__i386__) || defined(__x86_64__)
++			if ((attr->type == PERF_TYPE_HARDWARE) &&
++			    (err == EOPNOTSUPP)) {
++				pr_err("No hardware sampling interrupt available."
++				       " No APIC? If so then you can boot the kernel"
++				       " with the \"lapic\" boot parameter to"
++				       " force-enable it.\n");
++				rc = -err;
++				goto out;
++			}
++#endif
++
++			pr_err("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
++			rc = -err;
++			goto out;
++		}
++	}
++out:
++	return rc;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 56003f7..270e546 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -135,4 +135,7 @@ static inline struct perf_evsel *perf_evlist__last(struct perf_evlist *evlist)
+ }
  
- 	list_for_each_entry(counter, &evlist->entries, node) {
-@@ -899,10 +899,10 @@ static void perf_top__start_counters(struct perf_top *top)
- 
- 		attr->sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
- 
--		if (top->freq) {
-+		if (top->opts.freq) {
- 			attr->sample_type |= PERF_SAMPLE_PERIOD;
- 			attr->freq	  = 1;
--			attr->sample_freq = top->freq;
-+			attr->sample_freq = top->opts.freq;
- 		}
- 
- 		if (evlist->nr_entries > 1) {
-@@ -910,7 +910,7 @@ static void perf_top__start_counters(struct perf_top *top)
- 			attr->read_format |= PERF_FORMAT_ID;
- 		}
- 
--		if (perf_target__has_cpu(&top->target))
-+		if (perf_target__has_cpu(&top->opts.target))
- 			attr->sample_type |= PERF_SAMPLE_CPU;
- 
- 		if (symbol_conf.use_callchain)
-@@ -918,12 +918,12 @@ static void perf_top__start_counters(struct perf_top *top)
- 
- 		attr->mmap = 1;
- 		attr->comm = 1;
--		attr->inherit = top->inherit;
-+		attr->inherit = !top->opts.no_inherit;
- fallback_missing_features:
--		if (top->exclude_guest_missing)
-+		if (top->opts.exclude_guest_missing)
- 			attr->exclude_guest = attr->exclude_host = 0;
- retry_sample_id:
--		attr->sample_id_all = top->sample_id_all_missing ? 0 : 1;
-+		attr->sample_id_all = top->opts.sample_id_all_missing ? 0 : 1;
- try_again:
- 		if (perf_evsel__open(counter, top->evlist->cpus,
- 				     top->evlist->threads) < 0) {
-@@ -933,17 +933,17 @@ try_again:
- 				ui__error_paranoid();
- 				goto out_err;
- 			} else if (err == EINVAL) {
--				if (!top->exclude_guest_missing &&
-+				if (!top->opts.exclude_guest_missing &&
- 				    (attr->exclude_guest || attr->exclude_host)) {
- 					pr_debug("Old kernel, cannot exclude "
- 						 "guest or host samples.\n");
--					top->exclude_guest_missing = true;
-+					top->opts.exclude_guest_missing = true;
- 					goto fallback_missing_features;
--				} else if (!top->sample_id_all_missing) {
-+				} else if (!top->opts.sample_id_all_missing) {
- 					/*
- 					 * Old kernel, no attr->sample_id_type_all field
- 					 */
--					top->sample_id_all_missing = true;
-+					top->opts.sample_id_all_missing = true;
- 					goto retry_sample_id;
- 				}
- 			}
-@@ -992,7 +992,7 @@ try_again:
- 		}
- 	}
- 
--	if (perf_evlist__mmap(evlist, top->mmap_pages, false) < 0) {
-+	if (perf_evlist__mmap(evlist, top->opts.mmap_pages, false) < 0) {
- 		ui__error("Failed to mmap with %d (%s)\n",
- 			    errno, strerror(errno));
- 		goto out_err;
-@@ -1038,7 +1038,7 @@ static int __cmd_top(struct perf_top *top)
- 	if (ret)
- 		goto out_delete;
- 
--	if (perf_target__has_task(&top->target))
-+	if (perf_target__has_task(&top->opts.target))
- 		perf_event__synthesize_thread_map(&top->tool, top->evlist->threads,
- 						  perf_event__process,
- 						  &top->session->host_machine);
-@@ -1172,11 +1172,13 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct perf_top top = {
- 		.count_filter	     = 5,
- 		.delay_secs	     = 2,
--		.freq		     = 4000, /* 4 KHz */
--		.mmap_pages	     = 128,
- 		.sym_pcnt_filter     = 5,
--		.target		     = {
--			.uses_mmap   = true,
-+		.opts = {
-+			.freq		     = 4000, /* 4 KHz */
-+			.mmap_pages	     = 128,
-+			.target		     = {
-+				.uses_mmap   = true,
-+			},
- 		},
- 	};
- 	char callchain_default_opt[] = "fractal,0.5,callee";
-@@ -1184,21 +1186,21 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK('e', "event", &top.evlist, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
--	OPT_INTEGER('c', "count", &top.default_interval,
--		    "event period to sample"),
--	OPT_STRING('p', "pid", &top.target.pid, "pid",
-+	OPT_U64('c', "count", &top.opts.default_interval,
-+		"event period to sample"),
-+	OPT_STRING('p', "pid", &top.opts.target.pid, "pid",
- 		    "profile events on existing process id"),
--	OPT_STRING('t', "tid", &top.target.tid, "tid",
-+	OPT_STRING('t', "tid", &top.opts.target.tid, "tid",
- 		    "profile events on existing thread id"),
--	OPT_BOOLEAN('a', "all-cpus", &top.target.system_wide,
-+	OPT_BOOLEAN('a', "all-cpus", &top.opts.target.system_wide,
- 			    "system-wide collection from all CPUs"),
--	OPT_STRING('C', "cpu", &top.target.cpu_list, "cpu",
-+	OPT_STRING('C', "cpu", &top.opts.target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- 	OPT_BOOLEAN('K', "hide_kernel_symbols", &top.hide_kernel_symbols,
- 		    "hide kernel symbols"),
--	OPT_UINTEGER('m', "mmap-pages", &top.mmap_pages, "number of mmap data pages"),
-+	OPT_UINTEGER('m', "mmap-pages", &top.opts.mmap_pages, "number of mmap data pages"),
- 	OPT_INTEGER('r', "realtime", &top.realtime_prio,
- 		    "collect data with this RT SCHED_FIFO priority"),
- 	OPT_INTEGER('d', "delay", &top.delay_secs,
-@@ -1207,15 +1209,15 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 			    "dump the symbol table used for profiling"),
- 	OPT_INTEGER('f', "count-filter", &top.count_filter,
- 		    "only display functions with more events than this"),
--	OPT_BOOLEAN('g', "group", &top.group,
-+	OPT_BOOLEAN('g', "group", &top.opts.group,
- 			    "put the counters into a counter group"),
--	OPT_BOOLEAN('i', "inherit", &top.inherit,
-+	OPT_BOOLEAN('i', "inherit", &top.opts.no_inherit,
- 		    "child tasks inherit counters"),
- 	OPT_STRING(0, "sym-annotate", &top.sym_filter, "symbol name",
- 		    "symbol to annotate"),
- 	OPT_BOOLEAN('z', "zero", &top.zero,
- 		    "zero history across updates"),
--	OPT_INTEGER('F', "freq", &top.freq,
-+	OPT_UINTEGER('F', "freq", &top.opts.freq,
- 		    "profile at this frequency"),
- 	OPT_INTEGER('E', "entries", &top.print_entries,
- 		    "display this many functions"),
-@@ -1247,7 +1249,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "Display raw encoding of assembly instructions (default)"),
- 	OPT_STRING('M', "disassembler-style", &disassembler_style, "disassembler style",
- 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
--	OPT_STRING('u', "uid", &top.target.uid_str, "user", "user to profile"),
-+	OPT_STRING('u', "uid", &top.opts.target.uid_str, "user", "user to profile"),
- 	OPT_END()
- 	};
- 	const char * const top_usage[] = {
-@@ -1277,27 +1279,27 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	setup_browser(false);
- 
--	status = perf_target__validate(&top.target);
-+	status = perf_target__validate(&top.opts.target);
- 	if (status) {
--		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		perf_target__strerror(&top.opts.target, status, errbuf, BUFSIZ);
- 		ui__warning("%s", errbuf);
- 	}
- 
--	status = perf_target__parse_uid(&top.target);
-+	status = perf_target__parse_uid(&top.opts.target);
- 	if (status) {
- 		int saved_errno = errno;
- 
--		perf_target__strerror(&top.target, status, errbuf, BUFSIZ);
-+		perf_target__strerror(&top.opts.target, status, errbuf, BUFSIZ);
- 		ui__error("%s", errbuf);
- 
- 		status = -saved_errno;
- 		goto out_delete_evlist;
- 	}
- 
--	if (perf_target__none(&top.target))
--		top.target.system_wide = true;
-+	if (perf_target__none(&top.opts.target))
-+		top.opts.target.system_wide = true;
- 
--	if (perf_evlist__create_maps(top.evlist, &top.target) < 0)
-+	if (perf_evlist__create_maps(top.evlist, &top.opts.target) < 0)
- 		usage_with_options(top_usage, options);
- 
- 	if (!top.evlist->nr_entries &&
-@@ -1314,10 +1316,10 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	/*
- 	 * User specified count overrides default frequency.
- 	 */
--	if (top.default_interval)
--		top.freq = 0;
--	else if (top.freq) {
--		top.default_interval = top.freq;
-+	if (top.opts.default_interval)
-+		top.opts.freq = 0;
-+	else if (top.opts.freq) {
-+		top.opts.default_interval = top.opts.freq;
- 	} else {
- 		ui__error("frequency and count are zero, aborting\n");
- 		exit(EXIT_FAILURE);
-@@ -1328,7 +1330,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 		 * Fill in the ones not specifically initialized via -c:
- 		 */
- 		if (!pos->attr.sample_period)
--			pos->attr.sample_period = top.default_interval;
-+			pos->attr.sample_period = top.opts.default_interval;
- 	}
- 
- 	top.sym_evsel = perf_evlist__first(top.evlist);
-diff --git a/tools/perf/util/top.c b/tools/perf/util/top.c
-index 884dde9..deea8fd 100644
---- a/tools/perf/util/top.c
-+++ b/tools/perf/util/top.c
-@@ -61,31 +61,31 @@ size_t perf_top__header_snprintf(struct perf_top *top, char *bf, size_t size)
- 		struct perf_evsel *first = perf_evlist__first(top->evlist);
- 		ret += SNPRINTF(bf + ret, size - ret, "%" PRIu64 "%s ",
- 				(uint64_t)first->attr.sample_period,
--				top->freq ? "Hz" : "");
-+				top->opts.freq ? "Hz" : "");
- 	}
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "%s", perf_evsel__name(top->sym_evsel));
- 
- 	ret += SNPRINTF(bf + ret, size - ret, "], ");
- 
--	if (top->target.pid)
-+	if (top->opts.target.pid)
- 		ret += SNPRINTF(bf + ret, size - ret, " (target_pid: %s",
--				top->target.pid);
--	else if (top->target.tid)
-+				top->opts.target.pid);
-+	else if (top->opts.target.tid)
- 		ret += SNPRINTF(bf + ret, size - ret, " (target_tid: %s",
--				top->target.tid);
--	else if (top->target.uid_str != NULL)
-+				top->opts.target.tid);
-+	else if (top->opts.target.uid_str != NULL)
- 		ret += SNPRINTF(bf + ret, size - ret, " (uid: %s",
--				top->target.uid_str);
-+				top->opts.target.uid_str);
- 	else
- 		ret += SNPRINTF(bf + ret, size - ret, " (all");
- 
--	if (top->target.cpu_list)
-+	if (top->opts.target.cpu_list)
- 		ret += SNPRINTF(bf + ret, size - ret, ", CPU%s: %s)",
- 				top->evlist->cpus->nr > 1 ? "s" : "",
--				top->target.cpu_list);
-+				top->opts.target.cpu_list);
- 	else {
--		if (top->target.tid)
-+		if (top->opts.target.tid)
- 			ret += SNPRINTF(bf + ret, size - ret, ")");
- 		else
- 			ret += SNPRINTF(bf + ret, size - ret, ", %d CPU%s)",
-diff --git a/tools/perf/util/top.h b/tools/perf/util/top.h
-index 86ff1b1..9728740 100644
---- a/tools/perf/util/top.h
-+++ b/tools/perf/util/top.h
-@@ -14,7 +14,7 @@ struct perf_session;
- struct perf_top {
- 	struct perf_tool   tool;
- 	struct perf_evlist *evlist;
--	struct perf_target target;
-+	struct perf_record_opts opts;
- 	/*
- 	 * Symbols will be added here in perf_event__process_sample and will
- 	 * get out after decayed.
-@@ -24,24 +24,17 @@ struct perf_top {
- 	u64		   exact_samples;
- 	u64		   guest_us_samples, guest_kernel_samples;
- 	int		   print_entries, count_filter, delay_secs;
--	int		   freq;
- 	bool		   hide_kernel_symbols, hide_user_symbols, zero;
- 	bool		   use_tui, use_stdio;
- 	bool		   sort_has_symbols;
- 	bool		   dont_use_callchains;
- 	bool		   kptr_restrict_warned;
- 	bool		   vmlinux_warned;
--	bool		   inherit;
--	bool		   group;
--	bool		   sample_id_all_missing;
--	bool		   exclude_guest_missing;
- 	bool		   dump_symtab;
- 	struct hist_entry  *sym_filter_entry;
- 	struct perf_evsel  *sym_evsel;
- 	struct perf_session *session;
- 	struct winsize	   winsize;
--	unsigned int	   mmap_pages;
--	int		   default_interval;
- 	int		   realtime_prio;
- 	int		   sym_pcnt_filter;
- 	const char	   *sym_filter;
+ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
++
++int perf_evlist__open_counters(struct perf_evlist *evlist,
++			       struct perf_record_opts *opts);
+ #endif /* __PERF_EVLIST_H */
 -- 
 1.7.10.1
 
