@@ -1,150 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761103Ab2J2Wiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:38:55 -0400
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:36759 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761053Ab2J2Wix (ORCPT
+	id S1761143Ab2J2Wlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:41:31 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:54187 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751541Ab2J2Wla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:38:53 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
+	Mon, 29 Oct 2012 18:41:30 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhidAL4Ej1BV5h1yPGdsb2JhbABEilK3KgICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTHodWAwkKsjMNiVQUinqBHYEmgieBeWEDlB+BVIV5hTmHcw4
-X-IronPort-AV: E=Sophos;i="4.80,675,1344204000"; 
-   d="scan'208";a="435650436"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 23:43:31 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 10/11] HID: introduce Scan Time
-Message-ID: <20121029224331.GA15608@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-11-git-send-email-benjamin.tissoires@gmail.com>
+X-IronPort-Anti-Spam-Result: Av8MAJYFj1B5LDZd/2dsb2JhbABEvQeGAYEJgh4BAQUnExQIIxAIAw4HAy4UHQgDIQgLCRQEh2QMq3CQHRSLYQkehjYDlXOBG4oahQ6DA4FHAh4
+Date: Tue, 30 Oct 2012 09:41:22 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
+Message-ID: <20121029224122.GV29378@dastard>
+References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
+ <20121029222613.GU29378@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351241067-9521-11-git-send-email-benjamin.tissoires@gmail.com>
+In-Reply-To: <20121029222613.GU29378@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+[add the linux-mm cc I forgot to add before sending]
 
-> Win 8 digitizer devices provides the actual scan time computed by the
-> hardware itself. The value is global to the frame and is not specific
-> to the multitouch protocol (though only touch, not pen, should use it
-> according to the specification).
+On Tue, Oct 30, 2012 at 09:26:13AM +1100, Dave Chinner wrote:
+> On Mon, Oct 29, 2012 at 09:03:15PM +0100, Torsten Kaiser wrote:
+> > After experiencing a hang of all IO yesterday (
+> > http://marc.info/?l=linux-kernel&m=135142236520624&w=2 ), I turned on
+> > LOCKDEP after upgrading to -rc3.
+> > 
+> > I then tried to replicate the load that hung yesterday and got the
+> > following lockdep report, implicating XFS instead of by stacking swap
+> > onto dm-crypt and md.
+> > 
+> > [ 2844.971913]
+> > [ 2844.971920] =================================
+> > [ 2844.971921] [ INFO: inconsistent lock state ]
+> > [ 2844.971924] 3.7.0-rc3 #1 Not tainted
+> > [ 2844.971925] ---------------------------------
+> > [ 2844.971927] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+> > [ 2844.971929] kswapd0/725 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> > [ 2844.971931] (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e7ef4>] xfs_ilock+0x84/0xb0
+> > [ 2844.971941] {RECLAIM_FS-ON-W} state was registered at:
+> > [ 2844.971942]   [<ffffffff8108137e>] mark_held_locks+0x7e/0x130
+> > [ 2844.971947]   [<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
+> > [ 2844.971949]   [<ffffffff810e9dd5>] kmem_cache_alloc+0x35/0xe0
+> > [ 2844.971952]   [<ffffffff810dba31>] vm_map_ram+0x271/0x770
+> > [ 2844.971955]   [<ffffffff811e10a6>] _xfs_buf_map_pages+0x46/0xe0
+> > [ 2844.971959]   [<ffffffff811e1fba>] xfs_buf_get_map+0x8a/0x130
+> > [ 2844.971961]   [<ffffffff81233849>] xfs_trans_get_buf_map+0xa9/0xd0
+> > [ 2844.971964]   [<ffffffff8121e339>] xfs_ifree_cluster+0x129/0x670
+> > [ 2844.971967]   [<ffffffff8121f959>] xfs_ifree+0xe9/0xf0
+> > [ 2844.971969]   [<ffffffff811f4abf>] xfs_inactive+0x2af/0x480
+> > [ 2844.971972]   [<ffffffff811efb90>] xfs_fs_evict_inode+0x70/0x80
+> > [ 2844.971974]   [<ffffffff8110cb8f>] evict+0xaf/0x1b0
+> > [ 2844.971977]   [<ffffffff8110cd95>] iput+0x105/0x210
+> > [ 2844.971979]   [<ffffffff811070d0>] dentry_iput+0xa0/0xe0
+> > [ 2844.971981]   [<ffffffff81108310>] dput+0x150/0x280
+> > [ 2844.971983]   [<ffffffff811020fb>] sys_renameat+0x21b/0x290
+> > [ 2844.971986]   [<ffffffff81102186>] sys_rename+0x16/0x20
+> > [ 2844.971988]   [<ffffffff816b2292>] system_call_fastpath+0x16/0x1b
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  Documentation/input/event-codes.txt |  7 +++++++
->  drivers/hid/hid-input.c             |  4 ++++
->  drivers/hid/hid-multitouch.c        | 11 +++++++++--
->  include/linux/hid.h                 |  1 +
->  include/linux/input.h               |  1 +
->  5 files changed, 22 insertions(+), 2 deletions(-)
-
-This is a nice feature, useful in many other contexts. As such, I
-think it should be defined in the context of the input subsystem, with
-a more specific definition added to the documentation. For instance,
-is 100us suitable? When should it start at zero, at BTN_TOUCH? Or
-should it perhaps wrap around on unsigned integer instead? Or display
-the difference from the last event?
-
-> diff --git a/Documentation/input/event-codes.txt b/Documentation/input/event-codes.txt
-> index 53305bd..8f8c908 100644
-> --- a/Documentation/input/event-codes.txt
-> +++ b/Documentation/input/event-codes.txt
-> @@ -174,6 +174,13 @@ A few EV_ABS codes have special meanings:
->      the input device may be used freely in three dimensions, consider ABS_Z
->      instead.
->  
-> +* ABS_SCAN_TIME:
-> +  - Used when the device provides a timestamp for each frame. The unit must be
-> +    100us, and may be reset when the device don't send any events for a
-> +    period of time. The values increment at each frame and thus, it can roll
-> +    back to 0 when reach logical_max. If the device does not provide this
-> +    information, the driver must not provide it to the user space.
-> +
->  * ABS_MT_<name>:
->    - Used to describe multitouch input events. Please see
->      multi-touch-protocol.txt for details.
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 16cc89a..5fe7bd3 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -675,6 +675,10 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
->  			map_key_clear(BTN_STYLUS2);
->  			break;
->  
-> +		case 0x56: /* Scan Time */
-> +			map_abs(ABS_SCAN_TIME);
-> +			break;
-> +
-
-Is it not enough to map it in the case below? Or you mean this is
-picked up by hid core?
-
->  		default:  goto unknown;
->  		}
->  		break;
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index c0ab1c6..21a120b 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -447,12 +447,19 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
-> +		case HID_DG_SCANTIME:
-> +			hid_map_usage(hi, usage, bit, max,
-> +				EV_ABS, ABS_SCAN_TIME);
-> +			set_abs(hi->input, ABS_SCAN_TIME, field, 0);
-> +			td->last_field_index = field->index;
-> +			return 1;
->  		case HID_DG_CONTACTCOUNT:
->  			td->last_field_index = field->index;
->  			return 1;
->  		case HID_DG_CONTACTMAX:
-> -			/* we don't set td->last_slot_field as contactcount and
-> -			 * contact max are global to the report */
-> +			/* we don't set td->last_slot_field as scan time,
-> +			 * contactcount and contact max are global to the
-> +			 * report */
->  			td->last_field_index = field->index;
->  			return -1;
->  		case HID_DG_TOUCH:
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 6216529..99a6418 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -279,6 +279,7 @@ struct hid_item {
->  #define HID_DG_DEVICEINDEX	0x000d0053
->  #define HID_DG_CONTACTCOUNT	0x000d0054
->  #define HID_DG_CONTACTMAX	0x000d0055
-> +#define HID_DG_SCANTIME		0x000d0056
->  
->  /*
->   * HID report types --- Ouch! HID spec says 1 2 3!
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index ba48743..73c3a96 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -796,6 +796,7 @@ struct input_keymap_entry {
->  #define ABS_TILT_X		0x1a
->  #define ABS_TILT_Y		0x1b
->  #define ABS_TOOL_WIDTH		0x1c
-> +#define ABS_SCAN_TIME		0x1d
->  
->  #define ABS_VOLUME		0x20
->  
+> We shouldn't be mapping pages there. See if the patch below fixes
+> it.
+> 
+> Fundamentally, though, the lockdep warning has come about because
+> vm_map_ram is doing a GFP_KERNEL allocation when we need it to be
+> doing GFP_NOFS - we are within a transaction here, so memory reclaim
+> is not allowed to recurse back into the filesystem.
+> 
+> mm-folk: can we please get this vmalloc/gfp_flags passing API
+> fixed once and for all? This is the fourth time in the last month or
+> so that I've seen XFS bug reports with silent hangs and associated
+> lockdep output that implicate GFP_KERNEL allocations from vm_map_ram
+> in GFP_NOFS conditions as the potential cause....
+> 
+> Cheers,
+> 
+> Dave.
 > -- 
-> 1.7.11.7
+> Dave Chinner
+> david@fromorbit.com
+> 
+> xfs: don't vmap inode cluster buffers during free
+> 
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/xfs/xfs_inode.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
+> index c4add46..82f6e5d 100644
+> --- a/fs/xfs/xfs_inode.c
+> +++ b/fs/xfs/xfs_inode.c
+> @@ -1781,7 +1781,8 @@ xfs_ifree_cluster(
+>  		 * to mark all the active inodes on the buffer stale.
+>  		 */
+>  		bp = xfs_trans_get_buf(tp, mp->m_ddev_targp, blkno,
+> -					mp->m_bsize * blks_per_cluster, 0);
+> +					mp->m_bsize * blks_per_cluster,
+> +					XBF_UNMAPPED);
+>  
+>  		if (!bp)
+>  			return ENOMEM;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> This message has been scanned for viruses and
+> dangerous content by MailScanner, and is
+> believed to be clean.
+> 
 > 
 
-Thanks,
-Henrik
+-- 
+Dave Chinner
+david@fromorbit.com
