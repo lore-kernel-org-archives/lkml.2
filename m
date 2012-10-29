@@ -1,152 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2J2Eh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:37:28 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36723 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab2J2EcH (ORCPT
+	id S1752026Ab2J2EqZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:46:25 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53726 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab2J2EqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:32:07 -0400
-From: zwu.kernel@gmail.com
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
-        viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
-        cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: [RFC v4+ hot_track 05/19] vfs: add hooks to enable hot tracking
-Date: Mon, 29 Oct 2012 12:30:47 +0800
-Message-Id: <1351485061-12297-6-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102904-7282-0000-0000-00000E5C4F48
+	Mon, 29 Oct 2012 00:46:24 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-bc-508e0a1e3e27
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/2] backlight: 88pm860x: drop devm_kfree of devm_kzalloc'd data
+Date: Mon, 29 Oct 2012 13:46:22 +0900
+Message-id: <000501cdb590$588260f0$098722d0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac21kFhmA4SJbq7/SSeHEgsu/+gYEg==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jQV15rr4Ag9uHGC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG10dGBbd4Ku5dE2hg3MbVxcjJISFgItHwuJ8VwhaTuHBvPVsX
+	IxeHkMB0RommS1uZIZzZTBITT/SwgFSxCahJfPlymB3EFhGIkGieMQuoiIODWcBHYvMsTZCw
+	sECARP+FNWwgYRYBVYmGqW4gYV4BW4mj0+azQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zFmyi
+	hIC6xKO/uhCL9CRuvH3HClEiIrHvxTvGCYwCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk9
+	11CvODG3uDQvXS85P3cTIzggn0ntYFzZYHGIUYCDUYmHt/FNb4AQa2JZcWXuIUYJDmYlEd6l
+	3EAh3pTEyqrUovz4otKc1OJDjNIcLErivM0eKQFCAumJJanZqakFqUUwWSYOTqkGxmVn2lrz
+	2ntddx896GEpmfpgWeUX3a9/Tmxc3VX6Jylqtb9Wg/GJ/79eHXo755Jui8SRFWecqo/bti3y
+	DyqOWXs0+MGuTdv2GllbX772YROj1dlP/feunFxU/HUzo8NxD/5XUaqTPwYqP9NeH7z6gdoF
+	n3uOBU5NVooN3w0cJpssvMs48bNztKkSS3FGoqEWc1FxIgA4UceERAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+The devm_kfree function allocates memory that is released
+when a driver detaches. Thus, there is no reason to explicitly
+call devm_kfree in probe or remove functions.
 
-  Miscellaneous features that implement hot data tracking
-and generally make the hot data functions a bit more friendly.
-
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- fs/direct-io.c      |    6 ++++++
- mm/filemap.c        |    6 ++++++
- mm/page-writeback.c |   12 ++++++++++++
- mm/readahead.c      |    6 ++++++
- 4 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/video/backlight/88pm860x_bl.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index f86c720..1d23631 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -37,6 +37,7 @@
- #include <linux/uio.h>
- #include <linux/atomic.h>
- #include <linux/prefetch.h>
-+#include "hot_tracking.h"
+diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
+index b7ec34c..861cc40 100644
+--- a/drivers/video/backlight/88pm860x_bl.c
++++ b/drivers/video/backlight/88pm860x_bl.c
+@@ -208,22 +208,19 @@ static int pm860x_backlight_probe(struct platform_device *pdev)
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "duty cycle");
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "No REG resource for duty cycle\n");
+-		ret = -ENXIO;
+-		goto out;
++		return -ENXIO;
+ 	}
+ 	data->reg_duty_cycle = res->start;
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "always on");
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "No REG resorce for always on\n");
+-		ret = -ENXIO;
+-		goto out;
++		return -ENXIO;
+ 	}
+ 	data->reg_always_on = res->start;
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "current");
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "No REG resource for current\n");
+-		ret = -ENXIO;
+-		goto out;
++		return -ENXIO;
+ 	}
+ 	data->reg_current = res->start;
  
- /*
-  * How many user pages to map in one call to get_user_pages().  This determines
-@@ -1297,6 +1298,11 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	prefetch(bdev->bd_queue);
- 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
- 
-+	/* Hot data tracking */
-+	hot_update_freqs(inode, (u64)offset,
-+			(u64)iov_length(iov, nr_segs),
-+			rw & WRITE);
-+
- 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
- 				     nr_segs, get_block, end_io,
- 				     submit_io, flags);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..51b2c48 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
- #include <linux/cleancache.h>
-+#include <linux/hot_tracking.h>
- #include "internal.h"
- 
- /*
-@@ -1224,6 +1225,11 @@ readpage:
- 		 * PG_error will be set again if readpage fails.
- 		 */
- 		ClearPageError(page);
-+
-+		/* Hot data tracking */
-+		hot_update_freqs(inode, (u64)page->index << PAGE_CACHE_SHIFT,
-+				PAGE_CACHE_SIZE, 0);
-+
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 830893b..5220040 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -35,6 +35,7 @@
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
- #include <linux/timer.h>
-+#include <linux/hot_tracking.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -1903,13 +1904,24 @@ EXPORT_SYMBOL(generic_writepages);
- int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
- {
- 	int ret;
-+	pgoff_t start = 0;
-+	u64 count = 0;
- 
- 	if (wbc->nr_to_write <= 0)
- 		return 0;
-+
-+	start = mapping->writeback_index << PAGE_CACHE_SHIFT;
-+	count = (u64)wbc->nr_to_write;
-+
- 	if (mapping->a_ops->writepages)
- 		ret = mapping->a_ops->writepages(mapping, wbc);
- 	else
- 		ret = generic_writepages(mapping, wbc);
-+
-+	/* Hot data tracking */
-+	hot_update_freqs(mapping->host, (u64)start,
-+			(count - (u64)wbc->nr_to_write) * PAGE_CACHE_SIZE, 1);
-+
- 	return ret;
- }
- 
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 7963f23..8a24f1e 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -19,6 +19,7 @@
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
- #include <linux/file.h>
-+#include <linux/hot_tracking.h>
- 
- /*
-  * Initialise a struct file's readahead state.  Assumes that the caller has
-@@ -138,6 +139,11 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- out:
- 	blk_finish_plug(&plug);
- 
-+	/* Hot data tracking */
-+	hot_update_freqs(mapping->host, (u64)(list_entry(pages->prev,\
-+				struct page, lru)->index) << PAGE_CACHE_SHIFT,
-+			(u64)nr_pages * PAGE_CACHE_SIZE, 0);
-+
+@@ -263,8 +260,6 @@ static int pm860x_backlight_probe(struct platform_device *pdev)
+ 	return 0;
+ out_brt:
+ 	backlight_device_unregister(bl);
+-out:
+-	devm_kfree(&pdev->dev, data);
  	return ret;
  }
  
 -- 
-1.7.6.5
+1.7.1
+
 
