@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760351Ab2J2SWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:22:18 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53870 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842Ab2J2SWP (ORCPT
+	id S1760334Ab2J2SXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:23:14 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46941 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab2J2SXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:22:15 -0400
-Date: Mon, 29 Oct 2012 11:22:09 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 15/16] openvswitch: use new hashtable implementation
-Message-ID: <20121029182209.GB4066@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-15-git-send-email-levinsasha928@gmail.com>
- <20121029132931.GC16391@Krystal>
- <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com>
- <20121029155957.GB18834@Krystal>
- <CA+1xoqcr5xmOkDfqL3P84CNdotOALOhiLRkJjsPCZzijSQUF6w@mail.gmail.com>
- <20121029181648.GB20796@Krystal>
+	Mon, 29 Oct 2012 14:23:12 -0400
+Message-ID: <508EC98E.902@wwwdotorg.org>
+Date: Mon, 29 Oct 2012 12:23:10 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029181648.GB20796@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: linux@arm.linux.org.uk, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 2/4] ARM: tegra: Add OF_DEV_AUXDATA for SLINK driver
+ in board dt
+References: <1351531180-1652-1-git-send-email-ldewangan@nvidia.com> <1351531180-1652-3-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1351531180-1652-3-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 10/29/2012 11:19 AM, Laxman Dewangan wrote:
+> Add OF_DEV_AUXDATA for slink driver for Tegra20 and Tegra30
+> board dt files.
+> Set the parent clock of slink controller to PLLP and configure
+> clock to 100MHz.
 
-On Mon, Oct 29, 2012 at 02:16:48PM -0400, Mathieu Desnoyers wrote:
-> This is just one example in an attempt to show why different hash table
-> users may have different constraints: for a hash table entirely
-> populated by keys generated internally by the kernel, a random seed
-> might not be required, but for cases where values are fed by user-space
-> and from the NIC, I would argue that flexibility to implement a
-> randomizable hash function beats implementation simplicity any time.
-> 
-> And you could keep the basic use-case simple by providing hints to the
-> hash_32()/hash_64()/hash_ulong() helpers in comments.
+> diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
 
-If all you need is throwing in a salt value to avoid attacks, can't
-you just do that from caller side?  Scrambling the key before feeding
-it into hash_*() should work, no?
+> @@ -90,6 +90,10 @@ struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+>  		       &tegra_ehci3_pdata),
+>  	OF_DEV_AUXDATA("nvidia,tegra20-apbdma", TEGRA_APB_DMA_BASE, "tegra-apbdma", NULL),
+>  	OF_DEV_AUXDATA("nvidia,tegra20-pwm", TEGRA_PWFM_BASE, "tegra-pwm", NULL),
+> +	OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK1_BASE, "spi_tegra.0", NULL),
+> +	OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK2_BASE, "spi_tegra.1", NULL),
+> +	OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK3_BASE, "spi_tegra.2", NULL),
+> +	OF_DEV_AUXDATA("nvidia,tegra20-slink", TEGRA_SLINK4_BASE, "spi_tegra.3", NULL),
 
-Thanks.
+I would rather hard-code the addresses there (e.g. write literally
+0x7000d400), and hence not have to edit iomap.h;
 
--- 
-tejun
+> diff --git a/arch/arm/mach-tegra/include/mach/iomap.h b/arch/arm/mach-tegra/include/mach/iomap.h
+
+> -#define TEGRA_SPI1_BASE			0x7000D400
+> -#define TEGRA_SPI1_SIZE			SZ_512
+> +#define TEGRA_SLINK1_BASE		0x7000D400
+> +#define TEGRA_SLINK1_SIZE		SZ_512
+
+As I wrote for V1:
+
+Lets not add [or change] anything to iomap.h; we're trying to remove it.
+Instead, just put the raw address in the AUXDATA; I assume that's the
+only place these defines end up being used...
+
+Aside from that, this series looks fine.
