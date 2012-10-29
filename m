@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757829Ab2J2DIp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 23:08:45 -0400
-Received: from mk-outboundfilter-6-a-3.mail.uk.tiscali.com ([212.74.114.22]:32422
-	"EHLO mk-outboundfilter-6-a-3.mail.uk.tiscali.com"
+	id S1757861Ab2J2DJf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 23:09:35 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:50758 "EHLO mprc.pku.edu.cn"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754218Ab2J2DIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 23:08:44 -0400
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Oct 2012 23:08:44 EDT
-X-Trace: 514167688/mk-outboundfilter-6.mail.uk.tiscali.com/PIPEX/$ON_NET_AUTH_ACCEPTED/pipex-tiscali-ips/212.74.113.222/None/fd@yahoo.com
-X-SBRS: None
-X-RemoteIP: 212.74.113.222
-X-IP-MAIL-FROM: fd@yahoo.com
-X-SMTP-AUTH: 
-X-Originating-Country: GB/UNITED KINGDOM
-X-MUA: Pipex Webmail (IMP3.1)
-X-IP-BHB: Once
-X-IP-Webmail: TRUE
-X-IP-Added: To/mk-outboundfilter-6.mail.uk.tiscali.com
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArgWAODvjVDUSnHe/2dsb2JhbABED4IJgTm+IW2BCIIwIAcBaQUUFCAgAQ4BCRiIAwEBEQSaU4ZgiEcJhnUBIwMBigSSUgObSjVbiBFsX4I3AjY
-X-IronPort-AV: E=Sophos;i="4.80,669,1344207600"; 
-   d="scan'208";a="514167688"
-X-IP-Direction: IN
-Message-ID: <1351476191.508de3df8caf6@netmail.pipex.net>
-Date: Mon, 29 Oct 2012 02:03:11 +0000
-From: supreme financ <fd@yahoo.com>
-Reply-to: switzaand@live.com
-Subject: Darlehen
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-User-Agent: Pipex Webmail (IMP3.1)
-X-Originating-IP: 172.129.2.227
-X-Pipex-Username: ginnie.ebbrell@dsl.pipex.com
-X-Usage: Pipex Webmail is subject to the standard Pipex terms and conditions of use
-To: unlisted-recipients:; (no To-header on input)
+	id S1756417Ab2J2DJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 23:09:34 -0400
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL REQUEST] UniCore32 update for v3.7-rc2
+Cc: linux-kernel@vger.kernel.org
+Message-Id: <20121029030549.EF94F14603E7@linuxdev-32>
+Date: Mon, 29 Oct 2012 11:05:49 +0800 (CST)
+From: guanxuetao@mprc.pku.edu.cn (guanxuetao)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wir bieten legitimen Darlehen wie persönliche Darlehen und Business-Darlehen ohne Sicherheiten mit maximaler
-Garantie, € 5.000 bis € 90.000.000, Zinssätze niedrig wie 3% in 1 Jahr bis 40 Jahre Rückzahlungsfrist überall in der
-Welt
+The following changes since commit e657e078d3dfa9f96976db7a2b5fd7d7c9f1f1a6:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../davem/net
 
+are available in the git repository at:
+
+  git://github.com/gxt/linux.git unicore32
+
+Al Viro (2):
+      unicore32: switch to generic kernel_thread()/kernel_execve()
+      unicore32: switch to generic sys_execve()
+
+David Howells (1):
+      UAPI: (Scripted) Disintegrate arch/unicore32/include/asm
+
+Guan Xuetao (4):
+      UniCore32 bugfix: add missed CONFIG_ZONE_DMA
+      UniCore32-bugfix: fix mismatch return value of __xchg_bad_pointer
+      UniCore32-bugfix: Remove definitions in asm/bug.h to solve difference between native and cross compiler
+      unicore32: Use Kbuild infrastructure for kvm_para.h
+
+Kautuk Consul (1):
+      unicore32/mm/fault.c: Port OOM changes to do_pf
+
+Kees Cook (1):
+      arch/unicore32: remove CONFIG_EXPERIMENTAL
+
+ arch/unicore32/Kconfig                             |    7 ++-
+ arch/unicore32/include/asm/Kbuild                  |    1 -
+ arch/unicore32/include/asm/bug.h                   |    5 -
+ arch/unicore32/include/asm/cmpxchg.h               |    2 +-
+ arch/unicore32/include/asm/kvm_para.h              |    1 -
+ arch/unicore32/include/asm/processor.h             |    5 -
+ arch/unicore32/include/asm/ptrace.h                |   76 +----------------
+ arch/unicore32/include/uapi/asm/Kbuild             |    7 ++
+ arch/unicore32/include/{ => uapi}/asm/byteorder.h  |    0
+ arch/unicore32/include/uapi/asm/ptrace.h           |   90 ++++++++++++++++++++
+ arch/unicore32/include/{ => uapi}/asm/sigcontext.h |    0
+ arch/unicore32/include/{ => uapi}/asm/unistd.h     |    1 +
+ arch/unicore32/kernel/entry.S                      |   20 ++---
+ arch/unicore32/kernel/process.c                    |   58 +++----------
+ arch/unicore32/kernel/setup.h                      |    6 ++
+ arch/unicore32/kernel/sys.c                        |   63 --------------
+ arch/unicore32/mm/fault.c                          |   37 ++++++--
+ 17 files changed, 160 insertions(+), 219 deletions(-)
+ delete mode 100644 arch/unicore32/include/asm/kvm_para.h
+ rename arch/unicore32/include/{ => uapi}/asm/byteorder.h (100%)
+ create mode 100644 arch/unicore32/include/uapi/asm/ptrace.h
+ rename arch/unicore32/include/{ => uapi}/asm/sigcontext.h (100%)
+ rename arch/unicore32/include/{ => uapi}/asm/unistd.h (92%)
