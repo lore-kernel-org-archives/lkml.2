@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761219Ab2J2WMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:12:33 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47473 "EHLO mail.kernel.org"
+	id S933518Ab2J2WM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:12:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47484 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761212Ab2J2VhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:12 -0400
+	id S1761216Ab2J2VhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleksandr Chumachenko <ledest@gmail.com>,
-        Michael Shigorin <mike@osdn.org.ua>
-Subject: [ 040/101] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
-Date: Mon, 29 Oct 2012 14:34:53 -0700
-Message-Id: <20121029213244.697657046@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 041/101] USB: usb-wwan: fix multiple memory leaks in error paths
+Date: Mon, 29 Oct 2012 14:34:54 -0700
+Message-Id: <20121029213244.815940654@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,39 +25,252 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Shigorin <mike@osdn.org.ua>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
+commit b8f0e82044c9ba40e92340c8a6d47d6bd6d819bc upstream.
 
-This commit sets removable subclass for Casio EX-N1 digital camera.
+Fix port-data memory leak in usb-serial probe error path by moving port
+data allocation to port_probe.
 
-The patch has been tested within an ALT Linux kernel:
-http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
+Since commit a1028f0abf ("usb: usb_wwan: replace release and disconnect
+with a port_remove hook") port data is deallocated in port_remove. This
+leaves a possibility for memory leaks if usb-serial probe fails after
+attach but before the port in question has been successfully registered.
 
-See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
+Note that this patch also fixes two additional memory leaks in the error
+path of attach should port initialisation fail for any port as the urbs
+were never freed and neither was the data of any of the successfully
+initialised ports.
 
-Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
-Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
+Compile-only tested.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/serial/ipw.c      |    2 
+ drivers/usb/serial/option.c   |    2 
+ drivers/usb/serial/qcserial.c |    2 
+ drivers/usb/serial/usb-wwan.h |    2 
+ drivers/usb/serial/usb_wwan.c |  136 +++++++++++++++++-------------------------
+ 5 files changed, 60 insertions(+), 84 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9
- 		USB_SC_8070, USB_PR_CB, NULL,
- 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
+--- a/drivers/usb/serial/ipw.c
++++ b/drivers/usb/serial/ipw.c
+@@ -311,8 +311,8 @@ static struct usb_serial_driver ipw_devi
+ 	.open =			ipw_open,
+ 	.close =		ipw_close,
+ 	.probe =		ipw_probe,
+-	.attach =		usb_wwan_startup,
+ 	.release =		ipw_release,
++	.port_probe =		usb_wwan_port_probe,
+ 	.port_remove =		usb_wwan_port_remove,
+ 	.dtr_rts =		ipw_dtr_rts,
+ 	.write =		usb_wwan_write,
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1288,8 +1288,8 @@ static struct usb_serial_driver option_1
+ 	.tiocmget          = usb_wwan_tiocmget,
+ 	.tiocmset          = usb_wwan_tiocmset,
+ 	.ioctl             = usb_wwan_ioctl,
+-	.attach            = usb_wwan_startup,
+ 	.release           = option_release,
++	.port_probe        = usb_wwan_port_probe,
+ 	.port_remove	   = usb_wwan_port_remove,
+ 	.read_int_callback = option_instat_callback,
+ #ifdef CONFIG_PM
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -287,8 +287,8 @@ static struct usb_serial_driver qcdevice
+ 	.write		     = usb_wwan_write,
+ 	.write_room	     = usb_wwan_write_room,
+ 	.chars_in_buffer     = usb_wwan_chars_in_buffer,
+-	.attach		     = usb_wwan_startup,
+ 	.release	     = qc_release,
++	.port_probe          = usb_wwan_port_probe,
+ 	.port_remove	     = usb_wwan_port_remove,
+ #ifdef CONFIG_PM
+ 	.suspend	     = usb_wwan_suspend,
+--- a/drivers/usb/serial/usb-wwan.h
++++ b/drivers/usb/serial/usb-wwan.h
+@@ -8,7 +8,7 @@
+ extern void usb_wwan_dtr_rts(struct usb_serial_port *port, int on);
+ extern int usb_wwan_open(struct tty_struct *tty, struct usb_serial_port *port);
+ extern void usb_wwan_close(struct usb_serial_port *port);
+-extern int usb_wwan_startup(struct usb_serial *serial);
++extern int usb_wwan_port_probe(struct usb_serial_port *port);
+ extern int usb_wwan_port_remove(struct usb_serial_port *port);
+ extern int usb_wwan_write_room(struct tty_struct *tty);
+ extern void usb_wwan_set_termios(struct tty_struct *tty,
+--- a/drivers/usb/serial/usb_wwan.c
++++ b/drivers/usb/serial/usb_wwan.c
+@@ -447,10 +447,12 @@ void usb_wwan_close(struct usb_serial_po
+ EXPORT_SYMBOL(usb_wwan_close);
  
-+/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
-+UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
-+		"Casio",
-+		"EX-N1 DigitalCamera",
-+		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
+ /* Helper functions used by usb_wwan_setup_urbs */
+-static struct urb *usb_wwan_setup_urb(struct usb_serial *serial, int endpoint,
++static struct urb *usb_wwan_setup_urb(struct usb_serial_port *port,
++				      int endpoint,
+ 				      int dir, void *ctx, char *buf, int len,
+ 				      void (*callback) (struct urb *))
+ {
++	struct usb_serial *serial = port->serial;
+ 	struct urb *urb;
+ 
+ 	if (endpoint == -1)
+@@ -470,100 +472,74 @@ static struct urb *usb_wwan_setup_urb(st
+ 	return urb;
+ }
+ 
+-/* Setup urbs */
+-static void usb_wwan_setup_urbs(struct usb_serial *serial)
++int usb_wwan_port_probe(struct usb_serial_port *port)
+ {
+-	int i, j;
+-	struct usb_serial_port *port;
+-	struct usb_wwan_port_private *portdata;
+-
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		portdata = usb_get_serial_port_data(port);
+-
+-		/* Do indat endpoints first */
+-		for (j = 0; j < N_IN_URB; ++j) {
+-			portdata->in_urbs[j] = usb_wwan_setup_urb(serial,
+-								  port->
+-								  bulk_in_endpointAddress,
+-								  USB_DIR_IN,
+-								  port,
+-								  portdata->
+-								  in_buffer[j],
+-								  IN_BUFLEN,
+-								  usb_wwan_indat_callback);
+-		}
+-
+-		/* outdat endpoints */
+-		for (j = 0; j < N_OUT_URB; ++j) {
+-			portdata->out_urbs[j] = usb_wwan_setup_urb(serial,
+-								   port->
+-								   bulk_out_endpointAddress,
+-								   USB_DIR_OUT,
+-								   port,
+-								   portdata->
+-								   out_buffer
+-								   [j],
+-								   OUT_BUFLEN,
+-								   usb_wwan_outdat_callback);
+-		}
+-	}
+-}
+-
+-int usb_wwan_startup(struct usb_serial *serial)
+-{
+-	int i, j, err;
+-	struct usb_serial_port *port;
+ 	struct usb_wwan_port_private *portdata;
++	struct urb *urb;
+ 	u8 *buffer;
++	int err;
++	int i;
+ 
+-	/* Now setup per port private data */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
+-		if (!portdata) {
+-			dbg("%s: kmalloc for usb_wwan_port_private (%d) failed!.",
+-			    __func__, i);
+-			return 1;
+-		}
+-		init_usb_anchor(&portdata->delayed);
+-
+-		for (j = 0; j < N_IN_URB; j++) {
+-			buffer = (u8 *) __get_free_page(GFP_KERNEL);
+-			if (!buffer)
+-				goto bail_out_error;
+-			portdata->in_buffer[j] = buffer;
+-		}
+-
+-		for (j = 0; j < N_OUT_URB; j++) {
+-			buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
+-			if (!buffer)
+-				goto bail_out_error2;
+-			portdata->out_buffer[j] = buffer;
+-		}
++	portdata = kzalloc(sizeof(*portdata), GFP_KERNEL);
++	if (!portdata)
++		return -ENOMEM;
 +
- /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
- UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
- 		"Samsung",
++	init_usb_anchor(&portdata->delayed);
++
++	for (i = 0; i < N_IN_URB; i++) {
++		buffer = (u8 *)__get_free_page(GFP_KERNEL);
++		if (!buffer)
++			goto bail_out_error;
++		portdata->in_buffer[i] = buffer;
++
++		urb = usb_wwan_setup_urb(port, port->bulk_in_endpointAddress,
++						USB_DIR_IN, port,
++						buffer, IN_BUFLEN,
++						usb_wwan_indat_callback);
++		portdata->in_urbs[i] = urb;
++ 	}
++	for (i = 0; i < N_OUT_URB; i++) {
++		if (port->bulk_out_endpointAddress == -1)
++			continue;
+ 
+-		usb_set_serial_port_data(port, portdata);
++		buffer = kmalloc(OUT_BUFLEN, GFP_KERNEL);
++		if (!buffer)
++			goto bail_out_error2;
++		portdata->out_buffer[i] = buffer;
++
++		urb = usb_wwan_setup_urb(port, port->bulk_out_endpointAddress,
++						USB_DIR_OUT, port,
++						buffer, OUT_BUFLEN,
++						usb_wwan_outdat_callback);
++		portdata->out_urbs[i] = urb;
++	}
+ 
+-		if (!port->interrupt_in_urb)
+-			continue;
++	usb_set_serial_port_data(port, portdata);
++
++	if (port->interrupt_in_urb) {
+ 		err = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
+ 		if (err)
+-			dbg("%s: submit irq_in urb failed %d", __func__, err);
++			dev_dbg(&port->dev, "%s: submit irq_in urb failed %d\n",
++				__func__, err);
+ 	}
+-	usb_wwan_setup_urbs(serial);
++
+ 	return 0;
+ 
+ bail_out_error2:
+-	for (j = 0; j < N_OUT_URB; j++)
+-		kfree(portdata->out_buffer[j]);
++	for (i = 0; i < N_OUT_URB; i++) {
++		usb_free_urb(portdata->out_urbs[i]);
++		kfree(portdata->out_buffer[i]);
++	}
+ bail_out_error:
+-	for (j = 0; j < N_IN_URB; j++)
+-		if (portdata->in_buffer[j])
+-			free_page((unsigned long)portdata->in_buffer[j]);
++	for (i = 0; i < N_IN_URB; i++) {
++		usb_free_urb(portdata->in_urbs[i]);
++		free_page((unsigned long)portdata->in_buffer[i]);
++	}
+ 	kfree(portdata);
+-	return 1;
++
++	return -ENOMEM;
+ }
+-EXPORT_SYMBOL(usb_wwan_startup);
++EXPORT_SYMBOL_GPL(usb_wwan_port_probe);
+ 
+ int usb_wwan_port_remove(struct usb_serial_port *port)
+ {
 
 
