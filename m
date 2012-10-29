@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab2J2Hxx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 03:53:53 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:39573 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab2J2Hxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 03:53:50 -0400
-Date: Mon, 29 Oct 2012 08:53:39 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Richard Kuo <rkuo@codeaurora.org>, Lennox Wu <lennox.wu@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Subject: Re: [update] Re: new execve/kernel_thread design
-Message-ID: <20121029085339.0ea11bc6@mschwide>
-In-Reply-To: <20121026183107.GQ2616@ZenIV.linux.org.uk>
-References: <20121016223508.GR2616@ZenIV.linux.org.uk>
-	<20121026183107.GQ2616@ZenIV.linux.org.uk>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12102907-8372-0000-0000-00000428452B
+	id S1757204Ab2J2H7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 03:59:53 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:20619
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751690Ab2J2H7w convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 03:59:52 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 9
+X-BigFish: VPS9(zz9371I542M1432I4015Izz1202h1d1ah1d2ahzz17326ah8275bhz30ih95h668h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1307i1155h)
+From: Michal Simek <michal.simek@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>,
+        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        John Linn <linnj@xilinx.com>, Nick Bowler <nbowler@elliptictech.com>
+Subject: RE: [PATCH v4 1/5] zynq: use GIC device tree bindings
+Thread-Topic: [PATCH v4 1/5] zynq: use GIC device tree bindings
+Thread-Index: AQHNtWmpMWs5pY3/VkWJTSc0R6X6JpfP67hw
+Date: Mon, 29 Oct 2012 07:59:46 +0000
+References: <cover.1351466765.git.josh.cartwright@ni.com>
+ <94010fc0a0094ef29dc87fbdb77507e379c5fe76.1351466765.git.josh.cartwright@ni.com>
+In-Reply-To: <94010fc0a0094ef29dc87fbdb77507e379c5fe76.1351466765.git.josh.cartwright@ni.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.26.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+Message-ID: <4dc73182-4ae3-478e-9306-dbe1ff888388@VA3EHSMHS008.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012 19:31:07 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-> 	The situation got much better by now.  More than a half of
-> architectures are done - alpha arm arm64 c6x hexagon ia64 m68k mips openrisc
-> parisc sparc tile um unicore32 and x86.
+
+> -----Original Message-----
+> From: Josh Cartwright [mailto:josh.cartwright@ni.com]
+> Sent: Thursday, October 18, 2012 2:47 AM
+> To: arm@kernel.org; Arnd Bergmann
+> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; John
+> Linn; Nick Bowler; Michal Simek
+> Subject: [PATCH v4 1/5] zynq: use GIC device tree bindings
 > 
-> 	Two more avait ACKs from maintainers - powerpc and s390.  Should work,
-> AFAICS.
+> The Zynq uses the cortex-a9-gic.  This eliminates the need to hardcode register
+> addresses.
+> 
+> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
+> Cc: John Linn <john.linn@xilinx.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/boot/dts/zynq-ep107.dts           | 10 ++++++----
+>  arch/arm/mach-zynq/common.c                |  7 ++++++-
+>  arch/arm/mach-zynq/include/mach/zynq_soc.h |  2 --
+>  3 files changed, 12 insertions(+), 7 deletions(-)
+> 
 
-Oops, sorry. I tested this weeks ago but it seems I never wrote a mail to
-indicate success. The current git kernel works just fine.
+Applied to http://git.xilinx.com/?p=linux-xlnx.git;a=shortlog;h=refs/heads/arm-next
 
--- 
-blue skies,
-   Martin.
+Thanks,
+Michal
 
-"Reality continues to ruin my life." - Calvin.
 
