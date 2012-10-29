@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab2J2WTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:19:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47181 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761151Ab2J2Vgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Perl <chris.perl@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 015/101] SUNRPC: Get rid of the xs_error_report socket callback
-Date: Mon, 29 Oct 2012 14:34:28 -0700
-Message-Id: <20121029213241.850173721@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
-References: <20121029213240.128426598@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933647Ab2J2WUD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:20:03 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:9959 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933048Ab2J2WT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 18:19:58 -0400
+Message-ID: <1351549194.2757.26.camel@lorien2>
+Subject: [PATCH] Documentation/DMA-API-HOWTO.txt - minor grammar corrections
+From: Shuah Khan <shuah.khan@hp.com>
+Reply-To: shuah.khan@hp.com
+To: Jesper Juhl <jj@chaosbits.net>, rob@landley.net
+Cc: Andrew Morton <akpm@linux-foundation.org>, konrad.wilk@oracle.com,
+        LKML <linux-kernel@vger.kernel.org>, Shuah Khan <shuah.khan@hp.com>,
+        linux-doc@vger.kernel.org
+Date: Mon, 29 Oct 2012 16:19:54 -0600
+In-Reply-To: <alpine.LNX.2.00.1210292103260.4401@swampdragon.chaosbits.net>
+References: <20121029194930.2491B5C0050@hpza9.eem.corp.google.com>
+	 <alpine.LNX.2.00.1210292103260.4401@swampdragon.chaosbits.net>
+Organization: ISS-Linux
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+Minor grammar corrections.
 
-------------------
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit f878b657ce8e7d3673afe48110ec208a29e38c4a upstream.
-
-Chris Perl reports that we're seeing races between the wakeup call in
-xs_error_report and the connect attempts. Basically, Chris has shown
-that in certain circumstances, the call to xs_error_report causes the
-rpc_task that is responsible for reconnecting to wake up early, thus
-triggering a disconnect and retry.
-
-Since the sk->sk_error_report() calls in the socket layer are always
-followed by a tcp_done() in the cases where we care about waking up
-the rpc_tasks, just let the state_change callbacks take responsibility
-for those wake ups.
-
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 ---
- net/sunrpc/xprtsock.c |   25 -------------------------
- 1 file changed, 25 deletions(-)
+ Documentation/DMA-API-HOWTO.txt |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -254,7 +254,6 @@ struct sock_xprt {
- 	void			(*old_data_ready)(struct sock *, int);
- 	void			(*old_state_change)(struct sock *);
- 	void			(*old_write_space)(struct sock *);
--	void			(*old_error_report)(struct sock *);
- };
+diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
+index bf242bbe..14129f1 100644
+--- a/Documentation/DMA-API-HOWTO.txt
++++ b/Documentation/DMA-API-HOWTO.txt
+@@ -488,9 +488,10 @@ will invoke the generic mapping error check interface. Doing so will ensure
+ that the mapping code will work correctly on all dma implementations without
+ any dependency on the specifics of the underlying implementation. Using the
+ returned address without checking for errors could result in failures ranging
+-from panics to silent data corruption. Couple of example of incorrect ways to
+-check for errors that make assumptions about the underlying dma implementation
+-are as follows and these are applicable to dma_map_page() as well.
++from panics to silent data corruption. A couple of examples of incorrect ways
++to check for errors that make assumptions about the underlying dma
++implementation are as follows and these are applicable to dma_map_page() as
++well.
  
- /*
-@@ -781,7 +780,6 @@ static void xs_save_old_callbacks(struct
- 	transport->old_data_ready = sk->sk_data_ready;
- 	transport->old_state_change = sk->sk_state_change;
- 	transport->old_write_space = sk->sk_write_space;
--	transport->old_error_report = sk->sk_error_report;
- }
- 
- static void xs_restore_old_callbacks(struct sock_xprt *transport, struct sock *sk)
-@@ -789,7 +787,6 @@ static void xs_restore_old_callbacks(str
- 	sk->sk_data_ready = transport->old_data_ready;
- 	sk->sk_state_change = transport->old_state_change;
- 	sk->sk_write_space = transport->old_write_space;
--	sk->sk_error_report = transport->old_error_report;
- }
- 
- static void xs_reset_transport(struct sock_xprt *transport)
-@@ -1549,25 +1546,6 @@ static void xs_tcp_state_change(struct s
- 	read_unlock_bh(&sk->sk_callback_lock);
- }
- 
--/**
-- * xs_error_report - callback mainly for catching socket errors
-- * @sk: socket
-- */
--static void xs_error_report(struct sock *sk)
--{
--	struct rpc_xprt *xprt;
--
--	read_lock_bh(&sk->sk_callback_lock);
--	if (!(xprt = xprt_from_sock(sk)))
--		goto out;
--	dprintk("RPC:       %s client %p...\n"
--			"RPC:       error %d\n",
--			__func__, xprt, sk->sk_err);
--	xprt_wake_pending_tasks(xprt, -EAGAIN);
--out:
--	read_unlock_bh(&sk->sk_callback_lock);
--}
--
- static void xs_write_space(struct sock *sk)
- {
- 	struct socket *sock;
-@@ -1867,7 +1845,6 @@ static int xs_local_finish_connecting(st
- 		sk->sk_user_data = xprt;
- 		sk->sk_data_ready = xs_local_data_ready;
- 		sk->sk_write_space = xs_udp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
- 		xprt_clear_connected(xprt);
-@@ -1995,7 +1972,6 @@ static void xs_udp_finish_connecting(str
- 		sk->sk_user_data = xprt;
- 		sk->sk_data_ready = xs_udp_data_ready;
- 		sk->sk_write_space = xs_udp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_no_check = UDP_CSUM_NORCV;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
-@@ -2113,7 +2089,6 @@ static int xs_tcp_finish_connecting(stru
- 		sk->sk_data_ready = xs_tcp_data_ready;
- 		sk->sk_state_change = xs_tcp_state_change;
- 		sk->sk_write_space = xs_tcp_write_space;
--		sk->sk_error_report = xs_error_report;
- 		sk->sk_allocation = GFP_ATOMIC;
- 
- 		/* socket options */
+ Incorrect example 1:
+ 	dma_addr_t dma_handle;
+-- 
+1.7.9.5
+
 
 
