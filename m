@@ -1,206 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab2J2TCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:02:47 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40083 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420Ab2J2TCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:02:46 -0400
-Date: Mon, 29 Oct 2012 22:00:19 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function (v3)
-Message-ID: <20121029190019.GB2336@swordfish>
-References: <20121027160052.GA4771@swordfish>
- <508EB96C.4040505@vflare.org>
- <20121029180558.GE3706@swordfish.minsk.epam.com>
- <CAPkvG_eZObsD=uCRGNygsrTs=ymjoA09XkoHD9KUUq_YWyuA3A@mail.gmail.com>
+	id S1751162Ab2J2THI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:07:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52096 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab2J2THG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 15:07:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
+   d="scan'208";a="212618628"
+From: Andi Kleen <andi@firstfloor.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dave Chinner <david@fromorbit.com>, "Luck\, Tony" <tony.luck@intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "Kleen\, Andi" <andi.kleen@intel.com>,
+        "Wu\, Fengguang" <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Akira Fujita <a-fujita@rs.jp.nec.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4\@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
+References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20121026061206.GA31139@thunk.org>
+	<3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
+	<20121026184649.GA8614@thunk.org>
+	<3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com>
+	<20121027221626.GA9161@thunk.org> <20121029011632.GN29378@dastard>
+	<20121029024024.GC9365@thunk.org> <m27gq9r2cu.fsf@firstfloor.org>
+	<20121029182455.GA7098@thunk.org>
+Date: Mon, 29 Oct 2012 12:07:04 -0700
+In-Reply-To: <20121029182455.GA7098@thunk.org> (Theodore Ts'o's message of
+	"Mon, 29 Oct 2012 14:24:56 -0400")
+Message-ID: <m21ughksh3.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPkvG_eZObsD=uCRGNygsrTs=ymjoA09XkoHD9KUUq_YWyuA3A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  zram: factor-out zram_decompress_page() function
+Theodore Ts'o <tytso@mit.edu> writes:
+>
+> It's actually pretty easy to test this particular one, 
 
-  zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
-  Factor-out and make commonly used zram_decompress_page() function, which also simplified
-  error handling in zram_bvec_read().
+Note the error can happen at any time.
 
-  v3: remove debug message for handle_zero_page() case
-  v2: changed debug message for handle_zero_page() case to a more general one
+> and certainly
+> one of the things I'd strongly encourage in this patch series is the
+> introduction of an interface via madvise
 
-  Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+It already exists of course.
 
----
+I would suggest to study the existing framework before more 
+suggestions.
 
- drivers/staging/zram/zram_drv.c | 113 +++++++++++++++++-----------------------
- 1 file changed, 48 insertions(+), 65 deletions(-)
+> simulate an ECC hard error event.  So I don't think "it's hard to
+> test" is a reason not to do the right thing.  Let's make it easy to
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 6edefde..fb4a7c9 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
- 	return bvec->bv_len != PAGE_SIZE;
- }
- 
--static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
--			  u32 index, int offset, struct bio *bio)
-+static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
- {
--	int ret;
--	size_t clen;
--	struct page *page;
--	unsigned char *user_mem, *cmem, *uncmem = NULL;
--
--	page = bvec->bv_page;
--
--	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
--		handle_zero_page(bvec);
--		return 0;
--	}
-+	int ret = LZO_E_OK;
-+	size_t clen = PAGE_SIZE;
-+	unsigned char *cmem;
-+	unsigned long handle = zram->table[index].handle;
- 
--	/* Requested page is not present in compressed area */
--	if (unlikely(!zram->table[index].handle)) {
--		pr_debug("Read before write: sector=%lu, size=%u",
--			 (ulong)(bio->bi_sector), bio->bi_size);
--		handle_zero_page(bvec);
-+	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		memset(mem, 0, PAGE_SIZE);
- 		return 0;
- 	}
- 
--	if (is_partial_io(bvec)) {
--		/* Use  a temporary buffer to decompress the page */
--		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
--		if (!uncmem) {
--			pr_info("Error allocating temp memory!\n");
--			return -ENOMEM;
--		}
--	}
--
--	user_mem = kmap_atomic(page);
--	if (!is_partial_io(bvec))
--		uncmem = user_mem;
--	clen = PAGE_SIZE;
--
--	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
--				ZS_MM_RO);
--
--	if (zram->table[index].size == PAGE_SIZE) {
--		memcpy(uncmem, cmem, PAGE_SIZE);
--		ret = LZO_E_OK;
--	} else {
-+	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
-+	if (zram->table[index].size == PAGE_SIZE)
-+		memcpy(mem, cmem, PAGE_SIZE);
-+	else
- 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    uncmem, &clen);
--	}
--
--	if (is_partial_io(bvec)) {
--		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
--		       bvec->bv_len);
--		kfree(uncmem);
--	}
--
--	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
--	kunmap_atomic(user_mem);
-+						mem, &clen);
-+	zs_unmap_object(zram->mem_pool, handle);
- 
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
-@@ -247,36 +210,56 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 		return ret;
- 	}
- 
--	flush_dcache_page(page);
--
- 	return 0;
- }
- 
--static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
-+static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-+			  u32 index, int offset, struct bio *bio)
- {
- 	int ret;
--	size_t clen = PAGE_SIZE;
--	unsigned char *cmem;
--	unsigned long handle = zram->table[index].handle;
-+	struct page *page;
-+	unsigned char *user_mem, *uncmem = NULL;
- 
--	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
--		memset(mem, 0, PAGE_SIZE);
-+	page = bvec->bv_page;
-+
-+	if (unlikely(!zram->table[index].handle) ||
-+			zram_test_flag(zram, index, ZRAM_ZERO)) {
-+		handle_zero_page(bvec);
- 		return 0;
- 	}
- 
--	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
--	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
--				    mem, &clen);
--	zs_unmap_object(zram->mem_pool, handle);
-+	user_mem = kmap_atomic(page);
-+	if (is_partial_io(bvec))
-+		/* Use  a temporary buffer to decompress the page */
-+		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-+	else
-+		uncmem = user_mem;
- 
-+	if (!uncmem) {
-+		pr_info("Unable to allocate temp memory\n");
-+		ret = -ENOMEM;
-+		goto out_cleanup;
-+	}
-+
-+	ret = zram_decompress_page(zram, uncmem, index);
- 	/* Should NEVER happen. Return bio error if it does. */
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
- 		zram_stat64_inc(zram, &zram->stats.failed_reads);
--		return ret;
-+		goto out_cleanup;
- 	}
- 
--	return 0;
-+	if (is_partial_io(bvec))
-+		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-+				bvec->bv_len);
-+
-+	flush_dcache_page(page);
-+	ret = 0;
-+out_cleanup:
-+	kunmap_atomic(user_mem);
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
-+	return ret;
- }
- 
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-@@ -302,7 +285,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			ret = -ENOMEM;
- 			goto out;
- 		}
--		ret = zram_read_before_write(zram, uncmem, index);
-+		ret = zram_decompress_page(zram, uncmem, index);
- 		if (ret) {
- 			kfree(uncmem);
- 			goto out;
+What you can't test doesn't work. It's that simple.
 
+And memory error handling is extremly hard to test. The errors
+can happen at any time. It's not a well defined event.
+There are test suites for it of course (mce-test, mce-inject[1]),
+but they needed a lot of engineering effort to be at where
+they are.
+
+[1] despite the best efforts of some current RAS developers
+at breaking it.
+
+> Note that the problem that we're dealing with is buffered writes; so
+> it's quite possible that the process which wrote the file, thus
+> dirtying the page cache, has already exited; so there's no way we can
+> guarantee we can inform the process which wrote the file via a signal
+> or a error code return.
+
+Is that any different from other IO errors? It doesn't need to 
+be better.
+
+> Also, if you're going to keep this state in memory, what happens if
+> the inode gets pushed out of memory? 
+
+You lose the error, just like you do today with any other IO error.
+
+We had a lot of discussions on this when the memory error handling
+was originally introduced, that was the conclusuion.
+
+I don't think a special panic knob for this makes sense either.
+We already have multiple panic knobs for memory errors, that
+can be used.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
