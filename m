@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761292Ab2J2Vhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:37:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47585 "EHLO mail.kernel.org"
+	id S1761268Ab2J2Vhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:37:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47711 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761118Ab2J2VhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:23 -0400
+	id S1761181Ab2J2Vhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 051/101] USB: qcserial: fix interface-data memory leak in error path
-Date: Mon, 29 Oct 2012 14:35:04 -0700
-Message-Id: <20121029213245.926454169@linuxfoundation.org>
+Subject: [ 054/101] USB: opticon: fix DMA from stack
+Date: Mon, 29 Oct 2012 14:35:07 -0700
+Message-Id: <20121029213246.263267203@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,85 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 961be09e1ead58509ed4bed0d5819a15d8613d8d upstream.
+commit ea0dbebffe118724cd4df7d9b071ea8ee48d48f0 upstream.
 
-Move interface data allocation to attach so that it is deallocated
-should usb-serial probe fail.
+Make sure to allocate the control-message buffer dynamically as some
+platforms cannot do DMA from stack.
+
+Note that only the first byte of the old buffer was used.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ drivers/usb/serial/opticon.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -140,7 +140,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
- 
- static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -158,7 +158,11 @@ static int send_control_msg(struct usb_s
  {
--	struct usb_wwan_intf_private *data;
- 	struct usb_host_interface *intf = serial->interface->cur_altsetting;
- 	struct device *dev = &serial->dev->dev;
- 	int retval = -ENODEV;
-@@ -156,13 +155,6 @@ static int qcprobe(struct usb_serial *se
- 	ifnum = intf->desc.bInterfaceNumber;
- 	dev_dbg(dev, "This Interface = %d\n", ifnum);
+ 	struct usb_serial *serial = port->serial;
+ 	int retval;
+-	u8 buffer[2];
++	u8 *buffer;
++
++	buffer = kzalloc(1, GFP_KERNEL);
++	if (!buffer)
++		return -ENOMEM;
  
--	data = kzalloc(sizeof(struct usb_wwan_intf_private),
--					 GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--
--	spin_lock_init(&data->susp_lock);
--
- 	if (nintf == 1) {
- 		/* QDL mode */
- 		/* Gobi 2000 has a single altsetting, older ones have two */
-@@ -255,20 +247,28 @@ done:
- 		}
- 	}
+ 	buffer[0] = val;
+ 	/* Send the message to the vendor control endpoint
+@@ -167,6 +171,7 @@ static int send_control_msg(struct usb_s
+ 				requesttype,
+ 				USB_DIR_OUT|USB_TYPE_VENDOR|USB_RECIP_INTERFACE,
+ 				0, 0, buffer, 1, 0);
++	kfree(buffer);
  
--	/* Set serial->private if not returning error */
--	if (retval == 0)
--		usb_set_serial_data(serial, data);
--	else
--		kfree(data);
--
  	return retval;
  }
- 
-+static int qc_attach(struct usb_serial *serial)
-+{
-+	struct usb_wwan_intf_private *data;
-+
-+	data = kzalloc(sizeof(*data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&data->susp_lock);
-+
-+	usb_set_serial_data(serial, data);
-+
-+	return 0;
-+}
-+
- static void qc_release(struct usb_serial *serial)
- {
- 	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
- 
--	/* Free the private data allocated in qcprobe */
- 	usb_set_serial_data(serial, NULL);
- 	kfree(priv);
- }
-@@ -287,6 +287,7 @@ static struct usb_serial_driver qcdevice
- 	.write		     = usb_wwan_write,
- 	.write_room	     = usb_wwan_write_room,
- 	.chars_in_buffer     = usb_wwan_chars_in_buffer,
-+	.attach              = qc_attach,
- 	.release	     = qc_release,
- 	.port_probe          = usb_wwan_port_probe,
- 	.port_remove	     = usb_wwan_port_remove,
 
 
