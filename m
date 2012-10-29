@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759576Ab2J2PoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:44:06 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:59790 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752348Ab2J2PoE (ORCPT
+	id S1759585Ab2J2PoS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:44:18 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35852 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2J2PoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:44:04 -0400
-Date: Mon, 29 Oct 2012 11:44:03 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-mm@kvack.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        David Decotigny <david.decotigny@google.com>,
-        Tom Herbert <therbert@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v3 4/6] net/core: apply pm_runtime_set_memalloc_noio on
- network devices
-In-Reply-To: <1351513440-9286-5-git-send-email-ming.lei@canonical.com>
-Message-ID: <Pine.LNX.4.44L0.1210291142000.22882-100000@netrider.rowland.org>
+	Mon, 29 Oct 2012 11:44:13 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1351525219.24721.38.camel@twins>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	<1351523752-4215-7-git-send-email-eranian@google.com>
+	<1351525219.24721.38.camel@twins>
+Date: Mon, 29 Oct 2012 16:44:12 +0100
+Message-ID: <CABPqkBQiwJuZJkDbEE6MVtwjqzruJdpPT=yZdC_kokfRFZmqdg@mail.gmail.com>
+Subject: Re: [Patch v1 06/10] perf/x86: add support for PEBS Precise Store
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012, Ming Lei wrote:
+On Mon, Oct 29, 2012 at 4:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2012-10-29 at 16:15 +0100, Stephane Eranian wrote:
+>> -       if (fll) {
+>> +       if (fll || fst) {
+>>                 if (sample_type & PERF_SAMPLE_ADDR)
+>>                         data.addr = pebs->dla;
+>>
+>> @@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+>>                 if (sample_type & PERF_SAMPLE_DSRC) {
+>>                         if (fll)
+>>                                 data.dsrc.val = load_latency_data(pebs->dse);
+>> +                       else if (fst)
+>> +                               data.dsrc.val = precise_store_data(pebs->dse);
+>>                 }
+>>         }
+>>
+>
+> Ah, this is why I guess.. hrm.. ok, n/m then.
 
-> Deadlock might be caused by allocating memory with GFP_KERNEL in
-> runtime_resume callback of network devices in iSCSI situation, so
-> mark network devices and its ancestor as 'memalloc_noio_resume'
-> with the introduced pm_runtime_set_memalloc_noio().
-
-> @@ -1411,6 +1414,8 @@ int netdev_register_kobject(struct net_device *net)
->  	*groups++ = &netstat_group;
->  #endif /* CONFIG_SYSFS */
->  
-> +	pm_runtime_set_memalloc_noio(dev, true);
-> +
->  	error = device_add(dev);
->  	if (error)
->  		return error;
-
-This is an example of what I described earlier.  The 
-pm_runtime_set_memalloc_noio() call should come after device_add(), not 
-before.
-
-(Not to mention that this version of the code doesn't correctly handle
-the case where device_add() fails.)
-
-Alan Stern
-
+Yes, it is. But your proposal and my extension for Precise Store look good too.
