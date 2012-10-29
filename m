@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760749Ab2J2UJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:09:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42875 "EHLO mail.kernel.org"
+	id S932398Ab2J2UKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:10:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42895 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758695Ab2J2UJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:19 -0400
+	id S1760740Ab2J2UJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 32/34] x86, mm: Undo incorrect revert in arch/x86/mm/init.c
-Date: Mon, 29 Oct 2012 13:08:03 -0700
-Message-Id: <20121029200424.120179857@linuxfoundation.org>
+Subject: [ 31/34] x86, mm: Find_early_table_space based on ranges that are actually being mapped
+Date: Mon, 29 Oct 2012 13:08:02 -0700
+Message-Id: <20121029200424.001945480@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,42 +26,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit f82f64dd9f485e13f29f369772d4a0e868e5633a upstream.
+commit 844ab6f993b1d32eb40512503d35ff6ad0c57030 upstream.
 
-Commit
+Current logic finds enough space for direct mapping page tables from 0
+to end. Instead, we only need to find enough space to cover mr[0].start
+to mr[nr_range].end -- the range that is actually being mapped by
+init_memory_mapping()
 
-    844ab6f9 x86, mm: Find_early_table_space based on ranges that are actually being mapped
+This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
+the panic reported here:
 
-added back some lines back wrongly that has been removed in commit
+  https://lkml.org/lkml/2012/10/20/160
+  https://lkml.org/lkml/2012/10/21/157
 
-    7b16bbf97 Revert "x86/mm: Fix the size calculation of mapping tables"
-
-remove them again.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
+Tested-by: Tom Rini <trini@ti.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |    4 ----
- 1 file changed, 4 deletions(-)
+ arch/x86/mm/init.c |   73 +++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 43 insertions(+), 30 deletions(-)
 
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -64,10 +64,6 @@ static void __init find_early_table_spac
- #ifdef CONFIG_X86_32
- 			extra += PMD_SIZE;
+@@ -28,36 +28,54 @@ int direct_gbpages
  #endif
--			/* The first 2/4M doesn't use large pages. */
--			if (mr[i].start < PMD_SIZE)
--				extra += range;
+ ;
+ 
+-static void __init find_early_table_space(unsigned long end, int use_pse,
+-					  int use_gbpages)
++struct map_range {
++	unsigned long start;
++	unsigned long end;
++	unsigned page_size_mask;
++};
++
++/*
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
+ {
+-	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
+ 	phys_addr_t base;
+ 
+-	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
+ 
+-	if (use_gbpages) {
+-		unsigned long extra;
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+-		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+-		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-	} else
+-		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
 -
- 			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		} else {
- 			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
+ 
+-	if (use_pse) {
+-		unsigned long extra;
+-
+-		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+ #ifdef CONFIG_X86_32
+-		extra += PMD_SIZE;
++			extra += PMD_SIZE;
+ #endif
+-		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	} else
+-		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
++			/* The first 2/4M doesn't use large pages. */
++			if (mr[i].start < PMD_SIZE)
++				extra += range;
++
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
++	}
+ 
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+@@ -74,8 +92,9 @@ static void __init find_early_table_spac
+ 	pgt_buf_end = pgt_buf_start;
+ 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 
+-	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+-		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
++ 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
++		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
++ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+ }
+ 
+ void __init native_pagetable_reserve(u64 start, u64 end)
+@@ -83,12 +102,6 @@ void __init native_pagetable_reserve(u64
+ 	memblock_x86_reserve_range(start, end, "PGTABLE");
+ }
+ 
+-struct map_range {
+-	unsigned long start;
+-	unsigned long end;
+-	unsigned page_size_mask;
+-};
+-
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+ #else /* CONFIG_X86_64 */
+@@ -260,7 +273,7 @@ unsigned long __init_refok init_memory_m
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(end, use_pse, use_gbpages);
++		find_early_table_space(mr, nr_range);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 
 
