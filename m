@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760020Ab2J2Pwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:52:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56602 "EHLO song.cn.fujitsu.com"
+	id S932540Ab2J2Pxc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:53:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18353 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759893Ab2J2PsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:48:21 -0400
+	id S1759663Ab2J2PsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:48:19 -0400
 X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
-   d="scan'208";a="6093346"
+   d="scan'208";a="6093344"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
@@ -16,58 +16,49 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Michal Hocko <mhocko@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
         linux-mm@kvack.org
-Subject: [V5 PATCH 25/26] memblock: compare current_limit with end variable at memblock_find_in_range_node()
-Date: Mon, 29 Oct 2012 23:21:15 +0800
-Message-Id: <1351524078-20363-24-git-send-email-laijs@cn.fujitsu.com>
+Subject: [V5 PATCH 10/26] mm,migrate: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 29 Oct 2012 23:21:00 +0800
+Message-Id: <1351524078-20363-9-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:56,
+ 2012/10/29 23:19:04,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:20:02,
-	Serialize complete at 2012/10/29 23:20:02
+ 2012/10/29 23:19:07,
+	Serialize complete at 2012/10/29 23:19:07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-memblock_find_in_range_node() does not compare memblock.current_limit
-with end variable. Thus even if memblock.current_limit is smaller than
-end variable, the function allocates memory address that is bigger than
-memblock.current_limit.
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
-The patch adds the check to "memblock_find_in_range_node()"
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Acked-by: Christoph Lameter <cl@linux.com>
 ---
- mm/memblock.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ mm/migrate.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index ee2e307..50ab53c 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -100,11 +100,12 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- 					phys_addr_t align, int nid)
- {
- 	phys_addr_t this_start, this_end, cand;
-+	phys_addr_t current_limit = memblock.current_limit;
- 	u64 i;
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 77ed2d7..d595e58 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1201,7 +1201,7 @@ static int do_pages_move(struct mm_struct *mm, nodemask_t task_nodes,
+ 			if (node < 0 || node >= MAX_NUMNODES)
+ 				goto out_pm;
  
- 	/* pump up @end */
--	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
--		end = memblock.current_limit;
-+	if ((end == MEMBLOCK_ALLOC_ACCESSIBLE) || (end > current_limit))
-+		end = current_limit;
+-			if (!node_state(node, N_HIGH_MEMORY))
++			if (!node_state(node, N_MEMORY))
+ 				goto out_pm;
  
- 	/* avoid allocating the first page */
- 	start = max_t(phys_addr_t, start, PAGE_SIZE);
+ 			err = -EACCES;
 -- 
 1.7.4.4
 
