@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536Ab2J2LAY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:00:24 -0400
-Received: from basicbox7.server-home.net ([195.137.212.29]:59698 "EHLO
-	basicbox7.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab2J2LAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:00:23 -0400
-X-Greylist: delayed 495 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Oct 2012 07:00:23 EDT
-Message-ID: <508E5FD3.1060105@leemhuis.info>
-Date: Mon, 29 Oct 2012 11:52:03 +0100
-From: Thorsten Leemhuis <fedora@leemhuis.info>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1758573Ab2J2LCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:02:04 -0400
+Received: from mga14.intel.com ([143.182.124.37]:24740 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756886Ab2J2LCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 07:02:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,671,1344236400"; 
+   d="scan'208";a="161844559"
+Date: Mon, 29 Oct 2012 04:02:00 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
+        eranian@google.com, mingo@kernel.org
+Subject: Re: [PATCH 16/33] perf, tools: Add support for weight v2
+Message-ID: <20121029110200.GH2266@tassilo.jf.intel.com>
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+ <1351283415-13170-17-git-send-email-andi@firstfloor.org>
+ <87vcdt7e2m.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Jiri Slaby <jslaby@suse.cz>, Valdis.Kletnieks@vt.edu,
-        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: kswapd0: excessive CPU usage
-References: <507688CC.9000104@suse.cz> <106695.1349963080@turing-police.cc.vt.edu> <5076E700.2030909@suse.cz> <118079.1349978211@turing-police.cc.vt.edu> <50770905.5070904@suse.cz> <119175.1349979570@turing-police.cc.vt.edu> <5077434D.7080008@suse.cz> <50780F26.7070007@suse.cz> <20121012135726.GY29125@suse.de> <507BDD45.1070705@suse.cz> <20121015110937.GE29125@suse.de>
-In-Reply-To: <20121015110937.GE29125@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vcdt7e2m.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Oct 29, 2012 at 07:44:17PM +0900, Namhyung Kim wrote:
+> On Fri, 26 Oct 2012 13:29:58 -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> >
+> > perf record has a new option -W that enables weightened sampling.
+> >
+> > Add sorting support in top/report for the average weight per sample and the
+> > total weight sum. This allows to both compare relative cost per event
+> > and the total cost over the measurement period.
+> 
+> I expected the weight is used for scaling a sample period somehow - and
+> wondered the *somehow* part - when reading previous patch descriptions
+> but you just added sort keys.  Is it what you intended originally?
 
-On 15.10.2012 13:09, Mel Gorman wrote:
-> On Mon, Oct 15, 2012 at 11:54:13AM +0200, Jiri Slaby wrote:
->> On 10/12/2012 03:57 PM, Mel Gorman wrote:
->>> mm: vmscan: scale number of pages reclaimed by reclaim/compaction only in direct reclaim
->>> Jiri Slaby reported the following:
- > [...]
->>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>> index 2624edc..2b7edfa 100644
->>> --- a/mm/vmscan.c
->>> +++ b/mm/vmscan.c
->>> @@ -1763,14 +1763,20 @@ static bool in_reclaim_compaction(struct scan_control *sc)
->>>   #ifdef CONFIG_COMPACTION
->>>   /*
->>>    * If compaction is deferred for sc->order then scale the number of pages
->>> - * reclaimed based on the number of consecutive allocation failures
->>> + * reclaimed based on the number of consecutive allocation failures. This
->>> + * scaling only happens for direct reclaim as it is about to attempt
->>> + * compaction. If compaction fails, future allocations will be deferred
->>> + * and reclaim avoided. On the other hand, kswapd does not take compaction
->>> + * deferral into account so if it scaled, it could scan excessively even
->>> + * though allocations are temporarily not being attempted.
->>>    */
->>>   static unsigned long scale_for_compaction(unsigned long pages_for_compaction,
->>>   			struct lruvec *lruvec, struct scan_control *sc)
->>>   {
->>>   	struct zone *zone = lruvec_zone(lruvec);
->>>
->>> -	if (zone->compact_order_failed <= sc->order)
->>> +	if (zone->compact_order_failed <= sc->order &&
->>> +	    !current_is_kswapd())
->>>   		pages_for_compaction <<= zone->compact_defer_shift;
->>>   	return pages_for_compaction;
->>>   }
->> Yes, applying this instead of the revert fixes the issue as well.
+I originally simply multiplied, but then I changed over to separate sort 
+keys which give the same result and are more flexible and easier to understand
 
-Just wondering, is there a reason why this patch wasn't applied to 
-mainline? Did it simply fall through the cracks? Or am I missing something?
+You're right the manpage is stale, will fix.
 
-I'm asking because I think I stil see the issue on 
-3.7-rc2-git-checkout-from-friday. Seems Fedora rawhide users are hitting 
-it, too:
-https://bugzilla.redhat.com/show_bug.cgi?id=866988
+> 
+> 
+> >
+> > Add the necessary glue to perf report, record and the library.
+> >
+> > v2: Merge with new hist refactoring.
+> > Rename global_weight to weight and weight to local_weight.
+> 
+> But I think (total_)weight and avg_weight looks more natural.
 
-Or are we seeing something different which just looks similar? I can 
-test the patch if it needs further testing, but from the discussion I 
-got the impression that everything is clear and the patch ready for merging.
+Frankly I think your names as as arbitary as mine, so I'll stay
+with mine for now.
 
-CU
-  knurd
+> >  			 * become out-of-date due to an exec() or
+> > @@ -314,6 +322,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+> >  
+> >  	rb_link_node(&he->rb_node_in, parent, p);
+> >  	rb_insert_color(&he->rb_node_in, hists->entries_in);
+> > +	he->stat.weight += weight;
+> 
+> I'd suggest that the weight should be set to the 'entry' so that it can
+> be added when hist_entry__new() called.
+
+I did that originally, but ran into some problem, so I moved to this way
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
