@@ -1,110 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761402Ab2J2Vi4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:38:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48148 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab2J2ViR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:17 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peng Tao <tao.peng@emc.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 101/101] pnfsblock: fix non-aligned DIO write
-Date: Mon, 29 Oct 2012 14:35:54 -0700
-Message-Id: <20121029213251.546009848@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
-References: <20121029213240.128426598@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1761487Ab2J2VjB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:39:01 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59643 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751822Ab2J2Vi5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:57 -0400
+Message-ID: <508EF6C1.4000302@fb.com>
+Date: Mon, 29 Oct 2012 14:36:01 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist
+ periods
+References: <1347520811-28150-1-git-send-email-namhyung@kernel.org> <1351537727.4047.21.camel@twins>
+In-Reply-To: <1351537727.4047.21.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.254]
+X-Proofpoint-Spam-Reason: safe
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-29_04:2012-10-29,2012-10-29,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On 10/29/12 12:08 PM, Peter Zijlstra wrote:
 
-------------------
+> Right, so I tried this and I would expect the callchains to be inverted
+> too, so that when I expand say 'c' I would see that 'c' calls 'b' for
+> 100% which calls 'a' for 100%.
+>
+> Instead I get the regular callchains, expanding 'c' gives me main calls
+> it for 100%.
+>
+> Adding -G (invert callchains) doesn't make it better, in that case, when
+> I expand 'c' we start at '__libc_start_main' instead of 'c'.
+>
+> Is there anything I'm missing?
+>
 
-From: Peng Tao <bergwolf@gmail.com>
+Sounds like a reasonable expectation.
 
-commit 96c9eae638765c2bf2ca4f5a6325484f9bb69aa7 upstream.
+I tested mainly:
 
-For DIO writes, if it is not blocksize aligned, we need to do
-internal serialization. It may slow down writers anyway. So we
-just bail them out and resend to MDS.
+perf report --cumulate  -g graph,100,callee
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+to find the functions with a large amount of CPU time underneath. Then 
+examined the callgraph without --cumulate. But yeah - it'd be nice to be 
+able to do both in a single invocation.
 
----
- fs/nfs/blocklayout/blocklayout.c |   34 +++++++++++++++++++++++++++++++---
- 1 file changed, 31 insertions(+), 3 deletions(-)
+Also, when callgraphs are displayed, the percentages are off (> 100%). 
+Namhyung probably needs to use he->stat_acc->period in a few places as 
+the denominator instead of he->period.
 
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -685,7 +685,7 @@ bl_write_pagelist(struct nfs_write_data
- 	struct bio *bio = NULL;
- 	struct pnfs_block_extent *be = NULL, *cow_read = NULL;
- 	sector_t isect, last_isect = 0, extent_length = 0;
--	struct parallel_io *par;
-+	struct parallel_io *par = NULL;
- 	loff_t offset = wdata->args.offset;
- 	size_t count = wdata->args.count;
- 	unsigned int pg_offset, pg_len, saved_len;
-@@ -697,6 +697,13 @@ bl_write_pagelist(struct nfs_write_data
- 	    NFS_SERVER(header->inode)->pnfs_blksize >> PAGE_CACHE_SHIFT;
- 
- 	dprintk("%s enter, %Zu@%lld\n", __func__, count, offset);
-+
-+	if (header->dreq != NULL &&
-+	    (!IS_ALIGNED(offset, NFS_SERVER(header->inode)->pnfs_blksize) ||
-+	     !IS_ALIGNED(count, NFS_SERVER(header->inode)->pnfs_blksize))) {
-+		dprintk("pnfsblock nonblock aligned DIO writes. Resend MDS\n");
-+		goto out_mds;
-+	}
- 	/* At this point, wdata->pages is a (sequential) list of nfs_pages.
- 	 * We want to write each, and if there is an error set pnfs_error
- 	 * to have it redone using nfs.
-@@ -1197,6 +1204,27 @@ bl_pg_test_read(struct nfs_pageio_descri
- 	return pnfs_generic_pg_test(pgio, prev, req);
- }
- 
-+void
-+bl_pg_init_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *req)
-+{
-+	if (pgio->pg_dreq != NULL &&
-+	    !is_aligned_req(req, PAGE_CACHE_SIZE))
-+		nfs_pageio_reset_write_mds(pgio);
-+	else
-+		pnfs_generic_pg_init_write(pgio, req);
-+}
-+
-+static bool
-+bl_pg_test_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev,
-+		 struct nfs_page *req)
-+{
-+	if (pgio->pg_dreq != NULL &&
-+	    !is_aligned_req(req, PAGE_CACHE_SIZE))
-+		return false;
-+
-+	return pnfs_generic_pg_test(pgio, prev, req);
-+}
-+
- static const struct nfs_pageio_ops bl_pg_read_ops = {
- 	.pg_init = bl_pg_init_read,
- 	.pg_test = bl_pg_test_read,
-@@ -1204,8 +1232,8 @@ static const struct nfs_pageio_ops bl_pg
- };
- 
- static const struct nfs_pageio_ops bl_pg_write_ops = {
--	.pg_init = pnfs_generic_pg_init_write,
--	.pg_test = pnfs_generic_pg_test,
-+	.pg_init = bl_pg_init_write,
-+	.pg_test = bl_pg_test_write,
- 	.pg_doio = pnfs_generic_pg_writepages,
- };
- 
-
-
+  -Arun
