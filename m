@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761573Ab2J2Vwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:52:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48575 "EHLO mail.kernel.org"
+	id S1761581Ab2J2VxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:53:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48563 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761549Ab2J2VlZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:25 -0400
+	id S1761547Ab2J2VlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [ 19/54] Drivers: hv: Cleanup error handling in vmbus_open()
-Date: Mon, 29 Oct 2012 14:40:20 -0700
-Message-Id: <20121029213804.905370727@linuxfoundation.org>
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: =?UTF-8?q?=5B=2018/54=5D=20Staging=3A=20android=3A=20binder=3A=20Allow=20using=20highmem=20for=20binder=20buffers?=
+Date: Mon, 29 Oct 2012 14:40:19 -0700
+Message-Id: <20121029213804.797218970@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,105 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Arve Hjønnevåg <arve@android.com>
 
-commit 1392550240aaa72ce3a094a38bd23525cd67ce60 upstream.
+commit 585650dcec88e704a19bb226a34b6a7166111623 upstream.
 
-Fix a memory leak  in the error handling path in the function vmbus_open().
+The default kernel mapping for the pages allocated for the binder
+buffers is never used. Set the __GFP_HIGHMEM flag when allocating
+these pages so we don't needlessly use low memory pages that may
+be required elsewhere.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/staging/android/binder.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -146,14 +146,14 @@ int vmbus_open(struct vmbus_channel *new
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -655,7 +655,7 @@ static int binder_update_page_range(stru
+ 		page = &proc->pages[(page_addr - proc->buffer) / PAGE_SIZE];
  
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	ret = hv_ringbuffer_init(
- 		&newchannel->inbound, in, recv_ringbuffer_size);
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 
-@@ -168,7 +168,7 @@ int vmbus_open(struct vmbus_channel *new
- 
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	/* Create and init the channel open message */
-@@ -177,7 +177,7 @@ int vmbus_open(struct vmbus_channel *new
- 			   GFP_KERNEL);
- 	if (!open_info) {
- 		err = -ENOMEM;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	init_completion(&open_info->waitevent);
-@@ -193,7 +193,7 @@ int vmbus_open(struct vmbus_channel *new
- 
- 	if (userdatalen > MAX_USER_DEFINED_BYTES) {
- 		err = -EINVAL;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	if (userdatalen)
-@@ -208,19 +208,18 @@ int vmbus_open(struct vmbus_channel *new
- 			       sizeof(struct vmbus_channel_open_channel));
- 
- 	if (ret != 0)
--		goto cleanup;
-+		goto error1;
- 
- 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
- 	if (t == 0) {
- 		err = -ETIMEDOUT;
--		goto errorout;
-+		goto error1;
- 	}
- 
- 
- 	if (open_info->response.open_result.status)
- 		err = open_info->response.open_result.status;
- 
--cleanup:
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&open_info->msglistentry);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
-@@ -228,9 +227,12 @@ cleanup:
- 	kfree(open_info);
- 	return err;
- 
--errorout:
--	hv_ringbuffer_cleanup(&newchannel->outbound);
--	hv_ringbuffer_cleanup(&newchannel->inbound);
-+error1:
-+	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
-+	list_del(&open_info->msglistentry);
-+	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
-+
-+error0:
- 	free_pages((unsigned long)out,
- 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
- 	kfree(open_info);
+ 		BUG_ON(*page);
+-		*page = alloc_page(GFP_KERNEL | __GFP_ZERO);
++		*page = alloc_page(GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO);
+ 		if (*page == NULL) {
+ 			printk(KERN_ERR "binder: %d: binder_alloc_buf failed "
+ 			       "for page at %p\n", proc->pid, page_addr);
 
 
