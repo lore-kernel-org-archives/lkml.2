@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab2J2UwH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:52:07 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58328 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab2J2UwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:52:04 -0400
-Date: Mon, 29 Oct 2012 16:52:00 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        ying.huang@intel.com, chris.mason@fusionio.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 2/9] uuid: use random32_get_bytes()
-Message-ID: <20121029205200.GD7098@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-	akpm@linux-foundation.org, ying.huang@intel.com,
-	chris.mason@fusionio.com, linux-btrfs@vger.kernel.org
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
- <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
+	id S932936Ab2J2UwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:52:23 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34168 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834Ab2J2UwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:52:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351408746-8623-2-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.00.1210292149270.23875@ayla.of.borg>
+References: <alpine.DEB.2.00.1210292149270.23875@ayla.of.borg>
+Date: Mon, 29 Oct 2012 21:52:18 +0100
+X-Google-Sender-Auth: vRReVrvXE2GfH1Qx6DIdidcxNjU
+Message-ID: <CAMuHMdXwn0iLd=Phgpn4pAHwVkRebHNt=RhcnEYWe40gUckZ4w@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.7-rc3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 04:18:59PM +0900, Akinobu Mita wrote:
-> Use random32_get_bytes() to generate 16 bytes of pseudo-random bytes.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+On Mon, Oct 29, 2012 at 9:50 PM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> JFYI, when comparing v3.7-rc3 to v3.7-rc2[3], the summaries are:
+>   - build errors: +5/-6
+>   - build warnings: +149/-2090
 
-Since your patch is going to allow users to set the random seed, it
-means that what had previously been a bad security bug has just become
-a grievous security bug.  If you are going to be generating UUID's
-they _must_ use a truly random random generator, since the whole point
-of uuid's is that they be unique.  If someone can trivially set the
-random seed of a prng, and thus cause the uuid generator to generate,
-well, non-unique UUID's, the results can range anywhere from
-confusion, to file system corruption and data loss.
+  + error: file_storage.c: undefined reference to `usb_ep_autoconfig':
+ => .init.text+0x10bc5), .init.text+0x10be7), .init.text+0x10bac)
+  + error: file_storage.c: undefined reference to
+`usb_ep_autoconfig_reset':  => .init.text+0x10ba0)
+  + error: file_storage.c: undefined reference to
+`usb_gadget_config_buf':  => .text+0x34726a)
+  + error: file_storage.c: undefined reference to
+`usb_gadget_get_string':  => .text+0x347289)
 
-Fortunately, there is only one user of lib/uuid.c, and that's the
-btrfs file system.
+i386-randconfig
 
-Chris and the Btrfs folks --- my recommendation would be to ditch the
-use of uuid_be_gen, "git rm lib/uuid.c" with extreme prejudice, and
-use generate_random_uuid() which was coded over a decade ago in
-drivers/char/random.c.  Not only does this properly use the kernel
-random number generator, but it also creates a UUID with the correct
-format.  (It's not enough to set the UUID version to 4; you also need
-to set the UUID variant to be DCE if you want to be properly compliant
-with RFC 4122 --- see section 4.1.1.)
+  + error: phy_n.c: relocation truncated to fit: R_PPC64_REL24 against
+symbol `_restgpr0_14' defined in .text.save.restore section in
+arch/powerpc/lib/built-in.o: (.text+0x1ff7df4), (.text+0x1ff9f70) =>
+(.text+0x1ff79ac), (.text+0x1ff7fdc), (.text+0x1ffa158)
 
-The btrfs file system doesn't generate uuid's in any critical fast
-paths as near as I can determine, so it should be perfectly safe to
-use uuid_generate() --- I also would drop the whole distinction
-between little-endian and big-endian uuid's, BTW.  RFC 4122 is quite
-explicit about how uuid's should be encoded, and it's in internet byte
-order.  This is what OSF/DCE uses, and it's what the rest of the world
-(Microsoft, SAP AG, Apple, GNOME, KDE) uses as well.
+powerpc-allyesconfig
 
-Regards,
+> [1] http://kisskb.ellerman.id.au/kisskb/head/5580/ (all 117 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/5550/ (all 117 configs)
 
-					- Ted
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
