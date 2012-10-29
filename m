@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761079Ab2J2X0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:26:17 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42835 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284Ab2J2X0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:26:15 -0400
-Date: Mon, 29 Oct 2012 16:26:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: memcg/cgroup: do not fail fail on pre_destroy callbacks
-Message-ID: <20121029232602.GF4066@htj.dyndns.org>
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
+	id S1761239Ab2J2X3S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:29:18 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:44783 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755825Ab2J2X3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 19:29:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, lm-sensors@lm-sensors.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
+        Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        =?ISO-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+Subject: Re: [PATCH 3/4] cpufreq, powernow-k8: Change email address
+Date: Tue, 30 Oct 2012 00:33:15 +0100
+Message-ID: <2663527.sPyzc5AXi8@vostro.rjw.lan>
+User-Agent: KMail/4.8.5 (Linux/3.7.0-rc3; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <20121029175221.GD5024@tweety>
+References: <20121029174924.GA5024@tweety> <20121029175221.GD5024@tweety>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Michal.
+On Monday, October 29, 2012 06:52:21 PM Andreas Herrmann wrote:
+> 
+> Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
 
-> Tejun is planning to build on top of that and make some more cleanups
-> in the cgroup core (namely get rid of of the whole retry code in
-> cgroup_rmdir).
+Am I supposed to take this one?
 
-I applied 1-3 to the following branch which is based on top of v3.6.
+Rafael
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git cgroup-destroy-updates
 
-I'll follow up with updates to the destroy path which will replace #4.
-#5 and #6 should be stackable on top.  So, Andrew, there's likely be a
-conflict in the near future.  Just dropping #4-#6 till Michal and I
-sort it out should be enough.
-
-Thanks.
-
+> ---
+>  drivers/cpufreq/powernow-k8.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index c16a3a5..e3ebb4f 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -5,7 +5,7 @@
+>   *  http://www.gnu.org/licenses/gpl.html
+>   *
+>   *  Maintainer:
+> - *  Andreas Herrmann <andreas.herrmann3@amd.com>
+> + *  Andreas Herrmann <herrmann.der.user@googlemail.com>
+>   *
+>   *  Based on the powernow-k7.c module written by Dave Jones.
+>   *  (C) 2003 Dave Jones on behalf of SuSE Labs
+> 
 -- 
-tejun
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
