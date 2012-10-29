@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab2J2PzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:55:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18353 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759843Ab2J2PsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:48:16 -0400
-X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
-   d="scan'208";a="6093340"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
+	id S932639Ab2J2P4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:56:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759743Ab2J2Prt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:47:49 -0400
+Date: Mon, 29 Oct 2012 17:50:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Minchan Kim <minchan@kernel.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org
-Subject: [V5 PATCH 16/26] vmscan: use N_MEMORY instead N_HIGH_MEMORY
-Date: Mon, 29 Oct 2012 23:21:06 +0800
-Message-Id: <1351524078-20363-15-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:19,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:20,
-	Serialize complete at 2012/10/29 23:19:20
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 5/8] vhost: track zero copy failures using DMA length
+Message-ID: <ee60165e6501fb037dfa6e83e3569b3f4dc0c59a.1351524502.git.mst@redhat.com>
+References: <cover.1351524501.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1351524501.git.mst@redhat.com>
+X-Mutt-Fcc: =sent
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
+This will be used to disable zerocopy when error rate
+is high.
 
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- mm/vmscan.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/vhost/vhost.c | 7 ++++---
+ drivers/vhost/vhost.h | 4 ++++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 2624edc..98a2e11 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -3135,7 +3135,7 @@ static int __devinit cpu_callback(struct notifier_block *nfb,
- 	int nid;
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 906fd9f..5affce3 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+ 	int j = 0;
  
- 	if (action == CPU_ONLINE || action == CPU_ONLINE_FROZEN) {
--		for_each_node_state(nid, N_HIGH_MEMORY) {
-+		for_each_node_state(nid, N_MEMORY) {
- 			pg_data_t *pgdat = NODE_DATA(nid);
- 			const struct cpumask *mask;
+ 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
+-		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
++		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
+ 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
+ 			vhost_add_used_and_signal(vq->dev, vq,
+ 						  vq->heads[i].id, 0);
+@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
+ 	kfree(ubufs);
+ }
  
-@@ -3191,7 +3191,7 @@ static int __init kswapd_init(void)
- 	int nid;
+-void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
++void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
+ {
+ 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
+ 	struct vhost_virtqueue *vq = ubufs->vq;
  
- 	swap_setup();
--	for_each_node_state(nid, N_HIGH_MEMORY)
-+	for_each_node_state(nid, N_MEMORY)
-  		kswapd_run(nid);
- 	hotcpu_notifier(cpu_callback, 0);
- 	return 0;
+ 	vhost_poll_queue(&vq->poll);
+ 	/* set len to mark this desc buffers done DMA */
+-	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
++	vq->heads[ubuf->desc].len = status ?
++		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
+ 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
+ }
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index ad72a1f..6fdf31d 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -17,6 +17,8 @@
+  * For transmit, used buffer len is unused; we override it to track buffer
+  * status internally; used for zerocopy tx only.
+  */
++/* Lower device DMA failed */
++#define VHOST_DMA_FAILED_LEN	3
+ /* Lower device DMA done */
+ #define VHOST_DMA_DONE_LEN	2
+ /* Lower device DMA in progress */
+@@ -24,6 +26,8 @@
+ /* Buffer unused */
+ #define VHOST_DMA_CLEAR_LEN	0
+ 
++#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
++
+ struct vhost_device;
+ 
+ struct vhost_work;
 -- 
-1.7.4.4
+MST
 
