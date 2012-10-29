@@ -1,94 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281Ab2J2VsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:48:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56949 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933183Ab2J2VsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:48:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351504796-24788-2-git-send-email-b.zolnierkie@samsung.com>
-References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
-	<1351504796-24788-2-git-send-email-b.zolnierkie@samsung.com>
-Date: Mon, 29 Oct 2012 22:48:05 +0100
-Message-ID: <CABb+yY3DJ8saXGmXO31nQjtmqObpJxf5-Zwv4YhkJLv6EA=Tfw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] DMA: PL330: fix locking in pl330_free_chan_resources()
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, vinod.koul@intel.com,
-        kgene.kim@samsung.com, rob.herring@calxeda.com, dinguyen@altera.com,
-        pawel.moll@arm.com, t.figa@samsung.com, kyungmin.park@samsung.com,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S933106Ab2J2Vsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:48:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48785 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932999Ab2J2Vlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Bo Shen <voice.shen@atmel.com>, Jean Delvare <khali@linux-fr.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [ 37/54] ARM: at91/i2c: change id to let i2c-gpio work
+Date: Mon, 29 Oct 2012 14:40:38 -0700
+Message-Id: <20121029213806.874059032@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
+References: <20121029213802.697479610@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 10:59 AM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> tasklet_kill() may sleep so call it before taking pch->lock.
->
-> Fixes following lockup:
->
-> [  345.470000] BUG: scheduling while atomic: cat/2383/0x00000002
-> [  345.470000] Modules linked in:
-> [  345.470000] [<c0015858>] (unwind_backtrace+0x0/0xfc) from [<c004d980>] (__schedule_bug+0x4c/0x58)
-> [  345.470000] [<c004d980>] (__schedule_bug+0x4c/0x58) from [<c0360b6c>] (__schedule+0x690/0x6e0)
-> [  345.470000] [<c0360b6c>] (__schedule+0x690/0x6e0) from [<c004f2b4>] (sys_sched_yield+0x70/0x78)
-> [  345.470000] [<c004f2b4>] (sys_sched_yield+0x70/0x78) from [<c002acec>] (tasklet_kill+0x34/0x8c)
-> [  345.470000] [<c002acec>] (tasklet_kill+0x34/0x8c) from [<c01da4cc>] (pl330_free_chan_resources+0x24/0x88)
-> [  345.470000] [<c01da4cc>] (pl330_free_chan_resources+0x24/0x88) from [<c01d81f4>] (dma_chan_put+0x4c/0x50)
-> [  345.470000] [<c01d81f4>] (dma_chan_put+0x4c/0x50) from [<c01d82c0>] (dma_release_channel+0x28/0x98)
-> [...]
-> [  368.335000] BUG: spinlock lockup suspected on CPU#0, swapper/0/0
-> [  368.340000]  lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
-> [  368.350000] [<c0015858>] (unwind_backtrace+0x0/0xfc) from [<c01b3d78>] (do_raw_spin_lock+0x194/0x204)
-> [  368.360000] [<c01b3d78>] (do_raw_spin_lock+0x194/0x204) from [<c0361adc>] (_raw_spin_lock_irqsave+0x20/0x28)
-> [  368.365000] [<c0361adc>] (_raw_spin_lock_irqsave+0x20/0x28) from [<c01da80c>] (pl330_tasklet+0x2c/0x5a8)
-> [  368.375000] [<c01da80c>] (pl330_tasklet+0x2c/0x5a8) from [<c002ac04>] (tasklet_action+0xfc/0x114)
-> [  368.385000] [<c002ac04>] (tasklet_action+0xfc/0x114) from [<c002b204>] (__do_softirq+0xe4/0x19c)
-> [  368.395000] [<c002b204>] (__do_softirq+0xe4/0x19c) from [<c002b398>] (irq_exit+0x98/0x9c)
-> [  368.405000] [<c002b398>] (irq_exit+0x98/0x9c) from [<c0013ebc>] (handle_IPI+0x124/0x16c)
-> [  368.410000] [<c0013ebc>] (handle_IPI+0x124/0x16c) from [<c000857c>] (gic_handle_irq+0x64/0x68)
-> [  368.420000] [<c000857c>] (gic_handle_irq+0x64/0x68) from [<c000e740>] (__irq_svc+0x40/0x70)
-> [  368.430000] Exception stack(0xc04a3f00 to 0xc04a3f48)
-> [  368.435000] 3f00: c04a3f48 00000000 6f9e23e8 00000050 c07492c8 c04a3f48 00000000 c04ccc88
-> [  368.440000] 3f20: 6f9dbac3 00000050 6f9e23e8 00000050 3b9aca00 c04a3f48 c005cfa4 c02946d4
-> [  368.450000] 3f40: 60000013 ffffffff
-> [  368.455000] [<c000e740>] (__irq_svc+0x40/0x70) from [<c02946d4>] (cpuidle_wrap_enter+0x4c/0xa0)
-> [  368.460000] [<c02946d4>] (cpuidle_wrap_enter+0x4c/0xa0) from [<c02940dc>] (cpuidle_enter_state+0x18/0x68)
-> [  368.470000] [<c02940dc>] (cpuidle_enter_state+0x18/0x68) from [<c02948e0>] (cpuidle_idle_call+0xac/0xe0)
-> [  368.480000] [<c02948e0>] (cpuidle_idle_call+0xac/0xe0) from [<c00102f8>] (cpu_idle+0xac/0xf0)
-> [  368.490000] [<c00102f8>] (cpu_idle+0xac/0xf0) from [<c04796a0>] (start_kernel+0x28c/0x294)
->
-> Cc: Jassi Brar <jassisinghbrar@gmail.com>
-> Cc: Vinod Koul <vinod.koul@linux.intel.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/dma/pl330.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 665668b..db7574b 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -2459,10 +2459,10 @@ static void pl330_free_chan_resources(struct dma_chan *chan)
->         struct dma_pl330_chan *pch = to_pchan(chan);
->         unsigned long flags;
->
-> -       spin_lock_irqsave(&pch->lock, flags);
-> -
->         tasklet_kill(&pch->task);
->
-> +       spin_lock_irqsave(&pch->lock, flags);
-> +
->         pl330_release_channel(pch->pl330_chid);
->         pch->pl330_chid = NULL;
->
-Thanks.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+------------------
+
+From: Bo Shen <voice.shen@atmel.com>
+
+commit 7840487cd6298f9f931103b558290d8d98d41c49 upstream.
+
+The i2c core driver will turn the platform device ID to busnum
+When using platfrom device ID as -1, it means dynamically assigned
+the busnum. When writing code, we need to make sure the busnum,
+and call i2c_register_board_info(int busnum, ...) to register device
+if using -1, we do not know the value of busnum
+
+In order to solve this issue, set the platform device ID as a fix number
+Here using 0 to match the busnum used in i2c_regsiter_board_info()
+
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
+ arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+--- a/arch/arm/mach-at91/at91rm9200_devices.c
++++ b/arch/arm/mach-at91/at91rm9200_devices.c
+@@ -463,7 +463,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91rm9200_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -468,7 +468,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9260_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -285,7 +285,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9261_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -542,7 +542,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9263_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -314,7 +314,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9rl_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+
+
