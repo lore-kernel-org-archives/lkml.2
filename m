@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab2J2UKL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:10:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42895 "EHLO mail.kernel.org"
+	id S1760730Ab2J2UJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:18 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42766 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760740Ab2J2UJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:22 -0400
+	id S1760683Ab2J2UJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 31/34] x86, mm: Find_early_table_space based on ranges that are actually being mapped
-Date: Mon, 29 Oct 2012 13:08:02 -0700
-Message-Id: <20121029200424.001945480@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 23/34] USB: mos7840: remove NULL-urb submission
+Date: Mon, 29 Oct 2012 13:07:54 -0700
+Message-Id: <20121029200423.130444568@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,142 +25,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Shin <jacob.shin@amd.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 844ab6f993b1d32eb40512503d35ff6ad0c57030 upstream.
+commit 28c3ae9a8cf45f439c9a0779ebd0256e2ae72813 upstream.
 
-Current logic finds enough space for direct mapping page tables from 0
-to end. Instead, we only need to find enough space to cover mr[0].start
-to mr[nr_range].end -- the range that is actually being mapped by
-init_memory_mapping()
+The private int_urb is never allocated so the submission from the
+control completion handler will always fail. Remove this odd piece of
+broken code.
 
-This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
-the panic reported here:
-
-  https://lkml.org/lkml/2012/10/20/160
-  https://lkml.org/lkml/2012/10/21/157
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
-Tested-by: Tom Rini <trini@ti.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |   73 +++++++++++++++++++++++++++++++----------------------
- 1 file changed, 43 insertions(+), 30 deletions(-)
+ drivers/usb/serial/mos7840.c |   15 +--------------
+ 1 file changed, 1 insertion(+), 14 deletions(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -28,36 +28,54 @@ int direct_gbpages
- #endif
- ;
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -235,7 +235,6 @@ struct moschip_port {
+ 	int port_num;		/*Actual port number in the device(1,2,etc) */
+ 	struct urb *write_urb;	/* write URB for this port */
+ 	struct urb *read_urb;	/* read URB for this port */
+-	struct urb *int_urb;
+ 	__u8 shadowLCR;		/* last LCR value received */
+ 	__u8 shadowMCR;		/* last MCR value received */
+ 	char open;
+@@ -505,7 +504,6 @@ static void mos7840_control_callback(str
+ 	unsigned char *data;
+ 	struct moschip_port *mos7840_port;
+ 	__u8 regval = 0x0;
+-	int result = 0;
+ 	int status = urb->status;
  
--static void __init find_early_table_space(unsigned long end, int use_pse,
--					  int use_gbpages)
-+struct map_range {
-+	unsigned long start;
-+	unsigned long end;
-+	unsigned page_size_mask;
-+};
-+
-+/*
-+ * First calculate space needed for kernel direct mapping page tables to cover
-+ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-+ * pages. Then find enough contiguous space for those page tables.
-+ */
-+static void __init find_early_table_space(struct map_range *mr, int nr_range)
- {
--	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
-+	int i;
-+	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
-+	unsigned long start = 0, good_end;
- 	phys_addr_t base;
+ 	mos7840_port = urb->context;
+@@ -524,7 +522,7 @@ static void mos7840_control_callback(str
+ 	default:
+ 		dbg("%s - nonzero urb status received: %d", __func__,
+ 		    status);
+-		goto exit;
++		return;
+ 	}
  
--	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
--	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	for (i = 0; i < nr_range; i++) {
-+		unsigned long range, extra;
- 
--	if (use_gbpages) {
--		unsigned long extra;
-+		range = mr[i].end - mr[i].start;
-+		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
--		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
--		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
--	} else
--		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
+ 	dbg("%s urb buffer size is %d", __func__, urb->actual_length);
+@@ -537,17 +535,6 @@ static void mos7840_control_callback(str
+ 		mos7840_handle_new_msr(mos7840_port, regval);
+ 	else if (mos7840_port->MsrLsr == 1)
+ 		mos7840_handle_new_lsr(mos7840_port, regval);
 -
--	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
-+			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
-+			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
-+		} else {
-+			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
-+		}
- 
--	if (use_pse) {
--		unsigned long extra;
--
--		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
-+			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
--		extra += PMD_SIZE;
-+			extra += PMD_SIZE;
- #endif
--		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
--	} else
--		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+			/* The first 2/4M doesn't use large pages. */
-+			if (mr[i].start < PMD_SIZE)
-+				extra += range;
-+
-+			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		} else {
-+			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		}
-+	}
- 
-+	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
-@@ -74,8 +92,9 @@ static void __init find_early_table_spac
- 	pgt_buf_end = pgt_buf_start;
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
- 
--	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
--		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
-+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
-+		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
-+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+-exit:
+-	spin_lock(&mos7840_port->pool_lock);
+-	if (!mos7840_port->zombie)
+-		result = usb_submit_urb(mos7840_port->int_urb, GFP_ATOMIC);
+-	spin_unlock(&mos7840_port->pool_lock);
+-	if (result) {
+-		dev_err(&urb->dev->dev,
+-			"%s - Error %d submitting interrupt urb\n",
+-			__func__, result);
+-	}
  }
  
- void __init native_pagetable_reserve(u64 start, u64 end)
-@@ -83,12 +102,6 @@ void __init native_pagetable_reserve(u64
- 	memblock_x86_reserve_range(start, end, "PGTABLE");
- }
- 
--struct map_range {
--	unsigned long start;
--	unsigned long end;
--	unsigned page_size_mask;
--};
--
- #ifdef CONFIG_X86_32
- #define NR_RANGE_MR 3
- #else /* CONFIG_X86_64 */
-@@ -260,7 +273,7 @@ unsigned long __init_refok init_memory_m
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(end, use_pse, use_gbpages);
-+		find_early_table_space(mr, nr_range);
- 
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+ static int mos7840_get_reg(struct moschip_port *mcs, __u16 Wval, __u16 reg,
 
 
