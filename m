@@ -1,66 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab2J2TBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:01:15 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64666 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757361Ab2J2TBM (ORCPT
+	id S932926Ab2J2TBU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:01:20 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:53459 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932370Ab2J2TBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:01:12 -0400
-Date: Mon, 29 Oct 2012 12:01:07 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
-Message-ID: <20121029190107.GD4066@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
- <20121029113515.GB9115@Krystal>
- <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
- <20121029183157.GC3097@jtriplet-mobl1>
- <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
- <20121029185319.GA21546@Krystal>
- <20121029185814.GC4066@htj.dyndns.org>
+	Mon, 29 Oct 2012 15:01:17 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhWdACXRjlBV5h1yPGdsb2JhbABEilK3JQICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTh3QDCQqyEA2JVBSKeoEdgSaEIGEDlB+BVIV5hTmIAQ
+X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
+   d="scan'208";a="141711586"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 29 Oct 2012 20:05:54 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/11] HID: core: fix unit exponent parsing
+Message-ID: <20121029190554.GA15015@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1351241067-9521-3-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121029185814.GC4066@htj.dyndns.org>
+In-Reply-To: <1351241067-9521-3-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 11:58:14AM -0700, Tejun Heo wrote:
-> On Mon, Oct 29, 2012 at 02:53:19PM -0400, Mathieu Desnoyers wrote:
-> > The argument about hash_init being useful to add magic values in the
-> > future only works for the cases where a hash table is declared with
-> > DECLARE_HASHTABLE(). It's completely pointless with DEFINE_HASHTABLE(),
-> > because we could initialize any debugging variables from within
-> > DEFINE_HASHTABLE().
+Hi Benjamin,
+
+> HID spec details special values for the HID field unit exponent.
+> Basically, the range [0x8..0xf] correspond to [-8..-1].
 > 
-> You can do that with [0 .. HASH_SIZE - 1] initializer.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
 
-And in general, let's please try not to do optimizations which are
-pointless.  Just stick to the usual semantics.  You have an abstract
-data structure - invoke the initializer before using it.  Sure,
-optimize it if it shows up somewhere.  And here, if we do the
-initializers properly, it shouldn't cause any more actual overhead -
-ie. DEFINE_HASHTABLE() will basicallly boil down to all zero
-assignments and the compiler will put the whole thing in .bss anyway.
+Standard two's complement, in other words?
 
-Thanks.
+>  drivers/hid/hid-core.c  | 10 +++++++++-
+>  drivers/hid/hid-input.c | 19 +++++++++++++------
+>  2 files changed, 22 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 9904776..6bde6e4 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
+>  
+>  static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+>  {
+> +	__u32 raw_value;
+>  	switch (item->tag) {
+>  	case HID_GLOBAL_ITEM_TAG_PUSH:
+>  
+> @@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
+>  		return 0;
+>  
+>  	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
+> -		parser->global.unit_exponent = item_sdata(item);
+> +		/* Units exponent negative numbers are given through a special
+> +		 * table.
+> +		 * See "6.2.2.7 Global Items" for more information. */
+> +		raw_value = item_udata(item);
+> +		if ((raw_value >> 3) == 1)
+> +			parser->global.unit_exponent = raw_value - 16;
+> +		else
+> +			parser->global.unit_exponent = raw_value;
 
--- 
-tejun
+I beleive the function you want is snto32(value, 4).
+
+>  		return 0;
+>  
+>  	case HID_GLOBAL_ITEM_TAG_UNIT:
+> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+> index 1b0adc3..fc9f2b5 100644
+> --- a/drivers/hid/hid-input.c
+> +++ b/drivers/hid/hid-input.c
+> @@ -215,7 +215,7 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+>  					field->logical_minimum;
+>  	__s32 physical_extents = field->physical_maximum -
+>  					field->physical_minimum;
+> -	__s32 prev;
+> +	__s32 prev, tmp_exponent;
+>  
+>  	/* Check if the extents are sane */
+>  	if (logical_extents <= 0 || physical_extents <= 0)
+> @@ -235,17 +235,24 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+>  	case ABS_MT_TOOL_Y:
+>  	case ABS_MT_TOUCH_MAJOR:
+>  	case ABS_MT_TOUCH_MINOR:
+> -		if (field->unit == 0x11) {		/* If centimeters */
+> +		if (field->unit & 0xffffff00)		/* Not a length */
+> +			return 0;
+> +		tmp_exponent = field->unit >> 4;
+> +		if ((tmp_exponent >> 3) == 1)
+> +			tmp_exponent -= 16;
+
+Ditto.
+
+> +		switch (field->unit & 0xf) {
+> +		case 0x1:				/* If centimeters */
+>  			/* Convert to millimeters */
+> -			unit_exponent += 1;
+> -		} else if (field->unit == 0x13) {	/* If inches */
+> +			unit_exponent += tmp_exponent;
+> +			break;
+> +		case 0x3:				/* If inches */
+>  			/* Convert to millimeters */
+>  			prev = physical_extents;
+>  			physical_extents *= 254;
+>  			if (physical_extents < prev)
+>  				return 0;
+> -			unit_exponent -= 1;
+> -		} else {
+> +			unit_exponent += tmp_exponent - 2;
+> +		default:
+>  			return 0;
+>  		}
+>  		break;
+> -- 
+> 1.7.11.7
+> 
+
+Thanks,
+Henrik
