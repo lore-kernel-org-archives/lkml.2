@@ -1,165 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760264Ab2J2Rw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:52:57 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:56295 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760060Ab2J2Rww (ORCPT
+	id S932802Ab2J2Rxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:53:38 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41849 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932608Ab2J2Rxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:52:52 -0400
-Date: Mon, 29 Oct 2012 10:52:51 -0700 (PDT)
-From: Bhavesh Davda <bhavesh@vmware.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jongman heo <jongman.heo@samsung.com>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        David Miller <davem@davemloft.net>
-Message-ID: <1948210032.25549736.1351533171670.JavaMail.root@vmware.com>
-In-Reply-To: <1351531849.12280.54.camel@edumazet-glaptop>
-Subject: Re: [Pv-drivers] [PATCH] vmxnet3: must split too big fragments
+	Mon, 29 Oct 2012 13:53:35 -0400
+Date: Mon, 29 Oct 2012 18:53:25 +0100
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>
+Cc: lm-sensors@lm-sensors.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        oprofile-list@lists.sf.net, Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+Subject: [PATCH 4/4] MAINTAINERS: Update email address for Robert Richter
+Message-ID: <20121029175325.GE5024@tweety>
+References: <20121029174924.GA5024@tweety>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.160.14]
-X-Mailer: Zimbra 7.2.0_GA_2674 (ZimbraWebClient - GC22 (Mac)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029174924.GA5024@tweety>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LGTM. Thanks for doing this! Did you do any performance testing with this patch?
+From: Robert Richter <rric@kernel.org>
 
-Reviewed-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Robert Richter <rric@kernel.org>
+Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+---
+ MAINTAINERS |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---
-Bhavesh Davda
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5a66583..5b8935b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5363,7 +5363,7 @@ S:	Maintained
+ F:	sound/drivers/opl4/
+ 
+ OPROFILE
+-M:	Robert Richter <robert.richter@amd.com>
++M:	Robert Richter <rric@kernel.org>
+ L:	oprofile-list@lists.sf.net
+ S:	Maintained
+ F:	arch/*/include/asm/oprofile*.h
+-- 
+1.7.9.5
 
------ Original Message -----
-> From: "Eric Dumazet" <eric.dumazet@gmail.com>
-> To: "Shreyas Bhatewara" <sbhatewara@vmware.com>, "David Miller" <davem@davemloft.net>
-> Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org, linux-kernel@vger.kernel.org, "jongman heo"
-> <jongman.heo@samsung.com>
-> Sent: Monday, October 29, 2012 10:30:49 AM
-> Subject: [Pv-drivers] [PATCH] vmxnet3: must split too big fragments
-> 
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> vmxnet3 has a 16Kbytes limit per tx descriptor, that happened to work
-> as long as we provided PAGE_SIZE fragments.
-> 
-> Our stack can now build larger fragments, so we need to split them to
-> the 16kbytes boundary.
-> 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Reported-by: jongman heo <jongman.heo@samsung.com>
-> Tested-by: jongman heo <jongman.heo@samsung.com>
-> Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
-> ---
->  drivers/net/vmxnet3/vmxnet3_drv.c |   65
->  +++++++++++++++++++---------
->  1 file changed, 45 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c
-> b/drivers/net/vmxnet3/vmxnet3_drv.c
-> index ce9d4f2..0ae1bcc 100644
-> --- a/drivers/net/vmxnet3/vmxnet3_drv.c
-> +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-> @@ -744,28 +744,43 @@ vmxnet3_map_pkt(struct sk_buff *skb, struct
-> vmxnet3_tx_ctx *ctx,
->  
->  	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
->  		const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-> +		u32 buf_size;
->  
-> -		tbi = tq->buf_info + tq->tx_ring.next2fill;
-> -		tbi->map_type = VMXNET3_MAP_PAGE;
-> -		tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
-> -						 0, skb_frag_size(frag),
-> -						 DMA_TO_DEVICE);
-> +		buf_offset = 0;
-> +		len = skb_frag_size(frag);
-> +		while (len) {
-> +			tbi = tq->buf_info + tq->tx_ring.next2fill;
-> +			if (len < VMXNET3_MAX_TX_BUF_SIZE) {
-> +				buf_size = len;
-> +				dw2 |= len;
-> +			} else {
-> +				buf_size = VMXNET3_MAX_TX_BUF_SIZE;
-> +				/* spec says that for TxDesc.len, 0 == 2^14 */
-> +			}
-> +			tbi->map_type = VMXNET3_MAP_PAGE;
-> +			tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
-> +							 buf_offset, buf_size,
-> +							 DMA_TO_DEVICE);
->  
-> -		tbi->len = skb_frag_size(frag);
-> +			tbi->len = buf_size;
->  
-> -		gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
-> -		BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
-> +			gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
-> +			BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
->  
-> -		gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
-> -		gdesc->dword[2] = cpu_to_le32(dw2 | skb_frag_size(frag));
-> -		gdesc->dword[3] = 0;
-> +			gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
-> +			gdesc->dword[2] = cpu_to_le32(dw2);
-> +			gdesc->dword[3] = 0;
->  
-> -		dev_dbg(&adapter->netdev->dev,
-> -			"txd[%u]: 0x%llu %u %u\n",
-> -			tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
-> -			le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
-> -		vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
-> -		dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
-> +			dev_dbg(&adapter->netdev->dev,
-> +				"txd[%u]: 0x%llu %u %u\n",
-> +				tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
-> +				le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
-> +			vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
-> +			dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
-> +
-> +			len -= buf_size;
-> +			buf_offset += buf_size;
-> +		}
->  	}
->  
->  	ctx->eop_txd = gdesc;
-> @@ -886,6 +901,18 @@ vmxnet3_prepare_tso(struct sk_buff *skb,
->  	}
->  }
->  
-> +static int txd_estimate(const struct sk_buff *skb)
-> +{
-> +	int count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) + 1;
-> +	int i;
-> +
-> +	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-> +		const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-> +
-> +		count += VMXNET3_TXD_NEEDED(skb_frag_size(frag));
-> +	}
-> +	return count;
-> +}
->  
->  /*
->   * Transmits a pkt thru a given tq
-> @@ -914,9 +941,7 @@ vmxnet3_tq_xmit(struct sk_buff *skb, struct
-> vmxnet3_tx_queue *tq,
->  	union Vmxnet3_GenericDesc tempTxDesc;
->  #endif
->  
-> -	/* conservatively estimate # of descriptors to use */
-> -	count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
-> -		skb_shinfo(skb)->nr_frags + 1;
-> +	count = txd_estimate(skb);
->  
->  	ctx.ipv4 = (vlan_get_protocol(skb) == cpu_to_be16(ETH_P_IP));
->  
-> 
-> 
-> _______________________________________________
-> Pv-drivers mailing list
-> Pv-drivers@vmware.com
-> http://mailman2.vmware.com/mailman/listinfo/pv-drivers
-> 
