@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761480Ab2J2V7W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:59:22 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47990 "EHLO mail.kernel.org"
+	id S1761418Ab2J2V7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:59:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48001 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761378Ab2J2ViD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761357Ab2J2ViD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 17:38:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 089/101] iwlwifi: fix 6000 series channel switch command
-Date: Mon, 29 Oct 2012 14:35:42 -0700
-Message-Id: <20121029213250.210698848@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Arend Van Spriel <arend@broadcom.com>,
+        Piotr Haber <phaber@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 090/101] bcma: fix unregistration of cores
+Date: Mon, 29 Oct 2012 14:35:43 -0700
+Message-Id: <20121029213250.319958828@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,100 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Piotr Haber <phaber@broadcom.com>
 
-commit 8f7b8db6e0557c8437adf9371e020cd89a7e85dc upstream.
+commit 1fffa905adffbf0d3767fc978ef09afb830275eb upstream.
 
-The channel switch command for 6000 series devices
-is larger than the maximum inline command size of
-320 bytes. The command is therefore refused with a
-warning. Fix this by allocating the command and
-using the NOCOPY mechanism.
+When cores are unregistered, entries
+need to be removed from cores list in a safe manner.
 
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Signed-off-by: Piotr Haber <phaber@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/devices.c |   39 +++++++++++++++++------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
+ drivers/bcma/main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/devices.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/devices.c
-@@ -518,7 +518,7 @@ static int iwl6000_hw_channel_switch(str
- 	 * See iwlagn_mac_channel_switch.
- 	 */
- 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
--	struct iwl6000_channel_switch_cmd cmd;
-+	struct iwl6000_channel_switch_cmd *cmd;
- 	u32 switch_time_in_usec, ucode_switch_time;
- 	u16 ch;
- 	u32 tsf_low;
-@@ -527,18 +527,25 @@ static int iwl6000_hw_channel_switch(str
- 	struct ieee80211_vif *vif = ctx->vif;
- 	struct iwl_host_cmd hcmd = {
- 		.id = REPLY_CHANNEL_SWITCH,
--		.len = { sizeof(cmd), },
-+		.len = { sizeof(*cmd), },
- 		.flags = CMD_SYNC,
--		.data = { &cmd, },
-+		.dataflags[0] = IWL_HCMD_DFL_NOCOPY,
- 	};
-+	int err;
+--- a/drivers/bcma/main.c
++++ b/drivers/bcma/main.c
+@@ -141,9 +141,10 @@ static int bcma_register_cores(struct bc
  
--	cmd.band = priv->band == IEEE80211_BAND_2GHZ;
-+	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
-+	if (!cmd)
-+		return -ENOMEM;
-+
-+	hcmd.data[0] = cmd;
-+
-+	cmd->band = priv->band == IEEE80211_BAND_2GHZ;
- 	ch = ch_switch->channel->hw_value;
- 	IWL_DEBUG_11H(priv, "channel switch from %u to %u\n",
- 		      ctx->active.channel, ch);
--	cmd.channel = cpu_to_le16(ch);
--	cmd.rxon_flags = ctx->staging.flags;
--	cmd.rxon_filter_flags = ctx->staging.filter_flags;
-+	cmd->channel = cpu_to_le16(ch);
-+	cmd->rxon_flags = ctx->staging.flags;
-+	cmd->rxon_filter_flags = ctx->staging.filter_flags;
- 	switch_count = ch_switch->count;
- 	tsf_low = ch_switch->timestamp & 0x0ffffffff;
- 	/*
-@@ -554,23 +561,25 @@ static int iwl6000_hw_channel_switch(str
- 			switch_count = 0;
+ static void bcma_unregister_cores(struct bcma_bus *bus)
+ {
+-	struct bcma_device *core;
++	struct bcma_device *core, *tmp;
+ 
+-	list_for_each_entry(core, &bus->cores, list) {
++	list_for_each_entry_safe(core, tmp, &bus->cores, list) {
++		list_del(&core->list);
+ 		if (core->dev_registered)
+ 			device_unregister(&core->dev);
  	}
- 	if (switch_count <= 1)
--		cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
-+		cmd->switch_time = cpu_to_le32(priv->ucode_beacon_time);
- 	else {
- 		switch_time_in_usec =
- 			vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
- 		ucode_switch_time = iwl_usecs_to_beacons(priv,
- 							 switch_time_in_usec,
- 							 beacon_interval);
--		cmd.switch_time = iwl_add_beacon_time(priv,
--						      priv->ucode_beacon_time,
--						      ucode_switch_time,
--						      beacon_interval);
-+		cmd->switch_time = iwl_add_beacon_time(priv,
-+						       priv->ucode_beacon_time,
-+						       ucode_switch_time,
-+						       beacon_interval);
- 	}
- 	IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
--		      cmd.switch_time);
--	cmd.expect_beacon = ch_switch->channel->flags & IEEE80211_CHAN_RADAR;
-+		      cmd->switch_time);
-+	cmd->expect_beacon = ch_switch->channel->flags & IEEE80211_CHAN_RADAR;
- 
--	return iwl_dvm_send_cmd(priv, &hcmd);
-+	err = iwl_dvm_send_cmd(priv, &hcmd);
-+	kfree(cmd);
-+	return err;
- }
- 
- struct iwl_lib_ops iwl6000_lib = {
 
 
