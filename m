@@ -1,396 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932546Ab2J2PRB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:17:01 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45463 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932435Ab2J2PQ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:16:27 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, ming.m.lin@intel.com
-Subject: [Patch v1 10/10] perf tools: add new mem command for memory access profiling
-Date: Mon, 29 Oct 2012 16:15:52 +0100
-Message-Id: <1351523752-4215-11-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
+	id S1759381Ab2J2PRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:17:35 -0400
+Received: from fieldses.org ([174.143.236.118]:39269 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759276Ab2J2PRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:17:33 -0400
+Date: Mon, 29 Oct 2012 11:16:54 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <levinsasha928@gmail.com>, tj@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 09/16] SUNRPC/cache: use new hashtable implementation
+Message-ID: <20121029151653.GC9502@fieldses.org>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-9-git-send-email-levinsasha928@gmail.com>
+ <20121029124229.GC11733@Krystal>
+ <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
+ <20121029151343.GA17722@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029151343.GA17722@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new command is a wrapper on top of perf record and
-perf report to make it easier to configure for memory
-access profiling.
+On Mon, Oct 29, 2012 at 11:13:43AM -0400, Mathieu Desnoyers wrote:
+> * Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> > On Mon, Oct 29, 2012 at 5:42 AM, Mathieu Desnoyers
+> > <mathieu.desnoyers@efficios.com> wrote:
+> > >
+> > > So defining e.g.:
+> > >
+> > > #include <linux/log2.h>
+> > >
+> > > #define DFR_HASH_BITS  (PAGE_SHIFT - ilog2(BITS_PER_LONG))
+> > >
+> > > would keep the intended behavior in all cases: use one page for the hash
+> > > array.
+> > 
+> > Well, since that wasn't true before either because of the long-time
+> > bug you point out, clearly the page size isn't all that important. I
+> > think it's more important to have small and simple code, and "9" is
+> > certainly that, compared to playing ilog2 games with not-so-obvious
+> > things.
+> > 
+> > Because there's no reason to believe that '9' is in any way a worse
+> > random number than something page-shift-related, is there? And getting
+> > away from *previous* overly-complicated size calculations that had
+> > been broken because they were too complicated and random, sounds like
+> > a good idea.
+> 
+> Good point. I agree that unless we really care about the precise number
+> of TLB entries and cache lines used by this hash table, we might want to
+> stay away from page-size and pointer-size based calculation.
+>
+> It might not hurt to explain this in the patch changelog though.
 
-To record loads:
-$ perf mem -t load rec .....
+I'd also be happy to take that as a separate patch now.
 
-To record stores:
-$ perf mem -t store rec .....
-
-To get the report:
-$ perf mem -t load rep
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/Documentation/perf-mem.txt |   51 +++++++
- tools/perf/Makefile                   |    1 +
- tools/perf/builtin-mem.c              |  237 +++++++++++++++++++++++++++++++++
- tools/perf/builtin.h                  |    1 +
- tools/perf/command-list.txt           |    1 +
- tools/perf/perf.c                     |    1 +
- 6 files changed, 292 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-mem.txt
- create mode 100644 tools/perf/builtin-mem.c
-
-diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
-new file mode 100644
-index 0000000..57ead4f
---- /dev/null
-+++ b/tools/perf/Documentation/perf-mem.txt
-@@ -0,0 +1,51 @@
-+perf-mem(1)
-+===========
-+
-+NAME
-+----
-+perf-mem - Profile memory accesses
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf mem' -t load record <command>
-+'perf mem' -t store record <command>
-+'perf mem' -t load report
-+'perf mem' -t store report
-+
-+DESCRIPTION
-+-----------
-+"perf mem -t <TYPE> record" runs a command and gathers memory operation data
-+from it, into perf.data. Perf record options are accepted and are passed through.
-+
-+"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
-+right set of options to display a memory access profile.
-+
-+OPTIONS
-+-------
-+<command>...::
-+	Any command you can specify in a shell.
-+
-+-t::
-+--type=::
-+	Select the memory operation type: load or store
-+
-+-R::
-+--dump-raw-samples=::
-+	Dump the raw decoded samples on the screen in a format that is easy to parse with
-+	one sample per line.
-+
-+-x::
-+--field-separator::
-+	Specify the field separator used when dump raw samples (-R option). By default,
-+	The separator is the space character.
-+
-+-C::
-+--cpu-list::
-+	Restrict dump of raw samples to those provided via this option. Note that the same
-+	option can be passed in record mode. It will be interpreted the same way as perf
-+	record.
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 629fc6a..643b316 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -459,6 +459,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
- BUILTIN_OBJS += $(OUTPUT)builtin-test.o
- BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
- 
- PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
- 
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-new file mode 100644
-index 0000000..5334f7d
---- /dev/null
-+++ b/tools/perf/builtin-mem.c
-@@ -0,0 +1,237 @@
-+#include "builtin.h"
-+#include "perf.h"
-+
-+#include "util/parse-options.h"
-+#include "util/trace-event.h"
-+#include "util/tool.h"
-+#include "util/session.h"
-+
-+#define MEM_OPERATION_LOAD	"load"
-+#define MEM_OPERATION_STORE	"store"
-+
-+static char const	*input_name		= "perf.data";
-+static const char	*mem_operation		= MEM_OPERATION_LOAD;
-+static const char	*csv_sep		= NULL;
-+
-+struct perf_mem {
-+	struct perf_tool	tool;
-+	char const		*input_name;
-+	symbol_filter_t		annotate_init;
-+	bool			hide_unresolved;
-+	bool			dump_raw;
-+	const char		*cpu_list;
-+	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
-+};
-+
-+static const char * const mem_usage[] = {
-+	"perf mem [<options>] {record <command> |report}",
-+	NULL
-+};
-+
-+static int __cmd_record(int argc, const char **argv)
-+{
-+	int rec_argc, i = 0, j;
-+	const char **rec_argv;
-+	char event[64];
-+	int ret;
-+
-+	rec_argc = argc + 4;
-+	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-+	if (!rec_argv)
-+		return -1;
-+
-+	rec_argv[i++] = strdup("record");
-+	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		rec_argv[i++] = strdup("-l");
-+	rec_argv[i++] = strdup("-d");
-+	rec_argv[i++] = strdup("-e");
-+
-+	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		sprintf(event, "cpu/mem-stores/pp");
-+	else
-+		sprintf(event, "cpu/mem-loads/pp");
-+
-+	rec_argv[i++] = strdup(event);
-+	for (j = 1; j < argc; j++, i++)
-+		rec_argv[i] = argv[j];
-+
-+	ret = cmd_record(i, rec_argv, NULL);
-+	free(rec_argv);
-+	return ret;
-+}
-+
-+static int
-+dump_raw_samples(struct perf_tool *tool,
-+		 union perf_event *event,
-+		 struct perf_sample *sample,
-+		 struct perf_evsel *evsel __maybe_unused,
-+		 struct machine *machine)
-+{
-+	struct perf_mem *mem = container_of(tool, struct perf_mem, tool);
-+	struct addr_location al;
-+	const char *fmt;
-+
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+				mem->annotate_init) < 0) {
-+		fprintf(stderr, "problem processing %d event, skipping it.\n",
-+				event->header.type);
-+		return -1;
-+	}
-+
-+	if (al.filtered || (mem->hide_unresolved && al.sym == NULL))
-+		return 0;
-+
-+	if (al.map != NULL)
-+		al.map->dso->hit = 1;
-+
-+	if (csv_sep) {
-+		fmt = "%d%s%d%s0x%"PRIx64"%s0x%"PRIx64"%s%"PRIu64"%s0x%"PRIx64"%s%s:%s\n";
-+	} else {
-+		fmt = "%5d%s%5d%s0x%016"PRIx64"%s0x016%"PRIx64"%s%5"PRIu64"%s0x%06"PRIx64"%s%s:%s\n";
-+		csv_sep = " ";
-+	}
-+
-+	printf( fmt,
-+		sample->pid,
-+		csv_sep,
-+		sample->tid,
-+		csv_sep,
-+		event->ip.ip,
-+		csv_sep,
-+		sample->addr,
-+		csv_sep,
-+		sample->cost,
-+		csv_sep,
-+		sample->dsrc,
-+		csv_sep,
-+		al.map ? (al.map->dso ? al.map->dso->long_name : "???") : "???",
-+		al.sym ? al.sym->name : "???");
-+
-+	return 0;
-+}
-+
-+static int process_sample_event(struct perf_tool *tool,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+                                struct perf_evsel *evsel,
-+				struct machine *machine)
-+{
-+	return dump_raw_samples(tool, event, sample, evsel, machine);
-+}
-+
-+static int report_raw_events(struct perf_mem *mem)
-+{
-+	int err = -EINVAL;
-+	int ret;
-+	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
-+							 0, false, &mem->tool);
-+
-+	if (mem->cpu_list) {
-+		ret = perf_session__cpu_bitmap(session, mem->cpu_list,
-+					       mem->cpu_bitmap);
-+		if (ret)
-+			goto out_delete;
-+	}
-+
-+	if (symbol__init() < 0)
-+		return -1;
-+
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	printf("# PID, TID, IP, ADDR, COST, DSRC, SYMBOL\n");
-+
-+	err = perf_session__process_events(session, &mem->tool);
-+	if (err)
-+		return err;
-+
-+	return 0;
-+
-+out_delete:
-+	perf_session__delete(session);
-+	return err;
-+}
-+
-+static int report_events(int argc, const char **argv, struct perf_mem *mem)
-+{
-+	const char **rep_argv;
-+	int ret, i = 0, j, rep_argc;
-+
-+	if (mem->dump_raw)
-+		return report_raw_events(mem);
-+
-+	rep_argc = argc + 3;
-+	rep_argv = calloc(rep_argc + 1, sizeof(char *));
-+	if (!rep_argv)
-+		return -1;
-+
-+	rep_argv[i++] = strdup("report");
-+	rep_argv[i++] = strdup("--mem-mode");
-+	rep_argv[i++] = strdup("-n"); /* display number of samples */
-+
-+	/*
-+	 * there is no cost associated with stores, so don't print
-+	 * the column
-+	 */
-+	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,dso_daddr,tlb,locked");
-+
-+	for (j = 1; j < argc; j++, i++)
-+		rep_argv[i] = argv[j];
-+
-+	ret = cmd_report(i, rep_argv, NULL);
-+	free(rep_argv);
-+	return ret;
-+}
-+
-+int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	struct stat st;
-+	struct perf_mem mem = {
-+		.tool = {
-+			.sample		= process_sample_event,
-+			.mmap		= perf_event__process_mmap,
-+			.comm		= perf_event__process_comm,
-+			.lost		= perf_event__process_lost,
-+			.fork		= perf_event__process_fork,
-+			.build_id	= perf_event__process_build_id,
-+			.ordered_samples= true,
-+		},
-+		.input_name		 = "perf.data",
-+	};
-+	const struct option mem_options[] = {
-+		OPT_STRING('t', "type", &mem_operation,
-+			   "type", "memory operations(load/store)"),
-+		OPT_BOOLEAN('R', "dump-raw-samples", &mem.dump_raw,
-+			    "dump raw samples in ASCII"),
-+		OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
-+			    "Only display entries resolved to a symbol"),
-+		OPT_STRING('i', "input", &input_name, "file", "input file name"),
-+		OPT_STRING('C', "cpu", &mem.cpu_list, "cpu", "list of cpus to profile"),
-+		OPT_STRING('x', "field-separator", &csv_sep, "separator",
-+			   "dump raw samples with custom separator"),
-+		OPT_END()
-+	};
-+
-+	argc = parse_options(argc, argv, mem_options, mem_usage,
-+                        PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+	if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
-+		usage_with_options(mem_usage, mem_options);
-+
-+	if (!mem.input_name || !strlen(mem.input_name)) {
-+		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
-+			mem.input_name = "-";
-+		else
-+			mem.input_name = "perf.data";
-+	}
-+
-+        if (!strncmp(argv[0], "rec", 3))
-+		return __cmd_record(argc, argv);
-+	else if (!strncmp(argv[0], "rep", 3))
-+		return report_events(argc, argv, &mem);
-+	else
-+		usage_with_options(mem_usage, mem_options);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index 08143bd..b210d62 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -36,6 +36,7 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
-+extern int cmd_mem(int argc, const char **argv, const char *prefix);
- 
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 3e86bbd..2c5b621 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -24,3 +24,4 @@ perf-kmem			mainporcelain common
- perf-lock			mainporcelain common
- perf-kvm			mainporcelain common
- perf-test			mainporcelain common
-+perf-mem			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index d480d8a..15995fa 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -59,6 +59,7 @@ static struct cmd_struct commands[] = {
- 	{ "trace",	cmd_trace,	0 },
- #endif
- 	{ "inject",	cmd_inject,	0 },
-+	{ "mem",	cmd_mem,	0 },
- };
- 
- struct pager_config {
--- 
-1.7.9.5
-
+--b.
