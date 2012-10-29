@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab2J2MRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:17:11 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54612 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754978Ab2J2MRJ (ORCPT
+	id S1758859Ab2J2MU4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:20:56 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58361 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757311Ab2J2MUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:17:09 -0400
-Message-ID: <1351513026.2480.4.camel@dabdike.sthat4.btopenzone.com>
-Subject: Re: [PATCH] aic7xxx_old: silence GCC warnings
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 29 Oct 2012 12:17:06 +0000
-In-Reply-To: <1351506978.1339.8.camel@x61.thuisdomein>
-References: <1348219723.1581.5.camel@x61.thuisdomein>
-	 <1351506978.1339.8.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Oct 2012 08:20:55 -0400
+Date: Mon, 29 Oct 2012 08:20:52 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 08/16] block,elevator: use new hashtable
+	implementation
+Message-ID: <20121029122052.GB11733@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-8-git-send-email-levinsasha928@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351450948-15618-8-git-send-email-levinsasha928@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 11:36 +0100, Paul Bolle wrote:
-> On Fri, 2012-09-21 at 11:28 +0200, Paul Bolle wrote:
-> > Building the aic7xxx_old driver triggers these GCC warnings:
-> >     drivers/scsi/aic7xxx_old.c:7901:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
-> >     drivers/scsi/aic7xxx_old.c:7898:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
-> >     drivers/scsi/aic7xxx_old.c:8517:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
-> >     drivers/scsi/aic7xxx_old.c:8510:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
-> > 
-> > Fix these warnings by adopting the idiom used elsewhere in this driver.
-> > Since AHC_EISA and AHC_VL are only ever set for AHC_AIC7770 this fix
-> > should not lead to any functional change.
-> > 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > 0) I noticed these warnings while building v3.6-rc6 on current Fedora
-> > 17, using Fedora's default config.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+[...]
+> @@ -96,6 +97,8 @@ struct elevator_type
+>  	struct list_head list;
+>  };
+>  
+> +#define ELV_HASH_BITS 6
+> +
+>  /*
+>   * each queue has an elevator_queue associated with it
+>   */
+> @@ -105,7 +108,7 @@ struct elevator_queue
+>  	void *elevator_data;
+>  	struct kobject kobj;
+>  	struct mutex sysfs_lock;
+> -	struct hlist_head *hash;
+> +	DECLARE_HASHTABLE(hash, ELV_HASH_BITS);
+>  	unsigned int registered:1;
+
+Hrm, so this is moving "registered" out of the elevator_queue first
+cache-line by turning the pointer into a 256 or 512 bytes hash table.
+
+Maybe we should consider moving "registered" before the "hash" field ?
+
+Thanks,
+
+Mathieu
+
+>  };
+>  
+> -- 
+> 1.7.12.4
 > 
-> Identical warnings can be seen while building v3.7-rc3. What's the
-> status of my patch? Did anyone found some time to have a look at it?
 
-the aic7xxx_old driver is in deep maintenance; I don't think anyone can
-actually test changes to it anymore, so we just keep it around unchanged
-for the odd really old card that can't be driven by the current driver.
-For this reason, we tend only to do tested bug fixes to it because
-no-one will notice if any error is introduced.
-
-mvsas has a maintainer: poke them harder and aic94xx is currently
-maintainerless, so it will depend on someone finding the time to test.
-
-James
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
