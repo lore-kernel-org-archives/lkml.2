@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab2J2Fud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 01:50:33 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:36632 "EHLO
+	id S1756343Ab2J2Fuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:50:32 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36628 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751164Ab2J2Fu1 (ORCPT
+	with ESMTP id S1754798Ab2J2FuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 01:50:27 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9T5niH1005158, This message is released by code: ctaloc0852
+	Mon, 29 Oct 2012 01:50:24 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID q9T5nXj0005130, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v7 3/3] drivers/memstick: Add realtek pcie memstick host driver
-Date: Mon, 29 Oct 2012 13:49:44 +0800
-Message-ID: <2c35cfdce93b989f0f7159a69f735d1742b03bb6.1351481260.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v7 1/3] drivers/mfd: Add realtek pcie card reader driver
+Date: Mon, 29 Oct 2012 13:49:33 +0800
+Message-ID: <fb1fe6a8142facdc0d138daa3fc552a1df8ee74d.1351481260.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1351481260.git.wei_wang@realsil.com.cn>
 References: <cover.1351481260.git.wei_wang@realsil.com.cn>
@@ -28,52 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-Realtek PCI-E Memstick card host driver is used to access Memstick
-card, with the help of Realtek PCI-E card reader MFD driver.
+Realtek PCI-E card reader driver adapts requests from upper-level
+sdmmc/memstick layer to the real physical card reader.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-Acked-by: Alex Dubov <oakad@yahoo.com>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
 ---
- drivers/memstick/host/Kconfig       |   10 +
- drivers/memstick/host/Makefile      |    1 +
- drivers/memstick/host/rtsx_pci_ms.c |  641 +++++++++++++++++++++++++++++++++++
- 3 files changed, 652 insertions(+)
- create mode 100644 drivers/memstick/host/rtsx_pci_ms.c
+ drivers/mfd/Kconfig             |    9 +
+ drivers/mfd/Makefile            |    3 +
+ drivers/mfd/rtl8411.c           |  251 ++++++++
+ drivers/mfd/rts5209.c           |  223 +++++++
+ drivers/mfd/rts5229.c           |  205 +++++++
+ drivers/mfd/rtsx_pcr.c          | 1251 +++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h          |   32 +
+ include/linux/mfd/rtsx_common.h |   48 ++
+ include/linux/mfd/rtsx_pci.h    |  794 +++++++++++++++++++++++++
+ 9 files changed, 2816 insertions(+)
+ create mode 100644 drivers/mfd/rtl8411.c
+ create mode 100644 drivers/mfd/rts5209.c
+ create mode 100644 drivers/mfd/rts5229.c
+ create mode 100644 drivers/mfd/rtsx_pcr.c
+ create mode 100644 drivers/mfd/rtsx_pcr.h
+ create mode 100644 include/linux/mfd/rtsx_common.h
+ create mode 100644 include/linux/mfd/rtsx_pci.h
 
-diff --git a/drivers/memstick/host/Kconfig b/drivers/memstick/host/Kconfig
-index cc0997a..4f7a17f 100644
---- a/drivers/memstick/host/Kconfig
-+++ b/drivers/memstick/host/Kconfig
-@@ -42,3 +42,13 @@ config MEMSTICK_R592
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index acab3ef..867af07 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -63,6 +63,15 @@ config MFD_SM501_GPIO
+ 	 lines on the SM501. The platform data is used to supply the
+ 	 base number for the first GPIO line to register.
  
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called r592.
-+
-+config MEMSTICK_REALTEK_PCI
-+	tristate "Realtek PCI-E Memstick Card Interface Driver"
-+	depends on MFD_RTSX_PCI
++config MFD_RTSX_PCI
++	tristate "Support for Realtek PCI-E card reader"
++	depends on PCI
 +	help
-+	  Say Y here to include driver code to support Memstick card interface
-+	  of Realtek PCI-E card reader
++	  This supports for Realtek PCI-Express card reader including rts5209,
++	  rts5229, rtl8411, etc. Realtek card reader supports access to many
++	  types of memory cards, such as Memory Stick, Memory Stick Pro,
++	  Secure Digital and MultiMediaCard.
 +
-+	  To compile this driver as a module, choose M here: the module will
-+	  be called rtsx_pci_ms.
-diff --git a/drivers/memstick/host/Makefile b/drivers/memstick/host/Makefile
-index 31ba8d3..af3459d 100644
---- a/drivers/memstick/host/Makefile
-+++ b/drivers/memstick/host/Makefile
-@@ -5,3 +5,4 @@
- obj-$(CONFIG_MEMSTICK_TIFM_MS)		+= tifm_ms.o
- obj-$(CONFIG_MEMSTICK_JMICRON_38X)	+= jmb38x_ms.o
- obj-$(CONFIG_MEMSTICK_R592)		+= r592.o
-+obj-$(CONFIG_MEMSTICK_REALTEK_PCI)	+= rtsx_pci_ms.o
-diff --git a/drivers/memstick/host/rtsx_pci_ms.c b/drivers/memstick/host/rtsx_pci_ms.c
+ config MFD_ASIC3
+ 	bool "Support for Compaq ASIC3"
+ 	depends on GENERIC_HARDIRQS && GPIOLIB && ARM
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index d8ccb63..b53db06 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -9,6 +9,9 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
+ obj-$(CONFIG_MFD_SM501)		+= sm501.o
+ obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+ 
++rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o
++obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
++
+ obj-$(CONFIG_HTC_EGPIO)		+= htc-egpio.o
+ obj-$(CONFIG_HTC_PASIC3)	+= htc-pasic3.o
+ obj-$(CONFIG_HTC_I2CPLD)	+= htc-i2cpld.o
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
 new file mode 100644
-index 0000000..f5ddb82
+index 0000000..89f046c
 --- /dev/null
-+++ b/drivers/memstick/host/rtsx_pci_ms.c
-@@ -0,0 +1,641 @@
-+/* Realtek PCI-Express Memstick Card Interface driver
++++ b/drivers/mfd/rtl8411.c
+@@ -0,0 +1,251 @@
++/* Driver for Realtek PCI-Express card reader
 + *
 + * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
 + *
@@ -96,624 +116,2823 @@ index 0000000..f5ddb82
 + */
 +
 +#include <linux/module.h>
-+#include <linux/highmem.h>
++#include <linux/bitops.h>
 +#include <linux/delay.h>
++#include <linux/mfd/rtsx_pci.h>
++
++#include "rtsx_pcr.h"
++
++static u8 rtl8411_get_ic_version(struct rtsx_pcr *pcr)
++{
++	u8 val;
++
++	rtsx_pci_read_register(pcr, SYS_VER, &val);
++	return val & 0x0F;
++}
++
++static int rtl8411_extra_init_hw(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CD_PAD_CTL,
++			CD_DISABLE_MASK | CD_AUTO_DISABLE, CD_ENABLE);
++}
++
++static int rtl8411_turn_on_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_GPIO, 0x01, 0x00);
++}
++
++static int rtl8411_turn_off_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_GPIO, 0x01, 0x01);
++}
++
++static int rtl8411_enable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_AUTO_BLINK, 0xFF, 0x0D);
++}
++
++static int rtl8411_disable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_AUTO_BLINK, 0x08, 0x00);
++}
++
++static int rtl8411_card_power_on(struct rtsx_pcr *pcr, int card)
++{
++	int err;
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			BPP_POWER_MASK, BPP_POWER_5_PERCENT_ON);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_CTL,
++			BPP_LDO_POWB, BPP_LDO_SUSPEND);
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	/* To avoid too large in-rush current */
++	udelay(150);
++
++	err = rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++			BPP_POWER_MASK, BPP_POWER_10_PERCENT_ON);
++	if (err < 0)
++		return err;
++
++	udelay(150);
++
++	err = rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++			BPP_POWER_MASK, BPP_POWER_15_PERCENT_ON);
++	if (err < 0)
++		return err;
++
++	udelay(150);
++
++	err = rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++			BPP_POWER_MASK, BPP_POWER_ON);
++	if (err < 0)
++		return err;
++
++	return rtsx_pci_write_register(pcr, LDO_CTL, BPP_LDO_POWB, BPP_LDO_ON);
++}
++
++static int rtl8411_card_power_off(struct rtsx_pcr *pcr, int card)
++{
++	int err;
++
++	err = rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++			BPP_POWER_MASK, BPP_POWER_OFF);
++	if (err < 0)
++		return err;
++
++	return rtsx_pci_write_register(pcr, LDO_CTL,
++			BPP_LDO_POWB, BPP_LDO_SUSPEND);
++}
++
++static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
++{
++	unsigned int card_exist;
++
++	card_exist = rtsx_pci_readl(pcr, RTSX_BIPR);
++	card_exist &= CARD_EXIST;
++	if (!card_exist) {
++		/* Enable card CD */
++		rtsx_pci_write_register(pcr, CD_PAD_CTL,
++				CD_DISABLE_MASK, CD_ENABLE);
++		/* Enable card interrupt */
++		rtsx_pci_write_register(pcr, EFUSE_CONTENT, 0xe0, 0x00);
++		return 0;
++	}
++
++	if (hweight32(card_exist) > 1) {
++		rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++				BPP_POWER_MASK, BPP_POWER_5_PERCENT_ON);
++		msleep(100);
++
++		card_exist = rtsx_pci_readl(pcr, RTSX_BIPR);
++		if (card_exist & MS_EXIST)
++			card_exist = MS_EXIST;
++		else if (card_exist & SD_EXIST)
++			card_exist = SD_EXIST;
++		else
++			card_exist = 0;
++
++		rtsx_pci_write_register(pcr, CARD_PWR_CTL,
++				BPP_POWER_MASK, BPP_POWER_OFF);
++
++		dev_dbg(&(pcr->pci->dev),
++				"After CD deglitch, card_exist = 0x%x\n",
++				card_exist);
++	}
++
++	if (card_exist & MS_EXIST) {
++		/* Disable SD interrupt */
++		rtsx_pci_write_register(pcr, EFUSE_CONTENT, 0xe0, 0x40);
++		rtsx_pci_write_register(pcr, CD_PAD_CTL,
++				CD_DISABLE_MASK, MS_CD_EN_ONLY);
++	} else if (card_exist & SD_EXIST) {
++		/* Disable MS interrupt */
++		rtsx_pci_write_register(pcr, EFUSE_CONTENT, 0xe0, 0x80);
++		rtsx_pci_write_register(pcr, CD_PAD_CTL,
++				CD_DISABLE_MASK, SD_CD_EN_ONLY);
++	}
++
++	return card_exist;
++}
++
++static const struct pcr_ops rtl8411_pcr_ops = {
++	.extra_init_hw = rtl8411_extra_init_hw,
++	.optimize_phy = NULL,
++	.turn_on_led = rtl8411_turn_on_led,
++	.turn_off_led = rtl8411_turn_off_led,
++	.enable_auto_blink = rtl8411_enable_auto_blink,
++	.disable_auto_blink = rtl8411_disable_auto_blink,
++	.card_power_on = rtl8411_card_power_on,
++	.card_power_off = rtl8411_card_power_off,
++	.cd_deglitch = rtl8411_cd_deglitch,
++};
++
++/* SD Pull Control Enable:
++ *     SD_DAT[3:0] ==> pull up
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull up
++ *     SD_CMD      ==> pull up
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rtl8411_sd_pull_ctl_enable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xA9),
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x09),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x09),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x04),
++	0,
++};
++
++/* SD Pull Control Disable:
++ *     SD_DAT[3:0] ==> pull down
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull down
++ *     SD_CMD      ==> pull down
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rtl8411_sd_pull_ctl_disable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x65),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0x95),
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x09),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x05),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x04),
++	0,
++};
++
++/* MS Pull Control Enable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rtl8411_ms_pull_ctl_enable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x65),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0x95),
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x05),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x05),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x04),
++	0,
++};
++
++/* MS Pull Control Disable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rtl8411_ms_pull_ctl_disable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x65),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0x95),
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x09),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x05),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x04),
++	0,
++};
++
++void rtl8411_init_params(struct rtsx_pcr *pcr)
++{
++	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
++	pcr->num_slots = 2;
++	pcr->ops = &rtl8411_pcr_ops;
++
++	pcr->ic_version = rtl8411_get_ic_version(pcr);
++	pcr->sd_pull_ctl_enable_tbl = rtl8411_sd_pull_ctl_enable_tbl;
++	pcr->sd_pull_ctl_disable_tbl = rtl8411_sd_pull_ctl_disable_tbl;
++	pcr->ms_pull_ctl_enable_tbl = rtl8411_ms_pull_ctl_enable_tbl;
++	pcr->ms_pull_ctl_disable_tbl = rtl8411_ms_pull_ctl_disable_tbl;
++}
+diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
+new file mode 100644
+index 0000000..283a4f1
+--- /dev/null
++++ b/drivers/mfd/rts5209.c
+@@ -0,0 +1,223 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mfd/rtsx_pci.h>
++
++#include "rtsx_pcr.h"
++
++static u8 rts5209_get_ic_version(struct rtsx_pcr *pcr)
++{
++	u8 val;
++
++	val = rtsx_pci_readb(pcr, 0x1C);
++	return val & 0x0F;
++}
++
++static void rts5209_init_vendor_cfg(struct rtsx_pcr *pcr)
++{
++	u32 val;
++
++	rtsx_pci_read_config_dword(pcr, 0x724, &val);
++	dev_dbg(&(pcr->pci->dev), "Cfg 0x724: 0x%x\n", val);
++
++	if (!(val & 0x80)) {
++		if (val & 0x08)
++			pcr->ms_pmos = false;
++		else
++			pcr->ms_pmos = true;
++	}
++}
++
++static int rts5209_extra_init_hw(struct rtsx_pcr *pcr)
++{
++	rtsx_pci_init_cmd(pcr);
++
++	/* Turn off LED */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO, 0xFF, 0x03);
++	/* Configure GPIO as output */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_GPIO_DIR, 0xFF, 0x03);
++
++	return rtsx_pci_send_cmd(pcr, 100);
++}
++
++static int rts5209_optimize_phy(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_phy_register(pcr, 0x00, 0xB966);
++}
++
++static int rts5209_turn_on_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_GPIO, 0x01, 0x00);
++}
++
++static int rts5209_turn_off_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_GPIO, 0x01, 0x01);
++}
++
++static int rts5209_enable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_AUTO_BLINK, 0xFF, 0x0D);
++}
++
++static int rts5209_disable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, CARD_AUTO_BLINK, 0x08, 0x00);
++}
++
++static int rts5209_card_power_on(struct rtsx_pcr *pcr, int card)
++{
++	int err;
++	u8 pwr_mask, partial_pwr_on, pwr_on;
++
++	pwr_mask = SD_POWER_MASK;
++	partial_pwr_on = SD_PARTIAL_POWER_ON;
++	pwr_on = SD_POWER_ON;
++
++	if (pcr->ms_pmos && (card == RTSX_MS_CARD)) {
++		pwr_mask = MS_POWER_MASK;
++		partial_pwr_on = MS_PARTIAL_POWER_ON;
++		pwr_on = MS_POWER_ON;
++	}
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			pwr_mask, partial_pwr_on);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0x04);
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	/* To avoid too large in-rush current */
++	udelay(150);
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL, pwr_mask, pwr_on);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0x00);
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int rts5209_card_power_off(struct rtsx_pcr *pcr, int card)
++{
++	u8 pwr_mask, pwr_off;
++
++	pwr_mask = SD_POWER_MASK;
++	pwr_off = SD_POWER_OFF;
++
++	if (pcr->ms_pmos && (card == RTSX_MS_CARD)) {
++		pwr_mask = MS_POWER_MASK;
++		pwr_off = MS_POWER_OFF;
++	}
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			pwr_mask | PMOS_STRG_MASK, pwr_off | PMOS_STRG_400mA);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0X06);
++	return rtsx_pci_send_cmd(pcr, 100);
++}
++
++static const struct pcr_ops rts5209_pcr_ops = {
++	.extra_init_hw = rts5209_extra_init_hw,
++	.optimize_phy = rts5209_optimize_phy,
++	.turn_on_led = rts5209_turn_on_led,
++	.turn_off_led = rts5209_turn_off_led,
++	.enable_auto_blink = rts5209_enable_auto_blink,
++	.disable_auto_blink = rts5209_disable_auto_blink,
++	.card_power_on = rts5209_card_power_on,
++	.card_power_off = rts5209_card_power_off,
++	.cd_deglitch = NULL,
++};
++
++/* SD Pull Control Enable:
++ *     SD_DAT[3:0] ==> pull up
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull up
++ *     SD_CMD      ==> pull up
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rts5209_sd_pull_ctl_enable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xE9),
++	0,
++};
++
++/* SD Pull Control Disable:
++ *     SD_DAT[3:0] ==> pull down
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull down
++ *     SD_CMD      ==> pull down
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rts5209_sd_pull_ctl_disable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL1, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xD5),
++	0,
++};
++
++/* MS Pull Control Enable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rts5209_ms_pull_ctl_enable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
++	0,
++};
++
++/* MS Pull Control Disable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rts5209_ms_pull_ctl_disable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL4, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
++	0,
++};
++
++void rts5209_init_params(struct rtsx_pcr *pcr)
++{
++	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 |
++		EXTRA_CAPS_SD_SDR104 | EXTRA_CAPS_MMC_8BIT;
++	pcr->num_slots = 2;
++	pcr->ops = &rts5209_pcr_ops;
++
++	rts5209_init_vendor_cfg(pcr);
++
++	pcr->ic_version = rts5209_get_ic_version(pcr);
++	pcr->sd_pull_ctl_enable_tbl = rts5209_sd_pull_ctl_enable_tbl;
++	pcr->sd_pull_ctl_disable_tbl = rts5209_sd_pull_ctl_disable_tbl;
++	pcr->ms_pull_ctl_enable_tbl = rts5209_ms_pull_ctl_enable_tbl;
++	pcr->ms_pull_ctl_disable_tbl = rts5209_ms_pull_ctl_disable_tbl;
++}
+diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
+new file mode 100644
+index 0000000..b9dbab2
+--- /dev/null
++++ b/drivers/mfd/rts5229.c
+@@ -0,0 +1,205 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mfd/rtsx_pci.h>
++
++#include "rtsx_pcr.h"
++
++static u8 rts5229_get_ic_version(struct rtsx_pcr *pcr)
++{
++	u8 val;
++
++	rtsx_pci_read_register(pcr, DUMMY_REG_RESET_0, &val);
++	return val & 0x0F;
++}
++
++static int rts5229_extra_init_hw(struct rtsx_pcr *pcr)
++{
++	rtsx_pci_init_cmd(pcr);
++
++	/* Configure GPIO as output */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, GPIO_CTL, 0x02, 0x02);
++	/* Switch LDO3318 source from DV33 to card_3v3 */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x00);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, LDO_PWR_SEL, 0x03, 0x01);
++	/* LED shine disabled, set initial shine cycle period */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, OLT_LED_CTL, 0x0F, 0x02);
++
++	return rtsx_pci_send_cmd(pcr, 100);
++}
++
++static int rts5229_optimize_phy(struct rtsx_pcr *pcr)
++{
++	/* Optimize RX sensitivity */
++	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
++}
++
++static int rts5229_turn_on_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, GPIO_CTL, 0x02, 0x02);
++}
++
++static int rts5229_turn_off_led(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, GPIO_CTL, 0x02, 0x00);
++}
++
++static int rts5229_enable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, OLT_LED_CTL, 0x08, 0x08);
++}
++
++static int rts5229_disable_auto_blink(struct rtsx_pcr *pcr)
++{
++	return rtsx_pci_write_register(pcr, OLT_LED_CTL, 0x08, 0x00);
++}
++
++static int rts5229_card_power_on(struct rtsx_pcr *pcr, int card)
++{
++	int err;
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			SD_POWER_MASK, SD_PARTIAL_POWER_ON);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0x02);
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	/* To avoid too large in-rush current */
++	udelay(150);
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			SD_POWER_MASK, SD_POWER_ON);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0x06);
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int rts5229_card_power_off(struct rtsx_pcr *pcr, int card)
++{
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_PWR_CTL,
++			SD_POWER_MASK | PMOS_STRG_MASK,
++			SD_POWER_OFF | PMOS_STRG_400mA);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PWR_GATE_CTRL,
++			LDO3318_PWR_MASK, 0X00);
++	return rtsx_pci_send_cmd(pcr, 100);
++}
++
++static const struct pcr_ops rts5229_pcr_ops = {
++	.extra_init_hw = rts5229_extra_init_hw,
++	.optimize_phy = rts5229_optimize_phy,
++	.turn_on_led = rts5229_turn_on_led,
++	.turn_off_led = rts5229_turn_off_led,
++	.enable_auto_blink = rts5229_enable_auto_blink,
++	.disable_auto_blink = rts5229_disable_auto_blink,
++	.card_power_on = rts5229_card_power_on,
++	.card_power_off = rts5229_card_power_off,
++	.cd_deglitch = NULL,
++};
++
++/* SD Pull Control Enable:
++ *     SD_DAT[3:0] ==> pull up
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull up
++ *     SD_CMD      ==> pull up
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rts5229_sd_pull_ctl_enable_tbl1[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xE9),
++	0,
++};
++
++/* For RTS5229 version C */
++static const u32 rts5229_sd_pull_ctl_enable_tbl2[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0xAA),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xD9),
++	0,
++};
++
++/* SD Pull Control Disable:
++ *     SD_DAT[3:0] ==> pull down
++ *     SD_CD       ==> pull up
++ *     SD_WP       ==> pull down
++ *     SD_CMD      ==> pull down
++ *     SD_CLK      ==> pull down
++ */
++static const u32 rts5229_sd_pull_ctl_disable_tbl1[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xD5),
++	0,
++};
++
++/* For RTS5229 version C */
++static const u32 rts5229_sd_pull_ctl_disable_tbl2[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL2, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL3, 0xE5),
++	0,
++};
++
++/* MS Pull Control Enable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rts5229_ms_pull_ctl_enable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
++	0,
++};
++
++/* MS Pull Control Disable:
++ *     MS CD       ==> pull up
++ *     others      ==> pull down
++ */
++static const u32 rts5229_ms_pull_ctl_disable_tbl[] = {
++	RTSX_REG_PAIR(CARD_PULL_CTL5, 0x55),
++	RTSX_REG_PAIR(CARD_PULL_CTL6, 0x15),
++	0,
++};
++
++void rts5229_init_params(struct rtsx_pcr *pcr)
++{
++	pcr->extra_caps = EXTRA_CAPS_SD_SDR50 | EXTRA_CAPS_SD_SDR104;
++	pcr->num_slots = 2;
++	pcr->ops = &rts5229_pcr_ops;
++
++	pcr->ic_version = rts5229_get_ic_version(pcr);
++	if (pcr->ic_version == IC_VER_C) {
++		pcr->sd_pull_ctl_enable_tbl = rts5229_sd_pull_ctl_enable_tbl2;
++		pcr->sd_pull_ctl_disable_tbl = rts5229_sd_pull_ctl_disable_tbl2;
++	} else {
++		pcr->sd_pull_ctl_enable_tbl = rts5229_sd_pull_ctl_enable_tbl1;
++		pcr->sd_pull_ctl_disable_tbl = rts5229_sd_pull_ctl_disable_tbl1;
++	}
++	pcr->ms_pull_ctl_enable_tbl = rts5229_ms_pull_ctl_enable_tbl;
++	pcr->ms_pull_ctl_disable_tbl = rts5229_ms_pull_ctl_disable_tbl;
++}
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+new file mode 100644
+index 0000000..56d4377
+--- /dev/null
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -0,0 +1,1251 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#include <linux/pci.h>
++#include <linux/module.h>
++#include <linux/dma-mapping.h>
++#include <linux/highmem.h>
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/idr.h>
 +#include <linux/platform_device.h>
-+#include <linux/memstick.h>
++#include <linux/mfd/core.h>
 +#include <linux/mfd/rtsx_pci.h>
 +#include <asm/unaligned.h>
 +
-+struct realtek_pci_ms {
-+	struct platform_device	*pdev;
-+	struct rtsx_pcr		*pcr;
-+	struct memstick_host	*msh;
-+	struct memstick_request	*req;
++#include "rtsx_pcr.h"
 +
-+	struct mutex		host_mutex;
-+	struct work_struct	handle_req;
++static bool msi_en = true;
++module_param(msi_en, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(msi_en, "Enable MSI");
 +
-+	u8			ssc_depth;
-+	unsigned int		clock;
-+	unsigned char           ifmode;
-+	bool			eject;
++static DEFINE_IDR(rtsx_pci_idr);
++static DEFINE_SPINLOCK(rtsx_pci_lock);
++
++static struct mfd_cell rtsx_pcr_cells[] = {
++	[RTSX_SD_CARD] = {
++		.name = DRV_NAME_RTSX_PCI_SDMMC,
++	},
++	[RTSX_MS_CARD] = {
++		.name = DRV_NAME_RTSX_PCI_MS,
++	},
 +};
 +
-+static inline struct device *ms_dev(struct realtek_pci_ms *host)
++static DEFINE_PCI_DEVICE_TABLE(rtsx_pci_ids) = {
++	{ PCI_DEVICE(0x10EC, 0x5209), PCI_CLASS_OTHERS << 16, 0xFF0000 },
++	{ PCI_DEVICE(0x10EC, 0x5229), PCI_CLASS_OTHERS << 16, 0xFF0000 },
++	{ PCI_DEVICE(0x10EC, 0x5289), PCI_CLASS_OTHERS << 16, 0xFF0000 },
++	{ 0, }
++};
++
++MODULE_DEVICE_TABLE(pci, rtsx_pci_ids);
++
++void rtsx_pci_start_run(struct rtsx_pcr *pcr)
 +{
-+	return &(host->pdev->dev);
++	/* If pci device removed, don't queue idle work any more */
++	if (pcr->remove_pci)
++		return;
++
++	if (pcr->state != PDEV_STAT_RUN) {
++		pcr->state = PDEV_STAT_RUN;
++		if (pcr->ops->enable_auto_blink)
++			pcr->ops->enable_auto_blink(pcr);
++	}
++
++	mod_delayed_work(system_wq, &pcr->idle_work, msecs_to_jiffies(200));
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_start_run);
 +
-+static inline void ms_clear_error(struct realtek_pci_ms *host)
++int rtsx_pci_write_register(struct rtsx_pcr *pcr, u16 addr, u8 mask, u8 data)
 +{
-+	rtsx_pci_write_register(host->pcr, CARD_STOP,
-+			MS_STOP | MS_CLR_ERR, MS_STOP | MS_CLR_ERR);
++	int i;
++	u32 val = HAIMR_WRITE_START;
++
++	val |= (u32)(addr & 0x3FFF) << 16;
++	val |= (u32)mask << 8;
++	val |= (u32)data;
++
++	rtsx_pci_writel(pcr, RTSX_HAIMR, val);
++
++	for (i = 0; i < MAX_RW_REG_CNT; i++) {
++		val = rtsx_pci_readl(pcr, RTSX_HAIMR);
++		if ((val & HAIMR_TRANS_END) == 0) {
++			if (data != (u8)val)
++				return -EIO;
++			return 0;
++		}
++	}
++
++	return -ETIMEDOUT;
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_write_register);
 +
-+#ifdef DEBUG
-+
-+static void ms_print_debug_regs(struct realtek_pci_ms *host)
++int rtsx_pci_read_register(struct rtsx_pcr *pcr, u16 addr, u8 *data)
 +{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	u16 i;
-+	u8 *ptr;
++	u32 val = HAIMR_READ_START;
++	int i;
 +
-+	/* Print MS host internal registers */
++	val |= (u32)(addr & 0x3FFF) << 16;
++	rtsx_pci_writel(pcr, RTSX_HAIMR, val);
++
++	for (i = 0; i < MAX_RW_REG_CNT; i++) {
++		val = rtsx_pci_readl(pcr, RTSX_HAIMR);
++		if ((val & HAIMR_TRANS_END) == 0)
++			break;
++	}
++
++	if (i >= MAX_RW_REG_CNT)
++		return -ETIMEDOUT;
++
++	if (data)
++		*data = (u8)(val & 0xFF);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_read_register);
++
++int rtsx_pci_write_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 val)
++{
++	int err, i, finished = 0;
++	u8 tmp;
++
 +	rtsx_pci_init_cmd(pcr);
-+	for (i = 0xFD40; i <= 0xFD44; i++)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
-+	for (i = 0xFD52; i <= 0xFD69; i++)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
-+	rtsx_pci_send_cmd(pcr, 100);
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYDATA0, 0xFF, (u8)val);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYDATA1, 0xFF, (u8)(val >> 8));
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYADDR, 0xFF, addr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYRWCTL, 0xFF, 0x81);
++
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	for (i = 0; i < 100000; i++) {
++		err = rtsx_pci_read_register(pcr, PHYRWCTL, &tmp);
++		if (err < 0)
++			return err;
++
++		if (!(tmp & 0x80)) {
++			finished = 1;
++			break;
++		}
++	}
++
++	if (!finished)
++		return -ETIMEDOUT;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_write_phy_register);
++
++int rtsx_pci_read_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 *val)
++{
++	int err, i, finished = 0;
++	u16 data;
++	u8 *ptr, tmp;
++
++	rtsx_pci_init_cmd(pcr);
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYADDR, 0xFF, addr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PHYRWCTL, 0xFF, 0x80);
++
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	for (i = 0; i < 100000; i++) {
++		err = rtsx_pci_read_register(pcr, PHYRWCTL, &tmp);
++		if (err < 0)
++			return err;
++
++		if (!(tmp & 0x80)) {
++			finished = 1;
++			break;
++		}
++	}
++
++	if (!finished)
++		return -ETIMEDOUT;
++
++	rtsx_pci_init_cmd(pcr);
++
++	rtsx_pci_add_cmd(pcr, READ_REG_CMD, PHYDATA0, 0, 0);
++	rtsx_pci_add_cmd(pcr, READ_REG_CMD, PHYDATA1, 0, 0);
++
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
 +
 +	ptr = rtsx_pci_get_cmd_data(pcr);
-+	for (i = 0xFD40; i <= 0xFD44; i++)
-+		dev_dbg(ms_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
-+	for (i = 0xFD52; i <= 0xFD69; i++)
-+		dev_dbg(ms_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
-+}
++	data = ((u16)ptr[1] << 8) | ptr[0];
 +
-+#else
-+
-+#define ms_print_debug_regs(host)
-+
-+#endif
-+
-+static int ms_power_on(struct realtek_pci_ms *host)
-+{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	int err;
-+
-+	rtsx_pci_init_cmd(pcr);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_SELECT, 0x07, MS_MOD_SEL);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_SHARE_MODE,
-+			CARD_SHARE_MASK, CARD_SHARE_48_MS);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN,
-+			MS_CLK_EN, MS_CLK_EN);
-+	err = rtsx_pci_send_cmd(pcr, 100);
-+	if (err < 0)
-+		return err;
-+
-+	err = rtsx_pci_card_pull_ctl_enable(pcr, RTSX_MS_CARD);
-+	if (err < 0)
-+		return err;
-+
-+	err = rtsx_pci_card_power_on(pcr, RTSX_MS_CARD);
-+	if (err < 0)
-+		return err;
-+
-+	/* Wait ms power stable */
-+	msleep(150);
-+
-+	err = rtsx_pci_write_register(pcr, CARD_OE,
-+			MS_OUTPUT_EN, MS_OUTPUT_EN);
-+	if (err < 0)
-+		return err;
++	if (val)
++		*val = data;
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_read_phy_register);
 +
-+static int ms_power_off(struct realtek_pci_ms *host)
++void rtsx_pci_stop_cmd(struct rtsx_pcr *pcr)
 +{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	int err;
++	rtsx_pci_writel(pcr, RTSX_HCBCTLR, STOP_CMD);
++	rtsx_pci_writel(pcr, RTSX_HDBCTLR, STOP_DMA);
 +
-+	rtsx_pci_init_cmd(pcr);
-+
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, MS_CLK_EN, 0);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_OE, MS_OUTPUT_EN, 0);
-+
-+	err = rtsx_pci_send_cmd(pcr, 100);
-+	if (err < 0)
-+		return err;
-+
-+	err = rtsx_pci_card_power_off(pcr, RTSX_MS_CARD);
-+	if (err < 0)
-+		return err;
-+
-+	return rtsx_pci_card_pull_ctl_disable(pcr, RTSX_MS_CARD);
++	rtsx_pci_write_register(pcr, DMACTL, 0x80, 0x80);
++	rtsx_pci_write_register(pcr, RBCTL, 0x80, 0x80);
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_stop_cmd);
 +
-+static int ms_transfer_data(struct realtek_pci_ms *host, unsigned char data_dir,
-+		u8 tpc, u8 cfg, struct scatterlist *sg)
++void rtsx_pci_add_cmd(struct rtsx_pcr *pcr,
++		u8 cmd_type, u16 reg_addr, u8 mask, u8 data)
 +{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	int err;
-+	unsigned int length = sg->length;
-+	u16 sec_cnt = (u16)(length / 512);
-+	u8 val, trans_mode, dma_dir;
++	unsigned long flags;
++	u32 val = 0;
++	u32 *ptr = (u32 *)(pcr->host_cmds_ptr);
 +
-+	dev_dbg(ms_dev(host), "%s: tpc = 0x%02x, data_dir = %s, length = %d\n",
-+			__func__, tpc, (data_dir == READ) ? "READ" : "WRITE",
-+			length);
++	val |= (u32)(cmd_type & 0x03) << 30;
++	val |= (u32)(reg_addr & 0x3FFF) << 16;
++	val |= (u32)mask << 8;
++	val |= (u32)data;
 +
-+	if (data_dir == READ) {
-+		dma_dir = DMA_DIR_FROM_CARD;
-+		trans_mode = MS_TM_AUTO_READ;
-+	} else {
-+		dma_dir = DMA_DIR_TO_CARD;
-+		trans_mode = MS_TM_AUTO_WRITE;
++	spin_lock_irqsave(&pcr->lock, flags);
++	ptr += pcr->ci;
++	if (pcr->ci < (HOST_CMDS_BUF_LEN / 4)) {
++		put_unaligned_le32(val, ptr);
++		ptr++;
++		pcr->ci++;
++	}
++	spin_unlock_irqrestore(&pcr->lock, flags);
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_add_cmd);
++
++void rtsx_pci_send_cmd_no_wait(struct rtsx_pcr *pcr)
++{
++	u32 val = 1 << 31;
++
++	rtsx_pci_writel(pcr, RTSX_HCBAR, pcr->host_cmds_addr);
++
++	val |= (u32)(pcr->ci * 4) & 0x00FFFFFF;
++	/* Hardware Auto Response */
++	val |= 0x40000000;
++	rtsx_pci_writel(pcr, RTSX_HCBCTLR, val);
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_send_cmd_no_wait);
++
++int rtsx_pci_send_cmd(struct rtsx_pcr *pcr, int timeout)
++{
++	struct completion trans_done;
++	u32 val = 1 << 31;
++	long timeleft;
++	unsigned long flags;
++	int err = 0;
++
++	spin_lock_irqsave(&pcr->lock, flags);
++
++	/* set up data structures for the wakeup system */
++	pcr->done = &trans_done;
++	pcr->trans_result = TRANS_NOT_READY;
++	init_completion(&trans_done);
++
++	rtsx_pci_writel(pcr, RTSX_HCBAR, pcr->host_cmds_addr);
++
++	val |= (u32)(pcr->ci * 4) & 0x00FFFFFF;
++	/* Hardware Auto Response */
++	val |= 0x40000000;
++	rtsx_pci_writel(pcr, RTSX_HCBCTLR, val);
++
++	spin_unlock_irqrestore(&pcr->lock, flags);
++
++	/* Wait for TRANS_OK_INT */
++	timeleft = wait_for_completion_interruptible_timeout(
++			&trans_done, msecs_to_jiffies(timeout));
++	if (timeleft <= 0) {
++		dev_dbg(&(pcr->pci->dev), "Timeout (%s %d)\n",
++				__func__, __LINE__);
++		err = -ETIMEDOUT;
++		goto finish_send_cmd;
 +	}
 +
-+	rtsx_pci_init_cmd(pcr);
++	spin_lock_irqsave(&pcr->lock, flags);
++	if (pcr->trans_result == TRANS_RESULT_FAIL)
++		err = -EINVAL;
++	else if (pcr->trans_result == TRANS_RESULT_OK)
++		err = 0;
++	else if (pcr->trans_result == TRANS_NO_DEVICE)
++		err = -ENODEV;
++	spin_unlock_irqrestore(&pcr->lock, flags);
 +
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TPC, 0xFF, tpc);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_H,
-+			0xFF, (u8)(sec_cnt >> 8));
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_SECTOR_CNT_L,
-+			0xFF, (u8)sec_cnt);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANS_CFG, 0xFF, cfg);
++finish_send_cmd:
++	spin_lock_irqsave(&pcr->lock, flags);
++	pcr->done = NULL;
++	spin_unlock_irqrestore(&pcr->lock, flags);
 +
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, IRQSTAT0,
-+			DMA_DONE_INT, DMA_DONE_INT);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, DMATC3, 0xFF, (u8)(length >> 24));
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, DMATC2, 0xFF, (u8)(length >> 16));
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, DMATC1, 0xFF, (u8)(length >> 8));
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, DMATC0, 0xFF, (u8)length);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, DMACTL,
-+			0x03 | DMA_PACK_SIZE_MASK, dma_dir | DMA_EN | DMA_512);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_DATA_SOURCE,
-+			0x01, RING_BUFFER);
++	if ((err < 0) && (err != -ENODEV))
++		rtsx_pci_stop_cmd(pcr);
 +
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANSFER,
-+			0xFF, MS_TRANSFER_START | trans_mode);
-+	rtsx_pci_add_cmd(pcr, CHECK_REG_CMD, MS_TRANSFER,
-+			MS_TRANSFER_END, MS_TRANSFER_END);
++	if (pcr->finish_me)
++		complete(pcr->finish_me);
 +
-+	rtsx_pci_send_cmd_no_wait(pcr);
++	return err;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_send_cmd);
 +
-+	err = rtsx_pci_transfer_data(pcr, sg, 1, data_dir == READ, 10000);
-+	if (err < 0) {
-+		ms_clear_error(host);
-+		return err;
-+	}
++static void rtsx_pci_add_sg_tbl(struct rtsx_pcr *pcr,
++		dma_addr_t addr, unsigned int len, int end)
++{
++	u64 *ptr = (u64 *)(pcr->host_sg_tbl_ptr) + pcr->sgi;
++	u64 val;
++	u8 option = SG_VALID | SG_TRANS_DATA;
 +
-+	rtsx_pci_read_register(pcr, MS_TRANS_CFG, &val);
-+	if (val & (MS_INT_CMDNK | MS_INT_ERR | MS_CRC16_ERR | MS_RDY_TIMEOUT))
-+		return -EIO;
++	dev_dbg(&(pcr->pci->dev), "DMA addr: 0x%x, Len: 0x%x\n",
++			(unsigned int)addr, len);
 +
-+	return 0;
++	if (end)
++		option |= SG_END;
++	val = ((u64)addr << 32) | ((u64)len << 12) | option;
++
++	put_unaligned_le64(val, ptr);
++	ptr++;
++	pcr->sgi++;
 +}
 +
-+static int ms_write_bytes(struct realtek_pci_ms *host, u8 tpc,
-+		u8 cfg, u8 cnt, u8 *data, u8 *int_reg)
++int rtsx_pci_transfer_data(struct rtsx_pcr *pcr, struct scatterlist *sglist,
++		int num_sg, bool read, int timeout)
 +{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	int err, i;
++	struct completion trans_done;
++	u8 dir;
++	int err = 0, i, count;
++	long timeleft;
++	unsigned long flags;
++	struct scatterlist *sg;
++	enum dma_data_direction dma_dir;
++	u32 val;
++	dma_addr_t addr;
++	unsigned int len;
 +
-+	dev_dbg(ms_dev(host), "%s: tpc = 0x%02x\n", __func__, tpc);
++	dev_dbg(&(pcr->pci->dev), "--> %s: num_sg = %d\n", __func__, num_sg);
 +
-+	if (!data)
++	/* don't transfer data during abort processing */
++	if (pcr->remove_pci)
 +		return -EINVAL;
 +
-+	rtsx_pci_init_cmd(pcr);
++	if ((sglist == NULL) || (num_sg <= 0))
++		return -EINVAL;
 +
-+	for (i = 0; i < cnt; i++)
-+		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
-+				PPBUF_BASE2 + i, 0xFF, data[i]);
-+	if (cnt % 2)
-+		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
-+				PPBUF_BASE2 + i, 0xFF, 0xFF);
-+
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TPC, 0xFF, tpc);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_BYTE_CNT, 0xFF, cnt);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANS_CFG, 0xFF, cfg);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_DATA_SOURCE,
-+			0x01, PINGPONG_BUFFER);
-+
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANSFER,
-+			0xFF, MS_TRANSFER_START | MS_TM_WRITE_BYTES);
-+	rtsx_pci_add_cmd(pcr, CHECK_REG_CMD, MS_TRANSFER,
-+			MS_TRANSFER_END, MS_TRANSFER_END);
-+	if (int_reg)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, MS_TRANS_CFG, 0, 0);
-+
-+	err = rtsx_pci_send_cmd(pcr, 5000);
-+	if (err < 0) {
-+		u8 val;
-+
-+		rtsx_pci_read_register(pcr, MS_TRANS_CFG, &val);
-+		dev_dbg(ms_dev(host), "MS_TRANS_CFG: 0x%02x\n", val);
-+
-+		if (int_reg)
-+			*int_reg = val & 0x0F;
-+
-+		ms_print_debug_regs(host);
-+
-+		ms_clear_error(host);
-+
-+		if (!(tpc & 0x08)) {
-+			if (val & MS_CRC16_ERR)
-+				return -EIO;
-+		} else {
-+			if (!(val & 0x80)) {
-+				if (val & (MS_INT_ERR | MS_INT_CMDNK))
-+					return -EIO;
-+			}
-+		}
-+
-+		return -ETIMEDOUT;
++	if (read) {
++		dir = DEVICE_TO_HOST;
++		dma_dir = DMA_FROM_DEVICE;
++	} else {
++		dir = HOST_TO_DEVICE;
++		dma_dir = DMA_TO_DEVICE;
 +	}
 +
-+	if (int_reg) {
-+		u8 *ptr = rtsx_pci_get_cmd_data(pcr) + 1;
-+		*int_reg = *ptr & 0x0F;
++	count = dma_map_sg(&(pcr->pci->dev), sglist, num_sg, dma_dir);
++	if (count < 1) {
++		dev_err(&(pcr->pci->dev), "scatterlist map failed\n");
++		return -EINVAL;
++	}
++	dev_dbg(&(pcr->pci->dev), "DMA mapping count: %d\n", count);
++
++	val = ((u32)(dir & 0x01) << 29) | TRIG_DMA | ADMA_MODE;
++	pcr->sgi = 0;
++	for_each_sg(sglist, sg, count, i) {
++		addr = sg_dma_address(sg);
++		len = sg_dma_len(sg);
++		rtsx_pci_add_sg_tbl(pcr, addr, len, i == count - 1);
 +	}
 +
-+	return 0;
++	spin_lock_irqsave(&pcr->lock, flags);
++
++	pcr->done = &trans_done;
++	pcr->trans_result = TRANS_NOT_READY;
++	init_completion(&trans_done);
++	rtsx_pci_writel(pcr, RTSX_HDBAR, pcr->host_sg_tbl_addr);
++	rtsx_pci_writel(pcr, RTSX_HDBCTLR, val);
++
++	spin_unlock_irqrestore(&pcr->lock, flags);
++
++	timeleft = wait_for_completion_interruptible_timeout(
++			&trans_done, msecs_to_jiffies(timeout));
++	if (timeleft <= 0) {
++		dev_dbg(&(pcr->pci->dev), "Timeout (%s %d)\n",
++				__func__, __LINE__);
++		err = -ETIMEDOUT;
++		goto out;
++	}
++
++	spin_lock_irqsave(&pcr->lock, flags);
++
++	if (pcr->trans_result == TRANS_RESULT_FAIL)
++		err = -EINVAL;
++	else if (pcr->trans_result == TRANS_NO_DEVICE)
++		err = -ENODEV;
++
++	spin_unlock_irqrestore(&pcr->lock, flags);
++
++out:
++	spin_lock_irqsave(&pcr->lock, flags);
++	pcr->done = NULL;
++	spin_unlock_irqrestore(&pcr->lock, flags);
++
++	dma_unmap_sg(&(pcr->pci->dev), sglist, num_sg, dma_dir);
++
++	if ((err < 0) && (err != -ENODEV))
++		rtsx_pci_stop_cmd(pcr);
++
++	if (pcr->finish_me)
++		complete(pcr->finish_me);
++
++	return err;
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_transfer_data);
 +
-+static int ms_read_bytes(struct realtek_pci_ms *host, u8 tpc,
-+		u8 cfg, u8 cnt, u8 *data, u8 *int_reg)
++int rtsx_pci_read_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len)
 +{
-+	struct rtsx_pcr *pcr = host->pcr;
-+	int err, i;
++	int err;
++	int i, j;
++	u16 reg;
 +	u8 *ptr;
 +
-+	dev_dbg(ms_dev(host), "%s: tpc = 0x%02x\n", __func__, tpc);
++	if (buf_len > 512)
++		buf_len = 512;
 +
-+	if (!data)
-+		return -EINVAL;
++	ptr = buf;
++	reg = PPBUF_BASE2;
++	for (i = 0; i < buf_len / 256; i++) {
++		rtsx_pci_init_cmd(pcr);
 +
-+	rtsx_pci_init_cmd(pcr);
++		for (j = 0; j < 256; j++)
++			rtsx_pci_add_cmd(pcr, READ_REG_CMD, reg++, 0, 0);
 +
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TPC, 0xFF, tpc);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_BYTE_CNT, 0xFF, cnt);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANS_CFG, 0xFF, cfg);
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_DATA_SOURCE,
-+			0x01, PINGPONG_BUFFER);
++		err = rtsx_pci_send_cmd(pcr, 250);
++		if (err < 0)
++			return err;
 +
-+	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, MS_TRANSFER,
-+			0xFF, MS_TRANSFER_START | MS_TM_READ_BYTES);
-+	rtsx_pci_add_cmd(pcr, CHECK_REG_CMD, MS_TRANSFER,
-+			MS_TRANSFER_END, MS_TRANSFER_END);
-+	for (i = 0; i < cnt - 1; i++)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, PPBUF_BASE2 + i, 0, 0);
-+	if (cnt % 2)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, PPBUF_BASE2 + cnt, 0, 0);
-+	else
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD,
-+				PPBUF_BASE2 + cnt - 1, 0, 0);
-+	if (int_reg)
-+		rtsx_pci_add_cmd(pcr, READ_REG_CMD, MS_TRANS_CFG, 0, 0);
-+
-+	err = rtsx_pci_send_cmd(pcr, 5000);
-+	if (err < 0) {
-+		u8 val;
-+
-+		rtsx_pci_read_register(pcr, MS_TRANS_CFG, &val);
-+		dev_dbg(ms_dev(host), "MS_TRANS_CFG: 0x%02x\n", val);
-+
-+		if (int_reg)
-+			*int_reg = val & 0x0F;
-+
-+		ms_print_debug_regs(host);
-+
-+		ms_clear_error(host);
-+
-+		if (!(tpc & 0x08)) {
-+			if (val & MS_CRC16_ERR)
-+				return -EIO;
-+		} else {
-+			if (!(val & 0x80)) {
-+				if (val & (MS_INT_ERR | MS_INT_CMDNK))
-+					return -EIO;
-+			}
-+		}
-+
-+		return -ETIMEDOUT;
++		memcpy(ptr, rtsx_pci_get_cmd_data(pcr), 256);
++		ptr += 256;
 +	}
 +
-+	ptr = rtsx_pci_get_cmd_data(pcr) + 1;
-+	for (i = 0; i < cnt; i++)
-+		data[i] = *ptr++;
++	if (buf_len % 256) {
++		rtsx_pci_init_cmd(pcr);
 +
-+	if (int_reg)
-+		*int_reg = *ptr & 0x0F;
++		for (j = 0; j < buf_len % 256; j++)
++			rtsx_pci_add_cmd(pcr, READ_REG_CMD, reg++, 0, 0);
 +
-+	return 0;
-+}
-+
-+static int rtsx_pci_ms_issue_cmd(struct realtek_pci_ms *host)
-+{
-+	struct memstick_request *req = host->req;
-+	int err = 0;
-+	u8 cfg = 0, int_reg;
-+
-+	dev_dbg(ms_dev(host), "%s\n", __func__);
-+
-+	if (req->need_card_int) {
-+		if (host->ifmode != MEMSTICK_SERIAL)
-+			cfg = WAIT_INT;
-+	}
-+
-+	if (req->long_data) {
-+		err = ms_transfer_data(host, req->data_dir,
-+				req->tpc, cfg, &(req->sg));
-+	} else {
-+		if (req->data_dir == READ) {
-+			err = ms_read_bytes(host, req->tpc, cfg,
-+					req->data_len, req->data, &int_reg);
-+		} else {
-+			err = ms_write_bytes(host, req->tpc, cfg,
-+					req->data_len, req->data, &int_reg);
-+		}
-+	}
-+	if (err < 0)
-+		return err;
-+
-+	if (req->need_card_int && (host->ifmode == MEMSTICK_SERIAL)) {
-+		err = ms_read_bytes(host, MS_TPC_GET_INT,
-+				NO_WAIT_INT, 1, &int_reg, NULL);
++		err = rtsx_pci_send_cmd(pcr, 250);
 +		if (err < 0)
 +			return err;
 +	}
 +
-+	if (req->need_card_int) {
-+		dev_dbg(ms_dev(host), "int_reg: 0x%02x\n", int_reg);
++	memcpy(ptr, rtsx_pci_get_cmd_data(pcr), buf_len % 256);
 +
-+		if (int_reg & MS_INT_CMDNK)
-+			req->int_reg |= MEMSTICK_INT_CMDNAK;
-+		if (int_reg & MS_INT_BREQ)
-+			req->int_reg |= MEMSTICK_INT_BREQ;
-+		if (int_reg & MS_INT_ERR)
-+			req->int_reg |= MEMSTICK_INT_ERR;
-+		if (int_reg & MS_INT_CED)
-+			req->int_reg |= MEMSTICK_INT_CED;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_read_ppbuf);
++
++int rtsx_pci_write_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len)
++{
++	int err;
++	int i, j;
++	u16 reg;
++	u8 *ptr;
++
++	if (buf_len > 512)
++		buf_len = 512;
++
++	ptr = buf;
++	reg = PPBUF_BASE2;
++	for (i = 0; i < buf_len / 256; i++) {
++		rtsx_pci_init_cmd(pcr);
++
++		for (j = 0; j < 256; j++) {
++			rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++					reg++, 0xFF, *ptr);
++			ptr++;
++		}
++
++		err = rtsx_pci_send_cmd(pcr, 250);
++		if (err < 0)
++			return err;
++	}
++
++	if (buf_len % 256) {
++		rtsx_pci_init_cmd(pcr);
++
++		for (j = 0; j < buf_len % 256; j++) {
++			rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++					reg++, 0xFF, *ptr);
++			ptr++;
++		}
++
++		err = rtsx_pci_send_cmd(pcr, 250);
++		if (err < 0)
++			return err;
 +	}
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(rtsx_pci_write_ppbuf);
 +
-+static void rtsx_pci_ms_handle_req(struct work_struct *work)
++static int rtsx_pci_set_pull_ctl(struct rtsx_pcr *pcr, const u32 *tbl)
 +{
-+	struct realtek_pci_ms *host = container_of(work,
-+			struct realtek_pci_ms, handle_req);
-+	struct rtsx_pcr *pcr = host->pcr;
-+	struct memstick_host *msh = host->msh;
-+	int rc;
++	int err;
++
++	rtsx_pci_init_cmd(pcr);
++
++	while (*tbl & 0xFFFF0000) {
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
++				(u16)(*tbl >> 16), 0xFF, (u8)(*tbl));
++		tbl++;
++	}
++
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++int rtsx_pci_card_pull_ctl_enable(struct rtsx_pcr *pcr, int card)
++{
++	const u32 *tbl;
++
++	if (card == RTSX_SD_CARD)
++		tbl = pcr->sd_pull_ctl_enable_tbl;
++	else if (card == RTSX_MS_CARD)
++		tbl = pcr->ms_pull_ctl_enable_tbl;
++	else
++		return -EINVAL;
++
++	return rtsx_pci_set_pull_ctl(pcr, tbl);
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_pull_ctl_enable);
++
++int rtsx_pci_card_pull_ctl_disable(struct rtsx_pcr *pcr, int card)
++{
++	const u32 *tbl;
++
++	if (card == RTSX_SD_CARD)
++		tbl = pcr->sd_pull_ctl_disable_tbl;
++	else if (card == RTSX_MS_CARD)
++		tbl = pcr->ms_pull_ctl_disable_tbl;
++	else
++		return -EINVAL;
++
++
++	return rtsx_pci_set_pull_ctl(pcr, tbl);
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_pull_ctl_disable);
++
++static void rtsx_pci_enable_bus_int(struct rtsx_pcr *pcr)
++{
++	pcr->bier = TRANS_OK_INT_EN | TRANS_FAIL_INT_EN | SD_INT_EN;
++
++	if (pcr->num_slots > 1)
++		pcr->bier |= MS_INT_EN;
++
++	/* Enable Bus Interrupt */
++	rtsx_pci_writel(pcr, RTSX_BIER, pcr->bier);
++
++	dev_dbg(&(pcr->pci->dev), "RTSX_BIER: 0x%08x\n", pcr->bier);
++}
++
++static inline u8 double_ssc_depth(u8 depth)
++{
++	return ((depth > 1) ? (depth - 1) : depth);
++}
++
++static u8 revise_ssc_depth(u8 ssc_depth, u8 div)
++{
++	if (div > CLK_DIV_1) {
++		if (ssc_depth > (div - 1))
++			ssc_depth -= (div - 1);
++		else
++			ssc_depth = SSC_DEPTH_4M;
++	}
++
++	return ssc_depth;
++}
++
++int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
++		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk)
++{
++	int err, clk;
++	u8 N, min_N, max_N, clk_divider;
++	u8 mcu_cnt, div, max_div;
++	u8 depth[] = {
++		[RTSX_SSC_DEPTH_4M] = SSC_DEPTH_4M,
++		[RTSX_SSC_DEPTH_2M] = SSC_DEPTH_2M,
++		[RTSX_SSC_DEPTH_1M] = SSC_DEPTH_1M,
++		[RTSX_SSC_DEPTH_500K] = SSC_DEPTH_500K,
++		[RTSX_SSC_DEPTH_250K] = SSC_DEPTH_250K,
++	};
++
++	if (initial_mode) {
++		/* We use 250k(around) here, in initial stage */
++		clk_divider = SD_CLK_DIVIDE_128;
++		card_clock = 30000000;
++	} else {
++		clk_divider = SD_CLK_DIVIDE_0;
++	}
++	err = rtsx_pci_write_register(pcr, SD_CFG1,
++			SD_CLK_DIVIDE_MASK, clk_divider);
++	if (err < 0)
++		return err;
++
++	card_clock /= 1000000;
++	dev_dbg(&(pcr->pci->dev), "Switch card clock to %dMHz\n", card_clock);
++
++	min_N = 80;
++	max_N = 208;
++	max_div = CLK_DIV_8;
++
++	clk = card_clock;
++	if (!initial_mode && double_clk)
++		clk = card_clock * 2;
++	dev_dbg(&(pcr->pci->dev),
++			"Internal SSC clock: %dMHz (cur_clock = %d)\n",
++			clk, pcr->cur_clock);
++
++	if (clk == pcr->cur_clock)
++		return 0;
++
++	N = (u8)(clk - 2);
++	if ((clk <= 2) || (N > max_N))
++		return -EINVAL;
++
++	mcu_cnt = (u8)(125/clk + 3);
++	if (mcu_cnt > 15)
++		mcu_cnt = 15;
++
++	/* Make sure that the SSC clock div_n is equal or greater than min_N */
++	div = CLK_DIV_1;
++	while ((N < min_N) && (div < max_div)) {
++		N = (N + 2) * 2 - 2;
++		div++;
++	}
++	dev_dbg(&(pcr->pci->dev), "N = %d, div = %d\n", N, div);
++
++	ssc_depth = depth[ssc_depth];
++	if (double_clk)
++		ssc_depth = double_ssc_depth(ssc_depth);
++
++	ssc_depth = revise_ssc_depth(ssc_depth, div);
++	dev_dbg(&(pcr->pci->dev), "ssc_depth = %d\n", ssc_depth);
++
++	rtsx_pci_init_cmd(pcr);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CLK_CTL,
++			CLK_LOW_FREQ, CLK_LOW_FREQ);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CLK_DIV,
++			0xFF, (div << 4) | mcu_cnt);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1, SSC_RSTB, 0);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL2,
++			SSC_DEPTH_MASK, ssc_depth);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_DIV_N_0, 0xFF, N);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1, SSC_RSTB, SSC_RSTB);
++	if (vpclk) {
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_VPCLK0_CTL,
++				PHASE_NOT_RESET, 0);
++		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD_VPCLK0_CTL,
++				PHASE_NOT_RESET, PHASE_NOT_RESET);
++	}
++
++	err = rtsx_pci_send_cmd(pcr, 2000);
++	if (err < 0)
++		return err;
++
++	/* Wait SSC clock stable */
++	udelay(10);
++	err = rtsx_pci_write_register(pcr, CLK_CTL, CLK_LOW_FREQ, 0);
++	if (err < 0)
++		return err;
++
++	pcr->cur_clock = clk;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_switch_clock);
++
++int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card)
++{
++	if (pcr->ops->card_power_on)
++		return pcr->ops->card_power_on(pcr, card);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_power_on);
++
++int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card)
++{
++	if (pcr->ops->card_power_off)
++		return pcr->ops->card_power_off(pcr, card);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_power_off);
++
++unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr)
++{
++	unsigned int val;
++
++	val = rtsx_pci_readl(pcr, RTSX_BIPR);
++	if (pcr->ops->cd_deglitch)
++		val = pcr->ops->cd_deglitch(pcr);
++
++	return val;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_card_exist);
++
++void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr)
++{
++	struct completion finish;
++
++	pcr->finish_me = &finish;
++	init_completion(&finish);
++
++	if (pcr->done)
++		complete(pcr->done);
++
++	if (!pcr->remove_pci)
++		rtsx_pci_stop_cmd(pcr);
++
++	wait_for_completion_interruptible_timeout(&finish,
++			msecs_to_jiffies(2));
++	pcr->finish_me = NULL;
++}
++EXPORT_SYMBOL_GPL(rtsx_pci_complete_unfinished_transfer);
++
++static void rtsx_pci_card_detect(struct work_struct *work)
++{
++	struct delayed_work *dwork;
++	struct rtsx_pcr *pcr;
++	unsigned long flags;
++	unsigned int card_detect = 0;
++	u32 irq_status;
++
++	dwork = to_delayed_work(work);
++	pcr = container_of(dwork, struct rtsx_pcr, carddet_work);
++
++	dev_dbg(&(pcr->pci->dev), "--> %s\n", __func__);
++
++	spin_lock_irqsave(&pcr->lock, flags);
++
++	irq_status = rtsx_pci_readl(pcr, RTSX_BIPR);
++	dev_dbg(&(pcr->pci->dev), "irq_status: 0x%08x\n", irq_status);
++
++	if (pcr->card_inserted || pcr->card_removed) {
++		dev_dbg(&(pcr->pci->dev),
++				"card_inserted: 0x%x, card_removed: 0x%x\n",
++				pcr->card_inserted, pcr->card_removed);
++
++		if (pcr->ops->cd_deglitch)
++			pcr->card_inserted = pcr->ops->cd_deglitch(pcr);
++
++		card_detect = pcr->card_inserted | pcr->card_removed;
++		pcr->card_inserted = 0;
++		pcr->card_removed = 0;
++	}
++
++	spin_unlock_irqrestore(&pcr->lock, flags);
++
++	if (card_detect & SD_EXIST)
++		pcr->slots[RTSX_SD_CARD].card_event(
++				pcr->slots[RTSX_SD_CARD].p_dev);
++	if (card_detect & MS_EXIST)
++		pcr->slots[RTSX_MS_CARD].card_event(
++				pcr->slots[RTSX_MS_CARD].p_dev);
++}
++
++static irqreturn_t rtsx_pci_isr(int irq, void *dev_id)
++{
++	struct rtsx_pcr *pcr = dev_id;
++	u32 int_reg;
++
++	if (!pcr)
++		return IRQ_NONE;
++
++	spin_lock(&pcr->lock);
++
++	int_reg = rtsx_pci_readl(pcr, RTSX_BIPR);
++	/* Clear interrupt flag */
++	rtsx_pci_writel(pcr, RTSX_BIPR, int_reg);
++	if ((int_reg & pcr->bier) == 0) {
++		spin_unlock(&pcr->lock);
++		return IRQ_NONE;
++	}
++	if (int_reg == 0xFFFFFFFF) {
++		spin_unlock(&pcr->lock);
++		return IRQ_HANDLED;
++	}
++
++	int_reg &= (pcr->bier | 0x7FFFFF);
++
++	if (int_reg & SD_INT) {
++		if (int_reg & SD_EXIST) {
++			pcr->card_inserted |= SD_EXIST;
++		} else {
++			pcr->card_removed |= SD_EXIST;
++			pcr->card_inserted &= ~SD_EXIST;
++		}
++	}
++
++	if (int_reg & MS_INT) {
++		if (int_reg & MS_EXIST) {
++			pcr->card_inserted |= MS_EXIST;
++		} else {
++			pcr->card_removed |= MS_EXIST;
++			pcr->card_inserted &= ~MS_EXIST;
++		}
++	}
++
++	if (pcr->card_inserted || pcr->card_removed)
++		schedule_delayed_work(&pcr->carddet_work,
++				msecs_to_jiffies(200));
++
++	if (int_reg & (NEED_COMPLETE_INT | DELINK_INT)) {
++		if (int_reg & (TRANS_FAIL_INT | DELINK_INT)) {
++			pcr->trans_result = TRANS_RESULT_FAIL;
++			if (pcr->done)
++				complete(pcr->done);
++		} else if (int_reg & TRANS_OK_INT) {
++			pcr->trans_result = TRANS_RESULT_OK;
++			if (pcr->done)
++				complete(pcr->done);
++		}
++	}
++
++	spin_unlock(&pcr->lock);
++	return IRQ_HANDLED;
++}
++
++static int rtsx_pci_acquire_irq(struct rtsx_pcr *pcr)
++{
++	dev_info(&(pcr->pci->dev), "%s: pcr->msi_en = %d, pci->irq = %d\n",
++			__func__, pcr->msi_en, pcr->pci->irq);
++
++	if (request_irq(pcr->pci->irq, rtsx_pci_isr,
++			pcr->msi_en ? 0 : IRQF_SHARED,
++			DRV_NAME_RTSX_PCI, pcr)) {
++		dev_err(&(pcr->pci->dev),
++			"rtsx_sdmmc: unable to grab IRQ %d, disabling device\n",
++			pcr->pci->irq);
++		return -1;
++	}
++
++	pcr->irq = pcr->pci->irq;
++	pci_intx(pcr->pci, !pcr->msi_en);
++
++	return 0;
++}
++
++static void rtsx_pci_idle_work(struct work_struct *work)
++{
++	struct delayed_work *dwork = to_delayed_work(work);
++	struct rtsx_pcr *pcr = container_of(dwork, struct rtsx_pcr, idle_work);
++
++	dev_dbg(&(pcr->pci->dev), "--> %s\n", __func__);
 +
 +	mutex_lock(&pcr->pcr_mutex);
 +
-+	rtsx_pci_start_run(pcr);
++	pcr->state = PDEV_STAT_IDLE;
 +
-+	rtsx_pci_switch_clock(host->pcr, host->clock, host->ssc_depth,
-+			false, true, false);
-+	rtsx_pci_write_register(pcr, CARD_SELECT, 0x07, MS_MOD_SEL);
-+	rtsx_pci_write_register(pcr, CARD_SHARE_MODE,
-+			CARD_SHARE_MASK, CARD_SHARE_48_MS);
-+
-+	if (!host->req) {
-+		do {
-+			rc = memstick_next_req(msh, &host->req);
-+			dev_dbg(ms_dev(host), "next req %d\n", rc);
-+
-+			if (!rc)
-+				host->req->error = rtsx_pci_ms_issue_cmd(host);
-+		} while (!rc);
-+	}
++	if (pcr->ops->disable_auto_blink)
++		pcr->ops->disable_auto_blink(pcr);
++	if (pcr->ops->turn_off_led)
++		pcr->ops->turn_off_led(pcr);
 +
 +	mutex_unlock(&pcr->pcr_mutex);
 +}
 +
-+static void rtsx_pci_ms_request(struct memstick_host *msh)
++static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
 +{
-+	struct realtek_pci_ms *host = memstick_priv(msh);
-+
-+	dev_dbg(ms_dev(host), "--> %s\n", __func__);
-+
-+	schedule_work(&host->handle_req);
-+}
-+
-+static int rtsx_pci_ms_set_param(struct memstick_host *msh,
-+		enum memstick_param param, int value)
-+{
-+	struct realtek_pci_ms *host = memstick_priv(msh);
-+	struct rtsx_pcr *pcr = host->pcr;
-+	unsigned int clock = 0;
-+	u8 ssc_depth = 0;
 +	int err;
 +
-+	dev_dbg(ms_dev(host), "%s: param = %d, value = %d\n",
-+			__func__, param, value);
++	rtsx_pci_writel(pcr, RTSX_HCBAR, pcr->host_cmds_addr);
 +
-+	switch (param) {
-+	case MEMSTICK_POWER:
-+		if (value == MEMSTICK_POWER_ON)
-+			err = ms_power_on(host);
-+		else if (value == MEMSTICK_POWER_OFF)
-+			err = ms_power_off(host);
-+		else
-+			return -EINVAL;
-+		break;
++	rtsx_pci_enable_bus_int(pcr);
 +
-+	case MEMSTICK_INTERFACE:
-+		if (value == MEMSTICK_SERIAL) {
-+			clock = 19000000;
-+			ssc_depth = RTSX_SSC_DEPTH_500K;
++	/* Power on SSC */
++	err = rtsx_pci_write_register(pcr, FPDCTL, SSC_POWER_DOWN, 0);
++	if (err < 0)
++		return err;
 +
-+			err = rtsx_pci_write_register(pcr, MS_CFG,
-+					0x18, MS_BUS_WIDTH_1);
-+			if (err < 0)
-+				return err;
-+		} else if (value == MEMSTICK_PAR4) {
-+			clock = 39000000;
-+			ssc_depth = RTSX_SSC_DEPTH_1M;
++	/* Wait SSC power stable */
++	udelay(200);
 +
-+			err = rtsx_pci_write_register(pcr, MS_CFG,
-+					0x58, MS_BUS_WIDTH_4 | PUSH_TIME_ODD);
-+			if (err < 0)
-+				return err;
-+		} else {
-+			return -EINVAL;
-+		}
-+
-+		err = rtsx_pci_switch_clock(pcr, clock,
-+				ssc_depth, false, true, false);
++	if (pcr->ops->optimize_phy) {
++		err = pcr->ops->optimize_phy(pcr);
 +		if (err < 0)
 +			return err;
++	}
 +
-+		host->ssc_depth = ssc_depth;
-+		host->clock = clock;
-+		host->ifmode = value;
-+		break;
++	rtsx_pci_init_cmd(pcr);
++
++	/* Set mcu_cnt to 7 to ensure data can be sampled properly */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CLK_DIV, 0x07, 0x07);
++
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, HOST_SLEEP_STATE, 0x03, 0x00);
++	/* Disable card clock */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CARD_CLK_EN, 0x1E, 0);
++	/* Reset ASPM state to default value */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, ASPM_FORCE_CTL, 0x3F, 0);
++	/* Reset delink mode */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x0A, 0);
++	/* Card driving select */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SD30_DRIVE_SEL,
++			0x07, DRIVER_TYPE_D);
++	/* Enable SSC Clock */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL1,
++			0xFF, SSC_8X_EN | SSC_SEL_4M);
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, SSC_CTL2, 0xFF, 0x12);
++	/* Disable cd_pwr_save */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, CHANGE_LINK_STATE, 0x16, 0x10);
++	/* Clear Link Ready Interrupt */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, IRQSTAT0,
++			LINK_RDY_INT, LINK_RDY_INT);
++	/* Enlarge the estimation window of PERST# glitch
++	 * to reduce the chance of invalid card interrupt
++	 */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PERST_GLITCH_WIDTH, 0xFF, 0x80);
++	/* Update RC oscillator to 400k
++	 * bit[0] F_HIGH: for RC oscillator, Rst_value is 1'b1
++	 *                1: 2M  0: 400k
++	 */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, RCCTL, 0x01, 0x00);
++	/* Set interrupt write clear
++	 * bit 1: U_elbi_if_rd_clr_en
++	 *	1: Enable ELBI interrupt[31:22] & [7:0] flag read clear
++	 *	0: ELBI interrupt flag[31:22] & [7:0] only can be write clear
++	 */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, NFTS_TX_CTRL, 0x02, 0);
++	/* Force CLKREQ# PIN to drive 0 to request clock */
++	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0x08, 0x08);
++
++	err = rtsx_pci_send_cmd(pcr, 100);
++	if (err < 0)
++		return err;
++
++	/* Enable clk_request_n to enable clock power management */
++	rtsx_pci_write_config_byte(pcr, 0x81, 1);
++	/* Enter L1 when host tx idle */
++	rtsx_pci_write_config_byte(pcr, 0x70F, 0x5B);
++
++	if (pcr->ops->extra_init_hw) {
++		err = pcr->ops->extra_init_hw(pcr);
++		if (err < 0)
++			return err;
 +	}
 +
 +	return 0;
++}
++
++static int rtsx_pci_init_chip(struct rtsx_pcr *pcr)
++{
++	int err;
++
++	spin_lock_init(&pcr->lock);
++	mutex_init(&pcr->pcr_mutex);
++
++	switch (PCI_PID(pcr)) {
++	default:
++	case 0x5209:
++		rts5209_init_params(pcr);
++		break;
++
++	case 0x5229:
++		rts5229_init_params(pcr);
++		break;
++
++	case 0x5289:
++		rtl8411_init_params(pcr);
++		break;
++	}
++
++	dev_dbg(&(pcr->pci->dev), "PID: 0x%04x, IC version: 0x%02x\n",
++			PCI_PID(pcr), pcr->ic_version);
++
++	pcr->slots = kcalloc(pcr->num_slots, sizeof(struct rtsx_slot),
++			GFP_KERNEL);
++	if (!pcr->slots)
++		return -ENOMEM;
++
++	pcr->state = PDEV_STAT_IDLE;
++	err = rtsx_pci_init_hw(pcr);
++	if (err < 0) {
++		kfree(pcr->slots);
++		return err;
++	}
++
++	return 0;
++}
++
++static int __devinit rtsx_pci_probe(struct pci_dev *pcidev,
++				    const struct pci_device_id *id)
++{
++	struct rtsx_pcr *pcr;
++	struct pcr_handle *handle;
++	u32 base, len;
++	int ret, i;
++
++	dev_dbg(&(pcidev->dev),
++		": Realtek PCI-E Card Reader found at %s [%04x:%04x] (rev %x)\n",
++		pci_name(pcidev), (int)pcidev->vendor, (int)pcidev->device,
++		(int)pcidev->revision);
++
++	ret = pci_enable_device(pcidev);
++	if (ret)
++		return ret;
++
++	ret = pci_request_regions(pcidev, DRV_NAME_RTSX_PCI);
++	if (ret)
++		goto disable;
++
++	pcr = kzalloc(sizeof(*pcr), GFP_KERNEL);
++	if (!pcr) {
++		ret = -ENOMEM;
++		goto release_pci;
++	}
++
++	handle = kzalloc(sizeof(*handle), GFP_KERNEL);
++	if (!handle) {
++		ret = -ENOMEM;
++		goto free_pcr;
++	}
++	handle->pcr = pcr;
++
++	if (!idr_pre_get(&rtsx_pci_idr, GFP_KERNEL)) {
++		ret = -ENOMEM;
++		goto free_handle;
++	}
++
++	spin_lock(&rtsx_pci_lock);
++	ret = idr_get_new(&rtsx_pci_idr, pcr, &pcr->id);
++	spin_unlock(&rtsx_pci_lock);
++	if (ret)
++		goto free_handle;
++
++	pcr->pci = pcidev;
++	dev_set_drvdata(&pcidev->dev, handle);
++
++	len = pci_resource_len(pcidev, 0);
++	base = pci_resource_start(pcidev, 0);
++	pcr->remap_addr = ioremap_nocache(base, len);
++	if (!pcr->remap_addr) {
++		ret = -ENOMEM;
++		goto free_host;
++	}
++
++	pcr->rtsx_resv_buf = dma_alloc_coherent(&(pcidev->dev),
++			RTSX_RESV_BUF_LEN, &(pcr->rtsx_resv_buf_addr),
++			GFP_KERNEL);
++	if (pcr->rtsx_resv_buf == NULL) {
++		ret = -ENXIO;
++		goto unmap;
++	}
++	pcr->host_cmds_ptr = pcr->rtsx_resv_buf;
++	pcr->host_cmds_addr = pcr->rtsx_resv_buf_addr;
++	pcr->host_sg_tbl_ptr = pcr->rtsx_resv_buf + HOST_CMDS_BUF_LEN;
++	pcr->host_sg_tbl_addr = pcr->rtsx_resv_buf_addr + HOST_CMDS_BUF_LEN;
++
++	pcr->card_inserted = 0;
++	pcr->card_removed = 0;
++	INIT_DELAYED_WORK(&pcr->carddet_work, rtsx_pci_card_detect);
++	INIT_DELAYED_WORK(&pcr->idle_work, rtsx_pci_idle_work);
++
++	pcr->msi_en = msi_en;
++	if (pcr->msi_en) {
++		ret = pci_enable_msi(pcidev);
++		if (ret < 0)
++			pcr->msi_en = false;
++	}
++
++	ret = rtsx_pci_acquire_irq(pcr);
++	if (ret < 0)
++		goto free_dma;
++
++	pci_set_master(pcidev);
++	synchronize_irq(pcr->irq);
++
++	ret = rtsx_pci_init_chip(pcr);
++	if (ret < 0)
++		goto disable_irq;
++
++	for (i = 0; i < ARRAY_SIZE(rtsx_pcr_cells); i++) {
++		rtsx_pcr_cells[i].platform_data = handle;
++		rtsx_pcr_cells[i].pdata_size = sizeof(*handle);
++	}
++	ret = mfd_add_devices(&pcidev->dev, pcr->id, rtsx_pcr_cells,
++			ARRAY_SIZE(rtsx_pcr_cells), NULL, 0, NULL);
++	if (ret < 0)
++		goto disable_irq;
++
++	schedule_delayed_work(&pcr->idle_work, msecs_to_jiffies(200));
++
++	return 0;
++
++disable_irq:
++	free_irq(pcr->irq, (void *)pcr);
++free_dma:
++	dma_free_coherent(&(pcr->pci->dev), RTSX_RESV_BUF_LEN,
++			pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
++unmap:
++	iounmap(pcr->remap_addr);
++free_host:
++	dev_set_drvdata(&pcidev->dev, NULL);
++free_handle:
++	kfree(handle);
++free_pcr:
++	kfree(pcr);
++release_pci:
++	pci_release_regions(pcidev);
++disable:
++	pci_disable_device(pcidev);
++
++	return ret;
++}
++
++static void __devexit rtsx_pci_remove(struct pci_dev *pcidev)
++{
++	struct pcr_handle *handle = pci_get_drvdata(pcidev);
++	struct rtsx_pcr *pcr = handle->pcr;
++
++	pcr->remove_pci = true;
++
++	cancel_delayed_work(&pcr->carddet_work);
++	cancel_delayed_work(&pcr->idle_work);
++
++	mfd_remove_devices(&pcidev->dev);
++
++	dma_free_coherent(&(pcr->pci->dev), RTSX_RESV_BUF_LEN,
++			pcr->rtsx_resv_buf, pcr->rtsx_resv_buf_addr);
++	free_irq(pcr->irq, (void *)pcr);
++	if (pcr->msi_en)
++		pci_disable_msi(pcr->pci);
++	iounmap(pcr->remap_addr);
++
++	dev_set_drvdata(&pcidev->dev, NULL);
++	pci_release_regions(pcidev);
++	pci_disable_device(pcidev);
++
++	spin_lock(&rtsx_pci_lock);
++	idr_remove(&rtsx_pci_idr, pcr->id);
++	spin_unlock(&rtsx_pci_lock);
++
++	kfree(pcr->slots);
++	kfree(pcr);
++	kfree(handle);
++
++	dev_dbg(&(pcidev->dev),
++		": Realtek PCI-E Card Reader at %s [%04x:%04x] has been removed\n",
++		pci_name(pcidev), (int)pcidev->vendor, (int)pcidev->device);
 +}
 +
 +#ifdef CONFIG_PM
 +
-+static int rtsx_pci_ms_suspend(struct platform_device *pdev, pm_message_t state)
++static int rtsx_pci_suspend(struct pci_dev *pcidev, pm_message_t state)
 +{
-+	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+	struct memstick_host *msh = host->msh;
++	struct pcr_handle *handle;
++	struct rtsx_pcr *pcr;
++	int ret = 0;
 +
-+	dev_dbg(ms_dev(host), "--> %s\n", __func__);
++	dev_dbg(&(pcidev->dev), "--> %s\n", __func__);
 +
-+	memstick_suspend_host(msh);
-+	return 0;
++	handle = pci_get_drvdata(pcidev);
++	pcr = handle->pcr;
++
++	cancel_delayed_work(&pcr->carddet_work);
++	cancel_delayed_work(&pcr->idle_work);
++
++	mutex_lock(&pcr->pcr_mutex);
++
++	if (pcr->ops->turn_off_led)
++		pcr->ops->turn_off_led(pcr);
++
++	rtsx_pci_writel(pcr, RTSX_BIER, 0);
++	pcr->bier = 0;
++
++	rtsx_pci_write_register(pcr, PETXCFG, 0x08, 0x08);
++	rtsx_pci_write_register(pcr, HOST_SLEEP_STATE, 0x03, 0x02);
++
++	pci_save_state(pcidev);
++	pci_enable_wake(pcidev, pci_choose_state(pcidev, state), 0);
++	pci_disable_device(pcidev);
++	pci_set_power_state(pcidev, pci_choose_state(pcidev, state));
++
++	mutex_unlock(&pcr->pcr_mutex);
++	return ret;
 +}
 +
-+static int rtsx_pci_ms_resume(struct platform_device *pdev)
++static int rtsx_pci_resume(struct pci_dev *pcidev)
 +{
-+	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+	struct memstick_host *msh = host->msh;
++	struct pcr_handle *handle;
++	struct rtsx_pcr *pcr;
++	int ret = 0;
 +
-+	dev_dbg(ms_dev(host), "--> %s\n", __func__);
++	dev_dbg(&(pcidev->dev), "--> %s\n", __func__);
 +
-+	memstick_resume_host(msh);
-+	return 0;
++	handle = pci_get_drvdata(pcidev);
++	pcr = handle->pcr;
++
++	mutex_lock(&pcr->pcr_mutex);
++
++	pci_set_power_state(pcidev, PCI_D0);
++	pci_restore_state(pcidev);
++	ret = pci_enable_device(pcidev);
++	if (ret)
++		goto out;
++	pci_set_master(pcidev);
++
++	ret = rtsx_pci_write_register(pcr, HOST_SLEEP_STATE, 0x03, 0x00);
++	if (ret)
++		goto out;
++
++	ret = rtsx_pci_init_hw(pcr);
++	if (ret)
++		goto out;
++
++	schedule_delayed_work(&pcr->idle_work, msecs_to_jiffies(200));
++
++out:
++	mutex_unlock(&pcr->pcr_mutex);
++	return ret;
 +}
 +
 +#else /* CONFIG_PM */
 +
-+#define rtsx_pci_ms_suspend NULL
-+#define rtsx_pci_ms_resume NULL
++#define rtsx_pci_suspend NULL
++#define rtsx_pci_resume NULL
 +
 +#endif /* CONFIG_PM */
 +
-+static void rtsx_pci_ms_card_event(struct platform_device *pdev)
-+{
-+	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+
-+	memstick_detect_change(host->msh);
-+}
-+
-+static int rtsx_pci_ms_drv_probe(struct platform_device *pdev)
-+{
-+	struct memstick_host *msh;
-+	struct realtek_pci_ms *host;
-+	struct rtsx_pcr *pcr;
-+	struct pcr_handle *handle = pdev->dev.platform_data;
-+	int rc;
-+
-+	if (!handle)
-+		return -ENXIO;
-+
-+	pcr = handle->pcr;
-+	if (!pcr)
-+		return -ENXIO;
-+
-+	dev_dbg(&(pdev->dev),
-+			": Realtek PCI-E Memstick controller found\n");
-+
-+	msh = memstick_alloc_host(sizeof(*host), &pdev->dev);
-+	if (!msh)
-+		return -ENOMEM;
-+
-+	host = memstick_priv(msh);
-+	host->pcr = pcr;
-+	host->msh = msh;
-+	host->pdev = pdev;
-+	platform_set_drvdata(pdev, host);
-+	pcr->slots[RTSX_MS_CARD].p_dev = pdev;
-+	pcr->slots[RTSX_MS_CARD].card_event = rtsx_pci_ms_card_event;
-+
-+	mutex_init(&host->host_mutex);
-+
-+	INIT_WORK(&host->handle_req, rtsx_pci_ms_handle_req);
-+	msh->request = rtsx_pci_ms_request;
-+	msh->set_param = rtsx_pci_ms_set_param;
-+	msh->caps = MEMSTICK_CAP_PAR4;
-+
-+	rc = memstick_add_host(msh);
-+	if (rc) {
-+		memstick_free_host(msh);
-+		return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+static int rtsx_pci_ms_drv_remove(struct platform_device *pdev)
-+{
-+	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+	struct rtsx_pcr *pcr;
-+	struct memstick_host *msh;
-+	int rc;
-+
-+	if (!host)
-+		return 0;
-+
-+	pcr = host->pcr;
-+	pcr->slots[RTSX_MS_CARD].p_dev = NULL;
-+	pcr->slots[RTSX_MS_CARD].card_event = NULL;
-+	msh = host->msh;
-+	host->eject = true;
-+
-+	mutex_lock(&host->host_mutex);
-+	if (host->req) {
-+		dev_dbg(&(pdev->dev),
-+			"%s: Controller removed during transfer\n",
-+			dev_name(&msh->dev));
-+
-+		rtsx_pci_complete_unfinished_transfer(pcr);
-+
-+		host->req->error = -ENOMEDIUM;
-+		do {
-+			rc = memstick_next_req(msh, &host->req);
-+			if (!rc)
-+				host->req->error = -ENOMEDIUM;
-+		} while (!rc);
-+	}
-+	mutex_unlock(&host->host_mutex);
-+
-+	memstick_remove_host(msh);
-+	memstick_free_host(msh);
-+
-+	platform_set_drvdata(pdev, NULL);
-+
-+	dev_dbg(&(pdev->dev),
-+		": Realtek PCI-E Memstick controller has been removed\n");
-+
-+	return 0;
-+}
-+
-+static struct platform_device_id rtsx_pci_ms_ids[] = {
-+	{
-+		.name = DRV_NAME_RTSX_PCI_MS,
-+	}, {
-+		/* sentinel */
-+	}
++static struct pci_driver rtsx_pci_driver = {
++	.name = DRV_NAME_RTSX_PCI,
++	.id_table = rtsx_pci_ids,
++	.probe = rtsx_pci_probe,
++	.remove = __devexit_p(rtsx_pci_remove),
++	.suspend = rtsx_pci_suspend,
++	.resume = rtsx_pci_resume,
 +};
-+MODULE_DEVICE_TABLE(platform, rtsx_pci_ms_ids);
-+
-+static struct platform_driver rtsx_pci_ms_driver = {
-+	.probe		= rtsx_pci_ms_drv_probe,
-+	.remove		= rtsx_pci_ms_drv_remove,
-+	.id_table       = rtsx_pci_ms_ids,
-+	.suspend	= rtsx_pci_ms_suspend,
-+	.resume		= rtsx_pci_ms_resume,
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= DRV_NAME_RTSX_PCI_MS,
-+	},
-+};
-+module_platform_driver(rtsx_pci_ms_driver);
++module_pci_driver(rtsx_pci_driver);
 +
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Wei WANG <wei_wang@realsil.com.cn>");
-+MODULE_DESCRIPTION("Realtek PCI-E Memstick Card Host Driver");
++MODULE_DESCRIPTION("Realtek PCI-E Card Reader Driver");
+diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+new file mode 100644
+index 0000000..12462c1
+--- /dev/null
++++ b/drivers/mfd/rtsx_pcr.h
+@@ -0,0 +1,32 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#ifndef __RTSX_PCR_H
++#define __RTSX_PCR_H
++
++#include <linux/mfd/rtsx_pci.h>
++
++void rts5209_init_params(struct rtsx_pcr *pcr);
++void rts5229_init_params(struct rtsx_pcr *pcr);
++void rtl8411_init_params(struct rtsx_pcr *pcr);
++
++#endif
+diff --git a/include/linux/mfd/rtsx_common.h b/include/linux/mfd/rtsx_common.h
+new file mode 100644
+index 0000000..a8d393e
+--- /dev/null
++++ b/include/linux/mfd/rtsx_common.h
+@@ -0,0 +1,48 @@
++/* Driver for Realtek driver-based card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#ifndef __RTSX_COMMON_H
++#define __RTSX_COMMON_H
++
++#define DRV_NAME_RTSX_PCI		"rtsx_pci"
++#define DRV_NAME_RTSX_PCI_SDMMC		"rtsx_pci_sdmmc"
++#define DRV_NAME_RTSX_PCI_MS		"rtsx_pci_ms"
++
++#define RTSX_REG_PAIR(addr, val)	(((u32)(addr) << 16) | (u8)(val))
++
++#define RTSX_SSC_DEPTH_4M		0x01
++#define RTSX_SSC_DEPTH_2M		0x02
++#define RTSX_SSC_DEPTH_1M		0x03
++#define RTSX_SSC_DEPTH_500K		0x04
++#define RTSX_SSC_DEPTH_250K		0x05
++
++#define RTSX_SD_CARD			0
++#define RTSX_MS_CARD			1
++
++struct platform_device;
++
++struct rtsx_slot {
++	struct platform_device	*p_dev;
++	void			(*card_event)(struct platform_device *p_dev);
++};
++
++#endif
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+new file mode 100644
+index 0000000..060b721
+--- /dev/null
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -0,0 +1,794 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Wei WANG <wei_wang@realsil.com.cn>
++ *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
++ */
++
++#ifndef __RTSX_PCI_H
++#define __RTSX_PCI_H
++
++#include <linux/sched.h>
++#include <linux/pci.h>
++
++#include "rtsx_common.h"
++
++#define MAX_RW_REG_CNT			1024
++
++/* PCI Operation Register Address */
++#define RTSX_HCBAR			0x00
++#define RTSX_HCBCTLR			0x04
++#define RTSX_HDBAR			0x08
++#define RTSX_HDBCTLR			0x0C
++#define RTSX_HAIMR			0x10
++#define RTSX_BIPR			0x14
++#define RTSX_BIER			0x18
++
++/* Host command buffer control register */
++#define STOP_CMD			(0x01 << 28)
++
++/* Host data buffer control register */
++#define SDMA_MODE			0x00
++#define ADMA_MODE			(0x02 << 26)
++#define STOP_DMA			(0x01 << 28)
++#define TRIG_DMA			(0x01 << 31)
++
++/* Host access internal memory register */
++#define HAIMR_TRANS_START		(0x01 << 31)
++#define HAIMR_READ			0x00
++#define HAIMR_WRITE			(0x01 << 30)
++#define HAIMR_READ_START		(HAIMR_TRANS_START | HAIMR_READ)
++#define HAIMR_WRITE_START		(HAIMR_TRANS_START | HAIMR_WRITE)
++#define HAIMR_TRANS_END			(HAIMR_TRANS_START)
++
++/* Bus interrupt pending register */
++#define CMD_DONE_INT			(1 << 31)
++#define DATA_DONE_INT			(1 << 30)
++#define TRANS_OK_INT			(1 << 29)
++#define TRANS_FAIL_INT			(1 << 28)
++#define XD_INT				(1 << 27)
++#define MS_INT				(1 << 26)
++#define SD_INT				(1 << 25)
++#define GPIO0_INT			(1 << 24)
++#define OC_INT				(1 << 23)
++#define SD_WRITE_PROTECT		(1 << 19)
++#define XD_EXIST			(1 << 18)
++#define MS_EXIST			(1 << 17)
++#define SD_EXIST			(1 << 16)
++#define DELINK_INT			GPIO0_INT
++#define MS_OC_INT			(1 << 23)
++#define SD_OC_INT			(1 << 22)
++
++#define CARD_INT		(XD_INT | MS_INT | SD_INT)
++#define NEED_COMPLETE_INT	(DATA_DONE_INT | TRANS_OK_INT | TRANS_FAIL_INT)
++#define RTSX_INT		(CMD_DONE_INT | NEED_COMPLETE_INT | \
++					CARD_INT | GPIO0_INT | OC_INT)
++
++#define CARD_EXIST		(XD_EXIST | MS_EXIST | SD_EXIST)
++
++/* Bus interrupt enable register */
++#define CMD_DONE_INT_EN		(1 << 31)
++#define DATA_DONE_INT_EN	(1 << 30)
++#define TRANS_OK_INT_EN		(1 << 29)
++#define TRANS_FAIL_INT_EN	(1 << 28)
++#define XD_INT_EN		(1 << 27)
++#define MS_INT_EN		(1 << 26)
++#define SD_INT_EN		(1 << 25)
++#define GPIO0_INT_EN		(1 << 24)
++#define OC_INT_EN		(1 << 23)
++#define DELINK_INT_EN		GPIO0_INT_EN
++#define MS_OC_INT_EN		(1 << 23)
++#define SD_OC_INT_EN		(1 << 22)
++
++#define READ_REG_CMD		0
++#define WRITE_REG_CMD		1
++#define CHECK_REG_CMD		2
++
++/*
++ * macros for easy use
++ */
++#define rtsx_pci_writel(pcr, reg, value) \
++	iowrite32(value, (pcr)->remap_addr + reg)
++#define rtsx_pci_readl(pcr, reg) \
++	ioread32((pcr)->remap_addr + reg)
++#define rtsx_pci_writew(pcr, reg, value) \
++	iowrite16(value, (pcr)->remap_addr + reg)
++#define rtsx_pci_readw(pcr, reg) \
++	ioread16((pcr)->remap_addr + reg)
++#define rtsx_pci_writeb(pcr, reg, value) \
++	iowrite8(value, (pcr)->remap_addr + reg)
++#define rtsx_pci_readb(pcr, reg) \
++	ioread8((pcr)->remap_addr + reg)
++
++#define rtsx_pci_read_config_byte(pcr, where, val) \
++	pci_read_config_byte((pcr)->pci, where, val)
++
++#define rtsx_pci_write_config_byte(pcr, where, val) \
++	pci_write_config_byte((pcr)->pci, where, val)
++
++#define rtsx_pci_read_config_dword(pcr, where, val) \
++	pci_read_config_dword((pcr)->pci, where, val)
++
++#define rtsx_pci_write_config_dword(pcr, where, val) \
++	pci_write_config_dword((pcr)->pci, where, val)
++
++#define STATE_TRANS_NONE	0
++#define STATE_TRANS_CMD		1
++#define STATE_TRANS_BUF		2
++#define STATE_TRANS_SG		3
++
++#define TRANS_NOT_READY		0
++#define TRANS_RESULT_OK		1
++#define TRANS_RESULT_FAIL	2
++#define TRANS_NO_DEVICE		3
++
++#define RTSX_RESV_BUF_LEN	4096
++#define HOST_CMDS_BUF_LEN	1024
++#define HOST_SG_TBL_BUF_LEN	(RTSX_RESV_BUF_LEN - HOST_CMDS_BUF_LEN)
++#define HOST_SG_TBL_ITEMS	(HOST_SG_TBL_BUF_LEN / 8)
++#define MAX_SG_ITEM_LEN		0x80000
++
++#define HOST_TO_DEVICE		0
++#define DEVICE_TO_HOST		1
++
++#define MAX_PHASE		31
++#define RX_TUNING_CNT		3
++
++/* SG descriptor */
++#define SG_INT			0x04
++#define SG_END			0x02
++#define SG_VALID		0x01
++
++#define SG_NO_OP		0x00
++#define SG_TRANS_DATA		(0x02 << 4)
++#define SG_LINK_DESC		(0x03 << 4)
++
++/* SD bank voltage */
++#define SD_IO_3V3		0
++#define SD_IO_1V8		1
++
++
++/* Card Clock Enable Register */
++#define SD_CLK_EN			0x04
++#define MS_CLK_EN			0x08
++
++/* Card Select Register */
++#define SD_MOD_SEL			2
++#define MS_MOD_SEL			3
++
++/* Card Output Enable Register */
++#define SD_OUTPUT_EN			0x04
++#define MS_OUTPUT_EN			0x08
++
++/* CARD_SHARE_MODE */
++#define CARD_SHARE_MASK			0x0F
++#define CARD_SHARE_MULTI_LUN		0x00
++#define	CARD_SHARE_NORMAL		0x00
++#define	CARD_SHARE_48_SD		0x04
++#define	CARD_SHARE_48_MS		0x08
++/* CARD_SHARE_MODE for barossa */
++#define CARD_SHARE_BAROSSA_SD		0x01
++#define CARD_SHARE_BAROSSA_MS		0x02
++
++/* SD30_DRIVE_SEL */
++#define DRIVER_TYPE_A			0x05
++#define DRIVER_TYPE_B			0x03
++#define DRIVER_TYPE_C			0x02
++#define DRIVER_TYPE_D			0x01
++
++/* FPDCTL */
++#define SSC_POWER_DOWN			0x01
++#define SD_OC_POWER_DOWN		0x02
++#define ALL_POWER_DOWN			0x07
++#define OC_POWER_DOWN			0x06
++
++/* CLK_CTL */
++#define CHANGE_CLK			0x01
++
++/* LDO_CTL */
++#define BPP_LDO_POWB			0x03
++#define BPP_LDO_ON			0x00
++#define BPP_LDO_SUSPEND			0x02
++#define BPP_LDO_OFF			0x03
++
++/* CD_PAD_CTL */
++#define CD_DISABLE_MASK			0x07
++#define MS_CD_DISABLE			0x04
++#define SD_CD_DISABLE			0x02
++#define XD_CD_DISABLE			0x01
++#define CD_DISABLE			0x07
++#define CD_ENABLE			0x00
++#define MS_CD_EN_ONLY			0x03
++#define SD_CD_EN_ONLY			0x05
++#define XD_CD_EN_ONLY			0x06
++#define FORCE_CD_LOW_MASK		0x38
++#define FORCE_CD_XD_LOW			0x08
++#define FORCE_CD_SD_LOW			0x10
++#define FORCE_CD_MS_LOW			0x20
++#define CD_AUTO_DISABLE			0x40
++
++/* SD_STAT1 */
++#define	SD_CRC7_ERR			0x80
++#define	SD_CRC16_ERR			0x40
++#define	SD_CRC_WRITE_ERR		0x20
++#define	SD_CRC_WRITE_ERR_MASK		0x1C
++#define	GET_CRC_TIME_OUT		0x02
++#define	SD_TUNING_COMPARE_ERR		0x01
++
++/* SD_STAT2 */
++#define	SD_RSP_80CLK_TIMEOUT		0x01
++
++/* SD_BUS_STAT */
++#define	SD_CLK_TOGGLE_EN		0x80
++#define	SD_CLK_FORCE_STOP	        0x40
++#define	SD_DAT3_STATUS		        0x10
++#define	SD_DAT2_STATUS		        0x08
++#define	SD_DAT1_STATUS		        0x04
++#define	SD_DAT0_STATUS		        0x02
++#define	SD_CMD_STATUS			0x01
++
++/* SD_PAD_CTL */
++#define	SD_IO_USING_1V8		        0x80
++#define	SD_IO_USING_3V3		        0x7F
++#define	TYPE_A_DRIVING		        0x00
++#define	TYPE_B_DRIVING			0x01
++#define	TYPE_C_DRIVING			0x02
++#define	TYPE_D_DRIVING		        0x03
++
++/* SD_SAMPLE_POINT_CTL */
++#define	DDR_FIX_RX_DAT			0x00
++#define	DDR_VAR_RX_DAT			0x80
++#define	DDR_FIX_RX_DAT_EDGE		0x00
++#define	DDR_FIX_RX_DAT_14_DELAY		0x40
++#define	DDR_FIX_RX_CMD			0x00
++#define	DDR_VAR_RX_CMD			0x20
++#define	DDR_FIX_RX_CMD_POS_EDGE		0x00
++#define	DDR_FIX_RX_CMD_14_DELAY		0x10
++#define	SD20_RX_POS_EDGE		0x00
++#define	SD20_RX_14_DELAY		0x08
++#define SD20_RX_SEL_MASK		0x08
++
++/* SD_PUSH_POINT_CTL */
++#define	DDR_FIX_TX_CMD_DAT		0x00
++#define	DDR_VAR_TX_CMD_DAT		0x80
++#define	DDR_FIX_TX_DAT_14_TSU		0x00
++#define	DDR_FIX_TX_DAT_12_TSU		0x40
++#define	DDR_FIX_TX_CMD_NEG_EDGE		0x00
++#define	DDR_FIX_TX_CMD_14_AHEAD		0x20
++#define	SD20_TX_NEG_EDGE		0x00
++#define	SD20_TX_14_AHEAD		0x10
++#define SD20_TX_SEL_MASK		0x10
++#define	DDR_VAR_SDCLK_POL_SWAP		0x01
++
++/* SD_TRANSFER */
++#define	SD_TRANSFER_START		0x80
++#define	SD_TRANSFER_END			0x40
++#define SD_STAT_IDLE			0x20
++#define	SD_TRANSFER_ERR			0x10
++/* SD Transfer Mode definition */
++#define	SD_TM_NORMAL_WRITE		0x00
++#define	SD_TM_AUTO_WRITE_3		0x01
++#define	SD_TM_AUTO_WRITE_4		0x02
++#define	SD_TM_AUTO_READ_3		0x05
++#define	SD_TM_AUTO_READ_4		0x06
++#define	SD_TM_CMD_RSP			0x08
++#define	SD_TM_AUTO_WRITE_1		0x09
++#define	SD_TM_AUTO_WRITE_2		0x0A
++#define	SD_TM_NORMAL_READ		0x0C
++#define	SD_TM_AUTO_READ_1		0x0D
++#define	SD_TM_AUTO_READ_2		0x0E
++#define	SD_TM_AUTO_TUNING		0x0F
++
++/* SD_VPTX_CTL / SD_VPRX_CTL */
++#define PHASE_CHANGE			0x80
++#define PHASE_NOT_RESET			0x40
++
++/* SD_DCMPS_TX_CTL / SD_DCMPS_RX_CTL */
++#define DCMPS_CHANGE			0x80
++#define DCMPS_CHANGE_DONE		0x40
++#define DCMPS_ERROR			0x20
++#define DCMPS_CURRENT_PHASE		0x1F
++
++/* SD Configure 1 Register */
++#define SD_CLK_DIVIDE_0			0x00
++#define	SD_CLK_DIVIDE_256		0xC0
++#define	SD_CLK_DIVIDE_128		0x80
++#define	SD_BUS_WIDTH_1BIT		0x00
++#define	SD_BUS_WIDTH_4BIT		0x01
++#define	SD_BUS_WIDTH_8BIT		0x02
++#define	SD_ASYNC_FIFO_NOT_RST		0x10
++#define	SD_20_MODE			0x00
++#define	SD_DDR_MODE			0x04
++#define	SD_30_MODE			0x08
++
++#define SD_CLK_DIVIDE_MASK		0xC0
++
++/* SD_CMD_STATE */
++#define SD_CMD_IDLE			0x80
++
++/* SD_DATA_STATE */
++#define SD_DATA_IDLE			0x80
++
++/* DCM_DRP_CTL */
++#define DCM_RESET			0x08
++#define DCM_LOCKED			0x04
++#define DCM_208M			0x00
++#define DCM_TX			        0x01
++#define DCM_RX			        0x02
++
++/* DCM_DRP_TRIG */
++#define DRP_START			0x80
++#define DRP_DONE			0x40
++
++/* DCM_DRP_CFG */
++#define DRP_WRITE			0x80
++#define DRP_READ			0x00
++#define DCM_WRITE_ADDRESS_50		0x50
++#define DCM_WRITE_ADDRESS_51		0x51
++#define DCM_READ_ADDRESS_00		0x00
++#define DCM_READ_ADDRESS_51		0x51
++
++/* IRQSTAT0 */
++#define DMA_DONE_INT			0x80
++#define SUSPEND_INT			0x40
++#define LINK_RDY_INT			0x20
++#define LINK_DOWN_INT			0x10
++
++/* DMACTL */
++#define DMA_RST				0x80
++#define DMA_BUSY			0x04
++#define DMA_DIR_TO_CARD			0x00
++#define DMA_DIR_FROM_CARD		0x02
++#define DMA_EN				0x01
++#define DMA_128				(0 << 4)
++#define DMA_256				(1 << 4)
++#define DMA_512				(2 << 4)
++#define DMA_1024			(3 << 4)
++#define DMA_PACK_SIZE_MASK		0x30
++
++/* SSC_CTL1 */
++#define SSC_RSTB			0x80
++#define SSC_8X_EN			0x40
++#define SSC_FIX_FRAC			0x20
++#define SSC_SEL_1M			0x00
++#define SSC_SEL_2M			0x08
++#define SSC_SEL_4M			0x10
++#define SSC_SEL_8M			0x18
++
++/* SSC_CTL2 */
++#define SSC_DEPTH_MASK			0x07
++#define SSC_DEPTH_DISALBE		0x00
++#define SSC_DEPTH_4M			0x01
++#define SSC_DEPTH_2M			0x02
++#define SSC_DEPTH_1M			0x03
++#define SSC_DEPTH_500K			0x04
++#define SSC_DEPTH_250K			0x05
++
++/* System Clock Control Register */
++#define CLK_LOW_FREQ			0x01
++
++/* System Clock Divider Register */
++#define CLK_DIV_1			0x01
++#define CLK_DIV_2			0x02
++#define CLK_DIV_4			0x03
++#define CLK_DIV_8			0x04
++
++/* MS_CFG */
++#define	SAMPLE_TIME_RISING		0x00
++#define	SAMPLE_TIME_FALLING		0x80
++#define	PUSH_TIME_DEFAULT		0x00
++#define	PUSH_TIME_ODD			0x40
++#define	NO_EXTEND_TOGGLE		0x00
++#define	EXTEND_TOGGLE_CHK		0x20
++#define	MS_BUS_WIDTH_1			0x00
++#define	MS_BUS_WIDTH_4			0x10
++#define	MS_BUS_WIDTH_8			0x18
++#define	MS_2K_SECTOR_MODE		0x04
++#define	MS_512_SECTOR_MODE		0x00
++#define	MS_TOGGLE_TIMEOUT_EN		0x00
++#define	MS_TOGGLE_TIMEOUT_DISEN		0x01
++#define MS_NO_CHECK_INT			0x02
++
++/* MS_TRANS_CFG */
++#define	WAIT_INT			0x80
++#define	NO_WAIT_INT			0x00
++#define	NO_AUTO_READ_INT_REG		0x00
++#define	AUTO_READ_INT_REG		0x40
++#define	MS_CRC16_ERR			0x20
++#define	MS_RDY_TIMEOUT			0x10
++#define	MS_INT_CMDNK			0x08
++#define	MS_INT_BREQ			0x04
++#define	MS_INT_ERR			0x02
++#define	MS_INT_CED			0x01
++
++/* MS_TRANSFER */
++#define	MS_TRANSFER_START		0x80
++#define	MS_TRANSFER_END			0x40
++#define	MS_TRANSFER_ERR			0x20
++#define	MS_BS_STATE			0x10
++#define	MS_TM_READ_BYTES		0x00
++#define	MS_TM_NORMAL_READ		0x01
++#define	MS_TM_WRITE_BYTES		0x04
++#define	MS_TM_NORMAL_WRITE		0x05
++#define	MS_TM_AUTO_READ			0x08
++#define	MS_TM_AUTO_WRITE		0x0C
++
++/* SD Configure 2 Register */
++#define	SD_CALCULATE_CRC7		0x00
++#define	SD_NO_CALCULATE_CRC7		0x80
++#define	SD_CHECK_CRC16			0x00
++#define	SD_NO_CHECK_CRC16		0x40
++#define SD_NO_CHECK_WAIT_CRC_TO		0x20
++#define	SD_WAIT_BUSY_END		0x08
++#define	SD_NO_WAIT_BUSY_END		0x00
++#define	SD_CHECK_CRC7			0x00
++#define	SD_NO_CHECK_CRC7		0x04
++#define	SD_RSP_LEN_0			0x00
++#define	SD_RSP_LEN_6			0x01
++#define	SD_RSP_LEN_17			0x02
++/* SD/MMC Response Type Definition */
++#define	SD_RSP_TYPE_R0			0x04
++#define	SD_RSP_TYPE_R1			0x01
++#define	SD_RSP_TYPE_R1b			0x09
++#define	SD_RSP_TYPE_R2			0x02
++#define	SD_RSP_TYPE_R3			0x05
++#define	SD_RSP_TYPE_R4			0x05
++#define	SD_RSP_TYPE_R5			0x01
++#define	SD_RSP_TYPE_R6			0x01
++#define	SD_RSP_TYPE_R7			0x01
++
++/* SD_CONFIURE3 */
++#define	SD_RSP_80CLK_TIMEOUT_EN		0x01
++
++/* Card Transfer Reset Register */
++#define SPI_STOP			0x01
++#define XD_STOP				0x02
++#define SD_STOP				0x04
++#define MS_STOP				0x08
++#define SPI_CLR_ERR			0x10
++#define XD_CLR_ERR			0x20
++#define SD_CLR_ERR			0x40
++#define MS_CLR_ERR			0x80
++
++/* Card Data Source Register */
++#define PINGPONG_BUFFER			0x01
++#define RING_BUFFER			0x00
++
++/* Card Power Control Register */
++#define PMOS_STRG_MASK			0x10
++#define PMOS_STRG_800mA			0x10
++#define PMOS_STRG_400mA			0x00
++#define SD_POWER_OFF			0x03
++#define SD_PARTIAL_POWER_ON		0x01
++#define SD_POWER_ON			0x00
++#define SD_POWER_MASK			0x03
++#define MS_POWER_OFF			0x0C
++#define MS_PARTIAL_POWER_ON		0x04
++#define MS_POWER_ON			0x00
++#define MS_POWER_MASK			0x0C
++#define BPP_POWER_OFF			0x0F
++#define BPP_POWER_5_PERCENT_ON		0x0E
++#define BPP_POWER_10_PERCENT_ON		0x0C
++#define BPP_POWER_15_PERCENT_ON		0x08
++#define BPP_POWER_ON			0x00
++#define BPP_POWER_MASK			0x0F
++
++/* PWR_GATE_CTRL */
++#define PWR_GATE_EN			0x01
++#define LDO3318_PWR_MASK		0x06
++#define LDO_ON				0x00
++#define LDO_SUSPEND			0x04
++#define LDO_OFF				0x06
++
++/* CARD_CLK_SOURCE */
++#define CRC_FIX_CLK			(0x00 << 0)
++#define CRC_VAR_CLK0			(0x01 << 0)
++#define CRC_VAR_CLK1			(0x02 << 0)
++#define SD30_FIX_CLK			(0x00 << 2)
++#define SD30_VAR_CLK0			(0x01 << 2)
++#define SD30_VAR_CLK1			(0x02 << 2)
++#define SAMPLE_FIX_CLK			(0x00 << 4)
++#define SAMPLE_VAR_CLK0			(0x01 << 4)
++#define SAMPLE_VAR_CLK1			(0x02 << 4)
++
++#define MS_CFG				0xFD40
++#define MS_TPC				0xFD41
++#define MS_TRANS_CFG			0xFD42
++#define MS_TRANSFER			0xFD43
++#define MS_INT_REG			0xFD44
++#define MS_BYTE_CNT			0xFD45
++#define MS_SECTOR_CNT_L			0xFD46
++#define MS_SECTOR_CNT_H			0xFD47
++#define MS_DBUS_H			0xFD48
++
++#define SD_CFG1				0xFDA0
++#define SD_CFG2				0xFDA1
++#define SD_CFG3				0xFDA2
++#define SD_STAT1			0xFDA3
++#define SD_STAT2			0xFDA4
++#define SD_BUS_STAT			0xFDA5
++#define SD_PAD_CTL			0xFDA6
++#define SD_SAMPLE_POINT_CTL		0xFDA7
++#define SD_PUSH_POINT_CTL		0xFDA8
++#define SD_CMD0				0xFDA9
++#define SD_CMD1				0xFDAA
++#define SD_CMD2				0xFDAB
++#define SD_CMD3				0xFDAC
++#define SD_CMD4				0xFDAD
++#define SD_CMD5				0xFDAE
++#define SD_BYTE_CNT_L			0xFDAF
++#define SD_BYTE_CNT_H			0xFDB0
++#define SD_BLOCK_CNT_L			0xFDB1
++#define SD_BLOCK_CNT_H			0xFDB2
++#define SD_TRANSFER			0xFDB3
++#define SD_CMD_STATE			0xFDB5
++#define SD_DATA_STATE			0xFDB6
++
++#define SRCTL				0xFC13
++
++#define	DCM_DRP_CTL			0xFC23
++#define	DCM_DRP_TRIG			0xFC24
++#define	DCM_DRP_CFG			0xFC25
++#define	DCM_DRP_WR_DATA_L		0xFC26
++#define	DCM_DRP_WR_DATA_H		0xFC27
++#define	DCM_DRP_RD_DATA_L		0xFC28
++#define	DCM_DRP_RD_DATA_H		0xFC29
++#define SD_VPCLK0_CTL			0xFC2A
++#define SD_VPCLK1_CTL			0xFC2B
++#define SD_DCMPS0_CTL			0xFC2C
++#define SD_DCMPS1_CTL			0xFC2D
++#define SD_VPTX_CTL			SD_VPCLK0_CTL
++#define SD_VPRX_CTL			SD_VPCLK1_CTL
++#define SD_DCMPS_TX_CTL			SD_DCMPS0_CTL
++#define SD_DCMPS_RX_CTL			SD_DCMPS1_CTL
++#define CARD_CLK_SOURCE			0xFC2E
++
++#define CARD_PWR_CTL			0xFD50
++#define CARD_CLK_SWITCH			0xFD51
++#define CARD_SHARE_MODE			0xFD52
++#define CARD_DRIVE_SEL			0xFD53
++#define CARD_STOP			0xFD54
++#define CARD_OE				0xFD55
++#define CARD_AUTO_BLINK			0xFD56
++#define CARD_GPIO_DIR			0xFD57
++#define CARD_GPIO			0xFD58
++#define CARD_DATA_SOURCE		0xFD5B
++#define CARD_SELECT			0xFD5C
++#define SD30_DRIVE_SEL			0xFD5E
++#define CARD_CLK_EN			0xFD69
++#define SDIO_CTRL			0xFD6B
++#define CD_PAD_CTL			0xFD73
++
++#define FPDCTL				0xFC00
++#define PDINFO				0xFC01
++
++#define CLK_CTL				0xFC02
++#define CLK_DIV				0xFC03
++#define CLK_SEL				0xFC04
++
++#define SSC_DIV_N_0			0xFC0F
++#define SSC_DIV_N_1			0xFC10
++#define SSC_CTL1			0xFC11
++#define SSC_CTL2			0xFC12
++
++#define RCCTL				0xFC14
++
++#define FPGA_PULL_CTL			0xFC1D
++#define OLT_LED_CTL			0xFC1E
++#define GPIO_CTL			0xFC1F
++
++#define LDO_CTL				0xFC1E
++#define SYS_VER				0xFC32
++
++#define CARD_PULL_CTL1			0xFD60
++#define CARD_PULL_CTL2			0xFD61
++#define CARD_PULL_CTL3			0xFD62
++#define CARD_PULL_CTL4			0xFD63
++#define CARD_PULL_CTL5			0xFD64
++#define CARD_PULL_CTL6			0xFD65
++
++/* PCI Express Related Registers */
++#define IRQEN0				0xFE20
++#define IRQSTAT0			0xFE21
++#define IRQEN1				0xFE22
++#define IRQSTAT1			0xFE23
++#define TLPRIEN				0xFE24
++#define TLPRISTAT			0xFE25
++#define TLPTIEN				0xFE26
++#define TLPTISTAT			0xFE27
++#define DMATC0				0xFE28
++#define DMATC1				0xFE29
++#define DMATC2				0xFE2A
++#define DMATC3				0xFE2B
++#define DMACTL				0xFE2C
++#define BCTL				0xFE2D
++#define RBBC0				0xFE2E
++#define RBBC1				0xFE2F
++#define RBDAT				0xFE30
++#define RBCTL				0xFE34
++#define CFGADDR0			0xFE35
++#define CFGADDR1			0xFE36
++#define CFGDATA0			0xFE37
++#define CFGDATA1			0xFE38
++#define CFGDATA2			0xFE39
++#define CFGDATA3			0xFE3A
++#define CFGRWCTL			0xFE3B
++#define PHYRWCTL			0xFE3C
++#define PHYDATA0			0xFE3D
++#define PHYDATA1			0xFE3E
++#define PHYADDR				0xFE3F
++#define MSGRXDATA0			0xFE40
++#define MSGRXDATA1			0xFE41
++#define MSGRXDATA2			0xFE42
++#define MSGRXDATA3			0xFE43
++#define MSGTXDATA0			0xFE44
++#define MSGTXDATA1			0xFE45
++#define MSGTXDATA2			0xFE46
++#define MSGTXDATA3			0xFE47
++#define MSGTXCTL			0xFE48
++#define PETXCFG				0xFE49
++
++#define CDRESUMECTL			0xFE52
++#define WAKE_SEL_CTL			0xFE54
++#define PME_FORCE_CTL			0xFE56
++#define ASPM_FORCE_CTL			0xFE57
++#define PM_CLK_FORCE_CTL		0xFE58
++#define PERST_GLITCH_WIDTH		0xFE5C
++#define CHANGE_LINK_STATE		0xFE5B
++#define RESET_LOAD_REG			0xFE5E
++#define EFUSE_CONTENT			0xFE5F
++#define HOST_SLEEP_STATE		0xFE60
++#define SDIO_CFG			0xFE70
++
++#define NFTS_TX_CTRL			0xFE72
++
++#define PWR_GATE_CTRL			0xFE75
++#define PWD_SUSPEND_EN			0xFE76
++#define LDO_PWR_SEL			0xFE78
++
++#define DUMMY_REG_RESET_0		0xFE90
++
++/* Memory mapping */
++#define SRAM_BASE			0xE600
++#define RBUF_BASE			0xF400
++#define PPBUF_BASE1			0xF800
++#define PPBUF_BASE2			0xFA00
++#define IMAGE_FLAG_ADDR0		0xCE80
++#define IMAGE_FLAG_ADDR1		0xCE81
++
++#define rtsx_pci_init_cmd(pcr)		((pcr)->ci = 0)
++
++struct rtsx_pcr;
++
++struct pcr_handle {
++	struct rtsx_pcr			*pcr;
++};
++
++struct pcr_ops {
++	int		(*extra_init_hw)(struct rtsx_pcr *pcr);
++	int		(*optimize_phy)(struct rtsx_pcr *pcr);
++	int		(*turn_on_led)(struct rtsx_pcr *pcr);
++	int		(*turn_off_led)(struct rtsx_pcr *pcr);
++	int		(*enable_auto_blink)(struct rtsx_pcr *pcr);
++	int		(*disable_auto_blink)(struct rtsx_pcr *pcr);
++	int		(*card_power_on)(struct rtsx_pcr *pcr, int card);
++	int		(*card_power_off)(struct rtsx_pcr *pcr, int card);
++	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
++};
++
++enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
++
++struct rtsx_pcr {
++	struct pci_dev			*pci;
++	unsigned int			id;
++
++	/* pci resources */
++	unsigned long			addr;
++	void __iomem			*remap_addr;
++	int				irq;
++
++	/* host reserved buffer */
++	void				*rtsx_resv_buf;
++	dma_addr_t			rtsx_resv_buf_addr;
++
++	void				*host_cmds_ptr;
++	dma_addr_t			host_cmds_addr;
++	int				ci;
++
++	void				*host_sg_tbl_ptr;
++	dma_addr_t			host_sg_tbl_addr;
++	int				sgi;
++
++	u32				bier;
++	char				trans_result;
++
++	unsigned int			card_inserted;
++	unsigned int			card_removed;
++
++	struct delayed_work		carddet_work;
++	struct delayed_work		idle_work;
++
++	spinlock_t			lock;
++	struct mutex			pcr_mutex;
++	struct completion		*done;
++	struct completion		*finish_me;
++
++	unsigned int			cur_clock;
++	bool				ms_pmos;
++	bool				remove_pci;
++	bool				msi_en;
++
++#define EXTRA_CAPS_SD_SDR50		(1 << 0)
++#define EXTRA_CAPS_SD_SDR104		(1 << 1)
++#define EXTRA_CAPS_SD_DDR50		(1 << 2)
++#define EXTRA_CAPS_MMC_HSDDR		(1 << 3)
++#define EXTRA_CAPS_MMC_HS200		(1 << 4)
++#define EXTRA_CAPS_MMC_8BIT		(1 << 5)
++	u32				extra_caps;
++
++#define IC_VER_A			0
++#define IC_VER_B			1
++#define IC_VER_C			2
++#define IC_VER_D			3
++	u8				ic_version;
++
++	const u32			*sd_pull_ctl_enable_tbl;
++	const u32			*sd_pull_ctl_disable_tbl;
++	const u32			*ms_pull_ctl_enable_tbl;
++	const u32			*ms_pull_ctl_disable_tbl;
++
++	const struct pcr_ops		*ops;
++	enum PDEV_STAT			state;
++
++	int				num_slots;
++	struct rtsx_slot		*slots;
++};
++
++#define CHK_PCI_PID(pcr, pid)		((pcr)->pci->device == (pid))
++#define PCI_VID(pcr)			((pcr)->pci->vendor)
++#define PCI_PID(pcr)			((pcr)->pci->device)
++
++void rtsx_pci_start_run(struct rtsx_pcr *pcr);
++int rtsx_pci_write_register(struct rtsx_pcr *pcr, u16 addr, u8 mask, u8 data);
++int rtsx_pci_read_register(struct rtsx_pcr *pcr, u16 addr, u8 *data);
++int rtsx_pci_write_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 val);
++int rtsx_pci_read_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 *val);
++void rtsx_pci_stop_cmd(struct rtsx_pcr *pcr);
++void rtsx_pci_add_cmd(struct rtsx_pcr *pcr,
++		u8 cmd_type, u16 reg_addr, u8 mask, u8 data);
++void rtsx_pci_send_cmd_no_wait(struct rtsx_pcr *pcr);
++int rtsx_pci_send_cmd(struct rtsx_pcr *pcr, int timeout);
++int rtsx_pci_transfer_data(struct rtsx_pcr *pcr, struct scatterlist *sglist,
++		int num_sg, bool read, int timeout);
++int rtsx_pci_read_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len);
++int rtsx_pci_write_ppbuf(struct rtsx_pcr *pcr, u8 *buf, int buf_len);
++int rtsx_pci_card_pull_ctl_enable(struct rtsx_pcr *pcr, int card);
++int rtsx_pci_card_pull_ctl_disable(struct rtsx_pcr *pcr, int card);
++int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
++		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk);
++int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card);
++int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card);
++unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr);
++void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr);
++
++static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
++{
++	return (u8 *)(pcr->host_cmds_ptr);
++}
++
++#endif
 -- 
 1.7.9.5
 
