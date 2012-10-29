@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761152Ab2J2Vgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:36:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47140 "EHLO mail.kernel.org"
+	id S933633Ab2J2WTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:19:51 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47168 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761110Ab2J2Vgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:41 -0400
+	id S1761144Ab2J2Vgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Young <dyoung@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, Tejun Heo <tj@kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, ianfang.cn@gmail.com
-Subject: [ 012/101] Revert "x86/mm: Fix the size calculation of mapping tables"
-Date: Mon, 29 Oct 2012 14:34:25 -0700
-Message-Id: <20121029213241.527825408@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 014/101] mm: fix XFS oops due to dirty pages without buffers on s390
+Date: Mon, 29 Oct 2012 14:34:27 -0700
+Message-Id: <20121029213241.743362432@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -31,102 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Young <dyoung@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 7b16bbf97375d9fb7fc107b3f80afeb94a204e44 upstream.
+commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
 
-Commit:
+On s390 any write to a page (even from kernel itself) sets architecture
+specific page dirty bit.  Thus when a page is written to via buffered
+write, HW dirty bit gets set and when we later map and unmap the page,
+page_remove_rmap() finds the dirty bit and calls set_page_dirty().
 
-   722bc6b16771 x86/mm: Fix the size calculation of mapping tables
+Dirtying of a page which shouldn't be dirty can cause all sorts of
+problems to filesystems.  The bug we observed in practice is that
+buffers from the page get freed, so when the page gets later marked as
+dirty and writeback writes it, XFS crashes due to an assertion
+BUG_ON(!PagePrivate(page)) in page_buffers() called from
+xfs_count_page_state().
 
-Tried to address the issue that the first 2/4M should use 4k pages
-if PSE enabled, but extra counts should only be valid for x86_32.
+Similar problem can also happen when zero_user_segment() call from
+xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+hardware dirty bit during writeback, later buffers get freed, and then
+page unmapped.
 
-This commit caused a kdump regression: the kdump kernel hangs.
+Fix the issue by ignoring s390 HW dirty bit for page cache pages of
+mappings with mapping_cap_account_dirty().  This is safe because for
+such mappings when a page gets marked as writeable in PTE it is also
+marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
+cleared by clear_page_dirty_for_io(), the page gets writeprotected in
+page_mkclean().  So pagecache page is writeable if and only if it is
+dirty.
 
-Work is in progress to fundamentally fix the various page table
-initialization issues that we have, via the design suggested
-by H. Peter Anvin, but it's not ready yet to be merged.
+Thanks to Hugh Dickins for pointing out mapping has to have
+mapping_cap_account_dirty() for things to work and proposing a cleaned
+up variant of the patch.
 
-So, to get a working kdump revert to the last known working version,
-which is the revert of this commit and of a followup fix (which was
-incomplete):
+The patch has survived about two hours of running fsx-linux on tmpfs
+while heavily swapping and several days of running on out build machines
+where the original problem was triggered.
 
-   bd2753b2dda7 x86/mm: Only add extra pages count for the first memory range during pre-allocation
-
-Tested kdump on physical and virtual machines.
-
-Signed-off-by: Dave Young <dyoung@redhat.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
-Acked-by: Flavio Leitner <fbl@redhat.com>
-Tested-by: Flavio Leitner <fbl@redhat.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Flavio Leitner <fbl@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: ianfang.cn@gmail.com
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |   22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ mm/rmap.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -29,14 +29,8 @@ int direct_gbpages
- #endif
- ;
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -56,6 +56,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/migrate.h>
+ #include <linux/hugetlb.h>
++#include <linux/backing-dev.h>
  
--struct map_range {
--	unsigned long start;
--	unsigned long end;
--	unsigned page_size_mask;
--};
--
--static void __init find_early_table_space(struct map_range *mr, unsigned long end,
--					  int use_pse, int use_gbpages)
-+static void __init find_early_table_space(unsigned long end, int use_pse,
-+					  int use_gbpages)
+ #include <asm/tlbflush.h>
+ 
+@@ -971,11 +972,8 @@ int page_mkclean(struct page *page)
+ 
+ 	if (page_mapped(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		if (mapping) {
++		if (mapping)
+ 			ret = page_mkclean_file(mapping, page);
+-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+-				ret = 1;
+-		}
+ 	}
+ 
+ 	return ret;
+@@ -1161,6 +1159,7 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
  {
- 	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
- 	phys_addr_t base;
-@@ -61,10 +55,6 @@ static void __init find_early_table_spac
- #ifdef CONFIG_X86_32
- 		extra += PMD_SIZE;
- #endif
--		/* The first 2/4M doesn't use large pages. */
--		if (mr->start < PMD_SIZE)
--			extra += mr->end - mr->start;
--
- 		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	} else
- 		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-@@ -95,6 +85,12 @@ void __init native_pagetable_reserve(u64
- 	memblock_reserve(start, end - start);
- }
- 
-+struct map_range {
-+	unsigned long start;
-+	unsigned long end;
-+	unsigned page_size_mask;
-+};
-+
- #ifdef CONFIG_X86_32
- #define NR_RANGE_MR 3
- #else /* CONFIG_X86_64 */
-@@ -267,7 +263,7 @@ unsigned long __init_refok init_memory_m
- 	 * nodes are discovered.
++	struct address_space *mapping = page_mapping(page);
+ 	bool anon = PageAnon(page);
+ 	bool locked;
+ 	unsigned long flags;
+@@ -1183,8 +1182,19 @@ void page_remove_rmap(struct page *page)
+ 	 * this if the page is anon, so about to be freed; but perhaps
+ 	 * not if it's in swapcache - there might be another pte slot
+ 	 * containing the swap entry, but page not yet written to swap.
++	 *
++	 * And we can skip it on file pages, so long as the filesystem
++	 * participates in dirty tracking; but need to catch shm and tmpfs
++	 * and ramfs pages which have been modified since creation by read
++	 * fault.
++	 *
++	 * Note that mapping must be decided above, before decrementing
++	 * mapcount (which luckily provides a barrier): once page is unmapped,
++	 * it could be truncated and page->mapping reset to NULL at any moment.
++	 * Note also that we are relying on page_mapping(page) to set mapping
++	 * to &swapper_space when PageSwapCache(page).
  	 */
- 	if (!after_bootmem)
--		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
-+		find_early_table_space(end, use_pse, use_gbpages);
- 
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+-	if ((!anon || PageSwapCache(page)) &&
++	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+ 		set_page_dirty(page);
+ 	/*
 
 
