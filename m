@@ -1,94 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761330Ab2J2WOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:14:31 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38749 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761237Ab2J2WO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:14:27 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhqdAKH+jlBV5h1yPGdsb2JhbABEilK3KgICgQgZAQEBATg0gh4BAQQBJxMcIwULCAMYLhQNGAoaEx6HVgMJCrItDYlUFIp6ZzaBJoIngXlhA5QfgVSFeYU5h3MO
-X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
-   d="scan'208";a="215245992"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 23:19:05 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 08/11] HID: hid-multitouch: fix Win 8 protocol
-Message-ID: <20121029221905.GA15537@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-9-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351241067-9521-9-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761378Ab2J2WPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:15:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47422 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761067Ab2J2VhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Peter Huewe <peterhuewe@gmx.de>, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [ 035/101] extcon: Unregister compat class at module unload to fix oops
+Date: Mon, 29 Oct 2012 14:34:48 -0700
+Message-Id: <20121029213244.132790213@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
+References: <20121029213240.128426598@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:44:24AM +0200, Benjamin Tissoires wrote:
-> Win 8 specification is much more precise than the Win 7 one.
-> Moreover devices that need to take certification must be submitted
-> to Microsoft.
-> 
-> The result is a better protocol support and we can rely on that to
-> skip all the messy tests we used to do.
-> 
-> The protocol specify the fact that each valid touch must be reported
-> within a frame, and that the release touch coordinate must be the
-> same than the last known touch.
-> So we can use the always_valid quirk and dismiss reports when we
-> touch coordiante do not follow this rule.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Why do we need this patch?
+------------------
 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 43bd8e8..bd23f19 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -510,6 +510,18 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  		int slotnum = mt_compute_slot(td, input);
->  		struct mt_slot *s = &td->curdata;
->  
-> +		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
-> +		    !s->touch_state) {
-> +			struct input_mt_slot *slot = &input->mt->slots[slotnum];
-> +			int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
-> +			int prv_y = input_mt_get_value(slot, ABS_MT_POSITION_Y);
-> +			/* valid releases occurs when the last x and y positions
-> +			 * are the same as the last known touch. */
-> +			if (!input_mt_is_active(slot) ||
-> +			    prv_x != s->x || prv_y != s->y)
-> +				return;
-> +		}
-> +
->  		if (slotnum < 0 || slotnum >= td->maxcontacts)
->  			return;
->  
-> @@ -681,8 +693,8 @@ static void mt_post_parse_default_settings(struct mt_device *td)
->  {
->  	__s32 quirks = td->mtclass.quirks;
->  
-> -	/* unknown serial device needs special quirks */
-> -	if (td->touches_by_report == 1) {
-> +	/* unknown serial devices or win8 ones need special quirks */
-> +	if (td->touches_by_report == 1 || quirks & MT_QUIRK_WIN_8_CERTIFIED) {
->  		quirks |= MT_QUIRK_ALWAYS_VALID;
->  		quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
->  		quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
-> -- 
-> 1.7.11.7
-> 
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Henrik
+commit 0dc77b6dabec8fd298392018cc0de5214af2dc43 upstream.
+
+If you compile extcon with CONFIG_ANDROID and then load and unload the
+module you get a simple oops as the driver does not unregister its
+compat class and thus cannot register it again.
+
+Full trace:
+
+root@(none):~# modprobe extcon_class
+root@(none):~# rmmod extcon_class
+root@(none):~# modprobe extcon_class
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:536 sysfs_add_one+0xde/0x100()
+sysfs: cannot create duplicate filename '/class/switch'
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451a00:  [<602a58bc>] printk+0x0/0xa8
+9f451a18:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451a28:  [<6012c6de>] sysfs_add_one+0xde/0x100
+9f451a50:  [<601d3d90>] strcat+0x0/0x40
+9f451a68:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451a90:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ab0:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451ac0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ae8:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
+9f451b00:  [<601d3d90>] strcat+0x0/0x40
+9f451b18:  [<6012bd97>] sysfs_pathname.isra.10+0x57/0x70
+9f451b48:  [<6012c6de>] sysfs_add_one+0xde/0x100
+9f451b78:  [<6012c96f>] create_dir+0x8f/0x100
+9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
+9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
+9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
+9f451c18:  [<601cf396>] kobject_add_internal+0x96/0x280
+9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
+9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
+9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
+9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
+9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
+9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c367 ]---
+------------[ cut here ]------------
+WARNING: at lib/kobject.c:196 kobject_add_internal+0x26e/0x280()
+kobject_add_internal failed for switch with -EEXIST, don't try to
+register things with the same name in the same directory.
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451ad0:  [<602a58bc>] printk+0x0/0xa8
+9f451ae8:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451af8:  [<601cf56e>] kobject_add_internal+0x26e/0x280
+9f451b18:  [<601cf140>] kobject_put+0x0/0x70
+9f451b20:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451b38:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451b88:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451bc0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451bd8:  [<6012cda6>] sysfs_create_dir+0xa6/0x1c0
+9f451be8:  [<601d89f1>] kvasprintf+0x81/0xa0
+9f451bf8:  [<601cf0f0>] kobject_get+0x0/0x50
+9f451c18:  [<601cf56e>] kobject_add_internal+0x26e/0x280
+9f451c60:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451c78:  [<601cfb93>] kobject_add+0xd3/0x140
+9f451cc0:  [<601cfac0>] kobject_add+0x0/0x140
+9f451cd0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451cf8:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d28:  [<600c1de1>] kmem_cache_alloc+0xe1/0x100
+9f451d78:  [<601cffa0>] kobject_create_and_add+0x50/0xa0
+9f451da8:  [<601fbe76>] class_compat_register+0x56/0x80
+9f451dc8:  [<a085d118>] create_extcon_class+0x88/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c368 ]---
+kobject_create_and_add: kobject_add error: -17
+------------[ cut here ]------------
+WARNING: at drivers/extcon/extcon_class.c:545
+create_extcon_class+0xbc/0xd0 [extcon_class]()
+cannot allocate
+Modules linked in: extcon_class(+) [last unloaded: extcon_class]
+Call Trace:
+9f451c80:  [<602a58bc>] printk+0x0/0xa8
+9f451c98:  [<60039b43>] warn_slowpath_common+0x93/0xd0
+9f451ca0:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451ca8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
+9f451cd0:  [<a0861000>] extcon_class_init+0x0/0x12 [extcon_class]
+9f451ce8:  [<60039cdc>] warn_slowpath_fmt+0x9c/0xa0
+9f451d20:  [<6002fe32>] unblock_signals+0x0/0x84
+9f451d28:  [<60039c40>] warn_slowpath_fmt+0x0/0xa0
+9f451d48:  [<6002fffc>] set_signals+0x29/0x3f
+9f451d58:  [<601cf172>] kobject_put+0x32/0x70
+9f451d78:  [<600c22c3>] kfree+0xb3/0x100
+9f451da8:  [<601fbe9a>] class_compat_register+0x7a/0x80
+9f451dc8:  [<a085d14c>] create_extcon_class+0xbc/0xd0 [extcon_class]
+9f451de8:  [<a0861010>] extcon_class_init+0x10/0x12 [extcon_class]
+9f451df8:  [<600189a8>] do_one_initcall+0x48/0x1f0
+9f451e20:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e30:  [<60061920>] blocking_notifier_call_chain+0x0/0x20
+9f451e58:  [<6007e3c3>] sys_init_module+0xa3/0x280
+9f451e88:  [<6001e2ad>] handle_syscall+0x8d/0x90
+9f451ea8:  [<60033370>] userspace+0x405/0x531
+9f451ee8:  [<6001e380>] copy_chunk_to_user+0x0/0x40
+9f451ef8:  [<6001e5cd>] do_op_one_page+0x14d/0x220
+9f451fd8:  [<6001a355>] fork_handler+0x95/0xa0
+
+---[ end trace dd512cc03fe1c369 ]---
+FATAL: Error inserting extcon_class
+(/lib/modules/3.6.0-rc6-00178-g811315f/kernel/drivers/extcon/extcon_class.ko):
+Cannot allocate memory
+
+This patch fixes this.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/extcon/extcon_class.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -821,6 +821,9 @@ module_init(extcon_class_init);
+ 
+ static void __exit extcon_class_exit(void)
+ {
++#if defined(CONFIG_ANDROID)
++	class_compat_unregister(switch_class);
++#endif
+ 	class_destroy(extcon_class);
+ }
+ module_exit(extcon_class_exit);
+
+
