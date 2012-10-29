@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab2J2WL7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:11:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47500 "EHLO mail.kernel.org"
+	id S1761215Ab2J2VhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:37:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47390 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761219Ab2J2VhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:15 -0400
+	id S932958Ab2J2VhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 043/101] USB: ch341: fix port-data memory leak
-Date: Mon, 29 Oct 2012 14:34:56 -0700
-Message-Id: <20121029213245.034508191@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 032/101] staging: comedi: amplc_pc263: fix possible NULL deref during detach
+Date: Mon, 29 Oct 2012 14:34:45 -0700
+Message-Id: <20121029213243.787014490@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,90 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 456c5be56ed070a4d883c60b587bcc1c97a8cf3e upstream.
+commit 1d1171ffda585c1cab7bd7cf4bd8f8fd5923fb4a upstream.
 
-Fix port-data memory leak by moving port data allocation to port_probe
-and actually implementing deallocation.
+`pc263_detach()` is called by the comedi core to clean up if either
+`pc263_attach()` or `pc263_attach_pci()` returns an error.  It sets
+`thisboard` to the return value of `comedi_board(dev)` and assumes it is
+non-null.  This is a valid assumption if `pc263_attach()` fails, but not
+if `pc263_attach_pci()` fails, leading to a possible NULL pointer
+dereference.
 
-Note that this driver has never even bothered to try to deallocate it's
-port data...
+Check `thisboard` at the top of `pc263_detach()` and return early if it
+is `NULL`.  This is okay because no other resources need cleaning up in
+this case.
 
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ch341.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pc263.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -241,13 +241,11 @@ out:	kfree(buffer);
- 	return r;
- }
+--- a/drivers/staging/comedi/drivers/amplc_pc263.c
++++ b/drivers/staging/comedi/drivers/amplc_pc263.c
+@@ -310,8 +310,11 @@ static int __devinit pc263_attach_pci(st
  
--/* allocate private data */
--static int ch341_attach(struct usb_serial *serial)
-+static int ch341_port_probe(struct usb_serial_port *port)
+ static void pc263_detach(struct comedi_device *dev)
  {
- 	struct ch341_private *priv;
- 	int r;
++	const struct pc263_board *thisboard = comedi_board(dev);
+ 	struct pci_dev *pcidev = comedi_to_pci_dev(dev);
  
--	/* private data */
- 	priv = kzalloc(sizeof(struct ch341_private), GFP_KERNEL);
- 	if (!priv)
- 		return -ENOMEM;
-@@ -257,17 +255,27 @@ static int ch341_attach(struct usb_seria
- 	priv->baud_rate = DEFAULT_BAUD_RATE;
- 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
- 
--	r = ch341_configure(serial->dev, priv);
-+	r = ch341_configure(port->serial->dev, priv);
- 	if (r < 0)
- 		goto error;
- 
--	usb_set_serial_port_data(serial->port[0], priv);
-+	usb_set_serial_port_data(port, priv);
- 	return 0;
- 
- error:	kfree(priv);
- 	return r;
- }
- 
-+static int ch341_port_remove(struct usb_serial_port *port)
-+{
-+	struct ch341_private *priv;
-+
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
-+
-+	return 0;
-+}
-+
- static int ch341_carrier_raised(struct usb_serial_port *port)
- {
- 	struct ch341_private *priv = usb_get_serial_port_data(port);
-@@ -303,7 +311,7 @@ static void ch341_close(struct usb_seria
- static int ch341_open(struct tty_struct *tty, struct usb_serial_port *port)
- {
- 	struct usb_serial *serial = port->serial;
--	struct ch341_private *priv = usb_get_serial_port_data(serial->port[0]);
-+	struct ch341_private *priv = usb_get_serial_port_data(port);
- 	int r;
- 
- 	priv->baud_rate = DEFAULT_BAUD_RATE;
-@@ -606,7 +614,8 @@ static struct usb_serial_driver ch341_de
- 	.tiocmget          = ch341_tiocmget,
- 	.tiocmset          = ch341_tiocmset,
- 	.read_int_callback = ch341_read_int_callback,
--	.attach            = ch341_attach,
-+	.port_probe        = ch341_port_probe,
-+	.port_remove       = ch341_port_remove,
- 	.reset_resume      = ch341_reset_resume,
- };
- 
++	if (!thisboard)
++		return;
+ 	if (pcidev) {
+ 		if (dev->iobase)
+ 			comedi_pci_disable(pcidev);
 
 
