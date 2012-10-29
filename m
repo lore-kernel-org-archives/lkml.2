@@ -1,120 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756294Ab2J2AJV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:09:21 -0400
-Received: from mailserver5.natinst.com ([130.164.80.5]:44395 "EHLO
-	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756203Ab2J2AJU (ORCPT
+	id S1756309Ab2J2AOR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 20:14:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40963 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906Ab2J2AOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:09:20 -0400
-Message-Id: <a60818e7f2bf13cbc06b21bb3e3b0071539379ea.1351466765.git.josh.cartwright@ni.com>
-In-Reply-To: <cover.1351466765.git.josh.cartwright@ni.com>
-References: <cover.1351466765.git.josh.cartwright@ni.com>
-From: Josh Cartwright <josh.cartwright@ni.com>
-Date: Tue, 23 Oct 2012 17:34:22 -0500
-Subject: [PATCH v4 2/5] zynq: use pl310 device tree bindings
-To: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Michal Simek <michal.simek@xilinx.com>
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/28/2012 07:08:53 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/28/2012 07:08:53 PM,
-	Serialize complete at 10/28/2012 07:08:53 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-28_05:2012-10-26,2012-10-28,1970-01-01 signatures=0
+	Sun, 28 Oct 2012 20:14:15 -0400
+Date: Mon, 29 Oct 2012 11:14:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IkRhdmlkIEjDpHJkZW1hbiI=?= <david@hardeman.nu>,
+        =?UTF-8?B?IkJy?= =?UTF-8?B?dW5vIFByw6ltb250Ig==?= 
+	<bonbons@linux-vserver.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: linux-next: build failure after merge of the v4l-dvb tree
+Message-Id: <20121029111403.911c815a3c7d8d9572ff8e89@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Oct_2012_11_14_03_+1100_MJl4MOzS4h3t.S_z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Zynq has a PL310 L2 cache controller.  Convert in-tree uses to using
-the device tree.
+--Signature=_Mon__29_Oct_2012_11_14_03_+1100_MJl4MOzS4h3t.S_z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-Cc: John Linn <john.linn@xilinx.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Michal Simek <michal.simek@xilinx.com>
----
- arch/arm/boot/dts/zynq-ep107.dts           | 9 +++++++++
- arch/arm/mach-zynq/common.c                | 9 +--------
- arch/arm/mach-zynq/include/mach/zynq_soc.h | 4 ----
- 3 files changed, 10 insertions(+), 12 deletions(-)
+Hi Mauro,
 
-diff --git a/arch/arm/boot/dts/zynq-ep107.dts b/arch/arm/boot/dts/zynq-ep107.dts
-index f914090..574bc04 100644
---- a/arch/arm/boot/dts/zynq-ep107.dts
-+++ b/arch/arm/boot/dts/zynq-ep107.dts
-@@ -44,6 +44,15 @@
- 			      <0xF8F00100 0x100>;
- 		};
- 
-+		L2: cache-controller {
-+			compatible = "arm,pl310-cache";
-+			reg = <0xF8F02000 0x1000>;
-+			arm,data-latency = <2 3 2>;
-+			arm,tag-latency = <2 3 2>;
-+			cache-unified;
-+			cache-level = <2>;
-+		};
-+
- 		uart0: uart@e0000000 {
- 			compatible = "xlnx,xuartps";
- 			reg = <0xE0000000 0x1000>;
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index d73963b..056091a 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -45,12 +45,10 @@ static struct of_device_id zynq_of_bus_ids[] __initdata = {
-  */
- static void __init xilinx_init_machine(void)
- {
--#ifdef CONFIG_CACHE_L2X0
- 	/*
- 	 * 64KB way size, 8-way associativity, parity disabled
- 	 */
--	l2x0_init(PL310_L2CC_BASE, 0x02060000, 0xF0F0FFFF);
--#endif
-+	l2x0_of_init(0x02060000, 0xF0F0FFFF);
- 
- 	of_platform_bus_probe(NULL, zynq_of_bus_ids, NULL);
- }
-@@ -83,11 +81,6 @@ static struct map_desc io_desc[] __initdata = {
- 		.pfn		= __phys_to_pfn(SCU_PERIPH_PHYS),
- 		.length		= SZ_8K,
- 		.type		= MT_DEVICE,
--	}, {
--		.virtual	= PL310_L2CC_VIRT,
--		.pfn		= __phys_to_pfn(PL310_L2CC_PHYS),
--		.length		= SZ_4K,
--		.type		= MT_DEVICE,
- 	},
- 
- #ifdef CONFIG_DEBUG_LL
-diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-index 3d1c6a6..218283a 100644
---- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
-+++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-@@ -25,9 +25,6 @@
- #define TTC0_PHYS			0xF8001000
- #define TTC0_VIRT			TTC0_PHYS
- 
--#define PL310_L2CC_PHYS			0xF8F02000
--#define PL310_L2CC_VIRT			PL310_L2CC_PHYS
--
- #define SCU_PERIPH_PHYS			0xF8F00000
- #define SCU_PERIPH_VIRT			SCU_PERIPH_PHYS
- 
-@@ -35,7 +32,6 @@
- 
- #define TTC0_BASE			IOMEM(TTC0_VIRT)
- #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
--#define PL310_L2CC_BASE			IOMEM(PL310_L2CC_VIRT)
- 
- /*
-  * Mandatory for CONFIG_LL_DEBUG, UART is mapped virtual = physical
--- 
-1.8.0
+After merging the v4l-dvb tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+drivers/hid/hid-picolcd_cir.c: In function 'picolcd_init_cir':
+drivers/hid/hid-picolcd_cir.c:119:27: error: 'RC_TYPE_ALL' undeclared (firs=
+t use in this function)
 
+Caused by commit c003ab1bedf0 ("[media] rc-core: add separate defines for
+protocol bitmaps and numbers").  The new reference was introduced in
+commit ae08e324146c ("HID: picoLCD: Add support for CIR") which was
+merged by Linus on October 2 into v3.7-rc1 via the hid tree.
+
+I have used the v4l-dvb tree from next-20121026 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__29_Oct_2012_11_14_03_+1100_MJl4MOzS4h3t.S_z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQjcpLAAoJEECxmPOUX5FEHhoP/RprIPOvlq2BBIX0xIsfP7H4
+x80jF+VN46+7yj175II/8Ko25t7W1q7CojKo9xbKGPyXKywYoxcV0sAaWb46uowM
+fwZJJKMvS5XnXdOL2StHAqzSHD9Qx1Iwk0hOYRtllNBwGU1kgtvmoLS2TANZKSjI
+aCwO53g6YROT9Be11A/vxb64SRp2ECkfPVsSCQXu7ILkm6FC+MO1QEwpOfiooSZh
+0P+RyU+Dc+BS8Wl8O759LhspIBThA3Qa7QmLJAwn0CPe77PhGAQh7W/R++HUhJzZ
+8L7utwPlmoTdaxtLidilrdInvTPoo+uz4z7gbBj6LLYThxDaQe3Ju6t3BryEJOiz
+mRioF5Dl+wfrNP+YY3DfqNlBbTVZ3/3qAe5sCtyTuC5gS7DPXbjYZvR3Tza1S6+c
+S986Itcw++k77AfL0IZqkuC6iAPQz7WZ2JG5Ak/FY1FE+Mw706k3pg4tOwcOixVG
+pG9h6m84Kz2vjj1BjEyIia7t50J3V253CG8Bc4wz2vwZ/E61GGSpW7PGaVYncrOI
+rnUJae2C74XCKTd1A9riW2VTR70yBmqE/oFJYfmYgx0Bh670ZpY0bWsyZ8YBxaVt
+zsGaXE6dAZBh3QSAQyqMexRpAWintYeFg3W0rBXzF+DwOEVKwismU3+d3l7aehlH
+K7rAwrKxBt/DwbkSh7tX
+=ZCKF
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Oct_2012_11_14_03_+1100_MJl4MOzS4h3t.S_z--
