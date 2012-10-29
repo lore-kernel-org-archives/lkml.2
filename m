@@ -1,115 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab2J2JqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 05:46:03 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:64420 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab2J2JqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 05:46:00 -0400
-Message-ID: <508E5053.5090005@linaro.org>
-Date: Mon, 29 Oct 2012 10:45:55 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755499Ab2J2JrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 05:47:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:6297 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752419Ab2J2JrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 05:47:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,670,1344236400"; 
+   d="scan'208";a="241428197"
+Date: Mon, 29 Oct 2012 11:47:13 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Gustavo Padovan <gustavo@padovan.org>,
+        linux-bluetooth@vger.kernel.org
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] workqueue: cancel_delayed_work() should return %NULL if
+ work item is idle
+Message-ID: <20121029094707.GC9314@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	Tejun Heo <tj@kernel.org>, Gustavo Padovan <gustavo@padovan.org>,
+	linux-bluetooth@vger.kernel.org,
+	Dan Magenheimer <dan.magenheimer@oracle.com>,
+	linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>
+References: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
+ <20121018233928.GY13370@google.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: add missing header include
-References: <001401cdb332$93ffe450$bbffacf0$%han@samsung.com> <508DA864.8020503@linaro.org> <002101cdb572$fcc4d670$f64e8350$%han@samsung.com>
-In-Reply-To: <002101cdb572$fcc4d670$f64e8350$%han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121018233928.GY13370@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 02:16 AM, Jingoo Han wrote:
-> On Monday, October 29, 2012 6:49 AM Marek Vasut wrote
->>
->> On 10/26/2012 06:30 AM, Jingoo Han wrote:
->>> This patch adds missing device.h header to fix build warnings as below:
->>>
->>> drivers/cpuidle/cpuidle.h:26:41: warning: 'struct device' declared inside parameter list [enabled by
->> default]
->>> drivers/cpuidle/cpuidle.h:26:41: warning: its scope is only this definition or declaration, which is
->> probably not what you want
->>> [enabled by default]
->>> drivers/cpuidle/cpuidle.h:27:45: warning: 'struct device' declared inside parameter list [enabled by
->> default]
->>> In file included from drivers/cpuidle/driver.c:15:0:
->>> drivers/cpuidle/cpuidle.h:26:41: warning: 'struct device' declared inside parameter list [enabled by
->> default]
->>> drivers/cpuidle/cpuidle.h:26:41: warning: its scope is only this definition or declaration, which is
->> probably not what you want
->>> [enabled by default]
->>> drivers/cpuidle/cpuidle.h:27:45: warning: 'struct device' declared inside parameter list [enabled by
->> default]
->>>
->>> This build warning is introduced by commit efeca1b
->>> "cpuidle / sysfs: change function parameter".
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->>> ---
->>
->> Jingoo, could you copy-pastebin your config file. I don't have this
->> warning and I would like to understand why.
+Gustavo, could you apply the patch below to bluetooth-next tree, otherwise
+it is deadly broken.
+
+Best regards 
+Andrei Emeltchenko 
+
+On Thu, Oct 18, 2012 at 04:39:28PM -0700, Tejun Heo wrote:
+> From e65120fcfc1cb9697655d29ecd7982451c05d3c2 Mon Sep 17 00:00:00 2001
+> From: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Date: Thu, 18 Oct 2012 16:31:37 -0700
 > 
-> Hi Daniel Lezcano,
+> 57b30ae77b ("workqueue: reimplement cancel_delayed_work() using
+> try_to_grab_pending()") made cancel_delayed_work() always return %true
+> unless someone else is also trying to cancel the work item, which is
+> broken - if the target work item is idle, the return value should be
+> %false.
 > 
-> Could you build the code by using GCC 4.6.x?
-> In my opinion, it would be better.
+> try_to_grab_pending() indicates that the target work item was idle by
+> zero return value.  Use it for return.  Note that this brings
+> cancel_delayed_work() in line with __cancel_work_timer() in return
+> value handling.
 > 
-> Also, my config option is as below:
->     make exynos4_defconfig + CONFIG_CPU_IDLE
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> LKML-Reference: <444a6439-b1a4-4740-9e7e-bc37267cfe73@default>
+> ---
+>  kernel/workqueue.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-
-Ok, I got it.
-
-on x86, the header ioport.h is included indirectly by the headers
-including headers. In this file there is a forward declaration.
-For ARM, this is not the case.
-
-This is why the warning does not appear on x86 but on ARM.
-
-Thanks
-  -- Daniel
-
->> Thanks
->>   -- Daniel
->>
->>>  drivers/cpuidle/cpuidle.h |    2 ++
->>>  1 files changed, 2 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
->>> index a5bbd1c..2120d9e 100644
->>> --- a/drivers/cpuidle/cpuidle.h
->>> +++ b/drivers/cpuidle/cpuidle.h
->>> @@ -5,6 +5,8 @@
->>>  #ifndef __DRIVER_CPUIDLE_H
->>>  #define __DRIVER_CPUIDLE_H
->>>
->>> +#include <linux/device.h>
->>> +
->>>  /* For internal use only */
->>>  extern struct cpuidle_governor *cpuidle_curr_governor;
->>>  extern struct list_head cpuidle_governors;
->>
->>
->> --
->>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
->>
->> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
->> <http://twitter.com/#!/linaroorg> Twitter |
->> <http://www.linaro.org/linaro-blog/> Blog
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index d951daa..042d221 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2982,7 +2982,7 @@ bool cancel_delayed_work(struct delayed_work *dwork)
+>  
+>  	set_work_cpu_and_clear_pending(&dwork->work, work_cpu(&dwork->work));
+>  	local_irq_restore(flags);
+> -	return true;
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(cancel_delayed_work);
+>  
+> -- 
+> 1.7.7.3
 > 
-
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
