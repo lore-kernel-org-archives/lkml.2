@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab2J2LfU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:35:20 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58293 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758766Ab2J2LfS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:35:18 -0400
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Oct 2012 07:35:18 EDT
-Date: Mon, 29 Oct 2012 07:35:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
-Message-ID: <20121029113515.GB9115@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
+	id S1758792Ab2J2LjN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:39:13 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:37286 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758564Ab2J2LjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 07:39:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+References: <CA+55aFwwTc4QXKqiECgE9NOE2zjC6GsGHHydGP9YDbgQSbw9Aw@mail.gmail.com>
+Date: Mon, 29 Oct 2012 12:39:10 +0100
+Message-ID: <CACRpkdZ8+XBHqJGzP_UH0km07xMZEdtuGTBLdEuCXdY3o-xZdg@mail.gmail.com>
+Subject: Re: Linux 3.7-rc3
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in the tracepoints.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  kernel/tracepoint.c | 27 +++++++++++----------------
->  1 file changed, 11 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index d96ba22..854df92 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -26,6 +26,7 @@
->  #include <linux/slab.h>
->  #include <linux/sched.h>
->  #include <linux/static_key.h>
-> +#include <linux/hashtable.h>
->  
->  extern struct tracepoint * const __start___tracepoints_ptrs[];
->  extern struct tracepoint * const __stop___tracepoints_ptrs[];
-> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
->   * Protected by tracepoints_mutex.
->   */
->  #define TRACEPOINT_HASH_BITS 6
-> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
-> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
-> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
->  
-[...]
->  
-> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
->  
->  static int init_tracepoints(void)
->  {
-> +	hash_init(tracepoint_table);
-> +
->  	return register_module_notifier(&tracepoint_module_nb);
->  }
->  __initcall(init_tracepoints);
+On Sun, Oct 28, 2012 at 8:59 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-So we have a hash table defined in .bss (therefore entirely initialized
-to NULL), and you add a call to "hash_init", which iterates on the whole
-array and initialize it to NULL (again) ?
+> And talking about the shortlog: christ people, some of you need to
+> change your names. I'm used to there being multiple "David"s and
+> "Peter"s etc, but there are three different Linus's in just this rc.
+> People, people, I want to feel like the unique snowflake I am, not
+> like just another anonymous guy in a crowd.
 
-This extra initialization is redundant. I think it should be removed
-from here, and hashtable.h should document that hash_init() don't need
-to be called on zeroed memory (which includes static/global variables,
-kzalloc'd memory, etc).
+Ha! This is nothing, if I have calculated correctly soon your children
+will start contributing patches, which means you can no longer
+grep your logs for "Linus" nor "Torvalds" but will have to use the
+loooong string...
 
-Thanks,
+Geert Uytterhoeven wrote:
 
-Mathieu
+> Great, the sons of your biggest fans are starting to contribute patches!
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+No that will be a way bigger problem when it happens. He's actually
+only three years older than me.
+
+Yours,
+Linus Walleij
