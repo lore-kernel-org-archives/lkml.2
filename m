@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab2J2Q3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:29:09 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58831 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932647Ab2J2Q3I (ORCPT
+	id S1759961Ab2J2Qb6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:31:58 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63910 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759542Ab2J2Qb5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:29:08 -0400
-Date: Mon, 29 Oct 2012 12:29:04 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20121029162904.GA19509@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <20121029112907.GA9115@Krystal> <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com> <20121029161412.GB18944@Krystal> <CA+1xoqfBXM4sjvcZtUncnWAaUxA9_YBod3Hjx3ZO=K1oJO_j7g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqfBXM4sjvcZtUncnWAaUxA9_YBod3Hjx3ZO=K1oJO_j7g@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 29 Oct 2012 12:31:57 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 0/9 v2] perf: consolidate all the open counters loops
+Date: Mon, 29 Oct 2012 10:31:40 -0600
+Message-Id: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On Mon, Oct 29, 2012 at 12:14 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * Sasha Levin (levinsasha928@gmail.com) wrote:
-> >> On Mon, Oct 29, 2012 at 7:29 AM, Mathieu Desnoyers
-> >> <mathieu.desnoyers@efficios.com> wrote:
-> >> > * Sasha Levin (levinsasha928@gmail.com) wrote:
-> >> >> +
-> >> >> +     for (i = 0; i < sz; i++)
-> >> >> +             INIT_HLIST_HEAD(&ht[sz]);
-> >> >
-> >> > ouch. How did this work ? Has it been tested at all ?
-> >> >
-> >> > sz -> i
-> >>
-> >> Funny enough, it works perfectly. Generally as a test I boot the
-> >> kernel in a VM and let it fuzz with trinity for a bit, doing that with
-> >> the code above worked flawlessly.
-> >>
-> >> While it works, it's obviously wrong. Why does it work though? Usually
-> >> there's a list op happening pretty soon after that which brings the
-> >> list into proper state.
-> >>
-> >> I've been playing with a patch that adds a magic value into list_head
-> >> if CONFIG_DEBUG_LIST is set, and checks that magic in the list debug
-> >> code in lib/list_debug.c.
-> >>
-> >> Does it sound like something useful? If so I'll send that patch out.
-> >
-> > Most of the calls to this initialization function apply it on zeroed
-> > memory (static/kzalloc'd...), which makes it useless. I'd actually be in
-> > favor of removing those redundant calls (as I pointed out in another
-> > email), and document that zeroed memory don't need to be explicitly
-> > initialized.
-> 
-> Why would that make it useless? The idea is that the init functions
-> will set the magic field to something random, like:
-> 
-> .magic = 0xBADBEEF0;
-> 
-> And have list_add() and friends WARN(.magic != 0xBADBEEF0, "Using an
-> uninitialized list\n");
-> 
-> This way we'll catch all places that don't go through list initialization code.
+This patch set consolidates all of the open counters loops into a
+single common one.
 
-As I replied to Tejun Heo already, I agree that keeping the
-initialization in place makes sense for future-proofness. This intent
-should probably be documented in a comment about the initialization
-function though, just to make sure nobody will try to skip it.
+Rebased to latest perf/core. Added more hooks to ui stubs file.
 
-Thanks,
+David Ahern (9):
+  perf python: add ui stubs file
+  perf top: make use of perf_record_opts
+  perf evlist: introduce open counters method
+  perf top: use the new perf_evlist__open_counters method
+  perf record: use the new perf_evlist__open_counters method
+  perf stat: move user options to perf_record_opts
+  perf evlist: add stat unique code to open_counters method
+  perf stat: move to perf_evlist__open_counters
+  perf evsel: remove perf_evsel__open_per_cpu
 
-Mathieu
-
-> 
-> 
-> Thanks,
-> Sasha
+ tools/perf/builtin-record.c        |  116 +----------------
+ tools/perf/builtin-stat.c          |  246 ++++++++++++++++--------------------
+ tools/perf/builtin-top.c           |  146 ++++++---------------
+ tools/perf/util/evlist.c           |  143 ++++++++++++++++++++-
+ tools/perf/util/evlist.h           |    4 +
+ tools/perf/util/evsel.c            |    6 -
+ tools/perf/util/evsel.h            |    2 -
+ tools/perf/util/python-ext-sources |    1 +
+ tools/perf/util/python_stubs.c     |   54 ++++++++
+ tools/perf/util/top.c              |   20 +--
+ tools/perf/util/top.h              |    9 +-
+ 11 files changed, 366 insertions(+), 381 deletions(-)
+ create mode 100644 tools/perf/util/python_stubs.c
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.10.1
+
