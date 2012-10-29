@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921Ab2J2NkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:40:01 -0400
-Received: from void.printf.net ([89.145.121.20]:60460 "EHLO void.printf.net"
+	id S1759078Ab2J2Nlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:41:50 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:41625 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755105Ab2J2Nj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:39:59 -0400
-From: Chris Ball <cjb@laptop.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Will Newton <will.newton@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dw_mmc: fix multiple drv_data NULL dereferences
-References: <1350376988-27477-1-git-send-email-james.hogan@imgtec.com>
-	<507E129D.8000401@samsung.com>
-	<CAFbHwiSUoP_W=CK1hF+CYjxrJ1P6BR9=y_grEogmo5br6R_zuw@mail.gmail.com>
-	<508E4DB6.20504@imgtec.com>
-Date: Mon, 29 Oct 2012 09:39:48 -0400
-In-Reply-To: <508E4DB6.20504@imgtec.com> (James Hogan's message of "Mon, 29
-	Oct 2012 09:34:46 +0000")
-Message-ID: <87a9v5xuqj.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756749Ab2J2Nlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 09:41:46 -0400
+From: Florian Fainelli <ffainelli@freebox.fr>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, x86@kernel.org, rui.zhang@intel.com,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Florian Fainelli <ffainelli@freebox.fr>,
+        Maxime Bizon <mbizon@freebox.fr>
+Subject: [PATCH 3/3 v3] x86: ce4100: fixup PCI configuration register access for devices without interrupts
+Date: Mon, 29 Oct 2012 14:40:20 +0100
+Message-Id: <1351518020-25556-4-git-send-email-ffainelli@freebox.fr>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1351518020-25556-1-git-send-email-ffainelli@freebox.fr>
+References: <1351251054-19892-1-git-send-email-ffainelli@freebox.fr>
+ <1351518020-25556-1-git-send-email-ffainelli@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Maxime Bizon <mbizon@freebox.fr>
 
-On Mon, Oct 29 2012, James Hogan wrote:
-> On 17/10/12 10:11, Will Newton wrote:
->> Looks good to me too.
->> 
->> Acked-by: Will Newton <will.newton@imgtec.com>
->> 
->> On Wed, Oct 17, 2012 at 3:06 AM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->>> Looks good to me.
->>>
->>> Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
->
-> Thanks for the acks Thomas, Seungwon, Jaehoon and Will.
->
-> Chris: Any chance of queueing this patch for v3.7?
+Some CE4100 devices such as the:
+- DFX module (01:0b.7)
+- entertainment encryption device (01:10.0)
+- multimedia controller (01:12.0)
 
-Yes, certainly -- pushed to mmc-next for 3.7, thanks.
+do not have a device interrupt at all. This patch fixes the PCI controller
+code to declare the missing PCI configuration register space, as well as a
+fixup method for forcing the interrupt pin to be 0 for these devices. This is
+required to ensure that pci drivers matching on these devices will be able to
+honor the various PCI subsystem calls touching the configuration space.
 
-- Chris.
+Signed-off-by: Maxime Bizon <mbizon@freebox.fr>
+Signed-off-by: Florian Fainelli <ffainelli@freebox.fr>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ arch/x86/pci/ce4100.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/x86/pci/ce4100.c b/arch/x86/pci/ce4100.c
+index 41bd2a2..b914e20 100644
+--- a/arch/x86/pci/ce4100.c
++++ b/arch/x86/pci/ce4100.c
+@@ -115,6 +115,16 @@ static void sata_revid_read(struct sim_dev_reg *reg, u32 *value)
+ 	reg_read(reg, value);
+ }
+ 
++static void reg_noirq_read(struct sim_dev_reg *reg, u32 *value)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&pci_config_lock, flags);
++	/* force interrupt pin value to 0 */
++	*value = reg->sim_reg.value & 0xfff00ff;
++	raw_spin_unlock_irqrestore(&pci_config_lock, flags);
++}
++
+ static struct sim_dev_reg bus1_fixups[] = {
+ 	DEFINE_REG(2, 0, 0x10, (16*MB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(2, 0, 0x14, (256), reg_init, reg_read, reg_write)
+@@ -144,6 +154,7 @@ static struct sim_dev_reg bus1_fixups[] = {
+ 	DEFINE_REG(11, 5, 0x10, (64*KB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(11, 6, 0x10, (256), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(11, 7, 0x10, (64*KB), reg_init, reg_read, reg_write)
++	DEFINE_REG(11, 7, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
+ 	DEFINE_REG(12, 0, 0x10, (128*KB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(12, 0, 0x14, (256), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(12, 1, 0x10, (1024), reg_init, reg_read, reg_write)
+@@ -161,8 +172,10 @@ static struct sim_dev_reg bus1_fixups[] = {
+ 	DEFINE_REG(16, 0, 0x10, (64*KB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(16, 0, 0x14, (64*MB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(16, 0, 0x18, (64*MB), reg_init, reg_read, reg_write)
++	DEFINE_REG(16, 0, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
+ 	DEFINE_REG(17, 0, 0x10, (128*KB), reg_init, reg_read, reg_write)
+ 	DEFINE_REG(18, 0, 0x10, (1*KB), reg_init, reg_read, reg_write)
++	DEFINE_REG(18, 0, 0x3c, 256, reg_init, reg_noirq_read, reg_write)
+ };
+ 
+ static void __init init_sim_regs(void)
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+1.7.10.4
+
