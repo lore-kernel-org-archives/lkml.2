@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab2J2Rg0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:36:26 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:61275 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab2J2RgW (ORCPT
+	id S932749Ab2J2RiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:38:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38620 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab2J2RiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:36:22 -0400
-Message-ID: <508ECC63.3020302@mvista.com>
-Date: Mon, 29 Oct 2012 21:35:15 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 13:38:20 -0400
+From: Benjamin Segall <bsegall@google.com>
+To: Preeti Murthy <preeti.lkml@gmail.com>
+Cc: pjt@google.com, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Venki Pallipadi <venki@google.com>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [patch 02/16] sched: maintain per-rq runnable averages
+References: <20120823141422.444396696@google.com>
+	<20120823141506.442637130@google.com>
+	<CAM4v1pOJfADYuz9=XaFMnNG-OYAJtsd93Y5YgMd6pn-9sz6Q+A@mail.gmail.com>
+Date: Mon, 29 Oct 2012 10:38:15 -0700
+In-Reply-To: <CAM4v1pOJfADYuz9=XaFMnNG-OYAJtsd93Y5YgMd6pn-9sz6Q+A@mail.gmail.com>
+	(Preeti Murthy's message of "Sun, 28 Oct 2012 15:42:26 +0530")
+Message-ID: <xm26hapd6uwo.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Julius Werner <jwerner@chromium.org>
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: Re: [PATCH] xhci: fix null-pointer dereference when destroying half-built
- segment rings
-References: <1351530030-7080-1-git-send-email-jwerner@chromium.org>
-In-Reply-To: <1351530030-7080-1-git-send-email-jwerner@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Preeti Murthy <preeti.lkml@gmail.com> writes:
 
-On 10/29/2012 08:00 PM, Julius Werner wrote:
+> Hi Paul, Ben,
+>
+> A few queries regarding this patch:
+>
+> 1.What exactly is the significance of introducing sched_avg structure
+> for a runqueue? If I have
+>    understood correctly, sched_avg keeps track of how long a task has
+> been active,
+>    how long has it been serviced by the processor and its lifetime.How
+> does this apply analogously
+>    to the runqueue?
 
-> xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
-> the tail to head at the end (forming a ring). When it bails out for OOM
-> reasons half-way through, it tries to destroy its half-built list with
-> xhci_free_segments_for_ring(), even though it is not a ring yet. This
-> causes a null-pointer dereference upon hitting the last element.
+Remember that sched_avg's are not just for tasks, they're for any CFS
+group entity (sched_entity), for which they track the time runnable and
+the time used, which allows the system-wide per-task_group computation
+of runnable and usage.
 
-> Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
-> the output parameters to be valid upon this kind of OOM failure, and
-> calls xhci_ring_free() on them. Since the (incomplete) list/ring should
-> already be destroyed in that case, this would lead to a use after free.
+Computing these on the root has no usage in this patchset, but any
+extensions of this using hierarchy-based fractional usage or runnable
+time would need it, and retrofitting it afterwards would be a pain.
+>
+> 2.Is this a right measure to overwrite rq->load.weight because the
+> rq->sched_avg does not seem to
+>    take care of task priorities.IOW, what is the idea behind
+> introducing this metric for the runqueue?
+>    Why cant the run queue load be updated the same way as the cfs_rq
+> load is updated:
+>     cfs_rq->runnable_load_avg and cfs_rq->blocked_load_avg.
 
-> This patch fixes those issues by having xhci_alloc_segments_for_ring()
-> destroy its half-built, non-circular list manually and destroying the
-> invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
+Loadwise you would indeed want the cfs_rq statistics, that is what they
+are there for. The sched_avg numbers are only useful in computing the
+parent's load (irrelevant on the root), or for extensions using raw
+usage/runnable numbers.
+>
+> 3.What is the significance of passing rq->nr_running in
+> enqueue_task_fair while updating
+>    the run queue load? Because __update_entity_runnable_avg does not
+> treat this argument
+>    any differently if it is >1.
 
-> Signed-off-by: Julius Werner <jwerner@chromium.org>
-> ---
->  drivers/usb/host/xhci-mem.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-
-> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-> index 487bc08..420ba37 100644
-> --- a/drivers/usb/host/xhci-mem.c
-> +++ b/drivers/usb/host/xhci-mem.c
-> @@ -205,7 +205,11 @@ static int xhci_alloc_segments_for_ring(struct xhci_hcd *xhci,
->  
->  		next = xhci_segment_alloc(xhci, cycle_state, flags);
->  		if (!next) {
-> -			xhci_free_segments_for_ring(xhci, *first);
-> +			prev = *first;
-> +			do {
-> +				next = prev->next;
-> +				xhci_segment_free(xhci, prev);
-> +			} while ((prev = next));
-
-   It's preferred that the assignments are done outside the *if* and *while*
-statements. In fact, at least for the *if* statements scripts/checkpatch.pl
-gives a warning (it was silent in this case).
-
->  			return -ENOMEM;
->  		}
->  		xhci_link_segments(xhci, prev, next, type);
-> @@ -258,7 +262,7 @@ static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
->  	return ring;
->  
->  fail:
-> -	xhci_ring_free(xhci, ring);
-> +	kfree(ring);
->  	return NULL;
->  }
-
-[headless@wasted linux]$ scripts/checkpatch.pl
-patches/xhci-fix-null-pointer-dereference-when-destroying-half-built-segment-rings.patch
-
-ERROR: DOS line endings
-#30: FILE: drivers/usb/host/xhci-mem.c:208:
-+^I^I^Iprev = *first;^M$
-
-ERROR: DOS line endings
-#31: FILE: drivers/usb/host/xhci-mem.c:209:
-+^I^I^Ido {^M$
-
-ERROR: DOS line endings
-#32: FILE: drivers/usb/host/xhci-mem.c:210:
-+^I^I^I^Inext = prev->next;^M$
-
-ERROR: DOS line endings
-#33: FILE: drivers/usb/host/xhci-mem.c:211:
-+^I^I^I^Ixhci_segment_free(xhci, prev);^M$
-
-ERROR: DOS line endings
-#34: FILE: drivers/usb/host/xhci-mem.c:212:
-+^I^I^I} while ((prev = next));^M$
-
-ERROR: DOS line endings
-#43: FILE: drivers/usb/host/xhci-mem.c:265:
-+^Ikfree(ring);^M$
-
-total: 6 errors, 0 warnings, 20 lines checked
-
-patches/xhci-fix-null-pointer-dereference-when-destroying-half-built-segment-rings.patch
-has style problems, please review.
-
-If any of these errors are false positives, please report
-them to the maintainer, see CHECKPATCH in MAINTAINERS.
-
-   I have noticed that the patch description has DOS line endings as well.
-
-WBR, Sergei
-
+That could just as well be rq->nr_running != 0, it would behave the same.
