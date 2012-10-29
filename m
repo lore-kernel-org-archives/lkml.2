@@ -1,51 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab2J2SRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:17:22 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45949 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab2J2SRU (ORCPT
+	id S932806Ab2J2SSM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:18:12 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55531 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab2J2SSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:17:20 -0400
-Date: Mon, 29 Oct 2012 11:17:19 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "VMware, Inc." <pv-drivers@vmware.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jongman heo <jongman.heo@samsung.com>,
-        David Miller <davem@davemloft.net>
-Message-ID: <428233753.11168915.1351534639870.JavaMail.root@vmware.com>
-In-Reply-To: <1351531849.12280.54.camel@edumazet-glaptop>
-Subject: Re: [PATCH] vmxnet3: must split too big fragments
+	Mon, 29 Oct 2012 14:18:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [116.75.3.98]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
+In-Reply-To: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
+References: <20121015171707.25171.35294.stgit@gitlad.jf.intel.com>
+Date: Mon, 29 Oct 2012 11:18:09 -0700
+Message-ID: <CAKgT0UfG99tb29TOSQmDqnhy4uck5t+pjgeJnweqkV-EUuq3VA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] Improve swiotlb performance by using physical addresses
+From: Alexander Duyck <alexander.duyck@gmail.com>
+To: konrad.wilk@oracle.com, konrad@kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rob@landley.net,
+        akpm@linux-foundation.org, joerg.roedel@amd.com, bhelgaas@google.com,
+        shuahkhan@gmail.com, fujita.tomonori@lab.ntt.co.jp,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------ Original Message -----
-> From: Eric Dumazet <edumazet@google.com>
-> 
-> vmxnet3 has a 16Kbytes limit per tx descriptor, that happened to work
-> as long as we provided PAGE_SIZE fragments.
-> 
-> Our stack can now build larger fragments, so we need to split them to
-> the 16kbytes boundary.
-> 
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> Reported-by: jongman heo <jongman.heo@samsung.com>
-> Tested-by: jongman heo <jongman.heo@samsung.com>
-> Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+On Mon, Oct 15, 2012 at 10:19 AM, Alexander Duyck
+<alexander.h.duyck@intel.com> wrote:
+> While working on 10Gb/s routing performance I found a significant amount of
+> time was being spent in the swiotlb DMA handler. Further digging found that a
+> significant amount of this was due to virtual to physical address translation
+> and calling the function that did it. It accounted for nearly 60% of the
+> total swiotlb overhead.
+>
+> This patch set works to resolve that by replacing the io_tlb_start and
+> io_tlb_end virtual addresses with a physical addresses. In addition it changes
+> the io_tlb_overflow_buffer from a virtual to a physical address. I followed
+> through with the cleanup to the point that the only functions that really
+> require the virtual address for the DMA buffer are the init, free, and
+> bounce functions.
+>
+> In the case of devices that are using the bounce buffers these patches should
+> result in only a slight performance gain if any. This is due to the locking
+> overhead required to map and unmap the buffers.
+>
+> In the case of devices that are not making use of bounce buffers these patches
+> can significantly reduce their overhead. In the case of an ixgbe routing test
+> for example, these changes result in 7 fewer calls to __phys_addr and
+> allow is_swiotlb_buffer to become inlined due to a reduction in the number of
+> instructions. When running a routing throughput test using small packets I
+> saw roughly a 6% increase in packets rates after applying these patches. This
+> appears to match up with the CPU overhead reduction I was tracking via perf.
+>
+> Before:
+> Results 10.0Mpps
+>
+> After:
+> Results 10.6Mpps
+>
+> Finally, I updated the parameter names for several of the core function calls
+> as there was some ambiguity in naming. Specifically virtual address pointers
+> were named dma_addr. When I changed these pointers to physical I instead used
+> the name tlb_addr as this value represented a physical address in the
+> io_tlb_start region and is less likely to be confused with a bus address.
+>
+> v2:
+> I reviewed the changes and realized that the first patch that was dropping
+> io_tlb_end and calculating the value didn't actually gain me much once I had
+> gone through and translated the rest of the addresses to physical addresses.
+> As such I have updated the patch so that it instead is converting io_tlb_end
+> from a virtual address to a physical address.  This actually helps to reduce
+> the overhead for is_swiotlb_buffer and swiotlb_dma_supported by several
+> instructions.
+>
+> v3:
+> After reviewing the patches I realized I was causing some namespace pollution
+> since a "static char *" was being replaced with "phys_addr_t" when it should
+> have been "static phys_addr_t".  As such I have updated the first 3 patches to
+> correctly replace static pointers with static physical addresses.
+>
 > ---
->  drivers/net/vmxnet3/vmxnet3_drv.c |   65
->  +++++++++++++++++++---------
->  1 file changed, 45 insertions(+), 20 deletions(-)
-> 
+>
+> Alexander Duyck (7):
+>       swiotlb:  Do not export swiotlb_bounce since there are no external consumers
+>       swiotlb: Use physical addresses instead of virtual in swiotlb_tbl_sync_single
+>       swiotlb: Use physical addresses for swiotlb_tbl_unmap_single
+>       swiotlb: Return physical addresses when calling swiotlb_tbl_map_single
+>       swiotlb: Make io_tlb_overflow_buffer a physical address
+>       swiotlb: Make io_tlb_start a physical address instead of a virtual one
+>       swiotlb: Make io_tlb_end a physical address instead of a virtual one
+>
+>
+>  drivers/xen/swiotlb-xen.c |   25 ++--
+>  include/linux/swiotlb.h   |   20 ++-
+>  lib/swiotlb.c             |  269 +++++++++++++++++++++++----------------------
+>  3 files changed, 163 insertions(+), 151 deletions(-)
+>
 
-Thanks for the patch Eric.
+Is there any ETA on when this patch series might be pulled into a
+tree?  I'm just wondering if I need to rebase this patch series and
+resubmit it, and if so what tree I need to rebase it off of?
 
-Signed-of-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+Thanks,
+
+Alex
