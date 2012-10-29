@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759580Ab2J2Ppx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:45:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43229 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab2J2Ppw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:45:52 -0400
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: "Porter, Matt" <mporter@ti.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
-Thread-Topic: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
-Thread-Index: AQHNpvQIuOsYud0XskqrLRNTKR4CVJfQieKQ
-Date: Mon, 29 Oct 2012 15:45:36 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
-References: <1349879449-22657-1-git-send-email-mporter@ti.com>
-In-Reply-To: <1349879449-22657-1-git-send-email-mporter@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1759595Ab2J2PrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:47:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753743Ab2J2PrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:47:20 -0400
+Date: Mon, 29 Oct 2012 17:49:32 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 0/8] enable/disable zero copy tx dynamically
+Message-ID: <cover.1351524501.git.mst@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt,
 
-On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
-> 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
-> exposes a bug in the AM33XX clock data for mcasp. After moving to
-> clk_get() usage, the _init() of all registered hwmods fails on mcasp0
-> due to incorrect clock data causing clk_get() to fail. This causes all
-> successive hwmods to fail to _init() leaving them in a bad state.
-> 
-> This patch updates the mcasp clock entries so clk_get() will succeed.
-> It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
-> boot.
+tun supports zero copy transmit since 0690899b4d4501b3505be069b9a687e68ccbe15b,
+however you can only enable this mode if you know your workload does not
+trigger heavy guest to host/host to guest traffic - otherwise you
+get a (minor) performance regression.
+This patchset addresses this problem by notifying the owner
+device when callback is invoked because of a data copy.
+This makes it possible to detect whether zero copy is appropriate
+dynamically: we start in zero copy mode, when we detect
+data copied we disable zero copy for a while.
 
+With this patch applied, I get the same performance for
+guest to host and guest to guest both with and without zero copy tx.
 
-I want to test Audio on AM335x Evm with your EDMA patches. I have few 
-patches for AM335x.
-Can you share the link to the repo & branch on which I need to rebase?
-The patches are related to mcasp dt node, mcasp pinmux in dt, etc...
+Michael S. Tsirkin (8):
+  skb: report completion status for zero copy skbs
+  skb: api to report errors for zero copy skbs
+  tun: report orphan frags errors to zero copy callback
+  vhost-net: cleanup macros for DMA status tracking
+  vhost: track zero copy failures using DMA length
+  vhost: move -net specific code out
+  vhost-net: select tx zero copy dynamically
+  vhost-net: reduce vq polling on tx zerocopy
 
-> 
-..snip..
-..snip..
-> 
+ drivers/net/tun.c         |   1 +
+ drivers/vhost/net.c       | 109 +++++++++++++++++++++++++++++++++++++++++++---
+ drivers/vhost/tcm_vhost.c |   1 +
+ drivers/vhost/vhost.c     |  52 +++-------------------
+ drivers/vhost/vhost.h     |  11 ++---
+ include/linux/skbuff.h    |   5 ++-
+ net/core/skbuff.c         |  23 +++++++++-
+ 7 files changed, 141 insertions(+), 61 deletions(-)
 
-
-Thanks & Regards, 
-Gururaja
+-- 
+MST
