@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761170Ab2J2WOd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:14:33 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:35167 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761252Ab2J2WO1 (ORCPT
+	id S1761330Ab2J2WOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:14:31 -0400
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38749 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761237Ab2J2WO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 18:14:27 -0400
-Date: Mon, 29 Oct 2012 18:14:25 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Richard Retanubun <richardretanubun@ruggedcom.com>
-cc: Greg KH <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Tang Nguyen <TangNguyen@ruggedcom.com>,
-        "m.grzeschik@pengutronix.de" <m.grzeschik@pengutronix.de>,
-        Arvid Brodin <Arvid.Brodin@xdin.com>,
-        linux-usb mailing list <linux-usb@vger.kernel.org>,
-        "bigeasy@linutronix.de" <bigeasy@linutronix.de>
-Subject: Re: kmemleak report on isp1763 and sierra MC8705
-In-Reply-To: <508EEB48.9070508@ruggedcom.com>
-Message-ID: <Pine.LNX.4.44L0.1210291806360.31151-100000@netrider.rowland.org>
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhqdAKH+jlBV5h1yPGdsb2JhbABEilK3KgICgQgZAQEBATg0gh4BAQQBJxMcIwULCAMYLhQNGAoaEx6HVgMJCrItDYlUFIp6ZzaBJoIngXlhA5QfgVSFeYU5h3MO
+X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
+   d="scan'208";a="215245992"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 29 Oct 2012 23:19:05 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 08/11] HID: hid-multitouch: fix Win 8 protocol
+Message-ID: <20121029221905.GA15537@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1351241067-9521-9-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351241067-9521-9-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012, Richard Retanubun wrote:
-
-> do the disconnect without actually removing the power to the device.
-> I tried "echo 1 > /sys/bus/usb/drivers/usb/2-1.2/remove" and then take down the power
-> but this produced the same leak signature even before I take down the power.
+On Fri, Oct 26, 2012 at 10:44:24AM +0200, Benjamin Tissoires wrote:
+> Win 8 specification is much more precise than the Win 7 one.
+> Moreover devices that need to take certification must be submitted
+> to Microsoft.
 > 
-> Update on trigger to problem
-> ============================
-> This will happen as the modem is powered down and /dev/ttyUSB from sierra is teared down
-> either by powering it off/removing it, or sending at!reset.
+> The result is a better protocol support and we can rely on that to
+> skip all the messy tests we used to do.
 > 
-> It does not happen when the same thing is done using a simple usb to serial converter (pl2303)
+> The protocol specify the fact that each valid touch must be reported
+> within a frame, and that the release touch coordinate must be the
+> same than the last known touch.
+> So we can use the always_valid quirk and dismiss reports when we
+> touch coordiante do not follow this rule.
 > 
-> Focusing down on one of the dumps:
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 16 ++++++++++++++--
+>  1 file changed, 14 insertions(+), 2 deletions(-)
+
+Why do we need this patch?
+
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 43bd8e8..bd23f19 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -510,6 +510,18 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>  		int slotnum = mt_compute_slot(td, input);
+>  		struct mt_slot *s = &td->curdata;
+>  
+> +		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+> +		    !s->touch_state) {
+> +			struct input_mt_slot *slot = &input->mt->slots[slotnum];
+> +			int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
+> +			int prv_y = input_mt_get_value(slot, ABS_MT_POSITION_Y);
+> +			/* valid releases occurs when the last x and y positions
+> +			 * are the same as the last known touch. */
+> +			if (!input_mt_is_active(slot) ||
+> +			    prv_x != s->x || prv_y != s->y)
+> +				return;
+> +		}
+> +
+>  		if (slotnum < 0 || slotnum >= td->maxcontacts)
+>  			return;
+>  
+> @@ -681,8 +693,8 @@ static void mt_post_parse_default_settings(struct mt_device *td)
+>  {
+>  	__s32 quirks = td->mtclass.quirks;
+>  
+> -	/* unknown serial device needs special quirks */
+> -	if (td->touches_by_report == 1) {
+> +	/* unknown serial devices or win8 ones need special quirks */
+> +	if (td->touches_by_report == 1 || quirks & MT_QUIRK_WIN_8_CERTIFIED) {
+>  		quirks |= MT_QUIRK_ALWAYS_VALID;
+>  		quirks &= ~MT_QUIRK_NOT_SEEN_MEANS_UP;
+>  		quirks &= ~MT_QUIRK_VALID_IS_INRANGE;
+> -- 
+> 1.7.11.7
 > 
-> unreferenced object 0xd3849740 (size 8):
->    comm "khubd", pid 1026, jiffies 232553037 (age 506.597s)
->    hex dump (first 8 bytes):
->      4d 43 38 37 30 35 00 00                          MC8705..
->    backtrace:
->      [<e30efd74>] usb_cache_string+0x74/0xac [usbcore]
->      [<e30e77bc>] usb_enumerate_device+0x44/0xf8 [usbcore]
->      [<e30e7aa0>] usb_new_device+0x3c/0x13c [usbcore]
->      [<e30e9824>] hub_thread+0xc8c/0x1544 [usbcore]
->      [<c0043aa8>] kthread+0x7c/0x80
->      [<c000ed48>] kernel_thread+0x4c/0x68
-> 
-> I have a small question. How does the memory kmalloc-ed() in usb_cache_string is supposed to be released?
-> (during usb_serial_disconnect()?)
 
-It doesn't get released during usb_serial_disconnect().  It gets 
-released during usb_release_dev() in drivers/usb/core/usb.c.
-
->  Is the sierra driver is supposed to participate
-> in the tear down process (in sierra_release() maybe) and not doing something that is expected?
-
-Probably not.
-
-> I am still missing the link between the actions done by the hub_thread() for the caching the stings
-> and the sierra driver code.
-
-They aren't all that closely related.
-
-usb_release_dev() won't be called until all references to the USB
-device have been dropped.  Maybe there's an extra reference hanging 
-around.
-
-Alan Stern
-
+Henrik
