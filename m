@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932868Ab2J2Qpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:45:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55721 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab2J2Qpi convert rfc822-to-8bit (ORCPT
+	id S932891Ab2J2Qpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:45:55 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34278 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932216Ab2J2Qpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:45:38 -0400
-Message-ID: <1351529115.24721.40.camel@twins>
-Subject: Re: [PATCH 2/2] dm: stay in blk_queue_bypass until queue becomes
- initialized
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Alasdair G Kergon <agk@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Mon, 29 Oct 2012 17:45:15 +0100
-In-Reply-To: <20121029163845.GB7709@redhat.com>
-References: <50890937.7010809@ce.jp.nec.com>
-	 <20121026202105.GF24687@redhat.com> <508E572C.6000707@ce.jp.nec.com>
-	 <20121029163845.GB7709@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 29 Oct 2012 12:45:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPhKKr8HAbAw2jdvva6oJYj747ZS0dTakz2=qJXN+NsTiu=dCg@mail.gmail.com>
+References: <CAPhKKr8HAbAw2jdvva6oJYj747ZS0dTakz2=qJXN+NsTiu=dCg@mail.gmail.com>
+Date: Mon, 29 Oct 2012 12:45:53 -0400
+Message-ID: <CAPhKKr8KNi0kU4CcbPofZT7sghumeUTRyiuywOWrd24DiF4gFQ@mail.gmail.com>
+Subject: Re: [BUG] perf report: different reports when run on terminal as
+ opposed to script
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Arnaldo de Melo <acme@infradead.org>, mingo@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, namhyung@kernel.org
+Cc: akshay kumar <iit.akshay@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 12:38 -0400, Vivek Goyal wrote:
-> Ok, so the question is what's wrong with calling synchronize_rcu() inside
-> a mutex with CONFIG_PREEMPT=y. I don't know. Ccing paul mckenney  and
-> peterz.
+On Mon, Oct 29, 2012 at 12:01 PM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+> Hi,
+>
+> As part of a class assignment I have to collect some performance
+> statistics. In order to do so I run
+>
+> perf record -g <the program I have to profile>
+>
+> And in another window, I start 200 threads of the load generator
+> (which is not recorded by perf)
+>
+> This generates me statistics that I expect to see, and I am happy. As
+> this is academia and a class assignment, I need to collect information
+> and analyze it across different setups. Which of course meant I script
+> this whole thing, which basically is
+>
+> for i in all possibilities
+> do
+> perf record -g <the program I have to profile> &
+> WAITPID=$!
+> for j in NR_THREADS
+> do
+> <start load generator> &
+> KILLPID=$!
+> done
+> wait $PID
+> kill $KILLPID
+> mv perf.data results/perf.data.$i
+> done
+>
+> (This is basic pseudo script of what I am doing), which results me
+> having my profile being topped by _vscanf() and the function which I
+> was seeing dominating in the older report dropping down to something
+> like 5% (as opposed to 16-17%)
+>
+> Have I misunderstood how perf works? Something deeper? I am currently
+> on 3.6.3. I can update to the latest upstream and report back. Any
+> debug code is very welcome. I can also make my toy program and the
+> scripts available for you to try out.
 
-int blkcg_activate_policy(struct request_queue *q,
+I just updated to 6b0cb4eef7bdaa27b8021ea81813fba330a2d94d and I still
+see this happen.
 
-{
-
-	...
-
-        preloaded = !radix_tree_preload(GFP_KERNEL);
-
-        blk_queue_bypass_start(q);
-
-
-
-
-where:
-
-int radix_tree_preload(gfp_t gfp_mask)
-{
-        struct radix_tree_preload *rtp;
-        struct radix_tree_node *node;
-        int ret = -ENOMEM;
-        
-        preempt_disable();
-
-
-Seems obvious why it explodes..
+Thanks!
+Dhaval
