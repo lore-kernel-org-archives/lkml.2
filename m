@@ -1,68 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2J2DVh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 23:21:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57107 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754218Ab2J2DVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 23:21:36 -0400
-Date: Mon, 29 Oct 2012 14:21:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: linux-next: manual merge of the akpm-current tree with the staging
- tree
-Message-Id: <20121029142126.66314d5d5898d1a9070e3171@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Oct_2012_14_21_26_+1100_FuVF78tz/Ixu3I/9"
+	id S1757889Ab2J2DY4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 23:24:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16934 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756417Ab2J2DYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 23:24:55 -0400
+Message-ID: <508DF6FF.9090209@redhat.com>
+Date: Sun, 28 Oct 2012 22:24:47 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH -v3] ext4: fix unjournaled inode bitmap modification
+References: <87objupjlr.fsf@spindle.srvr.nix> <20121023013343.GB6370@fieldses.org> <87mwzdnuww.fsf@spindle.srvr.nix> <20121023143019.GA3040@fieldses.org> <874nllxi7e.fsf_-_@spindle.srvr.nix> <87pq48nbyz.fsf_-_@spindle.srvr.nix> <508CB35D.9080102@redhat.com> <20121029023034.GA9365@thunk.org>
+In-Reply-To: <20121029023034.GA9365@thunk.org>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Oct_2012_14_21_26_+1100_FuVF78tz/Ixu3I/9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/28/12 9:30 PM, Theodore Ts'o wrote:
+> On Sat, Oct 27, 2012 at 11:23:57PM -0500, Eric Sandeen wrote:
+>> A little more going on here to try to properly handle error
+>> cases & moving to the next group; despite
+>> ext4_handle_release_buffer being a no-op, I've tried
+>> to sprinkle it in at the right places.  Double checking
+>> on review is probably a fine idea ;)
+> 
+> Sorry, I didn't see your newer version of your patch.  I'm not
+> convinced it's worth it to try to get the calls to
+> ext4_handle_release_buffer() right.  There are plenty of other places
+> where we're not calling ext4_handle_release_buffer(), and I'm not
+> convinced it would ever be useful to make it be something other than a
+> no-op.  
 
-Hi Andrew,
+Fair enough, I went a little overboard.
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-drivers/staging/rts_pstor/trace.h between commit cd2112220b6b ("Staging:
-remove rts_pstor driver") from the staging tree and commit 3980a6d4af3e
-("staging: rts_pstor: use kbasename()") from the akpm-current tree.
+> In order to make it be useful, we'd have to enforce a rule
+> that every single get_write_access() was matched with either a
+> handle_dirty_metadata() or a handle_release_buffer().  That would be
+> tricky; worse, we'd have to keep track of a refcount on each bh, which
+> would cost us on the scalability front.  The main benefit would be
+> that might be able to be able to reclaim bh's where we called
+> get_write_access() and then changed our mind, but that's relatively
+> rare, and I think it's easier to simply be more careful about calling
+> get_write_acceess() until we're sure we're going to need write access.
+> 
+> Hence in my version of the patch, I've waited until right before the
+> call to ext4_lock_group() before calling get_write_access().  Note
+> that it's safe to call get_write_access() on a bh twice; the second
+> time the jbd2 layer will notice that the bh is already a part of the
+> transaction.
 
-The former removed the file modified by the latter, so I dropped the
-latter patch.
+Yeah, I guess that's the norm.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So on the one hand you delay calling it until we're sure we need
+it; OTOH it's no big deal if it does get called twice :)
 
---Signature=_Mon__29_Oct_2012_14_21_26_+1100_FuVF78tz/Ixu3I/9
-Content-Type: application/pgp-signature
+> Also, leaving out the calls to ext4_handle_release_buffer() makes the
+> patch easier to understand and reason about.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Fair enough.
 
-iQIcBAEBCAAGBQJQjfY2AAoJEECxmPOUX5FEpmIP+wYCJnKYkZGSU5fiBRQrDKR2
-RXTk64W4AttP3OdO6hY1td/cm1rosCUt91AIRB4LgKbzDWS0/Jr4U7yixGtHxJWc
-aQXMLZK1VmeoCtDWUQwBV4E0lcDvViSMqn1VFB0AULfei8IMvk+VoQLVVVDxZQPi
-qF2b25ZBwx69RdVw6gIsQZPQgkWjzJrwvnfJCQpdg+2uS7hntfeBM6hroPjPrTpz
-n0qvt6wzfs3ahhqXornVCum4X5+s6z/biXs+hJWRzYAJj7gzCmkgt4el1PoKF0/B
-UAyX+gLtP5voI7l6wUngqnJ0U1VOnstw3lNK59rRi+xXwdrPchymgAbwiLMA730F
-9PWY0w0dbdeW4eicTuBfuZlLFQSsfl4NZ9sSN5XqTnlX6n5EQUsTScDHKppZUuRv
-mcbPXrJyaVz1Q6+7NUH/ZtQj8LqdY7oNxqenhWp6apdwJH3+D0EPy8+8V/espfmv
-1lbuqkuLyVdddG/dWytFEVoKdUX45VgoHyqzdlJsnEJrM6rWyxQT+CD54UNVH65I
-7weUOz3XpLVp5v8C2Dp77xPayK5ox4PeVxEPYY7xyUG0vi2WLY83eee/nYYrkgQV
-rQclGrBdjEmNemj8IHyLYjJskmOvjEExCJXLhsukgXQbTgGGUe3O7A1K5iVLg3F6
-eOQ3YUkvwcOR9211fA1R
-=rckE
------END PGP SIGNATURE-----
+> What do you think of this version?
 
---Signature=_Mon__29_Oct_2012_14_21_26_+1100_FuVF78tz/Ixu3I/9--
+Looks fine, tests fine.  Ship it ;)
+
+-Eric
+
+> 						- Ted
+> 
+> commit 67d725143e9e7ea458a0c1c4a6625657c3dc7ba2
+> Author: Eric Sandeen <sandeen@redhat.com>
+> Date:   Sun Oct 28 22:24:57 2012 -0400
+> 
+>     ext4: fix unjournaled inode bitmap modification
+>     
+>     commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
+>     ext4_new_inode() such that the inode bitmap was being modified
+>     outside a transaction, which could lead to corruption, and was
+>     discovered when journal_checksum found a bad checksum in the
+>     journal during log replay.
+>     
+>     Nix ran into this when using the journal_async_commit mount
+>     option, which enables journal checksumming.  The ensuing
+>     journal replay failures due to the bad checksums led to
+>     filesystem corruption reported as the now infamous
+>     "Apparent serious progressive ext4 data corruption bug"
+>     
+>     [ Changed by tytso to only call ext4_journal_get_write_access() only
+>       when we're fairly certain that we're going to allocate the inode. ]
+>     
+>     I've tested this by mounting with journal_checksum and
+>     running fsstress then dropping power; I've also tested by
+>     hacking DM to create snapshots w/o first quiescing, which
+>     allows me to test journal replay repeatedly w/o actually
+>     power-cycling the box.  Without the patch I hit a journal
+>     checksum error every time.  With this fix it survives
+>     many iterations.
+>     
+>     Reported-by: Nix <nix@esperi.org.uk>
+>     Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+>     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+>     Cc: stable@vger.kernel.org
+> 
+> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> index 4facdd2..3a100e7 100644
+> --- a/fs/ext4/ialloc.c
+> +++ b/fs/ext4/ialloc.c
+> @@ -725,6 +725,10 @@ repeat_in_this_group:
+>  				   "inode=%lu", ino + 1);
+>  			continue;
+>  		}
+> +		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
+> +		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
+> +		if (err)
+> +			goto fail;
+>  		ext4_lock_group(sb, group);
+>  		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+>  		ext4_unlock_group(sb, group);
+> @@ -738,6 +742,11 @@ repeat_in_this_group:
+>  	goto out;
+>  
+>  got:
+> +	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
+> +	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
+> +	if (err)
+> +		goto fail;
+> +
+>  	/* We may have to initialize the block bitmap if it isn't already */
+>  	if (ext4_has_group_desc_csum(sb) &&
+>  	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
+> @@ -771,11 +780,6 @@ got:
+>  			goto fail;
+>  	}
+>  
+> -	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
+> -	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
+> -	if (err)
+> -		goto fail;
+> -
+>  	BUFFER_TRACE(group_desc_bh, "get_write_access");
+>  	err = ext4_journal_get_write_access(handle, group_desc_bh);
+>  	if (err)
+> @@ -823,11 +827,6 @@ got:
+>  	}
+>  	ext4_unlock_group(sb, group);
+>  
+> -	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
+> -	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
+> -	if (err)
+> -		goto fail;
+> -
+>  	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
+>  	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
+>  	if (err)
+> 
+> 
+
