@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2J2NHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:07:46 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58499 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756567Ab2J2NHj (ORCPT
+	id S1756555Ab2J2NJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:09:47 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34054 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755109Ab2J2NJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:07:39 -0400
-Date: Mon, 29 Oct 2012 09:07:36 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 10/16] dlm: use new hashtable implementation
-Message-ID: <20121029130736.GF11733@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-10-git-send-email-levinsasha928@gmail.com> <20121029124655.GD11733@Krystal>
+	Mon, 29 Oct 2012 09:09:46 -0400
+To: Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Subject: [PATCH] Add bluetooth support for VAIO VPCEH [0489:e027]
+Cc: linux-kernel@vger.kernel.org
+From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+Organization: Mrk Industries
+Date: Mon, 29 Oct 2012 10:09:12 -0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029124655.GD11733@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_4/njQD219Vpj1fR"
+Message-Id: <201210291009.12913.marcos@mrkindustries.com.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Sasha Levin (levinsasha928@gmail.com) wrote:
-> [...]
-> > @@ -158,34 +159,21 @@ static int dlm_allow_conn;
-> >  static struct workqueue_struct *recv_workqueue;
-> >  static struct workqueue_struct *send_workqueue;
-> >  
-> > -static struct hlist_head connection_hash[CONN_HASH_SIZE];
-> > +static struct hlist_head connection_hash[CONN_HASH_BITS];
-> >  static DEFINE_MUTEX(connections_lock);
-> >  static struct kmem_cache *con_cache;
-> >  
-> >  static void process_recv_sockets(struct work_struct *work);
-> >  static void process_send_sockets(struct work_struct *work);
-> >  
-> > -
-> > -/* This is deliberately very simple because most clusters have simple
-> > -   sequential nodeids, so we should be able to go straight to a connection
-> > -   struct in the array */
-> > -static inline int nodeid_hash(int nodeid)
-> > -{
-> > -	return nodeid & (CONN_HASH_SIZE-1);
-> > -}
-> 
-> There is one thing I dislike about this change: you remove a useful
-> comment. It's good to be informed of the reason why a direct mapping
-> "value -> hash" without any dispersion function is preferred here.
+--Boundary-00=_4/njQD219Vpj1fR
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-And now that I come to think of it: you're changing the behavior : you
-will now use a dispersion function on the key, which goes against the
-intent expressed in this comment.
+Hi,
+this patch against 3.7-rc3 identifies my Atheros AR3011 internal bluetooth 
+device, I just transferred some files from my phone to this debian PC using 
+bluetooth and it works fine (btw, it needs atheros-firmware package).
 
-It might be good to change hash_add(), hash_add_rcu(),
-hash_for_each_possible*() key parameter for a "hash" parameter, and let
-the caller provide the hash value computed by the function they like as
-parameter, rather than enforcing hash_32/hash_64.
+Before changing this, lsusb was identifying it as a Foxconn / Hon Hai device, 
+which is wrong, and it probably loaded a different firmware to the bluetooth 
+module.
 
-Thoughts ?
+The patches solves the following discussions:
+https://answers.launchpad.net/ubuntu/+source/bluez/+question/168992 
+http://ubuntuforums.org/showthread.php?t=1867214 
+http://linux-unix-open-source.1053819.n5.nabble.com/Atheros-AR9285-on-
+Ubuntu-11-10-Sony-Vaio-VPCEH-wifi-does-t-works-td4931321.html 
+http://www.vivaolinux.com.br/topico/Rede-Wireless/Bluetooth-vaio-VPCEH-
+desabilitado 
 
-Thanks,
+Please tell me if you won't add it to mainstream for some reason.
 
-Mathieu
+Thanks in advance, and greetings from Argentina.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--
+Marcos
+
+PS: Sent again without HTML formatting
+
+--Boundary-00=_4/njQD219Vpj1fR
+Content-Type: text/x-patch;
+  charset="utf-8";
+  name="patchfile"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="patchfile"
+
+diff -uNr linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c linux-3.7-rc3.new/drivers/bluetooth/ath3k.c
+--- linux-3.7-rc3.orig/drivers/bluetooth/ath3k.c	2012-10-28 16:24:48.000000000 -0300
++++ linux-3.7-rc3.new/drivers/bluetooth/ath3k.c	2012-10-29 09:39:03.459764720 -0300
+@@ -67,6 +67,7 @@
+ 	{ USB_DEVICE(0x13d3, 0x3304) },
+ 	{ USB_DEVICE(0x0930, 0x0215) },
+ 	{ USB_DEVICE(0x0489, 0xE03D) },
++	{ USB_DEVICE(0x0489, 0xE027) },
+ 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
+diff -uNr linux-3.7-rc3.orig/drivers/bluetooth/btusb.c linux-3.7-rc3.new/drivers/bluetooth/btusb.c
+--- linux-3.7-rc3.orig/drivers/bluetooth/btusb.c	2012-10-28 16:24:48.000000000 -0300
++++ linux-3.7-rc3.new/drivers/bluetooth/btusb.c	2012-10-29 09:39:06.219765159 -0300
+@@ -124,6 +124,7 @@
+ 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
+ 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+
+--Boundary-00=_4/njQD219Vpj1fR--
