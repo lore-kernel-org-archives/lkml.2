@@ -1,182 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2J2Pcm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:32:42 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:54293 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752717Ab2J2Pck (ORCPT
+	id S1759311Ab2J2Pe6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:34:58 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44125 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2J2Pey (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:32:40 -0400
-Message-ID: <508EA197.5010206@xenotime.net>
-Date: Mon, 29 Oct 2012 08:32:39 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 29 Oct 2012 11:34:54 -0400
+Message-ID: <508EA207.2060205@gmail.com>
+Date: Mon, 29 Oct 2012 23:34:31 +0800
+From: Jianguo Wu <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: linux-pm@vger.kernel.org, Rajagopal Venkat <rajagopal.venkat@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-next PATCH] PM / devfreq: documentation cleanups for devfreq
- header
-References: <1351515743-23411-1-git-send-email-nm@ti.com>
-In-Reply-To: <1351515743-23411-1-git-send-email-nm@ti.com>
+To: wency@cn.fujitsu.com
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
+Subject: Re: [PATCH v2 10/12] memory-hotplug: memory_hotplug: clear zone when
+ removing the memory
+References: <1350988250-31294-1-git-send-email-wency@cn.fujitsu.com> <1350988250-31294-11-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1350988250-31294-11-git-send-email-wency@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 06:02 AM, Nishanth Menon wrote:
-
-> struct parameters need to have ':' in documentation for
-> scripts/kernel-doc to parse appropriately.
+On 2012/10/23 18:30, wency@cn.fujitsu.com wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> Fix the errors reported by:
-> ./scripts/kernel-doc include/linux/devfreq.h >/dev/null
+> When a memory is added, we update zone's and pgdat's start_pfn and
+> spanned_pages in the function __add_zone(). So we should revert them
+> when the memory is removed.
 > 
-> Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: linux-pm@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
+> The patch adds a new function __remove_zone() to do this.
 > 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 > ---
-> Applies on
-> linux-next                e083feb Merge branch 'acpi-next' into linux-next
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+>  mm/memory_hotplug.c |  207 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 207 insertions(+), 0 deletions(-)
 > 
->  include/linux/devfreq.h |   54 +++++++++++++++++++++++------------------------
->  1 file changed, 27 insertions(+), 27 deletions(-)
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 03153cf..55a228d 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -312,10 +312,213 @@ static int __meminit __add_section(int nid, struct zone *zone,
+>  	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+>  }
+>  
+> +/* find the smallest valid pfn in the range [start_pfn, end_pfn) */
+> +static int find_smallest_section_pfn(int nid, struct zone *zone,
+> +				     unsigned long start_pfn,
+> +				     unsigned long end_pfn)
+> +{
+> +	struct mem_section *ms;
+> +
+> +	for (; start_pfn < end_pfn; start_pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(start_pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (unlikely(pfn_to_nid(start_pfn)) != nid)
+
+if (unlikely(pfn_to_nid(start_pfn) != nid))
+
+> +			continue;
+> +
+> +		if (zone && zone != page_zone(pfn_to_page(start_pfn)))
+> +			continue;
+> +
+> +		return start_pfn;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* find the biggest valid pfn in the range [start_pfn, end_pfn). */
+> +static int find_biggest_section_pfn(int nid, struct zone *zone,
+> +				    unsigned long start_pfn,
+> +				    unsigned long end_pfn)
+> +{
+> +	struct mem_section *ms;
+> +	unsigned long pfn;
+> +
+> +	/* pfn is the end pfn of a memory section. */
+> +	pfn = end_pfn - 1;
+> +	for (; pfn >= start_pfn; pfn -= PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (unlikely(pfn_to_nid(pfn)) != nid)
+
+if (unlikely(pfn_to_nid(pfn) != nid))
+
+> +			continue;
+> +
+> +		if (zone && zone != page_zone(pfn_to_page(pfn)))
+> +			continue;
+> +
+> +		return pfn;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
+> +			     unsigned long end_pfn)
+> +{
+> +	unsigned long zone_start_pfn =  zone->zone_start_pfn;
+> +	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> +	unsigned long pfn;
+> +	struct mem_section *ms;
+> +	int nid = zone_to_nid(zone);
+> +
+> +	zone_span_writelock(zone);
+> +	if (zone_start_pfn == start_pfn) {
+> +		/*
+> +		 * If the section is smallest section in the zone, it need
+> +		 * shrink zone->zone_start_pfn and zone->zone_spanned_pages.
+> +		 * In this case, we find second smallest valid mem_section
+> +		 * for shrinking zone.
+> +		 */
+> +		pfn = find_smallest_section_pfn(nid, zone, end_pfn,
+> +						zone_end_pfn);
+> +		if (pfn) {
+> +			zone->zone_start_pfn = pfn;
+> +			zone->spanned_pages = zone_end_pfn - pfn;
+> +		}
+> +	} else if (zone_end_pfn == end_pfn) {
+> +		/*
+> +		 * If the section is biggest section in the zone, it need
+> +		 * shrink zone->spanned_pages.
+> +		 * In this case, we find second biggest valid mem_section for
+> +		 * shrinking zone.
+> +		 */
+> +		pfn = find_biggest_section_pfn(nid, zone, zone_start_pfn,
+> +					       start_pfn);
+> +		if (pfn)
+> +			zone->spanned_pages = pfn - zone_start_pfn + 1;
+> +	}
+> +
+> +	/*
+> +	 * The section is not biggest or smallest mem_section in the zone, it
+> +	 * only creates a hole in the zone. So in this case, we need not
+> +	 * change the zone. But perhaps, the zone has only hole data. Thus
+> +	 * it check the zone has only hole or not.
+> +	 */
+> +	pfn = zone_start_pfn;
+> +	for (; pfn < zone_end_pfn; pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (page_zone(pfn_to_page(pfn)) != zone)
+> +			continue;
+> +
+> +		 /* If the section is current section, it continues the loop */
+> +		if (start_pfn == pfn)
+> +			continue;
+> +
+> +		/* If we find valid section, we have nothing to do */
+> +		zone_span_writeunlock(zone);
+> +		return;
+> +	}
+> +
+> +	/* The zone has no valid section */
+> +	zone->zone_start_pfn = 0;
+> +	zone->spanned_pages = 0;
+> +	zone_span_writeunlock(zone);
+> +}
+> +
+> +static void shrink_pgdat_span(struct pglist_data *pgdat,
+> +			      unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +	unsigned long pgdat_start_pfn =  pgdat->node_start_pfn;
+> +	unsigned long pgdat_end_pfn =
+> +		pgdat->node_start_pfn + pgdat->node_spanned_pages;
+> +	unsigned long pfn;
+> +	struct mem_section *ms;
+> +	int nid = pgdat->node_id;
+> +
+> +	if (pgdat_start_pfn == start_pfn) {
+> +		/*
+> +		 * If the section is smallest section in the pgdat, it need
+> +		 * shrink pgdat->node_start_pfn and pgdat->node_spanned_pages.
+> +		 * In this case, we find second smallest valid mem_section
+> +		 * for shrinking zone.
+> +		 */
+> +		pfn = find_smallest_section_pfn(nid, NULL, end_pfn,
+> +						pgdat_end_pfn);
+> +		if (pfn) {
+> +			pgdat->node_start_pfn = pfn;
+> +			pgdat->node_spanned_pages = pgdat_end_pfn - pfn;
+> +		}
+> +	} else if (pgdat_end_pfn == end_pfn) {
+> +		/*
+> +		 * If the section is biggest section in the pgdat, it need
+> +		 * shrink pgdat->node_spanned_pages.
+> +		 * In this case, we find second biggest valid mem_section for
+> +		 * shrinking zone.
+> +		 */
+> +		pfn = find_biggest_section_pfn(nid, NULL, pgdat_start_pfn,
+> +					       start_pfn);
+> +		if (pfn)
+> +			pgdat->node_spanned_pages = pfn - pgdat_start_pfn + 1;
+> +	}
+> +
+> +	/*
+> +	 * If the section is not biggest or smallest mem_section in the pgdat,
+> +	 * it only creates a hole in the pgdat. So in this case, we need not
+> +	 * change the pgdat.
+> +	 * But perhaps, the pgdat has only hole data. Thus it check the pgdat
+> +	 * has only hole or not.
+> +	 */
+> +	pfn = pgdat_start_pfn;
+> +	for (; pfn < pgdat_end_pfn; pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (pfn_to_nid(pfn) != nid)
+> +			continue;
+> +
+> +		 /* If the section is current section, it continues the loop */
+> +		if (start_pfn == pfn)
+> +			continue;
+> +
+> +		/* If we find valid section, we have nothing to do */
+> +		return;
+> +	}
+> +
+> +	/* The pgdat has no valid section */
+> +	pgdat->node_start_pfn = 0;
+> +	pgdat->node_spanned_pages = 0;
+> +}
+> +
+> +static void __remove_zone(struct zone *zone, unsigned long start_pfn)
+> +{
+> +	struct pglist_data *pgdat = zone->zone_pgdat;
+> +	int nr_pages = PAGES_PER_SECTION;
+> +	int zone_type;
+> +	unsigned long flags;
+> +
+> +	zone_type = zone - pgdat->node_zones;
+> +
+> +	pgdat_resize_lock(zone->zone_pgdat, &flags);
+> +	shrink_zone_span(zone, start_pfn, start_pfn + nr_pages);
+> +	shrink_pgdat_span(pgdat, start_pfn, start_pfn + nr_pages);
+> +	pgdat_resize_unlock(zone->zone_pgdat, &flags);
+> +}
+> +
+>  static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  {
+>  	unsigned long flags;
+>  	struct pglist_data *pgdat = zone->zone_pgdat;
+> +	unsigned long start_pfn;
+> +	int scn_nr;
+>  	int ret = -EINVAL;
+>  
+>  	if (!valid_section(ms))
+> @@ -325,6 +528,10 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  	if (ret)
+>  		return ret;
+>  
+> +	scn_nr = __section_nr(ms);
+> +	start_pfn = section_nr_to_pfn(scn_nr);
+> +	__remove_zone(zone, start_pfn);
+> +
+>  	pgdat_resize_lock(pgdat, &flags);
+>  	sparse_remove_one_section(zone, ms);
+>  	pgdat_resize_unlock(pgdat, &flags);
 > 
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index 7e2e2ea..1461fb2 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -25,12 +25,12 @@ struct devfreq;
->   * struct devfreq_dev_status - Data given from devfreq user device to
->   *			     governors. Represents the performance
->   *			     statistics.
-> - * @total_time		The total time represented by this instance of
-> + * @total_time:		The total time represented by this instance of
->   *			devfreq_dev_status
-> - * @busy_time		The time that the device was working among the
-> + * @busy_time:		The time that the device was working among the
->   *			total_time.
-> - * @current_frequency	The operating frequency.
-> - * @private_data	An entry not specified by the devfreq framework.
-> + * @current_frequency:	The operating frequency.
-> + * @private_data:	An entry not specified by the devfreq framework.
->   *			A device and a specific governor may have their
->   *			own protocol with private_data. However, because
->   *			this is governor-specific, a governor using this
-> @@ -54,21 +54,21 @@ struct devfreq_dev_status {
->  
->  /**
->   * struct devfreq_dev_profile - Devfreq's user device profile
-> - * @initial_freq	The operating frequency when devfreq_add_device() is
-> + * @initial_freq:	The operating frequency when devfreq_add_device() is
->   *			called.
-> - * @polling_ms		The polling interval in ms. 0 disables polling.
-> - * @target		The device should set its operating frequency at
-> + * @polling_ms:		The polling interval in ms. 0 disables polling.
-> + * @target:		The device should set its operating frequency at
->   *			freq or lowest-upper-than-freq value. If freq is
->   *			higher than any operable frequency, set maximum.
->   *			Before returning, target function should set
->   *			freq at the current frequency.
->   *			The "flags" parameter's possible values are
->   *			explained above with "DEVFREQ_FLAG_*" macros.
-> - * @get_dev_status	The device should provide the current performance
-> + * @get_dev_status:	The device should provide the current performance
->   *			status to devfreq, which is used by governors.
-> - * @get_cur_freq	The device should provide the current frequency
-> + * @get_cur_freq:	The device should provide the current frequency
->   *			at which it is operating.
-> - * @exit		An optional callback that is called when devfreq
-> + * @exit:		An optional callback that is called when devfreq
->   *			is removing the devfreq object due to error or
->   *			from devfreq_remove_device() call. If the user
->   *			has registered devfreq->nb at a notifier-head,
-> @@ -87,14 +87,14 @@ struct devfreq_dev_profile {
->  
->  /**
->   * struct devfreq_governor - Devfreq policy governor
-> - * @name		Governor's name
-> - * @get_target_freq	Returns desired operating frequency for the device.
-> + * @name:		Governor's name
-> + * @get_target_freq:	Returns desired operating frequency for the device.
->   *			Basically, get_target_freq will run
->   *			devfreq_dev_profile.get_dev_status() to get the
->   *			status of the device (load = busy_time / total_time).
->   *			If no_central_polling is set, this callback is called
->   *			only with update_devfreq() notified by OPP.
-> - * @event_handler       Callback for devfreq core framework to notify events
-> + * @event_handler:      Callback for devfreq core framework to notify events
->   *                      to governors. Events include per device governor
->   *                      init and exit, opp changes out of devfreq, suspend
->   *                      and resume of per device devfreq during device idle.
-> @@ -110,23 +110,23 @@ struct devfreq_governor {
->  
->  /**
->   * struct devfreq - Device devfreq structure
-> - * @node	list node - contains the devices with devfreq that have been
-> + * @node:	list node - contains the devices with devfreq that have been
->   *		registered.
-> - * @lock	a mutex to protect accessing devfreq.
-> - * @dev		device registered by devfreq class. dev.parent is the device
-> + * @lock:	a mutex to protect accessing devfreq.
-> + * @dev:	device registered by devfreq class. dev.parent is the device
->   *		using devfreq.
-> - * @profile	device-specific devfreq profile
-> - * @governor	method how to choose frequency based on the usage.
-> - * @nb		notifier block used to notify devfreq object that it should
-> + * @profile:	device-specific devfreq profile
-> + * @governor:	method how to choose frequency based on the usage.
-> + * @nb:		notifier block used to notify devfreq object that it should
->   *		reevaluate operable frequencies. Devfreq users may use
->   *		devfreq.nb to the corresponding register notifier call chain.
-> - * @work	delayed work for load monitoring.
-> - * @previous_freq	previously configured frequency value.
-> - * @data	Private data of the governor. The devfreq framework does not
-> + * @work:	delayed work for load monitoring.
-> + * @previous_freq:	previously configured frequency value.
-> + * @data:	Private data of the governor. The devfreq framework does not
->   *		touch this.
-> - * @min_freq	Limit minimum frequency requested by user (0: none)
-> - * @max_freq	Limit maximum frequency requested by user (0: none)
-> - * @stop_polling	 devfreq polling status of a device.
-> + * @min_freq:	Limit minimum frequency requested by user (0: none)
-> + * @max_freq:	Limit maximum frequency requested by user (0: none)
-> + * @stop_polling:	 devfreq polling status of a device.
->   *
->   * This structure stores the devfreq information for a give device.
->   *
-> @@ -186,9 +186,9 @@ extern const struct devfreq_governor devfreq_simple_ondemand;
->  /**
->   * struct devfreq_simple_ondemand_data - void *data fed to struct devfreq
->   *	and devfreq_add_device
-> - * @ upthreshold	If the load is over this value, the frequency jumps.
-> + * @upthreshold:	If the load is over this value, the frequency jumps.
->   *			Specify 0 to use the default. Valid value = 0 to 100.
-> - * @ downdifferential	If the load is under upthreshold - downdifferential,
-> + * @downdifferential:	If the load is under upthreshold - downdifferential,
->   *			the governor may consider slowing the frequency down.
->   *			Specify 0 to use the default. Valid value = 0 to 100.
->   *			downdifferential < upthreshold must hold.
 
-
-
--- 
-~Randy
