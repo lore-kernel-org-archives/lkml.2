@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2J2W6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:58:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41446 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844Ab2J2W6N (ORCPT
+	id S1756595Ab2J2XA6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:00:58 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:6204 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753892Ab2J2XA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:58:13 -0400
+	Mon, 29 Oct 2012 19:00:56 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAG6Zu08YNPuJ/2dsb2JhbAANN4UtsgIBAQQjVQEQCxoCBRYLAgIJAwIBAgFFBg0BBwEBrxiSe4EmjgqBFAOoEA
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="203108791"
+Message-ID: <508F0AA6.6010702@teksavvy.com>
+Date: Mon, 29 Oct 2012 19:00:54 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121029225421.GA21772@kroah.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-14-git-send-email-zwu.kernel@gmail.com>
-	<20121029181135.GB3605@kroah.com>
-	<CAEH94Li_XUxUUJDskO28OSvZPmZB3u_SpLFcVtD-04PivQSS8w@mail.gmail.com>
-	<20121029223404.GA20486@kroah.com>
-	<CAEH94Lj2baN-EzjTvxURc5ECyfjh9Z+w6NZbNUok3osOLF55ag@mail.gmail.com>
-	<20121029225421.GA21772@kroah.com>
-Date: Tue, 30 Oct 2012 06:58:11 +0800
-Message-ID: <CAEH94LjOGb_==OA7TZDYxpdHjXS_5ekpcxkMJSCgHvpbdD4_1g@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 13/19] debugfs: introduce one function
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jacob Shin <jacob.shin@amd.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yinghai Lu <yinghai@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
+References: <508E002B.4090200@teksavvy.com> <20121029064643.GE574@1wt.eu> <508E913D.2080104@teksavvy.com> <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk> <20121029144722.GA23217@jshin-Toonie> <20121029165823.GA6614@kroah.com>
+In-Reply-To: <20121029165823.GA6614@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 6:54 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Oct 30, 2012 at 06:45:19AM +0800, Zhi Yong Wu wrote:
->> On Tue, Oct 30, 2012 at 6:34 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Tue, Oct 30, 2012 at 06:25:50AM +0800, Zhi Yong Wu wrote:
->> >> On Tue, Oct 30, 2012 at 2:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> >> > On Mon, Oct 29, 2012 at 12:30:55PM +0800, zwu.kernel@gmail.com wrote:
->> >> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->> >> >>
->> >> >>   The debugfs function is used to get expected dentry.
->> >> >
->> >> > Huh?  Why do you need this?  Why haven't you added documentation for the
->> >> It is used to determine if one sysfs directory has been created. OK, i
->> >> will add some doc, thanks for your suggestion.
->> >
->> > You didn't answer the "why" part here.  How come you think you need
->> ah, Let me say its scenario at first. If we do two mount ops as below:
->> 1.) mount -o loop,hot_track image1 /data1
->> 2.) mount -o loop,hot_track image2 /data2
->>
->> The mount -o hot_track operation will automatically create one sysfs
->> directory /sys/kernel/debug/hot_track. To prevent this dir being
->> created again when 2.) is done, we need to know if it has existed at
->> first. In my patch, i at first get its dentry by this new function,
->> then determine if its d_inode field is NULL, if no, it means that this
->> sysfs dir has existed.
->> This is the reason that i want to add one new function.
->
-> Why not do like the rest of the kernel does and just have a:
->         static dentry *hot_track_root;
-> and use that as your root debugfs directory dentry:
-ah, i'm one newbie, don't get familar with other kernel part, but this
-is one good point, i will apply it, thanks.
->
->         if (!hot_track_root) {
->                 /* Create root directory */
->                 hot_track_root = debugfs_create(...);
->         }
->
-> No need to look anything up :)
->
-> thanks,
->
-> greg k-h
+There's something else very wrong when going from 3.4.9 to 3.4.16.
+I've done it on two machines here, one the AMD-450 server (64-bit),
+and the other my main notebook (Core2duo 32-bit-PAE).
 
+Both systems feel much more sluggish than usual with 3.4.16 running.
+Reverted them both back to earlier kernels (3.4.9, 3.4.4-PAE),
+and the usual responsive feel has returned.
 
+Vague, I know, but something bad happened in there somewhere.
 
--- 
-Regards,
-
-Zhi Yong Wu
+Cheers
