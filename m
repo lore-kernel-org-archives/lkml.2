@@ -1,128 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab2J2SQY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:16:24 -0400
-Received: from smtp1.smmp-rueil.gmessaging.net ([81.80.3.134]:48475 "EHLO
-	smtp1.smmp-rueil.gmessaging.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932181Ab2J2SQW (ORCPT
+	id S932827Ab2J2SQx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:16:53 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58917 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932181Ab2J2SQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:16:22 -0400
-Message-ID: <29600_1351534580_508EC7F3_29600_2345_1_508EC7F1.9030102@sagemcom.com>
-Date: Mon, 29 Oct 2012 19:16:17 +0100
-From: Guillaume Juan <guillaume.juan@sagemcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Mon, 29 Oct 2012 14:16:51 -0400
+Date: Mon, 29 Oct 2012 14:16:48 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 15/16] openvswitch: use new hashtable implementation
+Message-ID: <20121029181648.GB20796@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-15-git-send-email-levinsasha928@gmail.com> <20121029132931.GC16391@Krystal> <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com> <20121029155957.GB18834@Krystal> <CA+1xoqcr5xmOkDfqL3P84CNdotOALOhiLRkJjsPCZzijSQUF6w@mail.gmail.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] n_gsm: prevent crash due to dereferencing NULL gsm->tty
-References: <26026_1351239109_508A45C4_26026_63_1_508A45C1.3010407@sagemcom.com> <20121029162947.6270b4da@pyramind.ukuu.org.uk>
-In-Reply-To: <20121029162947.6270b4da@pyramind.ukuu.org.uk>
-X-MIMETrack: Itemize by SMTP Server on CHELS01SC/SERV/SAGEMCOM(Release 7.0.4|March 23, 2009) at
- 10/29/2012 07:16:18 PM,
-	Serialize by Router on CHELS01SC/SERV/SAGEMCOM(Release 7.0.4|March 23, 2009) at
- 10/29/2012 07:16:19 PM,
-	Serialize complete at 10/29/2012 07:16:19 PM
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqcr5xmOkDfqL3P84CNdotOALOhiLRkJjsPCZzijSQUF6w@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 29/10/2012 17:29, Alan Cox a écrit :
-
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On Mon, Oct 29, 2012 at 11:59 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> Hi Mathieu,
+> >>
+> >> On Mon, Oct 29, 2012 at 9:29 AM, Mathieu Desnoyers
+> >> <mathieu.desnoyers@efficios.com> wrote:
+> >> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> > [...]
+> >> >> -static struct hlist_head *hash_bucket(struct net *net, const char *name)
+> >> >> -{
+> >> >> -     unsigned int hash = jhash(name, strlen(name), (unsigned long) net);
+> >> >> -     return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
+> >> >> -}
+> >> >> -
+> >> >>  /**
+> >> >>   *   ovs_vport_locate - find a port that has already been created
+> >> >>   *
+> >> >> @@ -84,13 +76,12 @@ static struct hlist_head *hash_bucket(struct net *net, const char *name)
+> >> >>   */
+> >> >>  struct vport *ovs_vport_locate(struct net *net, const char *name)
+> >> >>  {
+> >> >> -     struct hlist_head *bucket = hash_bucket(net, name);
+> >> >>       struct vport *vport;
+> >> >>       struct hlist_node *node;
+> >> >> +     int key = full_name_hash(name, strlen(name));
+> >> >>
+> >> >> -     hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
+> >> >> -             if (!strcmp(name, vport->ops->get_name(vport)) &&
+> >> >> -                 net_eq(ovs_dp_get_net(vport->dp), net))
+> >> >> +     hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
+> >> >
+> >> > Is applying hash_32() on top of full_name_hash() needed and expected ?
+> >>
+> >> Since this was pointed out in several of the patches, I'll answer it
+> >> just once here.
+> >>
+> >> I've intentionally "allowed" double hashing with hash_32 to keep the
+> >> code simple.
+> >>
+> >> hash_32() is pretty simple and gcc optimizes it to be almost nothing,
+> >> so doing that costs us a multiplication and a shift. On the other
+> >> hand, we benefit from keeping our code simple - how would we avoid
+> >> doing this double hash? adding a different hashtable function for
+> >> strings? or a new function for already hashed keys? I think we benefit
+> >> a lot from having to mul/shr instead of adding extra lines of code
+> >> here.
+> >
+> > This could be done, as I pointed out in another email within this
+> > thread, by changing the "key" argument from add/for_each_possible to an
+> > expected "hash" value, and let the caller invoke hash_32() if they want.
+> > I doubt this would add a significant amount of complexity for users of
+> > this API, but would allow much more flexibility to choose hash
+> > functions.
 > 
-> More important is fixing the bug completely. I agree there is a bug I
-> don't think your fix is sufficient however.
->
-
-It may not fix all cases but I think it improves things both from a
-practical and theoretical point of view.
-In particular the part in gsmtty_hangup: the crash was systematic if the
-user space released the virtual ttys fds only after the N_GSM line
-discipline was removed (with ioctl).
-I explained all the crashes I had, and did not reproduced crashes after
-my patch. Note that I don't have use-cases where the DCE itself opens
-some DLCIs, which certainly can cause a lot more trouble.
-
-
+> Most callers do need to do the hashing though, so why add an
+> additional step for all callers instead of doing another hash_32 for
+> the ones that don't really need it?
 > 
-> You no longer set dlci->dead before doing the dlci release
+> Another question is why do you need flexibility? I think that
+> simplicity wins over flexibility here.
 
-Yes I do, see line 2036:
-+	if (dlci)
-+		dlci->dead = 1;
-I do it only for DLCI#0 but this is the same as what the previous code
-was doing (I don't understand why but I thought that was another topic).
-I was not sure that this dlci->dead was really efficient, but I decided
-to keep it because addressing the relevance of dlci->dead was not the
-purpose of my patch.
+I usually try to make things as simple as possible, but not simplistic
+compared to the problem tackled. In this case, I would ask the following
+question: by standardizing the hash function of all those pieces of
+kernel infrastructure to "hash_32()", including submodules part of the
+kernel network infrastructure, parts of the kernel that can be fed
+values coming from user-space (through the VFS), how can you guarantee
+that hash_32() won't be the cause of a DoS attack based on the fact that
+this algorithm is a) known by an attacker, and b) does not have any
+randomness. It's been a recent trend to perform DoS attacks on poorly
+implemented hashing functions.
 
-> Also moving the gsm_dlci_release seems to have no value at all because
-> there is no locking in the code concerned so viewed from any other thread
-> you've changed nothing but timings. Yes its probably way harder to hit.
-> 
+This is just one example in an attempt to show why different hash table
+users may have different constraints: for a hash table entirely
+populated by keys generated internally by the kernel, a random seed
+might not be required, but for cases where values are fed by user-space
+and from the NIC, I would argue that flexibility to implement a
+randomizable hash function beats implementation simplicity any time.
 
-I don't really see your point, or I think you may be speaking of a
-different matter. Once gsm_dlci_release has done its job, the T2 timer
-should no longer be rearmed by anything the user-space could do, because
-the tty will be hung up (tty_vhangup is synchronous isn't it ?). At
-least tty_port_close_start would not call tty_port_lower_dtr_rts
-anymore. So then the comment /* Now we are sure T2 has stopped */ after
-del_timer_sync will be true.
-Do you see any other paths that may lead to relaunch the T2 timer
-afterwards? Don't you agree that gsmtty_release should be done before
-del_timer_sync?
+And you could keep the basic use-case simple by providing hints to the
+hash_32()/hash_64()/hash_ulong() helpers in comments.
 
-> I can see two ways of tackling it both of which basically come down to
-> the same thing. In gsmld_detach_gsm after the gsm_cleanup_mux we need to
-> 
-> - be sure the thing cannot re-open
+Thoughts ?
 
-If you talk about reopening from the other side, I agree with you that
-dlci->dead does not seem to protect enough. However I can read in the
-description of gsmld_close that "the function will not be called while
-other ldisc methods are in progress". If this is true, the concurrence
-of gsmld_receive_buf should not be possible ?
+Thanks,
 
-> - wait until all the DLCIs are dead
+Mathieu
 
-I am not sure what you mean by this:
-- gsm_cleanup_mux already waits for the answer to CLD command and to the
-closure of DLCI#0. As I reported previously, it will never see the
-answers coming because of the line-discipline life-cycle design, but
-this is yet another topic.
-- or maybe you mean wait until we are sure there are no longer
-references to the virtual ttys. This seems to me impossible to achieve
-because the user-space closes them at its own pace.
-
-> then do the tty_kref_put and gsm->tty = NULL
-> 
-> Thoughts ?
-> 
-> Alan
-
-
-Guillaume
-
-#
-" Ce courriel et les documents qui lui sont joints peuvent contenir des
-informations confidentielles ou ayant un caractère privé. S'ils ne vous sont
-pas destinés, nous vous signalons qu'il est strictement interdit de les
-divulguer, de les reproduire ou d'en utiliser de quelque manière que ce
-soit le contenu. Si ce message vous a été transmis par erreur, merci d'en
-informer l'expéditeur et de supprimer immédiatement de votre système
-informatique ce courriel ainsi que tous les documents qui y sont attachés."
-
-
-                               ******
-
-" This e-mail and any attached documents may contain confidential or
-proprietary information. If you are not the intended recipient, you are
-notified that any dissemination, copying of this e-mail and any attachments
-thereto or use of their contents by any means whatsoever is strictly
-prohibited. If you have received this e-mail in error, please advise the
-sender immediately and delete this e-mail and all attached documents
-from your computer system."
-#
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
