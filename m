@@ -1,158 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754278Ab2J2MtQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:49:16 -0400
-Received: from antcom.de ([188.40.178.216]:50423 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018Ab2J2MtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:49:14 -0400
-Message-ID: <508E7B47.60207@antcom.de>
-Date: Mon, 29 Oct 2012 13:49:11 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.9) Gecko/20121015 Icedove/10.0.9
+	id S1754626Ab2J2Mwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:52:34 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29859 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab2J2Mwc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 08:52:32 -0400
+Date: Mon, 29 Oct 2012 08:39:50 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Jan Beulich <jbeulich@suse.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] Xen acpi pad implement
+Message-ID: <20121029123950.GK2708@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC829233537157F@SHSMSX101.ccr.corp.intel.com>
+ <5089676602000078000A4928@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC82923353723C7@SHSMSX101.ccr.corp.intel.com>
+ <508A89CB020000780008E6ED@nat28.tlf.novell.com>
+ <DE8DF0795D48FD4CA783C40EC8292335372883@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC829233537292E@SHSMSX101.ccr.corp.intel.com>
+ <20121026201409.GF2708@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC8292335373918@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.7-rc3 oops on reboot
-References: <CAAAP30E-g3YdXOMvfueDQZREZ+_Adi2uhxgLeqKixkupU+QNhA@mail.gmail.com>
-In-Reply-To: <CAAAP30E-g3YdXOMvfueDQZREZ+_Adi2uhxgLeqKixkupU+QNhA@mail.gmail.com>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC8292335373918@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2012 01:08 PM, Alexandre Pereira da Silva wrote:
-> I am getting oops on 3.7-rc3 at reboot.
+On Mon, Oct 29, 2012 at 03:38:14AM +0000, Liu, Jinsong wrote:
+> It's doable to register a stub for xen. However, it's not preferred, say, to make xen pad as module, considering the case 'rmmod xen_acpi_pad' then 'insmod acpi_pad'? Under such case there is risk of mwait #UD, if we want to remove mwait check as 'patch 2/2: Revert-pad-config-check-in-xen_check_mwait.patch' did, advantages of which is to enjoy deep Cx.
+
+You are missing my point. This is what I was thinking off:
+
+
+>From 5f30320b8a1c21d60a2c22e98bcf013b7773938b Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 29 Oct 2012 08:38:22 -0400
+Subject: [PATCH] xen/acpi: Provide a stub function to register for ACPI PAD
+ module.
+
+TODO: Give more details.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/Kconfig             |    5 ++
+ drivers/xen/Makefile            |    3 +-
+ drivers/xen/xen-acpi-pad-stub.c |  128 +++++++++++++++++++++++++++++++++++++++
+ drivers/xen/xen-acpi.h          |    2 +
+ 4 files changed, 137 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/xen/xen-acpi-pad-stub.c
+ create mode 100644 drivers/xen/xen-acpi.h
+
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index d4dffcd..9156a08 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -204,4 +204,9 @@ config XEN_MCE_LOG
+ 	  Allow kernel fetching MCE error from Xen platform and
+ 	  converting it into Linux mcelog format for mcelog tools
+ 
++config XEN_ACPI_PAD_STUB
++	bool
++	depends on XEN_DOM0 && X86_64 && ACPI
++	default n
++
+ endmenu
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e863703..d1895d9 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -9,9 +9,10 @@ nostackp := $(call cc-option, -fno-stack-protector)
+ CFLAGS_features.o			:= $(nostackp)
+ 
+ dom0-$(CONFIG_PCI) += pci.o
+-dom0-$(CONFIG_USB_SUPPORT) += dbgp.o
++dom0-$(CONFIG_USB_EHCI_HCD) += dbgp.o
+ dom0-$(CONFIG_ACPI) += acpi.o
+ dom0-$(CONFIG_X86) += pcpu.o
++dom0-$(CONFIG_XEN_ACPI_PAD_STUB)	+= xen-acpi-pad-stub.o
+ obj-$(CONFIG_XEN_DOM0)			+= $(dom0-y)
+ obj-$(CONFIG_BLOCK)			+= biomerge.o
+ obj-$(CONFIG_XEN_XENCOMM)		+= xencomm.o
+diff --git a/drivers/xen/xen-acpi-pad-stub.c b/drivers/xen/xen-acpi-pad-stub.c
+new file mode 100644
+index 0000000..cac9a39
+--- /dev/null
++++ b/drivers/xen/xen-acpi-pad-stub.c
+@@ -0,0 +1,128 @@
++/*
++ * Copyright 2012 by Oracle Inc
++ * Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
++ *
++ * This code borrows ideas from https://lkml.org/lkml/2011/11/30/249
++ * so many thanks go to Kevin Tian <kevin.tian@intel.com>
++ * and Yu Ke <ke.yu@intel.com>.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#include <linux/cpumask.h>
++#include <linux/freezer.h>
++#include <linux/kernel.h>
++#include <linux/kthread.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
++#include <acpi/processor.h>
++
++#include <xen/xen.h>
++#include <xen/interface/platform.h>
++#include <xen/interface/version.h>
++#include <asm/xen/hypercall.h>
++
++/* TODO: Needs comments. */
++static struct acpi_device_ops *xen_acpi_pad_ops;
++static bool __read_mostly xen_acpi_pad_registered;
++static DEFINE_SPINLOCK(xen_acpi_pad_spinlock);
++
++int xen_register_acpi_pad_owner(struct acpi_device_ops *ops)
++{
++	if (xen_acpi_pad_ops)
++		return -EEXIST;
++
++	spin_lock(&xen_acpi_pad_spinlock);
++	xen_acpi_pad_ops = ops;
++	spin_unlock(&xen_acpi_pad_spinlock);
++	return 0;
++}
++int xen_unregister_acpi_pad_owner(struct acpi_device_ops *ops)
++{
++	spin_lock(&xen_acpi_pad_spinlock);
++	if (xen_acpi_pad_ops != ops) {
++		spin_unlock(&xen_acpi_pad_spinlock);
++		return -ENODEV;
++	}
++	xen_acpi_pad_ops = NULL;
++	spin_unlock(&xen_acpi_pad_spinlock);
++	return 0;
++}
++
++static int xen_acpi_pad_remove(struct acpi_device *device, int type)
++{
++	int ret = -ENOSYS;
++
++	spin_lock(&xen_acpi_pad_spinlock);
++	if (xen_acpi_pad_ops && xen_acpi_pad_ops->remove)
++		ret = xen_acpi_pad_ops->remove(device, type);
++	spin_unlock(&xen_acpi_pad_spinlock);
++	return ret;
++}
++static int xen_acpi_pad_add(struct acpi_device *device)
++{
++	int ret = -ENOSYS;
++	spin_lock(&xen_acpi_pad_spinlock);
++	if (xen_acpi_pad_ops && xen_acpi_pad_ops->add)
++		ret = xen_acpi_pad_ops->add(device);
++	spin_unlock(&xen_acpi_pad_spinlock);
++	return ret;
++}
++
++static const struct acpi_device_id pad_device_ids[] = {
++	{"ACPI000C", 0},
++	{"", 0},
++};
++MODULE_DEVICE_TABLE(acpi, pad_device_ids);
++#define ACPI_PROCESSOR_AGGREGATOR_CLASS "acpi_pad"
++
++static struct acpi_driver xen_acpi_pad_driver = {
++	.name = "processor_aggregator",
++	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
++	.ids = pad_device_ids,
++	.ops = {
++		.add = xen_acpi_pad_add,
++		.remove = xen_acpi_pad_remove,
++	},
++};
++
++static int __init xen_acpi_pad_stub_init(void)
++{
++	int ret = -ENOSYS;
++	unsigned version;
++
++	if (!xen_initial_domain())
++		return -ENODEV;
++
++	version = HYPERVISOR_xen_version(XENVER_version, NULL);
++
++	if ((version >> 16 >= 4) && ((version & 0xffff) >= 2)) {
++        	ret = acpi_bus_register_driver(&xen_acpi_pad_driver);
++        	if (!ret)
++			xen_acpi_pad_registered = true;
++    	}
++    	return ret;
++}
++#if 0
++/* For testing purposes. */
++static void __exit xen_acpi_pad_stub_exit(void)
++{
++	if (xen_acpi_pad_registered)
++		acpi_bus_unregister_driver(&xen_acpi_pad_driver);
++	/* The driver should have unregistered first ! */
++	if (WARN_ON(xen_acpi_pad_ops))
++		xen_acpi_pad_ops = NULL;
++}
++#endif
++subsys_initcall(xen_acpi_pad_stub_init);
+diff --git a/drivers/xen/xen-acpi.h b/drivers/xen/xen-acpi.h
+new file mode 100644
+index 0000000..a0867b2
+--- /dev/null
++++ b/drivers/xen/xen-acpi.h
+@@ -0,0 +1,2 @@
++int xen_register_acpi_pad_owner(struct acpi_device_ops *ops);
++int xen_unregister_acpi_pad_owner(struct acpi_device_ops *ops);
+-- 
+1.7.7.6
+
 > 
-> This is an LPC32XX machine. This problem only happens when I connect
-> the ethernet cable and get an IP address.
+> IMHO to prevent mwait #UD, native pad should never have chance to register successfully when running under Xen. So it's better never unregister/disable xen pad.
+
+With the registration stub I mentioned that won't be a problem.
+
 > 
-> Here are the kernel messages.
-> [   38.570000] Unable to handle kernel paging request at virtual
-> address a0000014
-> [   38.570000] pgd = c1730000
-> [   38.580000] [a0000014] *pgd=00000000
-> [   38.580000] Internal error: Oops: 5 [#1] PREEMPT ARM
-> [   38.580000] Modules linked in:
-> [   38.580000] CPU: 0    Not tainted  (3.7.0-rc3 #4)
-> [   38.580000] PC is at trie_firstleaf+0xc/0x2c
-> [   38.580000] LR is at fib_table_flush+0x1c/0x170
-> [   38.580000] pc : [<c029659c>]    lr : [<c0298dec>]    psr: a0000013
-> [   38.580000] sp : c1719d50  ip : c1719d60  fp : c1719d5c
-> [   38.580000] r10: 00000000  r9 : 00000000  r8 : c16341e0
-> [   38.580000] r7 : c09d2c24  r6 : 00000001  r5 : a0000000  r4 : 000003fc
-> [   38.580000] r3 : c18dac00  r2 : c09c6fc0  r1 : c09c6fc0  r0 : a0000014
-> [   38.580000] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   38.580000] Control: 0005317f  Table: 81730000  DAC: 00000015
-> [   38.580000] Process ifconfig (pid: 396, stack limit = 0xc17181b8)
-> [   38.580000] Stack: (0xc1719d50 to 0xc171a000)
-> [   38.580000] 9d40:                                     c1719d9c
-> c1719d60 c0298dec c02965a0
-> [   38.580000] 9d60: c170f308 c14d42e0 00000000 a0000014 c16341e0
-> 000003fc a0000000 00000001
-> [   38.580000] 9d80: c09d2c24 c16341e0 00000000 00000000 c1719dbc
-> c1719da0 c0294244 c0298de0
-> [   38.580000] 9da0: c160f800 c160f800 ffffffff 00000000 c1719dd4
-> c1719dc0 c0294294 c0294224
-> [   38.580000] 9dc0: 00000000 c16341e0 c1719dec c1719dd8 c0294bf0
-> c0294284 00000002 00000000
-> [   38.580000] 9de0: c1719e14 c1719df0 c003e810 c0294b60 ffffffff
-> c09d4698 ffffffff c16341e0
-> [   38.580000] 9e00: 00000002 00000000 c1719e3c c1719e18 c003ea9c
-> c003e7e0 00000000 c1719e28
-> [   38.580000] 9e20: c16341e0 00000000 00000000 c16341e0 c1719e54
-> c1719e40 c003ead4 c003ea5c
-> [   38.580000] 9e40: 00000000 00000000 c1719e8c c1719e58 c028b9bc
-> c003eac4 00000000 c145edec
-> [   38.580000] 9e60: c1719e8c c16341e0 00000000 c160f800 c145ede0
-> c145edec 00000000 00000000
-> [   38.580000] 9e80: c1719ea4 c1719e90 c028ba94 c028b828 00000000
-> c09d2c24 c1719f14 c1719ea8
-> [   38.580000] 9ea0: c028d278 c028ba88 c003d890 00000000 00008916
-> bef74c18 30687465 00000000
-> [   38.580000] 9ec0: 00000000 00000000 00000002 00000000 00000001
-> 00084a10 00000002 00000000
-> [   38.580000] 9ee0: 00000001 00084a10 00001000 00008914 bef74c18
-> bef74c18 00008916 00000003
-> [   38.580000] 9f00: c1718000 00000000 c1719f2c c1719f18 c028e284
-> c028cf18 c1404420 00008916
-> [   38.580000] 9f20: c1719f4c c1719f30 c022ed8c c028e1c4 c022eb6c
-> 00000003 bef74c18 bef74c18
-> [   38.580000] 9f40: c1719f74 c1719f50 c009e5e8 c022eb7c 000ac000
-> 000ad000 bef74c18 00008916
-> [   38.580000] 9f60: c14dcbe0 00000000 c1719fa4 c1719f78 c009e66c
-> c009e304 c0080184 00000000
-> [   38.580000] 9f80: b6f73ee4 bef74c18 00008916 00000003 00000036
-> c000e224 00000000 c1719fa8
-> [   38.580000] 9fa0: c000e0c0 c009e638 bef74c18 00008916 00000003
-> 00008916 bef74c18 00000000
-> [   38.580000] 9fc0: bef74c18 00008916 00000003 00000036 00085a28
-> 00000000 000859a8 00000000
-> [   38.580000] 9fe0: b6f2bde4 bef74bc0 0000ddb4 b6f2be28 60000010
-> 00000003 00000000 00000000
-> [   38.580000] Backtrace:
-> [   38.580000] [<c0296590>] (trie_firstleaf+0x0/0x2c) from
-> [<c0298dec>] (fib_table_flush+0x1c/0x170)
-> [   38.580000] [<c0298dd0>] (fib_table_flush+0x0/0x170) from
-> [<c0294244>] (fib_flush.clone.27+0x30/0x60)
-> [   38.580000] [<c0294214>] (fib_flush.clone.27+0x0/0x60) from
-> [<c0294294>] (fib_disable_ip+0x20/0x38)
-> [   38.580000]  r7:00000000 r6:ffffffff r5:c160f800 r4:c160f800
-> [   38.580000] [<c0294274>] (fib_disable_ip+0x0/0x38) from
-> [<c0294bf0>] (fib_inetaddr_event+0xa0/0xb4)
-> [   38.580000]  r4:c16341e0 r3:00000000
-> [   38.580000] [<c0294b50>] (fib_inetaddr_event+0x0/0xb4) from
-> [<c003e810>] (notifier_call_chain+0x40/0x70)
-> [   38.580000]  r5:00000000 r4:00000002
-> [   38.580000] [<c003e7d0>] (notifier_call_chain+0x0/0x70) from
-> [<c003ea9c>] (__blocking_notifier_call_chain+0x50/0x68)
-> [   38.580000]  r8:00000000 r7:00000002 r6:c16341e0 r5:ffffffff r4:c09d4698
-> r3:ffffffff
-> [   38.580000] [<c003ea4c>] (__blocking_notifier_call_chain+0x0/0x68)
-> from [<c003ead4>] (blocking_notifier_call_chain+0x20/0x28)
-> [   38.580000]  r7:c16341e0 r6:00000000 r5:00000000 r4:c16341e0
-> [   38.580000] [<c003eab4>] (blocking_notifier_call_chain+0x0/0x28)
-> from [<c028b9bc>] (__inet_del_ifa+0x1a4/0x260)
-> [   38.580000] [<c028b818>] (__inet_del_ifa+0x0/0x260) from
-> [<c028ba94>] (inet_del_ifa+0x1c/0x24)
-> [   38.580000] [<c028ba78>] (inet_del_ifa+0x0/0x24) from [<c028d278>]
-> (devinet_ioctl+0x370/0x634)
-> [   38.580000] [<c028cf08>] (devinet_ioctl+0x0/0x634) from
-> [<c028e284>] (inet_ioctl+0xd0/0x110)
-> [   38.580000] [<c028e1b4>] (inet_ioctl+0x0/0x110) from [<c022ed8c>]
-> (sock_ioctl+0x220/0x278)
-> [   38.580000]  r4:00008916 r3:c1404420
-> [   38.580000] [<c022eb6c>] (sock_ioctl+0x0/0x278) from [<c009e5e8>]
-> (do_vfs_ioctl+0x2f4/0x334)
-> [   38.580000]  r6:bef74c18 r5:bef74c18 r4:00000003 r3:c022eb6c
-> [   38.580000] [<c009e2f4>] (do_vfs_ioctl+0x0/0x334) from [<c009e66c>]
-> (sys_ioctl+0x44/0x64)
-> [   38.580000]  r5:00000000 r4:c14dcbe0
-> [   38.580000] [<c009e628>] (sys_ioctl+0x0/0x64) from [<c000e0c0>]
-> (ret_fast_syscall+0x0/0x2c)
-> [   38.580000]  r8:c000e224 r7:00000036 r6:00000003 r5:00008916 r4:bef74c18
-> [   38.580000] Code: e89da810 e1a0c00d e92dd800 e24cb004 (e5900000)
-> [   39.040000] ---[ end trace 1e122706a9f64743 ]---
+> Konrad Rzeszutek Wilk wrote:
+> >> --- a/drivers/xen/Makefile
+> >> +++ b/drivers/xen/Makefile
+> >> @@ -29,6 +29,7 @@ obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
+> >>  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
+> >>  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
+> >>  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
+> >> +obj-$(CONFIG_XEN_DOM0)			+= xen_acpi_pad.o
+> > 
+> > We should have a Kconfig option. In it, please mention what
+> > version of hypervisor supports this functionality.
+> > 
 > 
-> Do anybody have any idea what may have happened there?
+> Kconfig option for xen pad is not preferred, considering if we disable xen pad and then register native pad driver? (of course the precondition is that we do not register stub for xen).
 
-I just tried both on a PHY3250 reference machine, and on a custom board
-and couldn't reproduce sth. like this. Booted the kernel and connected
-the ethernet cable later on, as well as with cable connected on boot.
+That should be OK with the stub.
 
-Any related patches applied? Can you reproduce this on a reference
-machine? Can you provide a .config for this? Any more detail about how
-this could be reproduced?
-
-Thanks in advance,
-
-Roland
+> 
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/types.h>
+> >> +#include <acpi/acpi_bus.h>
+> >> +#include <acpi/acpi_drivers.h>
+> >> +#include <asm/xen/hypercall.h>
+> >> +
+> >> +#if defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR) || \
+> >> +		defined(CONFIG_ACPI_PROCESSOR_AGGREGATOR_MODULE)
+> > 
+> > I don't think you need that.
+> > 
+> 
+> OK.
+> 
+> >> +
+> >> +static int __init xen_acpi_pad_init(void)
+> >> +{
+> >> +	/* Only DOM0 is responsible for Xen acpi pad */
+> >> +	if (xen_initial_domain())
+> >> +		return acpi_bus_register_driver(&xen_acpi_pad_driver); +
+> >> +	return -ENODEV;
+> >> +}
+> >> +subsys_initcall(xen_acpi_pad_init);
+> > 
+> > 
+> > No way of making this a module? It would be nice - perhaps have a stub
+> > function that registers the bus but does not do anything until this
+> > proper module is loaded?
+> > 
+> 
+> It's doable but not preferred, reason as above.
+> 
+> >> +
+> >> +#endif
+> >> diff --git a/include/xen/interface/platform.h
+> >> b/include/xen/interface/platform.h index 4755b5f..0f44376 100644 ---
+> >> a/include/xen/interface/platform.h +++
+> >> b/include/xen/interface/platform.h @@ -324,6 +324,22 @@ struct
+> >>  xenpf_cpu_ol { };
+> >>  DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
+> >> 
+> >> +/*
+> >> + * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
+> >> + * which already occupied at Xen hypervisor side.
+> >            ^- are
+> > 
+> 
+> Sure.
+> 
+> Thanks,
+> Jinsong
