@@ -1,53 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759455Ab2J2PSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:18:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41179 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759269Ab2J2PSA (ORCPT
+	id S1759310Ab2J2PSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:18:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56319 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757912Ab2J2PQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:18:00 -0400
-Subject: Re: [PATCH 1/2] perf header: Fix numa topology printing
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Andrew Jones <drjones@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20121024074903.GA2227@turtle.usersys.redhat.com>
-References: <20121023072702.GB2772@turtle.usersys.redhat.com>
-	 <1350999890-6920-1-git-send-email-namhyung@kernel.org>
-	 <20121023141218.GD2772@turtle.usersys.redhat.com>
-	 <874nlk9wxz.fsf@sejong.aot.lge.com>
-	 <20121024074903.GA2227@turtle.usersys.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Oct 2012 00:17:54 +0900
-Message-ID: <1351523874.1617.6.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3
-Content-Transfer-Encoding: 8bit
+	Mon, 29 Oct 2012 11:16:14 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, ming.m.lin@intel.com
+Subject: [Patch v1 06/10] perf/x86: add support for PEBS Precise Store
+Date: Mon, 29 Oct 2012 16:15:48 +0100
+Message-Id: <1351523752-4215-7-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-10-24 (수), 09:49 +0200, Andrew Jones:
-> On Wed, Oct 24, 2012 at 04:00:08PM +0900, Namhyung Kim wrote:
-> > On Tue, 23 Oct 2012 16:12:19 +0200, Andrew Jones wrote:
-> > > On Tue, Oct 23, 2012 at 10:44:49PM +0900, Namhyung Kim wrote:
-> > >> Andrew reported that the commit 7e94cfcc9d20 ("perf header: Use pre-
-> > >> processed session env when printing") regresses the header output.
-> > >> It was because of a missed string pointer calculation in the loop.
-> > >
-> > > works for me
-> > >
-> > > Tested-by: Andrew Jones <drjones@redhat.com> 
-> > 
-> > Did you test both of the patches?
-> 
-> Yes, I applied both before testing. I'll add a tested by to the other
-> as well.
+This patch adds support for PEBS Precise Store
+which is available on Intel Sandy Bridge and
+Ivy Bridge processors.
 
-Arnaldo, I think these two should go through the urgent branch.  Would
-you apply them?
+To use Precise store, the proper PEBS event
+must be used: mem_trans_retired:precise_stores.
+For the perf tool, the generic mem-stores event
+exported via sysfs can be used directly.
 
-Thanks,
-Namhyung
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.h          |    5 +++
+ arch/x86/kernel/cpu/perf_event_intel.c    |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   49 +++++++++++++++++++++++++++--
+ 3 files changed, 54 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3c5aa72..4e95c90 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -66,6 +66,7 @@ struct event_constraint {
+  * struct event_constraint flags
+  */
+ #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
++#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+ 
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
+@@ -242,6 +243,10 @@ struct cpu_hw_events {
+ 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+ 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
+ 
++#define INTEL_PST_CONSTRAINT(c, n)	\
++	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
++			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
++
+ #define EVENT_CONSTRAINT_END		\
+ 	EVENT_CONSTRAINT(0, 0, 0)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index c37b7f8..bf25b7b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -150,6 +150,7 @@ EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
+ 
+ EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x100b,umask=0x1,ldlat=3");
+ EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
++EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
+ 
+ struct attribute *nhm_events_attrs[] = {
+ 	EVENT_PTR(CPU_CYCLES),
+@@ -178,6 +179,7 @@ struct attribute *snb_events_attrs[] = {
+ 	EVENT_PTR(STALLED_CYCLES_BACKEND),
+ 	EVENT_PTR(REF_CPU_CYCLES),
+ 	EVENT_PTR(mem_ld_snb),
++	EVENT_PTR(mem_st_snb),
+ 	NULL,
+ };
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 3ee6e83..4c5f639 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -69,6 +69,44 @@ static const u64 pebs_data_source[] = {
+ 	OP_LH | P(LVL,UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
+ };
+ 
++static u64 precise_store_data(u64 status)
++{
++	union intel_x86_pebs_dse dse;
++	u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
++
++	dse.val = status;
++
++	/*
++	 * bit 4: TLB access
++	 * 1 = stored missed 2nd level TLB
++	 *
++	 * so it either hit the walker or the OS
++	 * otherwise hit 2nd level TLB
++	 */
++	if (dse.st_stlb_miss)
++		val |= P(TLB, MISS);
++	else
++		val |= P(TLB, HIT);
++
++	/*
++	 * bit 0: hit L1 data cache
++	 * if not set, then all we know is that
++	 * it missed L1D
++	 */
++	if (dse.st_l1d_hit)
++		val |= P(LVL, HIT);
++	else
++		val |= P(LVL, MISS);
++
++	/*
++	 * bit 5: Locked prefix
++	 */
++	if (dse.st_locked)
++		val |= P(LOCK, LOCKED);
++
++	return val;
++}
++
+ static u64 load_latency_data(u64 status)
+ {
+ 	union intel_x86_pebs_dse dse;
+@@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+ 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
++	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
++	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -537,6 +577,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 
+ 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
+ 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
++	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
++		cpuc->pebs_enabled |= 1ULL << 63;
+ }
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -657,12 +699,13 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+-	int fll;
++	int fll, fst;
+ 
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+ 
+ 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
++	fst = event->hw.flags & PERF_X86_EVENT_PEBS_ST;
+ 
+ 	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+@@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	/*
+ 	 * if PEBS-LL or PreciseStore
+ 	 */
+-	if (fll) {
++	if (fll || fst) {
+ 		if (sample_type & PERF_SAMPLE_ADDR)
+ 			data.addr = pebs->dla;
+ 
+@@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		if (sample_type & PERF_SAMPLE_DSRC) {
+ 			if (fll)
+ 				data.dsrc.val = load_latency_data(pebs->dse);
++			else if (fst)
++				data.dsrc.val = precise_store_data(pebs->dse);
+ 		}
+ 	}
+ 
+-- 
+1.7.9.5
 
