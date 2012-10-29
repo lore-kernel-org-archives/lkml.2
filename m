@@ -1,131 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab2J2TBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:01:20 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:53459 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab2J2TBR (ORCPT
+	id S932915Ab2J2TCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:02:47 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40083 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932420Ab2J2TCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:01:17 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhWdACXRjlBV5h1yPGdsb2JhbABEilK3JQICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTh3QDCQqyEA2JVBSKeoEdgSaEIGEDlB+BVIV5hTmIAQ
-X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
-   d="scan'208";a="141711586"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 20:05:54 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/11] HID: core: fix unit exponent parsing
-Message-ID: <20121029190554.GA15015@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-3-git-send-email-benjamin.tissoires@gmail.com>
+	Mon, 29 Oct 2012 15:02:46 -0400
+Date: Mon, 29 Oct 2012 22:00:19 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function (v3)
+Message-ID: <20121029190019.GB2336@swordfish>
+References: <20121027160052.GA4771@swordfish>
+ <508EB96C.4040505@vflare.org>
+ <20121029180558.GE3706@swordfish.minsk.epam.com>
+ <CAPkvG_eZObsD=uCRGNygsrTs=ymjoA09XkoHD9KUUq_YWyuA3A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351241067-9521-3-git-send-email-benjamin.tissoires@gmail.com>
+In-Reply-To: <CAPkvG_eZObsD=uCRGNygsrTs=ymjoA09XkoHD9KUUq_YWyuA3A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+  zram: factor-out zram_decompress_page() function
 
-> HID spec details special values for the HID field unit exponent.
-> Basically, the range [0x8..0xf] correspond to [-8..-1].
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
+  zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
+  Factor-out and make commonly used zram_decompress_page() function, which also simplified
+  error handling in zram_bvec_read().
 
-Standard two's complement, in other words?
+  v3: remove debug message for handle_zero_page() case
+  v2: changed debug message for handle_zero_page() case to a more general one
 
->  drivers/hid/hid-core.c  | 10 +++++++++-
->  drivers/hid/hid-input.c | 19 +++++++++++++------
->  2 files changed, 22 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 9904776..6bde6e4 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -315,6 +315,7 @@ static s32 item_sdata(struct hid_item *item)
->  
->  static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
->  {
-> +	__u32 raw_value;
->  	switch (item->tag) {
->  	case HID_GLOBAL_ITEM_TAG_PUSH:
->  
-> @@ -365,7 +366,14 @@ static int hid_parser_global(struct hid_parser *parser, struct hid_item *item)
->  		return 0;
->  
->  	case HID_GLOBAL_ITEM_TAG_UNIT_EXPONENT:
-> -		parser->global.unit_exponent = item_sdata(item);
-> +		/* Units exponent negative numbers are given through a special
-> +		 * table.
-> +		 * See "6.2.2.7 Global Items" for more information. */
-> +		raw_value = item_udata(item);
-> +		if ((raw_value >> 3) == 1)
-> +			parser->global.unit_exponent = raw_value - 16;
-> +		else
-> +			parser->global.unit_exponent = raw_value;
+  Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-I beleive the function you want is snto32(value, 4).
+---
 
->  		return 0;
->  
->  	case HID_GLOBAL_ITEM_TAG_UNIT:
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index 1b0adc3..fc9f2b5 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -215,7 +215,7 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  					field->logical_minimum;
->  	__s32 physical_extents = field->physical_maximum -
->  					field->physical_minimum;
-> -	__s32 prev;
-> +	__s32 prev, tmp_exponent;
->  
->  	/* Check if the extents are sane */
->  	if (logical_extents <= 0 || physical_extents <= 0)
-> @@ -235,17 +235,24 @@ __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	case ABS_MT_TOOL_Y:
->  	case ABS_MT_TOUCH_MAJOR:
->  	case ABS_MT_TOUCH_MINOR:
-> -		if (field->unit == 0x11) {		/* If centimeters */
-> +		if (field->unit & 0xffffff00)		/* Not a length */
-> +			return 0;
-> +		tmp_exponent = field->unit >> 4;
-> +		if ((tmp_exponent >> 3) == 1)
-> +			tmp_exponent -= 16;
+ drivers/staging/zram/zram_drv.c | 113 +++++++++++++++++-----------------------
+ 1 file changed, 48 insertions(+), 65 deletions(-)
 
-Ditto.
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 6edefde..fb4a7c9 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
+ 	return bvec->bv_len != PAGE_SIZE;
+ }
+ 
+-static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+-			  u32 index, int offset, struct bio *bio)
++static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ {
+-	int ret;
+-	size_t clen;
+-	struct page *page;
+-	unsigned char *user_mem, *cmem, *uncmem = NULL;
+-
+-	page = bvec->bv_page;
+-
+-	if (zram_test_flag(zram, index, ZRAM_ZERO)) {
+-		handle_zero_page(bvec);
+-		return 0;
+-	}
++	int ret = LZO_E_OK;
++	size_t clen = PAGE_SIZE;
++	unsigned char *cmem;
++	unsigned long handle = zram->table[index].handle;
+ 
+-	/* Requested page is not present in compressed area */
+-	if (unlikely(!zram->table[index].handle)) {
+-		pr_debug("Read before write: sector=%lu, size=%u",
+-			 (ulong)(bio->bi_sector), bio->bi_size);
+-		handle_zero_page(bvec);
++	if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
++		memset(mem, 0, PAGE_SIZE);
+ 		return 0;
+ 	}
+ 
+-	if (is_partial_io(bvec)) {
+-		/* Use  a temporary buffer to decompress the page */
+-		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
+-		if (!uncmem) {
+-			pr_info("Error allocating temp memory!\n");
+-			return -ENOMEM;
+-		}
+-	}
+-
+-	user_mem = kmap_atomic(page);
+-	if (!is_partial_io(bvec))
+-		uncmem = user_mem;
+-	clen = PAGE_SIZE;
+-
+-	cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
+-				ZS_MM_RO);
+-
+-	if (zram->table[index].size == PAGE_SIZE) {
+-		memcpy(uncmem, cmem, PAGE_SIZE);
+-		ret = LZO_E_OK;
+-	} else {
++	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
++	if (zram->table[index].size == PAGE_SIZE)
++		memcpy(mem, cmem, PAGE_SIZE);
++	else
+ 		ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    uncmem, &clen);
+-	}
+-
+-	if (is_partial_io(bvec)) {
+-		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
+-		       bvec->bv_len);
+-		kfree(uncmem);
+-	}
+-
+-	zs_unmap_object(zram->mem_pool, zram->table[index].handle);
+-	kunmap_atomic(user_mem);
++						mem, &clen);
++	zs_unmap_object(zram->mem_pool, handle);
+ 
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+@@ -247,36 +210,56 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+ 		return ret;
+ 	}
+ 
+-	flush_dcache_page(page);
+-
+ 	return 0;
+ }
+ 
+-static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
++static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
++			  u32 index, int offset, struct bio *bio)
+ {
+ 	int ret;
+-	size_t clen = PAGE_SIZE;
+-	unsigned char *cmem;
+-	unsigned long handle = zram->table[index].handle;
++	struct page *page;
++	unsigned char *user_mem, *uncmem = NULL;
+ 
+-	if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
+-		memset(mem, 0, PAGE_SIZE);
++	page = bvec->bv_page;
++
++	if (unlikely(!zram->table[index].handle) ||
++			zram_test_flag(zram, index, ZRAM_ZERO)) {
++		handle_zero_page(bvec);
+ 		return 0;
+ 	}
+ 
+-	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+-	ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
+-				    mem, &clen);
+-	zs_unmap_object(zram->mem_pool, handle);
++	user_mem = kmap_atomic(page);
++	if (is_partial_io(bvec))
++		/* Use  a temporary buffer to decompress the page */
++		uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	else
++		uncmem = user_mem;
+ 
++	if (!uncmem) {
++		pr_info("Unable to allocate temp memory\n");
++		ret = -ENOMEM;
++		goto out_cleanup;
++	}
++
++	ret = zram_decompress_page(zram, uncmem, index);
+ 	/* Should NEVER happen. Return bio error if it does. */
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
+ 		zram_stat64_inc(zram, &zram->stats.failed_reads);
+-		return ret;
++		goto out_cleanup;
+ 	}
+ 
+-	return 0;
++	if (is_partial_io(bvec))
++		memcpy(user_mem + bvec->bv_offset, uncmem + offset,
++				bvec->bv_len);
++
++	flush_dcache_page(page);
++	ret = 0;
++out_cleanup:
++	kunmap_atomic(user_mem);
++	if (is_partial_io(bvec))
++		kfree(uncmem);
++	return ret;
+ }
+ 
+ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+@@ -302,7 +285,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+-		ret = zram_read_before_write(zram, uncmem, index);
++		ret = zram_decompress_page(zram, uncmem, index);
+ 		if (ret) {
+ 			kfree(uncmem);
+ 			goto out;
 
-> +		switch (field->unit & 0xf) {
-> +		case 0x1:				/* If centimeters */
->  			/* Convert to millimeters */
-> -			unit_exponent += 1;
-> -		} else if (field->unit == 0x13) {	/* If inches */
-> +			unit_exponent += tmp_exponent;
-> +			break;
-> +		case 0x3:				/* If inches */
->  			/* Convert to millimeters */
->  			prev = physical_extents;
->  			physical_extents *= 254;
->  			if (physical_extents < prev)
->  				return 0;
-> -			unit_exponent -= 1;
-> -		} else {
-> +			unit_exponent += tmp_exponent - 2;
-> +		default:
->  			return 0;
->  		}
->  		break;
-> -- 
-> 1.7.11.7
-> 
-
-Thanks,
-Henrik
