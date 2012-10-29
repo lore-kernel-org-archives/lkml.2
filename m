@@ -1,369 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab2J2FpA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 01:45:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51550 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755609Ab2J2Fo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 01:44:56 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com
-Cc: maxk@qualcomm.com, haixiao@juniper.net, ernesto.martin@viasat.com,
-        krkumar2@in.ibm.com, edumazet@google.com,
-        Jason Wang <jasowang@redhat.com>
-Subject: [net-next v4 7/7] tuntap: choose the txq based on rxq
-Date: Mon, 29 Oct 2012 13:36:04 +0800
-Message-Id: <1351488964-11109-9-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1351488964-11109-1-git-send-email-jasowang@redhat.com>
-References: <1351488964-11109-1-git-send-email-jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com
+	id S1757624Ab2J2FpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:45:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64081 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754623Ab2J2FpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 01:45:09 -0400
+X-AuditID: cbfee60c-b7fb06d00000355f-e0-508e17e1dbe6
+Date: Mon, 29 Oct 2012 05:45:04 +0000 (GMT)
+From: Jongman Heo <jongman.heo@samsung.com>
+Subject: Re: Re: Re: [Pv-drivers] 3.7-rc2 regression : file copied to
+ CIFS-mounted directory corrupted
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "edumazet@google.com" <edumazet@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: jongman.heo@samsung.com
+MIME-version: 1.0
+X-MTR: 20121029053525306@jongman.heo
+Msgkey: 20121029053525306@jongman.heo
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20121024024610830@jongman.heo
+X-ParentMTR: 20121024024610830@jongman.heo
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <14353539.198251351489501891.JavaMail.weblogic@epml12>
+DLP-Filter: Pass
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t8zXd2H4n0BBn/WKVpc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MizP3sxRMM694+2YdcwPjHdMuRk4OIQE1iZufDzGC2BICJhK/
+	VxxggbDFJC7cW8/WxcgFVLOMUeLv3m1wRVd+N7BCJOYzSryde5QVJMEioCoxe3MnWDebgI5E
+	x//9YHFhgTSJxx8esIHYIgJREqe+H2UCaWYWOM8osfjAeUaIMxQlri1dDFbEKyAocXLmE6gz
+	VCTWTjoJ1MABFFeVWHnNAiIsLnFh7iV2CJtXYkb7U6hyOYlpX9cwQ9jSEudnbWCE+Wbx98dQ
+	cX6JY7d3gI0E6X1yPxhmzO7NX9ggbAGJqWcOQrVqSrSfPAbVqi1xfcNMRpgxu04tZ4bpvb9l
+	LhOIzQz0yZTuh+wg45mBetfv0kf3FK+Ak8TGD8tZJzAqz0KSmoWkexZCN7KSBYwsqxhFUwuS
+	C4qT0lON9IoTc4tL89L1kvNzNzFCkgLPDsY5DRaHGAU4GJV4eB987Q0QYk0sK67MPcQowcGs
+	JMK7lBsoxJuSWFmVWpQfX1Sak1p8iNEHGH0TmaVEk/OBCSuvJN7Q2MDY0NDS0MzU0tQAh7CS
+	OG+dR0qAkEB6YklqdmpqQWoRzDgmDk6pBkYX3v2Xz1+YqaxQUjUt5bOOFOeXvfFbJpX6rQv6
+	KnJM4qhPvY/M8xPHL263OtucL5vq023zadcS43+FxyoCs56vqyp5+PPnWYazz6LDNZZO+dPD
+	vUU9k2n3pYoX01S3/Kp+sKW1Nvy52EHGJYICja8v2pZc+vtZMH3idaGSL3KaDcaR+TuPq1Uo
+	sRRnJBpqMRcVJwIATXWr4zcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJKsWRmVeSWpSXmKPExsVy+t/tmboPxPsCDJZMULO4vGsOmwOjx+dN
+	cgGMURk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StFGBsZ6RqYmekbGBnomBrFWhgYGRqZAVQkZ
+	GRdn7mcpmGZe8fbNOuYGxjumXYycHEICahI3Px9iBLElBEwkrvxuYIWwxSQu3FvP1sXIBVQz
+	n1Hi7dyjYAkWAVWJ2Zs7WUBsNgEdiY7/+8HiwgJpEo8/PGADsUUEoiROfT/KBNLMLHCeUWLx
+	gfOMENsUJa4tXQxWxCsgKHFy5hMWiG0qEmsnnQRq4ACKq0qsvGYBERaXuDD3EjuEzSsxo/0p
+	VLmcxLSva5ghbGmJ87M2MMIcvfj7Y6g4v8Sx2zvARoL0PrkfDDNm9+YvbBC2gMTUMwehWjUl
+	2k8eg2rVlri+YSYjzJhdp5Yzw/Te3zKXCcRmBvpkSvdDdpDxzEC963fpo3uKV8BJYuOH5awT
+	GOVmIUnNQtI9C6EbWckCRpZVjKKpBckFxUnpqUZ6xYm5xaV56XrJ+bmbGMHp6RnPDsY5DRaH
+	GAU4GJV4eB987Q0QYk0sK67MPcQowcGsJMK7lBsoxJuSWFmVWpQfX1Sak1p8iNEHGH0TmaVE
+	k/OBqTOvJN7Q2MDY0NDS3MDU0MgCh7CSOG+dR0qAkEB6YklqdmpqQWoRzDgmDk6pBsbkW11f
+	RVL2/3OcWPmdISgg7sqa8vjFx73v3l2rybh3ATuPod0suSf/+552tIezHRYukmOUeGVWl7d2
+	/oNJG8MkzFUWh2ofKLMxjmBc6auVdtz1HuPfu4uXXE/X/JHyw/xO2feGjMCXnYpMsQtuZXzP
+	+5W/MSQoo7lsA9eWE4eWtx3Y1zxt1WolluKMREMt5qLiRABbZ1hBfAMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id q9T5jSo9002742
 
-This patch implements a simple multiqueue flow steering policy - tx follows rx
-for tun/tap. The idea is simple, it just choose the txq based on which rxq it
-comes. The flow were identified through the rxhash of a skb, and the hash to
-queue mapping were recorded in a hlist with an ageing timer to retire the
-mapping. The mapping were created when tun receives packet from userspace, and
-was quired in .ndo_select_queue().
 
-I run co-current TCP_CRR test and didn't see any mapping manipulation helpers in
-perf top, so the overhead could be negelected.
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |  239 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 236 insertions(+), 3 deletions(-)
+------- Original Message -------
+Sender : Jongman Heo<jongman.heo@samsung.com>
+Date : 2012-10-24 11:53 (GMT+09:00)
+Title : Re: Re: [Pv-drivers] 3.7-rc2 regression : file copied to CIFS-mounted directory corrupted
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 78dcda8..158ef1d 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -115,6 +115,8 @@ struct tap_filter {
-  * to match a queue per guest CPU. */
- #define MAX_TAP_QUEUES 1024
- 
-+#define TUN_FLOW_EXPIRE 3 * HZ
-+
- /* A tun_file connects an open character device to a tuntap netdevice. It
-  * also contains all socket related strctures (except sock_fprog and tap_filter)
-  * to serve as one transmit queue for tuntap device. The sock_fprog and
-@@ -138,6 +140,18 @@ struct tun_file {
- 	u16 queue_index;
- };
- 
-+struct tun_flow_entry {
-+	struct hlist_node hash_link;
-+	struct rcu_head rcu;
-+	struct tun_struct *tun;
-+
-+	u32 rxhash;
-+	int queue_index;
-+	unsigned long updated;
-+};
-+
-+#define TUN_NUM_FLOW_ENTRIES 1024
-+
- /* Since the socket were moved to tun_file, to preserve the behavior of persist
-  * device, socket fileter, sndbuf and vnet header size were restore when the
-  * file were attached to a persist device.
-@@ -163,8 +177,176 @@ struct tun_struct {
- #ifdef TUN_DEBUG
- 	int debug;
- #endif
-+	spinlock_t lock;
-+	struct kmem_cache *flow_cache;
-+	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
-+	struct timer_list flow_gc_timer;
-+	unsigned long ageing_time;
- };
- 
-+static inline u32 tun_hashfn(u32 rxhash)
-+{
-+	return rxhash & 0x3ff;
-+}
-+
-+static struct tun_flow_entry *tun_flow_find(struct hlist_head *head, u32 rxhash)
-+{
-+	struct tun_flow_entry *e;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(e, n, head, hash_link) {
-+		if (e->rxhash == rxhash)
-+			return e;
-+	}
-+	return NULL;
-+}
-+
-+static struct tun_flow_entry *tun_flow_create(struct tun_struct *tun,
-+					      struct hlist_head *head,
-+					      u32 rxhash, u16 queue_index)
-+{
-+	struct tun_flow_entry *e = kmem_cache_alloc(tun->flow_cache,
-+						    GFP_ATOMIC);
-+	if (e) {
-+		tun_debug(KERN_INFO, tun, "create flow: hash %u index %u\n",
-+			  rxhash, queue_index);
-+		e->updated = jiffies;
-+		e->rxhash = rxhash;
-+		e->queue_index = queue_index;
-+		e->tun = tun;
-+		hlist_add_head_rcu(&e->hash_link, head);
-+	}
-+	return e;
-+}
-+
-+static void tun_flow_free(struct rcu_head *head)
-+{
-+	struct tun_flow_entry *e
-+		= container_of(head, struct tun_flow_entry, rcu);
-+	kmem_cache_free(e->tun->flow_cache, e);
-+}
-+
-+static void tun_flow_delete(struct tun_struct *tun, struct tun_flow_entry *e)
-+{
-+	tun_debug(KERN_INFO, tun, "delete flow: hash %u index %u\n",
-+		  e->rxhash, e->queue_index);
-+	hlist_del_rcu(&e->hash_link);
-+	call_rcu(&e->rcu, tun_flow_free);
-+}
-+
-+/* caller hold tun->lock */
-+static int tun_delete_by_rxhash(struct tun_struct *tun, u32 rxhash)
-+{
-+	struct hlist_head *head = &tun->flows[tun_hashfn(rxhash)];
-+	struct tun_flow_entry *e = tun_flow_find(head, rxhash);
-+
-+	if (!e)
-+		return -ENOENT;
-+
-+	tun_flow_delete(tun, e);
-+}
-+
-+static void tun_flow_flush(struct tun_struct *tun)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link)
-+			tun_flow_delete(tun, e);
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_delete_by_queue(struct tun_struct *tun, u16 queue_index)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			if (e->queue_index == queue_index)
-+				tun_flow_delete(tun, e);
-+		}
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_cleanup(unsigned long data)
-+{
-+	struct tun_struct *tun = (struct tun_struct *)data;
-+	unsigned long delay = tun->ageing_time;
-+	unsigned long next_timer = jiffies + delay;
-+	unsigned long count = 0;
-+	int i;
-+
-+	tun_debug(KERN_INFO, tun, "tun_flow_cleanup\n");
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			unsigned long this_timer;
-+			count ++;
-+			this_timer = e->updated + delay;
-+			if (time_before_eq(this_timer, jiffies))
-+				tun_flow_delete(tun, e);
-+			else if (time_before(this_timer, next_timer))
-+				next_timer = this_timer;
-+		}
-+	}
-+
-+	if (count)
-+		mod_timer(&tun->flow_gc_timer, round_jiffies_up(next_timer));
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_update(struct tun_struct *tun, struct sk_buff *skb,
-+			    u16 queue_index)
-+{
-+	struct hlist_head *head;
-+	struct tun_flow_entry *e;
-+	unsigned long delay = tun->ageing_time;
-+	u32 rxhash = skb_get_rxhash(skb);
-+
-+	if (!rxhash)
-+		return;
-+	else
-+		head = &tun->flows[tun_hashfn(rxhash)];
-+
-+	rcu_read_lock();
-+
-+	if (tun->numqueues == 1)
-+		goto unlock;
-+
-+	e = tun_flow_find(head, rxhash);
-+	if (likely(e)) {
-+		/* TODO: keep queueing to old queue until it's empty? */
-+		e->queue_index = queue_index;
-+		e->updated = jiffies;
-+	} else {
-+		spin_lock_bh(&tun->lock);
-+		if (!tun_flow_find(head, rxhash))
-+			tun_flow_create(tun, head, rxhash, queue_index);
-+
-+		if (!timer_pending(&tun->flow_gc_timer))
-+			mod_timer(&tun->flow_gc_timer,
-+				  round_jiffies_up(jiffies + delay));
-+		spin_unlock_bh(&tun->lock);
-+	}
-+
-+unlock:
-+	rcu_read_unlock();
-+}
-+
- /* We try to identify a flow through its rxhash first. The reason that
-  * we do not check rxq no. is becuase some cards(e.g 82599), chooses
-  * the rxq based on the txq where the last packet of the flow comes. As
-@@ -175,6 +357,7 @@ struct tun_struct {
- static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
-+	struct tun_flow_entry *e;
- 	u32 txq = 0;
- 	u32 numqueues = 0;
- 
-@@ -183,8 +366,12 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
- 
- 	txq = skb_get_rxhash(skb);
- 	if (txq) {
--		/* use multiply and shift instead of expensive divide */
--	        txq = ((u64)txq * numqueues) >> 32;
-+		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
-+		if (e)
-+			txq = e->queue_index;
-+		else
-+			/* use multiply and shift instead of expensive divide */
-+			txq = ((u64)txq * numqueues) >> 32;
- 	} else if (likely(skb_rx_queue_recorded(skb))) {
- 		txq = skb_get_rx_queue(skb);
- 		while (unlikely(txq >= numqueues))
-@@ -234,6 +421,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		sock_put(&tfile->sk);
- 
- 		synchronize_net();
-+		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
-@@ -629,6 +817,37 @@ static const struct net_device_ops tap_netdev_ops = {
- #endif
- };
- 
-+static int tun_flow_init(struct tun_struct *tun)
-+{
-+	int i;
-+
-+	tun->flow_cache = kmem_cache_create("tun_flow_cache",
-+					    sizeof(struct tun_flow_entry), 0, 0,
-+					    NULL);
-+	if (!tun->flow_cache)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
-+		INIT_HLIST_HEAD(&tun->flows[i]);
-+
-+	tun->ageing_time = TUN_FLOW_EXPIRE;
-+	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
-+	mod_timer(&tun->flow_gc_timer,
-+		  round_jiffies_up(jiffies + tun->ageing_time));
-+
-+	return 0;
-+}
-+
-+static void tun_flow_uninit(struct tun_struct *tun)
-+{
-+	del_timer_sync(&tun->flow_gc_timer);
-+	tun_flow_flush(tun);
-+
-+	/* Wait for completion of call_rcu()'s */
-+	rcu_barrier();
-+	kmem_cache_destroy(tun->flow_cache);
-+}
-+
- /* Initialize net device. */
- static void tun_net_init(struct net_device *dev)
- {
-@@ -973,6 +1192,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
- 
-+	tun_flow_update(tun, skb, tfile->queue_index);
- 	return total_len;
- }
- 
-@@ -1150,6 +1370,14 @@ out:
- 	return ret;
- }
- 
-+static void tun_free_netdev(struct net_device *dev)
-+{
-+	struct tun_struct *tun = netdev_priv(dev);
-+
-+	tun_flow_uninit(tun);
-+	free_netdev(dev);
-+}
-+
- static void tun_setup(struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
-@@ -1158,7 +1386,7 @@ static void tun_setup(struct net_device *dev)
- 	tun->group = INVALID_GID;
- 
- 	dev->ethtool_ops = &tun_ethtool_ops;
--	dev->destructor = free_netdev;
-+	dev->destructor = tun_free_netdev;
- }
- 
- /* Trivial set of netlink ops to allow deleting tun or tap
-@@ -1381,10 +1609,15 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun->filter_attached = false;
- 		tun->sndbuf = tfile->socket.sk->sk_sndbuf;
- 
-+		spin_lock_init(&tun->lock);
-+
- 		security_tun_dev_post_create(&tfile->sk);
- 
- 		tun_net_init(dev);
- 
-+		if (tun_flow_init(tun))
-+			goto err_free_dev;
-+
- 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
- 			TUN_USER_FEATURES;
- 		dev->features = dev->hw_features;
--- 
-1.7.1
+Hi,
 
+------- Original Message -------
+Sender : Eric Dumazet
+Date : 2012-10-24 04:39 (GMT+09:00)
+Title : Re: [Pv-drivers] 3.7-rc2 regression : file copied to CIFS-mounted directory corrupted
+
+On Tue, 2012-10-23 at 15:50 +0200, Eric Dumazet wrote:
+
+> Only the skb head is handled in the code you copy/pasted.
+> 
+> You need to generalize that to code in lines ~754
+> 
+> 
+> Then, the number of estimated descriptors is bad :
+> 
+> /* conservatively estimate # of descriptors to use */
+> count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
+> skb_shinfo(skb)->nr_frags + 1;
+> 
+> 
+> Yes, you need a more precise estimation and vmxnet3_map_pkt() should
+> eventually split too big frags.
+
+raw patch would be :
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index ce9d4f2..0ae1bcc 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -744,28 +744,43 @@ vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
+
+for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
++ u32 buf_size;
+
+- tbi = tq->buf_info + tq->tx_ring.next2fill;
+- tbi->map_type = VMXNET3_MAP_PAGE;
+- tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
+- 0, skb_frag_size(frag),
+- DMA_TO_DEVICE);
++ buf_offset = 0;
++ len = skb_frag_size(frag);
++ while (len) {
++ tbi = tq->buf_info + tq->tx_ring.next2fill;
++ if (len < VMXNET3_MAX_TX_BUF_SIZE) {
++ buf_size = len;
++ dw2 |= len;
++ } else {
++ buf_size = VMXNET3_MAX_TX_BUF_SIZE;
++ /* spec says that for TxDesc.len, 0 == 2^14 */
++ }
++ tbi->map_type = VMXNET3_MAP_PAGE;
++ tbi->dma_addr = skb_frag_dma_map(&adapter->pdev->dev, frag,
++ buf_offset, buf_size,
++ DMA_TO_DEVICE);
+
+- tbi->len = skb_frag_size(frag);
++ tbi->len = buf_size;
+
+- gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
+- BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
++ gdesc = tq->tx_ring.base + tq->tx_ring.next2fill;
++ BUG_ON(gdesc->txd.gen == tq->tx_ring.gen);
+
+- gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
+- gdesc->dword[2] = cpu_to_le32(dw2 | skb_frag_size(frag));
+- gdesc->dword[3] = 0;
++ gdesc->txd.addr = cpu_to_le64(tbi->dma_addr);
++ gdesc->dword[2] = cpu_to_le32(dw2);
++ gdesc->dword[3] = 0;
+
+- dev_dbg(&adapter->netdev->dev,
+- "txd[%u]: 0x%llu %u %u\n",
+- tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
+- le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
+- vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
+- dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
++ dev_dbg(&adapter->netdev->dev,
++ "txd[%u]: 0x%llu %u %u\n",
++ tq->tx_ring.next2fill, le64_to_cpu(gdesc->txd.addr),
++ le32_to_cpu(gdesc->dword[2]), gdesc->dword[3]);
++ vmxnet3_cmd_ring_adv_next2fill(&tq->tx_ring);
++ dw2 = tq->tx_ring.gen << VMXNET3_TXD_GEN_SHIFT;
++
++ len -= buf_size;
++ buf_offset += buf_size;
++ }
+}
+
+ctx->eop_txd = gdesc;
+@@ -886,6 +901,18 @@ vmxnet3_prepare_tso(struct sk_buff *skb,
+}
+}
+
++static int txd_estimate(const struct sk_buff *skb)
++{
++ int count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) + 1;
++ int i;
++
++ for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
++ const struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
++
++ count += VMXNET3_TXD_NEEDED(skb_frag_size(frag));
++ }
++ return count;
++}
+
+/*
+  * Transmits a pkt thru a given tq
+@@ -914,9 +941,7 @@ vmxnet3_tq_xmit(struct sk_buff *skb, struct vmxnet3_tx_queue *tq,
+union Vmxnet3_GenericDesc tempTxDesc;
+#endif
+
+- /* conservatively estimate # of descriptors to use */
+- count = VMXNET3_TXD_NEEDED(skb_headlen(skb)) +
+- skb_shinfo(skb)->nr_frags + 1;
++ count = txd_estimate(skb);
+
+ctx.ipv4 = (vlan_get_protocol(skb) == cpu_to_be16(ETH_P_IP));
+
+------- Original Message End -------
+
+Hi, Eric, 
+your raw patch seemed to fix the issue. But after ~200 runs, copied file has been corrupted again.
+
+# cmp -l /home/local.bin /mnt/cifs/new.bin | awk '{printf "%08X %02X %02X\n", $1, strtonum(0$2), strtonum(0$3)}' > diff.log
+
+I compared the difference between source and copied file. Size of file is 45872732 bytes (= 0x2BBF65C).
+Among them, 4096 (0x1000) bytes are different, from 0x2B96001 to 0x2B97000. Instead of original data, 0x00 was copied in those area.
+
+patch applied on top of 2d1f4c8e ("Merge branch 'drm-fixes' of git://people.freedesktop.org/~airlied/linux").
+
+Regards,
+Jongman Heo.
+
+------- Original Message End -------
+
+Hi, 
+
+As I said in the previous post, with 2d1f4c8e + Eric's patch, I got the issue mentioned above ; sometimes 4096 bytes are being copied by all zeros. Not easily reproducible, but always happened before running ~500 runs.
+
+But with 3.7-rc3 + the patch, I haven't encountered the issue so far, until ~2000 runs.
+Maybe, the root cause is fixed by Eric's patch, and the remaining subtle bug, corrupting 4096 bytes, might be fixed by other commit, between 3.7-rc2 and -rc3.
+
+Thanks,
+Jongman Heo.
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
