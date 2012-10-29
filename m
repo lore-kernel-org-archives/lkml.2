@@ -1,185 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760558Ab2J2UDh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:03:37 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36297 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759048Ab2J2UDQ (ORCPT
+	id S1760570Ab2J2UEE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:04:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57462 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758695Ab2J2UB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:03:16 -0400
+	Mon, 29 Oct 2012 16:01:58 -0400
+From: Nishanth Menon <nm@ti.com>
+To: linux-pm <linux-pm@vger.kernel.org>
+CC: Nishanth Menon <nm@ti.com>, Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [linux-next PATCH 2/7] PM / devfreq: provide hooks for governors to be registered
+Date: Mon, 29 Oct 2012 15:01:43 -0500
+Message-ID: <1351540908-12195-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351540908-12195-1-git-send-email-nm@ti.com>
+References: <1351540908-12195-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Date: Mon, 29 Oct 2012 21:03:15 +0100
-Message-ID: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
-Subject: Hang in XFS reclaim on 3.7.0-rc3
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: xfs@oss.sgi.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After experiencing a hang of all IO yesterday (
-http://marc.info/?l=linux-kernel&m=135142236520624&w=2 ), I turned on
-LOCKDEP after upgrading to -rc3.
+Add devfreq_add_governor and devfreq_remove_governor which
+can be invoked by governors to register with devfreq.
 
-I then tried to replicate the load that hung yesterday and got the
-following lockdep report, implicating XFS instead of by stacking swap
-onto dm-crypt and md.
+This sets up the stage to dynamically switch governors and
+allow governors to be dynamically loaded as well.
 
-Oct 29 20:27:11 thoregon kernel: [ 2675.571958] usb 7-2: USB
-disconnect, device number 2
-Oct 29 20:30:01 thoregon kernel: [ 2844.971913]
-Oct 29 20:30:01 thoregon kernel: [ 2844.971920]
-=================================
-Oct 29 20:30:01 thoregon kernel: [ 2844.971921] [ INFO: inconsistent
-lock state ]
-Oct 29 20:30:01 thoregon kernel: [ 2844.971924] 3.7.0-rc3 #1 Not tainted
-Oct 29 20:30:01 thoregon kernel: [ 2844.971925]
----------------------------------
-Oct 29 20:30:01 thoregon kernel: [ 2844.971927] inconsistent
-{RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-Oct 29 20:30:01 thoregon kernel: [ 2844.971929] kswapd0/725
-[HC0[0]:SC0[0]:HE1:SE1] takes:
-Oct 29 20:30:01 thoregon kernel: [ 2844.971931]
-(&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e7ef4>]
-xfs_ilock+0x84/0xb0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971941] {RECLAIM_FS-ON-W}
-state was registered at:
-Oct 29 20:30:01 thoregon kernel: [ 2844.971942]   [<ffffffff8108137e>]
-mark_held_locks+0x7e/0x130
-Oct 29 20:30:01 thoregon kernel: [ 2844.971947]   [<ffffffff81081a63>]
-lockdep_trace_alloc+0x63/0xc0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971949]   [<ffffffff810e9dd5>]
-kmem_cache_alloc+0x35/0xe0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971952]   [<ffffffff810dba31>]
-vm_map_ram+0x271/0x770
-Oct 29 20:30:01 thoregon kernel: [ 2844.971955]   [<ffffffff811e10a6>]
-_xfs_buf_map_pages+0x46/0xe0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971959]   [<ffffffff811e1fba>]
-xfs_buf_get_map+0x8a/0x130
-Oct 29 20:30:01 thoregon kernel: [ 2844.971961]   [<ffffffff81233849>]
-xfs_trans_get_buf_map+0xa9/0xd0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971964]   [<ffffffff8121e339>]
-xfs_ifree_cluster+0x129/0x670
-Oct 29 20:30:01 thoregon kernel: [ 2844.971967]   [<ffffffff8121f959>]
-xfs_ifree+0xe9/0xf0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971969]   [<ffffffff811f4abf>]
-xfs_inactive+0x2af/0x480
-Oct 29 20:30:01 thoregon kernel: [ 2844.971972]   [<ffffffff811efb90>]
-xfs_fs_evict_inode+0x70/0x80
-Oct 29 20:30:01 thoregon kernel: [ 2844.971974]   [<ffffffff8110cb8f>]
-evict+0xaf/0x1b0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971977]   [<ffffffff8110cd95>]
-iput+0x105/0x210
-Oct 29 20:30:01 thoregon kernel: [ 2844.971979]   [<ffffffff811070d0>]
-dentry_iput+0xa0/0xe0
-Oct 29 20:30:01 thoregon kernel: [ 2844.971981]   [<ffffffff81108310>]
-dput+0x150/0x280
-Oct 29 20:30:01 thoregon kernel: [ 2844.971983]   [<ffffffff811020fb>]
-sys_renameat+0x21b/0x290
-Oct 29 20:30:01 thoregon kernel: [ 2844.971986]   [<ffffffff81102186>]
-sys_rename+0x16/0x20
-Oct 29 20:30:01 thoregon kernel: [ 2844.971988]   [<ffffffff816b2292>]
-system_call_fastpath+0x16/0x1b
-Oct 29 20:30:01 thoregon kernel: [ 2844.971992] irq event stamp: 155377
-Oct 29 20:30:01 thoregon kernel: [ 2844.971993] hardirqs last  enabled
-at (155377): [<ffffffff816ae1ed>] mutex_trylock+0xfd/0x170
-Oct 29 20:30:01 thoregon kernel: [ 2844.971997] hardirqs last disabled
-at (155376): [<ffffffff816ae12e>] mutex_trylock+0x3e/0x170
-Oct 29 20:30:01 thoregon kernel: [ 2844.971999] softirqs last  enabled
-at (155368): [<ffffffff81042fb1>] __do_softirq+0x111/0x170
-Oct 29 20:30:01 thoregon kernel: [ 2844.972002] softirqs last disabled
-at (155353): [<ffffffff816b33bc>] call_softirq+0x1c/0x30
-Oct 29 20:30:01 thoregon kernel: [ 2844.972004]
-Oct 29 20:30:01 thoregon kernel: [ 2844.972004] other info that might
-help us debug this:
-Oct 29 20:30:01 thoregon kernel: [ 2844.972006]  Possible unsafe
-locking scenario:
-Oct 29 20:30:01 thoregon kernel: [ 2844.972006]
-Oct 29 20:30:01 thoregon kernel: [ 2844.972007]        CPU0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972007]        ----
-Oct 29 20:30:01 thoregon kernel: [ 2844.972008]   lock(&(&ip->i_lock)->mr_lock);
-Oct 29 20:30:01 thoregon kernel: [ 2844.972009]   <Interrupt>
-Oct 29 20:30:01 thoregon kernel: [ 2844.972010]
-lock(&(&ip->i_lock)->mr_lock);
-Oct 29 20:30:01 thoregon kernel: [ 2844.972012]
-Oct 29 20:30:01 thoregon kernel: [ 2844.972012]  *** DEADLOCK ***
-Oct 29 20:30:01 thoregon kernel: [ 2844.972012]
-Oct 29 20:30:01 thoregon kernel: [ 2844.972013] 3 locks held by kswapd0/725:
-Oct 29 20:30:01 thoregon kernel: [ 2844.972014]  #0:
-(shrinker_rwsem){++++..}, at: [<ffffffff810bbd22>]
-shrink_slab+0x32/0x1f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972020]  #1:
-(&type->s_umount_key#20){++++.+}, at: [<ffffffff810f5a8e>]
-grab_super_passive+0x3e/0x90
-Oct 29 20:30:01 thoregon kernel: [ 2844.972024]  #2:
-(&pag->pag_ici_reclaim_lock){+.+...}, at: [<ffffffff811f263c>]
-xfs_reclaim_inodes_ag+0xbc/0x4f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972027]
-Oct 29 20:30:01 thoregon kernel: [ 2844.972027] stack backtrace:
-Oct 29 20:30:01 thoregon kernel: [ 2844.972029] Pid: 725, comm:
-kswapd0 Not tainted 3.7.0-rc3 #1
-Oct 29 20:30:01 thoregon kernel: [ 2844.972031] Call Trace:
-Oct 29 20:30:01 thoregon kernel: [ 2844.972035]  [<ffffffff816a782c>]
-print_usage_bug+0x1f5/0x206
-Oct 29 20:30:01 thoregon kernel: [ 2844.972039]  [<ffffffff8100ed8a>]
-? save_stack_trace+0x2a/0x50
-Oct 29 20:30:01 thoregon kernel: [ 2844.972042]  [<ffffffff8107e9fd>]
-mark_lock+0x28d/0x2f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972044]  [<ffffffff8107de30>]
-? print_irq_inversion_bug.part.37+0x1f0/0x1f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972047]  [<ffffffff8107efdf>]
-__lock_acquire+0x57f/0x1c00
-Oct 29 20:30:01 thoregon kernel: [ 2844.972049]  [<ffffffff8107c899>]
-? __lock_is_held+0x59/0x70
-Oct 29 20:30:01 thoregon kernel: [ 2844.972051]  [<ffffffff81080b55>]
-lock_acquire+0x55/0x70
-Oct 29 20:30:01 thoregon kernel: [ 2844.972053]  [<ffffffff811e7ef4>]
-? xfs_ilock+0x84/0xb0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972056]  [<ffffffff8106126a>]
-down_write_nested+0x4a/0x70
-Oct 29 20:30:01 thoregon kernel: [ 2844.972058]  [<ffffffff811e7ef4>]
-? xfs_ilock+0x84/0xb0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972060]  [<ffffffff811e7ef4>]
-xfs_ilock+0x84/0xb0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972063]  [<ffffffff811f1a76>]
-xfs_reclaim_inode+0x136/0x340
-Oct 29 20:30:01 thoregon kernel: [ 2844.972065]  [<ffffffff811f283f>]
-xfs_reclaim_inodes_ag+0x2bf/0x4f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972066]  [<ffffffff811f2660>]
-? xfs_reclaim_inodes_ag+0xe0/0x4f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972069]  [<ffffffff811f2bae>]
-xfs_reclaim_inodes_nr+0x2e/0x40
-Oct 29 20:30:01 thoregon kernel: [ 2844.972071]  [<ffffffff811ef480>]
-xfs_fs_free_cached_objects+0x10/0x20
-Oct 29 20:30:01 thoregon kernel: [ 2844.972073]  [<ffffffff810f5bf3>]
-prune_super+0x113/0x1a0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972075]  [<ffffffff810bbe0e>]
-shrink_slab+0x11e/0x1f0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972077]  [<ffffffff810be400>]
-kswapd+0x690/0xa10
-Oct 29 20:30:01 thoregon kernel: [ 2844.972080]  [<ffffffff8105ca30>]
-? __init_waitqueue_head+0x60/0x60
-Oct 29 20:30:01 thoregon kernel: [ 2844.972082]  [<ffffffff810bdd70>]
-? shrink_lruvec+0x540/0x540
-Oct 29 20:30:01 thoregon kernel: [ 2844.972084]  [<ffffffff8105c246>]
-kthread+0xd6/0xe0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972087]  [<ffffffff816b148b>]
-? _raw_spin_unlock_irq+0x2b/0x50
-Oct 29 20:30:01 thoregon kernel: [ 2844.972089]  [<ffffffff8105c170>]
-? flush_kthread_worker+0xe0/0xe0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972091]  [<ffffffff816b21ec>]
-ret_from_fork+0x7c/0xb0
-Oct 29 20:30:01 thoregon kernel: [ 2844.972093]  [<ffffffff8105c170>]
-? flush_kthread_worker+0xe0/0xe0
-Oct 29 20:30:01 thoregon cron[24374]: (root) CMD (test -x
-/usr/sbin/run-crons && /usr/sbin/run-crons)
+Cc: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 
-As kswapd got stuck yesterday, I think LOCKDEP found a real problem.
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/devfreq/devfreq.c  |   91 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/devfreq/governor.h |    4 ++
+ include/linux/devfreq.h    |    3 ++
+ 3 files changed, 98 insertions(+)
 
-If you need more information, please ask. I will try to provide it.
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index 6d3070d..9c079d2 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -36,6 +36,8 @@ static struct class *devfreq_class;
+  */
+ static struct workqueue_struct *devfreq_wq;
+ 
++/* The list of all device-devfreq governors */
++static LIST_HEAD(devfreq_governor_list);
+ /* The list of all device-devfreq */
+ static LIST_HEAD(devfreq_list);
+ static DEFINE_MUTEX(devfreq_list_lock);
+@@ -66,6 +68,32 @@ static struct devfreq *find_device_devfreq(struct device *dev)
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++/**
++ * find_devfreq_governor() - find devfreq governor from name
++ * @name:	name of the governor
++ *
++ * Search the list of devfreq governors and return the matched
++ * governor's pointer. devfreq_list_lock should be held by the caller.
++ */
++static struct devfreq_governor *find_devfreq_governor(const char *name)
++{
++	struct devfreq_governor *tmp_governor;
++
++	if (unlikely(IS_ERR_OR_NULL(name))) {
++		pr_err("DEVFREQ: %s: Invalid parameters\n", __func__);
++		return ERR_PTR(-EINVAL);
++	}
++	WARN(!mutex_is_locked(&devfreq_list_lock),
++	     "devfreq_list_lock must be locked.");
++
++	list_for_each_entry(tmp_governor, &devfreq_governor_list, node) {
++		if (!strncmp(tmp_governor->name, name, DEVFREQ_NAME_LEN))
++			return tmp_governor;
++	}
++
++	return ERR_PTR(-ENODEV);
++}
++
+ /* Load monitoring helper functions for governors use */
+ 
+ /**
+@@ -456,6 +484,69 @@ int devfreq_resume_device(struct devfreq *devfreq)
+ }
+ EXPORT_SYMBOL(devfreq_resume_device);
+ 
++/**
++ * devfreq_add_governor() - Add devfreq governor
++ * @governor:	the devfreq governor to be added
++ */
++int devfreq_add_governor(struct devfreq_governor *governor)
++{
++	struct devfreq_governor *g;
++	int err = 0;
++
++	if (!governor) {
++		pr_err("%s: Invalid parameters.\n", __func__);
++		return -EINVAL;
++	}
++
++	mutex_lock(&devfreq_list_lock);
++	g = find_devfreq_governor(governor->name);
++	if (!IS_ERR(g)) {
++		pr_err("%s: governor %s already registered\n", __func__,
++		       g->name);
++		err = -EINVAL;
++		goto err_out;
++	}
++
++	list_add(&governor->node, &devfreq_governor_list);
++
++err_out:
++	mutex_unlock(&devfreq_list_lock);
++
++	return err;
++}
++EXPORT_SYMBOL(devfreq_add_governor);
++
++/**
++ * devfreq_remove_device() - Remove devfreq feature from a device.
++ * @governor:	the devfreq governor to be removed
++ */
++int devfreq_remove_governor(struct devfreq_governor *governor)
++{
++	struct devfreq_governor *g;
++	int err = 0;
++
++	if (!governor) {
++		pr_err("%s: Invalid parameters.\n", __func__);
++		return -EINVAL;
++	}
++
++	mutex_lock(&devfreq_list_lock);
++	g = find_devfreq_governor(governor->name);
++	if (IS_ERR(g)) {
++		pr_err("%s: governor %s not registered\n", __func__,
++		       g->name);
++		err = -EINVAL;
++		goto err_out;
++	}
++
++	list_del(&governor->node);
++err_out:
++	mutex_unlock(&devfreq_list_lock);
++
++	return err;
++}
++EXPORT_SYMBOL(devfreq_remove_governor);
++
+ static ssize_t show_governor(struct device *dev,
+ 			     struct device_attribute *attr, char *buf)
+ {
+diff --git a/drivers/devfreq/governor.h b/drivers/devfreq/governor.h
+index 26432ac..fad7d63 100644
+--- a/drivers/devfreq/governor.h
++++ b/drivers/devfreq/governor.h
+@@ -34,4 +34,8 @@ extern void devfreq_monitor_suspend(struct devfreq *devfreq);
+ extern void devfreq_monitor_resume(struct devfreq *devfreq);
+ extern void devfreq_interval_update(struct devfreq *devfreq,
+ 					unsigned int *delay);
++
++extern int devfreq_add_governor(struct devfreq_governor *governor);
++extern int devfreq_remove_governor(struct devfreq_governor *governor);
++
+ #endif /* _GOVERNOR_H */
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index 1461fb2..a28d935 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -87,6 +87,7 @@ struct devfreq_dev_profile {
+ 
+ /**
+  * struct devfreq_governor - Devfreq policy governor
++ * @node:		list node - contains registered devfreq governors
+  * @name:		Governor's name
+  * @get_target_freq:	Returns desired operating frequency for the device.
+  *			Basically, get_target_freq will run
+@@ -102,6 +103,8 @@ struct devfreq_dev_profile {
+  * Note that the callbacks are called with devfreq->lock locked by devfreq.
+  */
+ struct devfreq_governor {
++	struct list_head node;
++
+ 	const char name[DEVFREQ_NAME_LEN];
+ 	int (*get_target_freq)(struct devfreq *this, unsigned long *freq);
+ 	int (*event_handler)(struct devfreq *devfreq,
+-- 
+1.7.9.5
 
-Thanks,
-
-Torsten
