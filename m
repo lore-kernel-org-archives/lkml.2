@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab2J2WTc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:19:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47191 "EHLO mail.kernel.org"
+	id S1761152Ab2J2Vgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:36:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47140 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761047Ab2J2Vgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:45 -0400
+	id S1761110Ab2J2Vgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Perl <chris.perl@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 017/101] Revert "SUNRPC: Ensure we close the socket on EPIPE errors too..."
-Date: Mon, 29 Oct 2012 14:34:30 -0700
-Message-Id: <20121029213242.074763478@linuxfoundation.org>
+        Dave Young <dyoung@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Flavio Leitner <fbl@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Tejun Heo <tj@kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, ianfang.cn@gmail.com
+Subject: [ 012/101] Revert "x86/mm: Fix the size calculation of mapping tables"
+Date: Mon, 29 Oct 2012 14:34:25 -0700
+Message-Id: <20121029213241.527825408@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,38 +31,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Dave Young <dyoung@redhat.com>
 
-commit b9d2bb2ee537424a7f855e1f93eed44eb9ee0854 upstream.
+commit 7b16bbf97375d9fb7fc107b3f80afeb94a204e44 upstream.
 
-This reverts commit 55420c24a0d4d1fce70ca713f84aa00b6b74a70e.
-Now that we clear the connected flag when entering TCP_CLOSE_WAIT,
-the deadlock described in this commit is no longer possible.
-Instead, the resulting call to xs_tcp_shutdown() can interfere
-with pending reconnection attempts.
+Commit:
 
-Reported-by: Chris Perl <chris.perl@gmail.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Chris Perl <chris.perl@gmail.com>
+   722bc6b16771 x86/mm: Fix the size calculation of mapping tables
+
+Tried to address the issue that the first 2/4M should use 4k pages
+if PSE enabled, but extra counts should only be valid for x86_32.
+
+This commit caused a kdump regression: the kdump kernel hangs.
+
+Work is in progress to fundamentally fix the various page table
+initialization issues that we have, via the design suggested
+by H. Peter Anvin, but it's not ready yet to be merged.
+
+So, to get a working kdump revert to the last known working version,
+which is the revert of this commit and of a followup fix (which was
+incomplete):
+
+   bd2753b2dda7 x86/mm: Only add extra pages count for the first memory range during pre-allocation
+
+Tested kdump on physical and virtual machines.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
+Acked-by: Flavio Leitner <fbl@redhat.com>
+Tested-by: Flavio Leitner <fbl@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Flavio Leitner <fbl@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: ianfang.cn@gmail.com
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/xprtsock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/mm/init.c |   22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -736,10 +736,10 @@ static int xs_tcp_send_request(struct rp
- 		dprintk("RPC:       sendmsg returned unrecognized error %d\n",
- 			-status);
- 	case -ECONNRESET:
--	case -EPIPE:
- 		xs_tcp_shutdown(xprt);
- 	case -ECONNREFUSED:
- 	case -ENOTCONN:
-+	case -EPIPE:
- 		clear_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags);
- 	}
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -29,14 +29,8 @@ int direct_gbpages
+ #endif
+ ;
  
+-struct map_range {
+-	unsigned long start;
+-	unsigned long end;
+-	unsigned page_size_mask;
+-};
+-
+-static void __init find_early_table_space(struct map_range *mr, unsigned long end,
+-					  int use_pse, int use_gbpages)
++static void __init find_early_table_space(unsigned long end, int use_pse,
++					  int use_gbpages)
+ {
+ 	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
+ 	phys_addr_t base;
+@@ -61,10 +55,6 @@ static void __init find_early_table_spac
+ #ifdef CONFIG_X86_32
+ 		extra += PMD_SIZE;
+ #endif
+-		/* The first 2/4M doesn't use large pages. */
+-		if (mr->start < PMD_SIZE)
+-			extra += mr->end - mr->start;
+-
+ 		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	} else
+ 		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+@@ -95,6 +85,12 @@ void __init native_pagetable_reserve(u64
+ 	memblock_reserve(start, end - start);
+ }
+ 
++struct map_range {
++	unsigned long start;
++	unsigned long end;
++	unsigned page_size_mask;
++};
++
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+ #else /* CONFIG_X86_64 */
+@@ -267,7 +263,7 @@ unsigned long __init_refok init_memory_m
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(&mr[0], end, use_pse, use_gbpages);
++		find_early_table_space(end, use_pse, use_gbpages);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 
 
