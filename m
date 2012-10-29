@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761391Ab2J2WDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:03:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47841 "EHLO mail.kernel.org"
+	id S1761510Ab2J2WDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:03:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47821 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761191Ab2J2Vhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:47 -0400
+	id S1761181Ab2J2Vhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bo Shen <voice.shen@atmel.com>, Jean Delvare <khali@linux-fr.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [ 074/101] ARM: at91/i2c: change id to let i2c-gpio work
-Date: Mon, 29 Oct 2012 14:35:27 -0700
-Message-Id: <20121029213248.519373297@linuxfoundation.org>
+        Heiko Stuebner <heiko@sntech.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 072/101] ARM: SAMSUNG: Add naming of s3c64xx-spi devices
+Date: Mon, 29 Oct 2012 14:35:25 -0700
+Message-Id: <20121029213248.297068660@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -28,88 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Heiko Stuebner <heiko@sntech.de>
 
-commit 7840487cd6298f9f931103b558290d8d98d41c49 upstream.
+commit 308b3afb97dc342e9c4f958d8b4c459ae0e22bd7 upstream.
 
-The i2c core driver will turn the platform device ID to busnum
-When using platfrom device ID as -1, it means dynamically assigned
-the busnum. When writing code, we need to make sure the busnum,
-and call i2c_register_board_info(int busnum, ...) to register device
-if using -1, we do not know the value of busnum
+Commit a5238e360b71 (spi: s3c64xx: move controller information into driver
+data) introduced separate device names for the different subtypes of the
+spi controller but forgot to set these in the relevant machines.
 
-In order to solve this issue, set the platform device ID as a fix number
-Here using 0 to match the busnum used in i2c_regsiter_board_info()
+To fix this introduce a s3c64xx_spi_setname function and populate all
+Samsung arches with the correct names. The function resides in a new
+header, as the s3c64xx-spi.h contains driver platform data and should
+therefore at some later point move out of the Samsung include dir.
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Tested on a s3c2416-based machine.
+
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+[s.nawrocki@samsung.com: tested on mach-exynos]
+Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ arch/arm/mach-exynos/common.c                 |    5 ++++
+ arch/arm/mach-s3c24xx/s3c2416.c               |    2 +
+ arch/arm/mach-s3c24xx/s3c2443.c               |    4 +++
+ arch/arm/mach-s5p64x0/common.c                |    3 ++
+ arch/arm/mach-s5pc100/common.c                |    3 ++
+ arch/arm/mach-s5pv210/common.c                |    3 ++
+ arch/arm/plat-samsung/include/plat/spi-core.h |   30 ++++++++++++++++++++++++++
+ 7 files changed, 50 insertions(+)
 
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -463,7 +463,7 @@ static struct i2c_gpio_platform_data pda
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -47,6 +47,7 @@
+ #include <plat/fimc-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/tv-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
  
- static struct platform_device at91rm9200_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ #include "common.h"
+@@ -346,6 +347,8 @@ static void __init exynos4_map_io(void)
  
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -471,7 +471,7 @@ static struct i2c_gpio_platform_data pda
+ 	s5p_fb_setname(0, "exynos4-fb");
+ 	s5p_hdmi_setname("exynos4-hdmi");
++
++	s3c64xx_spi_setname("exynos4210-spi");
+ }
  
- static struct platform_device at91sam9260_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ static void __init exynos5_map_io(void)
+@@ -366,6 +369,8 @@ static void __init exynos5_map_io(void)
+ 	s3c_i2c0_setname("s3c2440-i2c");
+ 	s3c_i2c1_setname("s3c2440-i2c");
+ 	s3c_i2c2_setname("s3c2440-i2c");
++
++	s3c64xx_spi_setname("exynos4210-spi");
+ }
  
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -285,7 +285,7 @@ static struct i2c_gpio_platform_data pda
+ static void __init exynos4_init_clocks(int xtal)
+--- a/arch/arm/mach-s3c24xx/s3c2416.c
++++ b/arch/arm/mach-s3c24xx/s3c2416.c
+@@ -61,6 +61,7 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
++#include <plat/spi-core.h>
  
- static struct platform_device at91sam9261_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ static struct map_desc s3c2416_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -132,6 +133,7 @@ void __init s3c2416_map_io(void)
+ 	/* initialize device information early */
+ 	s3c2416_default_sdhci0();
+ 	s3c2416_default_sdhci1();
++	s3c64xx_spi_setname("s3c2443-spi");
  
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -542,7 +542,7 @@ static struct i2c_gpio_platform_data pda
+ 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
+ }
+--- a/arch/arm/mach-s3c24xx/s3c2443.c
++++ b/arch/arm/mach-s3c24xx/s3c2443.c
+@@ -43,6 +43,7 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
++#include <plat/spi-core.h>
  
- static struct platform_device at91sam9263_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ static struct map_desc s3c2443_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -100,6 +101,9 @@ void __init s3c2443_map_io(void)
+ 	s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
+ 	s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
  
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -314,7 +314,7 @@ static struct i2c_gpio_platform_data pda
++	/* initialize device information early */
++	s3c64xx_spi_setname("s3c2443-spi");
++
+ 	iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
+ }
  
- static struct platform_device at91sam9rl_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+--- a/arch/arm/mach-s5p64x0/common.c
++++ b/arch/arm/mach-s5p64x0/common.c
+@@ -44,6 +44,7 @@
+ #include <plat/sdhci.h>
+ #include <plat/adc-core.h>
+ #include <plat/fb-core.h>
++#include <plat/spi-core.h>
+ #include <plat/gpio-cfg.h>
+ #include <plat/regs-irqtype.h>
+ #include <plat/regs-serial.h>
+@@ -179,6 +180,7 @@ void __init s5p6440_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
++	s3c64xx_spi_setname("s5p64x0-spi");
  
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+@@ -193,6 +195,7 @@ void __init s5p6450_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
++	s3c64xx_spi_setname("s5p64x0-spi");
+ 
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+--- a/arch/arm/mach-s5pc100/common.c
++++ b/arch/arm/mach-s5pc100/common.c
+@@ -45,6 +45,7 @@
+ #include <plat/fb-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/onenand-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ #include <plat/watchdog-reset.h>
+ 
+@@ -165,6 +166,8 @@ void __init s5pc100_map_io(void)
+ 	s3c_onenand_setname("s5pc100-onenand");
+ 	s3c_fb_setname("s5pc100-fb");
+ 	s3c_cfcon_setname("s5pc100-pata");
++
++	s3c64xx_spi_setname("s5pc100-spi");
+ }
+ 
+ void __init s5pc100_init_clocks(int xtal)
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@ -43,6 +43,7 @@
+ #include <plat/iic-core.h>
+ #include <plat/keypad-core.h>
+ #include <plat/tv-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ 
+ #include "common.h"
+@@ -196,6 +197,8 @@ void __init s5pv210_map_io(void)
+ 
+ 	/* setup TV devices */
+ 	s5p_hdmi_setname("s5pv210-hdmi");
++
++	s3c64xx_spi_setname("s5pv210-spi");
+ }
+ 
+ void __init s5pv210_init_clocks(int xtal)
+--- /dev/null
++++ b/arch/arm/plat-samsung/include/plat/spi-core.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __PLAT_S3C_SPI_CORE_H
++#define __PLAT_S3C_SPI_CORE_H
++
++/* These functions are only for use with the core support code, such as
++ * the cpu specific initialisation code
++ */
++
++/* re-define device name depending on support. */
++static inline void s3c64xx_spi_setname(char *name)
++{
++#ifdef CONFIG_S3C64XX_DEV_SPI0
++	s3c64xx_device_spi0.name = name;
++#endif
++#ifdef CONFIG_S3C64XX_DEV_SPI1
++	s3c64xx_device_spi1.name = name;
++#endif
++#ifdef CONFIG_S3C64XX_DEV_SPI2
++	s3c64xx_device_spi2.name = name;
++#endif
++}
++
++#endif /* __PLAT_S3C_SPI_CORE_H */
 
 
