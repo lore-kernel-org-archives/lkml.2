@@ -1,367 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab2J2GYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 02:24:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9067 "EHLO mx1.redhat.com"
+	id S1758188Ab2J2GYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 02:24:22 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45445 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab2J2GYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 02:24:10 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: maxk@qualcomm.com, edumazet@google.com, krkumar2@in.ibm.com,
-        ernesto.martin@viasat.com, haixiao@juniper.net,
-        Jason Wang <jasowang@redhat.com>
-Subject: [net-next resend v4 7/7] tuntap: choose the txq based on rxq
-Date: Mon, 29 Oct 2012 14:15:51 +0800
-Message-Id: <1351491351-11477-8-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1351491351-11477-1-git-send-email-jasowang@redhat.com>
-References: <1351491351-11477-1-git-send-email-jasowang@redhat.com>
+	id S1750970Ab2J2GYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 02:24:16 -0400
+Message-ID: <508E20FC.2080107@ti.com>
+Date: Mon, 29 Oct 2012 11:53:56 +0530
+From: kishon <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <b-cousson@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
+        <rdunlap@xenotime.net>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
+References: <1349675983-23803-1-git-send-email-kishon@ti.com> <1349675983-23803-2-git-send-email-kishon@ti.com> <20121016165043.GS15569@atomide.com> <20121025004806.GK11928@atomide.com> <20121025061722.GB4449@arwen.pp.htv.fi> <20121025174446.GT11928@atomide.com> <20121026064736.GA22206@arwen.pp.htv.fi> <20121026171655.GI11908@atomide.com> <20121026195915.GA29548@arwen.pp.htv.fi> <508BD344.1090001@ti.com> <20121029061026.GO17570@arwen.pp.htv.fi>
+In-Reply-To: <20121029061026.GO17570@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a simple multiqueue flow steering policy - tx follows rx
-for tun/tap. The idea is simple, it just choose the txq based on which rxq it
-comes. The flow were identified through the rxhash of a skb, and the hash to
-queue mapping were recorded in a hlist with an ageing timer to retire the
-mapping. The mapping were created when tun receives packet from userspace, and
-was quired in .ndo_select_queue().
+Hi,
 
-I run co-current TCP_CRR test and didn't see any mapping manipulation helpers in
-perf top, so the overhead could be negelected.
+On Monday 29 October 2012 11:40 AM, Felipe Balbi wrote:
+> Hi,
+>
+> On Sat, Oct 27, 2012 at 05:57:48PM +0530, kishon wrote:
+>> Hi,
+>>
+>> On Saturday 27 October 2012 01:29 AM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Fri, Oct 26, 2012 at 10:16:55AM -0700, Tony Lindgren wrote:
+>>>> * Felipe Balbi <balbi@ti.com> [121025 23:55]:
+>>>>> On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
+>>>>>> * Felipe Balbi <balbi@ti.com> [121024 23:24]:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
+>>>>>>>> * Tony Lindgren <tony@atomide.com> [121016 09:53]:
+>>>>>>>>> * Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
+>>>>>>>>>> ocp2scp was not having pdata support which makes *musb* fail for non-dt
+>>>>>>>>>> boot in OMAP platform. The pdata will have information about the devices
+>>>>>>>>>> that is connected to ocp2scp. ocp2scp driver will now make use of this
+>>>>>>>>>> information to create the devices that is attached to ocp2scp.
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>>>>>
+>>>>>>>>> This fixes the regression on my panda es for musb port:
+>>>>>>>>>
+>>>>>>>>> Acked-by: Tony Lindgren <tony@atomide.com>
+>>>>>>>>
+>>>>>>>> Looks like nobody has picked this one up and we need it to
+>>>>>>>> fix the musb regression on omap, so I'll queue these up.
+>>>>>>>
+>>>>>>> I don't seem to have the patches around in any mailbox :-(
+>>>>>>
+>>>>>> Bounced them to you. Do you have any better ideas for the
+>>>>>> -rc cycle to fix the MUSB regression on omap4?
+>>>>>
+>>>>> Well, there are two regressions that I know of. One is caused by the
+>>>>> mode1 DMA changes, which I'll just revert, and the other is the
+>>>>> missing platform_data support on the new PHY driver which these patches
+>>>>> are supposed to solve, right ?
+>>>>
+>>>> Yes that's it AFAIK.
+>>>
+>>> Kishon, any other patches I need to take to get MUSB working on v3.7 ?
+>>
+>> These should be good enough to get MUSB working..
+>
+> nothing needed for omap-usb2.c ? That's great, cheers
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |  239 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 236 insertions(+), 3 deletions(-)
+No. Nothing of pdata sort is used in omap-usb2.c
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 78dcda8..158ef1d 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -115,6 +115,8 @@ struct tap_filter {
-  * to match a queue per guest CPU. */
- #define MAX_TAP_QUEUES 1024
- 
-+#define TUN_FLOW_EXPIRE 3 * HZ
-+
- /* A tun_file connects an open character device to a tuntap netdevice. It
-  * also contains all socket related strctures (except sock_fprog and tap_filter)
-  * to serve as one transmit queue for tuntap device. The sock_fprog and
-@@ -138,6 +140,18 @@ struct tun_file {
- 	u16 queue_index;
- };
- 
-+struct tun_flow_entry {
-+	struct hlist_node hash_link;
-+	struct rcu_head rcu;
-+	struct tun_struct *tun;
-+
-+	u32 rxhash;
-+	int queue_index;
-+	unsigned long updated;
-+};
-+
-+#define TUN_NUM_FLOW_ENTRIES 1024
-+
- /* Since the socket were moved to tun_file, to preserve the behavior of persist
-  * device, socket fileter, sndbuf and vnet header size were restore when the
-  * file were attached to a persist device.
-@@ -163,8 +177,176 @@ struct tun_struct {
- #ifdef TUN_DEBUG
- 	int debug;
- #endif
-+	spinlock_t lock;
-+	struct kmem_cache *flow_cache;
-+	struct hlist_head flows[TUN_NUM_FLOW_ENTRIES];
-+	struct timer_list flow_gc_timer;
-+	unsigned long ageing_time;
- };
- 
-+static inline u32 tun_hashfn(u32 rxhash)
-+{
-+	return rxhash & 0x3ff;
-+}
-+
-+static struct tun_flow_entry *tun_flow_find(struct hlist_head *head, u32 rxhash)
-+{
-+	struct tun_flow_entry *e;
-+	struct hlist_node *n;
-+
-+	hlist_for_each_entry_rcu(e, n, head, hash_link) {
-+		if (e->rxhash == rxhash)
-+			return e;
-+	}
-+	return NULL;
-+}
-+
-+static struct tun_flow_entry *tun_flow_create(struct tun_struct *tun,
-+					      struct hlist_head *head,
-+					      u32 rxhash, u16 queue_index)
-+{
-+	struct tun_flow_entry *e = kmem_cache_alloc(tun->flow_cache,
-+						    GFP_ATOMIC);
-+	if (e) {
-+		tun_debug(KERN_INFO, tun, "create flow: hash %u index %u\n",
-+			  rxhash, queue_index);
-+		e->updated = jiffies;
-+		e->rxhash = rxhash;
-+		e->queue_index = queue_index;
-+		e->tun = tun;
-+		hlist_add_head_rcu(&e->hash_link, head);
-+	}
-+	return e;
-+}
-+
-+static void tun_flow_free(struct rcu_head *head)
-+{
-+	struct tun_flow_entry *e
-+		= container_of(head, struct tun_flow_entry, rcu);
-+	kmem_cache_free(e->tun->flow_cache, e);
-+}
-+
-+static void tun_flow_delete(struct tun_struct *tun, struct tun_flow_entry *e)
-+{
-+	tun_debug(KERN_INFO, tun, "delete flow: hash %u index %u\n",
-+		  e->rxhash, e->queue_index);
-+	hlist_del_rcu(&e->hash_link);
-+	call_rcu(&e->rcu, tun_flow_free);
-+}
-+
-+/* caller hold tun->lock */
-+static int tun_delete_by_rxhash(struct tun_struct *tun, u32 rxhash)
-+{
-+	struct hlist_head *head = &tun->flows[tun_hashfn(rxhash)];
-+	struct tun_flow_entry *e = tun_flow_find(head, rxhash);
-+
-+	if (!e)
-+		return -ENOENT;
-+
-+	tun_flow_delete(tun, e);
-+}
-+
-+static void tun_flow_flush(struct tun_struct *tun)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link)
-+			tun_flow_delete(tun, e);
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_delete_by_queue(struct tun_struct *tun, u16 queue_index)
-+{
-+	int i;
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			if (e->queue_index == queue_index)
-+				tun_flow_delete(tun, e);
-+		}
-+	}
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_cleanup(unsigned long data)
-+{
-+	struct tun_struct *tun = (struct tun_struct *)data;
-+	unsigned long delay = tun->ageing_time;
-+	unsigned long next_timer = jiffies + delay;
-+	unsigned long count = 0;
-+	int i;
-+
-+	tun_debug(KERN_INFO, tun, "tun_flow_cleanup\n");
-+
-+	spin_lock_bh(&tun->lock);
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++) {
-+		struct tun_flow_entry *e;
-+		struct hlist_node *h, *n;
-+
-+		hlist_for_each_entry_safe(e, h, n, &tun->flows[i], hash_link) {
-+			unsigned long this_timer;
-+			count ++;
-+			this_timer = e->updated + delay;
-+			if (time_before_eq(this_timer, jiffies))
-+				tun_flow_delete(tun, e);
-+			else if (time_before(this_timer, next_timer))
-+				next_timer = this_timer;
-+		}
-+	}
-+
-+	if (count)
-+		mod_timer(&tun->flow_gc_timer, round_jiffies_up(next_timer));
-+	spin_unlock_bh(&tun->lock);
-+}
-+
-+static void tun_flow_update(struct tun_struct *tun, struct sk_buff *skb,
-+			    u16 queue_index)
-+{
-+	struct hlist_head *head;
-+	struct tun_flow_entry *e;
-+	unsigned long delay = tun->ageing_time;
-+	u32 rxhash = skb_get_rxhash(skb);
-+
-+	if (!rxhash)
-+		return;
-+	else
-+		head = &tun->flows[tun_hashfn(rxhash)];
-+
-+	rcu_read_lock();
-+
-+	if (tun->numqueues == 1)
-+		goto unlock;
-+
-+	e = tun_flow_find(head, rxhash);
-+	if (likely(e)) {
-+		/* TODO: keep queueing to old queue until it's empty? */
-+		e->queue_index = queue_index;
-+		e->updated = jiffies;
-+	} else {
-+		spin_lock_bh(&tun->lock);
-+		if (!tun_flow_find(head, rxhash))
-+			tun_flow_create(tun, head, rxhash, queue_index);
-+
-+		if (!timer_pending(&tun->flow_gc_timer))
-+			mod_timer(&tun->flow_gc_timer,
-+				  round_jiffies_up(jiffies + delay));
-+		spin_unlock_bh(&tun->lock);
-+	}
-+
-+unlock:
-+	rcu_read_unlock();
-+}
-+
- /* We try to identify a flow through its rxhash first. The reason that
-  * we do not check rxq no. is becuase some cards(e.g 82599), chooses
-  * the rxq based on the txq where the last packet of the flow comes. As
-@@ -175,6 +357,7 @@ struct tun_struct {
- static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
-+	struct tun_flow_entry *e;
- 	u32 txq = 0;
- 	u32 numqueues = 0;
- 
-@@ -183,8 +366,12 @@ static u16 tun_select_queue(struct net_device *dev, struct sk_buff *skb)
- 
- 	txq = skb_get_rxhash(skb);
- 	if (txq) {
--		/* use multiply and shift instead of expensive divide */
--	        txq = ((u64)txq * numqueues) >> 32;
-+		e = tun_flow_find(&tun->flows[tun_hashfn(txq)], txq);
-+		if (e)
-+			txq = e->queue_index;
-+		else
-+			/* use multiply and shift instead of expensive divide */
-+			txq = ((u64)txq * numqueues) >> 32;
- 	} else if (likely(skb_rx_queue_recorded(skb))) {
- 		txq = skb_get_rx_queue(skb);
- 		while (unlikely(txq >= numqueues))
-@@ -234,6 +421,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
- 		sock_put(&tfile->sk);
- 
- 		synchronize_net();
-+		tun_flow_delete_by_queue(tun, tun->numqueues + 1);
- 		/* Drop read queue */
- 		skb_queue_purge(&tfile->sk.sk_receive_queue);
- 		tun_set_real_num_queues(tun);
-@@ -629,6 +817,37 @@ static const struct net_device_ops tap_netdev_ops = {
- #endif
- };
- 
-+static int tun_flow_init(struct tun_struct *tun)
-+{
-+	int i;
-+
-+	tun->flow_cache = kmem_cache_create("tun_flow_cache",
-+					    sizeof(struct tun_flow_entry), 0, 0,
-+					    NULL);
-+	if (!tun->flow_cache)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < TUN_NUM_FLOW_ENTRIES; i++)
-+		INIT_HLIST_HEAD(&tun->flows[i]);
-+
-+	tun->ageing_time = TUN_FLOW_EXPIRE;
-+	setup_timer(&tun->flow_gc_timer, tun_flow_cleanup, (unsigned long)tun);
-+	mod_timer(&tun->flow_gc_timer,
-+		  round_jiffies_up(jiffies + tun->ageing_time));
-+
-+	return 0;
-+}
-+
-+static void tun_flow_uninit(struct tun_struct *tun)
-+{
-+	del_timer_sync(&tun->flow_gc_timer);
-+	tun_flow_flush(tun);
-+
-+	/* Wait for completion of call_rcu()'s */
-+	rcu_barrier();
-+	kmem_cache_destroy(tun->flow_cache);
-+}
-+
- /* Initialize net device. */
- static void tun_net_init(struct net_device *dev)
- {
-@@ -973,6 +1192,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
- 
-+	tun_flow_update(tun, skb, tfile->queue_index);
- 	return total_len;
- }
- 
-@@ -1150,6 +1370,14 @@ out:
- 	return ret;
- }
- 
-+static void tun_free_netdev(struct net_device *dev)
-+{
-+	struct tun_struct *tun = netdev_priv(dev);
-+
-+	tun_flow_uninit(tun);
-+	free_netdev(dev);
-+}
-+
- static void tun_setup(struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
-@@ -1158,7 +1386,7 @@ static void tun_setup(struct net_device *dev)
- 	tun->group = INVALID_GID;
- 
- 	dev->ethtool_ops = &tun_ethtool_ops;
--	dev->destructor = free_netdev;
-+	dev->destructor = tun_free_netdev;
- }
- 
- /* Trivial set of netlink ops to allow deleting tun or tap
-@@ -1381,10 +1609,15 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun->filter_attached = false;
- 		tun->sndbuf = tfile->socket.sk->sk_sndbuf;
- 
-+		spin_lock_init(&tun->lock);
-+
- 		security_tun_dev_post_create(&tfile->sk);
- 
- 		tun_net_init(dev);
- 
-+		if (tun_flow_init(tun))
-+			goto err_free_dev;
-+
- 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
- 			TUN_USER_FEATURES;
- 		dev->features = dev->hw_features;
--- 
-1.7.1
-
+Thanks
+Kishon
