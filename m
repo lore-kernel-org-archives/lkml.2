@@ -1,164 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab2J2ScN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:32:13 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:43117 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760363Ab2J2ScJ (ORCPT
+	id S932580Ab2J2ScM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:32:12 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60218 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760255Ab2J2ScJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 14:32:09 -0400
+X-Originating-IP: 217.70.178.152
+X-Originating-IP: 173.246.103.110
+Date: Mon, 29 Oct 2012 11:31:57 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        torvalds@linux-foundation.org, tj@kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
+Message-ID: <20121029183157.GC3097@jtriplet-mobl1>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
+ <20121029113515.GB9115@Krystal>
+ <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121029180558.GE3706@swordfish.minsk.epam.com>
-References: <20121027160052.GA4771@swordfish>
-	<508EB96C.4040505@vflare.org>
-	<20121029180558.GE3706@swordfish.minsk.epam.com>
-Date: Mon, 29 Oct 2012 11:32:08 -0700
-Message-ID: <CAPkvG_eZObsD=uCRGNygsrTs=ymjoA09XkoHD9KUUq_YWyuA3A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function (v2)
-From: Nitin Gupta <ngupta@vflare.org>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 11:05 AM, Sergey Senozhatsky
-<sergey.senozhatsky@gmail.com> wrote:
->   zram: factor-out zram_decompress_page() function
->
->   zram_bvec_read() shared decompress functionality with zram_read_before_write() function.
->   Factor-out and make commonly used zram_decompress_page() function, which also simplified
->   error handling in zram_bvec_read().
->
->   V2: changed debug message for handle_zero_page() case to a more general one
->
->   Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->
-> ---
->
->  drivers/staging/zram/zram_drv.c | 115 +++++++++++++++++-----------------------
->  1 file changed, 50 insertions(+), 65 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 6edefde..bd5efdf 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -183,62 +183,25 @@ static inline int is_partial_io(struct bio_vec *bvec)
->         return bvec->bv_len != PAGE_SIZE;
->  }
->
-> -static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-> -                         u32 index, int offset, struct bio *bio)
-> +static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
->  {
-> -       int ret;
-> -       size_t clen;
-> -       struct page *page;
-> -       unsigned char *user_mem, *cmem, *uncmem = NULL;
-> -
-> -       page = bvec->bv_page;
-> -
-> -       if (zram_test_flag(zram, index, ZRAM_ZERO)) {
-> -               handle_zero_page(bvec);
-> -               return 0;
-> -       }
-> +       int ret = LZO_E_OK;
-> +       size_t clen = PAGE_SIZE;
-> +       unsigned char *cmem;
-> +       unsigned long handle = zram->table[index].handle;
->
-> -       /* Requested page is not present in compressed area */
-> -       if (unlikely(!zram->table[index].handle)) {
-> -               pr_debug("Read before write: sector=%lu, size=%u",
-> -                        (ulong)(bio->bi_sector), bio->bi_size);
-> -               handle_zero_page(bvec);
-> +       if (!handle || zram_test_flag(zram, index, ZRAM_ZERO)) {
-> +               memset(mem, 0, PAGE_SIZE);
->                 return 0;
->         }
->
-> -       if (is_partial_io(bvec)) {
-> -               /* Use  a temporary buffer to decompress the page */
-> -               uncmem = kmalloc(PAGE_SIZE, GFP_KERNEL);
-> -               if (!uncmem) {
-> -                       pr_info("Error allocating temp memory!\n");
-> -                       return -ENOMEM;
-> -               }
-> -       }
-> -
-> -       user_mem = kmap_atomic(page);
-> -       if (!is_partial_io(bvec))
-> -               uncmem = user_mem;
-> -       clen = PAGE_SIZE;
-> -
-> -       cmem = zs_map_object(zram->mem_pool, zram->table[index].handle,
-> -                               ZS_MM_RO);
-> -
-> -       if (zram->table[index].size == PAGE_SIZE) {
-> -               memcpy(uncmem, cmem, PAGE_SIZE);
-> -               ret = LZO_E_OK;
-> -       } else {
-> +       cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
-> +       if (zram->table[index].size == PAGE_SIZE)
-> +               memcpy(mem, cmem, PAGE_SIZE);
-> +       else
->                 ret = lzo1x_decompress_safe(cmem, zram->table[index].size,
-> -                                   uncmem, &clen);
-> -       }
-> -
-> -       if (is_partial_io(bvec)) {
-> -               memcpy(user_mem + bvec->bv_offset, uncmem + offset,
-> -                      bvec->bv_len);
-> -               kfree(uncmem);
-> -       }
-> -
-> -       zs_unmap_object(zram->mem_pool, zram->table[index].handle);
-> -       kunmap_atomic(user_mem);
-> +                                               mem, &clen);
-> +       zs_unmap_object(zram->mem_pool, handle);
->
->         /* Should NEVER happen. Return bio error if it does. */
->         if (unlikely(ret != LZO_E_OK)) {
-> @@ -247,36 +210,58 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
->                 return ret;
->         }
->
-> -       flush_dcache_page(page);
-> -
->         return 0;
->  }
->
-> -static int zram_read_before_write(struct zram *zram, char *mem, u32 index)
-> +static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
-> +                         u32 index, int offset, struct bio *bio)
->  {
->         int ret;
-> -       size_t clen = PAGE_SIZE;
-> -       unsigned char *cmem;
-> -       unsigned long handle = zram->table[index].handle;
-> +       struct page *page;
-> +       unsigned char *user_mem, *uncmem = NULL;
->
-> -       if (zram_test_flag(zram, index, ZRAM_ZERO) || !handle) {
-> -               memset(mem, 0, PAGE_SIZE);
-> +       page = bvec->bv_page;
-> +
-> +       if (unlikely(!zram->table[index].handle) ||
-> +                       zram_test_flag(zram, index, ZRAM_ZERO)) {
-> +               pr_debug("Handle zero page: sector=%lu, size=%u",
-> +                        (ulong)(bio->bi_sector), bio->bi_size);
-> +               handle_zero_page(bvec);
+On Mon, Oct 29, 2012 at 01:29:24PM -0400, Sasha Levin wrote:
+> On Mon, Oct 29, 2012 at 7:35 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+> >> generic unrelated code in the tracepoints.
+> >>
+> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> >> ---
+> >>  kernel/tracepoint.c | 27 +++++++++++----------------
+> >>  1 file changed, 11 insertions(+), 16 deletions(-)
+> >>
+> >> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> >> index d96ba22..854df92 100644
+> >> --- a/kernel/tracepoint.c
+> >> +++ b/kernel/tracepoint.c
+> >> @@ -26,6 +26,7 @@
+> >>  #include <linux/slab.h>
+> >>  #include <linux/sched.h>
+> >>  #include <linux/static_key.h>
+> >> +#include <linux/hashtable.h>
+> >>
+> >>  extern struct tracepoint * const __start___tracepoints_ptrs[];
+> >>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+> >> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+> >>   * Protected by tracepoints_mutex.
+> >>   */
+> >>  #define TRACEPOINT_HASH_BITS 6
+> >> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+> >> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+> >> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+> >>
+> > [...]
+> >>
+> >> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
+> >>
+> >>  static int init_tracepoints(void)
+> >>  {
+> >> +     hash_init(tracepoint_table);
+> >> +
+> >>       return register_module_notifier(&tracepoint_module_nb);
+> >>  }
+> >>  __initcall(init_tracepoints);
+> >
+> > So we have a hash table defined in .bss (therefore entirely initialized
+> > to NULL), and you add a call to "hash_init", which iterates on the whole
+> > array and initialize it to NULL (again) ?
+> >
+> > This extra initialization is redundant. I think it should be removed
+> > from here, and hashtable.h should document that hash_init() don't need
+> > to be called on zeroed memory (which includes static/global variables,
+> > kzalloc'd memory, etc).
+> 
+> This was discussed in the previous series, the conclusion was to call
+> hash_init() either way to keep the encapsulation and consistency.
+> 
+> It's cheap enough and happens only once, so why not?
 
-Nothing should be printed (even a debug only message) for
-the ZRAM_ZERO case. This case can be quite common for certain
-kinds of data and would cause a huge log spew.  Also (!handle) case
-is not the same as zero-filled page case, so this message would
-be misleading.
+Unnecessary work adds up.  Better not to do it unnecessarily, even if by
+itself it doesn't cost that much.
 
-So, we should either get rid of this warning entirely or only do
-pr_debug("Read before write ....") for (!handle) case and log nothing
-for ZRAM_ZERO case.
+It doesn't seem that difficult for future fields to have 0 as their
+initialized state.
 
-Nitin
+- Josh Triplett
