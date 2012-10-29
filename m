@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761587Ab2J2Vzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:55:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48472 "EHLO mail.kernel.org"
+	id S1761609Ab2J2Vz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:55:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48455 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761519Ab2J2VlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:16 -0400
+	id S1761398Ab2J2VlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Luebbe <jlu@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roland Stigge <stigge@antcom.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/54] drivers/rtc/rtc-imxdi.c: add missing spin lock initialization
-Date: Mon, 29 Oct 2012 14:40:07 -0700
-Message-Id: <20121029213803.446532587@linuxfoundation.org>
+Subject: [ 05/54] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
+Date: Mon, 29 Oct 2012 14:40:06 -0700
+Message-Id: <20121029213803.345949900@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -32,35 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Luebbe <jlu@pengutronix.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit fee0de7791f967c2c5f0d43eb7b7261761b45e64 upstream.
+commit 12176503366885edd542389eed3aaf94be163fdb upstream.
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Roland Stigge <stigge@antcom.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
+The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
+while converting ioctl arguments.  This could lead to leaking kernel
+stack contents into userspace.
+
+Patch extracted from existing fix in grsecurity.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-imxdi.c |    2 ++
+ fs/compat_ioctl.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -392,6 +392,8 @@ static int dryice_rtc_probe(struct platf
- 	if (imxdi->ioaddr == NULL)
- 		return -ENOMEM;
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -210,6 +210,8 @@ static int do_video_set_spu_palette(unsi
  
-+	spin_lock_init(&imxdi->irq_lock);
-+
- 	imxdi->irq = platform_get_irq(pdev, 0);
- 	if (imxdi->irq < 0)
- 		return imxdi->irq;
+ 	err  = get_user(palp, &up->palette);
+ 	err |= get_user(length, &up->length);
++	if (err)
++		return -EFAULT;
+ 
+ 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
+ 	err  = put_user(compat_ptr(palp), &up_native->palette);
 
 
