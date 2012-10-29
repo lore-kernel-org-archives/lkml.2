@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab2J2WGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:06:15 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47751 "EHLO mail.kernel.org"
+	id S933406Ab2J2WGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:06:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47741 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761310Ab2J2Vhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:38 -0400
+	id S1761302Ab2J2Vhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 065/101] USB: sierra: fix memory leak in probe error path
-Date: Mon, 29 Oct 2012 14:35:18 -0700
-Message-Id: <20121029213247.528335131@linuxfoundation.org>
+Subject: [ 064/101] USB: sierra: fix memory leak in attach error path
+Date: Mon, 29 Oct 2012 14:35:17 -0700
+Message-Id: <20121029213247.422940094@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,68 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 084817d79399ab5ccab2f90a148b0369912a8369 upstream.
+commit 7e41f9bcdd2e813ea2a3c40db291d87ea06b559f upstream.
 
-Move interface data allocation to attach so that it is deallocated on
-errors in usb-serial probe.
+Make sure port private data is deallocated on errors in attach.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/usb/serial/sierra.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 --- a/drivers/usb/serial/sierra.c
 +++ b/drivers/usb/serial/sierra.c
-@@ -162,7 +162,6 @@ static int sierra_probe(struct usb_seria
- {
- 	int result = 0;
- 	struct usb_device *udev;
--	struct sierra_intf_private *data;
- 	u8 ifnum;
- 
- 	udev = serial->dev;
-@@ -189,11 +188,6 @@ static int sierra_probe(struct usb_seria
- 		return -ENODEV;
+@@ -907,7 +907,7 @@ static int sierra_startup(struct usb_ser
+ 			dev_dbg(&port->dev, "%s: kmalloc for "
+ 				"sierra_port_private (%d) failed!\n",
+ 				__func__, i);
+-			return -ENOMEM;
++			goto err;
+ 		}
+ 		spin_lock_init(&portdata->lock);
+ 		init_usb_anchor(&portdata->active);
+@@ -944,6 +944,13 @@ static int sierra_startup(struct usb_ser
  	}
  
--	data = serial->private = kzalloc(sizeof(struct sierra_intf_private), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--	spin_lock_init(&data->susp_lock);
--
- 	return result;
+ 	return 0;
++err:
++	for (--i; i >= 0; --i) {
++		portdata = usb_get_serial_port_data(serial->port[i]);
++		kfree(portdata);
++	}
++
++	return -ENOMEM;
  }
  
-@@ -887,11 +881,20 @@ static void sierra_dtr_rts(struct usb_se
- static int sierra_startup(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
-+	struct sierra_intf_private *intfdata;
- 	struct sierra_port_private *portdata;
- 	struct sierra_iface_info *himemoryp = NULL;
- 	int i;
- 	u8 ifnum;
- 
-+	intfdata = kzalloc(sizeof(*intfdata), GFP_KERNEL);
-+	if (!intfdata)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&intfdata->susp_lock);
-+
-+	usb_set_serial_data(serial, intfdata);
-+
- 	/* Set Device mode to D0 */
- 	sierra_set_power_state(serial->dev, 0x0000);
- 
-@@ -949,6 +952,7 @@ err:
- 		portdata = usb_get_serial_port_data(serial->port[i]);
- 		kfree(portdata);
- 	}
-+	kfree(intfdata);
- 
- 	return -ENOMEM;
- }
+ static void sierra_release(struct usb_serial *serial)
 
 
