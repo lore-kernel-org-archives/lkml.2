@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab2J2Vn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:43:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48908 "EHLO mail.kernel.org"
+	id S933208Ab2J2VoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:44:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48897 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933131Ab2J2Vl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:57 -0400
+	id S933035Ab2J2Vl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 48/54] x86, mm: Find_early_table_space based on ranges that are actually being mapped
-Date: Mon, 29 Oct 2012 14:40:49 -0700
-Message-Id: <20121029213808.126814532@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>, rmanohar@qca.qualcomm.com
+Subject: [ 47/54] Revert "ath9k_hw: Updated AR9003 tx gain table for 5GHz"
+Date: Mon, 29 Oct 2012 14:40:48 -0700
+Message-Id: <20121029213808.022405771@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -26,142 +26,215 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jacob Shin <jacob.shin@amd.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 844ab6f993b1d32eb40512503d35ff6ad0c57030 upstream.
+commit 73b26df5fa1a6245d6fc982362518b620bc7c2fe upstream.
 
-Current logic finds enough space for direct mapping page tables from 0
-to end. Instead, we only need to find enough space to cover mr[0].start
-to mr[nr_range].end -- the range that is actually being mapped by
-init_memory_mapping()
+This reverts commit a240dc7b3c7463bd60cf0a9b2a90f52f78aae0fd.
 
-This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
-the panic reported here:
+This commit is reducing tx power by at least 10 db on some devices,
+e.g. the Buffalo WZR-HP-G450H.
 
-  https://lkml.org/lkml/2012/10/20/160
-  https://lkml.org/lkml/2012/10/21/157
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
-Tested-by: Tom Rini <trini@ti.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Cc: rmanohar@qca.qualcomm.com
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |   73 +++++++++++++++++++++++++++++++----------------------
- 1 file changed, 43 insertions(+), 30 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h |  164 +++++++++----------
+ 1 file changed, 82 insertions(+), 82 deletions(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -29,36 +29,54 @@ int direct_gbpages
- #endif
- ;
+--- a/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_2p2_initvals.h
+@@ -533,107 +533,107 @@ static const u32 ar9300_2p2_baseband_cor
  
--static void __init find_early_table_space(unsigned long end, int use_pse,
--					  int use_gbpages)
-+struct map_range {
-+	unsigned long start;
-+	unsigned long end;
-+	unsigned page_size_mask;
-+};
-+
-+/*
-+ * First calculate space needed for kernel direct mapping page tables to cover
-+ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-+ * pages. Then find enough contiguous space for those page tables.
-+ */
-+static void __init find_early_table_space(struct map_range *mr, int nr_range)
- {
--	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
-+	int i;
-+	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
-+	unsigned long start = 0, good_end;
- 	phys_addr_t base;
+ static const u32 ar9300Modes_high_power_tx_gain_table_2p2[][5] = {
+ 	/* Addr      5G_HT20     5G_HT40     2G_HT40     2G_HT20   */
+-	{0x0000a2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000a2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000a2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000a2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000a2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000a2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000a2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+ 	{0x0000a410, 0x000050d9, 0x000050d9, 0x000050d9, 0x000050d9},
+ 	{0x0000a500, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000a504, 0x06000003, 0x06000003, 0x04000002, 0x04000002},
+ 	{0x0000a508, 0x0a000020, 0x0a000020, 0x08000004, 0x08000004},
+ 	{0x0000a50c, 0x10000023, 0x10000023, 0x0b000200, 0x0b000200},
+-	{0x0000a510, 0x15000028, 0x15000028, 0x0f000202, 0x0f000202},
+-	{0x0000a514, 0x1b00002b, 0x1b00002b, 0x12000400, 0x12000400},
+-	{0x0000a518, 0x1f020028, 0x1f020028, 0x16000402, 0x16000402},
+-	{0x0000a51c, 0x2502002b, 0x2502002b, 0x19000404, 0x19000404},
+-	{0x0000a520, 0x2a04002a, 0x2a04002a, 0x1c000603, 0x1c000603},
+-	{0x0000a524, 0x2e06002a, 0x2e06002a, 0x21000a02, 0x21000a02},
+-	{0x0000a528, 0x3302202d, 0x3302202d, 0x25000a04, 0x25000a04},
+-	{0x0000a52c, 0x3804202c, 0x3804202c, 0x28000a20, 0x28000a20},
+-	{0x0000a530, 0x3c06202c, 0x3c06202c, 0x2c000e20, 0x2c000e20},
+-	{0x0000a534, 0x4108202d, 0x4108202d, 0x30000e22, 0x30000e22},
+-	{0x0000a538, 0x4506402d, 0x4506402d, 0x34000e24, 0x34000e24},
+-	{0x0000a53c, 0x4906222d, 0x4906222d, 0x38001640, 0x38001640},
+-	{0x0000a540, 0x4d062231, 0x4d062231, 0x3c001660, 0x3c001660},
+-	{0x0000a544, 0x50082231, 0x50082231, 0x3f001861, 0x3f001861},
+-	{0x0000a548, 0x5608422e, 0x5608422e, 0x43001a81, 0x43001a81},
+-	{0x0000a54c, 0x5a08442e, 0x5a08442e, 0x47001a83, 0x47001a83},
+-	{0x0000a550, 0x5e0a4431, 0x5e0a4431, 0x4a001c84, 0x4a001c84},
+-	{0x0000a554, 0x640a4432, 0x640a4432, 0x4e001ce3, 0x4e001ce3},
+-	{0x0000a558, 0x680a4434, 0x680a4434, 0x52001ce5, 0x52001ce5},
+-	{0x0000a55c, 0x6c0a6434, 0x6c0a6434, 0x56001ce9, 0x56001ce9},
+-	{0x0000a560, 0x6f0a6633, 0x6f0a6633, 0x5a001ceb, 0x5a001ceb},
+-	{0x0000a564, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a568, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a56c, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a570, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a574, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a578, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
+-	{0x0000a57c, 0x730c6634, 0x730c6634, 0x5d001eec, 0x5d001eec},
++	{0x0000a510, 0x16000220, 0x16000220, 0x0f000202, 0x0f000202},
++	{0x0000a514, 0x1c000223, 0x1c000223, 0x12000400, 0x12000400},
++	{0x0000a518, 0x21002220, 0x21002220, 0x16000402, 0x16000402},
++	{0x0000a51c, 0x27002223, 0x27002223, 0x19000404, 0x19000404},
++	{0x0000a520, 0x2b022220, 0x2b022220, 0x1c000603, 0x1c000603},
++	{0x0000a524, 0x2f022222, 0x2f022222, 0x21000a02, 0x21000a02},
++	{0x0000a528, 0x34022225, 0x34022225, 0x25000a04, 0x25000a04},
++	{0x0000a52c, 0x3a02222a, 0x3a02222a, 0x28000a20, 0x28000a20},
++	{0x0000a530, 0x3e02222c, 0x3e02222c, 0x2c000e20, 0x2c000e20},
++	{0x0000a534, 0x4202242a, 0x4202242a, 0x30000e22, 0x30000e22},
++	{0x0000a538, 0x4702244a, 0x4702244a, 0x34000e24, 0x34000e24},
++	{0x0000a53c, 0x4b02244c, 0x4b02244c, 0x38001640, 0x38001640},
++	{0x0000a540, 0x4e02246c, 0x4e02246c, 0x3c001660, 0x3c001660},
++	{0x0000a544, 0x52022470, 0x52022470, 0x3f001861, 0x3f001861},
++	{0x0000a548, 0x55022490, 0x55022490, 0x43001a81, 0x43001a81},
++	{0x0000a54c, 0x59022492, 0x59022492, 0x47001a83, 0x47001a83},
++	{0x0000a550, 0x5d022692, 0x5d022692, 0x4a001c84, 0x4a001c84},
++	{0x0000a554, 0x61022892, 0x61022892, 0x4e001ce3, 0x4e001ce3},
++	{0x0000a558, 0x65024890, 0x65024890, 0x52001ce5, 0x52001ce5},
++	{0x0000a55c, 0x69024892, 0x69024892, 0x56001ce9, 0x56001ce9},
++	{0x0000a560, 0x6e024c92, 0x6e024c92, 0x5a001ceb, 0x5a001ceb},
++	{0x0000a564, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a568, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a56c, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a570, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a574, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a578, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
++	{0x0000a57c, 0x74026e92, 0x74026e92, 0x5d001eec, 0x5d001eec},
+ 	{0x0000a580, 0x00800000, 0x00800000, 0x00800000, 0x00800000},
+ 	{0x0000a584, 0x06800003, 0x06800003, 0x04800002, 0x04800002},
+ 	{0x0000a588, 0x0a800020, 0x0a800020, 0x08800004, 0x08800004},
+ 	{0x0000a58c, 0x10800023, 0x10800023, 0x0b800200, 0x0b800200},
+-	{0x0000a590, 0x15800028, 0x15800028, 0x0f800202, 0x0f800202},
+-	{0x0000a594, 0x1b80002b, 0x1b80002b, 0x12800400, 0x12800400},
+-	{0x0000a598, 0x1f820028, 0x1f820028, 0x16800402, 0x16800402},
+-	{0x0000a59c, 0x2582002b, 0x2582002b, 0x19800404, 0x19800404},
+-	{0x0000a5a0, 0x2a84002a, 0x2a84002a, 0x1c800603, 0x1c800603},
+-	{0x0000a5a4, 0x2e86002a, 0x2e86002a, 0x21800a02, 0x21800a02},
+-	{0x0000a5a8, 0x3382202d, 0x3382202d, 0x25800a04, 0x25800a04},
+-	{0x0000a5ac, 0x3884202c, 0x3884202c, 0x28800a20, 0x28800a20},
+-	{0x0000a5b0, 0x3c86202c, 0x3c86202c, 0x2c800e20, 0x2c800e20},
+-	{0x0000a5b4, 0x4188202d, 0x4188202d, 0x30800e22, 0x30800e22},
+-	{0x0000a5b8, 0x4586402d, 0x4586402d, 0x34800e24, 0x34800e24},
+-	{0x0000a5bc, 0x4986222d, 0x4986222d, 0x38801640, 0x38801640},
+-	{0x0000a5c0, 0x4d862231, 0x4d862231, 0x3c801660, 0x3c801660},
+-	{0x0000a5c4, 0x50882231, 0x50882231, 0x3f801861, 0x3f801861},
+-	{0x0000a5c8, 0x5688422e, 0x5688422e, 0x43801a81, 0x43801a81},
+-	{0x0000a5cc, 0x5a88442e, 0x5a88442e, 0x47801a83, 0x47801a83},
+-	{0x0000a5d0, 0x5e8a4431, 0x5e8a4431, 0x4a801c84, 0x4a801c84},
+-	{0x0000a5d4, 0x648a4432, 0x648a4432, 0x4e801ce3, 0x4e801ce3},
+-	{0x0000a5d8, 0x688a4434, 0x688a4434, 0x52801ce5, 0x52801ce5},
+-	{0x0000a5dc, 0x6c8a6434, 0x6c8a6434, 0x56801ce9, 0x56801ce9},
+-	{0x0000a5e0, 0x6f8a6633, 0x6f8a6633, 0x5a801ceb, 0x5a801ceb},
+-	{0x0000a5e4, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5e8, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5ec, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f0, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f4, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5f8, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
+-	{0x0000a5fc, 0x738c6634, 0x738c6634, 0x5d801eec, 0x5d801eec},
++	{0x0000a590, 0x16800220, 0x16800220, 0x0f800202, 0x0f800202},
++	{0x0000a594, 0x1c800223, 0x1c800223, 0x12800400, 0x12800400},
++	{0x0000a598, 0x21802220, 0x21802220, 0x16800402, 0x16800402},
++	{0x0000a59c, 0x27802223, 0x27802223, 0x19800404, 0x19800404},
++	{0x0000a5a0, 0x2b822220, 0x2b822220, 0x1c800603, 0x1c800603},
++	{0x0000a5a4, 0x2f822222, 0x2f822222, 0x21800a02, 0x21800a02},
++	{0x0000a5a8, 0x34822225, 0x34822225, 0x25800a04, 0x25800a04},
++	{0x0000a5ac, 0x3a82222a, 0x3a82222a, 0x28800a20, 0x28800a20},
++	{0x0000a5b0, 0x3e82222c, 0x3e82222c, 0x2c800e20, 0x2c800e20},
++	{0x0000a5b4, 0x4282242a, 0x4282242a, 0x30800e22, 0x30800e22},
++	{0x0000a5b8, 0x4782244a, 0x4782244a, 0x34800e24, 0x34800e24},
++	{0x0000a5bc, 0x4b82244c, 0x4b82244c, 0x38801640, 0x38801640},
++	{0x0000a5c0, 0x4e82246c, 0x4e82246c, 0x3c801660, 0x3c801660},
++	{0x0000a5c4, 0x52822470, 0x52822470, 0x3f801861, 0x3f801861},
++	{0x0000a5c8, 0x55822490, 0x55822490, 0x43801a81, 0x43801a81},
++	{0x0000a5cc, 0x59822492, 0x59822492, 0x47801a83, 0x47801a83},
++	{0x0000a5d0, 0x5d822692, 0x5d822692, 0x4a801c84, 0x4a801c84},
++	{0x0000a5d4, 0x61822892, 0x61822892, 0x4e801ce3, 0x4e801ce3},
++	{0x0000a5d8, 0x65824890, 0x65824890, 0x52801ce5, 0x52801ce5},
++	{0x0000a5dc, 0x69824892, 0x69824892, 0x56801ce9, 0x56801ce9},
++	{0x0000a5e0, 0x6e824c92, 0x6e824c92, 0x5a801ceb, 0x5a801ceb},
++	{0x0000a5e4, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5e8, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5ec, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f0, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f4, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5f8, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
++	{0x0000a5fc, 0x74826e92, 0x74826e92, 0x5d801eec, 0x5d801eec},
+ 	{0x0000a600, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000a604, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+-	{0x0000a608, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a60c, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a610, 0x01804601, 0x01804601, 0x00000000, 0x00000000},
+-	{0x0000a614, 0x01804601, 0x01804601, 0x01404000, 0x01404000},
+-	{0x0000a618, 0x01804601, 0x01804601, 0x01404501, 0x01404501},
+-	{0x0000a61c, 0x01804601, 0x01804601, 0x02008501, 0x02008501},
+-	{0x0000a620, 0x03408d02, 0x03408d02, 0x0280ca03, 0x0280ca03},
+-	{0x0000a624, 0x0300cc03, 0x0300cc03, 0x03010c04, 0x03010c04},
+-	{0x0000a628, 0x03410d04, 0x03410d04, 0x04014c04, 0x04014c04},
+-	{0x0000a62c, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a630, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a634, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a638, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000a63c, 0x03410d04, 0x03410d04, 0x04015005, 0x04015005},
+-	{0x0000b2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000b2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000b2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000a608, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a60c, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a610, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
++	{0x0000a614, 0x02004000, 0x02004000, 0x01404000, 0x01404000},
++	{0x0000a618, 0x02004801, 0x02004801, 0x01404501, 0x01404501},
++	{0x0000a61c, 0x02808a02, 0x02808a02, 0x02008501, 0x02008501},
++	{0x0000a620, 0x0380ce03, 0x0380ce03, 0x0280ca03, 0x0280ca03},
++	{0x0000a624, 0x04411104, 0x04411104, 0x03010c04, 0x03010c04},
++	{0x0000a628, 0x04411104, 0x04411104, 0x04014c04, 0x04014c04},
++	{0x0000a62c, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a630, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a634, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a638, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000a63c, 0x04411104, 0x04411104, 0x04015005, 0x04015005},
++	{0x0000b2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000b2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000b2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000b2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+-	{0x0000c2dc, 0x000cfff0, 0x000cfff0, 0x03aaa352, 0x03aaa352},
+-	{0x0000c2e0, 0x000f0000, 0x000f0000, 0x03ccc584, 0x03ccc584},
+-	{0x0000c2e4, 0x03f00000, 0x03f00000, 0x03f0f800, 0x03f0f800},
++	{0x0000c2dc, 0x00033800, 0x00033800, 0x03aaa352, 0x03aaa352},
++	{0x0000c2e0, 0x0003c000, 0x0003c000, 0x03ccc584, 0x03ccc584},
++	{0x0000c2e4, 0x03fc0000, 0x03fc0000, 0x03f0f800, 0x03f0f800},
+ 	{0x0000c2e8, 0x00000000, 0x00000000, 0x03ff0000, 0x03ff0000},
+ 	{0x00016044, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016048, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016048, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016068, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
+ 	{0x00016444, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016448, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016448, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016468, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
+ 	{0x00016844, 0x012492d4, 0x012492d4, 0x012492d4, 0x012492d4},
+-	{0x00016848, 0x61200001, 0x61200001, 0x66480001, 0x66480001},
++	{0x00016848, 0x66480001, 0x66480001, 0x66480001, 0x66480001},
+ 	{0x00016868, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c, 0x6db6db6c},
+ };
  
--	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
--	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	for (i = 0; i < nr_range; i++) {
-+		unsigned long range, extra;
- 
--	if (use_gbpages) {
--		unsigned long extra;
-+		range = mr[i].end - mr[i].start;
-+		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
- 
--		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
--		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
--	} else
--		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
--
--	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
-+			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
-+			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
-+		} else {
-+			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
-+		}
- 
--	if (use_pse) {
--		unsigned long extra;
--
--		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
-+		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
-+			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
- #ifdef CONFIG_X86_32
--		extra += PMD_SIZE;
-+			extra += PMD_SIZE;
- #endif
--		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
--	} else
--		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+			/* The first 2/4M doesn't use large pages. */
-+			if (mr[i].start < PMD_SIZE)
-+				extra += range;
-+
-+			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		} else {
-+			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+		}
-+	}
- 
-+	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
-+	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
- 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
- 
- #ifdef CONFIG_X86_32
-@@ -75,8 +93,9 @@ static void __init find_early_table_spac
- 	pgt_buf_end = pgt_buf_start;
- 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
- 
--	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
--		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
-+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
-+		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
-+ 		(pgt_buf_top << PAGE_SHIFT) - 1);
- }
- 
- void __init native_pagetable_reserve(u64 start, u64 end)
-@@ -84,12 +103,6 @@ void __init native_pagetable_reserve(u64
- 	memblock_reserve(start, end - start);
- }
- 
--struct map_range {
--	unsigned long start;
--	unsigned long end;
--	unsigned page_size_mask;
--};
--
- #ifdef CONFIG_X86_32
- #define NR_RANGE_MR 3
- #else /* CONFIG_X86_64 */
-@@ -261,7 +274,7 @@ unsigned long __init_refok init_memory_m
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(end, use_pse, use_gbpages);
-+		find_early_table_space(mr, nr_range);
- 
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 
 
