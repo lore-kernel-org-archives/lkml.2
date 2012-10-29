@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760012Ab2J2PvA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:51:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56602 "EHLO song.cn.fujitsu.com"
+	id S1759761Ab2J2PvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:51:17 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18353 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759924Ab2J2PsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:48:24 -0400
+	id S1759915Ab2J2PsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:48:23 -0400
 X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
-   d="scan'208";a="6093352"
+   d="scan'208";a="6093350"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
@@ -17,22 +17,21 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Laura Vasilescu <laura@rosedu.org>, Jiri Kosina <jkosina@suse.cz>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [V5 PATCH 07/26] procfs: use N_MEMORY instead N_HIGH_MEMORY
-Date: Mon, 29 Oct 2012 23:20:57 +0800
-Message-Id: <1351524078-20363-6-git-send-email-laijs@cn.fujitsu.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Hillf Danton <dhillf@gmail.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org
+Subject: [V5 PATCH 12/26] hugetlb: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 29 Oct 2012 23:21:02 +0800
+Message-Id: <1351524078-20363-11-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:18:59,
+ 2012/10/29 23:19:09,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:04,
-	Serialize complete at 2012/10/29 23:19:04
+ 2012/10/29 23:19:14,
+	Serialize complete at 2012/10/29 23:19:14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -46,44 +45,118 @@ use N_MEMORY instead.
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Acked-by: Hillf Danton <dhillf@gmail.com>
 ---
- fs/proc/kcore.c    |    2 +-
- fs/proc/task_mmu.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/base/node.c |    2 +-
+ mm/hugetlb.c        |   24 ++++++++++++------------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-index 86c67ee..e96d4f1 100644
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -249,7 +249,7 @@ static int kcore_update_ram(void)
- 	/* Not inialized....update now */
- 	/* find out "max pfn" */
- 	end_pfn = 0;
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 5d7731e..4c3aa7c 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -227,7 +227,7 @@ static node_registration_func_t __hugetlb_unregister_node;
+ static inline bool hugetlb_register_node(struct node *node)
+ {
+ 	if (__hugetlb_register_node &&
+-			node_state(node->dev.id, N_HIGH_MEMORY)) {
++			node_state(node->dev.id, N_MEMORY)) {
+ 		__hugetlb_register_node(node);
+ 		return true;
+ 	}
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 59a0059..7720ade 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1057,7 +1057,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+ 	 * on-line nodes with memory and will handle the hstate accounting.
+ 	 */
+ 	while (nr_pages--) {
+-		if (!free_pool_huge_page(h, &node_states[N_HIGH_MEMORY], 1))
++		if (!free_pool_huge_page(h, &node_states[N_MEMORY], 1))
+ 			break;
+ 	}
+ }
+@@ -1180,14 +1180,14 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ int __weak alloc_bootmem_huge_page(struct hstate *h)
+ {
+ 	struct huge_bootmem_page *m;
+-	int nr_nodes = nodes_weight(node_states[N_HIGH_MEMORY]);
++	int nr_nodes = nodes_weight(node_states[N_MEMORY]);
+ 
+ 	while (nr_nodes) {
+ 		void *addr;
+ 
+ 		addr = __alloc_bootmem_node_nopanic(
+ 				NODE_DATA(hstate_next_node_to_alloc(h,
+-						&node_states[N_HIGH_MEMORY])),
++						&node_states[N_MEMORY])),
+ 				huge_page_size(h), huge_page_size(h), 0);
+ 
+ 		if (addr) {
+@@ -1259,7 +1259,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+ 			if (!alloc_bootmem_huge_page(h))
+ 				break;
+ 		} else if (!alloc_fresh_huge_page(h,
+-					 &node_states[N_HIGH_MEMORY]))
++					 &node_states[N_MEMORY]))
+ 			break;
+ 	}
+ 	h->max_huge_pages = i;
+@@ -1527,7 +1527,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		if (!(obey_mempolicy &&
+ 				init_nodemask_of_mempolicy(nodes_allowed))) {
+ 			NODEMASK_FREE(nodes_allowed);
+-			nodes_allowed = &node_states[N_HIGH_MEMORY];
++			nodes_allowed = &node_states[N_MEMORY];
+ 		}
+ 	} else if (nodes_allowed) {
+ 		/*
+@@ -1537,11 +1537,11 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		count += h->nr_huge_pages - h->nr_huge_pages_node[nid];
+ 		init_nodemask_of_node(nodes_allowed, nid);
+ 	} else
+-		nodes_allowed = &node_states[N_HIGH_MEMORY];
++		nodes_allowed = &node_states[N_MEMORY];
+ 
+ 	h->max_huge_pages = set_max_huge_pages(h, count, nodes_allowed);
+ 
+-	if (nodes_allowed != &node_states[N_HIGH_MEMORY])
++	if (nodes_allowed != &node_states[N_MEMORY])
+ 		NODEMASK_FREE(nodes_allowed);
+ 
+ 	return len;
+@@ -1844,7 +1844,7 @@ static void hugetlb_register_all_nodes(void)
+ {
+ 	int nid;
+ 
 -	for_each_node_state(nid, N_HIGH_MEMORY) {
 +	for_each_node_state(nid, N_MEMORY) {
- 		unsigned long node_end;
- 		node_end  = NODE_DATA(nid)->node_start_pfn +
- 			NODE_DATA(nid)->node_spanned_pages;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 90c63f9..2d89601 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1126,7 +1126,7 @@ static struct page *can_gather_numa_stats(pte_t pte, struct vm_area_struct *vma,
- 		return NULL;
+ 		struct node *node = &node_devices[nid];
+ 		if (node->dev.id == nid)
+ 			hugetlb_register_node(node);
+@@ -1939,8 +1939,8 @@ void __init hugetlb_add_hstate(unsigned order)
+ 	for (i = 0; i < MAX_NUMNODES; ++i)
+ 		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
+ 	INIT_LIST_HEAD(&h->hugepage_activelist);
+-	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
+-	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
++	h->next_nid_to_alloc = first_node(node_states[N_MEMORY]);
++	h->next_nid_to_free = first_node(node_states[N_MEMORY]);
+ 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+ 					huge_page_size(h)/1024);
+ 	/*
+@@ -2035,11 +2035,11 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 		if (!(obey_mempolicy &&
+ 			       init_nodemask_of_mempolicy(nodes_allowed))) {
+ 			NODEMASK_FREE(nodes_allowed);
+-			nodes_allowed = &node_states[N_HIGH_MEMORY];
++			nodes_allowed = &node_states[N_MEMORY];
+ 		}
+ 		h->max_huge_pages = set_max_huge_pages(h, tmp, nodes_allowed);
  
- 	nid = page_to_nid(page);
--	if (!node_isset(nid, node_states[N_HIGH_MEMORY]))
-+	if (!node_isset(nid, node_states[N_MEMORY]))
- 		return NULL;
- 
- 	return page;
-@@ -1279,7 +1279,7 @@ static int show_numa_map(struct seq_file *m, void *v, int is_pid)
- 	if (md->writeback)
- 		seq_printf(m, " writeback=%lu", md->writeback);
- 
--	for_each_node_state(n, N_HIGH_MEMORY)
-+	for_each_node_state(n, N_MEMORY)
- 		if (md->node[n])
- 			seq_printf(m, " N%d=%lu", n, md->node[n]);
+-		if (nodes_allowed != &node_states[N_HIGH_MEMORY])
++		if (nodes_allowed != &node_states[N_MEMORY])
+ 			NODEMASK_FREE(nodes_allowed);
+ 	}
  out:
 -- 
 1.7.4.4
