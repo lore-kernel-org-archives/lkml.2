@@ -1,131 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758846Ab2J2MPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:15:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58337 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754978Ab2J2MPJ (ORCPT
+	id S1758833Ab2J2MRL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:17:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54612 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754978Ab2J2MRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:15:09 -0400
-Date: Mon, 29 Oct 2012 08:15:06 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 07/16] net,9p: use new hashtable implementation
-Message-ID: <20121029121506.GA11733@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-7-git-send-email-levinsasha928@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351450948-15618-7-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 29 Oct 2012 08:17:09 -0400
+Message-ID: <1351513026.2480.4.camel@dabdike.sthat4.btopenzone.com>
+Subject: Re: [PATCH] aic7xxx_old: silence GCC warnings
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 29 Oct 2012 12:17:06 +0000
+In-Reply-To: <1351506978.1339.8.camel@x61.thuisdomein>
+References: <1348219723.1581.5.camel@x61.thuisdomein>
+	 <1351506978.1339.8.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> Switch 9p error table to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in 9p.
+On Mon, 2012-10-29 at 11:36 +0100, Paul Bolle wrote:
+> On Fri, 2012-09-21 at 11:28 +0200, Paul Bolle wrote:
+> > Building the aic7xxx_old driver triggers these GCC warnings:
+> >     drivers/scsi/aic7xxx_old.c:7901:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+> >     drivers/scsi/aic7xxx_old.c:7898:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
+> >     drivers/scsi/aic7xxx_old.c:8517:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+> >     drivers/scsi/aic7xxx_old.c:8510:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
+> > 
+> > Fix these warnings by adopting the idiom used elsewhere in this driver.
+> > Since AHC_EISA and AHC_VL are only ever set for AHC_AIC7770 this fix
+> > should not lead to any functional change.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > 0) I noticed these warnings while building v3.6-rc6 on current Fedora
+> > 17, using Fedora's default config.
 > 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  net/9p/error.c | 21 ++++++++++-----------
->  1 file changed, 10 insertions(+), 11 deletions(-)
-> 
-> diff --git a/net/9p/error.c b/net/9p/error.c
-> index 2ab2de7..a5cc7dd 100644
-> --- a/net/9p/error.c
-> +++ b/net/9p/error.c
-> @@ -34,7 +34,7 @@
->  #include <linux/jhash.h>
->  #include <linux/errno.h>
->  #include <net/9p/9p.h>
-> -
-> +#include <linux/hashtable.h>
+> Identical warnings can be seen while building v3.7-rc3. What's the
+> status of my patch? Did anyone found some time to have a look at it?
 
-missing newline.
+the aic7xxx_old driver is in deep maintenance; I don't think anyone can
+actually test changes to it anymore, so we just keep it around unchanged
+for the odd really old card that can't be driven by the current driver.
+For this reason, we tend only to do tested bug fixes to it because
+no-one will notice if any error is introduced.
 
->  /**
->   * struct errormap - map string errors from Plan 9 to Linux numeric ids
->   * @name: string sent over 9P
-> @@ -50,8 +50,8 @@ struct errormap {
->  	struct hlist_node list;
->  };
->  
-> -#define ERRHASHSZ		32
-> -static struct hlist_head hash_errmap[ERRHASHSZ];
-> +#define ERR_HASH_BITS 5
-> +static DEFINE_HASHTABLE(hash_errmap, ERR_HASH_BITS);
->  
->  /* FixMe - reduce to a reasonable size */
->  static struct errormap errmap[] = {
-> @@ -193,18 +193,17 @@ static struct errormap errmap[] = {
->  int p9_error_init(void)
->  {
->  	struct errormap *c;
-> -	int bucket;
-> +	u32 hash;
->  
->  	/* initialize hash table */
-> -	for (bucket = 0; bucket < ERRHASHSZ; bucket++)
-> -		INIT_HLIST_HEAD(&hash_errmap[bucket]);
-> +	hash_init(hash_errmap);
+mvsas has a maintainer: poke them harder and aic94xx is currently
+maintainerless, so it will depend on someone finding the time to test.
 
-As for most of the other patches in this series, the hash_init is
-redundant for a statically defined hash table.
+James
 
-Thanks,
 
-Mathieu
-
->  
->  	/* load initial error map into hash table */
->  	for (c = errmap; c->name != NULL; c++) {
->  		c->namelen = strlen(c->name);
-> -		bucket = jhash(c->name, c->namelen, 0) % ERRHASHSZ;
-> +		hash = jhash(c->name, c->namelen, 0);
->  		INIT_HLIST_NODE(&c->list);
-> -		hlist_add_head(&c->list, &hash_errmap[bucket]);
-> +		hash_add(hash_errmap, &c->list, hash);
->  	}
->  
->  	return 1;
-> @@ -223,13 +222,13 @@ int p9_errstr2errno(char *errstr, int len)
->  	int errno;
->  	struct hlist_node *p;
->  	struct errormap *c;
-> -	int bucket;
-> +	u32 hash;
->  
->  	errno = 0;
->  	p = NULL;
->  	c = NULL;
-> -	bucket = jhash(errstr, len, 0) % ERRHASHSZ;
-> -	hlist_for_each_entry(c, p, &hash_errmap[bucket], list) {
-> +	hash = jhash(errstr, len, 0);
-> +	hash_for_each_possible(hash_errmap, c, p, list, hash) {
->  		if (c->namelen == len && !memcmp(c->name, errstr, len)) {
->  			errno = c->val;
->  			break;
-> -- 
-> 1.7.12.4
-> 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
