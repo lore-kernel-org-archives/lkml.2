@@ -1,133 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932750Ab2J2RgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:36:16 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58721 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab2J2RgM (ORCPT
+	id S932813Ab2J2Rg0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:36:26 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:61275 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab2J2RgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:36:12 -0400
-Date: Mon, 29 Oct 2012 20:33:45 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] zram: factor-out zram_decompress_page() function
-Message-ID: <20121029173345.GC3706@swordfish.minsk.epam.com>
-References: <20121027160052.GA4771@swordfish>
- <508EB96C.4040505@vflare.org>
+	Mon, 29 Oct 2012 13:36:22 -0400
+Message-ID: <508ECC63.3020302@mvista.com>
+Date: Mon, 29 Oct 2012 21:35:15 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508EB96C.4040505@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julius Werner <jwerner@chromium.org>
+CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: Re: [PATCH] xhci: fix null-pointer dereference when destroying half-built
+ segment rings
+References: <1351530030-7080-1-git-send-email-jwerner@chromium.org>
+In-Reply-To: <1351530030-7080-1-git-send-email-jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/29/12 10:14), Nitin Gupta wrote:
-> 
-> "Read before write" message is not valid in case ZRAM_ZERO flag is
-> set. Its true only in !handle case.
-> 
+Hello.
 
-do we actually need this message?
+On 10/29/2012 08:00 PM, Julius Werner wrote:
 
+> xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
+> the tail to head at the end (forming a ring). When it bails out for OOM
+> reasons half-way through, it tries to destroy its half-built list with
+> xhci_free_segments_for_ring(), even though it is not a ring yet. This
+> causes a null-pointer dereference upon hitting the last element.
 
-> Otherwise, the patch looks good to me.
-> 
-> On a side note, zram still contains a known use-after-free bug
-> reported by Fengguang Wu (CC'ed) which happens in the "partial I/O"
-> i.e. non PAGE_SIZE'ed I/O case which is fixed by the following patch.
-> 
-> Please let me know if you can include the following patch when you
-> resend this patch series, or I can do the same or will wait for this
-> to be merged and then send it later.
->
+> Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
+> the output parameters to be valid upon this kind of OOM failure, and
+> calls xhci_ring_free() on them. Since the (incomplete) list/ring should
+> already be destroyed in that case, this would lead to a use after free.
 
-Nitin, I think let's deal with one change at a time. I'll try to resend my patch
-shortly, then we can continue with your fix (I didn't hit that problem, though
-will be happy to help with testing).
+> This patch fixes those issues by having xhci_alloc_segments_for_ring()
+> destroy its half-built, non-circular list manually and destroying the
+> invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
 
-	-ss
-
- 
-> ======
-> zram: Fix use-after-free in partial I/O case
-> 
-> When the compressed size of a page exceeds a threshold, the page is
-> stored as-is i.e. in uncompressed form. In the partial I/O i.e.
-> non-PAGE_SIZE'ed I/O case, however, the uncompressed memory was being
-> freed before it could be copied into the zsmalloc pool resulting in
-> use-after-free bug.
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> Signed-off-by: Julius Werner <jwerner@chromium.org>
 > ---
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c
-> b/drivers/staging/zram/zram_drv.c
-> index 7585467..635736b 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -288,10 +288,8 @@ static int zram_bvec_write(struct zram *zram,
-> struct bio_vec *bvec, u32 index,
->  			goto out;
+>  drivers/usb/host/xhci-mem.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+
+> diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+> index 487bc08..420ba37 100644
+> --- a/drivers/usb/host/xhci-mem.c
+> +++ b/drivers/usb/host/xhci-mem.c
+> @@ -205,7 +205,11 @@ static int xhci_alloc_segments_for_ring(struct xhci_hcd *xhci,
+>  
+>  		next = xhci_segment_alloc(xhci, cycle_state, flags);
+>  		if (!next) {
+> -			xhci_free_segments_for_ring(xhci, *first);
+> +			prev = *first;
+> +			do {
+> +				next = prev->next;
+> +				xhci_segment_free(xhci, prev);
+> +			} while ((prev = next));
+
+   It's preferred that the assignments are done outside the *if* and *while*
+statements. In fact, at least for the *if* statements scripts/checkpatch.pl
+gives a warning (it was silent in this case).
+
+>  			return -ENOMEM;
 >  		}
->  		ret = zram_decompress_page(zram, uncmem, index);
-> -		if (ret) {
-> -			kfree(uncmem);
-> +		if (ret)
->  			goto out;
-> -		}
->  	}
-> 
->  	/*
-> @@ -312,8 +310,6 @@ static int zram_bvec_write(struct zram *zram,
-> struct bio_vec *bvec, u32 index,
-> 
->  	if (page_zero_filled(uncmem)) {
->  		kunmap_atomic(user_mem);
-> -		if (is_partial_io(bvec))
-> -			kfree(uncmem);
->  		zram_stat_inc(&zram->stats.pages_zero);
->  		zram_set_flag(zram, index, ZRAM_ZERO);
->  		ret = 0;
-> @@ -324,8 +320,6 @@ static int zram_bvec_write(struct zram *zram,
-> struct bio_vec *bvec, u32 index,
->  			       zram->compress_workmem);
-> 
->  	kunmap_atomic(user_mem);
-> -	if (is_partial_io(bvec))
-> -			kfree(uncmem);
-> 
->  	if (unlikely(ret != LZO_E_OK)) {
->  		pr_err("Compression failed! err=%d\n", ret);
-> @@ -360,11 +354,15 @@ static int zram_bvec_write(struct zram *zram,
-> struct bio_vec *bvec, u32 index,
->  	if (clen <= PAGE_SIZE / 2)
->  		zram_stat_inc(&zram->stats.good_compress);
-> 
-> -	return 0;
-> +	ret = 0;
-> 
->  out:
->  	if (ret)
->  		zram_stat64_inc(zram, &zram->stats.failed_writes);
-> +
-> +	if (is_partial_io(bvec))
-> +		kfree(uncmem);
-> +
->  	return ret;
+>  		xhci_link_segments(xhci, prev, next, type);
+> @@ -258,7 +262,7 @@ static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
+>  	return ring;
+>  
+>  fail:
+> -	xhci_ring_free(xhci, ring);
+> +	kfree(ring);
+>  	return NULL;
 >  }
-> 
-> 
-> BTW, I could not trigger this partial I/O case, so please let me know
-> if you hit any issue during your testing.
-> 
-> There is another sparse warning to be fixed: zram_reset_device should
-> be static.
-> 
-> Thanks,
-> Nitin
-> 
+
+[headless@wasted linux]$ scripts/checkpatch.pl
+patches/xhci-fix-null-pointer-dereference-when-destroying-half-built-segment-rings.patch
+
+ERROR: DOS line endings
+#30: FILE: drivers/usb/host/xhci-mem.c:208:
++^I^I^Iprev = *first;^M$
+
+ERROR: DOS line endings
+#31: FILE: drivers/usb/host/xhci-mem.c:209:
++^I^I^Ido {^M$
+
+ERROR: DOS line endings
+#32: FILE: drivers/usb/host/xhci-mem.c:210:
++^I^I^I^Inext = prev->next;^M$
+
+ERROR: DOS line endings
+#33: FILE: drivers/usb/host/xhci-mem.c:211:
++^I^I^I^Ixhci_segment_free(xhci, prev);^M$
+
+ERROR: DOS line endings
+#34: FILE: drivers/usb/host/xhci-mem.c:212:
++^I^I^I} while ((prev = next));^M$
+
+ERROR: DOS line endings
+#43: FILE: drivers/usb/host/xhci-mem.c:265:
++^Ikfree(ring);^M$
+
+total: 6 errors, 0 warnings, 20 lines checked
+
+patches/xhci-fix-null-pointer-dereference-when-destroying-half-built-segment-rings.patch
+has style problems, please review.
+
+If any of these errors are false positives, please report
+them to the maintainer, see CHECKPATCH in MAINTAINERS.
+
+   I have noticed that the patch description has DOS line endings as well.
+
+WBR, Sergei
+
