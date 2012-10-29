@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761083Ab2J2WN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:13:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47443 "EHLO mail.kernel.org"
+	id S1761287Ab2J2WOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:14:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47433 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761196Ab2J2VhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:08 -0400
+	id S1761190Ab2J2VhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>
-Subject: [ 037/101] Drivers: hv: Cleanup error handling in vmbus_open()
-Date: Mon, 29 Oct 2012 14:34:50 -0700
-Message-Id: <20121029213244.363414032@linuxfoundation.org>
+        Peter Huewe <peterhuewe@gmx.de>, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [ 036/101] extcon: unregister compat link on cleanup
+Date: Mon, 29 Oct 2012 14:34:49 -0700
+Message-Id: <20121029213244.247653489@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,105 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Peter Huewe <peterhuewe@gmx.de>
 
-commit 1392550240aaa72ce3a094a38bd23525cd67ce60 upstream.
+commit 824a1bc045cef278aec15bef35d8d0b59ce77856 upstream.
 
-Fix a memory leak  in the error handling path in the function vmbus_open().
+Since extcon registers this compat link at device registration
+(extcon_dev_register), we should probably remove them at deregistration/cleanup.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 
 ---
- drivers/hv/channel.c |   24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/extcon/extcon_class.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -146,14 +146,14 @@ int vmbus_open(struct vmbus_channel *new
+--- a/drivers/extcon/extcon_class.c
++++ b/drivers/extcon/extcon_class.c
+@@ -575,6 +575,10 @@ static void extcon_cleanup(struct extcon
+ 			kfree(edev->cables);
+ 		}
  
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
++#if defined(CONFIG_ANDROID)
++		if (switch_class)
++			class_compat_remove_link(switch_class, edev->dev, NULL);
++#endif
+ 		device_unregister(edev->dev);
+ 		put_device(edev->dev);
  	}
- 
- 	ret = hv_ringbuffer_init(
- 		&newchannel->inbound, in, recv_ringbuffer_size);
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 
-@@ -168,7 +168,7 @@ int vmbus_open(struct vmbus_channel *new
- 
- 	if (ret != 0) {
- 		err = ret;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	/* Create and init the channel open message */
-@@ -177,7 +177,7 @@ int vmbus_open(struct vmbus_channel *new
- 			   GFP_KERNEL);
- 	if (!open_info) {
- 		err = -ENOMEM;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	init_completion(&open_info->waitevent);
-@@ -193,7 +193,7 @@ int vmbus_open(struct vmbus_channel *new
- 
- 	if (userdatalen > MAX_USER_DEFINED_BYTES) {
- 		err = -EINVAL;
--		goto errorout;
-+		goto error0;
- 	}
- 
- 	if (userdatalen)
-@@ -208,19 +208,18 @@ int vmbus_open(struct vmbus_channel *new
- 			       sizeof(struct vmbus_channel_open_channel));
- 
- 	if (ret != 0)
--		goto cleanup;
-+		goto error1;
- 
- 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
- 	if (t == 0) {
- 		err = -ETIMEDOUT;
--		goto errorout;
-+		goto error1;
- 	}
- 
- 
- 	if (open_info->response.open_result.status)
- 		err = open_info->response.open_result.status;
- 
--cleanup:
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&open_info->msglistentry);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
-@@ -228,9 +227,12 @@ cleanup:
- 	kfree(open_info);
- 	return err;
- 
--errorout:
--	hv_ringbuffer_cleanup(&newchannel->outbound);
--	hv_ringbuffer_cleanup(&newchannel->inbound);
-+error1:
-+	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
-+	list_del(&open_info->msglistentry);
-+	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
-+
-+error0:
- 	free_pages((unsigned long)out,
- 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
- 	kfree(open_info);
 
 
