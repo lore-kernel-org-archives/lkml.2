@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab2J2Vnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:43:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48967 "EHLO mail.kernel.org"
+	id S933197Ab2J2Vn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:43:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48908 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125Ab2J2VmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:42:06 -0400
+	id S933131Ab2J2Vl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Arend Van Spriel <arend@broadcom.com>,
-        Piotr Haber <phaber@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 45/54] bcma: fix unregistration of cores
-Date: Mon, 29 Oct 2012 14:40:46 -0700
-Message-Id: <20121029213807.782192288@linuxfoundation.org>
+        Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 48/54] x86, mm: Find_early_table_space based on ranges that are actually being mapped
+Date: Mon, 29 Oct 2012 14:40:49 -0700
+Message-Id: <20121029213808.126814532@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -28,37 +26,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Piotr Haber <phaber@broadcom.com>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit 1fffa905adffbf0d3767fc978ef09afb830275eb upstream.
+commit 844ab6f993b1d32eb40512503d35ff6ad0c57030 upstream.
 
-When cores are unregistered, entries
-need to be removed from cores list in a safe manner.
+Current logic finds enough space for direct mapping page tables from 0
+to end. Instead, we only need to find enough space to cover mr[0].start
+to mr[nr_range].end -- the range that is actually being mapped by
+init_memory_mapping()
 
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Reviewed-by: Arend Van Spriel <arend@broadcom.com>
-Signed-off-by: Piotr Haber <phaber@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
+the panic reported here:
+
+  https://lkml.org/lkml/2012/10/20/160
+  https://lkml.org/lkml/2012/10/21/157
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
+Tested-by: Tom Rini <trini@ti.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bcma/main.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c |   73 +++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 43 insertions(+), 30 deletions(-)
 
---- a/drivers/bcma/main.c
-+++ b/drivers/bcma/main.c
-@@ -131,9 +131,10 @@ static int bcma_register_cores(struct bc
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -29,36 +29,54 @@ int direct_gbpages
+ #endif
+ ;
  
- static void bcma_unregister_cores(struct bcma_bus *bus)
+-static void __init find_early_table_space(unsigned long end, int use_pse,
+-					  int use_gbpages)
++struct map_range {
++	unsigned long start;
++	unsigned long end;
++	unsigned page_size_mask;
++};
++
++/*
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
  {
--	struct bcma_device *core;
-+	struct bcma_device *core, *tmp;
+-	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
+ 	phys_addr_t base;
  
--	list_for_each_entry(core, &bus->cores, list) {
-+	list_for_each_entry_safe(core, tmp, &bus->cores, list) {
-+		list_del(&core->list);
- 		if (core->dev_registered)
- 			device_unregister(&core->dev);
- 	}
+-	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
+ 
+-	if (use_gbpages) {
+-		unsigned long extra;
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+-		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+-		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-	} else
+-		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
+-
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
+ 
+-	if (use_pse) {
+-		unsigned long extra;
+-
+-		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+ #ifdef CONFIG_X86_32
+-		extra += PMD_SIZE;
++			extra += PMD_SIZE;
+ #endif
+-		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	} else
+-		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
++			/* The first 2/4M doesn't use large pages. */
++			if (mr[i].start < PMD_SIZE)
++				extra += range;
++
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
++	}
+ 
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+@@ -75,8 +93,9 @@ static void __init find_early_table_spac
+ 	pgt_buf_end = pgt_buf_start;
+ 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 
+-	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+-		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
++ 	printk(KERN_DEBUG "kernel direct mapping tables up to %#lx @ [mem %#010lx-%#010lx]\n",
++		mr[nr_range - 1].end - 1, pgt_buf_start << PAGE_SHIFT,
++ 		(pgt_buf_top << PAGE_SHIFT) - 1);
+ }
+ 
+ void __init native_pagetable_reserve(u64 start, u64 end)
+@@ -84,12 +103,6 @@ void __init native_pagetable_reserve(u64
+ 	memblock_reserve(start, end - start);
+ }
+ 
+-struct map_range {
+-	unsigned long start;
+-	unsigned long end;
+-	unsigned page_size_mask;
+-};
+-
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+ #else /* CONFIG_X86_64 */
+@@ -261,7 +274,7 @@ unsigned long __init_refok init_memory_m
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(end, use_pse, use_gbpages);
++		find_early_table_space(mr, nr_range);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 
 
