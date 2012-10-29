@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab2J2WD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:03:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47850 "EHLO mail.kernel.org"
+	id S1761391Ab2J2WDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:03:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47841 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758458Ab2J2Vhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:48 -0400
+	id S1761191Ab2J2Vhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ivan Shugov <ivan.shugov@gmail.com>,
+        Bo Shen <voice.shen@atmel.com>, Jean Delvare <khali@linux-fr.org>,
         Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [ 075/101] ARM: at91: at91sam9g10: fix SOC type detection
-Date: Mon, 29 Oct 2012 14:35:28 -0700
-Message-Id: <20121029213248.642679294@linuxfoundation.org>
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [ 074/101] ARM: at91/i2c: change id to let i2c-gpio work
+Date: Mon, 29 Oct 2012 14:35:27 -0700
+Message-Id: <20121029213248.519373297@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,54 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ivan Shugov <ivan.shugov@gmail.com>
+From: Bo Shen <voice.shen@atmel.com>
 
-commit 3d9a0183dd3423353e9e363bcc261c1220d05f9f upstream.
+commit 7840487cd6298f9f931103b558290d8d98d41c49 upstream.
 
-Newer at91sam9g10 SoC revision can't be detected, so the kernel can't boot with
-this kind of kernel panic:
-"AT91: Impossible to detect the SOC type"
+The i2c core driver will turn the platform device ID to busnum
+When using platfrom device ID as -1, it means dynamically assigned
+the busnum. When writing code, we need to make sure the busnum,
+and call i2c_register_board_info(int busnum, ...) to register device
+if using -1, we do not know the value of busnum
 
-CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
-CPU: VIVT data cache, VIVT instruction cache
-Machine: Atmel AT91SAM9G10-EK
-Ignoring tag cmdline (using the default kernel command line)
-bootconsole [earlycon0] enabled
-Memory policy: ECC disabled, Data cache writeback
-Kernel panic - not syncing: AT91: Impossible to detect the SOC type
-[<c00133d4>] (unwind_backtrace+0x0/0xe0) from [<c02366dc>] (panic+0x78/0x1cc)
-[<c02366dc>] (panic+0x78/0x1cc) from [<c02fa35c>] (at91_map_io+0x90/0xc8)
-[<c02fa35c>] (at91_map_io+0x90/0xc8) from [<c02f9860>] (paging_init+0x564/0x6d0)
-[<c02f9860>] (paging_init+0x564/0x6d0) from [<c02f7914>] (setup_arch+0x464/0x704)
-[<c02f7914>] (setup_arch+0x464/0x704) from [<c02f44f8>] (start_kernel+0x6c/0x2d4)
-[<c02f44f8>] (start_kernel+0x6c/0x2d4) from [<20008040>] (0x20008040)
+In order to solve this issue, set the platform device ID as a fix number
+Here using 0 to match the busnum used in i2c_regsiter_board_info()
 
-The reason for this is that the Debug Unit Chip ID Register has changed between
-Engineering Sample and definitive revision of the SoC. Changing the check of
-cidr to socid will address the problem. We do not integrate this check to the
-list just above because we also have to make sure that the extended id is
-disregarded.
-
-Signed-off-by: Ivan Shugov <ivan.shugov@gmail.com>
-[nicolas.ferre@atmel.com: change commit message]
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/setup.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
+ arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -151,7 +151,7 @@ static void __init soc_detect(u32 dbgu_b
- 	}
+--- a/arch/arm/mach-at91/at91rm9200_devices.c
++++ b/arch/arm/mach-at91/at91rm9200_devices.c
+@@ -463,7 +463,7 @@ static struct i2c_gpio_platform_data pda
  
- 	/* at91sam9g10 */
--	if ((cidr & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
-+	if ((socid & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
- 		at91_soc_initdata.type = AT91_SOC_SAM9G10;
- 		at91_boot_soc = at91sam9261_soc;
- 	}
+ static struct platform_device at91rm9200_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -471,7 +471,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9260_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -285,7 +285,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9261_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -542,7 +542,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9263_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -314,7 +314,7 @@ static struct i2c_gpio_platform_data pda
+ 
+ static struct platform_device at91sam9rl_twi_device = {
+ 	.name			= "i2c-gpio",
+-	.id			= -1,
++	.id			= 0,
+ 	.dev.platform_data	= &pdata,
+ };
+ 
 
 
