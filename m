@@ -1,323 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab2J2L3O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:29:14 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58264 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754060Ab2J2L3M (ORCPT
+	id S1758763Ab2J2LaW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:30:22 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:50956 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758745Ab2J2LaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:29:12 -0400
-Date: Mon, 29 Oct 2012 07:29:08 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20121029112907.GA9115@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 29 Oct 2012 07:30:19 -0400
+Date: Mon, 29 Oct 2012 12:30:06 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] s390: Add pmd_mknotpresent()
+Message-ID: <20121029123006.5eae86ea@mschwide>
+In-Reply-To: <20121029110519.GA22569@gmail.com>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+	<20121018182642.2a541275@thinkpad>
+	<20121028131014.GA10754@gmail.com>
+	<20121029084956.12b512e6@mschwide>
+	<20121029110519.GA22569@gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12102911-8372-0000-0000-00000428FCB9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> This hashtable implementation is using hlist buckets to provide a simple
-> hashtable to prevent it from getting reimplemented all over the kernel.
+On Mon, 29 Oct 2012 12:05:19 +0100
+Ingo Molnar <mingo@kernel.org> wrote:
+
 > 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
+> * Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
 > 
-> Sorry for the long delay, I was busy with a bunch of personal things.
+> > On Sun, 28 Oct 2012 14:10:14 +0100
+> > Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > 
+> > > There's a related problem on s390: other THP implementations 
+> > > have pmd_mknotpresent() while s390 not, resulting in:
+> > > 
+> > >   mm/huge_memory.c:1543:2: error: implicit declaration of function 'pmd_mknotpresent'
+> > > 
+> > > The (untested!) patch below adds the s390 version of this 
+> > > method.
+> > > 
+> > > Gerald, Martin, did I get the S390 details right?
+> > 
+> > This won't work I'm afraid. S390 uses invalid bits which need 
+> > to be set to make an entry not present. Just setting the 
+> > _SEGMENT_ENTRY_INV bit is not good enough either, there is 
+> > _HPAGE_TYPE_NONE to consider. The patch to fix this for 
+> > pmd_none & pmd_present just got added to the s390 tree on 
+> > kernel.org:
+> >
+> > https://git.kernel.org/?p=linux/kernel/git/s390/linux.git;a=shortlog;h=refs/heads/fixes
+> > 
+> > Now, if pmd_mknotpresent is supposed to make the entry invalid 
+> > so that pmd_present will return false the function needs to do 
+> > two things, 1) set the _SEGMENT_ENTRY_INV bit, and 2) clear 
+> > the _SEGMENT_ENTRY_RO bit.
 > 
-> Changes since v6:
+> Would be nice if you could send me your suggested 
+> pmd_mknotpresent().
 > 
->  - Use macros that point to internal static inline functions instead of
->  implementing everything as a macro.
->  - Rebase on latest -next.
->  - Resending the enter patch series on request.
->  - Break early from hash_empty() if found to be non-empty.
->  - DECLARE_HASHTABLE/DEFINE_HASHTABLE.
-> 
-> 
->  include/linux/hashtable.h | 193 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 193 insertions(+)
->  create mode 100644 include/linux/hashtable.h
-> 
-> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
-> new file mode 100644
-> index 0000000..1fb8c97
-> --- /dev/null
-> +++ b/include/linux/hashtable.h
-> @@ -0,0 +1,193 @@
-> +/*
-> + * Statically sized hash table implementation
-> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
-> + */
-> +
-> +#ifndef _LINUX_HASHTABLE_H
-> +#define _LINUX_HASHTABLE_H
-> +
-> +#include <linux/list.h>
-> +#include <linux/types.h>
-> +#include <linux/kernel.h>
-> +#include <linux/hash.h>
-> +#include <linux/rculist.h>
-> +
-> +#define DEFINE_HASHTABLE(name, bits)						\
-> +	struct hlist_head name[1 << bits] =					\
-> +			{ [0 ... ((1 << bits) - 1)] = HLIST_HEAD_INIT }
+> (Writing it into the email would be enough, I can turn it into a 
+> patch - but a patch would be welcome as well.)
 
-Although it's unlikely that someone would use this with a binary
-operator with lower precedence than "<<" (see e.g.
-http://www.swansontec.com/sopc.html) as "bits", lack of parenthesis
-around "bits" would be unexpected by the caller, and could introduce
-bugs. Please review all macros with the precedence table in mind, and
-ask yourself if lack of parenthesis could introduce a subtle bug.
+This would look like the following, the patch should apply to all recent
+kernel version.
+--
+Subject: [PATCH] s390,mm: add pmd_mknotpresent
 
-> +
-> +#define DECLARE_HASHTABLE(name, bits)                                   	\
-> +	struct hlist_head name[1 << (bits)]
+Fix the following build problem in huge_memory:
 
-Here, you have parenthesis around "bits", but not above (inconsistency).
+mm/huge_memory.c:1543:2: error: implicit declaration of function 'pmd_mknotpresent'
 
-> +
-> +#define HASH_SIZE(name) (ARRAY_SIZE(name))
-> +#define HASH_BITS(name) ilog2(HASH_SIZE(name))
-> +
-> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
-> +#define hash_min(val, bits)							\
-> +({										\
-> +	sizeof(val) <= 4 ?							\
-> +	hash_32(val, bits) :							\
-> +	hash_long(val, bits);							\
-> +})
-> +
-> +static inline void __hash_init(struct hlist_head *ht, int sz)
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+---
+ arch/s390/include/asm/pgtable.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-int -> unsigned int.
-
-> +{
-> +	int i;
-
-int -> unsigned int.
-
-> +
-> +	for (i = 0; i < sz; i++)
-> +		INIT_HLIST_HEAD(&ht[sz]);
-
-ouch. How did this work ? Has it been tested at all ?
-
-sz -> i
-
-
-> +}
-> +
-> +/**
-> + * hash_init - initialize a hash table
-> + * @hashtable: hashtable to be initialized
-> + *
-> + * Calculates the size of the hashtable from the given parameter, otherwise
-> + * same as hash_init_size.
-> + *
-> + * This has to be a macro since HASH_BITS() will not work on pointers since
-> + * it calculates the size during preprocessing.
-> + */
-> +#define hash_init(hashtable) __hash_init(hashtable, HASH_SIZE(hashtable))
-> +
-> +/**
-> + * hash_add - add an object to a hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add(hashtable, node, key)						\
-> +	hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
-
-extra ";" at the end to remove.
-
-> +
-> +/**
-> + * hash_add_rcu - add an object to a rcu enabled hashtable
-> + * @hashtable: hashtable to add to
-> + * @node: the &struct hlist_node of the object to be added
-> + * @key: the key of the object to be added
-> + */
-> +#define hash_add_rcu(hashtable, node, key)					\
-> +	hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
-
-extra ";" at the end to remove.
-
-> +
-> +/**
-> + * hash_hashed - check whether an object is in any hashtable
-> + * @node: the &struct hlist_node of the object to be checked
-> + */
-> +#define hash_hashed(node) (!hlist_unhashed(node))
-
-Please use a static inline for this instead of a macro.
-
-> +
-> +static inline bool __hash_empty(struct hlist_head *ht, int sz)
-
-int -> unsigned int.
-
-> +{
-> +	int i;
-
-int -> unsigned int.
-
-> +
-> +	for (i = 0; i < sz; i++)
-> +		if (!hlist_empty(&ht[i]))
-> +			return false;
-> +
-> +	return true;
-> +}
-> +
-> +/**
-> + * hash_empty - check whether a hashtable is empty
-> + * @hashtable: hashtable to check
-> + *
-> + * This has to be a macro since HASH_BITS() will not work on pointers since
-> + * it calculates the size during preprocessing.
-> + */
-> +#define hash_empty(hashtable) __hash_empty(hashtable, HASH_SIZE(hashtable))
-> +
-> +/**
-> + * hash_del - remove an object from a hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del(struct hlist_node *node)
-> +{
-> +	hlist_del_init(node);
-> +}
-> +
-> +/**
-> + * hash_del_rcu - remove an object from a rcu enabled hashtable
-> + * @node: &struct hlist_node of the object to remove
-> + */
-> +static inline void hash_del_rcu(struct hlist_node *node)
-> +{
-> +	hlist_del_init_rcu(node);
-> +}
-> +
-> +/**
-> + * hash_for_each - iterate over a hashtable
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each(name, bkt, node, obj, member)				\
-> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-
-if "bkt" happens to be a dereferenced pointer (unary operator '*'), we
-get into a situation where "*blah" has higher precedence than "=",
-higher than "<", but lower than "++". Any thoughts on fixing this ?
-
-> +		hlist_for_each_entry(obj, node, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_rcu - iterate over a rcu enabled hashtable
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each_rcu(name, bkt, node, obj, member)				\
-> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-
-Same comment as above about "bkt".
-
-> +		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_safe - iterate over a hashtable safe against removal of
-> + * hash entry
-> + * @name: hashtable to iterate
-> + * @bkt: integer to use as bucket loop cursor
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @tmp: a &struct used for temporary storage
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + */
-> +#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
-> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
-
-Same comment as above about "bkt".
-
-Thanks,
-
-Mathieu
-
-> +		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
-> +
-> +/**
-> + * hash_for_each_possible - iterate over all possible objects hashing to the
-> + * same bucket
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible(name, obj, node, member, key)			\
-> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +/**
-> + * hash_for_each_possible_rcu - iterate over all possible objects hashing to the
-> + * same bucket in an rcu enabled hashtable
-> + * in a rcu enabled hashtable
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
-> +	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +/**
-> + * hash_for_each_possible_safe - iterate over all possible objects hashing to the
-> + * same bucket safe against removals
-> + * @name: hashtable to iterate
-> + * @obj: the type * to use as a loop cursor for each entry
-> + * @node: the &struct list_head to use as a loop cursor for each entry
-> + * @tmp: a &struct used for temporary storage
-> + * @member: the name of the hlist_node within the struct
-> + * @key: the key of the objects to iterate over
-> + */
-> +#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
-> +	hlist_for_each_entry_safe(obj, node, tmp,				\
-> +		&name[hash_min(key, HASH_BITS(name))], member)
-> +
-> +
-> +#endif
-> -- 
-> 1.7.12.4
-> 
-
+diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+index 335b601..4a84431 100644
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1326,6 +1326,13 @@ static inline pmd_t pmd_mkyoung(pmd_t pmd)
+ 	return pmd;
+ }
+ 
++static inline pmd_t pmd_mknotpresent(pmd_t pmd)
++{
++	pmd_val(pmd) |= _SEGMENT_ENTRY_INV;
++	pmd_val(pmd) &= ~_SEGMENT_ENTRY_RO;
++	return pmd;
++}
++
+ #define __HAVE_ARCH_PMDP_TEST_AND_CLEAR_YOUNG
+ static inline int pmdp_test_and_clear_young(struct vm_area_struct *vma,
+ 					    unsigned long address, pmd_t *pmdp)
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
