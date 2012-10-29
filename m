@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab2J2QdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:33:10 -0400
+	id S932872Ab2J2QdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:33:16 -0400
 Received: from mail-da0-f46.google.com ([209.85.210.46]:61611 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab2J2QdF (ORCPT
+	with ESMTP id S932701Ab2J2QdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:33:05 -0400
+	Mon, 29 Oct 2012 12:33:11 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 8/9] perf stat: move to perf_evlist__open_counters
-Date: Mon, 29 Oct 2012 10:31:48 -0600
-Message-Id: <1351528309-87705-9-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 9/9] perf evsel: remove perf_evsel__open_per_cpu
+Date: Mon, 29 Oct 2012 10:31:49 -0600
+Message-Id: <1351528309-87705-10-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
 References: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
@@ -21,8 +21,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes a lot of duplicated code moving to the common
-open method.
+No longer needed with perf-stat converted to perf_evlist__open_counters.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -30,145 +29,40 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- tools/perf/builtin-stat.c |  103 ++++++++++-----------------------------------
- 1 file changed, 22 insertions(+), 81 deletions(-)
+ tools/perf/util/evsel.c |    6 ------
+ tools/perf/util/evsel.h |    2 --
+ 2 files changed, 8 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index e12002b..dc9850c 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -126,55 +126,6 @@ static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
- static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 618d411..a9ccab7 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -774,12 +774,6 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+ 	return __perf_evsel__open(evsel, cpus, threads);
+ }
  
--static int create_perf_stat_counter(struct perf_evsel *evsel,
--				    struct perf_evsel *first,
--				    struct perf_record_opts *opts)
+-int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+-			     struct cpu_map *cpus)
 -{
--	struct perf_target *target = &opts->target;
--	struct perf_event_attr *attr = &evsel->attr;
--	bool exclude_guest_missing = false;
--	int ret;
--
--	if (scale)
--		attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
--				    PERF_FORMAT_TOTAL_TIME_RUNNING;
--
--	attr->inherit = !opts->no_inherit;
--
--retry:
--	if (exclude_guest_missing)
--		evsel->attr.exclude_guest = evsel->attr.exclude_host = 0;
--
--	if (perf_target__has_cpu(target)) {
--		ret = perf_evsel__open_per_cpu(evsel,
--					       perf_evsel__cpus(evsel, target));
--		if (ret)
--			goto check_ret;
--		return 0;
--	}
--
--	if (!perf_target__has_task(target) &&
--	    (!opts->group || evsel == first)) {
--		attr->disabled = 1;
--		attr->enable_on_exec = 1;
--	}
--
--	ret = perf_evsel__open_per_thread(evsel, evsel_list->threads);
--	if (!ret)
--		return 0;
--	/* fall through */
--check_ret:
--	if (ret && errno == EINVAL) {
--		if (!exclude_guest_missing &&
--		    (evsel->attr.exclude_guest || evsel->attr.exclude_host)) {
--			pr_debug("Old kernel, cannot exclude "
--				 "guest or host samples.\n");
--			exclude_guest_missing = true;
--			goto retry;
--		}
--	}
--	return ret;
+-	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map);
 -}
- 
- /*
-  * Does the counter have nsecs as a unit?
-@@ -281,6 +232,7 @@ static int __run_perf_stat(int argc __maybe_unused,
- 	unsigned long long t0, t1;
- 	struct perf_evsel *counter, *first;
- 	struct cpu_map *cmap;
-+	struct perf_target *target = &opts->target;
- 	int status = 0;
- 	int child_ready_pipe[2], go_pipe[2];
- 	const bool forks = (argc > 0);
-@@ -324,7 +276,7 @@ static int __run_perf_stat(int argc __maybe_unused,
- 			exit(-1);
- 		}
- 
--		if (perf_target__none(&opts->target))
-+		if (perf_target__none(target))
- 			evsel_list->threads->map[0] = child_pid;
- 
- 		/*
-@@ -343,38 +295,27 @@ static int __run_perf_stat(int argc __maybe_unused,
- 	first = perf_evlist__first(evsel_list);
- 
- 	list_for_each_entry(counter, &evsel_list->entries, node) {
--		if (create_perf_stat_counter(counter, first, opts) < 0) {
--			/*
--			 * PPC returns ENXIO for HW counters until 2.6.37
--			 * (behavior changed with commit b0a873e).
--			 */
--			if (errno == EINVAL || errno == ENOSYS ||
--			    errno == ENOENT || errno == EOPNOTSUPP ||
--			    errno == ENXIO) {
--				if (verbose)
--					ui__warning("%s event is not supported by the kernel.\n",
--						    perf_evsel__name(counter));
--				counter->supported = false;
--				continue;
--			}
 -
--			if (errno == EPERM || errno == EACCES) {
--				error("You may not have permission to collect %sstats.\n"
--				      "\t Consider tweaking"
--				      " /proc/sys/kernel/perf_event_paranoid or running as root.",
--				      opts->target.system_wide ? "system-wide " : "");
--			} else {
--				error("open_counter returned with %d (%s). "
--				      "/bin/dmesg may provide additional information.\n",
--				       errno, strerror(errno));
--			}
--			if (child_pid != -1)
--				kill(child_pid, SIGTERM);
--
--			pr_err("Not all events could be opened.\n");
--			return -1;
-+		struct perf_event_attr *attr = &counter->attr;
-+
-+		if (scale)
-+			attr->read_format = PERF_FORMAT_TOTAL_TIME_ENABLED |
-+					    PERF_FORMAT_TOTAL_TIME_RUNNING;
-+
-+		attr->inherit = !opts->no_inherit;
-+
-+		if (perf_target__none(target) &&
-+		    (!opts->group || counter == first)) {
-+			attr->disabled = 1;
-+			attr->enable_on_exec = 1;
- 		}
--		counter->supported = true;
-+	}
-+
-+	if (perf_evlist__open_counters(evsel_list, opts, true) != 0) {
-+		if (child_pid != -1)
-+			kill(child_pid, SIGTERM);
-+
-+		pr_err("Not all events could be opened.\n");
-+		return -1;
- 	}
+ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+ 				struct thread_map *threads)
+ {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 6f94d6d..4459cc0 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -121,8 +121,6 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__set_filter(struct perf_evsel *evsel, int ncpus, int nthreads,
+ 			   const char *filter);
  
- 	if (perf_evlist__apply_filters(evsel_list)) {
+-int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+-			     struct cpu_map *cpus);
+ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+ 				struct thread_map *threads);
+ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
 -- 
 1.7.10.1
 
