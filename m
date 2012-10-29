@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab2J2IBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 04:01:06 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:28887
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757633Ab2J2IBC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 04:01:02 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 9
-X-BigFish: VPS9(zz9371I542M1432I4015Izz1202h1d1ah1d2ahzz17326ah8275bhz30ih95h668h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1307i1155h)
-From: Michal Simek <michal.simek@xilinx.com>
-To: Josh Cartwright <josh.cartwright@ni.com>,
-        "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        John Linn <linnj@xilinx.com>, Nick Bowler <nbowler@elliptictech.com>
-Subject: RE: [PATCH v4 5/5] zynq: move static peripheral mappings
-Thread-Topic: [PATCH v4 5/5] zynq: move static peripheral mappings
-Thread-Index: AQHNtWmqbGUBUplIMkKe0WryExNYzpfP7CaA
-Date: Mon, 29 Oct 2012 08:00:57 +0000
-References: <cover.1351466765.git.josh.cartwright@ni.com>
- <7a663040dc05b79262d7bd8bf8224ca49eb00162.1351466765.git.josh.cartwright@ni.com>
-In-Reply-To: <7a663040dc05b79262d7bd8bf8224ca49eb00162.1351466765.git.josh.cartwright@ni.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.26.33]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757770Ab2J2IEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 04:04:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49862 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755442Ab2J2IEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 04:04:38 -0400
+Message-ID: <508E3857.6080109@ti.com>
+Date: Mon, 29 Oct 2012 13:33:35 +0530
+From: Afzal Mohammed <x0148406@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <736cec0d-a996-4cc9-95af-7912b372fb8c@CH1EHSMHS010.ehs.local>
-X-OriginatorOrg: xilinx.com
+To: Daniel Mack <zonque@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH v4 3/5] rtc: omap: dt support
+References: <cover.1350633036.git.afzal@ti.com> <061c670b0a05570d7b83d8a8f105ee5b35583f7f.1350633036.git.afzal@ti.com> <5084523F.2070800@gmail.com>
+In-Reply-To: <5084523F.2070800@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Daniel,
 
+On Monday 22 October 2012 01:21 AM, Daniel Mack wrote:
+> On 19.10.2012 11:59, Afzal Mohammed wrote:
 
-> -----Original Message-----
-> From: Josh Cartwright [mailto:josh.cartwright@ni.com]
-> Sent: Monday, October 22, 2012 4:16 AM
-> To: arm@kernel.org; Arnd Bergmann
-> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; John
-> Linn; Nick Bowler; Michal Simek
-> Subject: [PATCH v4 5/5] zynq: move static peripheral mappings
->
-> Shifting them up into the vmalloc region prevents the following warning, when
-> booting a zynq qemu target with more than 512mb of RAM:
->
->   BUG: mapping for 0xe0000000 at 0xe0000000 out of vmalloc space
->
-> In addition, it allows for reuse of these mappings when the proper drivers issue
-> requests via ioremap().
->
-> There are currently unknown issues with the early uart mapping.  For now, the
-> uart will be mapped to a known working address.
->
-> Signed-off-by: Josh Cartwright <josh.cartwright@ni.com>
-> Cc: John Linn <john.linn@xilinx.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  arch/arm/mach-zynq/common.c                |  6 +++---
->  arch/arm/mach-zynq/include/mach/zynq_soc.h | 25 +++++++++++++++----------
->  2 files changed, 18 insertions(+), 13 deletions(-)
->
+>> +static const struct of_device_id omap_rtc_of_match[] = {
+>> +	{	.compatible	= "ti,da830-rtc",
+>> +		.data		=&omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
 
-Tested and applied to http://git.xilinx.com/?p=linux-xlnx.git;a=shortlog;h=refs/heads/arm-next
+> Wouldn't it make sense to list all the compatible models here? The
+> advantage of a compatible list is that we can name the models
+> explicitly, or maybe at least "davinci-rtc". Is there any reason for
+> this particular name?
 
-Thanks,
-Michal
+Exact name followed by compatible models needs to be
+specified in DT node only, right ? (when driver for the
+first variant can handle it)
 
+And when additional features of newer IP's has to be
+leveraged, new entries can be added in the driver
+match table.
 
+First known variant of SoC for DT is da830 (exact name),
+hence it was used.
 
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
+Regards
+Afzal
 
