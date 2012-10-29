@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab2J2XA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:00:58 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:6204 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753892Ab2J2XA4 (ORCPT
+	id S1757643Ab2J2XBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:01:51 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:46774 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab2J2XBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:00:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAG6Zu08YNPuJ/2dsb2JhbAANN4UtsgIBAQQjVQEQCxoCBRYLAgIJAwIBAgFFBg0BBwEBrxiSe4EmjgqBFAOoEA
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="203108791"
-Message-ID: <508F0AA6.6010702@teksavvy.com>
-Date: Mon, 29 Oct 2012 19:00:54 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jacob Shin <jacob.shin@amd.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yinghai Lu <yinghai@kernel.org>, Willy Tarreau <w@1wt.eu>,
-        stable@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
+	Mon, 29 Oct 2012 19:01:50 -0400
+Date: Mon, 29 Oct 2012 16:01:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-References: <508E002B.4090200@teksavvy.com> <20121029064643.GE574@1wt.eu> <508E913D.2080104@teksavvy.com> <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk> <20121029144722.GA23217@jshin-Toonie> <20121029165823.GA6614@kroah.com>
-In-Reply-To: <20121029165823.GA6614@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
+ regions..."
+Message-ID: <20121029230146.GA22320@kroah.com>
+References: <508E58FD.2000707@ahsoftware.de>
+ <508E8264.8070807@ahsoftware.de>
+ <20121029165946.GB6614@kroah.com>
+ <508EC69F.2030505@ahsoftware.de>
+ <20121029183250.GB4623@kroah.com>
+ <508EDEC6.7030101@ahsoftware.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508EDEC6.7030101@ahsoftware.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's something else very wrong when going from 3.4.9 to 3.4.16.
-I've done it on two machines here, one the AMD-450 server (64-bit),
-and the other my main notebook (Core2duo 32-bit-PAE).
+On Mon, Oct 29, 2012 at 08:53:42PM +0100, Alexander Holler wrote:
+> Am 29.10.2012 19:32, schrieb Greg Kroah-Hartman:
+> >On Mon, Oct 29, 2012 at 07:10:39PM +0100, Alexander Holler wrote:
+> >>Am 29.10.2012 17:59, schrieb Greg Kroah-Hartman:
+> >>>On Mon, Oct 29, 2012 at 02:19:32PM +0100, Alexander Holler wrote:
+> >>>>Am 29.10.2012 11:22, schrieb Alexander Holler:
+> >>>>>Hello,
+> >>>>>
+> >>>>>I've just bisected a problem with 3.6.4.
+> >>>>>
+> >>>>>I had to revert commit 54ce8ce298f382a06186cb4672ad6aa090b050b6
+> >>>>>(1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a in mainline), otherwise my box
+> >>>>>didn't boot.
+> >>>>>
+> >>>>>I can't provide any output, because I don't see if that commit is
+> >>>>>applied. ;)
+> >>>>
+> >>>>That sentence missed an 'any'. But I've now attached a serial, here is
+> >>>>the output:
+> >>>
+> >>>Thanks for this, it should be fixed in the next 3.6.y release, we needed
+> >>>to add two more commits from upstream:
+> >>>	844ab6f993b1d32eb40512503d35ff6ad0c57030
+> >>>	f82f64dd9f485e13f29f369772d4a0e868e5633a
+> >>>If you apply those two, and it doesn't solve the problem for you, please
+> >>>let us know.
+> >>
+> >>They don't applied cleanly, but after fixing the conflicts it seem's
+> >>to work.
+> >
+> >The conflict was in the printk, right?  I fixed that up in the 3.4
+> >stable tree.
+> 
+> No, I've come up with that on top of 3.6.4:
 
-Both systems feel much more sluggish than usual with 3.4.16 running.
-Reverted them both back to earlier kernels (3.4.9, 3.4.4-PAE),
-and the usual responsive feel has returned.
+Really?  That's odd.
 
-Vague, I know, but something bad happened in there somewhere.
+Can you test out 3.6.5-rc1 and see if that works properly for you or
+not?  It should have all of the fixes in it already.
 
-Cheers
+thanks,
+
+greg k-h
