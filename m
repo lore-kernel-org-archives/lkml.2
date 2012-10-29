@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758771Ab2J2MJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:09:48 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:55103 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754978Ab2J2MJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:09:47 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19gxV9Zh6dg5a4SS9OLgWo4rwdcAMJ0H+/NWFYsxZ
-	TMANJHOer4KF+C
-Message-ID: <1351512615.9785.25.camel@maggy.simpson.net>
-Subject: Re: [PATCH] V2 sched, autogroup: fix crash on reboot when autogroup
- is disabled
-From: Mike Galbraith <efault@gmx.de>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Mon, 29 Oct 2012 05:10:15 -0700
-In-Reply-To: <CAJn8CcFO9BB7yfoo2158FPV75Za7yoYqrf_KfwPdA-AdkT=Qsw@mail.gmail.com>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-	 <1350654126.2768.5.camel@twins>
-	 <CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-	 <1350736696.5123.24.camel@maggy.simpson.net>
-	 <1351283371.16639.111.camel@maggy.simpson.net>
-	 <1351362370.4503.3.camel@maggy.simpson.net>
-	 <20121028102520.GA7711@gmail.com>
-	 <1351430004.8685.17.camel@maggy.simpson.net>
-	 <20121028131950.GA15159@gmail.com>
-	 <1351431201.8685.22.camel@maggy.simpson.net>
-	 <20121028140544.GA28216@gmail.com>
-	 <1351451963.4999.8.camel@maggy.simpson.net>
-	 <CAJn8CcFO9BB7yfoo2158FPV75Za7yoYqrf_KfwPdA-AdkT=Qsw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1758826Ab2J2MMM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:12:12 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15928 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754978Ab2J2MML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 08:12:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,671,1344236400"; 
+   d="scan'208";a="234017663"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] kvm tools: fix rbtree-interval search
+Date: Mon, 29 Oct 2012 14:12:57 +0200
+Message-Id: <1351512780-8563-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 10:42 +0800, Xiaotian Feng wrote:
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-> I'm okay with the removal of runtime enable/disable autogroup. But can
-> we simply remove
-> these two knobs that is already exposed to user space since 2.6.38 ?
-> So we can't cat /proc/<pid>/autogroup
-> or echo <nice level> > /proc/<pid>/autogroup anymore even if autogroup is on?
+I've noticed message on kvm exit:
 
-I should have never made those knobs, as it's against the whole idea of
-automatic no muss no fuss group scheduling.  If you want knobs, you want
-full cgroups, so I think we should call this a fix opportunity.
+  Warning: serial8250__exit failed.
 
-If the knobs are seen as being cast in stone, I'll do the full move for
-the on/off switch instead, and there will be no user visible change. I'd
-rather not do that.  This way, it's really out of the way when disabled,
-smaller and simpler is better for this feature.
+kvm tool is not able to remove ioport range which was added previously.
 
-It's a dinky little sidelines feature, so let's just quietly make kaboom
-go away, non-functional on/off go away, along with the silly knobs which
-will make kaboom unless you jump through hoops just to keep them alive. 
+The issue is caused by bug in rbtree-interval. Search algorithm in
+rb_int_search_single() expects correct value of max_high. But the tree
+can contain leaf nodes, which never were updated by propagate_callback().
+For this kind of nodes high_max will be 0 and we will not be able to
+find and remove them.
 
--Mike
+Let's initialize max_high on RB_INT_INIT() time.
+
+Fixing this bug makes other bug visible: propagate_callback() can be
+called for empty tree: node == NULL. The callback is not ready for empty
+tree. Let's fix that as well.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ tools/kvm/include/kvm/rbtree-interval.h |    3 ++-
+ tools/kvm/util/rbtree-interval.c        |    6 +++++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/tools/kvm/include/kvm/rbtree-interval.h b/tools/kvm/include/kvm/rbtree-interval.h
+index e97d05b..fb2102a 100644
+--- a/tools/kvm/include/kvm/rbtree-interval.h
++++ b/tools/kvm/include/kvm/rbtree-interval.h
+@@ -4,7 +4,8 @@
+ #include <linux/rbtree_augmented.h>
+ #include <linux/types.h>
+ 
+-#define RB_INT_INIT(l, h) (struct rb_int_node){.low = l, .high = h}
++#define RB_INT_INIT(l, h) \
++	(struct rb_int_node){.low = l, .high = h, .max_high = h}
+ #define rb_int(n) rb_entry(n, struct rb_int_node, node)
+ 
+ struct rb_int_node {
+diff --git a/tools/kvm/util/rbtree-interval.c b/tools/kvm/util/rbtree-interval.c
+index c82ce98..d7fa96a 100644
+--- a/tools/kvm/util/rbtree-interval.c
++++ b/tools/kvm/util/rbtree-interval.c
+@@ -48,8 +48,12 @@ struct rb_int_node *rb_int_search_range(struct rb_root *root, u64 low, u64 high)
+  */
+ static void propagate_callback(struct rb_node *node, struct rb_node *stop)
+ {
+-	struct rb_int_node *i_node = rb_int(node);
++	struct rb_int_node *i_node;
+ 
++	if (node == stop)
++		return;
++
++	i_node = rb_int(node);
+ 	i_node->max_high = i_node->high;
+ 
+ 	if (node->rb_left)
+-- 
+1.7.10.4
 
