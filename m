@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761001Ab2J2VQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:16:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:14015 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760764Ab2J2VQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:16:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
-   d="scan'208";a="241642841"
-Date: Mon, 29 Oct 2012 14:16:15 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load
- Latency
-Message-ID: <20121029211615.GL2266@tassilo.jf.intel.com>
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
- <1351523752-4215-5-git-send-email-eranian@google.com>
- <20121029194203.GK2266@tassilo.jf.intel.com>
- <CABPqkBQ3pdvhV=tYjmdaAFyZFvUsM0PkvVw385c1cLA9_Z3KoQ@mail.gmail.com>
+	id S1761021Ab2J2VUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:20:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44929 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760997Ab2J2VUt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:20:49 -0400
+Date: Mon, 29 Oct 2012 22:20:43 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: mach-imx: CAN clock fix for i.MX53
+Message-ID: <20121029212043.GA1641@pengutronix.de>
+References: <1351164400-27940-1-git-send-email-stigge@antcom.de>
+ <1351164400-27940-2-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQ3pdvhV=tYjmdaAFyZFvUsM0PkvVw385c1cLA9_Z3KoQ@mail.gmail.com>
+In-Reply-To: <1351164400-27940-2-git-send-email-stigge@antcom.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:17:18 up 128 days, 12:28, 59 users,  load average: 0.51, 0.33,
+ 0.35
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Why do you need to replace the whole table?
-> >
-> Because I am extending them with one or two events based on cpu
-> model. That was the easiest way of doing this instead of playing
-> some kind of malloc+copy trick.
+Roland,
 
-I did malloc and copy.
+Do you have updates on this one? I think this patch is wrong, specifying
+the clock rate in the devicetree is only for PowerPC, so I think this
+needs further investigation.
 
+Sascha
+
+On Thu, Oct 25, 2012 at 01:26:40PM +0200, Roland Stigge wrote:
+> This patch fixes CAN clocking on i.MX53.
 > 
-> > BTW I still think my approach in the v4 Haswell patchkit
-> > is simpler and didn't rely on hardcoding these events.
-> >
-> I don't care about those events. As I found out, they are not even
-> used by perf because they are all hardcoded and that's what gets
-> used. I assume they are exposed for reference only. I don't object
-> to that. But I think the right mechanism would be one where you
-> can add events at boot time based on CPU model. It could be used
-> to add the common events as well in the common part of the init
-> code.
-
-Yes that's what I did. 
-
-I don't think copying everything for everything new is a good 
-approach.
-
--Andi
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> ---
+>  arch/arm/mach-imx/clk-imx51-imx53.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> --- linux-2.6.orig/arch/arm/mach-imx/clk-imx51-imx53.c
+> +++ linux-2.6/arch/arm/mach-imx/clk-imx51-imx53.c
+> @@ -426,10 +426,10 @@ int __init mx53_clocks_init(unsigned lon
+>  	clk[usb_phy2_gate] = imx_clk_gate2("usb_phy2_gate", "usb_phy_sel", MXC_CCM_CCGR4, 12);
+>  	clk[can_sel] = imx_clk_mux("can_sel", MXC_CCM_CSCMR2, 6, 2,
+>  				mx53_can_sel, ARRAY_SIZE(mx53_can_sel));
+> -	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR6, 22);
+> -	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR6, 20);
+> -	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 8);
+> -	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 6);
+> +	clk[can1_serial_gate] = imx_clk_gate2("can1_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
+> +	clk[can1_ipg_gate] = imx_clk_gate2("can1_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
+> +	clk[can2_serial_gate] = imx_clk_gate2("can2_serial_gate", "can_sel", MXC_CCM_CCGR4, 6);
+> +	clk[can2_ipg_gate] = imx_clk_gate2("can2_ipg_gate", "ipg", MXC_CCM_CCGR4, 8);
+>  	clk[i2c3_gate] = imx_clk_gate2("i2c3_gate", "per_root", MXC_CCM_CCGR1, 22);
+>  
+>  	for (i = 0; i < ARRAY_SIZE(clk); i++)
+> 
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
