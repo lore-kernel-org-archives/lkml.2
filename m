@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab2J2Vlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:41:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48765 "EHLO mail.kernel.org"
+	id S933176Ab2J2VmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:42:08 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48931 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933012Ab2J2Vlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:42 -0400
+	id S933012Ab2J2VmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:42:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Heiko Stuebner <heiko@sntech.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 35/54] ARM: SAMSUNG: Add naming of s3c64xx-spi devices
-Date: Mon, 29 Oct 2012 14:40:36 -0700
-Message-Id: <20121029213806.646766364@linuxfoundation.org>
+        Josh Triplett <josh@joshtriplett.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: [ 50/54] efi: Defer freeing boot services memory until after ACPI init
+Date: Mon, 29 Oct 2012 14:40:51 -0700
+Message-Id: <20121029213808.343149628@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -27,200 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Stuebner <heiko@sntech.de>
+From: Josh Triplett <josh@joshtriplett.org>
 
-commit 308b3afb97dc342e9c4f958d8b4c459ae0e22bd7 upstream.
+commit 785107923a83d8456bbd8564e288a24d84109a46 upstream.
 
-Commit a5238e360b71 (spi: s3c64xx: move controller information into driver
-data) introduced separate device names for the different subtypes of the
-spi controller but forgot to set these in the relevant machines.
+Some new ACPI 5.0 tables reference resources stored in boot services
+memory, so keep that memory around until we have ACPI and can extract
+data from it.
 
-To fix this introduce a s3c64xx_spi_setname function and populate all
-Samsung arches with the correct names. The function resides in a new
-header, as the s3c64xx-spi.h contains driver platform data and should
-therefore at some later point move out of the Samsung include dir.
-
-Tested on a s3c2416-based machine.
-
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-[s.nawrocki@samsung.com: tested on mach-exynos]
-Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Link: http://lkml.kernel.org/r/baaa6d44bdc4eb0c58e5d1b4ccd2c729f854ac55.1348876882.git.josh@joshtriplett.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-exynos/common.c                 |    5 ++++
- arch/arm/mach-s3c24xx/s3c2416.c               |    2 +
- arch/arm/mach-s3c24xx/s3c2443.c               |    4 +++
- arch/arm/mach-s5p64x0/common.c                |    3 ++
- arch/arm/mach-s5pc100/common.c                |    3 ++
- arch/arm/mach-s5pv210/common.c                |    3 ++
- arch/arm/plat-samsung/include/plat/spi-core.h |   30 ++++++++++++++++++++++++++
- 7 files changed, 50 insertions(+)
+ arch/x86/platform/efi/efi.c |   31 ++++++++++++++++++-------------
+ include/linux/efi.h         |    5 +++++
+ init/main.c                 |    3 +++
+ 3 files changed, 26 insertions(+), 13 deletions(-)
 
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -44,6 +44,7 @@
- #include <plat/fimc-core.h>
- #include <plat/iic-core.h>
- #include <plat/tv-core.h>
-+#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- 
- #include "common.h"
-@@ -338,6 +339,8 @@ static void __init exynos4_map_io(void)
- 
- 	s5p_fb_setname(0, "exynos4-fb");
- 	s5p_hdmi_setname("exynos4-hdmi");
-+
-+	s3c64xx_spi_setname("exynos4210-spi");
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -419,10 +419,21 @@ void __init efi_reserve_boot_services(vo
+ 	}
  }
  
- static void __init exynos5_map_io(void)
-@@ -358,6 +361,8 @@ static void __init exynos5_map_io(void)
- 	s3c_i2c0_setname("s3c2440-i2c");
- 	s3c_i2c1_setname("s3c2440-i2c");
- 	s3c_i2c2_setname("s3c2440-i2c");
-+
-+	s3c64xx_spi_setname("exynos4210-spi");
- }
- 
- static void __init exynos4_init_clocks(int xtal)
---- a/arch/arm/mach-s3c24xx/s3c2416.c
-+++ b/arch/arm/mach-s3c24xx/s3c2416.c
-@@ -61,6 +61,7 @@
- #include <plat/nand-core.h>
- #include <plat/adc-core.h>
- #include <plat/rtc-core.h>
-+#include <plat/spi-core.h>
- 
- static struct map_desc s3c2416_iodesc[] __initdata = {
- 	IODESC_ENT(WATCHDOG),
-@@ -131,6 +132,7 @@ void __init s3c2416_map_io(void)
- 	/* initialize device information early */
- 	s3c2416_default_sdhci0();
- 	s3c2416_default_sdhci1();
-+	s3c64xx_spi_setname("s3c2443-spi");
- 
- 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
- }
---- a/arch/arm/mach-s3c24xx/s3c2443.c
-+++ b/arch/arm/mach-s3c24xx/s3c2443.c
-@@ -43,6 +43,7 @@
- #include <plat/nand-core.h>
- #include <plat/adc-core.h>
- #include <plat/rtc-core.h>
-+#include <plat/spi-core.h>
- 
- static struct map_desc s3c2443_iodesc[] __initdata = {
- 	IODESC_ENT(WATCHDOG),
-@@ -100,6 +101,9 @@ void __init s3c2443_map_io(void)
- 	s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
- 	s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
- 
-+	/* initialize device information early */
-+	s3c64xx_spi_setname("s3c2443-spi");
-+
- 	iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
- }
- 
---- a/arch/arm/mach-s5p64x0/common.c
-+++ b/arch/arm/mach-s5p64x0/common.c
-@@ -44,6 +44,7 @@
- #include <plat/sdhci.h>
- #include <plat/adc-core.h>
- #include <plat/fb-core.h>
-+#include <plat/spi-core.h>
- #include <plat/gpio-cfg.h>
- #include <plat/regs-irqtype.h>
- #include <plat/regs-serial.h>
-@@ -179,6 +180,7 @@ void __init s5p6440_map_io(void)
- 	/* initialize any device information early */
- 	s3c_adc_setname("s3c64xx-adc");
- 	s3c_fb_setname("s5p64x0-fb");
-+	s3c64xx_spi_setname("s5p64x0-spi");
- 
- 	s5p64x0_default_sdhci0();
- 	s5p64x0_default_sdhci1();
-@@ -193,6 +195,7 @@ void __init s5p6450_map_io(void)
- 	/* initialize any device information early */
- 	s3c_adc_setname("s3c64xx-adc");
- 	s3c_fb_setname("s5p64x0-fb");
-+	s3c64xx_spi_setname("s5p64x0-spi");
- 
- 	s5p64x0_default_sdhci0();
- 	s5p64x0_default_sdhci1();
---- a/arch/arm/mach-s5pc100/common.c
-+++ b/arch/arm/mach-s5pc100/common.c
-@@ -45,6 +45,7 @@
- #include <plat/fb-core.h>
- #include <plat/iic-core.h>
- #include <plat/onenand-core.h>
-+#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- #include <plat/watchdog-reset.h>
- 
-@@ -165,6 +166,8 @@ void __init s5pc100_map_io(void)
- 	s3c_onenand_setname("s5pc100-onenand");
- 	s3c_fb_setname("s5pc100-fb");
- 	s3c_cfcon_setname("s5pc100-pata");
-+
-+	s3c64xx_spi_setname("s5pc100-spi");
- }
- 
- void __init s5pc100_init_clocks(int xtal)
---- a/arch/arm/mach-s5pv210/common.c
-+++ b/arch/arm/mach-s5pv210/common.c
-@@ -43,6 +43,7 @@
- #include <plat/iic-core.h>
- #include <plat/keypad-core.h>
- #include <plat/tv-core.h>
-+#include <plat/spi-core.h>
- #include <plat/regs-serial.h>
- 
- #include "common.h"
-@@ -196,6 +197,8 @@ void __init s5pv210_map_io(void)
- 
- 	/* setup TV devices */
- 	s5p_hdmi_setname("s5pv210-hdmi");
-+
-+	s3c64xx_spi_setname("s5pv210-spi");
- }
- 
- void __init s5pv210_init_clocks(int xtal)
---- /dev/null
-+++ b/arch/arm/plat-samsung/include/plat/spi-core.h
-@@ -0,0 +1,30 @@
-+/*
-+ * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __PLAT_S3C_SPI_CORE_H
-+#define __PLAT_S3C_SPI_CORE_H
-+
-+/* These functions are only for use with the core support code, such as
-+ * the cpu specific initialisation code
-+ */
-+
-+/* re-define device name depending on support. */
-+static inline void s3c64xx_spi_setname(char *name)
+-static void __init efi_free_boot_services(void)
++static void __init efi_unmap_memmap(void)
 +{
-+#ifdef CONFIG_S3C64XX_DEV_SPI0
-+	s3c64xx_device_spi0.name = name;
-+#endif
-+#ifdef CONFIG_S3C64XX_DEV_SPI1
-+	s3c64xx_device_spi1.name = name;
-+#endif
-+#ifdef CONFIG_S3C64XX_DEV_SPI2
-+	s3c64xx_device_spi2.name = name;
-+#endif
++	if (memmap.map) {
++		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
++		memmap.map = NULL;
++	}
 +}
 +
-+#endif /* __PLAT_S3C_SPI_CORE_H */
++void __init efi_free_boot_services(void)
+ {
+ 	void *p;
+ 
++	if (!efi_native)
++		return;
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		efi_memory_desc_t *md = p;
+ 		unsigned long long start = md->phys_addr;
+@@ -438,6 +449,8 @@ static void __init efi_free_boot_service
+ 
+ 		free_bootmem_late(start, size);
+ 	}
++
++	efi_unmap_memmap();
+ }
+ 
+ static int __init efi_systab_init(void *phys)
+@@ -787,8 +800,10 @@ void __init efi_enter_virtual_mode(void)
+ 	 * non-native EFI
+ 	 */
+ 
+-	if (!efi_native)
+-		goto out;
++	if (!efi_native) {
++		efi_unmap_memmap();
++		return;
++	}
+ 
+ 	/* Merge contiguous regions of the same type and attribute */
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+@@ -878,13 +893,6 @@ void __init efi_enter_virtual_mode(void)
+ 	}
+ 
+ 	/*
+-	 * Thankfully, it does seem that no runtime services other than
+-	 * SetVirtualAddressMap() will touch boot services code, so we can
+-	 * get rid of it all at this point
+-	 */
+-	efi_free_boot_services();
+-
+-	/*
+ 	 * Now that EFI is in virtual mode, update the function
+ 	 * pointers in the runtime service table to the new virtual addresses.
+ 	 *
+@@ -907,9 +915,6 @@ void __init efi_enter_virtual_mode(void)
+ 	if (__supported_pte_mask & _PAGE_NX)
+ 		runtime_code_page_mkexec();
+ 
+-out:
+-	early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
+-	memmap.map = NULL;
+ 	kfree(new_memmap);
+ }
+ 
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -496,6 +496,11 @@ extern void efi_map_pal_code (void);
+ extern void efi_memmap_walk (efi_freemem_callback_t callback, void *arg);
+ extern void efi_gettimeofday (struct timespec *ts);
+ extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
++#ifdef CONFIG_X86
++extern void efi_free_boot_services(void);
++#else
++static inline void efi_free_boot_services(void) {}
++#endif
+ extern u64 efi_get_iobase (void);
+ extern u32 efi_mem_type (unsigned long phys_addr);
+ extern u64 efi_mem_attributes (unsigned long phys_addr);
+--- a/init/main.c
++++ b/init/main.c
+@@ -630,6 +630,9 @@ asmlinkage void __init start_kernel(void
+ 	acpi_early_init(); /* before LAPIC and SMP init */
+ 	sfi_init_late();
+ 
++	if (efi_enabled)
++		efi_free_boot_services();
++
+ 	ftrace_init();
+ 
+ 	/* Do the rest non-__init'ed, we're now alive */
 
 
