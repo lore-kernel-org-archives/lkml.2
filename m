@@ -1,158 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab2J2PQA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:16:00 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:42474 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab2J2PP6 (ORCPT
+	id S1757075Ab2J2PQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:16:05 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56872 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab2J2PQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:15:58 -0400
+	Mon, 29 Oct 2012 11:16:01 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, ming.m.lin@intel.com
-Subject: [Patch v1 00/10] perf: add memory access sampling support
-Date: Mon, 29 Oct 2012 16:15:42 +0100
-Message-Id: <1351523752-4215-1-git-send-email-eranian@google.com>
+Subject: [Patch v1 01/10] perf/x86: improve sysfs event mapping with event string
+Date: Mon, 29 Oct 2012 16:15:43 +0100
+Message-Id: <1351523752-4215-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series had a new feature to the kernel perf_events
-interface and corresponding user level tool, perf.
+This patch extends Jiri's changes to make generic
+events mapping visible via sysfs. The patch extends
+the mechanism to non-generic events by allowing
+the mappings to be hardcoded in strings.
 
-With this patch, it is possible to sample (not trace) memory
-accesses (load, store). For loads, the instruction and data
-addresses are captured along with the latency and data source.
-For stores, the instruction and data addresses are capture
-along with limited cache and TLB information.
-
-For load data source, the memory hierarchy level, the tlb, snoop
-and lock information is captured.
-
-Although the perf_event interface is extended in a generic manner,
-sampling memory accesses requires HW support. The current patches
-implement the feature on Intel processors starting with Nehalem.
-The patches leverage the PEBS Load Latency and Precise Store
-mechanisms. Precise Store is present only on Sandy Bridge and
-Ivy Bridge based processors.
-
-The perf tool is extended to make capturing and analyzing the
-data easier with a new command: perf mem.
-
-$ perf mem -t load rec triad
-$ perf mem -t load rep --stdio
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : cost,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked
-#
-# Overhead      Samples     Cost  Memory access Symbol      Shared Obj  Data Symbol             Data Object Snoop  TLB access   Locked
-# ........  ...........  .......  ............. ..........  ........... ......................  ........... ...... ............ ......
-#
-     0.10%            1      986  LFB hit       [.] triad   triad       [.] 0x00007f67dffe8038  [unknown]    None  L1 or L2 hit  No    
-     0.09%            1      890  LFB hit       [.] triad   triad       [.] 0x00007f67df91a750  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      826  LFB hit       [.] triad   triad       [.] 0x00007f67e288fba8  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      825  LFB hit       [.] triad   triad       [.] 0x00007f67dea28c80  [unknown]    None  L1 or L2 hit  No    
-     0.08%            1      787  LFB hit       [.] triad   triad       [.] 0x00007f67df055a60  [unknown]    None  L1 or L2 hit  No    
-
-The perf mem command is a wrapper around perf record/report. It passes the
-right options to the report and record commands. Note that the TUI mode is
-supported.
-
-One powerful feature of perf is that users can toy with sort order to display
-the information in different format or from a different angle. This is particularly
-useful with memory sampling:
-
-$ perf mem -t load rep --sort=mem
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : mem
-#
-# Overhead      Samples             Memory access
-# ........  ...........  ........................
-#
-    85.26%        10633  LFB hit                 
-     7.35%         8151  L1 hit                  
-     3.13%          383  L3 hit                  
-     3.09%          195  Local RAM hit           
-     1.16%          259  L2 hit                  
-     0.00%            4  Uncached hit            
-
-Or if one is interested in the data view:
-$ perf mem -t load rep --sort=symbol_daddr,cost
-# Samples: 19K of event 'cpu/mem-loads/pp'
-# Total cost : 1013994
-# Sort order : symbol_daddr,cost
-#
-# Overhead      Samples             Data Symbol     Cost
-# ........  ...........  ......................  .......
-#
-     0.10%            1  [.] 0x00007f67dffe8038      986
-     0.09%            1  [.] 0x00007f67df91a750      890
-     0.08%            1  [.] 0x00007f67e288fba8      826
-
-
-One note on the cost displayed: On Intel processors with PEBS Load Latency, as described
-in the SDM, the cost encompasses the number of cycles from dispatch to Globally Observable
-(GO) state. That means, that it includes OOO execution. It is not usual to see L1D Hits
-with a cost of > 100 cycles. Always look at the memory level for an approximation of the
-access penalty, then interpret the cost value accordingly.
-
-There is no cost associated with stores.
-
-CAVEAT: Note that the data addresses are not resolved correctly currently due to a
-problem in perf data symbol resolution code which I have not been able to
-uncover so far.
-
-Enjoy,
+This mechanism will be used by the PEBS-LL patch
+later on.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   26 ++++++++++++--------------
+ arch/x86/kernel/cpu/perf_event.h |   26 ++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 14 deletions(-)
 
-
-Stephane Eranian (10):
-  perf/x86: improve sysfs event mapping with event string
-  perf/x86: add flags to event constraints
-  perf: add generic memory sampling interface
-  perf/x86: add memory profiling via PEBS Load Latency
-  perf/x86: export PEBS load latency threshold register to sysfs
-  perf/x86: add support for PEBS Precise Store
-  perf tools: add mem access sampling core support
-  perf report: add support for mem access profiling
-  perf record: add support for mem access profiling
-  perf tools: add new mem command for memory access profiling
-
- arch/x86/include/asm/msr-index.h              |    1 +
- arch/x86/kernel/cpu/perf_event.c              |   31 +--
- arch/x86/kernel/cpu/perf_event.h              |   61 ++++-
- arch/x86/kernel/cpu/perf_event_intel.c        |   66 ++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c     |  182 +++++++++++++-
- arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
- include/linux/perf_event.h                    |    5 +
- include/uapi/linux/perf_event.h               |   70 +++++-
- kernel/events/core.c                          |   12 +
- tools/perf/Documentation/perf-mem.txt         |   51 ++++
- tools/perf/Makefile                           |    1 +
- tools/perf/builtin-mem.c                      |  237 ++++++++++++++++++
- tools/perf/builtin-record.c                   |    2 +
- tools/perf/builtin-report.c                   |  131 +++++++++-
- tools/perf/builtin.h                          |    1 +
- tools/perf/command-list.txt                   |    1 +
- tools/perf/perf.c                             |    1 +
- tools/perf/perf.h                             |    1 +
- tools/perf/util/event.h                       |    2 +
- tools/perf/util/evsel.c                       |   15 ++
- tools/perf/util/hist.c                        |   66 ++++-
- tools/perf/util/hist.h                        |   13 +
- tools/perf/util/session.c                     |   44 ++++
- tools/perf/util/session.h                     |    4 +
- tools/perf/util/sort.c                        |  324 ++++++++++++++++++++++++-
- tools/perf/util/sort.h                        |   10 +-
- tools/perf/util/symbol.h                      |    7 +
- 27 files changed, 1296 insertions(+), 45 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-mem.txt
- create mode 100644 tools/perf/builtin-mem.c
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 0a55ab2..7c30b4c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1316,20 +1316,22 @@ static struct attribute_group x86_pmu_format_group = {
+ 	.attrs = NULL,
+ };
+ 
+-struct perf_pmu_events_attr {
+-	struct device_attribute attr;
+-	u64 id;
+-};
+-
+ /*
+  * Remove all undefined events (x86_pmu.event_map(id) == 0)
+  * out of events_attr attributes.
+  */
+ static void __init filter_events(struct attribute **attrs)
+ {
++	struct device_attribute *d;
++	struct perf_pmu_events_attr *pmu_attr;
+ 	int i, j;
+ 
+ 	for (i = 0; attrs[i]; i++) {
++		d = (struct device_attribute *)attrs[i];
++		pmu_attr = container_of(d, struct perf_pmu_events_attr, attr);
++		/* str trumps id */
++		if (pmu_attr->event_str)
++			continue;
+ 		if (x86_pmu.event_map(i))
+ 			continue;
+ 
+@@ -1348,17 +1350,13 @@ ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 		container_of(attr, struct perf_pmu_events_attr, attr);
+ 
+ 	u64 config = x86_pmu.event_map(pmu_attr->id);
+-	return x86_pmu.events_sysfs_show(page, config);
+-}
+ 
+-#define EVENT_VAR(_id)  event_attr_##_id
+-#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++	/* string trumps id */
++	if (pmu_attr->event_str)
++		return sprintf(page, "%s", pmu_attr->event_str);
+ 
+-#define EVENT_ATTR(_name, _id)					\
+-static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
+-	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
+-	.id   =  PERF_COUNT_HW_##_id,				\
+-};
++	return x86_pmu.events_sysfs_show(page, config);
++}
+ 
+ EVENT_ATTR(cpu-cycles,			CPU_CYCLES		);
+ EVENT_ATTR(instructions,		INSTRUCTIONS		);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 115c1ea..41479da 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -419,6 +419,29 @@ do {									\
+ #define ERF_NO_HT_SHARING	1
+ #define ERF_HAS_RSP_1		2
+ 
++#define EVENT_VAR(_id)  event_attr_##_id
++#define EVENT_PTR(_id) &event_attr_##_id.attr.attr
++
++#define EVENT_ATTR(_name, _id)					\
++static struct perf_pmu_events_attr EVENT_VAR(_id) = {		\
++	.attr = __ATTR(_name, 0444, events_sysfs_show, NULL),	\
++	.id   =  PERF_COUNT_HW_##_id,				\
++	.event_str = NULL,					\
++};
++
++#define EVENT_ATTR_STR(_name, v, str)				  \
++static struct perf_pmu_events_attr event_attr_##v = {		  \
++	.attr      = __ATTR(_name, 0444, events_sysfs_show, NULL),\
++	.id        =  0,					  \
++	.event_str =  str,					  \
++};
++
++struct perf_pmu_events_attr {
++	struct device_attribute attr;
++	u64 id;
++	const char *event_str;
++};
++
+ extern struct x86_pmu x86_pmu __read_mostly;
+ 
+ DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+@@ -633,6 +656,9 @@ int p6_pmu_init(void);
+ 
+ int knc_pmu_init(void);
+ 
++ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
++			  char *page);
++
+ #else /* CONFIG_CPU_SUP_INTEL */
+ 
+ static inline void reserve_ds_buffers(void)
 -- 
 1.7.9.5
 
