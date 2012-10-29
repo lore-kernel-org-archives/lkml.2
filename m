@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2J2CBk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:01:40 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:8006 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753504Ab2J2CBi (ORCPT
+	id S1757527Ab2J2CD1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:03:27 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63585 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab2J2CD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:01:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsEMAOjijVB5LM3e/2dsb2JhbABEhS+3OIV3gQmCHgEBBTocIxAIAxguFA0YAyETHodWAw6xUA2JVBSKemeGXQOUH4FUiUiBaoURgwM
-Date: Mon, 29 Oct 2012 13:01:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [RFC v4 03/15] vfs,hot_track: add the function for collecting
- I/O frequency
-Message-ID: <20121029020124.GP29378@dastard>
-References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
- <1351177747-19389-4-git-send-email-zwu.kernel@gmail.com>
- <20121028075520.GA14554@gmail.com>
- <CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
+	Sun, 28 Oct 2012 22:03:26 -0400
+X-AuditID: 9c93016f-b7c7bae000000eb7-5c-508de3ec843c
+Date: Mon, 29 Oct 2012 11:09:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 5/5] mm, highmem: get virtual address of the page using
+ PKMAP_ADDR()
+Message-ID: <20121029020910.GJ15767@bbox>
+References: <Yes>
+ <1351451576-2611-1-git-send-email-js1304@gmail.com>
+ <1351451576-2611-6-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
+In-Reply-To: <1351451576-2611-6-git-send-email-js1304@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 09:51:48PM +0800, Zhi Yong Wu wrote:
-> On Sun, Oct 28, 2012 at 3:55 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
-> > Hi Zhiyong,
-> >
-> > On Thu, Oct 25, 2012 at 11:08:55PM +0800, zwu.kernel@gmail.com wrote:
-> > [snip]
-> >> @@ -199,6 +342,54 @@ err:
-> >>  }
-> >>
-> >>  /*
-> >> + * Main function to update access frequency from read/writepage(s) hooks
-> >> + */
-> >> +inline void hot_update_freqs(struct inode *inode, u64 start,
-> >> +                     u64 len, int rw)
-> >
-> > This function seems too big.  So we really need to inline this function?
-> As Dave said in his comments, it will add a function call
-> overhead even when tracking is not enabled. a static inline function
-> will just result in no extra overhead other than the if
-> statement....
+On Mon, Oct 29, 2012 at 04:12:56AM +0900, Joonsoo Kim wrote:
+> In flush_all_zero_pkmaps(), we have an index of the pkmap associated the page.
+> Using this index, we can simply get virtual address of the page.
+> So change it.
+> 
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-I don't think I said that with respect to this code. I think I said
-it w.r.t. a define or a small wrapper that decides to call
-hot_update_freqs().  A static inline fucntion should only be a
-couple of lines of code at most.
-
-A static function, OTOH, can be inlined by the compiler if the
-compiler thinks that is a win. But....
-
-.....
-
-> >> +EXPORT_SYMBOL_GPL(hot_update_freqs);
-
-... it's an exported function, so it can't be inline or static, so
-using "inline" is wrong whatever way you look at it. ;)
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Kind regards,
+Minchan Kim
