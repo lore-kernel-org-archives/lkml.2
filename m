@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760025Ab2J2QOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:14:19 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58762 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759912Ab2J2QOP (ORCPT
+	id S1760036Ab2J2QOc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:14:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42818 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759961Ab2J2QOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:14:15 -0400
-Date: Mon, 29 Oct 2012 12:14:12 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
-	hashtable
-Message-ID: <20121029161412.GB18944@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <20121029112907.GA9115@Krystal> <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com>
+	Mon, 29 Oct 2012 12:14:18 -0400
+Date: Mon, 29 Oct 2012 16:14:16 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regulator: core: Move regulator release to avoid deadlock
+Message-ID: <20121029161416.GE4511@opensource.wolfsonmicro.com>
+References: <20121029093333.GA17941@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JBi0ZxuS5uaEhkUZ"
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121029093333.GA17941@opensource.wolfsonmicro.com>
+X-Cookie: You will never know hunger.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On Mon, Oct 29, 2012 at 7:29 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * Sasha Levin (levinsasha928@gmail.com) wrote:
-> >> +
-> >> +     for (i = 0; i < sz; i++)
-> >> +             INIT_HLIST_HEAD(&ht[sz]);
-> >
-> > ouch. How did this work ? Has it been tested at all ?
-> >
-> > sz -> i
-> 
-> Funny enough, it works perfectly. Generally as a test I boot the
-> kernel in a VM and let it fuzz with trinity for a bit, doing that with
-> the code above worked flawlessly.
-> 
-> While it works, it's obviously wrong. Why does it work though? Usually
-> there's a list op happening pretty soon after that which brings the
-> list into proper state.
-> 
-> I've been playing with a patch that adds a magic value into list_head
-> if CONFIG_DEBUG_LIST is set, and checks that magic in the list debug
-> code in lib/list_debug.c.
-> 
-> Does it sound like something useful? If so I'll send that patch out.
 
-Most of the calls to this initialization function apply it on zeroed
-memory (static/kzalloc'd...), which makes it useless. I'd actually be in
-favor of removing those redundant calls (as I pointed out in another
-email), and document that zeroed memory don't need to be explicitly
-initialized.
+--JBi0ZxuS5uaEhkUZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Those sites that need to really reinitialize memory, or initialize it
-(if located on the stack or in non-zeroed dynamically allocated memory)
-could use a memset to 0, which will likely be faster than setting to
-NULL on many architectures.
+On Mon, Oct 29, 2012 at 09:33:33AM +0000, Charles Keepax wrote:
+> regulator_put function was called whilst holding the
+> regulator_list_mutex, which is also locked from regulator_put. This
+> causes deadlock when failing to register a regulator.
 
-About testing, I'd recommend taking the few sites that still need the
-initialization function, and just initialize the array with garbage
-before calling the initialization function. Things should blow up quite
-quickly. Doing it as a one-off thing might be enough to catch any issue.
-I don't think we need extra magic numbers to catch issues in this rather
-obvious init function.
+Applied, thanks.
 
-Thanks,
+--JBi0ZxuS5uaEhkUZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Mathieu
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> 
-> Thanks,
-> Sasha
+iQIcBAEBAgAGBQJQjqtRAAoJELSic+t+oim99xUP/jyfX6uu6MxXXbnqp0hwIdjQ
+1ercrJKJva057IaMeB/JiDLzEFP5uh8/TzseBpINLOOniivXLIUP/+pv4hMHrf+m
+0D2Nt4gmh+9sUbIhXsZ5saxYBhAaW3nqY+CTJ0hrD6WckCscsrwY0U4JwGexPOp+
+pZFH3Sgzp2NEVtRyEpFU7Wp6tljTSO90q1DCB1R/2sssUGk5p7KVUg06e0E8MAAG
+51ukarkxwdWO98R9+Sc5c7TTxFCzwkmQi9NOXA+y0Ndwrab+eYTTSPg20oOF5jsD
+NqH8JEIAsL4yxELLODdM9EsogdDdQHMKk9A3ecep8WQ8+l0a1yPeJXYp4UdzUzly
+4PkZKUwf7NHH+X63e0CkJsxjJWdBm25m52b8PN+xTVj/r5Kk9QEl2xYd7CYH8U6r
+2KcULw45B286mtmeAcl4L64ozoZUiI9Yj0yqFtV2X0e5WE2Pcp/xRvQMvzEI0OP/
+5z80xE/TW9ywR1k68W0hWSY4/nLzPWHFh1Volk3Kg+x/E1pkr4P8FZpucNxwZkJl
+nJjnGmSOZtgJrZ9iP//YtgVwa8rfc1DkHV2UCuLHICgzNd1w6S/iHfEpQHHQ9M7y
+GYwTIriOEgA0cmgDauQomOI3y041zHOXiuQyTbrsPK3Oq47tUXXK9xs2SIOlAKJ7
+nGo5It+CzzNZWAQ9DJxP
+=s9QZ
+-----END PGP SIGNATURE-----
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--JBi0ZxuS5uaEhkUZ--
