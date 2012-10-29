@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761354Ab2J2Vhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:37:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47771 "EHLO mail.kernel.org"
+	id S1761410Ab2J2ViL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:38:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47908 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761316Ab2J2Vhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:40 -0400
+	id S1761316Ab2J2Vhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 067/101] USB: mos7840: fix urb leak at release
-Date: Mon, 29 Oct 2012 14:35:20 -0700
-Message-Id: <20121029213247.747491468@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 079/101] mac80211: check if key has TKIP type before updating IV
+Date: Mon, 29 Oct 2012 14:35:32 -0700
+Message-Id: <20121029213249.085188801@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,28 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 65a4cdbb170e4ec1a7fa0e94936d47e24a17b0e8 upstream.
+commit 4045f72bcf3c293c7c5932ef001742d8bb5ded76 upstream.
 
-Make sure control urb is freed at release.
+This patch fix corruption which can manifest itself by following crash
+when switching on rfkill switch with rt2x00 driver:
+https://bugzilla.redhat.com/attachment.cgi?id=615362
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Pointer key->u.ccmp.tfm of group key get corrupted in:
+
+ieee80211_rx_h_michael_mic_verify():
+
+        /* update IV in key information to be able to detect replays */
+        rx->key->u.tkip.rx[rx->security_idx].iv32 = rx->tkip_iv32;
+        rx->key->u.tkip.rx[rx->security_idx].iv16 = rx->tkip_iv16;
+
+because rt2x00 always set RX_FLAG_MMIC_STRIPPED, even if key is not TKIP.
+
+We already check type of the key in different path in
+ieee80211_rx_h_michael_mic_verify() function, so adding additional
+check here is reasonable.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/wpa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -2754,6 +2754,7 @@ static void mos7840_release(struct usb_s
- 				del_timer_sync(&mos7840_port->led_timer1);
- 				del_timer_sync(&mos7840_port->led_timer2);
- 			}
-+			usb_free_urb(mos7840_port->control_urb);
- 			kfree(mos7840_port->ctrl_buf);
- 			kfree(mos7840_port->dr);
- 			kfree(mos7840_port);
+--- a/net/mac80211/wpa.c
++++ b/net/mac80211/wpa.c
+@@ -106,7 +106,8 @@ ieee80211_rx_h_michael_mic_verify(struct
+ 		if (status->flag & RX_FLAG_MMIC_ERROR)
+ 			goto mic_fail;
+ 
+-		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
++		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key &&
++		    rx->key->conf.cipher == WLAN_CIPHER_SUITE_TKIP)
+ 			goto update_iv;
+ 
+ 		return RX_CONTINUE;
 
 
