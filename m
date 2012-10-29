@@ -1,129 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760327Ab2J2SUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:20:07 -0400
-Received: from mx.scalarmail.ca ([98.158.95.75]:19095 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760291Ab2J2SUD (ORCPT
+	id S1759548Ab2J2SVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:21:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51519 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab2J2SVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:20:03 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        John Linn <john.linn@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Josh Cartwright <josh.cartwright@ni.com>
-Subject: [PATCH v2] ARM: zynq: Allow UART1 to be used as DEBUG_LL console.
-Date: Mon, 29 Oct 2012 14:19:29 -0400
-Message-Id: <1351534769-22155-1-git-send-email-nbowler@elliptictech.com>
-X-Mailer: git-send-email 1.7.8.6
+	Mon, 29 Oct 2012 14:21:30 -0400
+Message-ID: <508EC926.3040906@kernel.dk>
+Date: Mon, 29 Oct 2012 19:21:26 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block driver bits for 3.7
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main UART on the Xilinx ZC702 board is UART1, located at address
-e0001000.  Add a Kconfig option to select this device as the low-level
-debugging port.  This allows the really early boot printouts to reach
-the USB serial adaptor on this board.
+Hi Linus,
 
-For consistency's sake, add a choice entry for UART0 even though it is
-the the default if UART1 is not selected.
+Later than I would have liked, but I was traveling around the merge
+window and then a fixes snuck in past that and I wanted to ensure that
+everything was fully baked again. There was a particular issue around a
+floppy regression due to the genhd change, which has now gotten
+reverted. So without further ado, here are the driver updates queued up
+for 3.7. It contains:
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
-Tested-by: Josh Cartwright <josh.cartwright@ni.com>
----
-v2: rebase on newest patch series, signoff.
+- Updates to the Micron mtip32xx real-ssd card from Micron.
+- A few fixes for loop, from Dave Chinner and Eric Biederman.
+- A round of floppy fixes, and a subsequent revert of genhd
+  part since it caused regressions.
+- The usual round of drbd updates/fixes.
+- A single xen-blkback fixup.
+- A few other minor fixes and/or code cleanups.
+- memstick driver and later revert, this isn't well reviewed
+  enough yet to go directly in.
 
-This should apply cleanly on top of Josh Cartwright's v5 "zynq subarch
-cleanups" series.
+Please pull!
 
- arch/arm/Kconfig.debug                     |   17 +++++++++++++++++
- arch/arm/mach-zynq/common.c                |    6 +++---
- arch/arm/mach-zynq/include/mach/zynq_soc.h |   16 +++++++++++-----
- 3 files changed, 31 insertions(+), 8 deletions(-)
+  git://git.kernel.dk/linux-block.git for-3.7/drivers
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b0f3857b3a4c..7754d51f2b19 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -132,6 +132,23 @@ choice
- 		  their output to UART1 serial port on DaVinci TNETV107X
- 		  devices.
- 
-+	config DEBUG_ZYNQ_UART0
-+		bool "Kernel low-level debugging on Xilinx Zynq using UART0"
-+		depends on ARCH_ZYNQ
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to UART0 on the Zynq platform.
-+
-+	config DEBUG_ZYNQ_UART1
-+		bool "Kernel low-level debugging on Xilinx Zynq using UART1"
-+		depends on ARCH_ZYNQ
-+		help
-+		  Say Y here if you want the debug print routines to direct
-+		  their output to UART1 on the Zynq platform.
-+
-+		  If you have a ZC702 board and want early boot messages to
-+		  appear on the USB serial adaptor, select this option.
-+
- 	config DEBUG_DC21285_PORT
- 		bool "Kernel low-level debugging messages via footbridge serial port"
- 		depends on FOOTBRIDGE
-diff --git a/arch/arm/mach-zynq/common.c b/arch/arm/mach-zynq/common.c
-index ba8d14f78d4d..93b91059faab 100644
---- a/arch/arm/mach-zynq/common.c
-+++ b/arch/arm/mach-zynq/common.c
-@@ -84,9 +84,9 @@ static struct map_desc io_desc[] __initdata = {
- 
- #ifdef CONFIG_DEBUG_LL
- 	{
--		.virtual	= UART0_VIRT,
--		.pfn		= __phys_to_pfn(UART0_PHYS),
--		.length		= UART0_SIZE,
-+		.virtual	= LL_UART_VADDR,
-+		.pfn		= __phys_to_pfn(LL_UART_PADDR),
-+		.length		= UART_SIZE,
- 		.type		= MT_DEVICE,
- 	},
- #endif
-diff --git a/arch/arm/mach-zynq/include/mach/zynq_soc.h b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-index 1b8bf0ecbcb0..7f4f38bcada9 100644
---- a/arch/arm/mach-zynq/include/mach/zynq_soc.h
-+++ b/arch/arm/mach-zynq/include/mach/zynq_soc.h
-@@ -25,8 +25,9 @@
-  * address that is known to work.
-  */
- #define UART0_PHYS		0xE0000000
--#define UART0_SIZE		SZ_4K
--#define UART0_VIRT		0xF0001000
-+#define UART1_PHYS		0xE0001000
-+#define UART_SIZE		SZ_4K
-+#define UART_VIRT		0xF0001000
- 
- #define TTC0_PHYS		0xF8001000
- #define TTC0_SIZE		SZ_4K
-@@ -36,12 +37,17 @@
- #define SCU_PERIPH_SIZE		SZ_8K
- #define SCU_PERIPH_VIRT		(TTC0_VIRT - SCU_PERIPH_SIZE)
- 
-+#if IS_ENABLED(CONFIG_DEBUG_ZYNQ_UART1)
-+#	define LL_UART_PADDR	UART1_PHYS
-+#	define LL_UART_VADDR	UART_VIRT
-+#else
-+#	define LL_UART_PADDR	UART0_PHYS
-+#	define LL_UART_VADDR	UART_VIRT
-+#endif
-+
- /* The following are intended for the devices that are mapped early */
- 
- #define TTC0_BASE			IOMEM(TTC0_VIRT)
- #define SCU_PERIPH_BASE			IOMEM(SCU_PERIPH_VIRT)
- 
--#define LL_UART_PADDR	UART0_PHYS
--#define LL_UART_VADDR	UART0_VIRT
--
- #endif
+for you to fetch changes up to a13c29ddf73d3be4fbb2b1bbced64014986cd87a:
+
+  Merge branch 'for-jens' of git://git.kernel.org/pub/scm/linux/kernel/git/jikos/linux-block into for-3.7/drivers (2012-10-29 19:20:25 +0100)
+
+----------------------------------------------------------------
+
+Akinobu Mita (1):
+      cciss: select CONFIG_CHECK_SIGNATURE
+
+Asai Thambi S P (6):
+      mtip32xx: Add support for new devices
+      mtip32xx: Handle NCQ commands during the security locked state
+      mtip32xx: Increase timeout for standby command
+      mtip32xx: Proper reporting of write protect status on big-endian
+      mtip32xx: Change printk to pr_xxxx
+      mtip32xx: Remove dead code
+
+Ben Hutchings (1):
+      genhd: Make put_disk() safe for disks that have not been registered
+
+Dave Chinner (1):
+      loop: Make explicit loop device destruction lazy
+
+David Milburn (1):
+      mtip32xx: fix user_buffer check in exec_drive_command
+
+Eric W. Biederman (1):
+      userns: Convert loop to use kuid_t instead of uid_t
+
+Herton Ronaldo Krzesinski (5):
+      floppy: don't call alloc_ordered_workqueue inside the alloc_disk loop
+      floppy: do put_disk on current dr if blk_init_queue fails
+      floppy: properly handle failure on add_disk loop
+      floppy: use common function to check if floppies can be registered
+      floppy: remove dr, reuse drive on do_floppy_init
+
+Jens Axboe (6):
+      Merge branch 'stable/for-jens-3.7' of git://git.kernel.org/.../konrad/xen into for-3.7/drivers
+      Merge branch 'for-jens' of git://git.kernel.org/.../jikos/linux-block into for-3.7/drivers
+      Merge branch 'stable/for-jens-3.7' of git://git.kernel.org/.../konrad/xen into for-3.7/drivers
+      Merge branch 'for-3.7/core' into for-3.7/drivers
+      Revert "memstick: add support for legacy memorysticks"
+      Merge branch 'for-jens' of git://git.kernel.org/.../jikos/linux-block into for-3.7/drivers
+
+Jiri Kosina (3):
+      pktcdvd: update MAINTAINERS
+      Merge branches 'floppy' and 'pktcdvd' into for-jens
+      Revert "genhd: Make put_disk() safe for disks that have not been registered"
+
+Konrad Rzeszutek Wilk (1):
+      xen/blkback: Fix compile warning
+
+Lars Ellenberg (8):
+      drbd: introduce stop-sector to online verify
+      drbd: panic on delayed completion of aborted requests
+      drbd: fix potential deadlock during bitmap (re-)allocation
+      drbd: a few more GFP_KERNEL -> GFP_NOIO
+      drbd: wait for meta data IO completion even with failed disk, unless force-detached
+      drbd: prepare for more than 32 bit flags
+      drbd: always write bitmap on detach
+      drbd: log request sector offset and size for IO errors
+
+Maxim Levitsky (1):
+      memstick: add support for legacy memorysticks
+
+Oliver Chick (1):
+      xen/blkback: Change xen_vbd's flush_support and discard_secure to have type unsigned int, rather than bool
+
+Philipp Reisner (4):
+      drbd: Protect accesses to the uuid set with a spinlock
+      drbd: Fix a potential issue with the DISCARD_CONCURRENT flag
+      drbd: Avoid NetworkFailure state during disconnect
+      drbd: Remove dead code
+
+Selvan Mani (1):
+      mtip32xx:Added appropriate timeout value for secure erase
+
+Wei Yongjun (2):
+      xen/blkback: use kmem_cache_zalloc instead of kmem_cache_alloc/memset
+      cciss: remove unneeded memset()
+
+ MAINTAINERS                        |    2 +-
+ drivers/block/Kconfig              |    1 +
+ drivers/block/cciss.c              |    1 -
+ drivers/block/drbd/drbd_actlog.c   |   19 ++--
+ drivers/block/drbd/drbd_bitmap.c   |   24 ++---
+ drivers/block/drbd/drbd_int.h      |  108 +++++++++++++++++------
+ drivers/block/drbd/drbd_main.c     |  170 ++++++++++++++++++++++++------------
+ drivers/block/drbd/drbd_nl.c       |   74 +++++++++-------
+ drivers/block/drbd/drbd_proc.c     |   14 ++-
+ drivers/block/drbd/drbd_receiver.c |  147 ++++++++++++++++---------------
+ drivers/block/drbd/drbd_req.c      |   43 ++++++---
+ drivers/block/drbd/drbd_worker.c   |   87 ++++++++++++++----
+ drivers/block/floppy.c             |   86 ++++++++++--------
+ drivers/block/loop.c               |   21 ++++-
+ drivers/block/mtip32xx/mtip32xx.c  |   57 ++++++++----
+ drivers/block/mtip32xx/mtip32xx.h  |   13 ++-
+ drivers/block/xen-blkback/common.h |    4 +-
+ drivers/block/xen-blkback/xenbus.c |    9 +-
+ include/linux/drbd.h               |    4 +-
+ include/linux/drbd_nl.h            |    1 +
+ include/linux/loop.h               |    2 +-
+ init/Kconfig                       |    1 -
+ 22 files changed, 575 insertions(+), 313 deletions(-)
+
 -- 
-1.7.8.6
+Jens Axboe
 
