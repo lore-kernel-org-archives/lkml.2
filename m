@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab2J2WHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:07:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47669 "EHLO mail.kernel.org"
+	id S933432Ab2J2WHm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:07:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47654 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761287Ab2J2Vhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:32 -0400
+	id S1761279Ab2J2Vhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>
-Subject: [ 059/101] USB: quatech2: fix memory leak in error path
-Date: Mon, 29 Oct 2012 14:35:12 -0700
-Message-Id: <20121029213246.840410991@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 058/101] USB: mos7720: fix port-data memory leak
+Date: Mon, 29 Oct 2012 14:35:11 -0700
+Message-Id: <20121029213246.716250743@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,27 +27,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit b8a0055050b6294826171641b182c09f78f4cc63 upstream.
+commit 4230af572f95b3115bba1ee6fb95681f3851ab26 upstream.
 
-Fix memory leak in attach error path where the read urb was never freed.
+Fix port-data memory leak by moving port data allocation and
+deallocation to port_probe and port_remove.
+
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
+
+Note that this patch also fixes a second port-data memory leak in the
+error path of attach, should parallel-port initialisation fail.
+
+Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Bill Pemberton <wfp5p@virginia.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/quatech2.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/mos7720.c |   62 ++++++++++++++++++++++---------------------
+ 1 file changed, 32 insertions(+), 30 deletions(-)
 
---- a/drivers/usb/serial/quatech2.c
-+++ b/drivers/usb/serial/quatech2.c
-@@ -825,6 +825,7 @@ static int qt2_setup_urbs(struct usb_ser
- 	if (status != 0) {
- 		dev_err(&serial->dev->dev,
- 			"%s - submit read urb failed %i\n", __func__, status);
-+		usb_free_urb(serial_priv->read_urb);
- 		return status;
+--- a/drivers/usb/serial/mos7720.c
++++ b/drivers/usb/serial/mos7720.c
+@@ -2023,9 +2023,7 @@ static int mos7720_ioctl(struct tty_stru
+ 
+ static int mos7720_startup(struct usb_serial *serial)
+ {
+-	struct moschip_port *mos7720_port;
+ 	struct usb_device *dev;
+-	int i;
+ 	char data;
+ 	u16 product;
+ 	int ret_val;
+@@ -2063,29 +2061,6 @@ static int mos7720_startup(struct usb_se
+ 		serial->port[1]->interrupt_in_buffer = NULL;
  	}
  
+-
+-	/* set up serial port private structures */
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		mos7720_port = kzalloc(sizeof(struct moschip_port), GFP_KERNEL);
+-		if (mos7720_port == NULL) {
+-			dev_err(&dev->dev, "%s - Out of memory\n", __func__);
+-			return -ENOMEM;
+-		}
+-
+-		/* Initialize all port interrupt end point to port 0 int
+-		 * endpoint.  Our device has only one interrupt endpoint
+-		 * common to all ports */
+-		serial->port[i]->interrupt_in_endpointAddress =
+-				serial->port[0]->interrupt_in_endpointAddress;
+-
+-		mos7720_port->port = serial->port[i];
+-		usb_set_serial_port_data(serial->port[i], mos7720_port);
+-
+-		dbg("port number is %d", serial->port[i]->number);
+-		dbg("serial number is %d", serial->minor);
+-	}
+-
+-
+ 	/* setting configuration feature to one */
+ 	usb_control_msg(serial->dev, usb_sndctrlpipe(serial->dev, 0),
+ 			(__u8)0x03, 0x00, 0x01, 0x00, NULL, 0x00, 5*HZ);
+@@ -2113,8 +2088,6 @@ static int mos7720_startup(struct usb_se
+ 
+ static void mos7720_release(struct usb_serial *serial)
+ {
+-	int i;
+-
+ #ifdef CONFIG_USB_SERIAL_MOS7715_PARPORT
+ 	/* close the parallel port */
+ 
+@@ -2153,9 +2126,36 @@ static void mos7720_release(struct usb_s
+ 		kref_put(&mos_parport->ref_count, destroy_mos_parport);
+ 	}
+ #endif
+-	/* free private structure allocated for serial port */
+-	for (i = 0; i < serial->num_ports; ++i)
+-		kfree(usb_get_serial_port_data(serial->port[i]));
++}
++
++static int mos7720_port_probe(struct usb_serial_port *port)
++{
++	struct moschip_port *mos7720_port;
++
++	mos7720_port = kzalloc(sizeof(*mos7720_port), GFP_KERNEL);
++	if (!mos7720_port)
++		return -ENOMEM;
++
++	/* Initialize all port interrupt end point to port 0 int endpoint.
++	 * Our device has only one interrupt endpoint common to all ports.
++	 */
++	port->interrupt_in_endpointAddress =
++		port->serial->port[0]->interrupt_in_endpointAddress;
++	mos7720_port->port = port;
++
++	usb_set_serial_port_data(port, mos7720_port);
++
++	return 0;
++}
++
++static int mos7720_port_remove(struct usb_serial_port *port)
++{
++	struct moschip_port *mos7720_port;
++
++	mos7720_port = usb_get_serial_port_data(port);
++	kfree(mos7720_port);
++
++	return 0;
+ }
+ 
+ static struct usb_serial_driver moschip7720_2port_driver = {
+@@ -2173,6 +2173,8 @@ static struct usb_serial_driver moschip7
+ 	.probe			= mos77xx_probe,
+ 	.attach			= mos7720_startup,
+ 	.release		= mos7720_release,
++	.port_probe		= mos7720_port_probe,
++	.port_remove		= mos7720_port_remove,
+ 	.ioctl			= mos7720_ioctl,
+ 	.tiocmget		= mos7720_tiocmget,
+ 	.tiocmset		= mos7720_tiocmset,
 
 
