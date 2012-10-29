@@ -1,121 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab2J2GQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 02:16:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45145 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756370Ab2J2GQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 02:16:27 -0400
-Date: Mon, 29 Oct 2012 08:10:26 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: kishon <kishon@ti.com>
-CC: <balbi@ti.com>, Tony Lindgren <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <b-cousson@ti.com>, <arnd@arndb.de>, <olof@lixom.net>,
-        <rdunlap@xenotime.net>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] drivers: bus: ocp2scp: add pdata support
-Message-ID: <20121029061026.GO17570@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1349675983-23803-1-git-send-email-kishon@ti.com>
- <1349675983-23803-2-git-send-email-kishon@ti.com>
- <20121016165043.GS15569@atomide.com>
- <20121025004806.GK11928@atomide.com>
- <20121025061722.GB4449@arwen.pp.htv.fi>
- <20121025174446.GT11928@atomide.com>
- <20121026064736.GA22206@arwen.pp.htv.fi>
- <20121026171655.GI11908@atomide.com>
- <20121026195915.GA29548@arwen.pp.htv.fi>
- <508BD344.1090001@ti.com>
+	id S1757951Ab2J2GRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 02:17:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57890 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab2J2GRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 02:17:15 -0400
+Message-ID: <508E1F64.3080806@numascale-asia.com>
+Date: Mon, 29 Oct 2012 14:17:08 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="x+6KMIRAuhnl3hBn"
-Content-Disposition: inline
-In-Reply-To: <508BD344.1090001@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Add support for AMD64 EDAC on multiple PCI domains
+References: <1351153972-14019-1-git-send-email-daniel@numascale-asia.com> <20121025110353.GA2623@aftab.osrc.amd.com>
+In-Reply-To: <20121025110353.GA2623@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---x+6KMIRAuhnl3hBn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 25/10/2012 19:03, Borislav Petkov wrote:
+> On Thu, Oct 25, 2012 at 04:32:52PM +0800, Daniel J Blueman wrote:
+>> The AMD Northbridge initialisation code and EDAC assume the Northbridge IDs
+>> are contiguous, which no longer holds on federated systems with multiple
+>> HyperTransport fabrics and multiple PCI domains, eg on Numascale's
+>> Numaconnect systems with NumaChip.
+>>
+>> Address this assumption by searching the Northbridge ID array, rather than
+>> directly indexing it, using the upper bits for the PCI domain.
+>>
+>> RFC->v2: Correct array initialisation
+>> v2->v3: Add Boris's neater linked list approach
+>>
+>> Todo:
+>> 1. fix kobject/sysfs oops (see http://quora.org/2012/16-server-boot.txt later)
+>> 2. reorder amd64_edac.c or add amd64_per_family_init/pci_get_related_function
+>>     forward declarations, based on feedback
+>>
+>> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+>
+> This patch contains code from both of us and thus needs both our SOBs:
+>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
 
-Hi,
+I'll use "Based-on-patch-from: Borislav Petkov <bp@alien8.de>", great.
 
-On Sat, Oct 27, 2012 at 05:57:48PM +0530, kishon wrote:
-> Hi,
->=20
-> On Saturday 27 October 2012 01:29 AM, Felipe Balbi wrote:
-> >Hi,
-> >
-> >On Fri, Oct 26, 2012 at 10:16:55AM -0700, Tony Lindgren wrote:
-> >>* Felipe Balbi <balbi@ti.com> [121025 23:55]:
-> >>>On Thu, Oct 25, 2012 at 10:44:47AM -0700, Tony Lindgren wrote:
-> >>>>* Felipe Balbi <balbi@ti.com> [121024 23:24]:
-> >>>>>Hi,
-> >>>>>
-> >>>>>On Wed, Oct 24, 2012 at 05:48:07PM -0700, Tony Lindgren wrote:
-> >>>>>>* Tony Lindgren <tony@atomide.com> [121016 09:53]:
-> >>>>>>>* Kishon Vijay Abraham I <kishon@ti.com> [121007 23:01]:
-> >>>>>>>>ocp2scp was not having pdata support which makes *musb* fail for =
-non-dt
-> >>>>>>>>boot in OMAP platform. The pdata will have information about the =
-devices
-> >>>>>>>>that is connected to ocp2scp. ocp2scp driver will now make use of=
- this
-> >>>>>>>>information to create the devices that is attached to ocp2scp.
-> >>>>>>>>
-> >>>>>>>>Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> >>>>>>>
-> >>>>>>>This fixes the regression on my panda es for musb port:
-> >>>>>>>
-> >>>>>>>Acked-by: Tony Lindgren <tony@atomide.com>
-> >>>>>>
-> >>>>>>Looks like nobody has picked this one up and we need it to
-> >>>>>>fix the musb regression on omap, so I'll queue these up.
-> >>>>>
-> >>>>>I don't seem to have the patches around in any mailbox :-(
-> >>>>
-> >>>>Bounced them to you. Do you have any better ideas for the
-> >>>>-rc cycle to fix the MUSB regression on omap4?
-> >>>
-> >>>Well, there are two regressions that I know of. One is caused by the
-> >>>mode1 DMA changes, which I'll just revert, and the other is the
-> >>>missing platform_data support on the new PHY driver which these patches
-> >>>are supposed to solve, right ?
-> >>
-> >>Yes that's it AFAIK.
-> >
-> >Kishon, any other patches I need to take to get MUSB working on v3.7 ?
->=20
-> These should be good enough to get MUSB working..
+>> ---
+>>   arch/x86/include/asm/amd_nb.h            |   63 +++++++++++++++-
+>>   arch/x86/include/asm/numachip/numachip.h |   22 ++++++
+>>   arch/x86/kernel/amd_gart_64.c            |    8 +-
+>>   arch/x86/kernel/amd_nb.c                 |   85 ++++++++++++---------
+>>   arch/x86/pci/numachip.c                  |  121 ++++++++++++++++++++++++++++++
+>>   drivers/char/agp/amd64-agp.c             |   12 +--
+>>   drivers/edac/amd64_edac.c                |   34 +++++----
+>>   drivers/edac/amd64_edac.h                |    6 --
+>>   8 files changed, 283 insertions(+), 68 deletions(-)
+>>   create mode 100644 arch/x86/include/asm/numachip/numachip.h
+>>   create mode 100644 arch/x86/pci/numachip.c
+>>
+>> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+>> index b3341e9..6a27226 100644
+>> --- a/arch/x86/include/asm/amd_nb.h
+>> +++ b/arch/x86/include/asm/amd_nb.h
+>> @@ -4,6 +4,8 @@
+>>   #include <linux/ioport.h>
+>>   #include <linux/pci.h>
+>>
+>> +#define NUM_POSSIBLE_NBS	8
+>> +
+>>   struct amd_nb_bus_dev_range {
+>>   	u8 bus;
+>>   	u8 dev_base;
+>> @@ -51,12 +53,22 @@ struct amd_northbridge {
+>>   	struct pci_dev *link;
+>>   	struct amd_l3_cache l3_cache;
+>>   	struct threshold_bank *bank4;
+>> +	u16 node;
+>> +	struct list_head nbl;
+>>   };
+>>
+>>   struct amd_northbridge_info {
+>>   	u16 num;
+>>   	u64 flags;
+>> -	struct amd_northbridge *nb;
+>> +
+>> +	/*
+>> +	 * The first 8 elems are for fast lookup of NB descriptors on single-
+>> +	 * system setups, i.e. "normal" boxes. The nb_list, OTOH, is list of
+>> +	 * additional NB descriptors which exist on confederate systems
+>> +	 * like using Numascale's Numaconnect/NumaChip.
+>> +	 */
+>> +	struct amd_northbridge *nbs[NUM_POSSIBLE_NBS];
+>> +	struct list_head nb_list;
+>>   };
+>>   extern struct amd_northbridge_info amd_northbridges;
+>>
+>> @@ -78,7 +90,54 @@ static inline bool amd_nb_has_feature(unsigned feature)
+>>
+>>   static inline struct amd_northbridge *node_to_amd_nb(int node)
+>>   {
+>> -	return (node < amd_northbridges.num) ? &amd_northbridges.nb[node] : NULL;
+>> +	struct amd_northbridge_info *nbi = &amd_northbridges;
+>> +	struct amd_northbridge *nb;
+>> +	int i;
+>> +
+>> +	/* Quick search for first domain */
+>> +	if (node < NUM_POSSIBLE_NBS) {
+>> +		if (node < nbi->num)
+>> +			return nbi->nbs[node];
+>> +		else
+>> +			return NULL;
+>> +	}
+>
+> Why change that here from what I had before?
+>
+> nbi->nbs[node] will either return a valid descriptor or NULL because it
+> is statically allocated in amd_northbridge_info.
+>
+> So why add a conditional where you clearly don't need it?
 
-nothing needed for omap-usb2.c ? That's great, cheers
+True; fixed up.
 
---=20
-balbi
+>> +	/* Search for NBs from later domains in array */
+>> +	for (i = 0; i < NUM_POSSIBLE_NBS; i++)
+>> +		if (nbi->nbs[i]->node == node)
+>> +			return nbi->nbs[i];
+>
+> And then this is not needed.
 
---x+6KMIRAuhnl3hBn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Eg with two servers with two Northbridges per server, interconnected, 
+Linux sees two PCI domains (bits 15:3) and the nbs array would have node 
+IDs:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+[0x00]
+[0x01]
+[0x08]
+[0x09]
 
-iQIcBAEBAgAGBQJQjh3SAAoJEIaOsuA1yqREZsUQAKG8UcbcHA8KiRuq6fT4qQ/h
-yLHUbgg4rDn9rWQAhrWtg3C4Tcuylitg5gV7rxbE7O6Yi2ATfI3XHXDebpHFfnm5
-bxQe/KLnpnvrxZw3z1cG2k140PaYaQR77yMsvmyFFmAx/c/GRJJII2haePEvVZsb
-iMWmTVoyAu9eMuTqX8uaRHZ6lhTMhikBWqb0eZN9sow5UE96DOmyZoHpBsx92tCg
-l069eAbMzKz0CKHpFQO7FECfYsIwAEPGtYpAhaVD2Ahn1MSozFjZQVEy6jfnJF9n
-fuq53VsJ7eAMgLkK+Mchs7Fby1EFNKU2eOGaxVt63YTqm3RO19N8wgl/XGpKv5aI
-hCcFV4jB/6ZnJDRYHg/HbrNOHldW44q4ATaVjVuzC0L2F2beVsazG2h6et8aZjnP
-waYHJ70ZCKnNQMC5x2pMbs9HoMf/Q4uSaoysjBJ4Uz76HFQBNQFpubLY/bSHyQFV
-2FsvHbeq8VGBBn1cmTQ52mviiokgTwowfKiu+S5UqGmdE7yKc0m4KOWcT6GmwcfU
-E0GOBlqXtOoQy2O1vbBLvlvZsPDqHQii5WeTk5dW+CfQhG+G1PiXlGcBR0Ovt8vW
-oU/2pp6JAqTI8OJWx2dvsfg2W8U30lXwTT8Ii2NS4TB9C7WOKp28fx6I6Hmj9T8p
-UosOjnZ9Wy5w/lMtFpaD
-=kD0w
------END PGP SIGNATURE-----
+Without that check, searching for node 0x08 would only hit the linked 
+list, though this doesn't affect the fast-path (id < 0x8) of course.
 
---x+6KMIRAuhnl3hBn--
+We can use the static array for only the first PCI domain by changing 
+_alloc_nb_desc to use the list when nbi->node > NUM_POSSIBLE_NBS, rather 
+than nbi->num; we'd then need to introduce a variable to struct 
+amd_northbridge_info to keep track of how many static array entries are 
+used, for a linear lookup in index_to_amd_nb.
+
+>> +
+>> +	list_for_each_entry(nb, &nbi->nb_list, nbl)
+>> +		if (node == nb->node)
+>> +			return nb;
+>
+> And why change the list_for_each_entry_safe variant? It is not needed
+> now but who knows what code changes where in the future.
+
+Changed also.
+
+>> +
+>> +	return NULL;
+>> +}
+>> +
+>> +static inline struct amd_northbridge *index_to_amd_nb(int index)
+>> +{
+>> +	struct amd_northbridge_info *nbi = &amd_northbridges;
+>> +	struct amd_northbridge *nb;
+>> +	int count = NUM_POSSIBLE_NBS;
+>> +
+>> +	if (index < NUM_POSSIBLE_NBS) {
+>> +		if (index < nbi->num)
+>> +			return nbi->nbs[index];
+>> +		else
+>> +			return NULL;
+>> +	}
+>> +
+>> +	list_for_each_entry(nb, &nbi->nb_list, nbl) {
+>> +		if (count++ == index)
+>> +			return nb;
+>> +	}
+>> +
+>> +	return NULL;
+>> +}
+>
+> Huh, what do we need that function for? node should be equal to index
+> for the first 8 and then we use the linked list. What's up?
+
+A number of other callers lookup the PCI device based on index 
+0..amd_nb_num(), but we can't easily allocate contiguous northbridge IDs 
+from the PCI device in the first place.
+
+OTOH we can simply this code by changing amd_get_node_id to generate a 
+linear northbridge ID from the index of the matching entry in the 
+northbridge array.
+
+I'll get a patch together to see if there are any snags.
+
+Daniel
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
