@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab2J2V5D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:57:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48400 "EHLO mail.kernel.org"
+	id S1756564Ab2J2V53 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:57:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48389 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761508Ab2J2VlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:10 -0400
+	id S1761454Ab2J2VlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, Michal Marek <mmarek@suse.cz>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 04/54] gen_init_cpio: avoid stack overflow when expanding
-Date: Mon, 29 Oct 2012 14:40:05 -0700
-Message-Id: <20121029213803.239923186@linuxfoundation.org>
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 03/54] ALSA: hda - add dock support for Thinkpad T430
+Date: Mon, 29 Oct 2012 14:40:04 -0700
+Message-Id: <20121029213803.122517199@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -29,97 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: =?UTF-8?q?Stef=C3=A1n=20Freyr?= <stefan.freyr@gmail.com>
 
-commit 20f1de659b77364d55d4e7fad2ef657e7730323f upstream.
+commit 84f98fdf7865fbd35b312eb39ea91e5618c514c7 upstream.
 
-Fix possible overflow of the buffer used for expanding environment
-variables when building file list.
+I have a Lenovo ThinkPad T430 and an UltraBase Series 3 docking
+station.
 
-In the extremely unlikely case of an attacker having control over the
-environment variables visible to gen_init_cpio, control over the
-contents of the file gen_init_cpio parses, and gen_init_cpio was built
-without compiler hardening, the attacker can gain arbitrary execution
-control via a stack buffer overflow.
+Without this patch, if I plug my headphones into the jack on the
+computer, everything works fine. The computer speakers mute and the
+audio is played in the headphones. However, if I plug into the docking
+station headphone jack the computer speakers are muted but there is no
+audio in the headphones.
 
-  $ cat usr/crash.list
-  file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
-  $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
-  *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+Addresses https://bugs.launchpad.net/bugs/1060372
 
-This also replaces the space-indenting with tabs.
-
-Patch based on existing fix extracted from grsecurity.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- usr/gen_init_cpio.c |   41 ++++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 19 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/usr/gen_init_cpio.c
-+++ b/usr/gen_init_cpio.c
-@@ -303,7 +303,7 @@ static int cpio_mkfile(const char *name,
- 	int retval;
- 	int rc = -1;
- 	int namesize;
--	int i;
-+	unsigned int i;
- 
- 	mode |= S_IFREG;
- 
-@@ -381,25 +381,28 @@ error:
- 
- static char *cpio_replace_env(char *new_location)
- {
--       char expanded[PATH_MAX + 1];
--       char env_var[PATH_MAX + 1];
--       char *start;
--       char *end;
--
--       for (start = NULL; (start = strstr(new_location, "${")); ) {
--               end = strchr(start, '}');
--               if (start < end) {
--                       *env_var = *expanded = '\0';
--                       strncat(env_var, start + 2, end - start - 2);
--                       strncat(expanded, new_location, start - new_location);
--                       strncat(expanded, getenv(env_var), PATH_MAX);
--                       strncat(expanded, end + 1, PATH_MAX);
--                       strncpy(new_location, expanded, PATH_MAX);
--               } else
--                       break;
--       }
-+	char expanded[PATH_MAX + 1];
-+	char env_var[PATH_MAX + 1];
-+	char *start;
-+	char *end;
-+
-+	for (start = NULL; (start = strstr(new_location, "${")); ) {
-+		end = strchr(start, '}');
-+		if (start < end) {
-+			*env_var = *expanded = '\0';
-+			strncat(env_var, start + 2, end - start - 2);
-+			strncat(expanded, new_location, start - new_location);
-+			strncat(expanded, getenv(env_var),
-+				PATH_MAX - strlen(expanded));
-+			strncat(expanded, end + 1,
-+				PATH_MAX - strlen(expanded));
-+			strncpy(new_location, expanded, PATH_MAX);
-+			new_location[PATH_MAX] = 0;
-+		} else
-+			break;
-+	}
- 
--       return new_location;
-+	return new_location;
- }
- 
- 
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6184,6 +6184,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21f6, "Thinkpad T530", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x21fa, "Thinkpad X230", ALC269_FIXUP_LENOVO_DOCK),
++	SND_PCI_QUIRK(0x17aa, 0x21f3, "Thinkpad T430", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x21fb, "Thinkpad T430s", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_PCM_44K),
 
 
