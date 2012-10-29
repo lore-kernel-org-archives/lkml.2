@@ -1,64 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2J2OqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:46:04 -0400
-Received: from aserp1050.oracle.com ([141.146.126.70]:37421 "EHLO
-	aserp1050.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab2J2OqC (ORCPT
+	id S1753426Ab2J2Orh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:47:37 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:7957 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751045Ab2J2Ore (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:46:02 -0400
-Date: Mon, 29 Oct 2012 09:50:26 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "mukesh.rathor@oracle.com" <mukesh.rathor@oracle.com>
-Subject: Re: [PATCH 03/10] xen/hypercall: Make xen_remove_from_physmap the
- same on 64/32 builds.
-Message-ID: <20121029135025.GW2708@phenom.dumpdata.com>
-References: <1351015931-16991-1-git-send-email-konrad.wilk@oracle.com>
- <1351015931-16991-4-git-send-email-konrad.wilk@oracle.com>
- <1351071622.2237.130.camel@zakaz.uk.xensource.com>
+	Mon, 29 Oct 2012 10:47:34 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VPS-9(z21eIz98dI9371I936eI103dK1432I4015Izz1202h1d1ah1d2ahzz17326ah8275bh8275dhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh1155h)
+X-WSS-ID: 0MCNT31-02-6R0-02
+X-M-MSG: 
+Date: Mon, 29 Oct 2012 09:47:22 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Mark Lord <kernel@teksavvy.com>, Yinghai Lu <yinghai@kernel.org>,
+        Willy Tarreau <w@1wt.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <stable@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
+Message-ID: <20121029144722.GA23217@jshin-Toonie>
+References: <508E002B.4090200@teksavvy.com>
+ <20121029064643.GE574@1wt.eu>
+ <508E913D.2080104@teksavvy.com>
+ <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1351071622.2237.130.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1351521658.13356.7.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: aserp1040.oracle.com [141.146.126.69]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 24, 2012 at 10:40:22AM +0100, Ian Campbell wrote:
-> On Tue, 2012-10-23 at 19:12 +0100, Konrad Rzeszutek Wilk wrote:
-> > By making the structure exactly the same size and with the same
-> > offsets on 64 and 32-bit builds we are future-proofing ourselves.
+On Mon, Oct 29, 2012 at 02:40:58PM +0000, Ben Hutchings wrote:
+> On Mon, 2012-10-29 at 10:22 -0400, Mark Lord wrote:
+> > On 12-10-29 02:46 AM, Willy Tarreau wrote:
+> > > On Mon, Oct 29, 2012 at 12:03:55AM -0400, Mark Lord wrote:
+> > >> My server here runs the 3.4.xx series of "stable" kernels.
+> > >> Until today, it was running 3.4.9.
+> > >> Today I tried to upgrade it to 3.4.16.
+> > >> It hangs in setup.c.
+> > >>
+> > >> I've isolated the fault down to this specific change
+> > >> that was made between 3.4.9 and 3.4.16.
+> > >> Reverting this change allows the system to boot/run normally again.
+> > >>
+> > >>
+> > >> --- linux-3.4.9/arch/x86/kernel/setup.c	2012-08-15 11:17:17.000000000 -0400
+> > >> +++ linux-3.4.16/arch/x86/kernel/setup.c	2012-10-28 13:36:33.000000000 -0400
+> > >> @@ -927,8 +927,21 @@
+> > >>
+> > >>  #ifdef CONFIG_X86_64
+> > >>  	if (max_pfn > max_low_pfn) {
+> > >> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
+> > >> -						     max_pfn<<PAGE_SHIFT);
+> > >> +		int i;
+> > >> +		for (i = 0; i < e820.nr_map; i++) {
+> > >> +			struct e820entry *ei = &e820.map[i];
+> > >> +
+> > >> +			if (ei->addr + ei->size <= 1UL << 32)
+> > >> +				continue;
+> > >> +
+> > >> +			if (ei->type == E820_RESERVED)
+> > >> +				continue;
+> > >> +
+> > >> +			max_pfn_mapped = init_memory_mapping(
+> > >> +				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
+> > >> +				ei->addr + ei->size);
+> > >> +		}
+> > >> +
+> > >>  		/* can we preseve max_low_pfn ?*/
+> > >>  		max_low_pfn = max_pfn;
+> > >>  	}
+> > > 
+> > > For the record, it is this commit introduced in 3.4.16 :
+> > > 
+> > > commit efd5fa0c1a1d1b46846ea6e8d1a783d0d8a6a721
+> > > Author: Jacob Shin <jacob.shin@amd.com>
+> > > Date:   Thu Oct 20 16:15:26 2011 -0500
+> > > 
+> > >     x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+> > >     
+> > >     commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
+> > >     
+> > >     On systems with very large memory (1 TB in our case), BIOS may report a
+> > >     reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+> > >     these from the direct mapping.
+> > >     
+> > >     [ hpa: this should be done not just for > 4 GB but for everything above the legacy
+> > >       region (1 MB), at the very least.  That, however, turns out to require significant
+> > >       restructuring.  That work is well underway, but is not suitable for rc/stable. ]
+> > >     
+> > >     Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> > >     Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+> > >     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> > >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > 
+> > > Willy
 > > 
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  include/xen/interface/memory.h |    7 ++++++-
-> >  1 files changed, 6 insertions(+), 1 deletions(-)
 > > 
-> > diff --git a/include/xen/interface/memory.h b/include/xen/interface/memory.h
-> > index 8beebdb..6b07b54 100644
-> > --- a/include/xen/interface/memory.h
-> > +++ b/include/xen/interface/memory.h
-> > @@ -253,9 +253,14 @@ extern spinlock_t xen_reservation_lock;
-> >  struct xen_remove_from_physmap {
-> >      /* Which domain to change the mapping for. */
-> >      domid_t domid;
-> > -
-> > +   /* To be used in the future if need to. */
-> > +    uint8_t reserved[6];
-> >      /* GPFN of the current mapping of the page. */
-> >      xen_pfn_t gpfn;
-> > +#ifdef CONFIG_X86_32
-> > +    /* No need to do that on ARM as xen_pfn_t is always 8 bytes. */
-> > +    uint8_t __pad[4];
-> > +#endif
+> > Thanks, Willy.
+> > 
+> > I've also now downloaded linux-3.7.0-rc3, and it boots/runs without need for patching.
+> > So there's a fix somewhere in between that perhaps could also get backported to -stable.
 > 
-> I'm not sure if this last one is necessary since this isn't a struct
-> which would get used in an array. I guess it doesn't hurt though.
+> Might well be:
+> 
+> commit 1f2ff682ac951ed82cc043cf140d2851084512df
+> Author: Yinghai Lu <yinghai@kernel.org>
+> Date:   Mon Oct 22 16:35:18 2012 -0700
+> 
+>     x86, mm: Use memblock memory loop instead of e820_RAM
+> 
+> However I'm not sure that this loop is correct either.  Yinghai, does
+> your version definitely iterate in increasing pfn order?  If not then
+> the max_pfn_mapped assignment must be conditional.
 
-OK, we can always remove it later on?
+Hi, I believe these two commits in mainline should fix Alexander's failing
+machien:
+
+844ab6f993b1d32eb40512503d35ff6ad0c57030
+f82f64dd9f485e13f29f369772d4a0e868e5633a
+
+This thread has some more details:
+
+https://lkml.org/lkml/2012/10/21/157
+
+Sorry, and thanks!
+
+> 
+> Ben.
+> 
+> -- 
+> Ben Hutchings
+> Humans are not rational beings; they are rationalising beings.
+
+
+
