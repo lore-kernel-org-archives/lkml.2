@@ -1,47 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761384Ab2J2XdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:33:01 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33049 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761327Ab2J2XdA (ORCPT
+	id S1761405Ab2J2Xqh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:46:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab2J2Xqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:33:00 -0400
-Date: Tue, 30 Oct 2012 00:32:37 +0100
-From: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: Nouveau regression between 3.6 and 3.7-rc3: driver stuck at
- "running init tables"
-Message-ID: <20121029233237.GA10839@kashmir>
-Mail-Followup-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
-	Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20121029230647.GA10369@kashmir>
- <1351552559.3810.2.camel@turiel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351552559.3810.2.camel@turiel>
-X-Face: %JOeya=Dg!}[/#Go&*&cQ+)){p1c8}u\Fg2Q3&)kothIq|JnWoVzJtCFo~4X<uJ\9cHK'.w
- 3:{EoxBR
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Oct 2012 19:46:35 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=hXI3I0BFXWwNMd0WAfAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351554393.8467.79.camel@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.15-rt25
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Date: Mon, 29 Oct 2012 19:46:33 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi again,
 
-On Tue, Oct 30, 2012 at 09:15:59AM +1000, Ben Skeggs wrote:
-> Are you able to go back to the current master, and get me a
-> log/screenshot with "nouveau.debug=trace" appended to your kernel
-> options?
+Dear RT Folks,
 
-Hmmm I did just that on v3.7-rc3-8-g35fd3dc and it doesn't seem to
-output more stuff:
+I'm pleased to announce the 3.4.15-rt25 stable release.
 
-http://mathieu.csetco.com/nouveau.jpeg
--- 
-Mathieu Chouquet-Stringer                         mathieu@csetco.com
-            The sun itself sees not till heaven clears.
-	             -- William Shakespeare --
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  Head SHA1: 7fe212b3cf8cb2ba4dda85345130f7d3b0412e0f
+
+
+Or to build 3.4.15-rt25 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.15.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.15-rt25.patch.xz
+
+
+You can also build from 3.4.15-rt24 by applying the incremental patch:
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/incr/patch-3.4.15-rt24-rt25.patch.xz
+
+
+
+Enjoy,
+
+-- Steve
+
+
+Changes from 3.4.15-rt24:
+
+---
+
+Steven Rostedt (1):
+      Linux 3.4.15-rt25
+
+Thomas Gleixner (1):
+      rcu: rcutiny: Prevent RCU stall
+
+----
+ kernel/rcutiny_plugin.h |    2 +-
+ localversion-rt         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+---------------------------
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 22ecea0..97e359b 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -572,7 +572,7 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+ 		rcu_preempt_cpu_qs();
+ 
+ 	/* Hardware IRQ handlers cannot block. */
+-	if (in_irq() || in_serving_softirq()) {
++	if (preempt_count() & (HARDIRQ_MASK | SOFTIRQ_OFFSET)) {
+ 		local_irq_restore(flags);
+ 		return;
+ 	}
+diff --git a/localversion-rt b/localversion-rt
+index b2111a2..c5b71f9 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt24
++-rt25
+
+
