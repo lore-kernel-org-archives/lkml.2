@@ -1,55 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab2J2Rc7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:32:59 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56103 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab2J2Rc6 (ORCPT
+	id S932672Ab2J2Rdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:33:42 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52008 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932093Ab2J2Rdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:32:58 -0400
-Date: Mon, 29 Oct 2012 20:30:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
- parameter
-Message-ID: <20121029173031.GB3706@swordfish.minsk.epam.com>
-References: <20121027160347.GB4771@swordfish>
- <508EBB1E.9060400@vflare.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508EBB1E.9060400@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Oct 2012 13:33:40 -0400
+Date: Mon, 29 Oct 2012 13:33:38 -0400 (EDT)
+Message-Id: <20121029.133338.1308520640627047074.davem@davemloft.net>
+To: zheng.x.li@oracle.com
+Cc: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net,
+        linux-kernel@vger.kernel.org, joe.jin@oracle.com
+Subject: Re: [PATCH] bonding: fix bond-6-mode change MAC of arp reply from
+ vif to cause Domu's network unreachable intermittently
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <508E4840.40104@oracle.com>
+References: <508E4840.40104@oracle.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/29/12 10:21), Nitin Gupta wrote:
-> >+#include <linux/kernel.h>
-> >
-> >  #include "zram_drv.h"
-> >
-> >@@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
-> >  static ssize_t disksize_store(struct device *dev,
-> >  		struct device_attribute *attr, const char *buf, size_t len)
-> >  {
-> >-	int ret;
-> >  	u64 disksize;
-> >  	struct zram *zram = dev_to_zram(dev);
-> >
-> >-	ret = kstrtoull(buf, 10, &disksize);
-> >-	if (ret)
-> >-		return ret;
-> >+	disksize = memparse(buf, NULL);
-> >+	if (disksize < 1)
-> >+		return -EINVAL;
-> >
-> 
-> or, just: if (!disksize) ...
-> 
+From: "zheng.li" <zheng.x.li@oracle.com>
+Date: Mon, 29 Oct 2012 17:11:28 +0800
 
-will resend shortly.
+> @@ -700,7 +700,18 @@ static struct slave *rlb_arp_xmit(struct sk_buff
+> *skb, struct bonding *bond)
 
-	-ss
+You commit message is poorly formatted and your email client corrupted
+the patch, making it completely unusable.
