@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab2J2Q67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:58:59 -0400
-Received: from mail4.gandi.net ([217.70.183.210]:60350 "EHLO mail4.gandi.net"
+	id S1760121Ab2J2Q7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:59:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34833 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759406Ab2J2Q65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:58:57 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Oct 2012 12:58:57 EDT
-Date: Mon, 29 Oct 2012 17:51:41 +0100
-From: William Dauchy <william@gandi.net>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Asias He <asias.hejun@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm tools: fix rbtree-interval search
-Message-ID: <20121029165141.GG1109@gandi.net>
-References: <1351512780-8563-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1759406Ab2J2Q7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:59:48 -0400
+Date: Mon, 29 Oct 2012 09:59:46 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: linux-kernel@vger.kernel.org, Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
+ regions..."
+Message-ID: <20121029165946.GB6614@kroah.com>
+References: <508E58FD.2000707@ahsoftware.de>
+ <508E8264.8070807@ahsoftware.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="udcq9yAoWb9A4FsZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351512780-8563-1-git-send-email-kirill.shutemov@linux.intel.com>
-Reply_to: William Dauchy <william@gandi.net>
+In-Reply-To: <508E8264.8070807@ahsoftware.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 29, 2012 at 02:19:32PM +0100, Alexander Holler wrote:
+> Am 29.10.2012 11:22, schrieb Alexander Holler:
+> >Hello,
+> >
+> >I've just bisected a problem with 3.6.4.
+> >
+> >I had to revert commit 54ce8ce298f382a06186cb4672ad6aa090b050b6
+> >(1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a in mainline), otherwise my box
+> >didn't boot.
+> >
+> >I can't provide any output, because I don't see if that commit is
+> >applied. ;)
+> 
+> That sentence missed an 'any'. But I've now attached a serial, here is
+> the output:
 
---udcq9yAoWb9A4FsZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for this, it should be fixed in the next 3.6.y release, we needed
+to add two more commits from upstream:
+	844ab6f993b1d32eb40512503d35ff6ad0c57030
+	f82f64dd9f485e13f29f369772d4a0e868e5633a
+If you apply those two, and it doesn't solve the problem for you, please
+let us know.
 
-On Oct29 14:12, Kirill A. Shutemov wrote:
-> I've noticed message on kvm exit:
->=20
->   Warning: serial8250__exit failed.
->=20
-> kvm tool is not able to remove ioport range which was added previously.
->=20
-> The issue is caused by bug in rbtree-interval. Search algorithm in
-> rb_int_search_single() expects correct value of max_high. But the tree
-> can contain leaf nodes, which never were updated by propagate_callback().
-> For this kind of nodes high_max will be 0 and we will not be able to
-> find and remove them.
->=20
-> Let's initialize max_high on RB_INT_INIT() time.
->=20
-> Fixing this bug makes other bug visible: propagate_callback() can be
-> called for empty tree: node =3D=3D NULL. The callback is not ready for em=
-pty
-> tree. Let's fix that as well.
->=20
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+thanks,
 
-I had the same issue but didn't found the time to fix it.
-Applying the patch fixes the problem.
-
-Tested-by: William Dauchy <william@gandi.net>
-
-Thanks,
---=20
-William
-
---udcq9yAoWb9A4FsZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlCOtB0ACgkQ1I6eqOUidQHQ6QCffer5opfnTyL3YQ/cW0g6xEPe
-8IAAnjZqljQq726dLSlQRSosthBcPE1E
-=6gak
------END PGP SIGNATURE-----
-
---udcq9yAoWb9A4FsZ--
+greg k-h
