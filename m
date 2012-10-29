@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559Ab2J2AQs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:16:48 -0400
-Received: from mailserver6.natinst.com ([130.164.80.6]:33280 "EHLO
-	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab2J2AQr (ORCPT
+	id S1756435Ab2J2AVs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 20:21:48 -0400
+Received: from glenfiddich.mraw.org ([88.191.124.82]:52663 "EHLO
+	glenfiddich.mraw.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab2J2AVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:16:47 -0400
-Date: Sun, 28 Oct 2012 18:16:41 -0600
-From: Josh Cartwright <josh.cartwright@ni.com>
-To: arm@kernel.org, Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        John Linn <john.linn@xilinx.com>,
-        Nick Bowler <nbowler@elliptictech.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v4 0/5] zynq subarch cleanups
-Message-ID: <20121029001641.GD5190@beefymiracle.amer.corp.natinst.com>
-References: <cover.1351466765.git.josh.cartwright@ni.com>
+	Sun, 28 Oct 2012 20:21:47 -0400
+Date: Mon, 29 Oct 2012 01:21:40 +0100
+From: Cyril Brulebois <kibi@debian.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: Fix WoL on RTL8168d/8111d.
+Message-ID: <20121029002140.GK6195@mraw.org>
+References: <1351392414-32219-1-git-send-email-kibi@debian.org>
+ <20121028230523.GA26778@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-In-Reply-To: <cover.1351466765.git.josh.cartwright@ni.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/28/2012 07:16:33 PM,
-	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
- 14, 2012) at 10/28/2012 07:16:33 PM,
-	Serialize complete at 10/28/2012 07:16:33 PM
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
+	protocol="application/pgp-signature"; boundary="aqWxf8ydqYKP8htK"
 Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-28_05:2012-10-26,2012-10-28,1970-01-01 signatures=0
+In-Reply-To: <20121028230523.GA26778@electric-eye.fr.zoreil.com>
+Organization: Debian
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---2Z2K0IlrPCVsbNpk
+--aqWxf8ydqYKP8htK
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Sun, Oct 28, 2012 at 05:26:05PM -0600, Josh Cartwright wrote:
-> Michal-
+Francois Romieu <romieu@fr.zoreil.com> (29/10/2012):
+> Cyril Brulebois <kibi@debian.org> :
+> > This regression was spotted between Debian squeeze and Debian wheezy
+> > kernels (respectively based on 2.6.32 and 3.2). The fix was inspired
+> > by <http://www.spinics.net/lists/netdev/msg178543.html>, using
+> > RTL_GIGA_MAC_VER_{25,26} for the RTL8168d/8111d chipset.
+>=20
+> If someone experiences problems or has questions about WoL with
+> Realtek's 816x chipsets, http://marc.info/?t=3D132079219400004 would
+> imho be a better reference.
 
-Ugh, sorry everyone, I fatfingered the subject line.  This is indeed v5.
+Thanks. Should I re-send with that as reference, or will you amend the
+patch once you're done with your testing?
 
-  Josh
+> [...]
+> > Tested on top of a 3.2.23 kernel.
+>=20
+> It should still be relevant for current kernel. I'll give it a try.
 
---2Z2K0IlrPCVsbNpk
-Content-Type: application/pgp-signature
+FWIW, further testing was suggested on some Debian lists, and 3.2.32
+(which includes some commits related to r8169) is also affected.
+
+> [...]
+> > It looks like RTL_GIGA_MAC_VER_{25,26} are kinda supposed to go
+> > together so I kept both. Florent's testing gave the following results:
+> >  - RTL_GIGA_MAC_VER_25 only: FAIL.
+> >  - RTL_GIGA_MAC_VER_26 only: SUCCESS.
+> >  - RTL_GIGA_MAC_VER_25 + RTL_GIGA_MAC_VER_26: SUCCESS.
+>=20
+> I don't understand the VER_25 vs VER_26 difference.
+
+Neither do I. We just figured that it would nice to test all three
+cases since those two macros popped up when looking at the 8168D
+family.
+
+Mraw,
+KiBi.
+
+--aqWxf8ydqYKP8htK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQjcrpAAoJEEef0niEbw+lZtwQAJ55eFJrUZKlQHdQvx5M5kmu
-nAmkaVnULES6JO61ix7T/PIlphCKfC1Y477Kh8lHLh+K9NXxSjUiU63uxrkOELcW
-qAQcbw6WrRpCbg+Yi9PES4vCl0lqmmCGUJj+ijItbt7ABwdQMUtXzZgTOhIuSMPK
-3+QAqCGXKa9c87T6+NKfzgTIrEuC+Fs87mNnziT8wtEU0e9a7qwqqx/Qghx/4cq8
-pFuoQxdPkKKOEhmvN8UK7IrChKeW7rgQWtTXi3CpX5ne+6BbKFm5xiYzVuuESLk/
-Mdw8yI8VQuEfMGbFBO6rNSY9IzHCf2bFLJvI06Mt2dYgTLs64sPj3yH9AVB+Mwe1
-hkqaLdEoIF/IS7bckw+FFDMFMaPTvW10TdU8QvHgMoCAFdowknIVul08B1LIbnpS
-55k3LdA9hODxjxXCU3xpOyIDgjEAUQd9kLoeUa8ThRCBPC8727LZx+M47DOqe033
-fV4Pza+kROW4M+TKio3Mx7EuPwjOAUWU7/lvoiFdskwbPixY86B8by3cod2Ub46v
-W4KGgOToZm3vz5TipSP3UwJ1UC2rxYAjCqapdI7b7KipnCLJpyadK/LkTpjL6Y0A
-IKOA+MMzNeY/8NLefAGqhV3AH2wjWz/59j/GRdpyJpyM6N8TIihlKYWrkhb6YSwe
-WBS+htiGqauo+fzhEzZK
-=+G2q
+iEYEARECAAYFAlCNzAgACgkQeGfVPHR5Nd3bNgCdGk0pTyrS9cCOQVpr3xqMj/aX
+N+sAoKRaBIZZFH9OHiNeFxH7CJFreMci
+=JSky
 -----END PGP SIGNATURE-----
 
---2Z2K0IlrPCVsbNpk--
+--aqWxf8ydqYKP8htK--
