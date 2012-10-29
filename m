@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761427Ab2J2ViO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:38:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48085 "EHLO mail.kernel.org"
+	id S1761459Ab2J2ViV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:38:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48136 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761412Ab2J2ViL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:11 -0400
+	id S1761438Ab2J2ViR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Pedro Francisco <pedrogfrancisco@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 096/101] cfg80211/mac80211: avoid state mishmash on deauth
-Date: Mon, 29 Oct 2012 14:35:49 -0700
-Message-Id: <20121029213250.980820237@linuxfoundation.org>
+        Peng Tao <tao.peng@emc.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 100/101] pnfsblock: fix non-aligned DIO read
+Date: Mon, 29 Oct 2012 14:35:53 -0700
+Message-Id: <20121029213251.438431939@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,87 +26,189 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 6863255bd0e48bc41ae5a066d5c771801e92735a upstream.
+commit f742dc4a32587bff50b13dde9d8894b96851951a upstream.
 
-Avoid situation when we are on associate state in mac80211 and
-on disassociate state in cfg80211. This can results on crash
-during modules unload (like showed on this thread:
-http://marc.info/?t=134373976300001&r=1&w=2) and possibly other
-problems.
+For DIO read, if it is not sector aligned, we should reject it
+and resend via MDS. Otherwise there might be data corruption.
+Also teach bl_read_pagelist to handle partial page reads for DIO.
 
-Reported-by: Pedro Francisco <pedrogfrancisco@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/cfg80211.h |    1 +
- net/mac80211/mlme.c    |    5 +++--
- net/wireless/mlme.c    |   12 +++---------
- 3 files changed, 7 insertions(+), 11 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c |   77 +++++++++++++++++++++++----------------
+ 1 file changed, 46 insertions(+), 31 deletions(-)
 
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -1217,6 +1217,7 @@ struct cfg80211_deauth_request {
- 	const u8 *ie;
- 	size_t ie_len;
- 	u16 reason_code;
-+	bool local_state_change;
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -242,14 +242,6 @@ bl_end_par_io_read(void *data, int unuse
+ 	schedule_work(&rdata->task.u.tk_work);
+ }
+ 
+-static bool
+-bl_check_alignment(u64 offset, u32 len, unsigned long blkmask)
+-{
+-	if ((offset & blkmask) || (len & blkmask))
+-		return false;
+-	return true;
+-}
+-
+ static enum pnfs_try_status
+ bl_read_pagelist(struct nfs_read_data *rdata)
+ {
+@@ -260,15 +252,15 @@ bl_read_pagelist(struct nfs_read_data *r
+ 	sector_t isect, extent_length = 0;
+ 	struct parallel_io *par;
+ 	loff_t f_offset = rdata->args.offset;
++	size_t bytes_left = rdata->args.count;
++	unsigned int pg_offset, pg_len;
+ 	struct page **pages = rdata->args.pages;
+ 	int pg_index = rdata->args.pgbase >> PAGE_CACHE_SHIFT;
++	const bool is_dio = (header->dreq != NULL);
+ 
+ 	dprintk("%s enter nr_pages %u offset %lld count %u\n", __func__,
+ 	       rdata->pages.npages, f_offset, (unsigned int)rdata->args.count);
+ 
+-	if (!bl_check_alignment(f_offset, rdata->args.count, PAGE_CACHE_MASK))
+-		goto use_mds;
+-
+ 	par = alloc_parallel(rdata);
+ 	if (!par)
+ 		goto use_mds;
+@@ -298,36 +290,53 @@ bl_read_pagelist(struct nfs_read_data *r
+ 				extent_length = min(extent_length, cow_length);
+ 			}
+ 		}
++
++		if (is_dio) {
++			pg_offset = f_offset & ~PAGE_CACHE_MASK;
++			if (pg_offset + bytes_left > PAGE_CACHE_SIZE)
++				pg_len = PAGE_CACHE_SIZE - pg_offset;
++			else
++				pg_len = bytes_left;
++
++			f_offset += pg_len;
++			bytes_left -= pg_len;
++			isect += (pg_offset >> SECTOR_SHIFT);
++		} else {
++			pg_offset = 0;
++			pg_len = PAGE_CACHE_SIZE;
++		}
++
+ 		hole = is_hole(be, isect);
+ 		if (hole && !cow_read) {
+ 			bio = bl_submit_bio(READ, bio);
+ 			/* Fill hole w/ zeroes w/o accessing device */
+ 			dprintk("%s Zeroing page for hole\n", __func__);
+-			zero_user_segment(pages[i], 0, PAGE_CACHE_SIZE);
++			zero_user_segment(pages[i], pg_offset, pg_len);
+ 			print_page(pages[i]);
+ 			SetPageUptodate(pages[i]);
+ 		} else {
+ 			struct pnfs_block_extent *be_read;
+ 
+ 			be_read = (hole && cow_read) ? cow_read : be;
+-			bio = bl_add_page_to_bio(bio, rdata->pages.npages - i,
++			bio = do_add_page_to_bio(bio, rdata->pages.npages - i,
+ 						 READ,
+ 						 isect, pages[i], be_read,
+-						 bl_end_io_read, par);
++						 bl_end_io_read, par,
++						 pg_offset, pg_len);
+ 			if (IS_ERR(bio)) {
+ 				header->pnfs_error = PTR_ERR(bio);
+ 				bio = NULL;
+ 				goto out;
+ 			}
+ 		}
+-		isect += PAGE_CACHE_SECTORS;
++		isect += (pg_len >> SECTOR_SHIFT);
+ 		extent_length -= PAGE_CACHE_SECTORS;
+ 	}
+ 	if ((isect << SECTOR_SHIFT) >= header->inode->i_size) {
+ 		rdata->res.eof = 1;
+-		rdata->res.count = header->inode->i_size - f_offset;
++		rdata->res.count = header->inode->i_size - rdata->args.offset;
+ 	} else {
+-		rdata->res.count = (isect << SECTOR_SHIFT) - f_offset;
++		rdata->res.count = (isect << SECTOR_SHIFT) - rdata->args.offset;
+ 	}
+ out:
+ 	bl_put_extent(be);
+@@ -676,7 +685,7 @@ bl_write_pagelist(struct nfs_write_data
+ 	struct bio *bio = NULL;
+ 	struct pnfs_block_extent *be = NULL, *cow_read = NULL;
+ 	sector_t isect, last_isect = 0, extent_length = 0;
+-	struct parallel_io *par = NULL;
++	struct parallel_io *par;
+ 	loff_t offset = wdata->args.offset;
+ 	size_t count = wdata->args.count;
+ 	unsigned int pg_offset, pg_len, saved_len;
+@@ -688,10 +697,6 @@ bl_write_pagelist(struct nfs_write_data
+ 	    NFS_SERVER(header->inode)->pnfs_blksize >> PAGE_CACHE_SHIFT;
+ 
+ 	dprintk("%s enter, %Zu@%lld\n", __func__, count, offset);
+-	/* Check for alignment first */
+-	if (!bl_check_alignment(offset, count, PAGE_CACHE_MASK))
+-		goto out_mds;
+-
+ 	/* At this point, wdata->pages is a (sequential) list of nfs_pages.
+ 	 * We want to write each, and if there is an error set pnfs_error
+ 	 * to have it redone using nfs.
+@@ -1164,32 +1169,42 @@ bl_clear_layoutdriver(struct nfs_server
+ 	return 0;
+ }
+ 
++static bool
++is_aligned_req(struct nfs_page *req, unsigned int alignment)
++{
++	return IS_ALIGNED(req->wb_offset, alignment) &&
++	       IS_ALIGNED(req->wb_bytes, alignment);
++}
++
+ static void
+ bl_pg_init_read(struct nfs_pageio_descriptor *pgio, struct nfs_page *req)
+ {
+-	if (!bl_check_alignment(req->wb_offset, req->wb_bytes, PAGE_CACHE_MASK))
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, SECTOR_SIZE))
+ 		nfs_pageio_reset_read_mds(pgio);
+ 	else
+ 		pnfs_generic_pg_init_read(pgio, req);
+ }
+ 
+-static void
+-bl_pg_init_write(struct nfs_pageio_descriptor *pgio, struct nfs_page *req)
++static bool
++bl_pg_test_read(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev,
++		struct nfs_page *req)
+ {
+-	if (!bl_check_alignment(req->wb_offset, req->wb_bytes, PAGE_CACHE_MASK))
+-		nfs_pageio_reset_write_mds(pgio);
+-	else
+-		pnfs_generic_pg_init_write(pgio, req);
++	if (pgio->pg_dreq != NULL &&
++	    !is_aligned_req(req, SECTOR_SIZE))
++		return false;
++
++	return pnfs_generic_pg_test(pgio, prev, req);
+ }
+ 
+ static const struct nfs_pageio_ops bl_pg_read_ops = {
+ 	.pg_init = bl_pg_init_read,
+-	.pg_test = pnfs_generic_pg_test,
++	.pg_test = bl_pg_test_read,
+ 	.pg_doio = pnfs_generic_pg_readpages,
  };
  
- /**
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3467,6 +3467,7 @@ int ieee80211_mgd_deauth(struct ieee8021
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
- 	u8 frame_buf[DEAUTH_DISASSOC_LEN];
-+	bool tx = !req->local_state_change;
- 
- 	mutex_lock(&ifmgd->mtx);
- 
-@@ -3483,11 +3484,11 @@ int ieee80211_mgd_deauth(struct ieee8021
- 	if (ifmgd->associated &&
- 	    ether_addr_equal(ifmgd->associated->bssid, req->bssid))
- 		ieee80211_set_disassoc(sdata, IEEE80211_STYPE_DEAUTH,
--				       req->reason_code, true, frame_buf);
-+				       req->reason_code, tx, frame_buf);
- 	else
- 		ieee80211_send_deauth_disassoc(sdata, req->bssid,
- 					       IEEE80211_STYPE_DEAUTH,
--					       req->reason_code, true,
-+					       req->reason_code, tx,
- 					       frame_buf);
- 	mutex_unlock(&ifmgd->mtx);
- 
---- a/net/wireless/mlme.c
-+++ b/net/wireless/mlme.c
-@@ -457,20 +457,14 @@ int __cfg80211_mlme_deauth(struct cfg802
- 		.reason_code = reason,
- 		.ie = ie,
- 		.ie_len = ie_len,
-+		.local_state_change = local_state_change,
- 	};
- 
- 	ASSERT_WDEV_LOCK(wdev);
- 
--	if (local_state_change) {
--		if (wdev->current_bss &&
--		    ether_addr_equal(wdev->current_bss->pub.bssid, bssid)) {
--			cfg80211_unhold_bss(wdev->current_bss);
--			cfg80211_put_bss(&wdev->current_bss->pub);
--			wdev->current_bss = NULL;
--		}
--
-+	if (local_state_change && (!wdev->current_bss ||
-+	    !ether_addr_equal(wdev->current_bss->pub.bssid, bssid)))
- 		return 0;
--	}
- 
- 	return rdev->ops->deauth(&rdev->wiphy, dev, &req);
- }
+ static const struct nfs_pageio_ops bl_pg_write_ops = {
+-	.pg_init = bl_pg_init_write,
++	.pg_init = pnfs_generic_pg_init_write,
+ 	.pg_test = pnfs_generic_pg_test,
+ 	.pg_doio = pnfs_generic_pg_writepages,
+ };
 
 
