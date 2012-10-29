@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760715Ab2J2UJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:09:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42719 "EHLO mail.kernel.org"
+	id S1760780Ab2J2UL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:11:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42822 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab2J2UJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:04 -0400
+	id S1760707Ab2J2UJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 20/34] USB: sierra: fix memory leak in probe error path
-Date: Mon, 29 Oct 2012 13:07:51 -0700
-Message-Id: <20121029200422.799301912@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/34] mac80211: check if key has TKIP type before updating IV
+Date: Mon, 29 Oct 2012 13:07:59 -0700
+Message-Id: <20121029200423.685764605@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -25,72 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 084817d79399ab5ccab2f90a148b0369912a8369 upstream.
+commit 4045f72bcf3c293c7c5932ef001742d8bb5ded76 upstream.
 
-Move interface data allocation to attach so that it is deallocated on
-errors in usb-serial probe.
+This patch fix corruption which can manifest itself by following crash
+when switching on rfkill switch with rt2x00 driver:
+https://bugzilla.redhat.com/attachment.cgi?id=615362
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Pointer key->u.ccmp.tfm of group key get corrupted in:
+
+ieee80211_rx_h_michael_mic_verify():
+
+        /* update IV in key information to be able to detect replays */
+        rx->key->u.tkip.rx[rx->security_idx].iv32 = rx->tkip_iv32;
+        rx->key->u.tkip.rx[rx->security_idx].iv16 = rx->tkip_iv16;
+
+because rt2x00 always set RX_FLAG_MMIC_STRIPPED, even if key is not TKIP.
+
+We already check type of the key in different path in
+ieee80211_rx_h_michael_mic_verify() function, so adding additional
+check here is reasonable.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ net/mac80211/wpa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -171,7 +171,6 @@ static int sierra_probe(struct usb_seria
- {
- 	int result = 0;
- 	struct usb_device *udev;
--	struct sierra_intf_private *data;
- 	u8 ifnum;
+--- a/net/mac80211/wpa.c
++++ b/net/mac80211/wpa.c
+@@ -109,7 +109,8 @@ ieee80211_rx_h_michael_mic_verify(struct
+ 		if (status->flag & RX_FLAG_MMIC_ERROR)
+ 			goto mic_fail;
  
- 	udev = serial->dev;
-@@ -199,11 +198,6 @@ static int sierra_probe(struct usb_seria
- 		return -ENODEV;
- 	}
+-		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
++		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key &&
++		    rx->key->conf.cipher == WLAN_CIPHER_SUITE_TKIP)
+ 			goto update_iv;
  
--	data = serial->private = kzalloc(sizeof(struct sierra_intf_private), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--	spin_lock_init(&data->susp_lock);
--
- 	return result;
- }
- 
-@@ -915,6 +909,7 @@ static void sierra_dtr_rts(struct usb_se
- static int sierra_startup(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
-+	struct sierra_intf_private *intfdata;
- 	struct sierra_port_private *portdata;
- 	struct sierra_iface_info *himemoryp = NULL;
- 	int i;
-@@ -922,6 +917,14 @@ static int sierra_startup(struct usb_ser
- 
- 	dev_dbg(&serial->dev->dev, "%s\n", __func__);
- 
-+	intfdata = kzalloc(sizeof(*intfdata), GFP_KERNEL);
-+	if (!intfdata)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&intfdata->susp_lock);
-+
-+	usb_set_serial_data(serial, intfdata);
-+
- 	/* Set Device mode to D0 */
- 	sierra_set_power_state(serial->dev, 0x0000);
- 
-@@ -979,6 +982,7 @@ err:
- 		portdata = usb_get_serial_port_data(serial->port[i]);
- 		kfree(portdata);
- 	}
-+	kfree(intfdata);
- 
- 	return -ENOMEM;
- }
+ 		return RX_CONTINUE;
 
 
