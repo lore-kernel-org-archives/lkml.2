@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2J2Vqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:46:53 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48829 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933001Ab2J2Vlt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933069Ab2J2Vlt (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Oct 2012 17:41:49 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48744 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933001Ab2J2Vlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 41/54] freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
-Date: Mon, 29 Oct 2012 14:40:42 -0700
-Message-Id: <20121029213807.322515012@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 33/54] USB: mos7840: remove invalid disconnect handling
+Date: Mon, 29 Oct 2012 14:40:34 -0700
+Message-Id: <20121029213806.430341764@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -26,32 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit b40a79591ca918e7b91b0d9b6abd5d00f2e88c19 upstream.
+commit e681b66f2e19fadbe8a7e2a17900978cb6bc921f upstream.
 
-flush_old_exec() clears PF_KTHREAD but forgets about PF_NOFREEZE.
+Remove private zombie flag used to signal disconnect and to prevent
+control urb from being submitted from interrupt urb completion handler.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The control urb will not be re-submitted as both the control urb and the
+interrupt urb is killed on disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/exec.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/mos7840.c |   13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1114,7 +1114,8 @@ int flush_old_exec(struct linux_binprm *
- 	bprm->mm = NULL;		/* We're using it now */
- 
- 	set_fs(USER_DS);
--	current->flags &= ~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD);
-+	current->flags &=
-+		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE);
- 	flush_thread();
- 	current->personality &= ~bprm->per_clear;
- 
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -239,7 +239,6 @@ struct moschip_port {
+ 	__u8 shadowMCR;		/* last MCR value received */
+ 	char open;
+ 	char open_ports;
+-	char zombie;
+ 	wait_queue_head_t wait_chase;	/* for handling sleeping while waiting for chase to finish */
+ 	wait_queue_head_t delta_msr_wait;	/* for handling sleeping while waiting for msr change to happen */
+ 	int delta_msr_cond;
+@@ -642,14 +641,7 @@ static void mos7840_interrupt_callback(s
+ 					wreg = MODEM_STATUS_REGISTER;
+ 					break;
+ 				}
+-				spin_lock(&mos7840_port->pool_lock);
+-				if (!mos7840_port->zombie) {
+-					rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
+-				} else {
+-					spin_unlock(&mos7840_port->pool_lock);
+-					return;
+-				}
+-				spin_unlock(&mos7840_port->pool_lock);
++				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
+ 			}
+ 		}
+ 	}
+@@ -2607,9 +2599,6 @@ static void mos7840_disconnect(struct us
+ 		mos7840_port = mos7840_get_port_private(serial->port[i]);
+ 		dbg ("mos7840_port %d = %p", i, mos7840_port);
+ 		if (mos7840_port) {
+-			spin_lock_irqsave(&mos7840_port->pool_lock, flags);
+-			mos7840_port->zombie = 1;
+-			spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
+ 			usb_kill_urb(mos7840_port->control_urb);
+ 		}
+ 	}
 
 
