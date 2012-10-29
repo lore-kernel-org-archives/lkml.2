@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760318Ab2J2SLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:11:39 -0400
-Received: from mail.kernel.org ([198.145.19.201]:37886 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759689Ab2J2SLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:11:37 -0400
-Date: Mon, 29 Oct 2012 11:11:35 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: zwu.kernel@gmail.com
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 13/19] debugfs: introduce one function
-Message-ID: <20121029181135.GB3605@kroah.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-14-git-send-email-zwu.kernel@gmail.com>
+	id S932554Ab2J2SNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:13:13 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63229 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab2J2SNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 14:13:12 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6880"; a="2625508"
+Message-ID: <508EC727.9030701@codeaurora.org>
+Date: Mon, 29 Oct 2012 11:12:55 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351485061-12297-14-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] Minor fixes for generic clock framework
+References: <1349332735-20096-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1349332735-20096-1-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:30:55PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> 
->   The debugfs function is used to get expected dentry.
+On 10/03/12 23:38, Stephen Boyd wrote:
+> This is a small set of patches that fixes some documentation
+> and fixes return values of functions that aren't used that
+> much yet. Noticed while going through this code.
+>
 
-Huh?  Why do you need this?  Why haven't you added documentation for the
-function saying what it does?
+Mike, any comments on these patches?
 
-confused,
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-greg k-h
