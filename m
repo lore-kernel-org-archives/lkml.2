@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab2J2V7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:59:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47990 "EHLO mail.kernel.org"
+	id S933022Ab2J2V7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:59:50 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48001 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761373Ab2J2ViB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:01 -0400
+	id S1761285Ab2J2ViC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Barry Song <Baohua.Song@csr.com>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 087/101] dmaengine: sirf: fix a typo in moving running dma_desc to active queue
-Date: Mon, 29 Oct 2012 14:35:40 -0700
-Message-Id: <20121029213249.988432875@linuxfoundation.org>
+Subject: [ 088/101] dmaengine: imx-dma: fix missing unlock on error in imxdma_xfer_desc()
+Date: Mon, 29 Oct 2012 14:35:41 -0700
+Message-Id: <20121029213250.098517261@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,34 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Barry Song <Baohua.Song@csr.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 26fd12209c08fe947be1828896ef4ffc5bd0e6df upstream.
+commit 720dfd250e48a8c7fd1b2b8645955413989c4ee0 upstream.
 
-list_move_tail(&schan->queued, &schan->active) makes the list_empty(schan->queued)
-undefined, we either should change it to:
-list_move_tail(schan->queued.next, &schan->active)
-or
-list_move_tail(&sdesc->node, &schan->active)
+Add the missing unlock on the error handling path in function
+imxdma_xfer_desc().
 
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/sirf-dma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/dma/imx-dma.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/dma/sirf-dma.c
-+++ b/drivers/dma/sirf-dma.c
-@@ -109,7 +109,7 @@ static void sirfsoc_dma_execute(struct s
- 	sdesc = list_first_entry(&schan->queued, struct sirfsoc_dma_desc,
- 		node);
- 	/* Move the first queued descriptor to active list */
--	list_move_tail(&schan->queued, &schan->active);
-+	list_move_tail(&sdesc->node, &schan->active);
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -474,8 +474,10 @@ static int imxdma_xfer_desc(struct imxdm
+ 			slot = i;
+ 			break;
+ 		}
+-		if (slot < 0)
++		if (slot < 0) {
++			spin_unlock_irqrestore(&imxdma->lock, flags);
+ 			return -EBUSY;
++		}
  
- 	/* Start the DMA transfer */
- 	writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 +
+ 		imxdma->slots_2d[slot].xsr = d->x;
+ 		imxdma->slots_2d[slot].ysr = d->y;
 
 
