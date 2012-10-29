@@ -1,198 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab2J2NT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:19:58 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:53241 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab2J2NT5 (ORCPT
+	id S1756846Ab2J2NX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:23:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58530 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756543Ab2J2NX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:19:57 -0400
-Message-ID: <508E8264.8070807@ahsoftware.de>
-Date: Mon, 29 Oct 2012 14:19:32 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 09:23:26 -0400
+Date: Mon, 29 Oct 2012 09:23:23 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 13/16] lockd: use new hashtable implementation
+Message-ID: <20121029132323.GA16391@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-13-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Jacob Shin <jacob.shin@amd.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: x86: Regression in 3.6.4, bisected to "Exclude E820_RESERVED
- regions..."
-References: <508E58FD.2000707@ahsoftware.de>
-In-Reply-To: <508E58FD.2000707@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351450948-15618-13-git-send-email-levinsasha928@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.10.2012 11:22, schrieb Alexander Holler:
-> Hello,
->
-> I've just bisected a problem with 3.6.4.
->
-> I had to revert commit 54ce8ce298f382a06186cb4672ad6aa090b050b6
-> (1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a in mainline), otherwise my box
-> didn't boot.
->
-> I can't provide any output, because I don't see if that commit is
-> applied. ;)
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> Switch lockd to use the new hashtable implementation. This reduces the amount of
+> generic unrelated code in lockd.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  fs/lockd/svcsubs.c | 66 +++++++++++++++++++++++++++++-------------------------
+>  1 file changed, 36 insertions(+), 30 deletions(-)
+> 
+> diff --git a/fs/lockd/svcsubs.c b/fs/lockd/svcsubs.c
+> index 0deb5f6..d223a1f 100644
+> --- a/fs/lockd/svcsubs.c
+> +++ b/fs/lockd/svcsubs.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/lockd/share.h>
+>  #include <linux/module.h>
+>  #include <linux/mount.h>
+> +#include <linux/hashtable.h>
+>  
+>  #define NLMDBG_FACILITY		NLMDBG_SVCSUBS
+>  
+> @@ -28,8 +29,7 @@
+>   * Global file hash table
+>   */
+>  #define FILE_HASH_BITS		7
+> -#define FILE_NRHASH		(1<<FILE_HASH_BITS)
+> -static struct hlist_head	nlm_files[FILE_NRHASH];
+> +static DEFINE_HASHTABLE(nlm_files, FILE_HASH_BITS);
+>  static DEFINE_MUTEX(nlm_file_mutex);
+>  
+>  #ifdef NFSD_DEBUG
+> @@ -68,7 +68,7 @@ static inline unsigned int file_hash(struct nfs_fh *f)
+>  	int i;
+>  	for (i=0; i<NFS2_FHSIZE;i++)
+>  		tmp += f->data[i];
+> -	return tmp & (FILE_NRHASH - 1);
+> +	return tmp;
+>  }
+>  
+>  /*
+> @@ -86,17 +86,17 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
+>  {
+>  	struct hlist_node *pos;
+>  	struct nlm_file	*file;
+> -	unsigned int	hash;
+> +	unsigned int	key;
+>  	__be32		nfserr;
+>  
+>  	nlm_debug_print_fh("nlm_lookup_file", f);
+>  
+> -	hash = file_hash(f);
+> +	key = file_hash(f);
+>  
+>  	/* Lock file table */
+>  	mutex_lock(&nlm_file_mutex);
+>  
+> -	hlist_for_each_entry(file, pos, &nlm_files[hash], f_list)
+> +	hash_for_each_possible(nlm_files, file, pos, f_list, file_hash(f))
 
-That sentence missed an 'any'. But I've now attached a serial, here is
-the output:
+we have a nice example of weirdness about key vs hash here:
 
-------
-early console in decompress_kernel
+1) "key" is computed from file_hash(f)
+2) file_hash(f) is computed again and again in hash_for_each_possible()
 
-Decompressing Linux... Parsing ELF... done.
-Booting the kernel.
-[    0.000000] Initializing cgroup subsys cpuset
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.6.4 (root@krabat.ahsoftware) (gcc version
-4.7.2 20120921 (Red Hat 4.7.2-2) (GCC) ) #265 SMP Mon Oct 29 14:07:32
-CET 2012
-[    0.000000] Command line: ro root=/dev/sdb2 rootfstype=ext4
-enforcing=0 cgroup_disable=memory vga=0x346 video=vesafb:mtrr:3,ywrap
-radeon.modeset=0 earlycon=uart8250,io,0x3f8,115200n8
-earlyprintk=ttyS0,115200
-[    0.000000] KERNEL supported cpus:
-[    0.000000]   AMD AuthenticAMD
-[    0.000000] e820: BIOS-provided physical RAM map:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009e7ff] usable
-[    0.000000] BIOS-e820: [mem 0x000000000009e800-0x000000000009ffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000009d7cafff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009d7cb000-0x000000009dd6afff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009dd6b000-0x000000009dd7afff]
-ACPI data
-[    0.000000] BIOS-e820: [mem 0x000000009dd7b000-0x000000009e0e6fff]
-ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000009e0e7000-0x000000009e669fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009e66a000-0x000000009e66afff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009e66b000-0x000000009e870fff]
-ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000009e871000-0x000000009ec8ffff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009ec90000-0x000000009eff3fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009eff4000-0x000000009effffff] usable
-[    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed40000-0x00000000fed44fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x0000000100001000-0x00000001beffffff] usable
-[    0.000000] Early serial console at I/O port 0x3f8 (options '115200n8')
-[    0.000000] bootconsole [uart0] enabled
-[    0.000000] Initializing cgroup subsys cpuset
-[    0.000000] Initializing cgroup subsys cpu
-[    0.000000] Linux version 3.6.4 (root@krabat.ahsoftware) (gcc version
-4.7.2 20120921 (Red Hat 4.7.2-2) (GCC) ) #265 SMP Mon Oct 29 14:07:32
-CET 2012
-[    0.000000] Command line: ro root=/dev/sdb2 rootfstype=ext4
-enforcing=0 cgroup_disable=memory vga=0x346 video=vesafb:mtrr:3,ywrap
-radeon.modeset=0 earlycon=uart8250,io,0x3f8,115200n8
-earlyprintk=ttyS0,115200
-[    0.000000] KERNEL supported cpus:
-[    0.000000]   AMD AuthenticAMD
-[    0.000000] e820: BIOS-provided physical RAM map:
-[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009e7ff] usable
-[    0.000000] BIOS-e820: [mem 0x000000000009e800-0x000000000009ffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000000e0000-0x00000000000fffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000009d7cafff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009d7cb000-0x000000009dd6afff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009dd6b000-0x000000009dd7afff]
-ACPI data
-[    0.000000] BIOS-e820: [mem 0x000000009dd7b000-0x000000009e0e6fff]
-ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000009e0e7000-0x000000009e669fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009e66a000-0x000000009e66afff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009e66b000-0x000000009e870fff]
-ACPI NVS
-[    0.000000] BIOS-e820: [mem 0x000000009e871000-0x000000009ec8ffff] usable
-[    0.000000] BIOS-e820: [mem 0x000000009ec90000-0x000000009eff3fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x000000009eff4000-0x000000009effffff] usable
-[    0.000000] BIOS-e820: [mem 0x00000000fec00000-0x00000000fec00fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed00000-0x00000000fed00fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed40000-0x00000000fed44fff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff]
-reserved
-[    0.000000] BIOS-e820: [mem 0x0000000100001000-0x00000001beffffff] usable
-[    0.000000] Early serial console at I/O port 0x3f8 (options '115200n8')
-[    0.000000] bootconsole [uart0] enabled
-[    0.000000] bootconsole [earlyser0] enabled
-[    0.000000] bootconsole [earlyser0] enabled
-[    0.000000] NX (Execute Disable) protection: active
-[    0.000000] NX (Execute Disable) protection: active
-[    0.000000] DMI 2.7 present.
-[    0.000000] DMI 2.7 present.
-[    0.000000] No AGP bridge found
-[    0.000000] No AGP bridge found
-[    0.000000] e820: last_pfn = 0x1bf000 max_arch_pfn = 0x400000000
-[    0.000000] e820: last_pfn = 0x1bf000 max_arch_pfn = 0x400000000
-[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new
-0x7010600070106
-[    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new
-0x7010600070106
-[    0.000000] e820: last_pfn = 0x9f000 max_arch_pfn = 0x400000000
-[    0.000000] e820: last_pfn = 0x9f000 max_arch_pfn = 0x400000000
-[    0.000000] Using GB pages for direct mapping
-[    0.000000] Using GB pages for direct mapping
-[    0.000000] init_memory_mapping: [mem 0x00000000-0x9effffff]
-[    0.000000] init_memory_mapping: [mem 0x00000000-0x9effffff]
-[    0.000000] init_memory_mapping: [mem 0x100001000-0x1beffffff]
-[    0.000000] init_memory_mapping: [mem 0x100001000-0x1beffffff]
-[    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
-[    0.000000] Kernel panic - not syncing: alloc_low_page: ran out of memory
-[    0.000000] Pid: 0, comm: swapper Not tainted 3.6.4 #265
-[    0.000000] Pid: 0, comm: swapper Not tainted 3.6.4 #265
-[    0.000000] Call Trace:
-[    0.000000] Call Trace:
-[    0.000000]  [<ffffffff813e2a76>] ? panic+0xbf/0x1bb
-[    0.000000]  [<ffffffff813e2a76>] ? panic+0xbf/0x1bb
-[    0.000000]  [<ffffffff813cfa3f>] ? alloc_low_page+0x54/0x7f
-[    0.000000]  [<ffffffff813cfa3f>] ? alloc_low_page+0x54/0x7f
-[    0.000000]  [<ffffffff8169c987>] ? phys_pud_init+0x1a9/0x25a
-[    0.000000]  [<ffffffff8169c987>] ? phys_pud_init+0x1a9/0x25a
-[    0.000000]  [<ffffffff8169caf7>] ?
-kernel_physical_mapping_init+0xbf/0x17f
-[    0.000000]  [<ffffffff8169caf7>] ?
-kernel_physical_mapping_init+0xbf/0x17f
-[    0.000000]  [<ffffffff813cf6de>] ? init_memory_mapping+0x2de/0x5b0
-[    0.000000]  [<ffffffff813cf6de>] ? init_memory_mapping+0x2de/0x5b0
-[    0.000000]  [<ffffffff81671da2>] ? setup_arch+0x672/0x8b0
-[    0.000000]  [<ffffffff81671da2>] ? setup_arch+0x672/0x8b0
-[    0.000000]  [<ffffffff81670815>] ? start_kernel+0x86/0x2ef
-[    0.000000]  [<ffffffff81670815>] ? start_kernel+0x86/0x2ef
-------
+>  		if (!nfs_compare_fh(&file->f_handle, f))
+>  			goto found;
+>  
+> @@ -123,7 +123,7 @@ nlm_lookup_file(struct svc_rqst *rqstp, struct nlm_file **result,
+>  		goto out_free;
+>  	}
+>  
+> -	hlist_add_head(&file->f_list, &nlm_files[hash]);
+> +	hash_add(nlm_files, &file->f_list, key);
 
-Don't ask me, why some lines are twice there. I assume it's because I 
-have earlycon and earlyprintk enabled in the command line. I've never 
-used the serial before to debug a kernel on x86, I just have experience 
-debugging ARMs using the serial. ;)
+3) then we use "key" as parameter to hash_add.
 
+Moreover, we're adding dispersion to the file_hash() with the hash_32()
+called under the hook within hashtable.h. Is it an intended behavior ?
+This should at the very least be documented in the changelog.
 
-Regards,
+[...]
 
-Alexander
+> +static int __init nlm_init(void)
+> +{
+> +	hash_init(nlm_files);
+
+Useless.
+
+Thanks,
+
+Mathieu
+
+> +	return 0;
+> +}
+> +
+> +module_init(nlm_init);
+> -- 
+> 1.7.12.4
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
