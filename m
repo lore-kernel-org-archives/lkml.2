@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab2J2UMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:12:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42810 "EHLO mail.kernel.org"
+	id S1760699Ab2J2UJL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42678 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760447Ab2J2UJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:12 -0400
+	id S1760447Ab2J2UJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bo Shen <voice.shen@atmel.com>, Jean Delvare <khali@linux-fr.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [ 27/34] ARM: at91/i2c: change id to let i2c-gpio work
-Date: Mon, 29 Oct 2012 13:07:58 -0700
-Message-Id: <20121029200423.570743132@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 17/34] USB: opticon: fix memory leak in error path
+Date: Mon, 29 Oct 2012 13:07:48 -0700
+Message-Id: <20121029200422.460974048@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -28,88 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bo Shen <voice.shen@atmel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 7840487cd6298f9f931103b558290d8d98d41c49 upstream.
+commit acbf0e5263de563e25f7c104868e4490b9e72b13 upstream.
 
-The i2c core driver will turn the platform device ID to busnum
-When using platfrom device ID as -1, it means dynamically assigned
-the busnum. When writing code, we need to make sure the busnum,
-and call i2c_register_board_info(int busnum, ...) to register device
-if using -1, we do not know the value of busnum
+Fix memory leak in write error path.
 
-In order to solve this issue, set the platform device ID as a fix number
-Here using 0 to match the busnum used in i2c_regsiter_board_info()
-
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/at91rm9200_devices.c  |    2 +-
- arch/arm/mach-at91/at91sam9260_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9261_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c |    2 +-
- arch/arm/mach-at91/at91sam9rl_devices.c  |    2 +-
- 5 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/usb/serial/opticon.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-at91/at91rm9200_devices.c
-+++ b/arch/arm/mach-at91/at91rm9200_devices.c
-@@ -454,7 +454,7 @@ static struct i2c_gpio_platform_data pda
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -297,7 +297,7 @@ static int opticon_write(struct tty_stru
+ 	if (!dr) {
+ 		dev_err(&port->dev, "out of memory\n");
+ 		count = -ENOMEM;
+-		goto error;
++		goto error_no_dr;
+ 	}
  
- static struct platform_device at91rm9200_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
+ 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
+@@ -327,6 +327,8 @@ static int opticon_write(struct tty_stru
  
---- a/arch/arm/mach-at91/at91sam9260_devices.c
-+++ b/arch/arm/mach-at91/at91sam9260_devices.c
-@@ -459,7 +459,7 @@ static struct i2c_gpio_platform_data pda
- 
- static struct platform_device at91sam9260_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
---- a/arch/arm/mach-at91/at91sam9261_devices.c
-+++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -276,7 +276,7 @@ static struct i2c_gpio_platform_data pda
- 
- static struct platform_device at91sam9261_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
---- a/arch/arm/mach-at91/at91sam9263_devices.c
-+++ b/arch/arm/mach-at91/at91sam9263_devices.c
-@@ -534,7 +534,7 @@ static struct i2c_gpio_platform_data pda
- 
- static struct platform_device at91sam9263_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
---- a/arch/arm/mach-at91/at91sam9rl_devices.c
-+++ b/arch/arm/mach-at91/at91sam9rl_devices.c
-@@ -319,7 +319,7 @@ static struct i2c_gpio_platform_data pda
- 
- static struct platform_device at91sam9rl_twi_device = {
- 	.name			= "i2c-gpio",
--	.id			= -1,
-+	.id			= 0,
- 	.dev.platform_data	= &pdata,
- };
- 
+ 	return count;
+ error:
++	kfree(dr);
++error_no_dr:
+ 	usb_free_urb(urb);
+ error_no_urb:
+ 	kfree(buffer);
 
 
