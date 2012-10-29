@@ -1,192 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab2J2Ecs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:32:48 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33973 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756695Ab2J2Eco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:32:44 -0400
+	id S1754536Ab2J2Eh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:37:28 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36723 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab2J2EcH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 00:32:07 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
         cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: [RFC v4+ hot_track 09/19] vfs: add one work queue
-Date: Mon, 29 Oct 2012 12:30:51 +0800
-Message-Id: <1351485061-12297-10-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v4+ hot_track 05/19] vfs: add hooks to enable hot tracking
+Date: Mon, 29 Oct 2012 12:30:47 +0800
+Message-Id: <1351485061-12297-6-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102904-9360-0000-0000-00000C2822FD
+x-cbid: 12102904-7282-0000-0000-00000E5C4F48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Add a per-superblock workqueue and a delayed_work
-to run periodic work to update map info on each superblock.
+  Miscellaneous features that implement hot data tracking
+and generally make the hot data functions a bit more friendly.
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c            |   85 ++++++++++++++++++++++++++++++++++++++++++
- fs/hot_tracking.h            |    3 +
- include/linux/hot_tracking.h |    3 +
- 3 files changed, 91 insertions(+), 0 deletions(-)
+ fs/direct-io.c      |    6 ++++++
+ mm/filemap.c        |    6 ++++++
+ mm/page-writeback.c |   12 ++++++++++++
+ mm/readahead.c      |    6 ++++++
+ 4 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index fff0038..0ef9cad 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -15,9 +15,12 @@
- #include <linux/module.h>
- #include <linux/spinlock.h>
- #include <linux/hardirq.h>
-+#include <linux/kthread.h>
-+#include <linux/freezer.h>
- #include <linux/fs.h>
- #include <linux/blkdev.h>
- #include <linux/types.h>
-+#include <linux/list_sort.h>
- #include <linux/limits.h>
- #include "hot_tracking.h"
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index f86c720..1d23631 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -37,6 +37,7 @@
+ #include <linux/uio.h>
+ #include <linux/atomic.h>
+ #include <linux/prefetch.h>
++#include "hot_tracking.h"
  
-@@ -557,6 +560,67 @@ static void hot_map_array_exit(struct hot_info *root)
- 	}
- }
- 
-+/* Temperature compare function*/
-+static int hot_temp_cmp(void *priv, struct list_head *a,
-+				struct list_head *b)
-+{
-+	struct hot_comm_item *ap =
-+			container_of(a, struct hot_comm_item, n_list);
-+	struct hot_comm_item *bp =
-+			container_of(b, struct hot_comm_item, n_list);
-+
-+	int diff = ap->hot_freq_data.last_temp
-+				- bp->hot_freq_data.last_temp;
-+	if (diff > 0)
-+		return -1;
-+	if (diff < 0)
-+		return 1;
-+	return 0;
-+}
-+
-+/*
-+ * Every sync period we update temperatures for
-+ * each hot inode item and hot range item for aging
-+ * purposes.
-+ */
-+static void hot_update_worker(struct work_struct *work)
-+{
-+	struct hot_info *root = container_of(to_delayed_work(work),
-+					struct hot_info, update_work);
-+	struct hot_inode_item *hi_nodes[8];
-+	u64 ino = 0;
-+	int i, n;
-+
-+	while (1) {
-+		n = radix_tree_gang_lookup(&root->hot_inode_tree,
-+				   (void **)hi_nodes, ino,
-+				   ARRAY_SIZE(hi_nodes));
-+		if (!n)
-+			break;
-+
-+		ino = hi_nodes[n - 1]->i_ino + 1;
-+		for (i = 0; i < n; i++) {
-+			kref_get(&hi_nodes[i]->hot_inode.refs);
-+			hot_map_array_update(
-+				&hi_nodes[i]->hot_inode.hot_freq_data, root);
-+			hot_range_update(hi_nodes[i], root);
-+			hot_inode_item_put(hi_nodes[i]);
-+		}
-+	}
-+
-+	/* Sort temperature map info */
-+	for (i = 0; i < HEAT_MAP_SIZE; i++) {
-+		list_sort(NULL, &root->heat_inode_map[i].node_list,
-+			hot_temp_cmp);
-+		list_sort(NULL, &root->heat_range_map[i].node_list,
-+			hot_temp_cmp);
-+	}
-+
-+	/* Instert next delayed work */
-+	queue_delayed_work(root->update_wq, &root->update_work,
-+		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+}
-+
  /*
-  * Initialize kmem cache for hot_inode_item and hot_range_item.
-  */
-@@ -650,9 +714,28 @@ int hot_track_init(struct super_block *sb)
- 	hot_inode_tree_init(root);
- 	hot_map_array_init(root);
+  * How many user pages to map in one call to get_user_pages().  This determines
+@@ -1297,6 +1298,11 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	prefetch(bdev->bd_queue);
+ 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
  
-+	root->update_wq = alloc_workqueue(
-+		"hot_update_wq", WQ_NON_REENTRANT, 0);
-+	if (!root->update_wq) {
-+		printk(KERN_ERR "%s: Failed to create "
-+				"hot update workqueue\n", __func__);
-+		goto failed_wq;
-+	}
++	/* Hot data tracking */
++	hot_update_freqs(inode, (u64)offset,
++			(u64)iov_length(iov, nr_segs),
++			rw & WRITE);
 +
-+	/* Initialize hot tracking wq and arm one delayed work */
-+	INIT_DELAYED_WORK(&root->update_work, hot_update_worker);
-+	queue_delayed_work(root->update_wq, &root->update_work,
-+		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+
- 	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
+ 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
+ 				     nr_segs, get_block, end_io,
+ 				     submit_io, flags);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 83efee7..51b2c48 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -33,6 +33,7 @@
+ #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
+ #include <linux/memcontrol.h>
+ #include <linux/cleancache.h>
++#include <linux/hot_tracking.h>
+ #include "internal.h"
  
- 	return 0;
+ /*
+@@ -1224,6 +1225,11 @@ readpage:
+ 		 * PG_error will be set again if readpage fails.
+ 		 */
+ 		ClearPageError(page);
 +
-+failed_wq:
-+	hot_map_array_exit(root);
-+	hot_inode_tree_exit(root);
-+	kfree(root);
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(hot_track_init);
++		/* Hot data tracking */
++		hot_update_freqs(inode, (u64)page->index << PAGE_CACHE_SHIFT,
++				PAGE_CACHE_SIZE, 0);
++
+ 		/* Start the actual read. The read will unlock the page. */
+ 		error = mapping->a_ops->readpage(filp, page);
  
-@@ -660,6 +743,8 @@ void hot_track_exit(struct super_block *sb)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 830893b..5220040 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -35,6 +35,7 @@
+ #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
+ #include <linux/pagevec.h>
+ #include <linux/timer.h>
++#include <linux/hot_tracking.h>
+ #include <trace/events/writeback.h>
+ 
+ /*
+@@ -1903,13 +1904,24 @@ EXPORT_SYMBOL(generic_writepages);
+ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
  {
- 	struct hot_info *root = sb->s_hot_root;
+ 	int ret;
++	pgoff_t start = 0;
++	u64 count = 0;
  
-+	cancel_delayed_work_sync(&root->update_work);
-+	destroy_workqueue(root->update_wq);
- 	hot_map_array_exit(root);
- 	hot_inode_tree_exit(root);
- 	kfree(root);
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index f5ec05a..92e31fb 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -32,6 +32,9 @@
-  */
- #define TIME_TO_KICK 300
- 
-+/* set how often to update temperatures (seconds) */
-+#define HEAT_UPDATE_DELAY 300
+ 	if (wbc->nr_to_write <= 0)
+ 		return 0;
 +
- /* NRR/NRW heat unit = 2^X accesses */
- #define NRR_MULTIPLIER_POWER 20 /* NRR - number of reads since mount */
- #define NRR_COEFF_POWER 0
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index 4f92947..2ee0d02 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -82,6 +82,9 @@ struct hot_info {
- 	/* map of range temperature */
- 	struct hot_map_head heat_range_map[HEAT_MAP_SIZE];
- 	unsigned int hot_map_nr;
++	start = mapping->writeback_index << PAGE_CACHE_SHIFT;
++	count = (u64)wbc->nr_to_write;
 +
-+	struct workqueue_struct *update_wq;
-+	struct delayed_work update_work;
- };
+ 	if (mapping->a_ops->writepages)
+ 		ret = mapping->a_ops->writepages(mapping, wbc);
+ 	else
+ 		ret = generic_writepages(mapping, wbc);
++
++	/* Hot data tracking */
++	hot_update_freqs(mapping->host, (u64)start,
++			(count - (u64)wbc->nr_to_write) * PAGE_CACHE_SIZE, 1);
++
+ 	return ret;
+ }
  
- extern void __init hot_cache_init(void);
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 7963f23..8a24f1e 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -19,6 +19,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/syscalls.h>
+ #include <linux/file.h>
++#include <linux/hot_tracking.h>
+ 
+ /*
+  * Initialise a struct file's readahead state.  Assumes that the caller has
+@@ -138,6 +139,11 @@ static int read_pages(struct address_space *mapping, struct file *filp,
+ out:
+ 	blk_finish_plug(&plug);
+ 
++	/* Hot data tracking */
++	hot_update_freqs(mapping->host, (u64)(list_entry(pages->prev,\
++				struct page, lru)->index) << PAGE_CACHE_SHIFT,
++			(u64)nr_pages * PAGE_CACHE_SIZE, 0);
++
+ 	return ret;
+ }
+ 
 -- 
 1.7.6.5
 
