@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573Ab2J2LCE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:02:04 -0400
-Received: from mga14.intel.com ([143.182.124.37]:24740 "EHLO mga14.intel.com"
+	id S1758594Ab2J2LCh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:02:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59472 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab2J2LCC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:02:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,671,1344236400"; 
-   d="scan'208";a="161844559"
-Date: Mon, 29 Oct 2012 04:02:00 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
-        eranian@google.com, mingo@kernel.org
-Subject: Re: [PATCH 16/33] perf, tools: Add support for weight v2
-Message-ID: <20121029110200.GH2266@tassilo.jf.intel.com>
-References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
- <1351283415-13170-17-git-send-email-andi@firstfloor.org>
- <87vcdt7e2m.fsf@sejong.aot.lge.com>
+	id S1758543Ab2J2LCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 07:02:35 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: Tero Kristo <t-kristo@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] MFD: twl-core: Register twl4030-madc child only for twl4030 class
+Date: Mon, 29 Oct 2012 12:02:31 +0100
+Message-ID: <1351508551-30772-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.12.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vcdt7e2m.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 07:44:17PM +0900, Namhyung Kim wrote:
-> On Fri, 26 Oct 2012 13:29:58 -0700, Andi Kleen wrote:
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > perf record has a new option -W that enables weightened sampling.
-> >
-> > Add sorting support in top/report for the average weight per sample and the
-> > total weight sum. This allows to both compare relative cost per event
-> > and the total cost over the measurement period.
-> 
-> I expected the weight is used for scaling a sample period somehow - and
-> wondered the *somehow* part - when reading previous patch descriptions
-> but you just added sort keys.  Is it what you intended originally?
+twl4030-madc driver can only handle twl4030 class MADC. The newer revisions
+of twl does not have MADC, instead they have different IP called GPADC which
+is not backward compatible.
 
-I originally simply multiplied, but then I changed over to separate sort 
-keys which give the same result and are more flexible and easier to understand
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+Hi Samuel,
 
-You're right the manpage is stale, will fix.
+When building the kernel to support OMAP3/4/5 we should only register the MADC
+driver when we boot it on OMAP3 since twl60xx does not have MADC.
 
-> 
-> 
-> >
-> > Add the necessary glue to perf report, record and the library.
-> >
-> > v2: Merge with new hist refactoring.
-> > Rename global_weight to weight and weight to local_weight.
-> 
-> But I think (total_)weight and avg_weight looks more natural.
+Regards,
+Peter
 
-Frankly I think your names as as arbitary as mine, so I'll stay
-with mine for now.
+ drivers/mfd/twl-core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> >  			 * become out-of-date due to an exec() or
-> > @@ -314,6 +322,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
-> >  
-> >  	rb_link_node(&he->rb_node_in, parent, p);
-> >  	rb_insert_color(&he->rb_node_in, hists->entries_in);
-> > +	he->stat.weight += weight;
-> 
-> I'd suggest that the weight should be set to the 'entry' so that it can
-> be added when hist_entry__new() called.
-
-I did that originally, but ran into some problem, so I moved to this way
-
--Andi
-
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 4ae6423..2624668 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -646,7 +646,8 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
+ 			return PTR_ERR(child);
+ 	}
+ 
+-	if (IS_ENABLED(CONFIG_TWL4030_MADC) && pdata->madc) {
++	if (IS_ENABLED(CONFIG_TWL4030_MADC) && pdata->madc &&
++	    twl_class_is_4030()) {
+ 		child = add_child(2, "twl4030_madc",
+ 				pdata->madc, sizeof(*pdata->madc),
+ 				true, irq_base + MADC_INTR_OFFSET, 0);
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.12.4
+
