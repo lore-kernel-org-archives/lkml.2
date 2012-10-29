@@ -1,387 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757810Ab2J2Cml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:42:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52316 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757786Ab2J2Cmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:42:39 -0400
+	id S1757851Ab2J2Cmy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:42:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757748Ab2J2Cmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:42:52 -0400
+Message-ID: <508DEDA2.9030503@redhat.com>
+Date: Mon, 29 Oct 2012 10:44:50 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351451963.4999.8.camel@maggy.simpson.net>
-References: <1350635770-9189-1-git-send-email-xtfeng@gmail.com>
-	<1350654126.2768.5.camel@twins>
-	<CAJn8CcE5McFB-FH981Pj+eahNOt8ck3ncJwD4xocU_LrAtjBHA@mail.gmail.com>
-	<1350736696.5123.24.camel@maggy.simpson.net>
-	<1351283371.16639.111.camel@maggy.simpson.net>
-	<1351362370.4503.3.camel@maggy.simpson.net>
-	<20121028102520.GA7711@gmail.com>
-	<1351430004.8685.17.camel@maggy.simpson.net>
-	<20121028131950.GA15159@gmail.com>
-	<1351431201.8685.22.camel@maggy.simpson.net>
-	<20121028140544.GA28216@gmail.com>
-	<1351451963.4999.8.camel@maggy.simpson.net>
-Date: Mon, 29 Oct 2012 10:42:37 +0800
-Message-ID: <CAJn8CcFO9BB7yfoo2158FPV75Za7yoYqrf_KfwPdA-AdkT=Qsw@mail.gmail.com>
-Subject: Re: [PATCH] V2 sched, autogroup: fix crash on reboot when autogroup
- is disabled
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 00/31] numa/core patches
+References: <20121025121617.617683848@chello.nl> <508A52E1.8020203@redhat.com> <1351242480.12171.48.camel@twins> <20121028175615.GC29827@cmpxchg.org>
+In-Reply-To: <20121028175615.GC29827@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 3:19 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Sun, 2012-10-28 at 15:05 +0100, Ingo Molnar wrote:
->> * Mike Galbraith <efault@gmx.de> wrote:
->>
->> > On Sun, 2012-10-28 at 14:19 +0100, Ingo Molnar wrote:
->> > > * Mike Galbraith <efault@gmx.de> wrote:
->> > >
->> > > > On Sun, 2012-10-28 at 11:25 +0100, Ingo Molnar wrote:
->> > > > > * Mike Galbraith <efault@gmx.de> wrote:
->> > > > >
->> > > >
->> > > > > > No knobs, no glitz, nada, just a cute little thing folks can turn
->> > > > > > on if they don't want to muck about with cgroups and/or systemd.
->> > > > >
->> > > > > Please also keep the Kconfig switch and reuse it to turn on
->> > > > > the 'autogroups' knob.
->> > > > >
->> > > > > That way people with existing .config's don't have to change
->> > > > > a thing to get this functionality.
->> > > >
->> > > > The Kconfig option is still there.  The noautogroup ->
->> > > > autogroup arg change just makes it off by default (since an
->> > > > on/off switch would have to be a full move everybody thing
->> > > > post 8323f26ce race fix), so distros can make it available in
->> > > > their swiss army knife config, but it'll be out of the way
->> > > > unless specifically asked for by the user at boot.
->> > > >
->> > > > I can make it default 'on' by removing that arg change if you
->> > > > think that's the better way to go, but opt in at boot sounded
->> > > > better to me given there is no runtime on/off switch at all
->> > > > now.
->> > >
->> > > If I got your patch right then adding a command line option to
->> > > turn it on will disable it in essence for pretty much everyone
->> > > who has CONFIG_SCHED_AUTOGROUP=y in their .config today.
->> >
->> > With no user intervention, yes.
->>
->> 'No user intervention' is what happens with new kernel
->> commandline options, in 99.9999% of the cases.
->>
->> > > The patch should not change the defaults for existing
->> > > .config's.
->> > >
->> > > I.e. if autogroups was off, it should stay off, but if
->> > > autogroups was enabled in the .config and the kernel booted
->> > > with it enabled, then it should continue to do so in the
->> > > future as well.
->> > >
->> > > Adding a boot tweak and removing the runtime knobs is OK -
->> > > changing the current default functionality is not.
->> >
->> > Ok, I'll whack the arg change and respin.
->>
->> Thanks!
->>
->> I'd also suggest to still expose the state of autosched in
->> /proc/sys, read-only, so that its status can be checked.
->
-> Done.  Autogroup remains default on with noautogroup opt out at boot
-> time as before.  Sysctl remains intact, read only.  Knobs are gone.
->
-> sched, autogroup: fix crash on reboot when autogroup is disabled
->
-> Between 8323f26ce and 800d4d30, autogroup is a wreck.  With both
-> applied, all you have to do to crash a box is disable autogroup
-> during boot up, then reboot.. boom, NULL pointer dereference due
-> to 800d4d30 not allowing autogroup to move things, and 8323f26ce
-> making that the only way to switch runqueues.
->
-> Remove all of the knobs, as what wasn't broken would be by making
-> autogroup exclusively either on or off from boot, with off meaning
-> autogroups are not created, so unavailable for proc interface.
->
+On 10/29/2012 01:56 AM, Johannes Weiner wrote:
+> On Fri, Oct 26, 2012 at 11:08:00AM +0200, Peter Zijlstra wrote:
+>> On Fri, 2012-10-26 at 17:07 +0800, Zhouping Liu wrote:
+>>> [  180.918591] RIP: 0010:[<ffffffff8118c39a>]  [<ffffffff8118c39a>] mem_cgroup_prepare_migration+0xba/0xd0
+>>> [  182.681450]  [<ffffffff81183b60>] do_huge_pmd_numa_page+0x180/0x500
+>>> [  182.775090]  [<ffffffff811585c9>] handle_mm_fault+0x1e9/0x360
+>>> [  182.863038]  [<ffffffff81632b62>] __do_page_fault+0x172/0x4e0
+>>> [  182.950574]  [<ffffffff8101c283>] ? __switch_to_xtra+0x163/0x1a0
+>>> [  183.041512]  [<ffffffff8101281e>] ? __switch_to+0x3ce/0x4a0
+>>> [  183.126832]  [<ffffffff8162d686>] ? __schedule+0x3c6/0x7a0
+>>> [  183.211216]  [<ffffffff81632ede>] do_page_fault+0xe/0x10
+>>> [  183.293705]  [<ffffffff8162f518>] page_fault+0x28/0x30
+>> Johannes, this looks like the thp migration memcg hookery gone bad,
+>> could you have a look at this?
+> Oops.  Here is an incremental fix, feel free to fold it into #31.
 
-I'm okay with the removal of runtime enable/disable autogroup. But can
-we simply remove
-these two knobs that is already exposed to user space since 2.6.38 ?
-So we can't cat /proc/<pid>/autogroup
-or echo <nice level> > /proc/<pid>/autogroup anymore even if autogroup is on?
+Hi Johannes,
 
+Tested the below patch, and I'm sure it has fixed the above issue, thank 
+you.
 
-> If the user fiddles with cgroups hereafter, tough, once tasks are
-> moved, autogroup won't mess with them again unless they call setsid().
+  Zhouping
+
 >
-> No knobs, no glitz, nada, just a cute little thing folks can turn
-> on if they don't want to muck about with cgroups and/or systemd.
->
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Cc: stable@vger.kernel.org v3.6
->
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 > ---
->  fs/proc/base.c            |   78 ----------------------------------------------
->  kernel/sched/auto_group.c |   68 ++++++----------------------------------
->  kernel/sched/auto_group.h |    9 -----
->  kernel/sysctl.c           |    6 +--
->  4 files changed, 14 insertions(+), 147 deletions(-)
 >
-> --- a/fs/proc/base.c
-> +++ b/fs/proc/base.c
-> @@ -1165,81 +1165,6 @@ static const struct file_operations proc
->
->  #endif
->
-> -#ifdef CONFIG_SCHED_AUTOGROUP
-> -/*
-> - * Print out autogroup related information:
-> - */
-> -static int sched_autogroup_show(struct seq_file *m, void *v)
-> -{
-> -       struct inode *inode = m->private;
-> -       struct task_struct *p;
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 5c30a14..0d7ebd3 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -801,8 +801,6 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   	if (!new_page)
+>   		goto alloc_fail;
+>   
+> -	mem_cgroup_prepare_migration(page, new_page, &memcg);
 > -
-> -       p = get_proc_task(inode);
-> -       if (!p)
-> -               return -ESRCH;
-> -       proc_sched_autogroup_show_task(p, m);
+>   	lru = PageLRU(page);
+>   
+>   	if (lru && isolate_lru_page(page)) /* does an implicit get_page() */
+> @@ -835,6 +833,14 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   
+>   		return;
+>   	}
+> +	/*
+> +	 * Traditional migration needs to prepare the memcg charge
+> +	 * transaction early to prevent the old page from being
+> +	 * uncharged when installing migration entries.  Here we can
+> +	 * save the potential rollback and start the charge transfer
+> +	 * only when migration is already known to end successfully.
+> +	 */
+> +	mem_cgroup_prepare_migration(page, new_page, &memcg);
+>   
+>   	entry = mk_pmd(new_page, vma->vm_page_prot);
+>   	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+> @@ -845,6 +851,12 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   	set_pmd_at(mm, haddr, pmd, entry);
+>   	update_mmu_cache_pmd(vma, address, entry);
+>   	page_remove_rmap(page);
+> +	/*
+> +	 * Finish the charge transaction under the page table lock to
+> +	 * prevent split_huge_page() from dividing up the charge
+> +	 * before it's fully transferred to the new page.
+> +	 */
+> +	mem_cgroup_end_migration(memcg, page, new_page, true);
+>   	spin_unlock(&mm->page_table_lock);
+>   
+>   	put_page(page);			/* Drop the rmap reference */
+> @@ -856,18 +868,14 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>   
+>   	unlock_page(new_page);
+>   
+> -	mem_cgroup_end_migration(memcg, page, new_page, true);
 > -
-> -       put_task_struct(p);
-> -
-> -       return 0;
-> -}
-> -
-> -static ssize_t
-> -sched_autogroup_write(struct file *file, const char __user *buf,
-> -           size_t count, loff_t *offset)
-> -{
-> -       struct inode *inode = file->f_path.dentry->d_inode;
-> -       struct task_struct *p;
-> -       char buffer[PROC_NUMBUF];
-> -       int nice;
-> -       int err;
-> -
-> -       memset(buffer, 0, sizeof(buffer));
-> -       if (count > sizeof(buffer) - 1)
-> -               count = sizeof(buffer) - 1;
-> -       if (copy_from_user(buffer, buf, count))
-> -               return -EFAULT;
-> -
-> -       err = kstrtoint(strstrip(buffer), 0, &nice);
-> -       if (err < 0)
-> -               return err;
-> -
-> -       p = get_proc_task(inode);
-> -       if (!p)
-> -               return -ESRCH;
-> -
-> -       err = proc_sched_autogroup_set_nice(p, nice);
-> -       if (err)
-> -               count = err;
-> -
-> -       put_task_struct(p);
-> -
-> -       return count;
-> -}
-> -
-> -static int sched_autogroup_open(struct inode *inode, struct file *filp)
-> -{
-> -       int ret;
-> -
-> -       ret = single_open(filp, sched_autogroup_show, NULL);
-> -       if (!ret) {
-> -               struct seq_file *m = filp->private_data;
-> -
-> -               m->private = inode;
-> -       }
-> -       return ret;
-> -}
-> -
-> -static const struct file_operations proc_pid_sched_autogroup_operations = {
-> -       .open           = sched_autogroup_open,
-> -       .read           = seq_read,
-> -       .write          = sched_autogroup_write,
-> -       .llseek         = seq_lseek,
-> -       .release        = single_release,
-> -};
-> -
-> -#endif /* CONFIG_SCHED_AUTOGROUP */
-> -
->  static ssize_t comm_write(struct file *file, const char __user *buf,
->                                 size_t count, loff_t *offset)
->  {
-> @@ -2550,9 +2475,6 @@ static const struct pid_entry tgid_base_
->  #ifdef CONFIG_SCHED_DEBUG
->         REG("sched",      S_IRUGO|S_IWUSR, proc_pid_sched_operations),
->  #endif
-> -#ifdef CONFIG_SCHED_AUTOGROUP
-> -       REG("autogroup",  S_IRUGO|S_IWUSR, proc_pid_sched_autogroup_operations),
-> -#endif
->         REG("comm",      S_IRUGO|S_IWUSR, proc_pid_set_comm_operations),
->  #ifdef CONFIG_HAVE_ARCH_TRACEHOOK
->         INF("syscall",    S_IRUGO, proc_pid_syscall),
-> --- a/kernel/sched/auto_group.c
-> +++ b/kernel/sched/auto_group.c
-> @@ -110,6 +110,9 @@ static inline struct autogroup *autogrou
->
->  bool task_wants_autogroup(struct task_struct *p, struct task_group *tg)
->  {
-> +       if (!sysctl_sched_autogroup_enabled)
-> +               return false;
+>   	unlock_page(page);
+>   	put_page(page);			/* Drop the local reference */
+>   
+>   	return;
+>   
+>   alloc_fail:
+> -	if (new_page) {
+> -		mem_cgroup_end_migration(memcg, page, new_page, false);
+> +	if (new_page)
+>   		put_page(new_page);
+> -	}
+>   
+>   	unlock_page(page);
+>   
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 7acf43b..011e510 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3255,15 +3255,18 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+>   				  struct mem_cgroup **memcgp)
+>   {
+>   	struct mem_cgroup *memcg = NULL;
+> +	unsigned int nr_pages = 1;
+>   	struct page_cgroup *pc;
+>   	enum charge_type ctype;
+>   
+>   	*memcgp = NULL;
+>   
+> -	VM_BUG_ON(PageTransHuge(page));
+>   	if (mem_cgroup_disabled())
+>   		return;
+>   
+> +	if (PageTransHuge(page))
+> +		nr_pages <<= compound_order(page);
 > +
->         if (tg != &root_task_group)
->                 return false;
->
-> @@ -143,15 +146,11 @@ autogroup_move_group(struct task_struct
->
->         p->signal->autogroup = autogroup_kref_get(ag);
->
-> -       if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
-> -               goto out;
-> -
->         t = p;
->         do {
->                 sched_move_task(t);
->         } while_each_thread(p, t);
->
-> -out:
->         unlock_task_sighand(p, &flags);
->         autogroup_kref_put(prev);
->  }
-> @@ -159,8 +158,11 @@ autogroup_move_group(struct task_struct
->  /* Allocates GFP_KERNEL, cannot be called under any spinlock */
->  void sched_autogroup_create_attach(struct task_struct *p)
->  {
-> -       struct autogroup *ag = autogroup_create();
-> +       struct autogroup *ag;
->
-> +       if (!sysctl_sched_autogroup_enabled)
-> +               return;
-> +       ag = autogroup_create();
->         autogroup_move_group(p, ag);
->         /* drop extra reference added by autogroup_create() */
->         autogroup_kref_put(ag);
-> @@ -176,11 +178,15 @@ EXPORT_SYMBOL(sched_autogroup_detach);
->
->  void sched_autogroup_fork(struct signal_struct *sig)
->  {
-> +       if (!sysctl_sched_autogroup_enabled)
-> +               return;
->         sig->autogroup = autogroup_task_get(current);
->  }
->
->  void sched_autogroup_exit(struct signal_struct *sig)
->  {
-> +       if (!sysctl_sched_autogroup_enabled)
-> +               return;
->         autogroup_kref_put(sig->autogroup);
->  }
->
-> @@ -193,58 +199,6 @@ static int __init setup_autogroup(char *
->
->  __setup("noautogroup", setup_autogroup);
->
-> -#ifdef CONFIG_PROC_FS
-> -
-> -int proc_sched_autogroup_set_nice(struct task_struct *p, int nice)
-> -{
-> -       static unsigned long next = INITIAL_JIFFIES;
-> -       struct autogroup *ag;
-> -       int err;
-> -
-> -       if (nice < -20 || nice > 19)
-> -               return -EINVAL;
-> -
-> -       err = security_task_setnice(current, nice);
-> -       if (err)
-> -               return err;
-> -
-> -       if (nice < 0 && !can_nice(current, nice))
-> -               return -EPERM;
-> -
-> -       /* this is a heavy operation taking global locks.. */
-> -       if (!capable(CAP_SYS_ADMIN) && time_before(jiffies, next))
-> -               return -EAGAIN;
-> -
-> -       next = HZ / 10 + jiffies;
-> -       ag = autogroup_task_get(p);
-> -
-> -       down_write(&ag->lock);
-> -       err = sched_group_set_shares(ag->tg, prio_to_weight[nice + 20]);
-> -       if (!err)
-> -               ag->nice = nice;
-> -       up_write(&ag->lock);
-> -
-> -       autogroup_kref_put(ag);
-> -
-> -       return err;
-> -}
-> -
-> -void proc_sched_autogroup_show_task(struct task_struct *p, struct seq_file *m)
-> -{
-> -       struct autogroup *ag = autogroup_task_get(p);
-> -
-> -       if (!task_group_is_autogroup(ag->tg))
-> -               goto out;
-> -
-> -       down_read(&ag->lock);
-> -       seq_printf(m, "/autogroup-%ld nice %d\n", ag->id, ag->nice);
-> -       up_read(&ag->lock);
-> -
-> -out:
-> -       autogroup_kref_put(ag);
-> -}
-> -#endif /* CONFIG_PROC_FS */
-> -
->  #ifdef CONFIG_SCHED_DEBUG
->  int autogroup_path(struct task_group *tg, char *buf, int buflen)
->  {
-> --- a/kernel/sched/auto_group.h
-> +++ b/kernel/sched/auto_group.h
-> @@ -4,11 +4,6 @@
->  #include <linux/rwsem.h>
->
->  struct autogroup {
-> -       /*
-> -        * reference doesn't mean how many thread attach to this
-> -        * autogroup now. It just stands for the number of task
-> -        * could use this autogroup.
-> -        */
->         struct kref             kref;
->         struct task_group       *tg;
->         struct rw_semaphore     lock;
-> @@ -29,9 +24,7 @@ extern bool task_wants_autogroup(struct
->  static inline struct task_group *
->  autogroup_task_group(struct task_struct *p, struct task_group *tg)
->  {
-> -       int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
-> -
-> -       if (enabled && task_wants_autogroup(p, tg))
-> +       if (task_wants_autogroup(p, tg))
->                 return p->signal->autogroup->tg;
->
->         return tg;
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -367,10 +367,8 @@ static struct ctl_table kern_table[] = {
->                 .procname       = "sched_autogroup_enabled",
->                 .data           = &sysctl_sched_autogroup_enabled,
->                 .maxlen         = sizeof(unsigned int),
-> -               .mode           = 0644,
-> -               .proc_handler   = proc_dointvec_minmax,
-> -               .extra1         = &zero,
-> -               .extra2         = &one,
-> +               .mode           = 0444,
-> +               .proc_handler   = proc_dointvec,
->         },
->  #endif
->  #ifdef CONFIG_CFS_BANDWIDTH
->
->
+>   	pc = lookup_page_cgroup(page);
+>   	lock_page_cgroup(pc);
+>   	if (PageCgroupUsed(pc)) {
+> @@ -3325,7 +3328,7 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+>   	 * charged to the res_counter since we plan on replacing the
+>   	 * old one and only one page is going to be left afterwards.
+>   	 */
+> -	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
+> +	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
+>   }
+>   
+>   /* remove redundant charge if migration failed*/
+
