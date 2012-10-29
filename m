@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab2J2Cki (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:40:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58208 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753814Ab2J2Ckg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:40:36 -0400
-Date: Sun, 28 Oct 2012 22:40:24 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Chinner <david@fromorbit.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-Message-ID: <20121029024024.GC9365@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Chinner <david@fromorbit.com>,
-	"Luck, Tony" <tony.luck@intel.com>,
-	Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	"Kleen, Andi" <andi.kleen@intel.com>,
-	"Wu, Fengguang" <fengguang.wu@intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-	Jun'ichi Nomura <j-nomura@ce.jp.nec.com>,
-	Akira Fujita <a-fujita@rs.jp.nec.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20121026061206.GA31139@thunk.org>
- <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
- <20121026184649.GA8614@thunk.org>
- <3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com>
- <20121027221626.GA9161@thunk.org>
- <20121029011632.GN29378@dastard>
+	id S1757734Ab2J2Clq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:41:46 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:49246 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757554Ab2J2Clp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:41:45 -0400
+From: guanxuetao@mprc.pku.edu.cn
+Message-ID: <58205.162.105.203.8.1351479644.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <1351022666-6960-31-git-send-email-keescook@chromium.org>
+References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
+    <1351022666-6960-31-git-send-email-keescook@chromium.org>
+Date: Mon, 29 Oct 2012 11:00:44 +0800 (CST)
+Subject: Re: [PATCH 030/193] arch/unicore32: remove CONFIG_EXPERIMENTAL
+To: "Kees Cook" <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "Kees Cook" <keescook@chromium.org>,
+        "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029011632.GN29378@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain;charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:16:32PM +1100, Dave Chinner wrote:
-> 
-> Except that there are filesystems that cannot implement such flags,
-> or require on-disk format changes to add more of those flags. This
-> is most definitely not a filesystem specific behaviour, so any sort
-> of VFS level per-file state needs to be kept in xattrs, not special
-> flags. Filesystems are welcome to optimise the storage of such
-> special xattrs (e.g. down to a single boolean flag in an inode), but
-> using a flag for something that dould, in fact, storage the exactly
-> offset and length of the corruption is far better than just storing
-> a "something is corrupted in this file" bit....
+> This config item has not carried much meaning for a while now and is
+> almost always enabled by default. As agreed during the Linux kernel
+> summit, remove it.
+>
+> CC: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Agreed, if we're going to add an xattr, then we might as well store
-not just a boolean, but some indication of what part of the file was
-corrupted.  The only complication is what if there are many memory
-corruptions.  Do we store just the last ECC hard error that we
-detected?  Or just the first?
+Thanks. I will push it in my tree.
 
-It wasn't clear to me it was worth the extra complexity, but if there
-are indeed for file systems that don't have or don't want to allocate
-a spare bit in their inode structure, that might be a good enough
-justification to add an xattr.  (Was this a hypothetical, or does this
-constraint apply to XFS or some other file system that you're aware of?)
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-> > I note that we've already added a new error code:
-> > 
-> > #define EHWPOISON 133	  /* Memory page has hardware error */
-> > 
-> > ... although the glibc shipping with Debian testing hasn't been taught
-> > what it is, so strerror(EHWPOISON) returns "Unknown error 133".  We
-> > could simply allow open(2) and stat(2) return this error, although I
-> > wonder if we're just better off defining a new error code.
-> 
-> If we are going to add special new "file corrupted" errors, we
-> should add EFSCORRUPTED (i.e. "filesystem corrupted") at the same
-> time....
+> ---
+>  arch/unicore32/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
+> index e5c5473..4def59a 100644
+> --- a/arch/unicore32/Kconfig
+> +++ b/arch/unicore32/Kconfig
+> @@ -216,7 +216,7 @@ config PUV3_GPIO
+>  	bool
+>  	depends on !ARCH_FPGA
+>  	select GENERIC_GPIO
+> -	select GPIO_SYSFS if EXPERIMENTAL
+> +	select GPIO_SYSFS
+>  	default y
+>
+>  if PUV3_NB0916
+> --
+> 1.7.9.5
+>
 
-I would dearly love it if we could allocate a new EFSCORRUPTED errno.
-I was about to follow XFS's lead and change ext4 to return EUCLEAN
-instead of EIO in the cases of fs corruption, but that really is ugly
-and gross...
-
-						- Ted
