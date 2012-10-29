@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760637Ab2J2UI5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:08:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42608 "EHLO mail.kernel.org"
+	id S1760619Ab2J2UIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:08:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42562 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760585Ab2J2UIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:53 -0400
+	id S1760585Ab2J2UIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [ 10/34] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat() instead of strcat()
-Date: Mon, 29 Oct 2012 13:07:41 -0700
-Message-Id: <20121029200421.719233417@linuxfoundation.org>
+        Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>,
+        David McKay <david.mckay@st.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 05/34] ARM: 7559/1: smp: switch away from the idmap before updating init_mm.mm_count
+Date: Mon, 29 Oct 2012 13:07:36 -0700
+Message-Id: <20121029200421.177543936@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -25,66 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 66081a72517a131430dcf986775f3268aafcb546 upstream.
+commit 5f40b909728ad784eb43aa309d3c4e9bdf050781 upstream.
 
-The warning check for duplicate sysfs entries can cause a buffer overflow
-when printing the warning, as strcat() doesn't check buffer sizes.
-Use strlcat() instead.
+When booting a secondary CPU, the primary CPU hands two sets of page
+tables via the secondary_data struct:
 
-Since strlcat() doesn't return a pointer to the passed buffer, unlike
-strcat(), I had to convert the nested concatenation in sysfs_add_one() to
-an admittedly more obscure comma operator construct, to avoid emitting code
-for the concatenation if CONFIG_BUG is disabled.
+	(1) swapper_pg_dir: a normal, cacheable, shared (if SMP) mapping
+	    of the kernel image (i.e. the tables used by init_mm).
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+	(2) idmap_pgd: an uncached mapping of the .idmap.text ELF
+	    section.
+
+The idmap is generally used when enabling and disabling the MMU, which
+includes early CPU boot. In this case, the secondary CPU switches to
+swapper as soon as it enters C code:
+
+	struct mm_struct *mm = &init_mm;
+	unsigned int cpu = smp_processor_id();
+
+	/*
+	 * All kernel threads share the same mm context; grab a
+	 * reference and switch to it.
+	 */
+	atomic_inc(&mm->mm_count);
+	current->active_mm = mm;
+	cpumask_set_cpu(cpu, mm_cpumask(mm));
+	cpu_switch_mm(mm->pgd, mm);
+
+This causes a problem on ARMv7, where the identity mapping is treated as
+strongly-ordered leading to architecturally UNPREDICTABLE behaviour of
+exclusive accesses, such as those used by atomic_inc.
+
+This patch re-orders the secondary_start_kernel function so that we
+switch to swapper before performing any exclusive accesses.
+
+Reported-by: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
+Cc: David McKay <david.mckay@st.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/sysfs/dir.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/kernel/smp.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -404,20 +404,18 @@ int __sysfs_add_one(struct sysfs_addrm_c
- /**
-  *	sysfs_pathname - return full path to sysfs dirent
-  *	@sd: sysfs_dirent whose path we want
-- *	@path: caller allocated buffer
-+ *	@path: caller allocated buffer of size PATH_MAX
-  *
-  *	Gives the name "/" to the sysfs_root entry; any path returned
-  *	is relative to wherever sysfs is mounted.
-- *
-- *	XXX: does no error checking on @path size
-  */
- static char *sysfs_pathname(struct sysfs_dirent *sd, char *path)
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -277,18 +277,24 @@ static void __cpuinit smp_store_cpu_info
+ asmlinkage void __cpuinit secondary_start_kernel(void)
  {
- 	if (sd->s_parent) {
- 		sysfs_pathname(sd->s_parent, path);
--		strcat(path, "/");
-+		strlcat(path, "/", PATH_MAX);
- 	}
--	strcat(path, sd->s_name);
-+	strlcat(path, sd->s_name, PATH_MAX);
- 	return path;
- }
+ 	struct mm_struct *mm = &init_mm;
+-	unsigned int cpu = smp_processor_id();
++	unsigned int cpu;
++
++	/*
++	 * The identity mapping is uncached (strongly ordered), so
++	 * switch away from it before attempting any exclusive accesses.
++	 */
++	cpu_switch_mm(mm->pgd, mm);
++	enter_lazy_tlb(mm, current);
++	local_flush_tlb_all();
  
-@@ -450,9 +448,11 @@ int sysfs_add_one(struct sysfs_addrm_cxt
- 		char *path = kzalloc(PATH_MAX, GFP_KERNEL);
- 		WARN(1, KERN_WARNING
- 		     "sysfs: cannot create duplicate filename '%s'\n",
--		     (path == NULL) ? sd->s_name :
--		     strcat(strcat(sysfs_pathname(acxt->parent_sd, path), "/"),
--		            sd->s_name));
-+		     (path == NULL) ? sd->s_name
-+				    : (sysfs_pathname(acxt->parent_sd, path),
-+				       strlcat(path, "/", PATH_MAX),
-+				       strlcat(path, sd->s_name, PATH_MAX),
-+				       path));
- 		kfree(path);
- 	}
+ 	/*
+ 	 * All kernel threads share the same mm context; grab a
+ 	 * reference and switch to it.
+ 	 */
++	cpu = smp_processor_id();
+ 	atomic_inc(&mm->mm_count);
+ 	current->active_mm = mm;
+ 	cpumask_set_cpu(cpu, mm_cpumask(mm));
+-	cpu_switch_mm(mm->pgd, mm);
+-	enter_lazy_tlb(mm, current);
+-	local_flush_tlb_all();
+ 
+ 	printk("CPU%u: Booted secondary processor\n", cpu);
  
 
 
