@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab2J2Vti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:49:38 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48752 "EHLO mail.kernel.org"
+	id S932993Ab2J2Vlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:41:36 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48628 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933005Ab2J2Vlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:40 -0400
+	id S1761569Ab2J2Vla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/54] vhost: fix mergeable bufs on BE hosts
-Date: Mon, 29 Oct 2012 14:40:35 -0700
-Message-Id: <20121029213806.547982258@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, support@connecttech.com
+Subject: [ 24/54] USB: whiteheat: fix memory leak in error path
+Date: Mon, 29 Oct 2012 14:40:25 -0700
+Message-Id: <20121029213805.451588643@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -26,33 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 910a578f7e9400a78a3b13aba0b4d2df16a2cb05 upstream.
+commit c129197c99550d356cf5f69b046994dd53cd1b9d upstream.
 
-We copy head count to a 16 bit field, this works by chance on LE but on
-BE guest gets 0. Fix it up.
+Make sure command buffer is deallocated in case of errors during attach.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Alexander Graf <agraf@suse.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: <support@connecttech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/vhost/net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/whiteheat.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -376,7 +376,8 @@ static void handle_rx(struct vhost_net *
- 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
- 	};
- 	size_t total_len = 0;
--	int err, headcount, mergeable;
-+	int err, mergeable;
-+	s16 headcount;
- 	size_t vhost_hlen, sock_hlen;
- 	size_t vhost_len, sock_len;
- 	/* TODO: check that we are running from vhost_worker? */
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -525,6 +525,7 @@ no_firmware:
+ 		"%s: please contact support@connecttech.com\n",
+ 		serial->type->description);
+ 	kfree(result);
++	kfree(command);
+ 	return -ENODEV;
+ 
+ no_command_private:
 
 
