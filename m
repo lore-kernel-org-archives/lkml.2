@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab2J2Clq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:41:46 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:49246 "EHLO mprc.pku.edu.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757554Ab2J2Clp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:41:45 -0400
-From: guanxuetao@mprc.pku.edu.cn
-Message-ID: <58205.162.105.203.8.1351479644.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <1351022666-6960-31-git-send-email-keescook@chromium.org>
-References: <1351022666-6960-1-git-send-email-keescook@chromium.org>
-    <1351022666-6960-31-git-send-email-keescook@chromium.org>
-Date: Mon, 29 Oct 2012 11:00:44 +0800 (CST)
-Subject: Re: [PATCH 030/193] arch/unicore32: remove CONFIG_EXPERIMENTAL
-To: "Kees Cook" <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, "Kees Cook" <keescook@chromium.org>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-User-Agent: SquirrelMail/1.4.8-4.0.1.el5
+	id S1757761Ab2J2Cmb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:42:31 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58213 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757597Ab2J2Cma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:42:30 -0400
+Date: Sun, 28 Oct 2012 22:42:24 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121029024224.GD9365@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Eric Sandeen <sandeen@redhat.com>, Nix <nix@esperi.org.uk>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	gregkh@linuxfoundation.org
+References: <20121027002258.GB31030@thunk.org>
+ <873910xevu.fsf@spindle.srvr.nix>
+ <20121027175534.GA7783@thunk.org>
+ <87fw4zzra3.fsf@spindle.srvr.nix>
+ <508C4FE5.1030102@redhat.com>
+ <508C633F.4070100@redhat.com>
+ <20121029010012.GE9161@thunk.org>
+ <508DE8D3.1050101@redhat.com>
+ <20121029023430.GB9365@thunk.org>
+ <508DEB8E.10101@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508DEB8E.10101@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This config item has not carried much meaning for a while now and is
-> almost always enabled by default. As agreed during the Linux kernel
-> summit, remove it.
->
-> CC: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Sun, Oct 28, 2012 at 09:35:58PM -0500, Eric Sandeen wrote:
+> Yeah, seems that way.
+> 
+> Then your simpler version is probably the way to go.
 
-Thanks. I will push it in my tree.
+If you have a chance, could you do me a favor and test my -v3 version
+of the patch?  It should work just as well as yours, but I'm getting
+paranoid in my old age, and you seem to have a reliable way of testing
+for this failure.  I still need to figure out why my kvm based
+approach isn't showing the problem....
 
-Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Thanks,
 
-> ---
->  arch/unicore32/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/unicore32/Kconfig b/arch/unicore32/Kconfig
-> index e5c5473..4def59a 100644
-> --- a/arch/unicore32/Kconfig
-> +++ b/arch/unicore32/Kconfig
-> @@ -216,7 +216,7 @@ config PUV3_GPIO
->  	bool
->  	depends on !ARCH_FPGA
->  	select GENERIC_GPIO
-> -	select GPIO_SYSFS if EXPERIMENTAL
-> +	select GPIO_SYSFS
->  	default y
->
->  if PUV3_NB0916
-> --
-> 1.7.9.5
->
-
+-- Ted
