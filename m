@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759561Ab2J2Pnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:43:51 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:37554 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2J2Pnt (ORCPT
+	id S1759576Ab2J2PoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:44:06 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:59790 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752348Ab2J2PoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:43:49 -0400
-Date: Mon, 29 Oct 2012 08:43:48 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph fixes for -rc4
-Message-ID: <alpine.DEB.2.00.1210290841250.18873@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 29 Oct 2012 11:44:04 -0400
+Date: Mon, 29 Oct 2012 11:44:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Ming Lei <ming.lei@canonical.com>
+cc: linux-kernel@vger.kernel.org, Oliver Neukum <oneukum@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-mm@kvack.org>, Eric Dumazet <eric.dumazet@gmail.com>,
+        David Decotigny <david.decotigny@google.com>,
+        Tom Herbert <therbert@google.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v3 4/6] net/core: apply pm_runtime_set_memalloc_noio on
+ network devices
+In-Reply-To: <1351513440-9286-5-git-send-email-ming.lei@canonical.com>
+Message-ID: <Pine.LNX.4.44L0.1210291142000.22882-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 29 Oct 2012, Ming Lei wrote:
 
-Please pull the following fixes from
+> Deadlock might be caused by allocating memory with GFP_KERNEL in
+> runtime_resume callback of network devices in iSCSI situation, so
+> mark network devices and its ancestor as 'memalloc_noio_resume'
+> with the introduced pm_runtime_set_memalloc_noio().
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+> @@ -1411,6 +1414,8 @@ int netdev_register_kobject(struct net_device *net)
+>  	*groups++ = &netstat_group;
+>  #endif /* CONFIG_SYSFS */
+>  
+> +	pm_runtime_set_memalloc_noio(dev, true);
+> +
+>  	error = device_add(dev);
+>  	if (error)
+>  		return error;
 
-There are two fixes in the messenger code, one that can trigger a NULL 
-dereference, and one that error in refcounting (extra put).  There is also 
-a trivial fix that in the fs client code that is triggered by NFS 
-reexport.
+This is an example of what I described earlier.  The 
+pm_runtime_set_memalloc_noio() call should come after device_add(), not 
+before.
 
-Thanks!
-sage
+(Not to mention that this version of the code doesn't correctly handle
+the case where device_add() fails.)
 
+Alan Stern
 
-----------------------------------------------------------------
-Alex Elder (1):
-      rbd: reset BACKOFF if unable to re-queue
-
-David Zafman (1):
-      ceph: fix dentry reference leak in encode_fh()
-
-Sage Weil (1):
-      libceph: avoid NULL kref_put when osd reset races with alloc_msg
-
- fs/ceph/export.c     |    2 ++
- net/ceph/messenger.c |    6 ++++--
- 2 files changed, 6 insertions(+), 2 deletions(-)
