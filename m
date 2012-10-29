@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760651Ab2J2UI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:08:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42618 "EHLO mail.kernel.org"
+	id S1760637Ab2J2UI5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:08:57 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760165Ab2J2UIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:54 -0400
+	id S1760585Ab2J2UIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anisse Astier <anisse@astier.eu>
-Subject: [ 11/34] ehci: fix Lucid nohandoff pci quirk to be more generic with BIOS versions
-Date: Mon, 29 Oct 2012 13:07:42 -0700
-Message-Id: <20121029200421.825911545@linuxfoundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 10/34] sysfs: sysfs_pathname/sysfs_add_one: Use strlcat() instead of strcat()
+Date: Mon, 29 Oct 2012 13:07:41 -0700
+Message-Id: <20121029200421.719233417@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -25,30 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit c323dc023b9501e5d09582ec7efd1d40a9001d99 upstream.
+commit 66081a72517a131430dcf986775f3268aafcb546 upstream.
 
-BIOS vendors keep changing the BIOS versions. Only match the beginning
-of the string to match all Lucid tablets with board name M11JB.
+The warning check for duplicate sysfs entries can cause a buffer overflow
+when printing the warning, as strcat() doesn't check buffer sizes.
+Use strlcat() instead.
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
+Since strlcat() doesn't return a pointer to the passed buffer, unlike
+strcat(), I had to convert the nested concatenation in sysfs_add_one() to
+an admittedly more obscure comma operator construct, to avoid emitting code
+for the concatenation if CONFIG_BUG is disabled.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/sysfs/dir.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -543,7 +543,7 @@ static const struct dmi_system_id __devi
- 		/*  Pegatron Lucid (Ordissimo AIRIS) */
- 		.matches = {
- 			DMI_MATCH(DMI_BOARD_NAME, "M11JB"),
--			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-GE-133"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
- 	{ }
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -404,20 +404,18 @@ int __sysfs_add_one(struct sysfs_addrm_c
+ /**
+  *	sysfs_pathname - return full path to sysfs dirent
+  *	@sd: sysfs_dirent whose path we want
+- *	@path: caller allocated buffer
++ *	@path: caller allocated buffer of size PATH_MAX
+  *
+  *	Gives the name "/" to the sysfs_root entry; any path returned
+  *	is relative to wherever sysfs is mounted.
+- *
+- *	XXX: does no error checking on @path size
+  */
+ static char *sysfs_pathname(struct sysfs_dirent *sd, char *path)
+ {
+ 	if (sd->s_parent) {
+ 		sysfs_pathname(sd->s_parent, path);
+-		strcat(path, "/");
++		strlcat(path, "/", PATH_MAX);
+ 	}
+-	strcat(path, sd->s_name);
++	strlcat(path, sd->s_name, PATH_MAX);
+ 	return path;
+ }
+ 
+@@ -450,9 +448,11 @@ int sysfs_add_one(struct sysfs_addrm_cxt
+ 		char *path = kzalloc(PATH_MAX, GFP_KERNEL);
+ 		WARN(1, KERN_WARNING
+ 		     "sysfs: cannot create duplicate filename '%s'\n",
+-		     (path == NULL) ? sd->s_name :
+-		     strcat(strcat(sysfs_pathname(acxt->parent_sd, path), "/"),
+-		            sd->s_name));
++		     (path == NULL) ? sd->s_name
++				    : (sysfs_pathname(acxt->parent_sd, path),
++				       strlcat(path, "/", PATH_MAX),
++				       strlcat(path, sd->s_name, PATH_MAX),
++				       path));
+ 		kfree(path);
+ 	}
+ 
 
 
