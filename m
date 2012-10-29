@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761231Ab2J2VhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:37:17 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47379 "EHLO mail.kernel.org"
+	id S1761292Ab2J2Vhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:37:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47585 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932920Ab2J2VhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:00 -0400
+	id S1761118Ab2J2VhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 023/101] xhci: endianness xhci_calculate_intel_u2_timeout
-Date: Mon, 29 Oct 2012 14:34:36 -0700
-Message-Id: <20121029213242.753462318@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 051/101] USB: qcserial: fix interface-data memory leak in error path
+Date: Mon, 29 Oct 2012 14:35:04 -0700
+Message-Id: <20121029213245.926454169@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,34 +25,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 966e7a854177097083683176ced871558b631a12 upstream.
+commit 961be09e1ead58509ed4bed0d5819a15d8613d8d upstream.
 
-An le16 is accessed without conversion.
+Move interface data allocation to attach so that it is deallocated
+should usb-serial probe fail.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit e3567d2c15a7a8e2f992a5f7c7683453ca406d82 "xhci: Add Intel
-U1/U2 timeout policy."
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/qcserial.c |   31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4141,7 +4141,7 @@ static u16 xhci_calculate_intel_u2_timeo
- 			(xhci_service_interval_to_ns(desc) > timeout_ns))
- 		timeout_ns = xhci_service_interval_to_ns(desc);
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -140,7 +140,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
  
--	u2_del_ns = udev->bos->ss_cap->bU2DevExitLat * 1000;
-+	u2_del_ns = le16_to_cpu(udev->bos->ss_cap->bU2DevExitLat) * 1000ULL;
- 	if (u2_del_ns > timeout_ns)
- 		timeout_ns = u2_del_ns;
+ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ {
+-	struct usb_wwan_intf_private *data;
+ 	struct usb_host_interface *intf = serial->interface->cur_altsetting;
+ 	struct device *dev = &serial->dev->dev;
+ 	int retval = -ENODEV;
+@@ -156,13 +155,6 @@ static int qcprobe(struct usb_serial *se
+ 	ifnum = intf->desc.bInterfaceNumber;
+ 	dev_dbg(dev, "This Interface = %d\n", ifnum);
  
+-	data = kzalloc(sizeof(struct usb_wwan_intf_private),
+-					 GFP_KERNEL);
+-	if (!data)
+-		return -ENOMEM;
+-
+-	spin_lock_init(&data->susp_lock);
+-
+ 	if (nintf == 1) {
+ 		/* QDL mode */
+ 		/* Gobi 2000 has a single altsetting, older ones have two */
+@@ -255,20 +247,28 @@ done:
+ 		}
+ 	}
+ 
+-	/* Set serial->private if not returning error */
+-	if (retval == 0)
+-		usb_set_serial_data(serial, data);
+-	else
+-		kfree(data);
+-
+ 	return retval;
+ }
+ 
++static int qc_attach(struct usb_serial *serial)
++{
++	struct usb_wwan_intf_private *data;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	spin_lock_init(&data->susp_lock);
++
++	usb_set_serial_data(serial, data);
++
++	return 0;
++}
++
+ static void qc_release(struct usb_serial *serial)
+ {
+ 	struct usb_wwan_intf_private *priv = usb_get_serial_data(serial);
+ 
+-	/* Free the private data allocated in qcprobe */
+ 	usb_set_serial_data(serial, NULL);
+ 	kfree(priv);
+ }
+@@ -287,6 +287,7 @@ static struct usb_serial_driver qcdevice
+ 	.write		     = usb_wwan_write,
+ 	.write_room	     = usb_wwan_write_room,
+ 	.chars_in_buffer     = usb_wwan_chars_in_buffer,
++	.attach              = qc_attach,
+ 	.release	     = qc_release,
+ 	.port_probe          = usb_wwan_port_probe,
+ 	.port_remove	     = usb_wwan_port_remove,
 
 
