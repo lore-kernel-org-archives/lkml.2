@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761516Ab2J2VlL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:41:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48376 "EHLO mail.kernel.org"
+	id S1761567Ab2J2Vl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:41:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48535 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761399Ab2J2VlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:07 -0400
+	id S1761400Ab2J2VlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 02/54] drm/radeon: add error output if VM CS fails on cayman
-Date: Mon, 29 Oct 2012 14:40:03 -0700
-Message-Id: <20121029213803.010236471@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 15/54] xhci: Fix potential NULL ptr deref in command cancellation.
+Date: Mon, 29 Oct 2012 14:40:16 -0700
+Message-Id: <20121029213804.476628739@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -25,28 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit c71721324c612f7f040657ce9917d87f530f9784 upstream.
+commit 43a09f7fb01fa1e091416a2aa49b6c666458c1ee upstream.
 
-So we know why the CS was rejected.
+The command cancellation code doesn't check whether find_trb_seg()
+couldn't find the segment that contains the TRB to be canceled.  This
+could cause a NULL pointer deference later in the function when next_trb
+is called.  It's unlikely to happen unless something is wrong with the
+command ring pointers, so add some debugging in case it happens.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch should be backported to stable kernels as old as 3.0, that
+contain the commit b63f4053cc8aa22a98e3f9a97845afe6c15d0a0d "xHCI:
+handle command after aborting the command ring".
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/host/xhci-ring.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -2775,6 +2775,7 @@ static bool evergreen_vm_reg_valid(u32 r
- 	case CAYMAN_SQ_EX_ALLOC_TABLE_SLOTS:
- 		return true;
- 	default:
-+		DRM_ERROR("Invalid register 0x%x in CS\n", reg);
- 		return false;
- 	}
- }
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1228,6 +1228,17 @@ static void xhci_cmd_to_noop(struct xhci
+ 	cur_seg = find_trb_seg(xhci->cmd_ring->first_seg,
+ 			xhci->cmd_ring->dequeue, &cycle_state);
+ 
++	if (!cur_seg) {
++		xhci_warn(xhci, "Command ring mismatch, dequeue = %p %llx (dma)\n",
++				xhci->cmd_ring->dequeue,
++				(unsigned long long)
++				xhci_trb_virt_to_dma(xhci->cmd_ring->deq_seg,
++					xhci->cmd_ring->dequeue));
++		xhci_debug_ring(xhci, xhci->cmd_ring);
++		xhci_dbg_ring_ptrs(xhci, xhci->cmd_ring);
++		return;
++	}
++
+ 	/* find the command trb matched by cd from command ring */
+ 	for (cmd_trb = xhci->cmd_ring->dequeue;
+ 			cmd_trb != xhci->cmd_ring->enqueue;
 
 
