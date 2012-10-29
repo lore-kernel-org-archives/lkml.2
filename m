@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897Ab2J2UOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:14:22 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47207 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150Ab2J2UOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:14:18 -0400
-Message-ID: <508EE395.9010709@ursulin.net>
-Date: Mon, 29 Oct 2012 20:14:13 +0000
-From: Tvrtko Ursulin <tvrtko@ursulin.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Milan Broz <gmazyland@gmail.com>
-CC: dm-crypt@saout.de, linux-kernel@vger.kernel.org, okozina@redhat.com
-Subject: Re: [dm-crypt] cryptsetup not working under 3.6 - regression from
- 3.4?
-References: <50830D33.5050807@ursulin.net> <5083C61C.5090807@gmail.com> <5083E4A8.3060501@ursulin.net> <5083E87B.2080908@gmail.com> <5083EC61.8070505@ursulin.net> <50844D01.9090805@gmail.com> <5084551E.5040304@ursulin.net> <508ED985.5060301@ursulin.net> <508EDD6E.7030908@gmail.com>
-In-Reply-To: <508EDD6E.7030908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760671Ab2J2UJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42670 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760165Ab2J2UJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:00 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Johan Hovold <jhovold@gmail.com>, support@connecttech.com
+Subject: [ 15/34] USB: whiteheat: fix memory leak in error path
+Date: Mon, 29 Oct 2012 13:07:46 -0700
+Message-Id: <20121029200422.249622411@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
+References: <20121029200420.550338074@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/12 19:47, Milan Broz wrote:
-> On 10/29/2012 08:31 PM, Tvrtko Ursulin wrote:
->> Just tried 3.6.4 and it is still broken. Is there anything else I could
->> try to debug this?
->
-> See response from response from Ondra on dmcrypt list - your kernel config
-> is perhaps broken.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-I don't think that reached me - perhaps I was not copied.
+------------------
 
-Weird yes, I mean no one can spot anything bad with my config...
+From: Johan Hovold <jhovold@gmail.com>
 
-> Please use fresh checkout, run make oldconfig and try again.
-> (Many people use 3.6 already and there is no other report.)
+commit c129197c99550d356cf5f69b046994dd53cd1b9d upstream.
 
-... and I just used it today to configure a fresh 3.6.4 (plus -rt10 
-patches) without a problem.
+Make sure command buffer is deallocated in case of errors during attach.
 
-Unless RT patchset is the culprit. Hm.. that would be unexpected, but I 
-guess it is worth a shot. I'll let you know what happens without -rt.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: <support@connecttech.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks,
+---
+ drivers/usb/serial/whiteheat.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Tvrtko
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -576,6 +576,7 @@ no_firmware:
+ 		"%s: please contact support@connecttech.com\n",
+ 		serial->type->description);
+ 	kfree(result);
++	kfree(command);
+ 	return -ENODEV;
+ 
+ no_command_private:
+
 
