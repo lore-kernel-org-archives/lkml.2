@@ -1,107 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab2J2CMr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:12:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29496 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756205Ab2J2CMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:12:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,668,1344236400"; 
-   d="scan'208";a="239615421"
-Subject: [PATCH] hrtimer: Printing timer info when hitting BUG_ON()
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: tglx@linutronix.de, mingo@kernel.org, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, fei.li@intel.com,
-        yanmin_zhang@linux.intel.com, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Oct 2012 19:02:31 +0800
-Message-ID: <1351508551.15558.1428.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757572Ab2J2COo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:14:44 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62211 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757484Ab2J2COl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:14:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121029020124.GP29378@dastard>
+References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
+	<1351177747-19389-4-git-send-email-zwu.kernel@gmail.com>
+	<20121028075520.GA14554@gmail.com>
+	<CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
+	<20121029020124.GP29378@dastard>
+Date: Mon, 29 Oct 2012 10:14:39 +0800
+Message-ID: <CAEH94LhyW8THc1JNgaCeptiN9ErUHALrpsT0BK=bXa8gMq3iRQ@mail.gmail.com>
+Subject: Re: [RFC v4 03/15] vfs,hot_track: add the function for collecting I/O frequency
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 29, 2012 at 10:01 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Sun, Oct 28, 2012 at 09:51:48PM +0800, Zhi Yong Wu wrote:
+>> On Sun, Oct 28, 2012 at 3:55 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+>> > Hi Zhiyong,
+>> >
+>> > On Thu, Oct 25, 2012 at 11:08:55PM +0800, zwu.kernel@gmail.com wrote:
+>> > [snip]
+>> >> @@ -199,6 +342,54 @@ err:
+>> >>  }
+>> >>
+>> >>  /*
+>> >> + * Main function to update access frequency from read/writepage(s) hooks
+>> >> + */
+>> >> +inline void hot_update_freqs(struct inode *inode, u64 start,
+>> >> +                     u64 len, int rw)
+>> >
+>> > This function seems too big.  So we really need to inline this function?
+>> As Dave said in his comments, it will add a function call
+>> overhead even when tracking is not enabled. a static inline function
+>> will just result in no extra overhead other than the if
+>> statement....
+>
+> I don't think I said that with respect to this code. I think I said
+> it w.r.t. a define or a small wrapper that decides to call
+> hot_update_freqs().  A static inline fucntion should only be a
+> couple of lines of code at most.
+>
+> A static function, OTOH, can be inlined by the compiler if the
+> compiler thinks that is a win. But....
+thanks for your explaination at first.
+>
+> .....
+>
+>> >> +EXPORT_SYMBOL_GPL(hot_update_freqs);
+>
+> ... it's an exported function, so it can't be inline or static, so
+> using "inline" is wrong whatever way you look at it. ;)
+ah, but i' m surprised by why the compiler find this error.
 
-We encounted one BUG_ON() issue at function __run_hrtimer(),
-but the panic info is not enough to find out which hrtimer
-users use the hrtimer wrongly.
-(in this BUG_ON case, it is callback running at the same time
-hrtimer_start() is executed on different context.)
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-We can print basic timer info before BUG(), it is easy to find
-out which hrtimer user has fault, the output info is like below:
 
-<3>[   41.118552] timer info: state/3, func/test_timer_cb
-<3>[   41.118618] timer stats: pid/786(sh), site/hrtimer_start
-<0>[   41.118670] ------------[ cut here ]------------
-<2>[   41.118691] kernel BUG at /root/r4_code/hardware/intel/linux-2.6/kernel/hrtimer.c:1260!
-<0>[   41.118715] invalid opcode: 0000 [#1] PREEMPT SMP
 
-The infos of callback/state are very helpful for debugging this BUG_ON().
-
-Signed-off-by: Li Fei <fei.li@intel.com>
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- kernel/hrtimer.c |   34 +++++++++++++++++++++++++++++++++-
- 1 files changed, 33 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6db7a5e..388e8b2 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1204,6 +1204,35 @@ int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp)
- }
- EXPORT_SYMBOL_GPL(hrtimer_get_res);
- 
-+/*
-+ * dump_hrtimer_callinfo - print hrtimer information including:
-+ * state, callback function, pid and start_site.
-+*/
-+static void dump_hrtimer_callinfo(struct hrtimer *timer)
-+{
-+
-+	char symname[KSYM_NAME_LEN];
-+
-+	if (lookup_symbol_name((unsigned long)(timer->function), symname) < 0) {
-+		pr_err("timer info: state/%lx, func/%pK\n",
-+			timer->state, timer->function);
-+	} else {
-+		pr_err("timer info: state/%lx, func/%s",
-+			timer->state, symname);
-+	}
-+
-+#ifdef CONFIG_TIMER_STATS
-+	if (lookup_symbol_name((unsigned long)(timer->start_site),
-+						symname) < 0) {
-+		pr_err("timer stats: pid/%d(%s), site/%pK\n",
-+			timer->start_pid, timer->start_comm, timer->start_site);
-+	} else {
-+		pr_err("timer stats: pid/%d(%s), site/%s\n",
-+			timer->start_pid, timer->start_comm, symname);
-+	}
-+#endif
-+}
-+
- static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- {
- 	struct hrtimer_clock_base *base = timer->base;
-@@ -1235,7 +1264,10 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- 	 * hrtimer_start_range_ns() or in hrtimer_interrupt()
- 	 */
- 	if (restart != HRTIMER_NORESTART) {
--		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
-+		if (timer->state != HRTIMER_STATE_CALLBACK) {
-+			dump_hrtimer_callinfo(timer);
-+			BUG();
-+		}
- 		enqueue_hrtimer(timer, base);
- 	}
- 
 -- 
-1.7.0.4
+Regards,
 
-
-
+Zhi Yong Wu
