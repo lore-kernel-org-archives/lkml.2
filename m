@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708Ab2J2UPw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:15:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42648 "EHLO mail.kernel.org"
+	id S1760666Ab2J2UQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:16:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42639 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760585Ab2J2UI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:57 -0400
+	id S1760632Ab2J2UIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleksandr Chumachenko <ledest@gmail.com>,
-        Michael Shigorin <mike@osdn.org.ua>
-Subject: [ 13/34] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
-Date: Mon, 29 Oct 2012 13:07:44 -0700
-Message-Id: <20121029200422.029374325@linuxfoundation.org>
+        Anisse Astier <anisse@astier.eu>
+Subject: [ 12/34] ehci: Add yet-another Lucid nohandoff pci quirk
+Date: Mon, 29 Oct 2012 13:07:43 -0700
+Message-Id: <20121029200421.929261654@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,39 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Shigorin <mike@osdn.org.ua>
+From: Anisse Astier <anisse@astier.eu>
 
-commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
+commit 8daf8b6086f9d575200cd0aa3797e26137255609 upstream.
 
-This commit sets removable subclass for Casio EX-N1 digital camera.
+Board name changed on another shipping Lucid tablet.
 
-The patch has been tested within an ALT Linux kernel:
-http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
-
-See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
-
-Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
-Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/host/pci-quirks.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9
- 		USB_SC_8070, USB_PR_CB, NULL,
- 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -546,6 +546,13 @@ static const struct dmi_system_id __devi
+ 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
++	{
++		/*  Pegatron Lucid (Ordissimo) */
++		.matches = {
++			DMI_MATCH(DMI_BOARD_NAME, "Ordissimo"),
++			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
++		},
++	},
+ 	{ }
+ };
  
-+/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
-+UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
-+		"Casio",
-+		"EX-N1 DigitalCamera",
-+		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
-+
- /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
- UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
- 		"Samsung",
 
 
