@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760926Ab2J2VLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:11:46 -0400
-Received: from mail.kernel.org ([198.145.19.201]:46354 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758546Ab2J2VLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:11:44 -0400
-Date: Mon, 29 Oct 2012 14:11:42 -0700
-From: Greg KH <greg@kroah.com>
-To: Richard Retanubun <richardretanubun@ruggedcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Tang Nguyen <TangNguyen@ruggedcom.com>,
-        "m.grzeschik@pengutronix.de" <m.grzeschik@pengutronix.de>,
-        Arvid Brodin <Arvid.Brodin@xdin.com>,
-        linux-usb mailing list <linux-usb@vger.kernel.org>,
-        "bigeasy@linutronix.de" <bigeasy@linutronix.de>
-Subject: Re: kmemleak report on isp1763 and sierra MC8705
-Message-ID: <20121029211142.GA31351@kroah.com>
-References: <508B0743.9040806@ruggedcom.com>
- <20121026233509.GA26646@kroah.com>
- <508EEB48.9070508@ruggedcom.com>
+	id S1760982Ab2J2VMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:12:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48743 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759133Ab2J2VMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:12:19 -0400
+Date: Mon, 29 Oct 2012 22:12:13 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: wim@iguana.be, grant.likely@secretlab.ca, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] watchdog: Support imx watchdog on SOC_IMX53
+Message-ID: <20121029211213.GY1641@pengutronix.de>
+References: <1351164513-27999-1-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508EEB48.9070508@ruggedcom.com>
+In-Reply-To: <1351164513-27999-1-git-send-email-stigge@antcom.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:11:58 up 128 days, 12:23, 39 users,  load average: 0.33, 0.33,
+ 0.38
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 04:47:04PM -0400, Richard Retanubun wrote:
-> On 26/10/12 07:35 PM, Greg KH wrote:
-> >On Fri, Oct 26, 2012 at 05:57:23PM -0400, Richard Retanubun wrote:
-> >>Hi Guys,
-> >>
-> >>I am debugging a reported kmemleak involving a sierra wireless MC8705 connected
-> >>through isp1763 on powerpc linux-3.0.22
-> >
-> >Does this also happen on 3.6.3?
-> >
-> >thanks,
-> >
-> >greg k-h
+On Thu, Oct 25, 2012 at 01:28:33PM +0200, Roland Stigge wrote:
+> This patch fixes watchdog support after devicetree switch for imx53
 > 
-> Hi Greg,
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+Applied, thanks
+
+Sascha
+
 > 
-> Unfortunately, it is not trivial for us to update the kernel on this platform,
-> Is there a specific experiment/patch I should look at for 3.0.22?
+> ---
+>  arch/arm/mach-imx/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-2.6.orig/arch/arm/mach-imx/Kconfig
+> +++ linux-2.6/arch/arm/mach-imx/Kconfig
+> @@ -739,6 +739,7 @@ config	SOC_IMX53
+>  	select ARCH_MX5
+>  	select ARCH_MX53
+>  	select HAVE_CAN_FLEXCAN if CAN
+> +	select IMX_HAVE_PLATFORM_IMX2_WDT
+>  	select PINCTRL
+>  	select PINCTRL_IMX53
+>  	select SOC_IMX5
+> 
 
-I have no idea, given that 3.0.22 is based on 18 month old kernel, tens
-of thousands of patches ago.
-
-You are on your own here, sorry.
-
-Best of luck,
-
-greg k-h
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
