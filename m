@@ -1,128 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab2J2LFY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:05:24 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51657 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758578Ab2J2LFW (ORCPT
+	id S1758660Ab2J2LFc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:05:32 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:52258 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758578Ab2J2LF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:05:22 -0400
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 4/7] staging/gdm72xx: Use dev_ printks in gdm_sdio.c
-Date: Mon, 29 Oct 2012 20:05:16 +0900
-Message-Id: <1351508716-1822-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1351508627-1713-1-git-send-email-yamanetoshi@gmail.com>
-References: <1351508627-1713-1-git-send-email-yamanetoshi@gmail.com>
+	Mon, 29 Oct 2012 07:05:27 -0400
+Date: Mon, 29 Oct 2012 12:05:19 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] s390: Add pmd_mknotpresent()
+Message-ID: <20121029110519.GA22569@gmail.com>
+References: <20121018172201.b81dcc8fe40868256f532364@canb.auug.org.au>
+ <20121018182642.2a541275@thinkpad>
+ <20121028131014.GA10754@gmail.com>
+ <20121029084956.12b512e6@mschwide>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121029084956.12b512e6@mschwide>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed below checkpatch warnings.
-- WARNING: Prefer netdev_err(netdev, ... then dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-- WARNING: Prefer netdev_info(netdev, ... then dev_info(dev, ... then pr_info(...  to printk(KERN_INFO ...
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/gdm72xx/gdm_sdio.c |   29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+* Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index ca38d71..8b8ed98 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -157,7 +157,7 @@ static int init_sdio(struct sdiowm_dev *sdev)
- 
- 	tx->sdu_buf = kmalloc(SDU_TX_BUF_SIZE, GFP_KERNEL);
- 	if (tx->sdu_buf == NULL) {
--		printk(KERN_ERR "Failed to allocate SDU tx buffer.\n");
-+		dev_err(&sdev->func->dev, "Failed to allocate SDU tx buffer.\n");
- 		goto fail;
- 	}
- 
-@@ -186,7 +186,7 @@ static int init_sdio(struct sdiowm_dev *sdev)
- 
- 	rx->rx_buf = kmalloc(RX_BUF_SIZE, GFP_KERNEL);
- 	if (rx->rx_buf == NULL) {
--		printk(KERN_ERR "Failed to allocate rx buffer.\n");
-+		dev_err(&sdev->func->dev, "Failed to allocate rx buffer.\n");
- 		goto fail;
- 	}
- 
-@@ -246,7 +246,8 @@ static void send_sdio_pkt(struct sdio_func *func, u8 *data, int len)
- 		ret = sdio_memcpy_toio(func, 0, data, n);
- 		if (ret < 0) {
- 			if (ret != -ENOMEDIUM)
--				printk(KERN_ERR "gdmwms: %s error: ret = %d\n",
-+				dev_err(&func->dev,
-+					"gdmwms: %s error: ret = %d\n",
- 					__func__, ret);
- 			goto end_io;
- 		}
-@@ -259,7 +260,8 @@ static void send_sdio_pkt(struct sdio_func *func, u8 *data, int len)
- 		ret = sdio_memcpy_toio(func, 0, data + n, remain);
- 		if (ret < 0) {
- 			if (ret != -ENOMEDIUM)
--				printk(KERN_ERR "gdmwms: %s error: ret = %d\n",
-+				dev_err(&func->dev,
-+					"gdmwms: %s error: ret = %d\n",
- 					__func__, ret);
- 			goto end_io;
- 		}
-@@ -522,13 +524,14 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 
- 	ret = sdio_memcpy_fromio(func, hdr, 0x0, TYPE_A_LOOKAHEAD_SIZE);
- 	if (ret) {
--		printk(KERN_ERR "Cannot read from function %d\n", func->num);
-+		dev_err(&func->dev,
-+			"Cannot read from function %d\n", func->num);
- 		goto done;
- 	}
- 
- 	len = (hdr[2] << 16) | (hdr[1] << 8) | hdr[0];
- 	if (len > (RX_BUF_SIZE - TYPE_A_HEADER_SIZE)) {
--		printk(KERN_ERR "Too big Type-A size: %d\n", len);
-+		dev_err(&func->dev, "Too big Type-A size: %d\n", len);
- 		goto done;
- 	}
- 
-@@ -562,8 +565,8 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 		n = blocks * func->cur_blksize;
- 		ret = sdio_memcpy_fromio(func, buf, 0x0, n);
- 		if (ret) {
--			printk(KERN_ERR "Cannot read from function %d\n",
--				func->num);
-+			dev_err(&func->dev,
-+				"Cannot read from function %d\n", func->num);
- 			goto done;
- 		}
- 		buf += n;
-@@ -573,8 +576,8 @@ static void gdm_sdio_irq(struct sdio_func *func)
- 	if (remain) {
- 		ret = sdio_memcpy_fromio(func, buf, 0x0, remain);
- 		if (ret) {
--			printk(KERN_ERR "Cannot read from function %d\n",
--				func->num);
-+			dev_err(&func->dev,
-+				"Cannot read from function %d\n", func->num);
- 			goto done;
- 		}
- 	}
-@@ -637,9 +640,9 @@ static int sdio_wimax_probe(struct sdio_func *func,
- 	struct phy_dev *phy_dev = NULL;
- 	struct sdiowm_dev *sdev = NULL;
- 
--	printk(KERN_INFO "Found GDM SDIO VID = 0x%04x PID = 0x%04x...\n",
--			func->vendor, func->device);
--	printk(KERN_INFO "GCT WiMax driver version %s\n", DRIVER_VERSION);
-+	dev_info(&func->dev, "Found GDM SDIO VID = 0x%04x PID = 0x%04x...\n",
-+		 func->vendor, func->device);
-+	dev_info(&func->dev, "GCT WiMax driver version %s\n", DRIVER_VERSION);
- 
- 	sdio_claim_host(func);
- 	sdio_enable_func(func);
--- 
-1.7.9.5
+> On Sun, 28 Oct 2012 14:10:14 +0100
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > There's a related problem on s390: other THP implementations 
+> > have pmd_mknotpresent() while s390 not, resulting in:
+> > 
+> >   mm/huge_memory.c:1543:2: error: implicit declaration of function 'pmd_mknotpresent'
+> > 
+> > The (untested!) patch below adds the s390 version of this 
+> > method.
+> > 
+> > Gerald, Martin, did I get the S390 details right?
+> 
+> This won't work I'm afraid. S390 uses invalid bits which need 
+> to be set to make an entry not present. Just setting the 
+> _SEGMENT_ENTRY_INV bit is not good enough either, there is 
+> _HPAGE_TYPE_NONE to consider. The patch to fix this for 
+> pmd_none & pmd_present just got added to the s390 tree on 
+> kernel.org:
+>
+> https://git.kernel.org/?p=linux/kernel/git/s390/linux.git;a=shortlog;h=refs/heads/fixes
+> 
+> Now, if pmd_mknotpresent is supposed to make the entry invalid 
+> so that pmd_present will return false the function needs to do 
+> two things, 1) set the _SEGMENT_ENTRY_INV bit, and 2) clear 
+> the _SEGMENT_ENTRY_RO bit.
 
+Would be nice if you could send me your suggested 
+pmd_mknotpresent().
+
+(Writing it into the email would be enough, I can turn it into a 
+patch - but a patch would be welcome as well.)
+
+Thanks,
+
+	Ingo
