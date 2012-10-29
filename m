@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761096Ab2J2XQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:16:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab2J2XQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:16:40 -0400
-Message-ID: <1351552559.3810.2.camel@turiel>
-Subject: Re: Nouveau regression between 3.6 and 3.7-rc3: driver stuck at
- "running init tables"
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Date: Tue, 30 Oct 2012 09:15:59 +1000
-In-Reply-To: <20121029230647.GA10369@kashmir>
-References: <20121029230647.GA10369@kashmir>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761178Ab2J2XXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:23:31 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:47314 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720Ab2J2XX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 19:23:29 -0400
+From: Dmitry Osipenko <digetx@gmail.com>
+To: swarren@wwwdotorg.org
+Cc: digetx@gmail.com, vinod.koul@intel.com, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V2] dma: tegra: avoid channel lock up after free
+Date: Tue, 30 Oct 2012 03:20:33 +0400
+Message-Id: <1351552833-4132-1-git-send-email-digetx@gmail.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <508EA04D.5050805@wwwdotorg.org>
+References: <508EA04D.5050805@wwwdotorg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-10-30 at 00:06 +0100, Mathieu Chouquet-Stringer wrote:
-> 	Hi Ben,
-Hey Mathieu,
+Fixed channel "lock up" after free.
 
-> 
-> I haven't been able to boot any 3.7 kernels since there's a regression
-> which freezes my machine hard (a lenovo t530 with the dreaded optimus
-> thing).
-> 
-> 3.6 used to work but 3.7 get stuck at (copied by hand but I have an ugly
-> screenshot if you'd like):
-> nouveau [   VBIOS][0000:01:00.0] running init tables
-Are you able to go back to the current master, and get me a
-log/screenshot with "nouveau.debug=trace" appended to your kernel
-options?
+Lock scenario: Channel 1 was allocated and prepared as slave_sg, used and freed.
+Now preparation of cyclic dma on channel 1 will fail with err "DMA configuration
+conflict" because tdc->isr_handler still selected to handle_once_dma_done.
 
-Thanks,
-Ben.
+This happens because tegra_dma_abort_all() won't be called on channel freeing
+if pending list is empty or channel not busy. We need to clear isr_handler
+on channel freeing to avoid locking. Also I added small optimization to prepare
+functions, so current channel type checked before making allocations.
 
-> 
-> Note my uefi settings weren't modified during the whole thing.
-> 
-> I've bisected the issue and git found that commit 4196fa is the one
-> causing trouble (looking at the diff, it's pretty big):
-> 
-> Author: Ben Skeggs <bskeggs@redhat.com>
-> Date:   Tue Jul 10 14:36:38 2012 +1000
-> 
->     drm/nouveau/i2c: port to subdev interfaces
-> 
->     v2/v3: Ben Skeggs <bskeggs@redhat.com>
->     - fix typo in default bus selection
->     - fix accidental loss of destructor
-> 
->     v4: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
->     - fix typo causing incorrect default i2c port settings when no BMP data
-> 
-> While bisecting the matter, I had a couple of messages like the
-> following (6 actually).  The addresses were always different (I could
-> send another ugly screenshot if you'd like).
-> 
-> Condition still not met after 2000ms, skipping following opcodes
-> 
-> followed by:
-> 
-> Parsing VBIOUS init table 1 at offset 0x8183
-> 
-> At this point, the kernel was frozen hard (sysrq wasn't working)...
-> 
-> I'm attaching the output of lspci and my kernel config.
-> 
-> If you'd like me to add some debug statements or if you need more info,
-> feel free, I'd love to help.
-> 
-> Cheers,
-> 
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+---
+ drivers/dma/tegra20-apb-dma.c | 60 ++++++++++++++++++-------------------------
+ 1 file changed, 25 insertions(+), 35 deletions(-)
 
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 4d816be..5a557af 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -681,11 +681,6 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
+ 	bool was_busy;
+ 
+ 	spin_lock_irqsave(&tdc->lock, flags);
+-	if (list_empty(&tdc->pending_sg_req)) {
+-		spin_unlock_irqrestore(&tdc->lock, flags);
+-		return;
+-	}
+-
+ 	if (!tdc->busy)
+ 		goto skip_dma_stop;
+ 
+@@ -896,6 +891,15 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_slave_sg(
+ 		return NULL;
+ 	}
+ 
++	/*
++	 * Make sure that mode should not be conflicting with currently
++	 * configured mode.
++	 */
++	if (tdc->isr_handler && tdc->isr_handler != handle_once_dma_done) {
++		dev_err(tdc2dev(tdc), "DMA configured in cyclic mode\n");
++		return NULL;
++	}
++
+ 	ret = get_transfer_param(tdc, direction, &apb_ptr, &apb_seq, &csr,
+ 				&burst_size, &slave_bw);
+ 	if (ret < 0)
+@@ -968,20 +972,9 @@ static struct dma_async_tx_descriptor *tegra_dma_prep_slave_sg(
+ 	if (flags & DMA_CTRL_ACK)
+ 		dma_desc->txd.flags = DMA_CTRL_ACK;
+ 
+-	/*
+-	 * Make sure that mode should not be conflicting with currently
+-	 * configured mode.
+-	 */
+-	if (!tdc->isr_handler) {
+-		tdc->isr_handler = handle_once_dma_done;
+-		tdc->cyclic = false;
+-	} else {
+-		if (tdc->cyclic) {
+-			dev_err(tdc2dev(tdc), "DMA configured in cyclic mode\n");
+-			tegra_dma_desc_put(tdc, dma_desc);
+-			return NULL;
+-		}
+-	}
++
++	tdc->isr_handler = handle_once_dma_done;
++	tdc->cyclic = false;
+ 
+ 	return &dma_desc->txd;
+ }
+@@ -1024,6 +1017,16 @@ struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+ 	}
+ 
+ 	/*
++	 * Make sure that mode should not be conflicting with currently
++	 * configured mode.
++	 */
++	if (tdc->isr_handler &&
++			tdc->isr_handler != handle_cont_sngl_cycle_dma_done) {
++		dev_err(tdc2dev(tdc), "DMA configuration conflict\n");
++		return NULL;
++	}
++
++	/*
+ 	 * We only support cycle transfer when buf_len is multiple of
+ 	 * period_len.
+ 	 */
+@@ -1097,20 +1100,8 @@ struct dma_async_tx_descriptor *tegra_dma_prep_dma_cyclic(
+ 	sg_req->last_sg = true;
+ 	dma_desc->txd.flags = 0;
+ 
+-	/*
+-	 * Make sure that mode should not be conflicting with currently
+-	 * configured mode.
+-	 */
+-	if (!tdc->isr_handler) {
+-		tdc->isr_handler = handle_cont_sngl_cycle_dma_done;
+-		tdc->cyclic = true;
+-	} else {
+-		if (!tdc->cyclic) {
+-			dev_err(tdc2dev(tdc), "DMA configuration conflict\n");
+-			tegra_dma_desc_put(tdc, dma_desc);
+-			return NULL;
+-		}
+-	}
++	tdc->isr_handler = handle_cont_sngl_cycle_dma_done;
++	tdc->cyclic = true;
+ 
+ 	return &dma_desc->txd;
+ }
+@@ -1145,8 +1136,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ 
+ 	dev_dbg(tdc2dev(tdc), "Freeing channel %d\n", tdc->id);
+ 
+-	if (tdc->busy)
+-		tegra_dma_terminate_all(dc);
++	tegra_dma_terminate_all(dc);
+ 
+ 	spin_lock_irqsave(&tdc->lock, flags);
+ 	list_splice_init(&tdc->pending_sg_req, &sg_req_list);
+-- 
+1.7.12
 
