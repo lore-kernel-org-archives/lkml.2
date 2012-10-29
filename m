@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab2J2KLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:11:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58266 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758041Ab2J2KLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:11:23 -0400
-Date: Mon, 29 Oct 2012 11:11:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] add some drop_caches documentation and info messsge
-Message-ID: <20121029101120.GC4326@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Dave Hansen <dave@linux.vnet.ibm.com>,
-	Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20121012125708.GJ10110@dhcp22.suse.cz>
- <20121024210600.GA17037@liondog.tnic>
- <20121024141303.0797d6a1.akpm@linux-foundation.org>
- <1787395.7AzIesGUbB@vostro.rjw.lan>
- <20121024181752.de011615.akpm@linux-foundation.org>
- <alpine.LRH.2.00.1210290958450.10392@twin.jikos.cz>
- <20121029095819.GA4326@liondog.tnic>
- <alpine.LNX.2.00.1210291100470.19184@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1758460Ab2J2KNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:13:30 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:36169 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232Ab2J2KN3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:13:29 -0400
+Date: Mon, 29 Oct 2012 11:13:23 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
+        eranian@google.com, mingo@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 01/33] perf, x86: Add PEBSv2 record support
+Message-ID: <20121029101323.GR16230@one.firstfloor.org>
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org> <1351283415-13170-2-git-send-email-andi@firstfloor.org> <874nld8ubf.fsf@sejong.aot.lge.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1210291100470.19184@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <874nld8ubf.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 11:01:59AM +0100, Jiri Kosina wrote:
-> Well if the point of dropping caches is lowering the resume time, then
-> the point is rendered moot as soon as you switch to your browser and
-> have to wait noticeable amount of time until it starts reacting.
+On Mon, Oct 29, 2012 at 07:08:04PM +0900, Namhyung Kim wrote:
+> Hi Andi,
+> 
+> On Fri, 26 Oct 2012 13:29:43 -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> >
+> > Add support for the v2 PEBS format. It has a superset of the v1 PEBS
+> > fields, but has a longer record so we need to adjust the code paths.
+> >
+> > The main advantage is the new "EventingRip" support which directly
+> > gives the instruction, not off-by-one instruction. So with precise == 2
+> > we use that directly and don't try to use LBRs and walking basic blocks.
+> > This lowers the overhead significantly.
+> 
+> That means it can support precise == 3?
 
-Not the resume time - the suspend time. If, say, one has 8Gb of memory
-and Linux nicely spreads all over it in caches, you don't want to wait
-too long for the suspend image creation.
+No. It's still 2
 
-And nowadays, since you can have 8Gb in a laptop, you really want to
-keep that image minimal so that suspend-to-disk is quick.
+I tried to introduced precise == 3 some time ago for PDIR, but it was
+rejected. 
 
-The penalty of faulting everything back in is a cost we'd be willing to
-pay, I guess.
-
-Thanks.
+-Andi
 
 -- 
-Regards/Gruss,
-    Boris.
+ak@linux.intel.com -- Speaking for myself only.
