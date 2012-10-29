@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab2J2Ky6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:54:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:26715 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab2J2Ky5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:54:57 -0400
-X-IronPort-AV: E=Sophos;i="4.80,671,1344182400"; 
-   d="scan'208";a="6092350"
-Message-ID: <508E61D6.3080101@cn.fujitsu.com>
-Date: Mon, 29 Oct 2012 19:00:38 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1756128Ab2J2K4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:56:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57005 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2J2K4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:56:48 -0400
+Date: Mon, 29 Oct 2012 03:56:13 -0700
+From: tip-bot for Johannes Weiner <hannes@cmpxchg.org>
+Message-ID: <tip-9db1bdb2eaa80a787f55806603b38d0068a89f1e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
+        aarcange@redhat.com, zliu@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
+        zliu@redhat.com, aarcange@redhat.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:numa/core] sched, numa, mm:
+  Add memcg support to do_huge_pmd_numa_page()
+Git-Commit-ID: 9db1bdb2eaa80a787f55806603b38d0068a89f1e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, bhelgaas@google.com,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3 1/2] update mem= option's spec according to its implementation
-References: <1351500524-23907-1-git-send-email-wency@cn.fujitsu.com>	<1351500524-23907-2-git-send-email-wency@cn.fujitsu.com> <CAFLxGvyOo065sc2QeTkFsPotJbJEgEAV_ktvz5Z2gYpD-Ft7WA@mail.gmail.com>
-In-Reply-To: <CAFLxGvyOo065sc2QeTkFsPotJbJEgEAV_ktvz5Z2gYpD-Ft7WA@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 18:54:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 18:54:14,
-	Serialize complete at 2012/10/29 18:54:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 29 Oct 2012 03:56:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 10/29/2012 06:48 PM, richard -rw- weinberger Wrote:
-> On Mon, Oct 29, 2012 at 9:48 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
->> Current mem= implementation seems buggy because specification and
->> implementation doesn't match. Current mem= has been working
->> for many years and it's not buggy, it works as expected. So
->> we should update the specification.
->>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
-> 
-> So, is this an ACK or not?
-> 
+Commit-ID:  9db1bdb2eaa80a787f55806603b38d0068a89f1e
+Gitweb:     http://git.kernel.org/tip/9db1bdb2eaa80a787f55806603b38d0068a89f1e
+Author:     Johannes Weiner <hannes@cmpxchg.org>
+AuthorDate: Thu, 25 Oct 2012 12:49:51 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 29 Oct 2012 07:54:23 +0100
 
-I don't know.
+sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
 
-Here is the origin message:
+Add memory control group support to hugepage migration.
 
-At 06/15/2012 04:22 AM, Rob Landley Wrote:
-> I have no objection to this but can't confirm it's true or not without
-> an awful lot more digging through the code I don't have time for right
-> now. (All the x86-32 machines I've used just had the 640k->1m hole and
-> the rest was contiguous memory, so the behavior would be the same either
-> way...)
-> 
-> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
-> 
-> Rob
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Zhouping Liu <zliu@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-rDk9mgpoyhZlwh2xhlykvgnp@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7361fd9..1fc805e 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -742,6 +742,7 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			   unsigned int flags, pmd_t entry)
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct mem_cgroup *memcg = NULL;
+ 	struct page *new_page = NULL;
+ 	struct page *page = NULL;
+ 	int node, lru;
+@@ -832,6 +833,14 @@ migrate:
+ 
+ 		return;
+ 	}
++	/*
++	 * Traditional migration needs to prepare the memcg charge
++	 * transaction early to prevent the old page from being
++	 * uncharged when installing migration entries.  Here we can
++	 * save the potential rollback and start the charge transfer
++	 * only when migration is already known to end successfully.
++	 */
++	mem_cgroup_prepare_migration(page, new_page, &memcg);
+ 
+ 	entry = mk_pmd(new_page, vma->vm_page_prot);
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+@@ -842,6 +851,12 @@ migrate:
+ 	set_pmd_at(mm, haddr, pmd, entry);
+ 	update_mmu_cache_pmd(vma, address, entry);
+ 	page_remove_rmap(page);
++	/*
++	 * Finish the charge transaction under the page table lock to
++	 * prevent split_huge_page() from dividing up the charge
++	 * before it's fully transferred to the new page.
++	 */
++	mem_cgroup_end_migration(memcg, page, new_page, true);
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	put_page(page);			/* Drop the rmap reference */
