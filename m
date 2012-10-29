@@ -1,188 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab2J2CAs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:00:48 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59040 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab2J2CAr (ORCPT
+	id S1757513Ab2J2CBk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:01:40 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:8006 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753504Ab2J2CBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:00:47 -0400
-X-AuditID: 9c930197-b7c4aae000004160-54-508de34daf7d
-Date: Mon, 29 Oct 2012 11:06:31 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 4/5] mm, highmem: makes flush_all_zero_pkmaps() return
- index of last flushed entry
-Message-ID: <20121029020631.GI15767@bbox>
-References: <Yes>
- <1351451576-2611-1-git-send-email-js1304@gmail.com>
- <1351451576-2611-5-git-send-email-js1304@gmail.com>
+	Sun, 28 Oct 2012 22:01:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsEMAOjijVB5LM3e/2dsb2JhbABEhS+3OIV3gQmCHgEBBTocIxAIAxguFA0YAyETHodWAw6xUA2JVBSKemeGXQOUH4FUiUiBaoURgwM
+Date: Mon, 29 Oct 2012 13:01:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [RFC v4 03/15] vfs,hot_track: add the function for collecting
+ I/O frequency
+Message-ID: <20121029020124.GP29378@dastard>
+References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
+ <1351177747-19389-4-git-send-email-zwu.kernel@gmail.com>
+ <20121028075520.GA14554@gmail.com>
+ <CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351451576-2611-5-git-send-email-js1304@gmail.com>
+In-Reply-To: <CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 04:12:55AM +0900, Joonsoo Kim wrote:
-> In current code, after flush_all_zero_pkmaps() is invoked,
-> then re-iterate all pkmaps. It can be optimized if flush_all_zero_pkmaps()
-> return index of flushed entry. With this index,
-> we can immediately map highmem page to virtual address represented by index.
-> So change return type of flush_all_zero_pkmaps()
-> and return index of last flushed entry.
-> 
-> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> 
-> diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-> index ef788b5..0683869 100644
-> --- a/include/linux/highmem.h
-> +++ b/include/linux/highmem.h
-> @@ -32,6 +32,7 @@ static inline void invalidate_kernel_vmap_range(void *vaddr, int size)
->  
->  #ifdef CONFIG_HIGHMEM
->  #include <asm/highmem.h>
-> +#define PKMAP_INDEX_INVAL (-1)
+On Sun, Oct 28, 2012 at 09:51:48PM +0800, Zhi Yong Wu wrote:
+> On Sun, Oct 28, 2012 at 3:55 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
+> > Hi Zhiyong,
+> >
+> > On Thu, Oct 25, 2012 at 11:08:55PM +0800, zwu.kernel@gmail.com wrote:
+> > [snip]
+> >> @@ -199,6 +342,54 @@ err:
+> >>  }
+> >>
+> >>  /*
+> >> + * Main function to update access frequency from read/writepage(s) hooks
+> >> + */
+> >> +inline void hot_update_freqs(struct inode *inode, u64 start,
+> >> +                     u64 len, int rw)
+> >
+> > This function seems too big.  So we really need to inline this function?
+> As Dave said in his comments, it will add a function call
+> overhead even when tracking is not enabled. a static inline function
+> will just result in no extra overhead other than the if
+> statement....
 
-How about this?
+I don't think I said that with respect to this code. I think I said
+it w.r.t. a define or a small wrapper that decides to call
+hot_update_freqs().  A static inline fucntion should only be a
+couple of lines of code at most.
 
-#define PKMAP_INVALID_INDEX (-1)
+A static function, OTOH, can be inlined by the compiler if the
+compiler thinks that is a win. But....
 
->  
->  /* declarations for linux/mm/highmem.c */
->  unsigned int nr_free_highpages(void);
-> diff --git a/mm/highmem.c b/mm/highmem.c
-> index 731cf9a..65beb9a 100644
-> --- a/mm/highmem.c
-> +++ b/mm/highmem.c
-> @@ -106,10 +106,10 @@ struct page *kmap_to_page(void *vaddr)
->  	return virt_to_page(addr);
->  }
->  
-> -static void flush_all_zero_pkmaps(void)
-> +static int flush_all_zero_pkmaps(void)
->  {
->  	int i;
-> -	int need_flush = 0;
-> +	int index = PKMAP_INDEX_INVAL;
->  
->  	flush_cache_kmaps();
->  
-> @@ -141,10 +141,12 @@ static void flush_all_zero_pkmaps(void)
->  			  &pkmap_page_table[i]);
->  
->  		set_page_address(page, NULL);
-> -		need_flush = 1;
-> +		index = i;
+.....
 
-How about returning first free index instead of last one?
-and update last_pkmap_nr to it.
+> >> +EXPORT_SYMBOL_GPL(hot_update_freqs);
 
->  	}
-> -	if (need_flush)
-> +	if (index != PKMAP_INDEX_INVAL)
->  		flush_tlb_kernel_range(PKMAP_ADDR(0), PKMAP_ADDR(LAST_PKMAP));
-> +
-> +	return index;
->  }
->  
->  /**
-> @@ -160,6 +162,7 @@ void kmap_flush_unused(void)
->  static inline unsigned long map_new_virtual(struct page *page)
->  {
->  	unsigned long vaddr;
-> +	int index = PKMAP_INDEX_INVAL;
->  	int count;
->  
->  start:
-> @@ -168,40 +171,45 @@ start:
->  	for (;;) {
->  		last_pkmap_nr = (last_pkmap_nr + 1) & LAST_PKMAP_MASK;
->  		if (!last_pkmap_nr) {
-> -			flush_all_zero_pkmaps();
-> -			count = LAST_PKMAP;
-> +			index = flush_all_zero_pkmaps();
-> +			if (index != PKMAP_INDEX_INVAL)
-> +				break; /* Found a usable entry */
->  		}
-> -		if (!pkmap_count[last_pkmap_nr])
-> +		if (!pkmap_count[last_pkmap_nr]) {
-> +			index = last_pkmap_nr;
->  			break;	/* Found a usable entry */
-> -		if (--count)
-> -			continue;
-> -
-> -		/*
-> -		 * Sleep for somebody else to unmap their entries
-> -		 */
-> -		{
-> -			DECLARE_WAITQUEUE(wait, current);
-> -
-> -			__set_current_state(TASK_UNINTERRUPTIBLE);
-> -			add_wait_queue(&pkmap_map_wait, &wait);
-> -			unlock_kmap();
-> -			schedule();
-> -			remove_wait_queue(&pkmap_map_wait, &wait);
-> -			lock_kmap();
-> -
-> -			/* Somebody else might have mapped it while we slept */
-> -			if (page_address(page))
-> -				return (unsigned long)page_address(page);
-> -
-> -			/* Re-start */
-> -			goto start;
->  		}
-> +		if (--count == 0)
-> +			break;
->  	}
-> -	vaddr = PKMAP_ADDR(last_pkmap_nr);
-> +
-> +	/*
-> +	 * Sleep for somebody else to unmap their entries
-> +	 */
-> +	if (index == PKMAP_INDEX_INVAL) {
-> +		DECLARE_WAITQUEUE(wait, current);
-> +
-> +		__set_current_state(TASK_UNINTERRUPTIBLE);
-> +		add_wait_queue(&pkmap_map_wait, &wait);
-> +		unlock_kmap();
-> +		schedule();
-> +		remove_wait_queue(&pkmap_map_wait, &wait);
-> +		lock_kmap();
-> +
-> +		/* Somebody else might have mapped it while we slept */
-> +		vaddr = (unsigned long)page_address(page);
-> +		if (vaddr)
-> +			return vaddr;
-> +
-> +		/* Re-start */
-> +		goto start;
-> +	}
-> +
-> +	vaddr = PKMAP_ADDR(index);
->  	set_pte_at(&init_mm, vaddr,
-> -		   &(pkmap_page_table[last_pkmap_nr]), mk_pte(page, kmap_prot));
-> +		   &(pkmap_page_table[index]), mk_pte(page, kmap_prot));
->  
-> -	pkmap_count[last_pkmap_nr] = 1;
-> +	pkmap_count[index] = 1;
->  	set_page_address(page, (void *)vaddr);
->  
->  	return vaddr;
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+... it's an exported function, so it can't be inline or static, so
+using "inline" is wrong whatever way you look at it. ;)
 
+Cheers,
+
+Dave.
 -- 
-Kind regards,
-Minchan Kim
+Dave Chinner
+david@fromorbit.com
