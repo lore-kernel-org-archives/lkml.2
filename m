@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760874Ab2J2Uqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:46:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10288 "EHLO
+	id S932664Ab2J2Uqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:46:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9739 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756980Ab2J2Uiw (ORCPT
+	with ESMTP id S1757076Ab2J2Uiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 16:38:52 -0400
-X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=RltJrNS3AM0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=JT55oZSufwAA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=9AzMRrQhAAAA:8 a=NufY4J3AAAAA:8 a=KKAkSRfTAAAA:8 a=JfrnYn6hAAAA:8 a=ftUzEednAAAA:8 a=sozttTNsAAAA:8 a=EUspDBNiAAAA:8 a=VnNF1IyMAAAA:8 a=fh4mg5NFAAAA:8 a=vS16OoDkK_UUei6Zr3YA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=SxxB86fLhQ4A:10 a=re9sYKne76oA:10 a=WwgC8nHKvroA:10 a=3Rfx1nUSh_UA:10 a=QwxQZocgbLcA:10 a=x2szoZtqnggA:10 a=IG2fH9E8heMA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Y4x_QKceoAwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ViZkdgtUnW0A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=9AzMRrQhAAAA:8 a=NufY4J3AAAAA:8 a=KKAkSRfTAAAA:8 a=JfrnYn6hAAAA:8 a=ftUzEednAAAA:8 a=sozttTNsAAAA:8 a=EUspDBNiAAAA:8 a=VnNF1IyMAAAA:8 a=fh4mg5NFAAAA:8 a=5AB75Ri8bxmm_MEgFBYA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=SxxB86fLhQ4A:10 a=re9sYKne76oA:10 a=WwgC8nHKvroA:10 a=3Rfx1nUSh_UA:10 a=QwxQZocgbLcA:10 a=x2szoZtqnggA:10 a=IG2fH9E8heMA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121029203849.711251734@goodmis.org>
+Message-Id: <20121029203847.815884461@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 29 Oct 2012 16:27:32 -0400
+Date: Mon, 29 Oct 2012 16:27:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -32,22 +32,22 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Max Krasnyansky <maxk@qualcomm.com>,
         Stephen Hemminger <shemminger@vyatta.com>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
-Subject: [PATCH 21/32] nohz: Dont restart the tick before scheduling to idle
+Subject: [PATCH 08/32] nohz/cpuset: Dont stop the tick if posix cpu timers are running
 References: <20121029202711.062749374@goodmis.org>
-Content-Disposition: inline; filename=0021-nohz-Don-t-restart-the-tick-before-scheduling-to-idl.patch
+Content-Disposition: inline; filename=0008-nohz-cpuset-Don-t-stop-the-tick-if-posix-cpu-timers-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-If we were running adaptive tickless but then we schedule out and
-enter the idle task, we don't need to restart the tick because
-tick_nohz_idle_enter() is going to be called right away.
+If either a per thread or a per process posix cpu timer is running,
+don't stop the tick.
 
-The only thing we need to do is to save the jiffies such that
-when we later restart the tick we can account the CPU time spent
-while idle was tickless.
+TODO: restart the tick if it is stopped and a posix cpu timer is
+enqueued. Check we probably need a memory barrier for the per
+process posix timer that can be enqueued from another task
+of the group.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -69,39 +69,75 @@ Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/tick-sched.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ include/linux/posix-timers.h |    1 +
+ kernel/posix-cpu-timers.c    |   12 ++++++++++++
+ kernel/time/tick-sched.c     |    4 ++++
+ 3 files changed, 17 insertions(+)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 2627663..16267ee 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -1036,14 +1036,18 @@ void tick_nohz_pre_schedule(void)
- void tick_nohz_post_schedule(void)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-+	unsigned long flags;
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 042058f..97480c2 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -119,6 +119,7 @@ int posix_timer_event(struct k_itimer *timr, int si_private);
+ void posix_cpu_timer_schedule(struct k_itimer *timer);
  
--	/*
--	 * No need to disable irqs here. The worst that can happen
--	 * is an irq that comes and restart the tick before us.
--	 * tick_nohz_restart_sched_tick() is irq safe.
--	 */
--	if (ts->tick_stopped)
--		tick_nohz_restart_sched_tick();
-+	local_irq_save(flags);
-+	if (ts->tick_stopped) {
-+		if (is_idle_task(current)) {
-+			ts->saved_jiffies = jiffies;
-+			ts->saved_jiffies_whence = JIFFIES_SAVED_IDLE;
-+		} else {
-+			tick_nohz_restart_sched_tick();
-+		}
-+	}
-+	local_irq_restore(flags);
+ void run_posix_cpu_timers(struct task_struct *task);
++bool posix_cpu_timers_running(struct task_struct *tsk);
+ void posix_cpu_timers_exit(struct task_struct *task);
+ void posix_cpu_timers_exit_group(struct task_struct *task);
+ 
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 125cb67..79d4c24 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -6,6 +6,7 @@
+ #include <linux/posix-timers.h>
+ #include <linux/errno.h>
+ #include <linux/math64.h>
++#include <linux/cpuset.h>
+ #include <asm/uaccess.h>
+ #include <linux/kernel_stat.h>
+ #include <trace/events/timer.h>
+@@ -1274,6 +1275,17 @@ static inline int fastpath_timer_check(struct task_struct *tsk)
+ 	return 0;
  }
  
- void tick_nohz_flush_current_times(bool restart_tick)
++bool posix_cpu_timers_running(struct task_struct *tsk)
++{
++	if (!task_cputime_zero(&tsk->cputime_expires))
++		return true;
++
++	if (tsk->signal->cputimer.running)
++		return true;
++
++	return false;
++}
++
+ /*
+  * This is called from the timer interrupt handler.  The irq handler has
+  * already updated our counts.  We need to check if any timers fire now.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index de3c8fe..0a5e650 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -21,6 +21,7 @@
+ #include <linux/sched.h>
+ #include <linux/module.h>
+ #include <linux/cpuset.h>
++#include <linux/posix-timers.h>
+ 
+ #include <asm/irq_regs.h>
+ 
+@@ -518,6 +519,9 @@ static bool can_stop_adaptive_tick(void)
+ 	if (!sched_can_stop_tick())
+ 		return false;
+ 
++	if (posix_cpu_timers_running(current))
++		return false;
++
+ 	/* Is there a grace period to complete ? */
+ 	if (rcu_pending(smp_processor_id()))
+ 		return false;
 -- 
 1.7.10.4
 
