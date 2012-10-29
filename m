@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab2J2OwU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:52:20 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43499 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752689Ab2J2OwS (ORCPT
+	id S1757945Ab2J2O54 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:57:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46904 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab2J2O5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:52:18 -0400
-Date: Mon, 29 Oct 2012 14:52:15 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <dchen@diasemi.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Patch v3 2/7] Regulator: DA9055 Regulator driver
-Message-ID: <20121029145215.GA4511@opensource.wolfsonmicro.com>
-References: <1349950164.7957.23.camel@dhruva>
- <20121027215850.GI4564@opensource.wolfsonmicro.com>
- <1351512478.17695.14.camel@dhruva>
+	Mon, 29 Oct 2012 10:57:55 -0400
+Date: Mon, 29 Oct 2012 14:57:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>, Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [update] Re: new execve/kernel_thread design
+Message-ID: <20121029145745.GY2616@ZenIV.linux.org.uk>
+References: <20121016223508.GR2616@ZenIV.linux.org.uk>
+ <20121026183107.GQ2616@ZenIV.linux.org.uk>
+ <20121029085339.0ea11bc6@mschwide>
+ <20121029132521.GW2616@ZenIV.linux.org.uk>
+ <20121029153823.2317fdef@mschwide>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tThc/1wpZn/ma/RB"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351512478.17695.14.camel@dhruva>
-X-Cookie: You will never know hunger.
+In-Reply-To: <20121029153823.2317fdef@mschwide>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 29, 2012 at 03:38:23PM +0100, Martin Schwidefsky wrote:
+> On Mon, 29 Oct 2012 13:25:21 +0000
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> 
+> > On Mon, Oct 29, 2012 at 08:53:39AM +0100, Martin Schwidefsky wrote:
+> > 
+> > > Oops, sorry. I tested this weeks ago but it seems I never wrote a mail to
+> > > indicate success. The current git kernel works just fine.
+> > 
+> > "Current git" being what?  Linus' tree?  linux-next?  signal.git#arch-s390?
+> > FWIW, the relevant diff against mainline is below, linux-next already
+> > contains it.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal arch-s390
+> 
+> against Linux 3.7-rc3
+> 
+> # uname -a
+> Linux r3545014 3.7.0-rc3-00002-g95a96a7 #1 SMP Mon Oct 29 15:32:18 CET 2012 s390x s390x s390x GNU/Linux
+> 
+> works as it is. Feel free to add my Acked-By.
 
---tThc/1wpZn/ma/RB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Oct 29, 2012 at 05:37:58PM +0530, Ashish Jangam wrote:
-> On Sat, 2012-10-27 at 22:59 +0100, Mark Brown wrote:
-
-> > Always submit patches with subject lines appropriate for the subsystem,
-> > this helps get your patch noticed.  People do things like search their
-> > mailboxes for subsystem prefixes when looking for things they need to
-> > review.
-
-> In subject line apart from "regulator" I will introduce "next" too.=20
-
-No, that's not going to help.  You need to actually include "regulator"
-in the subject line and not a variation like "Regulator" which you've
-used this time.  In general if your commit log looks different to all
-the other commit logs for the subsystem there's probably an issue.
-
---tThc/1wpZn/ma/RB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQjpgCAAoJELSic+t+oim9j1YP/0Zo/vhRGmYTnvr0oLdLWSGX
-3otEwlukLlEXob4taczr7i6wy8pnBg0Sl0WLccI4DlqZCiF2vshtUq7j5BL3ytGu
-BvUV16i4nq8sk+H0BIHe3Wu0mohTevYOxvFa/ykXiGeIURlmHL4V/uEMz/Q/cOKT
-WgteE2g9m/lvGCQFpz5JepuR4AC3VKHrQdtreCm/hFQV5VH5tT7osplzm5Rxa0kd
-qKGlRXhmJznINRsjW8AVZIXKtmH9HUqLwM2cXM12yPowBierV+aN72spDG4oR3kj
-tIGVWE7K2EzkQjwVrPOpCQhIK5LU26WGKezGDS5gbkapNSCMBKCmj8IdJb+OW4Qx
-+6SA5AwytocvFA645krWjrdVCTsppzfeZ3VuxFjMCd6Bxc4gbyisYoN/bJI1N7g5
-ErzYvkgwMJ8tzJ6UpjshciF03R2/UMdvGhS9z8x0E5/kgGoGDAgFqawo08p7Cerp
-gYP7MxQp0rc/9pNicLN86tNR58nyYS/Hwxo/wIWkyM+iB4Eppe8zhr3Pvr8z1HEy
-Rx0ntnHQUlbpNTrNoUPEKTIcNDdLNE7qpnENk5QuWo3vfIrJmCry3M5Fd4uK4/g7
-4qbWIIoF5/sWaEXsBtOd8XClYWh7mOE4eHOP5r4h0pzRNPCQm25ZkhfS3iFUxugU
-WEHjtnivsm32shCBXrcN
-=uBoM
------END PGP SIGNATURE-----
-
---tThc/1wpZn/ma/RB--
+Done and pushed, should propagate shortly.  It's in no-rebase mode now.
