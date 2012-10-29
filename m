@@ -1,121 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760477Ab2J2SxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:53:15 -0400
-Received: from smtprelay-h31.telenor.se ([213.150.131.4]:41784 "EHLO
-	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab2J2SxO (ORCPT
+	id S1760532Ab2J2SxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:53:25 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58984 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760501Ab2J2SxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:53:14 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhWdAA/QjlBV5h1yPGdsb2JhbABEilK3JQICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTh3QDCQqyGQ2JVBSKeoEdgSaEIGEDlB+BVIV5g0+BaogB
-X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
-   d="scan'208";a="438755119"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 19:57:50 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/11] HID: hid-input: export hidinput_calc_abs_res
-Message-ID: <20121029185750.GA12640@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-2-git-send-email-benjamin.tissoires@gmail.com>
+	Mon, 29 Oct 2012 14:53:23 -0400
+Date: Mon, 29 Oct 2012 14:53:19 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
+        tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
+Message-ID: <20121029185319.GA21546@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-6-git-send-email-levinsasha928@gmail.com> <20121029113515.GB9115@Krystal> <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com> <20121029183157.GC3097@jtriplet-mobl1> <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351241067-9521-2-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
-
-> Exporting this function allows us to calculate the resolution in third
-> party drivers like hid-multitouch.
-> This patch also complete the function with additional valid axes.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On Mon, Oct 29, 2012 at 2:31 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > On Mon, Oct 29, 2012 at 01:29:24PM -0400, Sasha Levin wrote:
+> >> On Mon, Oct 29, 2012 at 7:35 AM, Mathieu Desnoyers
+> >> <mathieu.desnoyers@efficios.com> wrote:
+> >> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> >> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
+> >> >> generic unrelated code in the tracepoints.
+> >> >>
+> >> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> >> >> ---
+> >> >>  kernel/tracepoint.c | 27 +++++++++++----------------
+> >> >>  1 file changed, 11 insertions(+), 16 deletions(-)
+> >> >>
+> >> >> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> >> >> index d96ba22..854df92 100644
+> >> >> --- a/kernel/tracepoint.c
+> >> >> +++ b/kernel/tracepoint.c
+> >> >> @@ -26,6 +26,7 @@
+> >> >>  #include <linux/slab.h>
+> >> >>  #include <linux/sched.h>
+> >> >>  #include <linux/static_key.h>
+> >> >> +#include <linux/hashtable.h>
+> >> >>
+> >> >>  extern struct tracepoint * const __start___tracepoints_ptrs[];
+> >> >>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
+> >> >> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
+> >> >>   * Protected by tracepoints_mutex.
+> >> >>   */
+> >> >>  #define TRACEPOINT_HASH_BITS 6
+> >> >> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
+> >> >> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
+> >> >> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
+> >> >>
+> >> > [...]
+> >> >>
+> >> >> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
+> >> >>
+> >> >>  static int init_tracepoints(void)
+> >> >>  {
+> >> >> +     hash_init(tracepoint_table);
+> >> >> +
+> >> >>       return register_module_notifier(&tracepoint_module_nb);
+> >> >>  }
+> >> >>  __initcall(init_tracepoints);
+> >> >
+> >> > So we have a hash table defined in .bss (therefore entirely initialized
+> >> > to NULL), and you add a call to "hash_init", which iterates on the whole
+> >> > array and initialize it to NULL (again) ?
+> >> >
+> >> > This extra initialization is redundant. I think it should be removed
+> >> > from here, and hashtable.h should document that hash_init() don't need
+> >> > to be called on zeroed memory (which includes static/global variables,
+> >> > kzalloc'd memory, etc).
+> >>
+> >> This was discussed in the previous series, the conclusion was to call
+> >> hash_init() either way to keep the encapsulation and consistency.
+> >>
+> >> It's cheap enough and happens only once, so why not?
+> >
+> > Unnecessary work adds up.  Better not to do it unnecessarily, even if by
+> > itself it doesn't cost that much.
+> >
+> > It doesn't seem that difficult for future fields to have 0 as their
+> > initialized state.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
-
-Nice, but please see comment below.
-
->  drivers/hid/hid-input.c      | 11 +++++++++--
->  drivers/hid/hid-multitouch.c |  1 +
->  include/linux/hid.h          |  1 +
->  3 files changed, 11 insertions(+), 2 deletions(-)
+> Let's put it this way: hlist requires the user to initialize hlist
+> head before usage, therefore as a hlist user, hashtable implementation
+> must do that.
 > 
-> diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
-> index d917c0d..1b0adc3 100644
-> --- a/drivers/hid/hid-input.c
-> +++ b/drivers/hid/hid-input.c
-> @@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
->   * Only exponent 1 length units are processed. Centimeters and inches are
->   * converted to millimeters. Degrees are converted to radians.
->   */
-> -static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
-> +__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  {
->  	__s32 unit_exponent = field->unit_exponent;
->  	__s32 logical_extents = field->logical_maximum -
-> @@ -229,6 +229,12 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	case ABS_X:
->  	case ABS_Y:
->  	case ABS_Z:
-> +	case ABS_MT_POSITION_X:
-> +	case ABS_MT_POSITION_Y:
-> +	case ABS_MT_TOOL_X:
-> +	case ABS_MT_TOOL_Y:
-> +	case ABS_MT_TOUCH_MAJOR:
-> +	case ABS_MT_TOUCH_MINOR:
->  		if (field->unit == 0x11) {		/* If centimeters */
->  			/* Convert to millimeters */
->  			unit_exponent += 1;
-> @@ -281,8 +287,9 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
->  	}
->  
->  	/* Calculate resolution */
-> -	return logical_extents / physical_extents;
-> +	return DIV_ROUND_CLOSEST(logical_extents, physical_extents);
-
-This line might be best left alone; if the round-off matters, you now
-risk regressing a carefully tuned userland.
-
->  }
-> +EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
->  
->  #ifdef CONFIG_HID_BATTERY_STRENGTH
->  static enum power_supply_property hidinput_battery_props[] = {
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index c97011c..375a38d 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -298,6 +298,7 @@ static void set_abs(struct input_dev *input, unsigned int code,
->  	int fmax = field->logical_maximum;
->  	int fuzz = snratio ? (fmax - fmin) / snratio : 0;
->  	input_set_abs_params(input, code, fmin, fmax, fuzz, 0);
-> +	input_abs_set_res(input, code, hidinput_calc_abs_res(field, code));
->  }
->  
->  static void mt_store_field(struct hid_usage *usage, struct mt_device *td,
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 7e1f37d..9edb06c 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -743,6 +743,7 @@ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
->  int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
->  struct hid_field *hidinput_get_led_field(struct hid_device *hid);
->  unsigned int hidinput_count_leds(struct hid_device *hid);
-> +__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code);
->  void hid_output_report(struct hid_report *report, __u8 *data);
->  struct hid_device *hid_allocate_device(void);
->  struct hid_report *hid_register_report(struct hid_device *device, unsigned type, unsigned id);
-> -- 
-> 1.7.11.7
+> We do it automatically when the hashtable user does
+> DEFINE_HASHTABLE(), but we can't do that if he does
+> DECLARE_HASHTABLE(). This means that the hashtable user must call
+> hash_init() whenever he uses DECLARE_HASHTABLE() to create his
+> hashtable.
 > 
+> There are two options here, either we specify that hash_init() should
+> only be called if DECLARE_HASHTABLE() was called, which is confusing,
+> inconsistent and prone to errors, or we can just say that it should be
+> called whenever a hashtable is used.
+> 
+> The only way to work around it IMO is to get hlist to not require
+> initializing before usage, and there are good reasons that that won't
+> happen.
+
+Hrm, just a second here.
+
+The argument about hash_init being useful to add magic values in the
+future only works for the cases where a hash table is declared with
+DECLARE_HASHTABLE(). It's completely pointless with DEFINE_HASHTABLE(),
+because we could initialize any debugging variables from within
+DEFINE_HASHTABLE().
+
+So I take my "Agreed" back. I disagree with initializing the hash table
+twice redundantly. There should be at least "DEFINE_HASHTABLE()" or a
+hash_init() (for DECLARE_HASHTABLE()), but not useless execution
+initialization on top of an already statically initialized hash table.
 
 Thanks,
-Henrik
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
