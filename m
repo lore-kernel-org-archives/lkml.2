@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759621Ab2J2Pog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:44:36 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43026 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759597Ab2J2PoY convert rfc822-to-8bit (ORCPT
+	id S1759580Ab2J2Ppx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:45:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43229 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756768Ab2J2Ppw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:44:24 -0400
-Message-ID: <1351525443.24721.39.camel@twins>
-Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load
- Latency
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Date: Mon, 29 Oct 2012 16:44:03 +0100
-In-Reply-To: <CABPqkBT8_nXJhgr4MkbyHrg2wmXr+-DAf_FPBWWnK_GdkEFf_Q@mail.gmail.com>
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	 <1351523752-4215-5-git-send-email-eranian@google.com>
-	 <1351525112.24721.36.camel@twins>
-	 <CABPqkBT8_nXJhgr4MkbyHrg2wmXr+-DAf_FPBWWnK_GdkEFf_Q@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 29 Oct 2012 11:45:52 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Porter, Matt" <mporter@ti.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Thread-Topic: [PATCH] ARM: OMAP2+: AM33XX: clock data: fix mcasp entries
+Thread-Index: AQHNpvQIuOsYud0XskqrLRNTKR4CVJfQieKQ
+Date: Mon, 29 Oct 2012 15:45:36 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EAB8596@DBDE01.ent.ti.com>
+References: <1349879449-22657-1-git-send-email-mporter@ti.com>
+In-Reply-To: <1349879449-22657-1-git-send-email-mporter@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-10-29 at 16:43 +0100, Stephane Eranian wrote:
-> You meant fll, instead I think.
+Matt,
 
-Oh, yes, too small font I guess.
+On Wed, Oct 10, 2012 at 20:00:49, Porter, Matt wrote:
+> 6ea74cb ARM: OMAP2+: hwmod: get rid of all omap_clk_get_by_name usage
+> exposes a bug in the AM33XX clock data for mcasp. After moving to
+> clk_get() usage, the _init() of all registered hwmods fails on mcasp0
+> due to incorrect clock data causing clk_get() to fail. This causes all
+> successive hwmods to fail to _init() leaving them in a bad state.
+> 
+> This patch updates the mcasp clock entries so clk_get() will succeed.
+> It is tested on BeagleBone and is needed for 3.7-rc1 to fix AM33xx
+> boot.
 
-> Well, that would work too, but I am trying to factorize the code
-> with Precise Store which is a later patch. 
 
-Yeah, just found that, its fine the way it is. Just looked funneh on
-first reading.
+I want to test Audio on AM335x Evm with your EDMA patches. I have few 
+patches for AM335x.
+Can you share the link to the repo & branch on which I need to rebase?
+The patches are related to mcasp dt node, mcasp pinmux in dt, etc...
+
+> 
+..snip..
+..snip..
+> 
+
+
+Thanks & Regards, 
+Gururaja
