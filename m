@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab2J2TnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:43:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62302 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755532Ab2J2Tm6 convert rfc822-to-8bit (ORCPT
+	id S1756794Ab2J2Tp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:45:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43155 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab2J2Tp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:42:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
-   d="scan'208";a="241581861"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Akira Fujita <a-fujita@rs.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: RE: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-Thread-Topic: [PATCH 2/3] ext4: introduce ext4_error_remove_page
-Thread-Index: AQHNssNn60IFoxEWWkW+xJzYf95sNpfLkXcAgAA0tFCAAJ4qgP//weDAgAILBQCAAmnU0A==
-Date: Mon, 29 Oct 2012 18:11:58 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19D5ABB3@ORSMSX108.amr.corp.intel.com>
-References: <1351177969-893-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1351177969-893-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20121026061206.GA31139@thunk.org>
- <3908561D78D1C84285E8C5FCA982C28F19D5A13B@ORSMSX108.amr.corp.intel.com>
- <20121026184649.GA8614@thunk.org>
- <3908561D78D1C84285E8C5FCA982C28F19D5A388@ORSMSX108.amr.corp.intel.com>
- <20121027221626.GA9161@thunk.org>
-In-Reply-To: <20121027221626.GA9161@thunk.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 29 Oct 2012 15:45:27 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH] ARM: Dove: update defconfig
+Date: Mon, 29 Oct 2012 20:45:16 +0100
+Message-Id: <1351539916-29561-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What I would recommend is adding a 
->
-> #define FS_CORRUPTED_FL		0x01000000 /* File is corrupted */
->
-> ... and which could be accessed and cleared via the lsattr and chattr
-> programs.
+It has been a while since dove_defconfig was updated to recent development.
+This patch adds all currently available Dove boards, including a DT-enabled
+machine.
 
-Good - but we need some space to save the corrupted range information
-too. These errors should be quite rare, so one range per file should be
-enough.
+DT support requires to allow ATAGS passed by boot loader as most of them are
+not yet capable of passing DT blobs. Also OF_SERIAL is enabled to actually
+see the bootlog.
 
-New file systems should plan to add space in their on-disk format. The
-corruption isn't going to go away across a reboot.
+Finally, sdhci driver for Dove, GPIO LEDs, and highmem support is added.
 
--Tony
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+---
+ arch/arm/configs/dove_defconfig |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/arch/arm/configs/dove_defconfig b/arch/arm/configs/dove_defconfig
+index 40db34c..8407194 100644
+--- a/arch/arm/configs/dove_defconfig
++++ b/arch/arm/configs/dove_defconfig
+@@ -8,11 +8,19 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_ARCH_DOVE=y
+ CONFIG_MACH_DOVE_DB=y
++CONFIG_MACH_CM_A510=y
++CONFIG_MACH_DOVE_DT=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_AEABI=y
+ CONFIG_ZBOOT_ROM_TEXT=0x0
+ CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_HIGHMEM=y
++CONFIG_USE_OF=y
++CONFIG_ATAGS=y
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
+ CONFIG_VFP=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+@@ -62,6 +70,9 @@ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ # CONFIG_SERIAL_8250_PCI is not set
+ CONFIG_SERIAL_8250_RUNTIME_UARTS=2
++CONFIG_SERIAL_CORE=y
++CONFIG_SERIAL_CORE_CONSOLE=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_I2C=y
+ CONFIG_I2C_CHARDEV=y
+@@ -74,6 +85,18 @@ CONFIG_USB_DEVICEFS=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_ROOT_HUB_TT=y
+ CONFIG_USB_STORAGE=y
++CONFIG_MMC=y
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_IO_ACCESSORS=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_MMC_SDHCI_DOVE=y
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_GPIO=y
++CONFIG_LEDS_TRIGGERS=y
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_MV=y
+ CONFIG_DMADEVICES=y
+-- 
+1.7.10.4
+
