@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584Ab2J2Pxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:53:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20672 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759857Ab2J2PsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:48:18 -0400
-X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
-   d="scan'208";a="6093341"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org
-Subject: [V5 PATCH 26/26] mempolicy: fix is_valid_nodemask()
-Date: Mon, 29 Oct 2012 23:21:16 +0800
-Message-Id: <1351524078-20363-25-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:20:00,
-	Serialize complete at 2012/10/29 23:20:00
+	id S932635Ab2J2PyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:54:22 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:48583 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab2J2PyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:54:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20121029130736.GF11733@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+ <1351450948-15618-10-git-send-email-levinsasha928@gmail.com>
+ <20121029124655.GD11733@Krystal> <20121029130736.GF11733@Krystal>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 29 Oct 2012 11:53:54 -0400
+Message-ID: <CA+1xoqfxgB+8BybPpf+jwT-ObfGPxnbKvkz1MUMuJuR8NDSNaw@mail.gmail.com>
+Subject: Re: [PATCH v7 10/16] dlm: use new hashtable implementation
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-is_valid_nodemask() is introduced by 19770b32. but it does not match
-its comments, because it does not check the zone which > policy_zone.
+On Mon, Oct 29, 2012 at 9:07 AM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+>> * Sasha Levin (levinsasha928@gmail.com) wrote:
+>> [...]
+>> > @@ -158,34 +159,21 @@ static int dlm_allow_conn;
+>> >  static struct workqueue_struct *recv_workqueue;
+>> >  static struct workqueue_struct *send_workqueue;
+>> >
+>> > -static struct hlist_head connection_hash[CONN_HASH_SIZE];
+>> > +static struct hlist_head connection_hash[CONN_HASH_BITS];
+>> >  static DEFINE_MUTEX(connections_lock);
+>> >  static struct kmem_cache *con_cache;
+>> >
+>> >  static void process_recv_sockets(struct work_struct *work);
+>> >  static void process_send_sockets(struct work_struct *work);
+>> >
+>> > -
+>> > -/* This is deliberately very simple because most clusters have simple
+>> > -   sequential nodeids, so we should be able to go straight to a connection
+>> > -   struct in the array */
+>> > -static inline int nodeid_hash(int nodeid)
+>> > -{
+>> > -   return nodeid & (CONN_HASH_SIZE-1);
+>> > -}
+>>
+>> There is one thing I dislike about this change: you remove a useful
+>> comment. It's good to be informed of the reason why a direct mapping
+>> "value -> hash" without any dispersion function is preferred here.
 
-Also in b377fd, this commits told us, if highest zone is ZONE_MOVABLE,
-we should also apply memory policies to it. so ZONE_MOVABLE should be valid zone
-for policies. is_valid_nodemask() need to be changed to match it.
+Yes, I've removed the comment because it's no longer true with the patch :)
 
-Fix: check all zones, even its zoneid > policy_zone.
-Use nodes_intersects() instead open code to check it.
+> And now that I come to think of it: you're changing the behavior : you
+> will now use a dispersion function on the key, which goes against the
+> intent expressed in this comment.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Reported-by: Wen Congyang <wency@cn.fujitsu.com>
----
- mm/mempolicy.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
+The comment gave us the information that nodeids are mostly
+sequential, we no longer need to rely on that.
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index d4a084c..ed7c249 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -140,19 +140,7 @@ static const struct mempolicy_operations {
- /* Check that the nodemask contains at least one populated zone */
- static int is_valid_nodemask(const nodemask_t *nodemask)
- {
--	int nd, k;
--
--	for_each_node_mask(nd, *nodemask) {
--		struct zone *z;
--
--		for (k = 0; k <= policy_zone; k++) {
--			z = &NODE_DATA(nd)->node_zones[k];
--			if (z->present_pages > 0)
--				return 1;
--		}
--	}
--
--	return 0;
-+	return nodes_intersects(*nodemask, node_states[N_MEMORY]);
- }
- 
- static inline int mpol_store_user_nodemask(const struct mempolicy *pol)
-@@ -1572,6 +1560,26 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 	return pol;
- }
- 
-+static int apply_policy_zone(struct mempolicy *policy, enum zone_type zone)
-+{
-+	enum zone_type dynamic_policy_zone = policy_zone;
-+
-+	BUG_ON(dynamic_policy_zone == ZONE_MOVABLE);
-+
-+	/*
-+	 * if policy->v.nodes has movable memory only,
-+	 * we apply policy when gfp_zone(gfp) = ZONE_MOVABLE only.
-+	 *
-+	 * policy->v.nodes is intersect with node_states[N_MEMORY].
-+	 * so if the following test faile, it implies
-+	 * policy->v.nodes has movable memory only.
-+	 */
-+	if (!nodes_intersects(policy->v.nodes, node_states[N_HIGH_MEMORY]))
-+		dynamic_policy_zone = ZONE_MOVABLE;
-+
-+	return zone >= dynamic_policy_zone;
-+}
-+
- /*
-  * Return a nodemask representing a mempolicy for filtering nodes for
-  * page allocation
-@@ -1580,7 +1588,7 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
- {
- 	/* Lower zones don't get a nodemask applied for MPOL_BIND */
- 	if (unlikely(policy->mode == MPOL_BIND) &&
--			gfp_zone(gfp) >= policy_zone &&
-+			apply_policy_zone(policy, gfp_zone(gfp)) &&
- 			cpuset_nodemask_valid_mems_allowed(&policy->v.nodes))
- 		return &policy->v.nodes;
- 
--- 
-1.7.4.4
+> It might be good to change hash_add(), hash_add_rcu(),
+> hash_for_each_possible*() key parameter for a "hash" parameter, and let
+> the caller provide the hash value computed by the function they like as
+> parameter, rather than enforcing hash_32/hash_64.
 
+Why? We already proved that hash_32() is more than enough as a hashing
+function, why complicate things?
+
+Even doing hash_32() on top of another hash is probably a good idea to
+keep things simple.
+
+Thanks,
+Sasha
