@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933022Ab2J2V7u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:59:50 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48001 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761285Ab2J2ViC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Vinod Koul <vinod.koul@linux.intel.com>
-Subject: [ 088/101] dmaengine: imx-dma: fix missing unlock on error in imxdma_xfer_desc()
-Date: Mon, 29 Oct 2012 14:35:41 -0700
-Message-Id: <20121029213250.098517261@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
-References: <20121029213240.128426598@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1760132Ab2J2WA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:00:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33029 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933062Ab2J2WAY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 18:00:24 -0400
+Date: Mon, 29 Oct 2012 15:00:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list
+ error handling
+Message-Id: <20121029150022.a595b866.akpm@linux-foundation.org>
+In-Reply-To: <508E8B95.406@parallels.com>
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
+	<1351251453-6140-4-git-send-email-mhocko@suse.cz>
+	<508E8B95.406@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 29 Oct 2012 17:58:45 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-------------------
+> > + * move charges to its parent or the root cgroup if the group has no
+> > + * parent (aka use_hierarchy==0).
+> > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
+> > + * mem_cgroup_move_account fails) the failure is always temporary and
+> > + * it signals a race with a page removal/uncharge or migration. In the
+> > + * first case the page is on the way out and it will vanish from the LRU
+> > + * on the next attempt and the call should be retried later.
+> > + * Isolation from the LRU fails only if page has been isolated from
+> > + * the LRU since we looked at it and that usually means either global
+> > + * reclaim or migration going on. The page will either get back to the
+> > + * LRU or vanish.
+> 
+> I just wonder for how long can it go in the worst case?
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-
-commit 720dfd250e48a8c7fd1b2b8645955413989c4ee0 upstream.
-
-Add the missing unlock on the error handling path in function
-imxdma_xfer_desc().
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/dma/imx-dma.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -474,8 +474,10 @@ static int imxdma_xfer_desc(struct imxdm
- 			slot = i;
- 			break;
- 		}
--		if (slot < 0)
-+		if (slot < 0) {
-+			spin_unlock_irqrestore(&imxdma->lock, flags);
- 			return -EBUSY;
-+		}
- 
- 		imxdma->slots_2d[slot].xsr = d->x;
- 		imxdma->slots_2d[slot].ysr = d->y;
-
-
+If the kernel is uniprocessor and the caller is SCHED_FIFO: ad infinitum!
