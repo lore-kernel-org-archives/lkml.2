@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab2J2W0p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:26:45 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49756 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941Ab2J2W0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:26:42 -0400
+	id S1756135Ab2J2Wco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:32:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5421 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754524Ab2J2Wcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 18:32:43 -0400
+Date: Mon, 29 Oct 2012 20:31:11 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 2/6] KVM: MMU: remove mmu_is_invalid
+Message-ID: <20121029223111.GB8188@amt.cnet>
+References: <507D4DE7.5080708@linux.vnet.ibm.com>
+ <507D4E21.6010202@linux.vnet.ibm.com>
+ <507EC360.8010208@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121029181040.GA3605@kroah.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
-	<1351485061-12297-16-git-send-email-zwu.kernel@gmail.com>
-	<20121029181040.GA3605@kroah.com>
-Date: Tue, 30 Oct 2012 06:26:40 +0800
-Message-ID: <CAEH94LiOSQeQcRz4cokTWKn2RBm8NxmP1Sqg2zyH6JLvU6=2vw@mail.gmail.com>
-Subject: Re: [RFC v4+ hot_track 15/19] sysfs: add two hot_track proc files
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <507EC360.8010208@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 2:10 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Oct 29, 2012 at 12:30:57PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   Add two proc files hot-kick-time and hot-update-delay
->> under the dir /proc/sys/fs/ in order to turn
->> TIME_TO_KICK and HEAT_UPDATE_DELAY into be tunable.
->
-> As you say, these are proc files, not sysfs files, so please fix the
->  Subject: up here.
-ah, OK, i will fix it, thanks for your pointing it out.
->
-> thanks,
->
-> greg k-h
+On Wed, Oct 17, 2012 at 04:40:32PM +0200, Avi Kivity wrote:
+> On 10/16/2012 02:08 PM, Xiao Guangrong wrote:
+> > Remove mmu_is_invalid and use is_invalid_pfn instead
+> 
+> 
+> Applied 2-5 to next; 6 depends on 1, so will wait until it is merged
+> upstream.
 
+Applied 6.
 
-
--- 
-Regards,
-
-Zhi Yong Wu
