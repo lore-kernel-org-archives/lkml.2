@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760619Ab2J2UIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:08:52 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42562 "EHLO mail.kernel.org"
+	id S1760684Ab2J2UJI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:08 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42658 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760585Ab2J2UIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:49 -0400
+	id S1760653Ab2J2UI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>,
-        David McKay <david.mckay@st.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 05/34] ARM: 7559/1: smp: switch away from the idmap before updating init_mm.mm_count
-Date: Mon, 29 Oct 2012 13:07:36 -0700
-Message-Id: <20121029200421.177543936@linuxfoundation.org>
+        Octavian Purdila <octavian.purdila@intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 14/34] usb hub: send clear_tt_buffer_complete events when canceling TT clear work
+Date: Mon, 29 Oct 2012 13:07:45 -0700
+Message-Id: <20121029200422.143116438@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -27,82 +26,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Octavian Purdila <octavian.purdila@intel.com>
 
-commit 5f40b909728ad784eb43aa309d3c4e9bdf050781 upstream.
+commit 3b6054da68f9b0d5ed6a7ed0f42a79e61904352c upstream.
 
-When booting a secondary CPU, the primary CPU hands two sets of page
-tables via the secondary_data struct:
+There is a race condition in the USB hub code with regard to handling
+TT clear requests that can get the HCD driver in a deadlock. Usually
+when an TT clear request is scheduled it will be executed immediately:
 
-	(1) swapper_pg_dir: a normal, cacheable, shared (if SMP) mapping
-	    of the kernel image (i.e. the tables used by init_mm).
+<7>[    6.077583] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[    6.078041] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[    6.078299] hub_tt_work:731
+<7>[    9.309089] usb 2-1.5: link qh1-0e01/f4d506c0 start 0 [1/2 us]
+<7>[    9.324526] ehci_hcd 0000:00:1d.0: reused qh f4d4db00 schedule
+<7>[    9.324539] usb 2-1.3: link qh1-0e01/f4d4db00 start 0 [1/2 us]
+<7>[    9.341530] usb 1-1.1: link qh4-0e01/f397aec0 start 2 [1/2 us]
+<7>[   10.116159] usb 2-1.3: unlink qh1-0e01/f4d4db00 start 0 [1/2 us]
+<3>[   10.116459] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d82
+<7>[   10.116537] hub_tt_work:731
 
-	(2) idmap_pgd: an uncached mapping of the .idmap.text ELF
-	    section.
+However, if a suspend operation is triggered before hub_tt_work is
+scheduled, hub_quiesce will cancel the work without notifying the HCD
+driver:
 
-The idmap is generally used when enabling and disabling the MMU, which
-includes early CPU boot. In this case, the secondary CPU switches to
-swapper as soon as it enters C code:
+<3>[   35.033941] usb 2-1: clear tt buffer port 3, a3 ep2 t04048d80
+<5>[   35.034022] sd 0:0:0:0: [sda] Stopping disk
+<7>[   35.034039] hub 2-1:1.0: hub_suspend
+<7>[   35.034067] usb 2-1: unlink qh256-0001/f3b1ab00 start 1 [1/0 us]
+<7>[   35.035085] hub 1-0:1.0: hub_suspend
+<7>[   35.035102] usb usb1: bus suspend, wakeup 0
+<7>[   35.035106] ehci_hcd 0000:00:1a.0: suspend root hub
+<7>[   35.035298] hub 2-0:1.0: hub_suspend
+<7>[   35.035313] usb usb2: bus suspend, wakeup 0
+<7>[   35.035315] ehci_hcd 0000:00:1d.0: suspend root hub
+<6>[   35.250017] PM: suspend of devices complete after 216.979 msecs
+<6>[   35.250822] PM: late suspend of devices complete after 0.799 msecs
+<7>[   35.252343] ehci_hcd 0000:00:1d.0: wakeup: 1
+<7>[   35.262923] ehci_hcd 0000:00:1d.0: --> PCI D3hot
+<7>[   35.263302] ehci_hcd 0000:00:1a.0: wakeup: 1
+<7>[   35.273912] ehci_hcd 0000:00:1a.0: --> PCI D3hot
+<6>[   35.274254] PM: noirq suspend of devices complete after 23.442 msecs
+<6>[   35.274975] ACPI: Preparing to enter system sleep state S3
+<6>[   35.292666] PM: Saving platform NVS memory
+<7>[   35.295030] Disabling non-boot CPUs ...
+<6>[   35.297351] CPU 1 is now offline
+<6>[   35.300345] CPU 2 is now offline
+<6>[   35.303929] CPU 3 is now offline
+<7>[   35.303931] lockdep: fixing up alternatives.
+<6>[   35.304825] Extended CMOS year: 2000
 
-	struct mm_struct *mm = &init_mm;
-	unsigned int cpu = smp_processor_id();
+When the device will resume the EHCI driver will get stuck in
+ehci_endpoint_disable waiting for the tt_clearing flag to reset:
 
-	/*
-	 * All kernel threads share the same mm context; grab a
-	 * reference and switch to it.
-	 */
-	atomic_inc(&mm->mm_count);
-	current->active_mm = mm;
-	cpumask_set_cpu(cpu, mm_cpumask(mm));
-	cpu_switch_mm(mm->pgd, mm);
+<0>[   47.610967] usb 2-1.3: **** DPM device timeout ****
+<7>[   47.610972]  f2f11c60 00000092 f2f11c0c c10624a5 00000003 f4c6e880 c1c8a4c0 c1c8a4c0
+<7>[   47.610983]  15c55698 0000000b f56b34c0 f2a45b70 f4c6e880 00000082 f2a4602c f2f11c30
+<7>[   47.610993]  c10787f8 f4cac000 f2a45b70 00000000 f4cac010 f2f11c58 00000046 00000001
+<7>[   47.611004] Call Trace:
+<7>[   47.611006]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611019]  [<c10787f8>] ? lock_release_holdtime.part.22+0x88/0xf0
+<7>[   47.611026]  [<c103ed46>] ? lock_timer_base.isra.35+0x26/0x50
+<7>[   47.611034]  [<c17592d3>] ? schedule_timeout+0x133/0x290
+<7>[   47.611044]  [<c175b43e>] schedule+0x1e/0x50
+<7>[   47.611051]  [<c17592d8>] schedule_timeout+0x138/0x290
+<7>[   47.611057]  [<c10624a5>] ? sched_clock_cpu+0xf5/0x160
+<7>[   47.611063]  [<c103e560>] ? usleep_range+0x40/0x40
+<7>[   47.611070]  [<c1759445>] schedule_timeout_uninterruptible+0x15/0x20
+<7>[   47.611077]  [<c14935f4>] ehci_endpoint_disable+0x64/0x160
+<7>[   47.611084]  [<c147d1ee>] ? usb_hcd_flush_endpoint+0x10e/0x1d0
+<7>[   47.611092]  [<c1165663>] ? sysfs_add_file+0x13/0x20
+<7>[   47.611100]  [<c147d5a9>] usb_hcd_disable_endpoint+0x29/0x40
+<7>[   47.611107]  [<c147fafc>] usb_disable_endpoint+0x5c/0x80
+<7>[   47.611111]  [<c147fb57>] usb_disable_interface+0x37/0x50
+<7>[   47.611116]  [<c1477650>] usb_reset_and_verify_device+0x4b0/0x640
+<7>[   47.611122]  [<c1474665>] ? hub_port_status+0xb5/0x100
+<7>[   47.611129]  [<c147a975>] usb_port_resume+0xd5/0x220
+<7>[   47.611136]  [<c148877f>] generic_resume+0xf/0x30
+<7>[   47.611142]  [<c14821a3>] usb_resume+0x133/0x180
+<7>[   47.611147]  [<c1473b10>] ? usb_dev_thaw+0x10/0x10
+<7>[   47.611152]  [<c1473b1d>] usb_dev_resume+0xd/0x10
+<7>[   47.611157]  [<c13baa60>] dpm_run_callback+0x40/0xb0
+<7>[   47.611164]  [<c13bdb03>] ? pm_runtime_enable+0x43/0x70
+<7>[   47.611171]  [<c13bafc6>] device_resume+0x1a6/0x2c0
+<7>[   47.611177]  [<c13ba940>] ? dpm_show_time+0xe0/0xe0
+<7>[   47.611183]  [<c13bb0f9>] async_resume+0x19/0x40
+<7>[   47.611189]  [<c10580c4>] async_run_entry_fn+0x64/0x160
+<7>[   47.611196]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611203]  [<c104a24c>] ? process_one_work+0x10c/0x480
+<7>[   47.611209]  [<c104a2c0>] process_one_work+0x180/0x480
+<7>[   47.611215]  [<c104a244>] ? process_one_work+0x104/0x480
+<7>[   47.611220]  [<c1058060>] ? async_schedule+0x10/0x10
+<7>[   47.611226]  [<c104c15c>] worker_thread+0x11c/0x2f0
+<7>[   47.611233]  [<c104c040>] ? manage_workers.isra.27+0x1f0/0x1f0
+<7>[   47.611239]  [<c10507f8>] kthread+0x78/0x80
+<7>[   47.611244]  [<c1750000>] ? timer_cpu_notify+0xd6/0x20d
+<7>[   47.611253]  [<c1050780>] ? __init_kthread_worker+0x60/0x60
+<7>[   47.611258]  [<c176357e>] kernel_thread_helper+0x6/0xd
+<7>[   47.611283] ------------[ cut here ]------------
 
-This causes a problem on ARMv7, where the identity mapping is treated as
-strongly-ordered leading to architecturally UNPREDICTABLE behaviour of
-exclusive accesses, such as those used by atomic_inc.
+This patch changes hub_quiesce behavior to flush the TT clear work
+instead of canceling it, to make sure that no TT clear request remains
+uncompleted before suspend.
 
-This patch re-orders the secondary_start_kernel function so that we
-switch to swapper before performing any exclusive accesses.
-
-Reported-by: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
-Cc: David McKay <david.mckay@st.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/smp.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/usb/core/hub.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -277,18 +277,24 @@ static void __cpuinit smp_store_cpu_info
- asmlinkage void __cpuinit secondary_start_kernel(void)
- {
- 	struct mm_struct *mm = &init_mm;
--	unsigned int cpu = smp_processor_id();
-+	unsigned int cpu;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -482,13 +482,16 @@ static void hub_tt_work(struct work_stru
+ 	int			limit = 100;
+ 
+ 	spin_lock_irqsave (&hub->tt.lock, flags);
+-	while (--limit && !list_empty (&hub->tt.clear_list)) {
++	while (!list_empty(&hub->tt.clear_list)) {
+ 		struct list_head	*next;
+ 		struct usb_tt_clear	*clear;
+ 		struct usb_device	*hdev = hub->hdev;
+ 		const struct hc_driver	*drv;
+ 		int			status;
+ 
++		if (!hub->quiescing && --limit < 0)
++			break;
 +
-+	/*
-+	 * The identity mapping is uncached (strongly ordered), so
-+	 * switch away from it before attempting any exclusive accesses.
-+	 */
-+	cpu_switch_mm(mm->pgd, mm);
-+	enter_lazy_tlb(mm, current);
-+	local_flush_tlb_all();
+ 		next = hub->tt.clear_list.next;
+ 		clear = list_entry (next, struct usb_tt_clear, clear_list);
+ 		list_del (&clear->clear_list);
+@@ -952,7 +955,7 @@ static void hub_quiesce(struct usb_hub *
+ 	if (hub->has_indicators)
+ 		cancel_delayed_work_sync(&hub->leds);
+ 	if (hub->tt.hub)
+-		cancel_work_sync(&hub->tt.clear_work);
++		flush_work_sync(&hub->tt.clear_work);
+ }
  
- 	/*
- 	 * All kernel threads share the same mm context; grab a
- 	 * reference and switch to it.
- 	 */
-+	cpu = smp_processor_id();
- 	atomic_inc(&mm->mm_count);
- 	current->active_mm = mm;
- 	cpumask_set_cpu(cpu, mm_cpumask(mm));
--	cpu_switch_mm(mm->pgd, mm);
--	enter_lazy_tlb(mm, current);
--	local_flush_tlb_all();
- 
- 	printk("CPU%u: Booted secondary processor\n", cpu);
- 
+ /* caller has locked the hub device */
 
 
