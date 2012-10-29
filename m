@@ -1,70 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2J2OR6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:17:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33535 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab2J2OR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:17:56 -0400
-Date: Mon, 29 Oct 2012 15:17:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v3 4/6] cgroups: forbid pre_destroy callback to fail
-Message-ID: <20121029141755.GC20757@dhcp22.suse.cz>
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
- <1351251453-6140-5-git-send-email-mhocko@suse.cz>
- <508E8CDE.1090702@parallels.com>
- <508E8D6A.5040602@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508E8D6A.5040602@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754994Ab2J2OUw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:20:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18978 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780Ab2J2OUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 10:20:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Subject: [PATCH v1] Bug-fixes for v3.7 back-ported from Jan's postings.
+Date: Mon, 29 Oct 2012 10:08:16 -0400
+Message-Id: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 18:06:34, Glauber Costa wrote:
-> On 10/29/2012 06:04 PM, Glauber Costa wrote:
-> > On 10/26/2012 03:37 PM, Michal Hocko wrote:
-> >> Now that mem_cgroup_pre_destroy callback doesn't fail (other than a race
-> >> with a task attach resp. child group appears) finally we can safely move
-> >> on and forbit all the callbacks to fail.
-> >> The last missing piece is moving cgroup_call_pre_destroy after
-> >> cgroup_clear_css_refs so that css_tryget fails so no new charges for the
-> >> memcg can happen.
-> >> We cannot, however, move cgroup_call_pre_destroy right after because we
-> >> cannot call mem_cgroup_pre_destroy with the cgroup_lock held (see
-> >> 3fa59dfb cgroup: fix potential deadlock in pre_destroy) so we have to
-> >> move it after the lock is released.
-> >>
-> > 
-> > If we don't have the cgroup lock held, how safe is the following
-> > statement in mem_cgroup_reparent_charges():
-> > 
-> > if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
-> > 	return -EBUSY;
-> > 
-> > ?
-> > 
-> > IIUC, although this is not generally safe, but it would be safe here
-> > because at this point we are expected to had already set the removed bit
-> > in the css. If this is the case, however, this condition is impossible
-> > and becomes useless - in which case you may want to remove it from Patch1.
-> > 
-> Which I just saw you doing in patch5... =)
+These are back-ports from the ones that Jan posted. Please
+take a look  - I might have missed an email about one of the patches
+and I can't find it my mailbox :-(
 
-Yes, I just wanted to keep this one cgroup core only to enable further
-cgroup clean ups easier. Dropping the earlier in the series could
-introduce regressions which I tried to avoid as much as possible.
+Either way, was thinking to put these in v3.7.
 
-Thanks
+ arch/x86/include/asm/xen/hypercall.h     |   21 +++-----
+ drivers/xen/Makefile                     |    2 +-
+ drivers/xen/fallback.c                   |   78 ++++++++++++++++++++++++++++++
+ drivers/xen/xenbus/xenbus_dev_frontend.c |    2 +-
+ 4 files changed, 87 insertions(+), 16 deletions(-)
 
--- 
-Michal Hocko
-SUSE Labs
+
+Jan Beulich (2):
+      xen/hypercall: fix hypercall fallback code for very old hypervisors
+      xen/xenbus: fix overflow check in xenbus_file_write()
+
