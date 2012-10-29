@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760797Ab2J2Ujx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:39:53 -0400
-Received: from usindpps05.hds.com ([207.126.252.18]:33970 "EHLO
-	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758408Ab2J2Ujs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:39:48 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [PATCH v3 6/7] efi_pstore: Add a format check for an existing
- variable name at reading time
-Thread-Topic: [PATCH v3 6/7] efi_pstore: Add a format check for an existing
- variable name at reading time
-Thread-Index: Ac2zwt72eK09iNgHR7WUUZexYzUqOgCcHHoAAAe9wuA=
-Date: Mon, 29 Oct 2012 20:39:36 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138995BB@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41388F045@USINDEM103.corp.hds.com>
- <CAGTjWtDO=Z9y-7XxE5YdFzWsiT3MZ8Jhb4hgywYCQiG+NGcMKA@mail.gmail.com>
-In-Reply-To: <CAGTjWtDO=Z9y-7XxE5YdFzWsiT3MZ8Jhb4hgywYCQiG+NGcMKA@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760673Ab2J2Ujw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:39:52 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58321 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758414Ab2J2Ujt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:39:49 -0400
+Date: Mon, 29 Oct 2012 16:39:37 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 1/9] random32: introduce random32_get_bytes() and
+ prandom32_get_bytes()
+Message-ID: <20121029203937.GC7098@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+	akpm@linux-foundation.org, Artem Bityutskiy <dedekind1@gmail.com>,
+	Adrian Hunter <adrian.hunter@intel.com>,
+	David Woodhouse <dwmw2@infradead.org>,
+	linux-mtd@lists.infradead.org
+References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-29_03:2012-10-29,2012-10-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=1 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1210290243
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +                               efivars->walk_entry = list_entry(
-> > +                                       efivars->walk_entry->list.next,
-> > +                                        struct efivar_entry, list);
-> 
-> odd wrap.
-> 
+On Sun, Oct 28, 2012 at 04:18:58PM +0900, Akinobu Mita wrote:
+>  /**
+> + *	prandom32_get_bytes - get the requested number of pseudo-random bytes
+> + *	@state: pointer to state structure holding seeded state.
+> + *	@buf: where to copy the pseudo-random bytes to
+> + *	@bytes: the requested number of bytes
+> + *
+> + *	This is used for pseudo-randomness with no outside seeding.
+> + *	For more random results, use random32_get_bytes().
+> + */
+> +
+> +/**
+> + *	random32_get_bytes - get the requested number of pseudo-random bytes
+> + *	@buf: where to copy the pseudo-random bytes to
+> + *	@bytes: the requested number of bytes
+> + */
 
-I will fix it.
+This naming scheme is going to be very confusing.  If the function is
+going to return a pseudo-random number, it *must* have a "prandom"
+suffix.  Otherwise some kernel developer, somewhere, will get confused
+between get_random_bytes() and random32_get_bytes(), and the result
+may be a very embarassing security exposure.
 
-Thanks,
+How about prandom32_get_bytes_state() and prandom32_get_bytes() instead?
 
-Seiji
+						- Ted
