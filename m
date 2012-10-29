@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609Ab2J2WTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:19:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47201 "EHLO mail.kernel.org"
+	id S933594Ab2J2WTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:19:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47191 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761158Ab2J2Vgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:46 -0400
+	id S1761047Ab2J2Vgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nix <nix@esperi.org.uk>, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 018/101] LOCKD: fix races in nsm_client_get
-Date: Mon, 29 Oct 2012 14:34:31 -0700
-Message-Id: <20121029213242.194355625@linuxfoundation.org>
+        Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 017/101] Revert "SUNRPC: Ensure we close the socket on EPIPE errors too..."
+Date: Mon, 29 Oct 2012 14:34:30 -0700
+Message-Id: <20121029213242.074763478@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,79 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit a4ee8d978e47e79d536226dccb48991f70091168 upstream.
+commit b9d2bb2ee537424a7f855e1f93eed44eb9ee0854 upstream.
 
-Commit e9406db20fecbfcab646bad157b4cfdc7cadddfb (lockd: per-net
-NSM client creation and destruction helpers introduced) contains
-a nasty race on initialisation of the per-net NSM client because
-it doesn't check whether or not the client is set after grabbing
-the nsm_create_mutex.
+This reverts commit 55420c24a0d4d1fce70ca713f84aa00b6b74a70e.
+Now that we clear the connected flag when entering TCP_CLOSE_WAIT,
+the deadlock described in this commit is no longer possible.
+Instead, the resulting call to xs_tcp_shutdown() can interfere
+with pending reconnection attempts.
 
-Reported-by: Nix <nix@esperi.org.uk>
+Reported-by: Chris Perl <chris.perl@gmail.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Chris Perl <chris.perl@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/mon.c |   43 ++++++++++++++++++++++++++-----------------
- 1 file changed, 26 insertions(+), 17 deletions(-)
+ net/sunrpc/xprtsock.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -85,29 +85,38 @@ static struct rpc_clnt *nsm_create(struc
- 	return rpc_create(&args);
- }
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -736,10 +736,10 @@ static int xs_tcp_send_request(struct rp
+ 		dprintk("RPC:       sendmsg returned unrecognized error %d\n",
+ 			-status);
+ 	case -ECONNRESET:
+-	case -EPIPE:
+ 		xs_tcp_shutdown(xprt);
+ 	case -ECONNREFUSED:
+ 	case -ENOTCONN:
++	case -EPIPE:
+ 		clear_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags);
+ 	}
  
-+static struct rpc_clnt *nsm_client_set(struct lockd_net *ln,
-+		struct rpc_clnt *clnt)
-+{
-+	spin_lock(&ln->nsm_clnt_lock);
-+	if (ln->nsm_users == 0) {
-+		if (clnt == NULL)
-+			goto out;
-+		ln->nsm_clnt = clnt;
-+	}
-+	clnt = ln->nsm_clnt;
-+	ln->nsm_users++;
-+out:
-+	spin_unlock(&ln->nsm_clnt_lock);
-+	return clnt;
-+}
-+
- static struct rpc_clnt *nsm_client_get(struct net *net)
- {
--	static DEFINE_MUTEX(nsm_create_mutex);
--	struct rpc_clnt	*clnt;
-+	struct rpc_clnt	*clnt, *new;
- 	struct lockd_net *ln = net_generic(net, lockd_net_id);
- 
--	spin_lock(&ln->nsm_clnt_lock);
--	if (ln->nsm_users) {
--		ln->nsm_users++;
--		clnt = ln->nsm_clnt;
--		spin_unlock(&ln->nsm_clnt_lock);
-+	clnt = nsm_client_set(ln, NULL);
-+	if (clnt != NULL)
- 		goto out;
--	}
--	spin_unlock(&ln->nsm_clnt_lock);
- 
--	mutex_lock(&nsm_create_mutex);
--	clnt = nsm_create(net);
--	if (!IS_ERR(clnt)) {
--		ln->nsm_clnt = clnt;
--		smp_wmb();
--		ln->nsm_users = 1;
--	}
--	mutex_unlock(&nsm_create_mutex);
-+	clnt = new = nsm_create(net);
-+	if (IS_ERR(clnt))
-+		goto out;
-+
-+	clnt = nsm_client_set(ln, new);
-+	if (clnt != new)
-+		rpc_shutdown_client(new);
- out:
- 	return clnt;
- }
 
 
