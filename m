@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470Ab2J2N2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:28:31 -0400
+	id S1758958Ab2J2N2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:28:44 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:44308 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757181Ab2J2N20 (ORCPT
+	with ESMTP id S1757504Ab2J2N2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:28:26 -0400
+	Mon, 29 Oct 2012 09:28:34 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 2/9] irq_work: Remove CONFIG_HAVE_IRQ_WORK
-Date: Mon, 29 Oct 2012 14:28:09 +0100
-Message-Id: <1351517296-9173-3-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 6/9] nohz: Add API to check tick state
+Date: Mon, 29 Oct 2012 14:28:13 +0100
+Message-Id: <1351517296-9173-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
 References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
@@ -25,10 +25,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq work is supposed to work everywhere because of the irq work
-hook in the generic timer tick function.
-
-I might be missing something though...
+We need some quick way to check if the CPU has stopped
+its tick. This will be useful to implement the printk tick
+using the irq work subsystem.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -38,208 +37,64 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/alpha/Kconfig                  |    1 -
- arch/arm/Kconfig                    |    1 -
- arch/arm64/Kconfig                  |    1 -
- arch/blackfin/Kconfig               |    1 -
- arch/frv/Kconfig                    |    1 -
- arch/hexagon/Kconfig                |    1 -
- arch/mips/Kconfig                   |    1 -
- arch/parisc/Kconfig                 |    1 -
- arch/powerpc/Kconfig                |    1 -
- arch/s390/Kconfig                   |    1 -
- arch/sh/Kconfig                     |    1 -
- arch/sparc/Kconfig                  |    1 -
- arch/x86/Kconfig                    |    1 -
- drivers/staging/iio/trigger/Kconfig |    1 -
- init/Kconfig                        |    4 ----
- 15 files changed, 0 insertions(+), 18 deletions(-)
+ include/linux/tick.h     |   17 ++++++++++++++++-
+ kernel/time/tick-sched.c |    2 +-
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 7da9124..ea86275 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -5,7 +5,6 @@ config ALPHA
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
- 	select HAVE_SYSCALL_WRAPPERS
--	select HAVE_IRQ_WORK
- 	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
- 	select HAVE_DMA_ATTRS
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 767aae8..44bdbfe 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -30,7 +30,6 @@ config ARM
- 	select HAVE_KERNEL_LZO
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_XZ
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_REGS_AND_STACK_ACCESS_API
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 7ff68c9..efa0627 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -17,7 +17,6 @@ config ARM64
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS
--	select HAVE_IRQ_WORK
- 	select HAVE_MEMBLOCK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_SPARSE_IRQ
-diff --git a/arch/blackfin/Kconfig b/arch/blackfin/Kconfig
-index ccd9193..9c588f7 100644
---- a/arch/blackfin/Kconfig
-+++ b/arch/blackfin/Kconfig
-@@ -24,7 +24,6 @@ config BLACKFIN
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
- 	select HAVE_IDE
--	select HAVE_IRQ_WORK
- 	select HAVE_KERNEL_GZIP if RAMKERNEL
- 	select HAVE_KERNEL_BZIP2 if RAMKERNEL
- 	select HAVE_KERNEL_LZMA if RAMKERNEL
-diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
-index 9d26264..17df48f 100644
---- a/arch/frv/Kconfig
-+++ b/arch/frv/Kconfig
-@@ -3,7 +3,6 @@ config FRV
- 	default y
- 	select HAVE_IDE
- 	select HAVE_ARCH_TRACEHOOK
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_UID16
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
-index b2fdfb7..8a902a7 100644
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@ -14,7 +14,6 @@ config HEXAGON
- 	# select HAVE_CLK
- 	# select IRQ_PER_CPU
- 	# select GENERIC_PENDING_IRQ if SMP
--	select HAVE_IRQ_WORK
- 	select GENERIC_ATOMIC64
- 	select HAVE_PERF_EVENTS
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 35453ea..045bf4d 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -4,7 +4,6 @@ config MIPS
- 	select HAVE_GENERIC_DMA_COHERENT
- 	select HAVE_IDE
- 	select HAVE_OPROFILE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select PERF_USE_VMALLOC
- 	select HAVE_ARCH_KGDB
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index b87438b..abbdb7a 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -9,7 +9,6 @@ config PARISC
- 	select RTC_DRV_GENERIC
- 	select INIT_ALL_POSSIBLE
- 	select BUG
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select GENERIC_ATOMIC64 if !64BIT
- 	select HAVE_GENERIC_HARDIRQS
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index df7edb8..c071bcb 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -118,7 +118,6 @@ config PPC
- 	select HAVE_SYSCALL_WRAPPERS if PPC64
- 	select GENERIC_ATOMIC64 if PPC32
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_REGS_AND_STACK_ACCESS_API
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 99d2d79..d3e251b 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -78,7 +78,6 @@ config S390
- 	select HAVE_KVM if 64BIT
- 	select HAVE_ARCH_TRACEHOOK
- 	select INIT_ALL_POSSIBLE
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	select HAVE_DEBUG_KMEMLEAK
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 3b3e27a..8dc67fd 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -11,7 +11,6 @@ config SUPERH
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_DMA_ATTRS
--	select HAVE_IRQ_WORK
- 	select HAVE_PERF_EVENTS
- 	select HAVE_DEBUG_BUGVERBOSE
- 	select ARCH_HAVE_CUSTOM_GPIO_H
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 91c780c..17b3c9f 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -22,7 +22,6 @@ config SPARC
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select RTC_CLASS
- 	select RTC_DRV_M48T59
--	select HAVE_IRQ_WORK
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
- 	select HAVE_ARCH_JUMP_LABEL
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 42d2c35..bf1821b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -26,7 +26,6 @@ config X86
- 	select HAVE_OPROFILE
- 	select HAVE_PCSPKR_PLATFORM
- 	select HAVE_PERF_EVENTS
--	select HAVE_IRQ_WORK
- 	select HAVE_IOREMAP_PROT
- 	select HAVE_KPROBES
- 	select HAVE_MEMBLOCK
-diff --git a/drivers/staging/iio/trigger/Kconfig b/drivers/staging/iio/trigger/Kconfig
-index 7d32075..d44d3ad 100644
---- a/drivers/staging/iio/trigger/Kconfig
-+++ b/drivers/staging/iio/trigger/Kconfig
-@@ -21,7 +21,6 @@ config IIO_GPIO_TRIGGER
- config IIO_SYSFS_TRIGGER
- 	tristate "SYSFS trigger"
- 	depends on SYSFS
--	depends on HAVE_IRQ_WORK
- 	select IRQ_WORK
- 	help
- 	  Provides support for using SYSFS entry as IIO triggers.
-diff --git a/init/Kconfig b/init/Kconfig
-index 4c93533..8ba9fc3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -20,12 +20,8 @@ config CONSTRUCTORS
- 	bool
- 	depends on !UML
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index f37fceb..2307dd3 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -8,6 +8,8 @@
  
--config HAVE_IRQ_WORK
--	bool
--
- config IRQ_WORK
- 	bool
--	depends on HAVE_IRQ_WORK
+ #include <linux/clockchips.h>
+ #include <linux/irqflags.h>
++#include <linux/percpu.h>
++#include <linux/hrtimer.h>
  
- config BUILDTIME_EXTABLE_SORT
- 	bool
+ #ifdef CONFIG_GENERIC_CLOCKEVENTS
+ 
+@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
++DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
++
++static inline int tick_nohz_tick_stopped(void)
++{
++	return __this_cpu_read(tick_cpu_sched.tick_stopped);
++}
++
+ extern void tick_nohz_idle_enter(void);
+ extern void tick_nohz_idle_exit(void);
+ extern void tick_nohz_irq_exit(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+-# else
++
++# else /* !CONFIG_NO_HZ */
++static inline int tick_nohz_tick_stopped(void)
++{
++	return 0;
++}
++
+ static inline void tick_nohz_idle_enter(void) { }
+ static inline void tick_nohz_idle_exit(void) { }
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f423bdd..ccc1971 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -28,7 +28,7 @@
+ /*
+  * Per cpu nohz control structure
+  */
+-static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
++DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
+ 
+ /*
+  * The time, when the last jiffy update happened. Protected by xtime_lock.
 -- 
 1.7.5.4
 
