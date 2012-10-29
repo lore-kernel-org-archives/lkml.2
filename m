@@ -1,39 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab2J2PYn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:24:43 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:62316 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab2J2PYl (ORCPT
+	id S1759276Ab2J2P0q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:26:46 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:38794 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab2J2P0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:24:41 -0400
+	Mon, 29 Oct 2012 11:26:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <1351524186.24721.29.camel@twins>
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-5-git-send-email-eranian@google.com>
-	<1351524186.24721.29.camel@twins>
-Date: Mon, 29 Oct 2012 16:24:41 +0100
-Message-ID: <CABPqkBQEcPdDKgR6nSvcJQ4WcSJNzi8LS+QO9yTsLfdjigijuA@mail.gmail.com>
-Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load Latency
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Lin Ming <ming.m.lin@intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+In-Reply-To: <1350656442-1523-14-git-send-email-glommer@parallels.com>
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
+	<1350656442-1523-14-git-send-email-glommer@parallels.com>
+Date: Tue, 30 Oct 2012 00:26:43 +0900
+Message-ID: <CAAmzW4MGdj-jL_FJ2Nkoa4Hx8KUDCeVK6HFidYQLauu_0vHhCg@mail.gmail.com>
+Subject: Re: [PATCH v5 13/18] memcg/sl[au]b Track all the memcg children of a kmem_cache.
+From: JoonSoo Kim <js1304@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        Suleiman Souhlal <suleiman@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 4:23 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-10-29 at 16:15 +0100, Stephane Eranian wrote:
->> +EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x100b,umask=0x1,ldlat=3");
->> +EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
->
-> I haven't fully grokked the macro magic yet, but event=0x100b seems
-> wrong, event only takes 8 bit on Intel.
+2012/10/19 Glauber Costa <glommer@parallels.com>:
+> +void kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+> +{
+> +       struct kmem_cache *c;
+> +       int i;
+> +
+> +       if (!s->memcg_params)
+> +               return;
+> +       if (!s->memcg_params->is_root_cache)
+> +               return;
+> +
+> +       /*
+> +        * If the cache is being destroyed, we trust that there is no one else
+> +        * requesting objects from it. Even if there are, the sanity checks in
+> +        * kmem_cache_destroy should caught this ill-case.
+> +        *
+> +        * Still, we don't want anyone else freeing memcg_caches under our
+> +        * noses, which can happen if a new memcg comes to life. As usual,
+> +        * we'll take the set_limit_mutex to protect ourselves against this.
+> +        */
+> +       mutex_lock(&set_limit_mutex);
+> +       for (i = 0; i < memcg_limited_groups_array_size; i++) {
+> +               c = s->memcg_params->memcg_caches[i];
+> +               if (c)
+> +                       kmem_cache_destroy(c);
+> +       }
+> +       mutex_unlock(&set_limit_mutex);
+> +}
 
-Yeah, my bad. I messed up on this one. should be:
-event=0x0b,umask=0x10,ldlat=3
+It may cause NULL deref.
+Look at the following scenario.
+
+1. some memcg slab caches has remained object.
+2. start to destroy memcg.
+3. schedule_delayed_work(kmem_cache_destroy_work_func, @delay 60hz)
+4. all remained object is freed.
+5. start to destroy root cache.
+6. kmem_cache_destroy makes 's->memcg_params->memcg_caches[i]" NULL!!
+7. Start delayed work function.
+8. cachep in kmem_cache_destroy_work_func() may be NULL
+
+Thanks.
