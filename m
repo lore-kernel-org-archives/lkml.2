@@ -1,112 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab2J2RuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:50:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58886 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753962Ab2J2RuK (ORCPT
+	id S1759178Ab2J2Ru7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:50:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51193 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679Ab2J2Ru4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:50:10 -0400
-Date: Mon, 29 Oct 2012 13:50:07 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
-Message-ID: <20121029175007.GA20796@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-6-git-send-email-levinsasha928@gmail.com> <20121029113515.GB9115@Krystal> <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
+	Mon, 29 Oct 2012 13:50:56 -0400
+Date: Mon, 29 Oct 2012 18:50:47 +0100
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <linux@roeck-us.net>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>
+Cc: lm-sensors@lm-sensors.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        oprofile-list@lists.sf.net, Stephane Eranian <eranian@google.com>,
+        Robert Richter <rric@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        =?iso-8859-1?Q?J=F6rg_R=F6del?= <joro@8bytes.org>
+Subject: [PATCH 1/4] hwmon, fam15h_power: Change email address, MAINTAINERS
+ entry
+Message-ID: <20121029175047.GB5024@tweety>
+References: <20121029174924.GA5024@tweety>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121029174924.GA5024@tweety>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> On Mon, Oct 29, 2012 at 7:35 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > * Sasha Levin (levinsasha928@gmail.com) wrote:
-> >> Switch tracepoints to use the new hashtable implementation. This reduces the amount of
-> >> generic unrelated code in the tracepoints.
-> >>
-> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> >> ---
-> >>  kernel/tracepoint.c | 27 +++++++++++----------------
-> >>  1 file changed, 11 insertions(+), 16 deletions(-)
-> >>
-> >> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> >> index d96ba22..854df92 100644
-> >> --- a/kernel/tracepoint.c
-> >> +++ b/kernel/tracepoint.c
-> >> @@ -26,6 +26,7 @@
-> >>  #include <linux/slab.h>
-> >>  #include <linux/sched.h>
-> >>  #include <linux/static_key.h>
-> >> +#include <linux/hashtable.h>
-> >>
-> >>  extern struct tracepoint * const __start___tracepoints_ptrs[];
-> >>  extern struct tracepoint * const __stop___tracepoints_ptrs[];
-> >> @@ -49,8 +50,7 @@ static LIST_HEAD(tracepoint_module_list);
-> >>   * Protected by tracepoints_mutex.
-> >>   */
-> >>  #define TRACEPOINT_HASH_BITS 6
-> >> -#define TRACEPOINT_TABLE_SIZE (1 << TRACEPOINT_HASH_BITS)
-> >> -static struct hlist_head tracepoint_table[TRACEPOINT_TABLE_SIZE];
-> >> +static DEFINE_HASHTABLE(tracepoint_table, TRACEPOINT_HASH_BITS);
-> >>
-> > [...]
-> >>
-> >> @@ -722,6 +715,8 @@ struct notifier_block tracepoint_module_nb = {
-> >>
-> >>  static int init_tracepoints(void)
-> >>  {
-> >> +     hash_init(tracepoint_table);
-> >> +
-> >>       return register_module_notifier(&tracepoint_module_nb);
-> >>  }
-> >>  __initcall(init_tracepoints);
-> >
-> > So we have a hash table defined in .bss (therefore entirely initialized
-> > to NULL), and you add a call to "hash_init", which iterates on the whole
-> > array and initialize it to NULL (again) ?
-> >
-> > This extra initialization is redundant. I think it should be removed
-> > from here, and hashtable.h should document that hash_init() don't need
-> > to be called on zeroed memory (which includes static/global variables,
-> > kzalloc'd memory, etc).
-> 
-> This was discussed in the previous series, the conclusion was to call
-> hash_init() either way to keep the encapsulation and consistency.
 
-Agreed,
+Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+---
+ Documentation/hwmon/fam15h_power |    2 +-
+ MAINTAINERS                      |    2 +-
+ drivers/hwmon/fam15h_power.c     |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-Thanks,
-
-Mathieu
-
-> 
-> It's cheap enough and happens only once, so why not?
-> 
-> 
-> Thanks,
-> Sasha
-
+diff --git a/Documentation/hwmon/fam15h_power b/Documentation/hwmon/fam15h_power
+index a92918e..8065481 100644
+--- a/Documentation/hwmon/fam15h_power
++++ b/Documentation/hwmon/fam15h_power
+@@ -10,7 +10,7 @@ Supported chips:
+   BIOS and Kernel Developer's Guide (BKDG) For AMD Family 15h Processors
+     (not yet published)
+ 
+-Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++Author: Andreas Herrmann <herrmann.der.user@googlemail.com>
+ 
+ Description
+ -----------
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1fa9074..a4e8136 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -503,7 +503,7 @@ F:	include/linux/altera_uart.h
+ F:	include/linux/altera_jtaguart.h
+ 
+ AMD FAM15H PROCESSOR POWER MONITORING DRIVER
+-M:	Andreas Herrmann <andreas.herrmann3@amd.com>
++M:	Andreas Herrmann <herrmann.der.user@googlemail.com>
+ L:	lm-sensors@lm-sensors.org
+ S:	Maintained
+ F:	Documentation/hwmon/fam15h_power
+diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
+index 68ad7d2..4f41104 100644
+--- a/drivers/hwmon/fam15h_power.c
++++ b/drivers/hwmon/fam15h_power.c
+@@ -2,7 +2,7 @@
+  * fam15h_power.c - AMD Family 15h processor power monitoring
+  *
+  * Copyright (c) 2011 Advanced Micro Devices, Inc.
+- * Author: Andreas Herrmann <andreas.herrmann3@amd.com>
++ * Author: Andreas Herrmann <herrmann.der.user@googlemail.com>
+  *
+  *
+  * This driver is free software; you can redistribute it and/or
+@@ -28,7 +28,7 @@
+ #include <asm/processor.h>
+ 
+ MODULE_DESCRIPTION("AMD Family 15h CPU processor power monitor");
+-MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
++MODULE_AUTHOR("Andreas Herrmann <herrmann.der.user@googlemail.com>");
+ MODULE_LICENSE("GPL");
+ 
+ /* D18F3 */
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.9.5
+
