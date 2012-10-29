@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab2J2NEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:04:08 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58475 "EHLO
+	id S1756692Ab2J2NHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:07:46 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58499 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754539Ab2J2NEG (ORCPT
+	by vger.kernel.org with ESMTP id S1756567Ab2J2NHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:04:06 -0400
-Date: Mon, 29 Oct 2012 09:04:03 -0400
+	Mon, 29 Oct 2012 09:07:39 -0400
+Date: Mon, 29 Oct 2012 09:07:36 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Sasha Levin <levinsasha928@gmail.com>
 Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
@@ -22,13 +22,13 @@ Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
         ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
         linux-nfs@vger.kernel.org, dev@openvswitch.org,
         rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 11/16] net,l2tp: use new hashtable implementation
-Message-ID: <20121029130403.GE11733@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-11-git-send-email-levinsasha928@gmail.com>
+Subject: Re: [PATCH v7 10/16] dlm: use new hashtable implementation
+Message-ID: <20121029130736.GF11733@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-10-git-send-email-levinsasha928@gmail.com> <20121029124655.GD11733@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351450948-15618-11-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <20121029124655.GD11733@Krystal>
 X-Editor: vi
 X-Info: http://www.efficios.com
 User-Agent: Mutt/1.5.18 (2008-05-17)
@@ -36,41 +36,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-[...]  
-> -/* Session hash global list for L2TPv3.
-> - * The session_id SHOULD be random according to RFC3931, but several
-> - * L2TP implementations use incrementing session_ids.  So we do a real
-> - * hash on the session_id, rather than a simple bitmask.
-> - */
-> -static inline struct hlist_head *
-> -l2tp_session_id_hash_2(struct l2tp_net *pn, u32 session_id)
-> -{
-> -	return &pn->l2tp_session_hlist[hash_32(session_id, L2TP_HASH_BITS_2)];
-> -
-> -}
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Sasha Levin (levinsasha928@gmail.com) wrote:
+> [...]
+> > @@ -158,34 +159,21 @@ static int dlm_allow_conn;
+> >  static struct workqueue_struct *recv_workqueue;
+> >  static struct workqueue_struct *send_workqueue;
+> >  
+> > -static struct hlist_head connection_hash[CONN_HASH_SIZE];
+> > +static struct hlist_head connection_hash[CONN_HASH_BITS];
+> >  static DEFINE_MUTEX(connections_lock);
+> >  static struct kmem_cache *con_cache;
+> >  
+> >  static void process_recv_sockets(struct work_struct *work);
+> >  static void process_send_sockets(struct work_struct *work);
+> >  
+> > -
+> > -/* This is deliberately very simple because most clusters have simple
+> > -   sequential nodeids, so we should be able to go straight to a connection
+> > -   struct in the array */
+> > -static inline int nodeid_hash(int nodeid)
+> > -{
+> > -	return nodeid & (CONN_HASH_SIZE-1);
+> > -}
+> 
+> There is one thing I dislike about this change: you remove a useful
+> comment. It's good to be informed of the reason why a direct mapping
+> "value -> hash" without any dispersion function is preferred here.
 
-I understand that you removed this hash function, as well as
-"l2tp_session_id_hash" below, but is there any way we could leave those
-comments in place ? They look useful.
+And now that I come to think of it: you're changing the behavior : you
+will now use a dispersion function on the key, which goes against the
+intent expressed in this comment.
 
-> -/* Session hash list.
-> - * The session_id SHOULD be random according to RFC2661, but several
-> - * L2TP implementations (Cisco and Microsoft) use incrementing
-> - * session_ids.  So we do a real hash on the session_id, rather than a
-> - * simple bitmask.
+It might be good to change hash_add(), hash_add_rcu(),
+hash_for_each_possible*() key parameter for a "hash" parameter, and let
+the caller provide the hash value computed by the function they like as
+parameter, rather than enforcing hash_32/hash_64.
 
-Ditto.
-
-> - */
-> -static inline struct hlist_head *
-> -l2tp_session_id_hash(struct l2tp_tunnel *tunnel, u32 session_id)
-> -{
-> -	return &tunnel->session_hlist[hash_32(session_id, L2TP_HASH_BITS)];
-> -}
-> -
->  /* Lookup a session by id
->   */
+Thoughts ?
 
 Thanks,
 
