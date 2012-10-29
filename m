@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab2J2Ke7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:34:59 -0400
-Received: from plane.gmane.org ([80.91.229.3]:41099 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752754Ab2J2Ke6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:34:58 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Dimitar <dimitarsh1@gmail.com>
-Subject: Re: =?utf-8?b?Z21hNTAwX2dmeA==?= black screen
-Date: Sun, 28 Oct 2012 21:21:30 +0000 (UTC)
-Message-ID: <loom.20121028T222030-310@post.gmane.org>
-References: <CAC27Lhfn+o5OWQFs6kvkaheh5cX_6jFxtJadLa8csJcfVknJLQ@mail.gmail.com> <20120921135916.796d970e@bob.linux.org.uk> <CAC27LhfvV4u1WemsvimtVGuMwwLuz8ns82-wPDe30=cq4OUkAQ@mail.gmail.com> <CAC27LhfktXyBNiB+HhS61pFdiyMhTp-5JYco77=xCFQB4nxy+A@mail.gmail.com>
+	id S932251Ab2J2KgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:36:22 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:62557 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751353Ab2J2KgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:36:21 -0400
+Message-ID: <1351506978.1339.8.camel@x61.thuisdomein>
+Subject: Re: [PATCH] aic7xxx_old: silence GCC warnings
+From: Paul Bolle <pebolle@tiscali.nl>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 29 Oct 2012 11:36:18 +0100
+In-Reply-To: <1348219723.1581.5.camel@x61.thuisdomein>
+References: <1348219723.1581.5.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.164.159.216 (Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20100101 Firefox/16.0)
+X-OriginalArrivalTime: 29 Oct 2012 10:36:19.0407 (UTC) FILETIME=[3B6F2DF0:01CDB5C1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Markus H <hauschild.markus <at> gmail.com> writes:
+On Fri, 2012-09-21 at 11:28 +0200, Paul Bolle wrote:
+> Building the aic7xxx_old driver triggers these GCC warnings:
+>     drivers/scsi/aic7xxx_old.c:7901:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+>     drivers/scsi/aic7xxx_old.c:7898:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
+>     drivers/scsi/aic7xxx_old.c:8517:5: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]
+>     drivers/scsi/aic7xxx_old.c:8510:5: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]
+> 
+> Fix these warnings by adopting the idiom used elsewhere in this driver.
+> Since AHC_EISA and AHC_VL are only ever set for AHC_AIC7770 this fix
+> should not lead to any functional change.
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> 0) I noticed these warnings while building v3.6-rc6 on current Fedora
+> 17, using Fedora's default config.
 
-> 
-> Hi,
-> 
-> >> Should be fixed in the very latest 3.6-rc. I got a report from soeone
-> >> else that I could duplicate and pin down exactly. It's made somewhat
-> >> more complicated by the fact that another bug got introduced and then
-> >> fixed across the same period.
-> 
-> >> Can you try the latest 3.6-rc release. The commit in question is
-> >> "gma500: Fix regression on Oaktrail devices"
-> >
-> > I will try 3.6-rc6 and report back.
-> 
-> Works fine (at least with fb console, setting up xorg at the moment).
-> 
-> Thanks,
-> Markus
-> 
+Identical warnings can be seen while building v3.7-rc3. What's the
+status of my patch? Did anyone found some time to have a look at it?
 
 
-I tried kernel 3.6.3 and still doesn't work :S
-Any suggestions?
-
-Thank you very much.
-Regards, 
-Dimitar
+Paul Bolle
 
