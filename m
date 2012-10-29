@@ -1,105 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761585Ab2J2Vxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:53:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48552 "EHLO mail.kernel.org"
+	id S1761593Ab2J2Vxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:53:41 -0400
+Received: from mail.kernel.org ([198.145.19.201]:49903 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761544Ab2J2VlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: =?UTF-8?q?=5B=2017/54=5D=20Staging=3A=20android=3A=20binder=3A=20Fix=20memory=20leak=20on=20thread/process=20exit?=
-Date: Mon, 29 Oct 2012 14:40:18 -0700
-Message-Id: <20121029213804.689112897@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
-References: <20121029213802.697479610@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1761422Ab2J2Vxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:53:38 -0400
+Date: Mon, 29 Oct 2012 14:53:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anmol Sarma <unmole.in@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: android: binder: Fixed multi-line strings
+Message-ID: <20121029215336.GA13740@kroah.com>
+References: <20121025192510.GA26600@kroah.com>
+ <1351239859-6585-1-git-send-email-unmole.in@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351239859-6585-1-git-send-email-unmole.in@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 26, 2012 at 01:54:19PM +0530, Anmol Sarma wrote:
+>  	if (vma == NULL) {
+> -		pr_err("binder: %d: binder_alloc_buf failed to "
+> -		       "map pages in userspace, no vma\n", proc->pid);
+> +		pr_err("%d: binder_alloc_buf failed to map pages in userspace, no vma\n",
+> +		 proc->pid);
+>  		goto err_no_vma;
+>  	}
+>  
+> @@ -585,8 +587,8 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
+>  		BUG_ON(*page);
+>  		*page = alloc_page(GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO);
+>  		if (*page == NULL) {
+> -			pr_err("binder: %d: binder_alloc_buf failed "
+> -			       "for page at %p\n", proc->pid, page_addr);
+> +			pr_err("%d: binder_alloc_buf failed for page at %p\n",
+> +			 proc->pid, page_addr);
+>  			goto err_alloc_page_failed;
+>  		}
+>  		tmp_area.addr = page_addr;
 
-------------------
+What's with the very wierd indentation here for the second line?  Please
+indent it properly, one space isn't ok.
 
-From: Arve Hjønnevåg <arve@android.com>
-
-commit 675d66b0ed5fd170d6a44cf8dbb3fa56a5347bdb upstream.
-
-If a thread or process exited while a reply, one-way transaction or
-death notification was pending, the struct holding the pending work
-was leaked.
-
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/staging/android/binder.c |   28 +++++++++++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
-
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -2507,14 +2507,38 @@ static void binder_release_work(struct l
- 			struct binder_transaction *t;
- 
- 			t = container_of(w, struct binder_transaction, work);
--			if (t->buffer->target_node && !(t->flags & TF_ONE_WAY))
-+			if (t->buffer->target_node &&
-+			    !(t->flags & TF_ONE_WAY)) {
- 				binder_send_failed_reply(t, BR_DEAD_REPLY);
-+			} else {
-+				binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+					"binder: undelivered transaction %d\n",
-+					t->debug_id);
-+				t->buffer->transaction = NULL;
-+				kfree(t);
-+				binder_stats_deleted(BINDER_STAT_TRANSACTION);
-+			}
- 		} break;
- 		case BINDER_WORK_TRANSACTION_COMPLETE: {
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered TRANSACTION_COMPLETE\n");
- 			kfree(w);
- 			binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
- 		} break;
-+		case BINDER_WORK_DEAD_BINDER_AND_CLEAR:
-+		case BINDER_WORK_CLEAR_DEATH_NOTIFICATION: {
-+			struct binder_ref_death *death;
-+
-+			death = container_of(w, struct binder_ref_death, work);
-+			binder_debug(BINDER_DEBUG_DEAD_TRANSACTION,
-+				"binder: undelivered death notification, %p\n",
-+				death->cookie);
-+			kfree(death);
-+			binder_stats_deleted(BINDER_STAT_DEATH);
-+		} break;
- 		default:
-+			pr_err("binder: unexpected work type, %d, not freed\n",
-+			       w->type);
- 			break;
- 		}
- 	}
-@@ -2984,6 +3008,7 @@ static void binder_deferred_release(stru
- 		nodes++;
- 		rb_erase(&node->rb_node, &proc->nodes);
- 		list_del_init(&node->work.entry);
-+		binder_release_work(&node->async_todo);
- 		if (hlist_empty(&node->refs)) {
- 			kfree(node);
- 			binder_stats_deleted(BINDER_STAT_NODE);
-@@ -3022,6 +3047,7 @@ static void binder_deferred_release(stru
- 		binder_delete_ref(ref);
- 	}
- 	binder_release_work(&proc->todo);
-+	binder_release_work(&proc->delivered_death);
- 	buffers = 0;
- 
- 	while ((n = rb_first(&proc->allocated_buffers))) {
-
-
+greg k-h
