@@ -1,63 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760673Ab2J2Ujw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:39:52 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58321 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758414Ab2J2Ujt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:39:49 -0400
-Date: Mon, 29 Oct 2012 16:39:37 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 1/9] random32: introduce random32_get_bytes() and
- prandom32_get_bytes()
-Message-ID: <20121029203937.GC7098@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
-	akpm@linux-foundation.org, Artem Bityutskiy <dedekind1@gmail.com>,
-	Adrian Hunter <adrian.hunter@intel.com>,
-	David Woodhouse <dwmw2@infradead.org>,
-	linux-mtd@lists.infradead.org
-References: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351408746-8623-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1760590Ab2J2UjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:39:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10288 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758279Ab2J2Uiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:38:55 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5U5zc0_H5bAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Sbqno787VVwA:10 a=pGLkceISAAAA:8 a=Y_cBV_yHcS7a025lPygA:9 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121029203851.331629432@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 29 Oct 2012 16:27:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [PATCH 32/32] nohz, not for merge: Add tickless tracing
+References: <20121029202711.062749374@goodmis.org>
+Content-Disposition: inline; filename=0032-nohz-not-for-merge-Add-tickless-tracing.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 04:18:58PM +0900, Akinobu Mita wrote:
->  /**
-> + *	prandom32_get_bytes - get the requested number of pseudo-random bytes
-> + *	@state: pointer to state structure holding seeded state.
-> + *	@buf: where to copy the pseudo-random bytes to
-> + *	@bytes: the requested number of bytes
-> + *
-> + *	This is used for pseudo-randomness with no outside seeding.
-> + *	For more random results, use random32_get_bytes().
-> + */
-> +
-> +/**
-> + *	random32_get_bytes - get the requested number of pseudo-random bytes
-> + *	@buf: where to copy the pseudo-random bytes to
-> + *	@bytes: the requested number of bytes
-> + */
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-This naming scheme is going to be very confusing.  If the function is
-going to return a pseudo-random number, it *must* have a "prandom"
-suffix.  Otherwise some kernel developer, somewhere, will get confused
-between get_random_bytes() and random32_get_bytes(), and the result
-may be a very embarassing security exposure.
+add hoc tickless tracing
 
-How about prandom32_get_bytes_state() and prandom32_get_bytes() instead?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/smp.c    |    2 ++
+ kernel/cpuset.c          |    1 +
+ kernel/time/tick-sched.c |    7 +++++++
+ 3 files changed, 10 insertions(+)
 
-						- Ted
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 0bad72d..45f2176 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -264,6 +264,7 @@ finish:
+ void smp_reschedule_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
++	trace_printk("IPI: Scheduler\n");
+ 	inc_irq_stat(irq_resched_count);
+ 	scheduler_ipi();
+ 	/*
+@@ -276,6 +277,7 @@ void smp_cpuset_update_nohz_interrupt(struct pt_regs *regs)
+ {
+ 	ack_APIC_irq();
+ 	irq_enter();
++	trace_printk("IPI: Nohz update\n");
+ 	tick_nohz_check_adaptive();
+ 	inc_irq_stat(irq_call_count);
+ 	irq_exit();
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 218abc8..84f099c 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1212,6 +1212,7 @@ static cpumask_t nohz_cpuset_mask;
+ 
+ static void flush_cputime_interrupt(void *unused)
+ {
++	trace_printk("IPI: flush cputime\n");
+ 	tick_nohz_flush_current_times(false);
+ }
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index bdd40bb..db19c2d 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -376,6 +376,7 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
+ 		if (!ts->tick_stopped) {
+ 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
++			trace_printk("Stop tick\n");
+ 		}
+ 
+ 		/*
+@@ -581,6 +582,7 @@ static void tick_nohz_cpuset_stop_tick(struct tick_sched *ts)
+ 
+ 		ts->saved_jiffies = jiffies;
+ 		set_thread_flag(TIF_NOHZ);
++		trace_printk("set TIF_NOHZ\n");
+ 	}
+ }
+ #else
+@@ -659,6 +661,7 @@ static void __tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
+ 	ts->idle_exittime = now;
+ 
+ 	tick_nohz_restart(ts, now);
++	trace_printk("Restart sched tick\n");
+ }
+ 
+ /**
+@@ -1012,6 +1015,7 @@ static void tick_nohz_restart_adaptive(void)
+ 	tick_nohz_flush_current_times(true);
+ 	tick_nohz_restart_sched_tick();
+ 	clear_thread_flag(TIF_NOHZ);
++	trace_printk("clear TIF_NOHZ\n");
+ 	tick_nohz_cpu_exit_qs();
+ }
+ 
+@@ -1031,6 +1035,7 @@ void cpuset_exit_nohz_interrupt(void *unused)
+ {
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+ 
++	trace_printk("IPI: Nohz exit\n");
+ 	if (ts->tick_stopped && !is_idle_task(current))
+ 		tick_nohz_restart_adaptive();
+ }
+@@ -1052,6 +1057,7 @@ void tick_nohz_pre_schedule(void)
+ 	if (test_thread_flag(TIF_NOHZ)) {
+ 		tick_nohz_flush_current_times(true);
+ 		clear_thread_flag(TIF_NOHZ);
++		trace_printk("clear TIF_NOHZ\n");
+ 		/* FIXME: warn if we are in RCU idle mode */
+ 	}
+ }
+@@ -1147,6 +1153,7 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
+ 		}
+ 		update_process_times(user);
+ 		profile_tick(CPU_PROFILING);
++		trace_printk("tick\n");
+ 	}
+ 
+ 	hrtimer_forward(timer, now, tick_period);
+-- 
+1.7.10.4
+
+
