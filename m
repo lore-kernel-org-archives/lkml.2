@@ -1,37 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2J2EqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:46:25 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53726 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab2J2EqY (ORCPT
+	id S1752451Ab2J2ErR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:47:17 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:24649 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905Ab2J2ErQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:46:24 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-bc-508e0a1e3e27
+	Mon, 29 Oct 2012 00:47:16 -0400
+X-AuditID: cbfee61a-b7fa66d0000004cf-cb-508e0a534d53
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/2] backlight: 88pm860x: drop devm_kfree of devm_kzalloc'd data
-Date: Mon, 29 Oct 2012 13:46:22 +0900
-Message-id: <000501cdb590$588260f0$098722d0$%han@samsung.com>
+References: <000501cdb590$588260f0$098722d0$%han@samsung.com>
+In-reply-to: <000501cdb590$588260f0$098722d0$%han@samsung.com>
+Subject: [PATCH 2/2] backlight: max8925: drop devm_kfree of devm_kzalloc'd data
+Date: Mon, 29 Oct 2012 13:47:15 +0900
+Message-id: <000601cdb590$77a78dc0$66f6a940$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac21kFhmA4SJbq7/SSeHEgsu/+gYEg==
+Thread-index: Ac21kFhmA4SJbq7/SSeHEgsu/+gYEgAAAliQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrILMWRmVeSWpSXmKPExsVy+t9jQV15rr4Ag9uHGC0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG10dGBbd4Ku5dE2hg3MbVxcjJISFgItHwuJ8VwhaTuHBvPVsX
-	IxeHkMB0RommS1uZIZzZTBITT/SwgFSxCahJfPlymB3EFhGIkGieMQuoiIODWcBHYvMsTZCw
-	sECARP+FNWwgYRYBVYmGqW4gYV4BW4mj0+azQNiCEj8m3wOzmQW0JNbvPM4EYctLbF7zFmyi
-	hIC6xKO/uhCL9CRuvH3HClEiIrHvxTvGCYwCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk9
-	11CvODG3uDQvXS85P3cTIzggn0ntYFzZYHGIUYCDUYmHt/FNb4AQa2JZcWXuIUYJDmYlEd6l
-	3EAh3pTEyqrUovz4otKc1OJDjNIcLErivM0eKQFCAumJJanZqakFqUUwWSYOTqkGxmVn2lrz
-	2ntddx896GEpmfpgWeUX3a9/Tmxc3VX6Jylqtb9Wg/GJ/79eHXo755Jui8SRFWecqo/bti3y
-	DyqOWXs0+MGuTdv2GllbX772YROj1dlP/feunFxU/HUzo8NxD/5XUaqTPwYqP9NeH7z6gdoF
-	n3uOBU5NVooN3w0cJpssvMs48bNztKkSS3FGoqEWc1FxIgA4UceERAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd1grr4Ag1fzBSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldG56I1LAULeCv2T3/E1sD4nquLkYNDQsBEYvak2i5GTiBTTOLC
+	vfVsXYxcHEIC0xklXtz5zQThzGaSeLf/HTNIFZuAmsSXL4fZQWwRgQiJ5hmzmEEGMQv4SGye
+	pQkSFhKwlXh/eRYTiM0pYCfx79UjMFtYwF/ielMPC4jNIqAqce7cZFYQmxeofsLLRUwQtqDE
+	j8n3wGqYBbQk1u88zgRhy0tsXvOWGeJmdYlHf3UhLjCSmDftBlS5iMS+F+8YJzAKzUIyaRaS
+	SbOQTJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOAgfia1g3Flg8UhRgEORiUe
+	3sY3vQFCrIllxZW5hxglOJiVRHiXcgOFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8zZ7pAQICaQn
+	lqRmp6YWpBbBZJk4OKUaGFVeWD1d8qpfteLi7dnByy2eKdp4u1u8sTyZuv4Gk63qkbeHWJ8v
+	0jx6cuJ7jx0vzO9K/um9X5+4beZrge6X101Ov5H0cN8ya9dXk0xW/e+C3WlaPfYOFapTWZpV
+	ltju9NglwsW9t10ltbFT7Nvhyxf6JVaErelfuvh35MmfHfPmVu1/pDe1WFCJpTgj0VCLuag4
+	EQA/53y5XgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -43,40 +46,42 @@ call devm_kfree in probe or remove functions.
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- drivers/video/backlight/88pm860x_bl.c |   11 +++--------
+ drivers/video/backlight/max8925_bl.c |   11 +++--------
  1 files changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/video/backlight/88pm860x_bl.c b/drivers/video/backlight/88pm860x_bl.c
-index b7ec34c..861cc40 100644
---- a/drivers/video/backlight/88pm860x_bl.c
-+++ b/drivers/video/backlight/88pm860x_bl.c
-@@ -208,22 +208,19 @@ static int pm860x_backlight_probe(struct platform_device *pdev)
- 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "duty cycle");
+diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
+index f72ba54..01e9f7d 100644
+--- a/drivers/video/backlight/max8925_bl.c
++++ b/drivers/video/backlight/max8925_bl.c
+@@ -120,15 +120,13 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
  	if (!res) {
- 		dev_err(&pdev->dev, "No REG resource for duty cycle\n");
+ 		dev_err(&pdev->dev, "No REG resource for mode control!\n");
 -		ret = -ENXIO;
 -		goto out;
 +		return -ENXIO;
  	}
- 	data->reg_duty_cycle = res->start;
- 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "always on");
+ 	data->reg_mode_cntl = res->start;
+ 	res = platform_get_resource(pdev, IORESOURCE_REG, 1);
  	if (!res) {
- 		dev_err(&pdev->dev, "No REG resorce for always on\n");
+ 		dev_err(&pdev->dev, "No REG resource for control!\n");
 -		ret = -ENXIO;
 -		goto out;
 +		return -ENXIO;
  	}
- 	data->reg_always_on = res->start;
- 	res = platform_get_resource_byname(pdev, IORESOURCE_REG, "current");
- 	if (!res) {
- 		dev_err(&pdev->dev, "No REG resource for current\n");
--		ret = -ENXIO;
--		goto out;
-+		return -ENXIO;
- 	}
- 	data->reg_current = res->start;
+ 	data->reg_cntl = res->start;
  
-@@ -263,8 +260,6 @@ static int pm860x_backlight_probe(struct platform_device *pdev)
+@@ -142,8 +140,7 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
+ 					&max8925_backlight_ops, &props);
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+-		ret = PTR_ERR(bl);
+-		goto out;
++		return PTR_ERR(bl);
+ 	}
+ 	bl->props.brightness = MAX_BRIGHTNESS;
+ 
+@@ -166,8 +163,6 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
  	return 0;
  out_brt:
  	backlight_device_unregister(bl);
