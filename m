@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760271Ab2J2SI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 14:08:28 -0400
-Received: from 8bytes.org ([85.214.48.195]:59555 "EHLO mail.8bytes.org"
+	id S1760284Ab2J2SKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 14:10:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37832 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759825Ab2J2SIZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 14:08:25 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Joerg Roedel <joro@8bytes.org>,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH 2/2] kvm, svm: Update MAINTAINERS entry
-Date: Mon, 29 Oct 2012 19:08:21 +0100
-Message-Id: <1351534101-28578-1-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Oct 29 19:08:24 2012
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 508ec61822971498816730
+	id S1752045Ab2J2SKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 14:10:42 -0400
+Date: Mon, 29 Oct 2012 11:10:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: zwu.kernel@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
+        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
+Subject: Re: [RFC v4+ hot_track 15/19] sysfs: add two hot_track proc files
+Message-ID: <20121029181040.GA3605@kroah.com>
+References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
+ <1351485061-12297-16-git-send-email-zwu.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351485061-12297-16-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have no access to my AMD email address anymore. Update
-entry in MAINTAINERS to the new address.
+On Mon, Oct 29, 2012 at 12:30:57PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   Add two proc files hot-kick-time and hot-update-delay
+> under the dir /proc/sys/fs/ in order to turn
+> TIME_TO_KICK and HEAT_UPDATE_DELAY into be tunable.
 
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- MAINTAINERS |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+As you say, these are proc files, not sysfs files, so please fix the
+ Subject: up here.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0267ba2..d881321 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4234,10 +4234,10 @@ F:	include/linux/kvm*
- F:	virt/kvm/
- 
- KERNEL VIRTUAL MACHINE (KVM) FOR AMD-V
--M:	Joerg Roedel <joerg.roedel@amd.com>
-+M:	Joerg Roedel <joro@8bytes.org>
- L:	kvm@vger.kernel.org
- W:	http://kvm.qumranet.com
--S:	Supported
-+S:	Maintained
- F:	arch/x86/include/asm/svm.h
- F:	arch/x86/kvm/svm.c
- 
--- 
-1.7.9.5
+thanks,
 
-
+greg k-h
