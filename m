@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab2J2COo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:14:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62211 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757484Ab2J2COl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:14:41 -0400
+	id S1757567Ab2J2CY2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:24:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756261Ab2J2CY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:24:27 -0400
+Message-ID: <508DE8D3.1050101@redhat.com>
+Date: Sun, 28 Oct 2012 21:24:19 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121029020124.GP29378@dastard>
-References: <1351177747-19389-1-git-send-email-zwu.kernel@gmail.com>
-	<1351177747-19389-4-git-send-email-zwu.kernel@gmail.com>
-	<20121028075520.GA14554@gmail.com>
-	<CAEH94LidECTUHb0_Wujyg=zH18+dzxMPTUUpiYBeUSiG7MpSKQ@mail.gmail.com>
-	<20121029020124.GP29378@dastard>
-Date: Mon, 29 Oct 2012 10:14:39 +0800
-Message-ID: <CAEH94LhyW8THc1JNgaCeptiN9ErUHALrpsT0BK=bXa8gMq3iRQ@mail.gmail.com>
-Subject: Re: [RFC v4 03/15] vfs,hot_track: add the function for collecting I/O frequency
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        cmm@us.ibm.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Nix <nix@esperi.org.uk>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+References: <20121026205618.GC8614@thunk.org> <87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org> <87haphx76u.fsf@spindle.srvr.nix> <20121027002258.GB31030@thunk.org> <873910xevu.fsf@spindle.srvr.nix> <20121027175534.GA7783@thunk.org> <87fw4zzra3.fsf@spindle.srvr.nix> <508C4FE5.1030102@redhat.com> <508C633F.4070100@redhat.com> <20121029010012.GE9161@thunk.org>
+In-Reply-To: <20121029010012.GE9161@thunk.org>
+X-Enigmail-Version: 1.4.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 10:01 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Sun, Oct 28, 2012 at 09:51:48PM +0800, Zhi Yong Wu wrote:
->> On Sun, Oct 28, 2012 at 3:55 PM, Zheng Liu <gnehzuil.liu@gmail.com> wrote:
->> > Hi Zhiyong,
->> >
->> > On Thu, Oct 25, 2012 at 11:08:55PM +0800, zwu.kernel@gmail.com wrote:
->> > [snip]
->> >> @@ -199,6 +342,54 @@ err:
->> >>  }
->> >>
->> >>  /*
->> >> + * Main function to update access frequency from read/writepage(s) hooks
->> >> + */
->> >> +inline void hot_update_freqs(struct inode *inode, u64 start,
->> >> +                     u64 len, int rw)
->> >
->> > This function seems too big.  So we really need to inline this function?
->> As Dave said in his comments, it will add a function call
->> overhead even when tracking is not enabled. a static inline function
->> will just result in no extra overhead other than the if
->> statement....
->
-> I don't think I said that with respect to this code. I think I said
-> it w.r.t. a define or a small wrapper that decides to call
-> hot_update_freqs().  A static inline fucntion should only be a
-> couple of lines of code at most.
->
-> A static function, OTOH, can be inlined by the compiler if the
-> compiler thinks that is a win. But....
-thanks for your explaination at first.
->
-> .....
->
->> >> +EXPORT_SYMBOL_GPL(hot_update_freqs);
->
-> ... it's an exported function, so it can't be inline or static, so
-> using "inline" is wrong whatever way you look at it. ;)
-ah, but i' m surprised by why the compiler find this error.
+On 10/28/12 8:00 PM, Theodore Ts'o wrote:
+> On Sat, Oct 27, 2012 at 05:42:07PM -0500, Eric Sandeen wrote:
+>>
+>> It looks like the inode_bitmap_bh is being modified outside a transaction:
+>>
+>>                 ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+>>
+>> It needs a get_write_access / handle_dirty_metadata pair around it.
+> 
+> Oops.   Nice catch!!
+> 
+> The patch isn't quite right, though.  
 
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+Yeah, I knew it wasn't ;)  I did resend 
+[PATCH] ext4: fix unjournaled inode bitmap modification
+which is a bit more involved.
+
+> We only want to call
+> ext4_journal_get_write_access() when we know that there is an available
+> bit in the bitmap.  (We could still lose the race, but in that case
+> the winner of the race probably grabbed the bitmap block first.)
+> 
+> Also, we only need to call ext4_handle_dirty_metadata() if we
+> successfully grab the bit in the bitmap.
+> 
+> So I suggest this patch instead:
+
+That'll get_write_access on the same buffer over and over, I suppose
+it's ok, but the patch I sent tries to minimize that, and call
+ext4_handle_release_buffer if we're not going to use it (which is
+a no-op today anyway and not normally used I guess...)
+
+If ext4_handle_release_buffer() is dead code now, and repeated calls
+via repeat_in_this_group: are no big deal, then your version looks fine.
+
+-Eric
+
+> commit 087eda81f1ac6a6a0394f781b44f1d555d8f64c6
+> Author: Eric Sandeen <sandeen@redhat.com>
+> Date:   Sun Oct 28 20:59:57 2012 -0400
+> 
+>     ext4: fix unjournaled inode bitmap modification
+>     
+>     commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 modified this function
+>     such that the inode bitmap was being modified outside a transaction,
+>     which could lead to corruption, and was discovered when journal_checksum
+>     found a bad checksum in the journal.
+>     
+>     Reported-by: Nix <nix@esperi.org.uk>
+>     Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+>     Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+>     Cc: stable@vger.kernel.org
+> 
+> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+> index 4facdd2..575afac 100644
+> --- a/fs/ext4/ialloc.c
+> +++ b/fs/ext4/ialloc.c
+> @@ -725,6 +725,10 @@ repeat_in_this_group:
+>  				   "inode=%lu", ino + 1);
+>  			continue;
+>  		}
+> +		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
+> +		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
+> +		if (err)
+> +			goto fail;
+>  		ext4_lock_group(sb, group);
+>  		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+>  		ext4_unlock_group(sb, group);
+> @@ -738,6 +742,11 @@ repeat_in_this_group:
+>  	goto out;
+>  
+>  got:
+> +	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
+> +	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
+> +	if (err)
+> +		goto fail;
+> +
+>  	/* We may have to initialize the block bitmap if it isn't already */
+>  	if (ext4_has_group_desc_csum(sb) &&
+>  	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-
-
--- 
-Regards,
-
-Zhi Yong Wu
