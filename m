@@ -1,86 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab2J2MMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:12:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15928 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978Ab2J2MML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:12:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,671,1344236400"; 
-   d="scan'208";a="234017663"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+	id S1758846Ab2J2MPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:15:11 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58337 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754978Ab2J2MPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 08:15:09 -0400
+Date: Mon, 29 Oct 2012 08:15:06 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Pekka Enberg <penberg@kernel.org>, Asias He <asias.hejun@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm tools: fix rbtree-interval search
-Date: Mon, 29 Oct 2012 14:12:57 +0200
-Message-Id: <1351512780-8563-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 07/16] net,9p: use new hashtable implementation
+Message-ID: <20121029121506.GA11733@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-7-git-send-email-levinsasha928@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351450948-15618-7-git-send-email-levinsasha928@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> Switch 9p error table to use the new hashtable implementation. This reduces the amount of
+> generic unrelated code in 9p.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  net/9p/error.c | 21 ++++++++++-----------
+>  1 file changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/net/9p/error.c b/net/9p/error.c
+> index 2ab2de7..a5cc7dd 100644
+> --- a/net/9p/error.c
+> +++ b/net/9p/error.c
+> @@ -34,7 +34,7 @@
+>  #include <linux/jhash.h>
+>  #include <linux/errno.h>
+>  #include <net/9p/9p.h>
+> -
+> +#include <linux/hashtable.h>
 
-I've noticed message on kvm exit:
+missing newline.
 
-  Warning: serial8250__exit failed.
+>  /**
+>   * struct errormap - map string errors from Plan 9 to Linux numeric ids
+>   * @name: string sent over 9P
+> @@ -50,8 +50,8 @@ struct errormap {
+>  	struct hlist_node list;
+>  };
+>  
+> -#define ERRHASHSZ		32
+> -static struct hlist_head hash_errmap[ERRHASHSZ];
+> +#define ERR_HASH_BITS 5
+> +static DEFINE_HASHTABLE(hash_errmap, ERR_HASH_BITS);
+>  
+>  /* FixMe - reduce to a reasonable size */
+>  static struct errormap errmap[] = {
+> @@ -193,18 +193,17 @@ static struct errormap errmap[] = {
+>  int p9_error_init(void)
+>  {
+>  	struct errormap *c;
+> -	int bucket;
+> +	u32 hash;
+>  
+>  	/* initialize hash table */
+> -	for (bucket = 0; bucket < ERRHASHSZ; bucket++)
+> -		INIT_HLIST_HEAD(&hash_errmap[bucket]);
+> +	hash_init(hash_errmap);
 
-kvm tool is not able to remove ioport range which was added previously.
+As for most of the other patches in this series, the hash_init is
+redundant for a statically defined hash table.
 
-The issue is caused by bug in rbtree-interval. Search algorithm in
-rb_int_search_single() expects correct value of max_high. But the tree
-can contain leaf nodes, which never were updated by propagate_callback().
-For this kind of nodes high_max will be 0 and we will not be able to
-find and remove them.
+Thanks,
 
-Let's initialize max_high on RB_INT_INIT() time.
+Mathieu
 
-Fixing this bug makes other bug visible: propagate_callback() can be
-called for empty tree: node == NULL. The callback is not ready for empty
-tree. Let's fix that as well.
+>  
+>  	/* load initial error map into hash table */
+>  	for (c = errmap; c->name != NULL; c++) {
+>  		c->namelen = strlen(c->name);
+> -		bucket = jhash(c->name, c->namelen, 0) % ERRHASHSZ;
+> +		hash = jhash(c->name, c->namelen, 0);
+>  		INIT_HLIST_NODE(&c->list);
+> -		hlist_add_head(&c->list, &hash_errmap[bucket]);
+> +		hash_add(hash_errmap, &c->list, hash);
+>  	}
+>  
+>  	return 1;
+> @@ -223,13 +222,13 @@ int p9_errstr2errno(char *errstr, int len)
+>  	int errno;
+>  	struct hlist_node *p;
+>  	struct errormap *c;
+> -	int bucket;
+> +	u32 hash;
+>  
+>  	errno = 0;
+>  	p = NULL;
+>  	c = NULL;
+> -	bucket = jhash(errstr, len, 0) % ERRHASHSZ;
+> -	hlist_for_each_entry(c, p, &hash_errmap[bucket], list) {
+> +	hash = jhash(errstr, len, 0);
+> +	hash_for_each_possible(hash_errmap, c, p, list, hash) {
+>  		if (c->namelen == len && !memcmp(c->name, errstr, len)) {
+>  			errno = c->val;
+>  			break;
+> -- 
+> 1.7.12.4
+> 
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- tools/kvm/include/kvm/rbtree-interval.h |    3 ++-
- tools/kvm/util/rbtree-interval.c        |    6 +++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/tools/kvm/include/kvm/rbtree-interval.h b/tools/kvm/include/kvm/rbtree-interval.h
-index e97d05b..fb2102a 100644
---- a/tools/kvm/include/kvm/rbtree-interval.h
-+++ b/tools/kvm/include/kvm/rbtree-interval.h
-@@ -4,7 +4,8 @@
- #include <linux/rbtree_augmented.h>
- #include <linux/types.h>
- 
--#define RB_INT_INIT(l, h) (struct rb_int_node){.low = l, .high = h}
-+#define RB_INT_INIT(l, h) \
-+	(struct rb_int_node){.low = l, .high = h, .max_high = h}
- #define rb_int(n) rb_entry(n, struct rb_int_node, node)
- 
- struct rb_int_node {
-diff --git a/tools/kvm/util/rbtree-interval.c b/tools/kvm/util/rbtree-interval.c
-index c82ce98..d7fa96a 100644
---- a/tools/kvm/util/rbtree-interval.c
-+++ b/tools/kvm/util/rbtree-interval.c
-@@ -48,8 +48,12 @@ struct rb_int_node *rb_int_search_range(struct rb_root *root, u64 low, u64 high)
-  */
- static void propagate_callback(struct rb_node *node, struct rb_node *stop)
- {
--	struct rb_int_node *i_node = rb_int(node);
-+	struct rb_int_node *i_node;
- 
-+	if (node == stop)
-+		return;
-+
-+	i_node = rb_int(node);
- 	i_node->max_high = i_node->high;
- 
- 	if (node->rb_left)
 -- 
-1.7.10.4
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
