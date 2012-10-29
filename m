@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756584Ab2J2WeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:34:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52831 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab2J2WeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:34:07 -0400
-Date: Mon, 29 Oct 2012 15:34:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Zhi Yong Wu <zwu.kernel@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxram@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        david@fromorbit.com, tytso@mit.edu, cmm@us.ibm.com,
-        wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: Re: [RFC v4+ hot_track 13/19] debugfs: introduce one function
-Message-ID: <20121029223404.GA20486@kroah.com>
-References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
- <1351485061-12297-14-git-send-email-zwu.kernel@gmail.com>
- <20121029181135.GB3605@kroah.com>
- <CAEH94Li_XUxUUJDskO28OSvZPmZB3u_SpLFcVtD-04PivQSS8w@mail.gmail.com>
+	id S1759821Ab2J2WfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:35:09 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58347 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755635Ab2J2WfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 18:35:06 -0400
+Date: Mon, 29 Oct 2012 18:35:03 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.6.0 ext4 dump/filemap_fault?
+Message-ID: <20121029223503.GA9532@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Justin Piszcz <jpiszcz@lucidpixels.com>,
+	linux-kernel@vger.kernel.org
+References: <015201cdb54f$844487e0$8ccd97a0$@lucidpixels.com>
+ <20121028225109.GA6931@thunk.org>
+ <CAO9zADx=DHHDcj3by9RSMatN4RFOQLzWwPJCZzs=NemQ4_sOUQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAEH94Li_XUxUUJDskO28OSvZPmZB3u_SpLFcVtD-04PivQSS8w@mail.gmail.com>
+In-Reply-To: <CAO9zADx=DHHDcj3by9RSMatN4RFOQLzWwPJCZzs=NemQ4_sOUQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 06:25:50AM +0800, Zhi Yong Wu wrote:
-> On Tue, Oct 30, 2012 at 2:11 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Oct 29, 2012 at 12:30:55PM +0800, zwu.kernel@gmail.com wrote:
-> >> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-> >>
-> >>   The debugfs function is used to get expected dentry.
-> >
-> > Huh?  Why do you need this?  Why haven't you added documentation for the
-> It is used to determine if one sysfs directory has been created. OK, i
-> will add some doc, thanks for your suggestion.
+On Mon, Oct 29, 2012 at 05:51:37PM -0400, Justin Piszcz wrote:
+> 
+> > What happened afterwards?
+> It did eventually complete.
+> 
+> > How much memory do you have in your system?
+> 32GB memory/32GB swap
+> > Did the system continue, and did the sync command (I presume you ran
+> > "sync" from the command line?)  finally return to the command prompt?
+> In this case I did not run sync, I waited for the processes/dump/etc
+> to complete.
 
-You didn't answer the "why" part here.  How come you think you need
-this?  Can't you just save off the dentry you created somewhere so you
-don't need to look it up again?
+OK, well *some* process must have issued a sync system call, since
+that was what triggered the soft lockup.  If half your memory was
+dirtied, then the time it might take to write back 16 gigs would
+roughly:
+ 
+   (16 GB * 1024 MB/G) /  100 MB/s = 163 seconds
 
-greg k-h
+... which would be enough to trigger the soft lockup error.
+
+    	  	   	     	     	      - Ted
+
+
