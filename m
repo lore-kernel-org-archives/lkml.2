@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759630Ab2J2QB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:01:29 -0400
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:43566 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759528Ab2J2QB2 (ORCPT
+	id S1759685Ab2J2QBx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:01:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41973 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759601Ab2J2QBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:01:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HE8u/0hflwnSbJt7YDiDL
-Date: Mon, 29 Oct 2012 09:01:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Constantine Shulyupin <const@MakeLinux.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux@arm.linux.org.uk, tim.bird@am.sony.com,
-        pandaboard@googlegroups.com,
-        Santosh Shilimkar OMAP <santosh.shilimkar@ti.com>, nsekhar@ti.com
-Subject: Re: [PATCH] Add FDT support to Pandaboard initialization
-Message-ID: <20121029160122.GB11908@atomide.com>
-References: <1351363800-28744-1-git-send-email-const@MakeLinux.com>
- <20121029061427.GP17570@arwen.pp.htv.fi>
+	Mon, 29 Oct 2012 12:01:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029061427.GP17570@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Mon, 29 Oct 2012 12:01:51 -0400
+Message-ID: <CAPhKKr8HAbAw2jdvva6oJYj747ZS0dTakz2=qJXN+NsTiu=dCg@mail.gmail.com>
+Subject: [BUG] perf report: different reports when run on terminal as opposed
+ to script
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Arnaldo de Melo <acme@infradead.org>, mingo@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, namhyung@kernel.org
+Cc: akshay kumar <iit.akshay@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [121028 23:22]:
-> On Sat, Oct 27, 2012 at 08:50:00PM +0200, Constantine Shulyupin wrote:
-> > From: Constantine Shulyupin <const@MakeLinux.com>
-> > 
-> > Problem:
-> > - FDT is supported only by generic OMAP board initialization in arch/arm/mach-omap2/board-generic.c and lacks some configurations, which are not yet configured in FDT (USB for example).
-> > Solution:
-> > - arch/arm/mach-omap2/board-omap4panda.c supports initialization with FDT and without it.
-> > 
-> > Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
-> 
-> NAK, the whole idea of DT is to drop board-*.c. It would be best to see
-> the "missing initialization" being added to board-generic/dts files.
+Hi,
 
-Yes I agree, let's rather get board-generic.c to work with panda.
+As part of a class assignment I have to collect some performance
+statistics. In order to do so I run
 
-The other board-*.c files will be dropped as soon as we have
-things usable with devicetree. And we're only two board-*.c files
-away from making omap4 device tree only ;)
+perf record -g <the program I have to profile>
 
-I think we are only missing DSS, USB and WLAN bindings to
-have blaze and panda usable with device tree to the point
-where everything else can be added later on.
+And in another window, I start 200 threads of the load generator
+(which is not recorded by perf)
 
-Regards,
+This generates me statistics that I expect to see, and I am happy. As
+this is academia and a class assignment, I need to collect information
+and analyze it across different setups. Which of course meant I script
+this whole thing, which basically is
 
-Tony
+for i in all possibilities
+do
+perf record -g <the program I have to profile> &
+WAITPID=$!
+for j in NR_THREADS
+do
+<start load generator> &
+KILLPID=$!
+done
+wait $PID
+kill $KILLPID
+mv perf.data results/perf.data.$i
+done
+
+(This is basic pseudo script of what I am doing), which results me
+having my profile being topped by _vscanf() and the function which I
+was seeing dominating in the older report dropping down to something
+like 5% (as opposed to 16-17%)
+
+Have I misunderstood how perf works? Something deeper? I am currently
+on 3.6.3. I can update to the latest upstream and report back. Any
+debug code is very welcome. I can also make my toy program and the
+scripts available for you to try out.
+
+Thanks!
+Dhaval
