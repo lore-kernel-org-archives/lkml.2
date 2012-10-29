@@ -1,153 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab2J2Ec7 (ORCPT <rfc822;w@1wt.eu>);
+	id S1756330Ab2J2EdE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:33:04 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36845 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab2J2Ec7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 00:32:59 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:46027 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757493Ab2J2Ecy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:32:54 -0400
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxram@linux.vnet.ibm.com,
         viro@zeniv.linux.org.uk, david@fromorbit.com, tytso@mit.edu,
         cmm@us.ibm.com, wuzhy@linux.vnet.ibm.com, wenqing.lz@taobao.com
-Subject: [RFC v4+ hot_track 15/19] sysfs: add two hot_track proc files
-Date: Mon, 29 Oct 2012 12:30:57 +0800
-Message-Id: <1351485061-12297-16-git-send-email-zwu.kernel@gmail.com>
+Subject: [RFC v4+ hot_track 16/19] btrfs: add hot tracking support
+Date: Mon, 29 Oct 2012 12:30:58 +0800
+Message-Id: <1351485061-12297-17-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 References: <1351485061-12297-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102904-8974-0000-0000-000010414AEC
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
- PH=3.00000001; SC=3.00000008; SDB=6.00186565; UDB=6.00042263; UTC=2012-10-29
- 04:32:51
+x-cbid: 12102904-7282-0000-0000-00000E5C5030
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Add two proc files hot-kick-time and hot-update-delay
-under the dir /proc/sys/fs/ in order to turn
-TIME_TO_KICK and HEAT_UPDATE_DELAY into be tunable.
+  Introduce one new mount option '-o hot_track',
+and add its parsing support.
+  Its usage looks like:
+   mount -o hot_track
+   mount -o nouser,hot_track
+   mount -o nouser,hot_track,loop
+   mount -o hot_track,nouser
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/hot_tracking.c            |   12 +++++++++---
- fs/hot_tracking.h            |    9 ---------
- include/linux/hot_tracking.h |    7 +++++++
- kernel/sysctl.c              |   14 ++++++++++++++
- 4 files changed, 30 insertions(+), 12 deletions(-)
+ fs/btrfs/ctree.h |    1 +
+ fs/btrfs/super.c |   22 +++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletions(-)
 
-diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
-index 376d7fb..02ac4a2 100644
---- a/fs/hot_tracking.c
-+++ b/fs/hot_tracking.c
-@@ -28,6 +28,12 @@
- static DEFINE_SPINLOCK(hot_func_list_lock);
- static LIST_HEAD(hot_func_list);
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index c72ead8..4703178 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1756,6 +1756,7 @@ struct btrfs_ioctl_defrag_range_args {
+ #define BTRFS_MOUNT_CHECK_INTEGRITY	(1 << 20)
+ #define BTRFS_MOUNT_CHECK_INTEGRITY_INCLUDING_EXTENT_DATA (1 << 21)
+ #define BTRFS_MOUNT_PANIC_ON_FATAL_ERROR	(1 << 22)
++#define BTRFS_MOUNT_HOT_TRACK		(1 << 23)
  
-+int sysctl_hot_kick_time __read_mostly = 300;
-+EXPORT_SYMBOL_GPL(sysctl_hot_kick_time);
+ #define btrfs_clear_opt(o, opt)		((o) &= ~BTRFS_MOUNT_##opt)
+ #define btrfs_set_opt(o, opt)		((o) |= BTRFS_MOUNT_##opt)
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 915ac14..0bcc62b 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -41,6 +41,7 @@
+ #include <linux/slab.h>
+ #include <linux/cleancache.h>
+ #include <linux/ratelimit.h>
++#include <linux/hot_tracking.h>
+ #include "compat.h"
+ #include "delayed-inode.h"
+ #include "ctree.h"
+@@ -299,6 +300,10 @@ static void btrfs_put_super(struct super_block *sb)
+ 	 * last process that kept it busy.  Or segfault in the aforementioned
+ 	 * process...  Whom would you report that to?
+ 	 */
 +
-+int sysctl_hot_update_delay __read_mostly = 300;
-+EXPORT_SYMBOL_GPL(sysctl_hot_update_delay);
-+
- /* kmem_cache pointers for slab caches */
- static struct kmem_cache *hot_inode_item_cachep __read_mostly;
- static struct kmem_cache *hot_range_item_cachep __read_mostly;
-@@ -417,7 +423,7 @@ static bool hot_is_obsolete(struct hot_freq_data *freq_data)
- 		(cur_time - timespec_to_ns(&freq_data->last_read_time));
- 	u64 last_write_ns =
- 		(cur_time - timespec_to_ns(&freq_data->last_write_time));
--	u64 kick_ns =  TIME_TO_KICK * NSEC_PER_SEC;
-+	u64 kick_ns =  sysctl_hot_kick_time * NSEC_PER_SEC;
- 
- 	if ((last_read_ns > kick_ns) && (last_write_ns > kick_ns))
- 		ret = 1;
-@@ -625,7 +631,7 @@ static void hot_update_worker(struct work_struct *work)
- 
- 	/* Instert next delayed work */
- 	queue_delayed_work(root->update_wq, &root->update_work,
--		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+		msecs_to_jiffies(sysctl_hot_update_delay * MSEC_PER_SEC));
++	/* Hot data tracking */
++	if (btrfs_test_opt(btrfs_sb(sb)->tree_root, HOT_TRACK))
++		hot_track_exit(sb);
  }
  
- /*
-@@ -1316,7 +1322,7 @@ int hot_track_init(struct super_block *sb)
- 	/* Initialize hot tracking wq and arm one delayed work */
- 	INIT_DELAYED_WORK(&root->update_work, hot_update_worker);
- 	queue_delayed_work(root->update_wq, &root->update_work,
--		msecs_to_jiffies(HEAT_UPDATE_DELAY * MSEC_PER_SEC));
-+		msecs_to_jiffies(sysctl_hot_update_delay * MSEC_PER_SEC));
- 
- 	/* Register a shrinker callback */
- 	root->hot_shrink.shrink = hot_track_prune;
-diff --git a/fs/hot_tracking.h b/fs/hot_tracking.h
-index f5ba2d6..095eab0 100644
---- a/fs/hot_tracking.h
-+++ b/fs/hot_tracking.h
-@@ -26,15 +26,6 @@
- 
- #define FREQ_POWER 4
- 
--/*
-- * time to quit keeping track of
-- * tracking data (seconds)
-- */
--#define TIME_TO_KICK 300
--
--/* set how often to update temperatures (seconds) */
--#define HEAT_UPDATE_DELAY 300
--
- /* NRR/NRW heat unit = 2^X accesses */
- #define NRR_MULTIPLIER_POWER 20 /* NRR - number of reads since mount */
- #define NRR_COEFF_POWER 0
-diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
-index a16217f..416c988 100644
---- a/include/linux/hot_tracking.h
-+++ b/include/linux/hot_tracking.h
-@@ -123,6 +123,13 @@ struct hot_info {
+ enum {
+@@ -311,7 +316,7 @@ enum {
+ 	Opt_enospc_debug, Opt_subvolrootid, Opt_defrag, Opt_inode_cache,
+ 	Opt_no_space_cache, Opt_recovery, Opt_skip_balance,
+ 	Opt_check_integrity, Opt_check_integrity_including_extent_data,
+-	Opt_check_integrity_print_mask, Opt_fatal_errors,
++	Opt_check_integrity_print_mask, Opt_fatal_errors, Opt_hot_track,
+ 	Opt_err,
  };
  
- /*
-+ * Two variables have meanings as below:
-+ * 1. time to quit keeping track of tracking data (seconds)
-+ * 2. set how often to update temperatures (seconds)
-+ */
-+extern int sysctl_hot_kick_time, sysctl_hot_update_delay;
+@@ -352,6 +357,7 @@ static match_table_t tokens = {
+ 	{Opt_check_integrity_including_extent_data, "check_int_data"},
+ 	{Opt_check_integrity_print_mask, "check_int_print_mask=%d"},
+ 	{Opt_fatal_errors, "fatal_errors=%s"},
++	{Opt_hot_track, "hot_track"},
+ 	{Opt_err, NULL},
+ };
+ 
+@@ -614,6 +620,9 @@ int btrfs_parse_options(struct btrfs_root *root, char *options)
+ 				goto out;
+ 			}
+ 			break;
++		case Opt_hot_track:
++			btrfs_set_opt(info->mount_opt, HOT_TRACK);
++			break;
+ 		case Opt_err:
+ 			printk(KERN_INFO "btrfs: unrecognized mount option "
+ 			       "'%s'\n", p);
+@@ -841,11 +850,20 @@ static int btrfs_fill_super(struct super_block *sb,
+ 		goto fail_close;
+ 	}
+ 
++	if (btrfs_test_opt(fs_info->tree_root, HOT_TRACK)) {
++		err = hot_track_init(sb);
++		if (err)
++			goto fail_hot;
++	}
 +
-+/*
-  * Hot data tracking ioctls:
-  *
-  * HOT_INFO - retrieve info on frequency of access
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 26f65ea..37624fb 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1545,6 +1545,20 @@ static struct ctl_table fs_table[] = {
- 		.proc_handler	= &pipe_proc_fn,
- 		.extra1		= &pipe_min_size,
- 	},
-+	{
-+		.procname	= "hot-kick-time",
-+		.data		= &sysctl_hot_kick_time,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
-+		.procname	= "hot-update-delay",
-+		.data		= &sysctl_hot_update_delay,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
- 	{ }
- };
+ 	save_mount_options(sb, data);
+ 	cleancache_init_fs(sb);
+ 	sb->s_flags |= MS_ACTIVE;
+ 	return 0;
+ 
++fail_hot:
++	dput(sb->s_root);
++	sb->s_root = NULL;
+ fail_close:
+ 	close_ctree(fs_info->tree_root);
+ 	return err;
+@@ -941,6 +959,8 @@ static int btrfs_show_options(struct seq_file *seq, struct dentry *dentry)
+ 		seq_puts(seq, ",skip_balance");
+ 	if (btrfs_test_opt(root, PANIC_ON_FATAL_ERROR))
+ 		seq_puts(seq, ",fatal_errors=panic");
++	if (btrfs_test_opt(root, HOT_TRACK))
++		seq_puts(seq, ",hot_track");
+ 	return 0;
+ }
  
 -- 
 1.7.6.5
