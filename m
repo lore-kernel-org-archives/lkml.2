@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761107Ab2J2Vgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:36:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47035 "EHLO mail.kernel.org"
+	id S1761128Ab2J2Vgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:36:39 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47074 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761087Ab2J2Vgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:31 -0400
+	id S1761091Ab2J2Vgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 004/101] ALSA: hda - Fix silent headphone output from Toshiba P200
-Date: Mon, 29 Oct 2012 14:34:17 -0700
-Message-Id: <20121029213240.640989661@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 007/101] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
+Date: Mon, 29 Oct 2012 14:34:20 -0700
+Message-Id: <20121029213240.957885574@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,68 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit cb766404e6b8c566569eb9ada02ea45d28729864 upstream.
+commit 12176503366885edd542389eed3aaf94be163fdb upstream.
 
-By some reason, Toshiba laptop doesn't like the EAPD turned up for the
-headphone pin.  Add a fix up code to force to turn down EAPD for NID
-0x15.
+The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
+while converting ioctl arguments.  This could lead to leaking kernel
+stack contents into userspace.
 
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=569991
+Patch extracted from existing fix in grsecurity.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++++-
- 1 file changed, 18 insertions(+), 1 deletion(-)
+ fs/compat_ioctl.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5704,6 +5704,7 @@ static const struct hda_verb alc268_beep
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -210,6 +210,8 @@ static int do_video_set_spu_palette(unsi
  
- enum {
- 	ALC268_FIXUP_INV_DMIC,
-+	ALC268_FIXUP_HP_EAPD,
- };
+ 	err  = get_user(palp, &up->palette);
+ 	err |= get_user(length, &up->length);
++	if (err)
++		return -EFAULT;
  
- static const struct alc_fixup alc268_fixups[] = {
-@@ -5711,10 +5712,26 @@ static const struct alc_fixup alc268_fix
- 		.type = ALC_FIXUP_FUNC,
- 		.v.func = alc_fixup_inv_dmic_0x12,
- 	},
-+	[ALC268_FIXUP_HP_EAPD] = {
-+		.type = ALC_FIXUP_VERBS,
-+		.v.verbs = (const struct hda_verb[]) {
-+			{0x15, AC_VERB_SET_EAPD_BTLENABLE, 0},
-+			{}
-+		}
-+	},
- };
- 
- static const struct alc_model_fixup alc268_fixup_models[] = {
- 	{.id = ALC268_FIXUP_INV_DMIC, .name = "inv-dmic"},
-+	{.id = ALC268_FIXUP_HP_EAPD, .name = "hp-eapd"},
-+	{}
-+};
-+
-+static const struct snd_pci_quirk alc268_fixup_tbl[] = {
-+	/* below is codec SSID since multiple Toshiba laptops have the
-+	 * same PCI SSID 1179:ff00
-+	 */
-+	SND_PCI_QUIRK(0x1179, 0xff06, "Toshiba P200", ALC268_FIXUP_HP_EAPD),
- 	{}
- };
- 
-@@ -5749,7 +5766,7 @@ static int patch_alc268(struct hda_codec
- 
- 	spec = codec->spec;
- 
--	alc_pick_fixup(codec, alc268_fixup_models, NULL, alc268_fixups);
-+	alc_pick_fixup(codec, alc268_fixup_models, alc268_fixup_tbl, alc268_fixups);
- 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
- 
- 	/* automatic parse from the BIOS config */
+ 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
+ 	err  = put_user(compat_ptr(palp), &up_native->palette);
 
 
