@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761602Ab2J2Vyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:54:55 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48496 "EHLO mail.kernel.org"
+	id S1761611Ab2J2VzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:55:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48485 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761528Ab2J2VlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761525Ab2J2VlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 17:41:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>,
-        David McKay <david.mckay@st.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 08/54] ARM: 7559/1: smp: switch away from the idmap before updating init_mm.mm_count
-Date: Mon, 29 Oct 2012 14:40:09 -0700
-Message-Id: <20121029213803.683365444@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 10/54] mm: fix XFS oops due to dirty pages without buffers on s390
+Date: Mon, 29 Oct 2012 14:40:11 -0700
+Message-Id: <20121029213803.907280277@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -27,82 +29,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 5f40b909728ad784eb43aa309d3c4e9bdf050781 upstream.
+commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
 
-When booting a secondary CPU, the primary CPU hands two sets of page
-tables via the secondary_data struct:
+On s390 any write to a page (even from kernel itself) sets architecture
+specific page dirty bit.  Thus when a page is written to via buffered
+write, HW dirty bit gets set and when we later map and unmap the page,
+page_remove_rmap() finds the dirty bit and calls set_page_dirty().
 
-	(1) swapper_pg_dir: a normal, cacheable, shared (if SMP) mapping
-	    of the kernel image (i.e. the tables used by init_mm).
+Dirtying of a page which shouldn't be dirty can cause all sorts of
+problems to filesystems.  The bug we observed in practice is that
+buffers from the page get freed, so when the page gets later marked as
+dirty and writeback writes it, XFS crashes due to an assertion
+BUG_ON(!PagePrivate(page)) in page_buffers() called from
+xfs_count_page_state().
 
-	(2) idmap_pgd: an uncached mapping of the .idmap.text ELF
-	    section.
+Similar problem can also happen when zero_user_segment() call from
+xfs_vm_writepage() (or block_write_full_page() for that matter) set the
+hardware dirty bit during writeback, later buffers get freed, and then
+page unmapped.
 
-The idmap is generally used when enabling and disabling the MMU, which
-includes early CPU boot. In this case, the secondary CPU switches to
-swapper as soon as it enters C code:
+Fix the issue by ignoring s390 HW dirty bit for page cache pages of
+mappings with mapping_cap_account_dirty().  This is safe because for
+such mappings when a page gets marked as writeable in PTE it is also
+marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
+cleared by clear_page_dirty_for_io(), the page gets writeprotected in
+page_mkclean().  So pagecache page is writeable if and only if it is
+dirty.
 
-	struct mm_struct *mm = &init_mm;
-	unsigned int cpu = smp_processor_id();
+Thanks to Hugh Dickins for pointing out mapping has to have
+mapping_cap_account_dirty() for things to work and proposing a cleaned
+up variant of the patch.
 
-	/*
-	 * All kernel threads share the same mm context; grab a
-	 * reference and switch to it.
-	 */
-	atomic_inc(&mm->mm_count);
-	current->active_mm = mm;
-	cpumask_set_cpu(cpu, mm_cpumask(mm));
-	cpu_switch_mm(mm->pgd, mm);
+The patch has survived about two hours of running fsx-linux on tmpfs
+while heavily swapping and several days of running on out build machines
+where the original problem was triggered.
 
-This causes a problem on ARMv7, where the identity mapping is treated as
-strongly-ordered leading to architecturally UNPREDICTABLE behaviour of
-exclusive accesses, such as those used by atomic_inc.
-
-This patch re-orders the secondary_start_kernel function so that we
-switch to swapper before performing any exclusive accesses.
-
-Reported-by: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
-Cc: David McKay <david.mckay@st.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/smp.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ mm/rmap.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -249,18 +249,24 @@ static void percpu_timer_setup(void);
- asmlinkage void __cpuinit secondary_start_kernel(void)
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -56,6 +56,7 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/migrate.h>
+ #include <linux/hugetlb.h>
++#include <linux/backing-dev.h>
+ 
+ #include <asm/tlbflush.h>
+ 
+@@ -977,11 +978,8 @@ int page_mkclean(struct page *page)
+ 
+ 	if (page_mapped(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		if (mapping) {
++		if (mapping)
+ 			ret = page_mkclean_file(mapping, page);
+-			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+-				ret = 1;
+-		}
+ 	}
+ 
+ 	return ret;
+@@ -1167,6 +1165,7 @@ void page_add_file_rmap(struct page *pag
+  */
+ void page_remove_rmap(struct page *page)
  {
- 	struct mm_struct *mm = &init_mm;
--	unsigned int cpu = smp_processor_id();
-+	unsigned int cpu;
-+
-+	/*
-+	 * The identity mapping is uncached (strongly ordered), so
-+	 * switch away from it before attempting any exclusive accesses.
-+	 */
-+	cpu_switch_mm(mm->pgd, mm);
-+	enter_lazy_tlb(mm, current);
-+	local_flush_tlb_all();
- 
- 	/*
- 	 * All kernel threads share the same mm context; grab a
- 	 * reference and switch to it.
++	struct address_space *mapping = page_mapping(page);
+ 	bool anon = PageAnon(page);
+ 	bool locked;
+ 	unsigned long flags;
+@@ -1189,8 +1188,19 @@ void page_remove_rmap(struct page *page)
+ 	 * this if the page is anon, so about to be freed; but perhaps
+ 	 * not if it's in swapcache - there might be another pte slot
+ 	 * containing the swap entry, but page not yet written to swap.
++	 *
++	 * And we can skip it on file pages, so long as the filesystem
++	 * participates in dirty tracking; but need to catch shm and tmpfs
++	 * and ramfs pages which have been modified since creation by read
++	 * fault.
++	 *
++	 * Note that mapping must be decided above, before decrementing
++	 * mapcount (which luckily provides a barrier): once page is unmapped,
++	 * it could be truncated and page->mapping reset to NULL at any moment.
++	 * Note also that we are relying on page_mapping(page) to set mapping
++	 * to &swapper_space when PageSwapCache(page).
  	 */
-+	cpu = smp_processor_id();
- 	atomic_inc(&mm->mm_count);
- 	current->active_mm = mm;
- 	cpumask_set_cpu(cpu, mm_cpumask(mm));
--	cpu_switch_mm(mm->pgd, mm);
--	enter_lazy_tlb(mm, current);
--	local_flush_tlb_all();
- 
- 	printk("CPU%u: Booted secondary processor\n", cpu);
- 
+-	if ((!anon || PageSwapCache(page)) &&
++	if (mapping && !mapping_cap_account_dirty(mapping) &&
+ 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
+ 		set_page_dirty(page);
+ 	/*
 
 
