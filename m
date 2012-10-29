@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761318Ab2J2XbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 19:31:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40347 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757744Ab2J2XbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 19:31:04 -0400
-Date: Tue, 30 Oct 2012 00:31:00 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-        Jean Delvare <khali@linux-fr.org>, Guenter Roeck <linux@roeck-us.net>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, lm-sensors@lm-sensors.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net,
-        Stephane Eranian <eranian@google.com>,
-        Robert Richter <rric@kernel.org>,
-        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-Subject: Re: [PATCH 3/4] cpufreq, powernow-k8: Change email address
-Message-ID: <20121029233100.GE8393@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Andreas Herrmann <herrmann.der.user@googlemail.com>,
-	Jean Delvare <khali@linux-fr.org>,
-	Guenter Roeck <linux@roeck-us.net>, Ingo Molnar <mingo@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	lm-sensors@lm-sensors.org, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	oprofile-list@lists.sf.net, Stephane Eranian <eranian@google.com>,
-	Robert Richter <rric@kernel.org>,
-	=?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
-References: <20121029174924.GA5024@tweety>
- <20121029175221.GD5024@tweety>
- <2663527.sPyzc5AXi8@vostro.rjw.lan>
+	id S1761384Ab2J2XdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 19:33:01 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:33049 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761327Ab2J2XdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 19:33:00 -0400
+Date: Tue, 30 Oct 2012 00:32:37 +0100
+From: Mathieu Chouquet-Stringer <mathieu@csetco.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: Nouveau regression between 3.6 and 3.7-rc3: driver stuck at
+ "running init tables"
+Message-ID: <20121029233237.GA10839@kashmir>
+Mail-Followup-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>,
+	Ben Skeggs <bskeggs@redhat.com>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20121029230647.GA10369@kashmir>
+ <1351552559.3810.2.camel@turiel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2663527.sPyzc5AXi8@vostro.rjw.lan>
+In-Reply-To: <1351552559.3810.2.camel@turiel>
+X-Face: %JOeya=Dg!}[/#Go&*&cQ+)){p1c8}u\Fg2Q3&)kothIq|JnWoVzJtCFo~4X<uJ\9cHK'.w
+ 3:{EoxBR
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 30, 2012 at 12:33:15AM +0100, Rafael J. Wysocki wrote:
-> On Monday, October 29, 2012 06:52:21 PM Andreas Herrmann wrote:
-> > 
-> > Signed-off-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
-> 
-> Am I supposed to take this one?
+	Hi again,
 
-Yes please.
+On Tue, Oct 30, 2012 at 09:15:59AM +1000, Ben Skeggs wrote:
+> Are you able to go back to the current master, and get me a
+> log/screenshot with "nouveau.debug=trace" appended to your kernel
+> options?
 
-Thanks.
+Hmmm I did just that on v3.7-rc3-8-g35fd3dc and it doesn't seem to
+output more stuff:
 
+http://mathieu.csetco.com/nouveau.jpeg
 -- 
-Regards/Gruss,
-    Boris.
+Mathieu Chouquet-Stringer                         mathieu@csetco.com
+            The sun itself sees not till heaven clears.
+	             -- William Shakespeare --
