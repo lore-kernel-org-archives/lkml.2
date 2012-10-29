@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab2J2J2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 05:28:16 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:55735 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753287Ab2J2J2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 05:28:14 -0400
-Message-ID: <508E4C29.4030308@imgtec.com>
-Date: Mon, 29 Oct 2012 09:28:09 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754561Ab2J2Jdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 05:33:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42175 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752675Ab2J2Jde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 05:33:34 -0400
+Date: Mon, 29 Oct 2012 09:33:33 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@opensource.wolfsonmicro.com, lrg@ti.com
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH] regulator: core: Move regulator release to avoid deadlock
+Message-ID: <20121029093333.GA17941@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: <guanxuetao@mprc.pku.edu.cn>
-CC: Arnd Bergmann <arnd@arndb.de>, Jonas Bonn <jonas@southpole.se>,
-        <linux-arch@vger.kernel.org>, <linux@openrisc.net>,
-        <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        <linux-xtensa@linux-xtensa.org>, Chris Zankel <chris@zankel.net>,
-        "Max Filippov" <jcmvbkbc@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "Chen Liqin" <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>, "Guan Xuetao" <gxt@mprc.pku.edu.cn>
-Subject: Re: [PATCH] asm-generic/io.h: remove asm/cacheflush.h include
-References: <1350984117-17369-1-git-send-email-james.hogan@imgtec.com> <57835.162.105.203.8.1351474122.squirrel@mprc.pku.edu.cn>
-In-Reply-To: <57835.162.105.203.8.1351474122.squirrel@mprc.pku.edu.cn>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_10_29_09_28_10
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/12 01:28, guanxuetao@mprc.pku.edu.cn wrote:
->> Including <asm/cacheflush.h> from <asm-generic/io.h> prevents
->> cacheflush.h being able to use I/O functions like readl and writel due
->> to circular include dependencies. It doesn't appear as if anything from
->> cacheflush.h is actually used by the generic io.h, so remove the
->> include.
->>
->> I've compile tested a defconfig compilation of blackfin, openrisc (which
->> needed <asm/pgtable.h> including from it's <asm/io.h> to get the PAGE_*
->> definitions), and xtensa.
->>
->> Other architectures which use asm-generic/io.h are score and unicore32,
->> and looking at their io.h I don't see any obvious problems.
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Jonas Bonn <jonas@southpole.se>
->> Cc: Chris Zankel <chris@zankel.net>
->> Cc: Max Filippov <jcmvbkbc@gmail.com>
->> Cc: Mike Frysinger <vapier@gentoo.org>
->> Cc: Chen Liqin <liqin.chen@sunplusct.com>
->> Cc: Lennox Wu <lennox.wu@gmail.com>
->> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> 
-> Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
+regulator_put function was called whilst holding the
+regulator_list_mutex, which is also locked from regulator_put. This
+causes deadlock when failing to register a regulator.
 
-Thanks Guan
+This patch adds a second exit point for the regulator_register function
+which releases the mutex and then cleans up the supply.
 
-Cheers
-James
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/core.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 5c4829c..e68754c 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3444,15 +3444,18 @@ unset_supplies:
+ 	unset_regulator_supplies(rdev);
+ 
+ scrub:
+-	if (rdev->supply)
+-		regulator_put(rdev->supply);
+ 	if (rdev->ena_gpio)
+ 		gpio_free(rdev->ena_gpio);
+ 	kfree(rdev->constraints);
+ 	device_unregister(&rdev->dev);
++
++	mutex_unlock(&regulator_list_mutex);
++	if (rdev->supply)
++		regulator_put(rdev->supply);
++
+ 	/* device core frees rdev */
+ 	rdev = ERR_PTR(ret);
+-	goto out;
++	return rdev;
+ 
+ clean:
+ 	kfree(rdev);
+-- 
+1.7.2.5
 
