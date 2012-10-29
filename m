@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab2J2TNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:13:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52375 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab2J2TND (ORCPT
+	id S1754050Ab2J2TNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:13:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51700 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab2J2TNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:13:03 -0400
-Date: Mon, 29 Oct 2012 12:12:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
-Message-ID: <20121029191256.GE4066@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
- <20121029113515.GB9115@Krystal>
- <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
- <20121029183157.GC3097@jtriplet-mobl1>
- <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
- <20121029185319.GA21546@Krystal>
- <CA+1xoqcSx04JEXy2aPu4Qt7Zb4iSqXBSjARgMae_FusgzpgnaQ@mail.gmail.com>
+	Mon, 29 Oct 2012 15:13:37 -0400
+Message-ID: <508ED55E.4000308@kernel.dk>
+Date: Mon, 29 Oct 2012 20:13:34 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqcSx04JEXy2aPu4Qt7Zb4iSqXBSjARgMae_FusgzpgnaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] block driver bits for 3.7
+References: <508EC926.3040906@kernel.dk> <CA+55aFwLUuwue0RQn2r1EZgZL_r-wO-cjJAgpUObXKMkA7S1xQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwLUuwue0RQn2r1EZgZL_r-wO-cjJAgpUObXKMkA7S1xQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 03:09:36PM -0400, Sasha Levin wrote:
-> The other thing is whether hash_init() should be called for hashtables
-> that were created with DEFINE_HASHTABLE(). That point was raised by
-> Neil Brown last time this series went around, and it seems that no one
-> objected to the point that it should be consistent across the code.
+On 2012-10-29 19:35, Linus Torvalds wrote:
+> On Mon, Oct 29, 2012 at 11:21 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>
+>> Later than I would have liked, but I was traveling around the merge
+>> window and then a fixes snuck in past that and I wanted to ensure that
+>> everything was fully baked again.
+> 
+> Didn't we agree last time that drbd just wasn't important enough to
+> *constantly* cause these kinds of "lots of late fixes"?
+> 
+> In fact, they aren't even fixes. There's a single small commit during
+> the merge window since v3.6 touching that driver, and it wasn't even
+> drbd-specific.
+> 
+> In other words, I see absolutely no reason to pull this stuff at this
+> time. It's so far out of the merge window that it's not funny, and it
+> has absolutely nothing about it that says "fixes".
+> 
+> So mind sending just the actual *fixes* for actual regressions, and
+> then you can re-push this for the next merge window?
 
-Hmmm?  If something is DEFINE_XXX()'d, you definitely shouldn't be
-calling XXX_init() on it.  That's how it is with most other abstract
-data types and you need *VERY* strong rationale to deviate from that.
-
-Thanks.
+It was actually the floppy part that caused a delay on my end. But sure,
+I can distill this down given the time. I'll send out a new one
+tomorrow.
 
 -- 
-tejun
+Jens Axboe
+
