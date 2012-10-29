@@ -1,136 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758741Ab2J2L0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:26:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57384 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758683Ab2J2L0W (ORCPT
+	id S1758754Ab2J2L3O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:29:14 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58264 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754060Ab2J2L3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:26:22 -0400
-Date: Mon, 29 Oct 2012 04:26:03 -0700
-From: tip-bot for Johannes Weiner <hannes@cmpxchg.org>
-Message-ID: <tip-3eaf14577ceb5c540e33a4eab967160d374b93b1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
-        aarcange@redhat.com, zliu@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
-        zliu@redhat.com, aarcange@redhat.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:numa/core] sched, numa, mm:
-  Add memcg support to do_huge_pmd_numa_page()
-Git-Commit-ID: 3eaf14577ceb5c540e33a4eab967160d374b93b1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 29 Oct 2012 07:29:12 -0400
+Date: Mon, 29 Oct 2012 07:29:08 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20121029112907.GA9115@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 29 Oct 2012 04:26:09 -0700 (PDT)
+In-Reply-To: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3eaf14577ceb5c540e33a4eab967160d374b93b1
-Gitweb:     http://git.kernel.org/tip/3eaf14577ceb5c540e33a4eab967160d374b93b1
-Author:     Johannes Weiner <hannes@cmpxchg.org>
-AuthorDate: Thu, 25 Oct 2012 12:49:51 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 29 Oct 2012 12:15:15 +0100
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> This hashtable implementation is using hlist buckets to provide a simple
+> hashtable to prevent it from getting reimplemented all over the kernel.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+> 
+> Sorry for the long delay, I was busy with a bunch of personal things.
+> 
+> Changes since v6:
+> 
+>  - Use macros that point to internal static inline functions instead of
+>  implementing everything as a macro.
+>  - Rebase on latest -next.
+>  - Resending the enter patch series on request.
+>  - Break early from hash_empty() if found to be non-empty.
+>  - DECLARE_HASHTABLE/DEFINE_HASHTABLE.
+> 
+> 
+>  include/linux/hashtable.h | 193 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 193 insertions(+)
+>  create mode 100644 include/linux/hashtable.h
+> 
+> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
+> new file mode 100644
+> index 0000000..1fb8c97
+> --- /dev/null
+> +++ b/include/linux/hashtable.h
+> @@ -0,0 +1,193 @@
+> +/*
+> + * Statically sized hash table implementation
+> + * (C) 2012  Sasha Levin <levinsasha928@gmail.com>
+> + */
+> +
+> +#ifndef _LINUX_HASHTABLE_H
+> +#define _LINUX_HASHTABLE_H
+> +
+> +#include <linux/list.h>
+> +#include <linux/types.h>
+> +#include <linux/kernel.h>
+> +#include <linux/hash.h>
+> +#include <linux/rculist.h>
+> +
+> +#define DEFINE_HASHTABLE(name, bits)						\
+> +	struct hlist_head name[1 << bits] =					\
+> +			{ [0 ... ((1 << bits) - 1)] = HLIST_HEAD_INIT }
 
-sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
+Although it's unlikely that someone would use this with a binary
+operator with lower precedence than "<<" (see e.g.
+http://www.swansontec.com/sopc.html) as "bits", lack of parenthesis
+around "bits" would be unexpected by the caller, and could introduce
+bugs. Please review all macros with the precedence table in mind, and
+ask yourself if lack of parenthesis could introduce a subtle bug.
 
-Add memory control group support to hugepage migration.
+> +
+> +#define DECLARE_HASHTABLE(name, bits)                                   	\
+> +	struct hlist_head name[1 << (bits)]
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Zhouping Liu <zliu@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-rDk9mgpoyhZlwh2xhlykvgnp@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/huge_memory.c |   15 +++++++++++++++
- mm/memcontrol.c  |    7 +++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+Here, you have parenthesis around "bits", but not above (inconsistency).
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 7361fd9..1fc805e 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -742,6 +742,7 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			   unsigned int flags, pmd_t entry)
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	struct mem_cgroup *memcg = NULL;
- 	struct page *new_page = NULL;
- 	struct page *page = NULL;
- 	int node, lru;
-@@ -832,6 +833,14 @@ migrate:
- 
- 		return;
- 	}
-+	/*
-+	 * Traditional migration needs to prepare the memcg charge
-+	 * transaction early to prevent the old page from being
-+	 * uncharged when installing migration entries.  Here we can
-+	 * save the potential rollback and start the charge transfer
-+	 * only when migration is already known to end successfully.
-+	 */
-+	mem_cgroup_prepare_migration(page, new_page, &memcg);
- 
- 	entry = mk_pmd(new_page, vma->vm_page_prot);
- 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-@@ -842,6 +851,12 @@ migrate:
- 	set_pmd_at(mm, haddr, pmd, entry);
- 	update_mmu_cache_pmd(vma, address, entry);
- 	page_remove_rmap(page);
-+	/*
-+	 * Finish the charge transaction under the page table lock to
-+	 * prevent split_huge_page() from dividing up the charge
-+	 * before it's fully transferred to the new page.
-+	 */
-+	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(&mm->page_table_lock);
- 
- 	put_page(page);			/* Drop the rmap reference */
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7acf43b..011e510 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3255,15 +3255,18 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
- 				  struct mem_cgroup **memcgp)
- {
- 	struct mem_cgroup *memcg = NULL;
-+	unsigned int nr_pages = 1;
- 	struct page_cgroup *pc;
- 	enum charge_type ctype;
- 
- 	*memcgp = NULL;
- 
--	VM_BUG_ON(PageTransHuge(page));
- 	if (mem_cgroup_disabled())
- 		return;
- 
-+	if (PageTransHuge(page))
-+		nr_pages <<= compound_order(page);
-+
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
-@@ -3325,7 +3328,7 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
- 	 * charged to the res_counter since we plan on replacing the
- 	 * old one and only one page is going to be left afterwards.
- 	 */
--	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
-+	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
- }
- 
- /* remove redundant charge if migration failed*/
+> +
+> +#define HASH_SIZE(name) (ARRAY_SIZE(name))
+> +#define HASH_BITS(name) ilog2(HASH_SIZE(name))
+> +
+> +/* Use hash_32 when possible to allow for fast 32bit hashing in 64bit kernels. */
+> +#define hash_min(val, bits)							\
+> +({										\
+> +	sizeof(val) <= 4 ?							\
+> +	hash_32(val, bits) :							\
+> +	hash_long(val, bits);							\
+> +})
+> +
+> +static inline void __hash_init(struct hlist_head *ht, int sz)
+
+int -> unsigned int.
+
+> +{
+> +	int i;
+
+int -> unsigned int.
+
+> +
+> +	for (i = 0; i < sz; i++)
+> +		INIT_HLIST_HEAD(&ht[sz]);
+
+ouch. How did this work ? Has it been tested at all ?
+
+sz -> i
+
+
+> +}
+> +
+> +/**
+> + * hash_init - initialize a hash table
+> + * @hashtable: hashtable to be initialized
+> + *
+> + * Calculates the size of the hashtable from the given parameter, otherwise
+> + * same as hash_init_size.
+> + *
+> + * This has to be a macro since HASH_BITS() will not work on pointers since
+> + * it calculates the size during preprocessing.
+> + */
+> +#define hash_init(hashtable) __hash_init(hashtable, HASH_SIZE(hashtable))
+> +
+> +/**
+> + * hash_add - add an object to a hashtable
+> + * @hashtable: hashtable to add to
+> + * @node: the &struct hlist_node of the object to be added
+> + * @key: the key of the object to be added
+> + */
+> +#define hash_add(hashtable, node, key)						\
+> +	hlist_add_head(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
+
+extra ";" at the end to remove.
+
+> +
+> +/**
+> + * hash_add_rcu - add an object to a rcu enabled hashtable
+> + * @hashtable: hashtable to add to
+> + * @node: the &struct hlist_node of the object to be added
+> + * @key: the key of the object to be added
+> + */
+> +#define hash_add_rcu(hashtable, node, key)					\
+> +	hlist_add_head_rcu(node, &hashtable[hash_min(key, HASH_BITS(hashtable))]);
+
+extra ";" at the end to remove.
+
+> +
+> +/**
+> + * hash_hashed - check whether an object is in any hashtable
+> + * @node: the &struct hlist_node of the object to be checked
+> + */
+> +#define hash_hashed(node) (!hlist_unhashed(node))
+
+Please use a static inline for this instead of a macro.
+
+> +
+> +static inline bool __hash_empty(struct hlist_head *ht, int sz)
+
+int -> unsigned int.
+
+> +{
+> +	int i;
+
+int -> unsigned int.
+
+> +
+> +	for (i = 0; i < sz; i++)
+> +		if (!hlist_empty(&ht[i]))
+> +			return false;
+> +
+> +	return true;
+> +}
+> +
+> +/**
+> + * hash_empty - check whether a hashtable is empty
+> + * @hashtable: hashtable to check
+> + *
+> + * This has to be a macro since HASH_BITS() will not work on pointers since
+> + * it calculates the size during preprocessing.
+> + */
+> +#define hash_empty(hashtable) __hash_empty(hashtable, HASH_SIZE(hashtable))
+> +
+> +/**
+> + * hash_del - remove an object from a hashtable
+> + * @node: &struct hlist_node of the object to remove
+> + */
+> +static inline void hash_del(struct hlist_node *node)
+> +{
+> +	hlist_del_init(node);
+> +}
+> +
+> +/**
+> + * hash_del_rcu - remove an object from a rcu enabled hashtable
+> + * @node: &struct hlist_node of the object to remove
+> + */
+> +static inline void hash_del_rcu(struct hlist_node *node)
+> +{
+> +	hlist_del_init_rcu(node);
+> +}
+> +
+> +/**
+> + * hash_for_each - iterate over a hashtable
+> + * @name: hashtable to iterate
+> + * @bkt: integer to use as bucket loop cursor
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @member: the name of the hlist_node within the struct
+> + */
+> +#define hash_for_each(name, bkt, node, obj, member)				\
+> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
+
+if "bkt" happens to be a dereferenced pointer (unary operator '*'), we
+get into a situation where "*blah" has higher precedence than "=",
+higher than "<", but lower than "++". Any thoughts on fixing this ?
+
+> +		hlist_for_each_entry(obj, node, &name[bkt], member)
+> +
+> +/**
+> + * hash_for_each_rcu - iterate over a rcu enabled hashtable
+> + * @name: hashtable to iterate
+> + * @bkt: integer to use as bucket loop cursor
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @member: the name of the hlist_node within the struct
+> + */
+> +#define hash_for_each_rcu(name, bkt, node, obj, member)				\
+> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
+
+Same comment as above about "bkt".
+
+> +		hlist_for_each_entry_rcu(obj, node, &name[bkt], member)
+> +
+> +/**
+> + * hash_for_each_safe - iterate over a hashtable safe against removal of
+> + * hash entry
+> + * @name: hashtable to iterate
+> + * @bkt: integer to use as bucket loop cursor
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @tmp: a &struct used for temporary storage
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @member: the name of the hlist_node within the struct
+> + */
+> +#define hash_for_each_safe(name, bkt, node, tmp, obj, member)			\
+> +	for (bkt = 0, node = NULL; node == NULL && bkt < HASH_SIZE(name); bkt++)\
+
+Same comment as above about "bkt".
+
+Thanks,
+
+Mathieu
+
+> +		hlist_for_each_entry_safe(obj, node, tmp, &name[bkt], member)
+> +
+> +/**
+> + * hash_for_each_possible - iterate over all possible objects hashing to the
+> + * same bucket
+> + * @name: hashtable to iterate
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @member: the name of the hlist_node within the struct
+> + * @key: the key of the objects to iterate over
+> + */
+> +#define hash_for_each_possible(name, obj, node, member, key)			\
+> +	hlist_for_each_entry(obj, node,	&name[hash_min(key, HASH_BITS(name))], member)
+> +
+> +/**
+> + * hash_for_each_possible_rcu - iterate over all possible objects hashing to the
+> + * same bucket in an rcu enabled hashtable
+> + * in a rcu enabled hashtable
+> + * @name: hashtable to iterate
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @member: the name of the hlist_node within the struct
+> + * @key: the key of the objects to iterate over
+> + */
+> +#define hash_for_each_possible_rcu(name, obj, node, member, key)		\
+> +	hlist_for_each_entry_rcu(obj, node, &name[hash_min(key, HASH_BITS(name))], member)
+> +
+> +/**
+> + * hash_for_each_possible_safe - iterate over all possible objects hashing to the
+> + * same bucket safe against removals
+> + * @name: hashtable to iterate
+> + * @obj: the type * to use as a loop cursor for each entry
+> + * @node: the &struct list_head to use as a loop cursor for each entry
+> + * @tmp: a &struct used for temporary storage
+> + * @member: the name of the hlist_node within the struct
+> + * @key: the key of the objects to iterate over
+> + */
+> +#define hash_for_each_possible_safe(name, obj, node, tmp, member, key)		\
+> +	hlist_for_each_entry_safe(obj, node, tmp,				\
+> +		&name[hash_min(key, HASH_BITS(name))], member)
+> +
+> +
+> +#endif
+> -- 
+> 1.7.12.4
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
