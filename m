@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2J2TRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 15:17:40 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:65200 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241Ab2J2TRi (ORCPT
+	id S1754967Ab2J2TS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 15:18:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:36217 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2J2TSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 15:17:38 -0400
+	Mon, 29 Oct 2012 15:18:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20121029191256.GE4066@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-6-git-send-email-levinsasha928@gmail.com>
- <20121029113515.GB9115@Krystal> <CA+1xoqce6uJ6wy3+2CBwsLHKnsz4wD0vt8MBEGKCFfXTvuC0Hg@mail.gmail.com>
- <20121029183157.GC3097@jtriplet-mobl1> <CA+1xoqfMrn9zDFMJNFfA0NA86wE_DedD97cP1yJ2UQdTjs3uyQ@mail.gmail.com>
- <20121029185319.GA21546@Krystal> <CA+1xoqcSx04JEXy2aPu4Qt7Zb4iSqXBSjARgMae_FusgzpgnaQ@mail.gmail.com>
- <20121029191256.GE4066@htj.dyndns.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Mon, 29 Oct 2012 15:17:16 -0400
-Message-ID: <CA+1xoqdi2pQENa=--FkPbOGOHgK+M26_jNCxGTkFiynqnR+7og@mail.gmail.com>
-Subject: Re: [PATCH v7 06/16] tracepoint: use new hashtable implementation
-To: Tejun Heo <tj@kernel.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Josh Triplett <josh@joshtriplett.org>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+In-Reply-To: <1351518466.8467.65.camel@gandalf.local.home>
+References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
+	<1351517296-9173-2-git-send-email-fweisbec@gmail.com>
+	<1351518466.8467.65.camel@gandalf.local.home>
+Date: Mon, 29 Oct 2012 20:18:22 +0100
+Message-ID: <CAFTL4hxzGV4QFOLnTHYMhvKVsF_CrG7pOyi9hdgPBYLKdMB5zA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/9] irq_work: Fix racy check on work pending flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 3:12 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Mon, Oct 29, 2012 at 03:09:36PM -0400, Sasha Levin wrote:
->> The other thing is whether hash_init() should be called for hashtables
->> that were created with DEFINE_HASHTABLE(). That point was raised by
->> Neil Brown last time this series went around, and it seems that no one
->> objected to the point that it should be consistent across the code.
+2012/10/29 Steven Rostedt <rostedt@goodmis.org>:
+> I wonder if the bug is just a memory barrier missing here? But that also
+> suggests that the other CPU used a memory barrier too (or cmpxchg()
+> which implies one).
 >
-> Hmmm?  If something is DEFINE_XXX()'d, you definitely shouldn't be
-> calling XXX_init() on it.  That's how it is with most other abstract
-> data types and you need *VERY* strong rationale to deviate from that.
+> But this change looks fine too.
 
-Neil Brown raised that point last time that this series went around,
-and suggested that this should be consistent and hash_init() would
-appear everywhere, even if DEFINE_HASHTABLE() was used. Since no one
-objected to that I thought we're going with that.
+I fear a memory barrier wouldn't be much helpful here.
 
-I'll chalk it up to me getting confused :)
+Thing is I'm not sure exactly what strict semantics is expected there:
+do we allow for concurrent claiming only locally or also across CPUs?
+Given that we only disable preemption on work queueing, I assumed we
+allow for concurrent claiming across CPUs. Also we have irq work users
+that may claim on random CPUs already and thus this can result in
+cross-CPUs concurrent claiming. Task wide (not per cpu) perf event are
+such examples. May be drivers/acpi/apei/ghes.c and perhaps others.
 
+Also if we allow for cross-CPUs concurrent claiming, we should set
+IRQ_WORK_BUSY with cmpxchg() (or xchg() if it's atomic, because nobody
+can modify it concurrently at this stage as it's claimed). Otherwise a
+CPU can fail its claim whereas the other CPU that claimed it may
+actually have executed the work already, or is in the middle of doing
+so. The race window stops when we clear the IRQ_WORK_BUSY flag with
+cmpxchg so it's very tight. But still it's there.
 
-Thanks,
-Sasha
+Also irq_work_sync() should poll with ACCESS_ONCE(). Same problem with
+foggy semantics here: do we allow remote sync?
