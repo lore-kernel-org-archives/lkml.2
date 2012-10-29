@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab2J2Ffa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 01:35:30 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:54223 "EHLO e2.ny.us.ibm.com"
+	id S1754724Ab2J2Fnw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:43:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645Ab2J2Ff2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 01:35:28 -0400
-Date: Mon, 29 Oct 2012 11:05:22 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 6/9] uprobes: flush cache after xol write
-Message-ID: <20121029053522.GC3400@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1350242593-17761-1-git-send-email-rabin@rab.in> <1350242593-17761-6-git-send-email-rabin@rab.in> <20121015165756.GA11737@redhat.com> <CAH+eYFAv=UTZ1gQ5jXq8_ziNy1i3BL9y1bOUWMdTow=i3N0n+g@mail.gmail.com> <20121025145839.GB26929@redhat.com> <20121026055239.GA4862@in.ibm.com> <20121026163951.GA17742@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121026163951.GA17742@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12102905-5112-0000-0000-00000DF38C2D
+	id S1754321Ab2J2Fnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 01:43:51 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com
+Cc: maxk@qualcomm.com, haixiao@juniper.net, ernesto.martin@viasat.com,
+        krkumar2@in.ibm.com, edumazet@google.com,
+        Jason Wang <jasowang@redhat.com>
+Subject: [net-next v4 0/7] Multiqueue support in tuntap
+Date: Mon, 29 Oct 2012 13:35:56 +0800
+Message-Id: <1351488964-11109-1-git-send-email-jasowang@redhat.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 06:39:51PM +0200, Oleg Nesterov wrote:
-> On 10/26, Ananth N Mavinakayanahalli wrote:
-> >
-> > On Thu, Oct 25, 2012 at 04:58:39PM +0200, Oleg Nesterov wrote:
-> > > On 10/16, Rabin Vincent wrote:
-> > > >
-> > > > >> --- a/kernel/events/uprobes.c
-> > > > >> +++ b/kernel/events/uprobes.c
-> > > > >> @@ -1246,6 +1246,7 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
-> > > > >>       offset = current->utask->xol_vaddr & ~PAGE_MASK;
-> > > > >>       vaddr = kmap_atomic(area->page);
-> > > > >>       arch_uprobe_xol_copy(&uprobe->arch, vaddr + offset);
-> > > > >> +     flush_dcache_page(area->page);
-> > > > >>       kunmap_atomic(vaddr);
-> > > > >
-> > > > > I agree... but why under kmap_atomic?
-> > > >
-> > > > No real reason; I'll move it to after the unmap.
-> > >
-> > > OK. I assume you will send v2.
-> > >
-> > > But this patch looks like a bugfix, flush_dcache_page() is not a nop
-> > > on powerpc. So perhaps we should apply this fix right now?
-> >
-> > Starting Power5, all Power processers have coherent caches.
-> >
-> > > OTOH, I do not understand this stuff, everything is nop on x86. And
-> > > when I look into Documentation/cachetlb.txt I am starting to think
-> > > that may be this needs flush_icache_user_range instead?
-> > >
-> > > Rabin, Ananth could you clarify this?
-> >
-> > Yes. We need flush_icache_user_range(). Though for x86 its always been a
-> > nop, one never knows if there is some Power4 or older machine out there
-> > that is still being used. We are fine for Power5 and later.
-> 
-> This is bad...
-> 
-> flush_icache_user needs vma. perhaps just to check VM_EXEC...
-> 
-> So let me repeat to be sure I really understand, do you confirm that
-> _in general_ flush_dcache_page() is not enough?
+Hello All:
 
-flush_dcache_page() on powerpc already checks for
-CPU_FTR_COHERENT_ICACHE. So, yes, that is enough.
+This is an update of multiqueue support in tuntap from V3. Please consider to
+merge.
 
-Ananth
+The main idea for this series is to let tun/tap device to be benefited from
+multiqueue network cards and multi-core host. We used to have a single queue for
+tuntap which could be a bottleneck in a multiqueue/core environment. So this
+series let the device could be attched with multiple sockets and expose them
+through fd to the userspace as multiqueues. The sereis were orignally designed
+to serve as backend for multiqueue virtio-net in KVM, but the design is generic
+for other application to be used.
+
+Some quick overview of the design:
+
+- Moving socket from tun_device to tun_file.
+- Allowing multiple sockets to be attached to a tun/tap devices.
+- Using RCU to synchronize the data path and system call.
+- Two new ioctls were added for the usespace to attach and detach socket to the device.
+- API compatibility were maintained without userspace notable changes, so legacy
+  userspace that only use one queue won't need any changes.
+- A flow(rxhash) to queue table were maintained by tuntap which choose the txq
+  based on the last rxq where it comes.
+
+Performance test:
+
+Pktgen is used to generate the traffic and a simple program that only does the
+receiving in userspace.
+
+#q #thread  kpps     aggregate kpps
+1q 1thread  818kpps  +0%
+2q 2threads 1926kpps +135%
+3q 3threads 2642kpps +223%
+4q 4threads 3536kpps +332%
+
+Changes from V3:
+- Rebase to net-next
+- A separate RCUiying patch to simply the reviewing
+- Add a simple "tx follows rx" policy when choosing txq
+- Various bug fixes
+
+Changes from V2:
+- Rebase to the latest net-next
+- Fix netdev leak when tun_attach fails
+- Fix return value of TUNSETOWNER
+- Purge the receive queue in socket destructor
+- Enable multiqueue tun (V1 and V2 only allows mq to be eanbled for tap
+- Add per-queue u64 statistics
+- Fix wrong BUG_ON() check in tun_detach()
+- Check numqueues instead of tfile[0] in tun_set_iff() to let tunctl -d works
+  correctly
+- Set numqueues to MAX_TAP_QUEUES during tun_detach_all() to prevent the
+  attaching.
+
+Changes from V1:
+- Simplify the sockets array management by not leaving NULL in the slot.
+- Optimization on the tx queue selecting.
+- Fix the bug in tun_deatch_all()
+
+Reference:
+- V3 https://lkml.org/lkml/2012/6/25/191
+- V2 http://lwn.net/Articles/459270/
+- V1 http://www.mail-archive.com/kvm@vger.kernel.org/msg59479.html
+
+Jason Wang (7):
+  tuntap: log the unsigned informaiton with %u
+  tuntap: move socket to tun_file
+  tuntap: RCUify dereferencing between tun_struct and tun_file
+  tuntap: introduce multiqueue flags
+  tuntap: multiqueue support
+  tuntap: add ioctl to attach or detach a file form tuntap device
+  tuntap: choose the txq based on rxq
+
+ drivers/net/tun.c           |  845 ++++++++++++++++++++++++++++++++-----------
+ include/uapi/linux/if_tun.h |    5 +
+ 2 files changed, 640 insertions(+), 210 deletions(-)
 
