@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758480Ab2J2KAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:00:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53766 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758430Ab2J2KAq (ORCPT
+	id S1758513Ab2J2KBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:01:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63181 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758403Ab2J2KAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:00:46 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-8c-508e53cc57db
+	Mon, 29 Oct 2012 06:00:35 -0400
+X-AuditID: cbfee61b-b7f616d00000319b-91-508e53c2f94f
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
@@ -15,191 +15,85 @@ Cc: jassisinghbrar@gmail.com, vinod.koul@intel.com, kgene.kim@samsung.com,
         rob.herring@calxeda.com, dinguyen@altera.com, pawel.moll@arm.com,
         t.figa@samsung.com, kyungmin.park@samsung.com,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 4/4] DMA: PL330: add device tree property for DMA_MEMCPY
- capability
-Date: Mon, 29 Oct 2012 10:59:56 +0100
-Message-id: <1351504796-24788-5-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH 2/4] ARM: EXYNOS: PL330 MDMA1 fix for revision 0 of Exynos4210
+ SOC
+Date: Mon, 29 Oct 2012 10:59:54 +0100
+Message-id: <1351504796-24788-3-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
 References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jQd0zwX0BBlN6TS0u75rDZjHj/D4m
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDJOrr7OXjBHp2LKne9MDYzLlbsYOTkkBEwkel8cY4aw
-	xSQu3FvP1sXIxSEkMJ1R4t67eYwgCSGBLiaJ10fsQWw2ASuJie2rwOIiAtkSP75NZgFpYBb4
-	xiixuX8xG0hCWCBU4tazuWBTWQRUJfae2M0OYvMKeEgcWfaKCWKbvMTT+31g9ZwCnhKnJ65i
-	hljmIfHv0372CYy8CxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEe/+Z1A7GlQ0WhxgF
-	OBiVeHgb3/QGCLEmlhVX5h5ilOBgVhLhXcoNFOJNSaysSi3Kjy8qzUktPsQozcGiJM7b7JES
-	ICSQnliSmp2aWpBaBJNl4uCUamDknrCN23ni74SsepYVO5UObkxpjLGf2KTcI7TF+FpE5NQs
-	5tC+t+rX2IOr+FZ5fq6V5ZrktJlz63X5A0bvQnO4Fdlf/o950WP48ejDuiNVr34//Rg7uetS
-	6lRn+X1TtJZGGq0x+vFmbvXyiYxFK44pLYuqmn3c3/8Bx3fVfYl7Ly7ymLrHweqmEktxRqKh
-	FnNRcSIAw/xEzPoBAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t9jQd1DwX0BBlfnm1lc3jWHzWLG+X1M
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGU0vSsuWCxc8ff5ZZYGxo0CXYycHBICJhI7bp5gg7DF
+	JC7cWw9kc3EICUxnlLi6+CQzhNPFJLFh4nYWkCo2ASuJie2rGEFsEYFsiR/fJrOAFDELfGOU
+	2Ny/GGyUsECIRNe/jWBFLAKqEuf+/gOL8wp4SMx/9o4RYp28xNP7fWBxTgFPidMTVzGD2EJA
+	Nf8+7WefwMi7gJFhFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkaw959J72Bc1WBxiFGAg1GJ
+	h/fGu94AIdbEsuLK3EOMEhzMSiK8S7mBQrwpiZVVqUX58UWlOanFhxilOViUxHmbPVIChATS
+	E0tSs1NTC1KLYLJMHJxSDYzle0uvmT1asOfc1tUmu7NXrGbZw2zyYNm59LoUlZOTK9Jz1Jqi
+	kv95PD8sEv4xTNf1WPWlQ02TfojzyS9dt8FzV8rex/Vrt6yx+rQncOqS4NX8r/zvnHto1eH2
+	97ruNZVat48/PdzMG75MNnrocnNqUu3EVM9Vdy49MKphqdHdXPLg+CaN7gOMSizFGYmGWsxF
+	xYkAWEOGG/oBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Add device tree (DT) property ("pl330,dma-memcpy") for DMA_MEMCPY
-  capability and instead of setting this capability unconditionally
-  in pl330_probe() do it only when property is present.
+Commit 8214513 ("ARM: EXYNOS: fix address for EXYNOS4 MDMA1")
+changed EXYNOS specific setup of PL330 DMA engine to use 'non-secure'
+mdma1 address instead of 'secure' one (from 0x12840000 to 0x12850000)
+to fix issue with some Exynos4212 SOCs.  Unfortunately it brakes
+PL330 setup for revision 0 of Exynos4210 SOC (mdma1 device cannot
+be found at 'non-secure' address):
 
-* Set the new "pl330,dma-memcpy" device tree property for all
-  current pl330 driver users except pdma controllers on ARM EXYNOS
-  platforms (so the DT case matches non-DT one).
+[    0.566245] dma-pl330 dma-pl330.2: PERIPH_ID 0x0, PCELL_ID 0x0 !
+[    0.566278] dma-pl330: probe of dma-pl330.2 failed with error -22
 
-It fixes the issue on ARM EXYNOS platforms using DT where pdma
-controller erroneously was used for DMA_MEMCPY operations instead
-of mdma one (it surprisingly seems to work but at the cost of
-worse performance).
+Fix it by using 'secure' mdma1 address on Exynos4210 revision 0 SOC.
 
-Cc: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Dinh Nguyen <dinguyen@altera.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/devicetree/bindings/dma/arm-pl330.txt |  1 +
- arch/arm/boot/dts/exynos4.dtsi                      |  1 +
- arch/arm/boot/dts/exynos5250.dtsi                   |  2 ++
- arch/arm/boot/dts/highbank.dts                      |  1 +
- arch/arm/boot/dts/socfpga.dtsi                      |  1 +
- arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts         |  1 +
- arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts          |  1 +
- drivers/dma/pl330.c                                 | 11 ++++++++---
- 8 files changed, 16 insertions(+), 3 deletions(-)
+ arch/arm/mach-exynos/dma.c              | 5 ++++-
+ arch/arm/mach-exynos/include/mach/map.h | 3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/dma/arm-pl330.txt b/Documentation/devicetree/bindings/dma/arm-pl330.txt
-index 36e27d5..2661c7b 100644
---- a/Documentation/devicetree/bindings/dma/arm-pl330.txt
-+++ b/Documentation/devicetree/bindings/dma/arm-pl330.txt
-@@ -11,6 +11,7 @@ Required properties:
- 
- Optional properties:
- - dma-coherent      : Present if dma operations are coherent
-+- pl330,dma-memcpy  : Present if controller has DMA_MEMCPY capability
- 
- Example:
- 
-diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-index 96d4462..ce5b03f 100644
---- a/arch/arm/boot/dts/exynos4.dtsi
-+++ b/arch/arm/boot/dts/exynos4.dtsi
-@@ -249,6 +249,7 @@
- 			compatible = "arm,pl330", "arm,primecell";
- 			reg = <0x12850000 0x1000>;
- 			interrupts = <0 34 0>;
-+			pl330,dma-memcpy;
- 		};
- 	};
+diff --git a/arch/arm/mach-exynos/dma.c b/arch/arm/mach-exynos/dma.c
+index 21d568b..dcc9f74 100644
+--- a/arch/arm/mach-exynos/dma.c
++++ b/arch/arm/mach-exynos/dma.c
+@@ -261,7 +261,7 @@ static struct dma_pl330_platdata exynos_mdma1_pdata = {
  };
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 49546bc..d659e7b 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -247,12 +247,14 @@
- 			compatible = "arm,pl330", "arm,primecell";
- 			reg = <0x10800000 0x1000>;
- 			interrupts = <0 33 0>;
-+			pl330,dma-memcpy;
- 		};
  
- 		mdma1: mdma@11C10000 {
- 			compatible = "arm,pl330", "arm,primecell";
- 			reg = <0x11C10000 0x1000>;
- 			interrupts = <0 124 0>;
-+			pl330,dma-memcpy;
- 		};
- 	};
+ static AMBA_AHB_DEVICE(exynos_mdma1,  "dma-pl330.2", 0x00041330,
+-	EXYNOS4_PA_MDMA1, {EXYNOS4_IRQ_MDMA1}, &exynos_mdma1_pdata);
++	EXYNOS4_PA_NS_MDMA1, {EXYNOS4_IRQ_MDMA1}, &exynos_mdma1_pdata);
  
-diff --git a/arch/arm/boot/dts/highbank.dts b/arch/arm/boot/dts/highbank.dts
-index 0c6fc34..87f1d25 100644
---- a/arch/arm/boot/dts/highbank.dts
-+++ b/arch/arm/boot/dts/highbank.dts
-@@ -297,6 +297,7 @@
- 			interrupts = <0 92 4>;
- 			clocks = <&pclk>;
- 			clock-names = "apb_pclk";
-+			pl330,dma-memcpy;
- 		};
- 
- 		ethernet@fff50000 {
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 0772f57..2fe1697 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -71,6 +71,7 @@
- 				compatible = "arm,pl330", "arm,primecell";
- 				reg = <0xffe01000 0x1000>;
- 				interrupts = <0 180 4>;
-+				pl330,dma-memcpy;
- 			};
- 		};
- 
-diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts b/arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts
-index d12b34c..d82953c 100644
---- a/arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts
-@@ -94,6 +94,7 @@
- 			     <0 89 4>,
- 			     <0 90 4>,
- 			     <0 91 4>;
-+		pl330,dma-memcpy;
- 	};
- 
- 	timer {
-diff --git a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-index 4890a81..b9e6ba2 100644
---- a/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-+++ b/arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts
-@@ -114,6 +114,7 @@
- 			     <0 89 4>,
- 			     <0 90 4>,
- 			     <0 91 4>;
-+		pl330,dma-memcpy;
- 	};
- 
- 	timer {
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index db7574b..e10290b 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2860,6 +2860,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	struct pl330_info *pi;
- 	struct dma_device *pd;
- 	struct resource *res;
-+	struct device_node *node;
- 	int i, ret, irq;
- 	int num_chan;
- 
-@@ -2921,12 +2922,14 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 		goto probe_err4;
- 	}
- 
-+	node = adev->dev.of_node;
+ static int __init exynos_dma_init(void)
+ {
+@@ -275,6 +275,9 @@ static int __init exynos_dma_init(void)
+ 		exynos_pdma1_pdata.nr_valid_peri =
+ 			ARRAY_SIZE(exynos4210_pdma1_peri);
+ 		exynos_pdma1_pdata.peri_id = exynos4210_pdma1_peri;
 +
- 	for (i = 0; i < num_chan; i++) {
- 		pch = &pdmac->peripherals[i];
--		if (!adev->dev.of_node)
-+		if (!node)
- 			pch->chan.private = pdat ? &pdat->peri_id[i] : NULL;
- 		else
--			pch->chan.private = adev->dev.of_node;
-+			pch->chan.private = node;
++		if (samsung_rev() == EXYNOS4210_REV_0)
++			exynos_mdma1_device.res.start = EXYNOS4_PA_S_MDMA1;
+ 	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
+ 		exynos_pdma0_pdata.nr_valid_peri =
+ 			ARRAY_SIZE(exynos4212_pdma0_peri);
+diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
+index 8480849..0abfe78 100644
+--- a/arch/arm/mach-exynos/include/mach/map.h
++++ b/arch/arm/mach-exynos/include/mach/map.h
+@@ -89,7 +89,8 @@
+ #define EXYNOS4_PA_L2CC			0x10502000
  
- 		INIT_LIST_HEAD(&pch->work_list);
- 		spin_lock_init(&pch->lock);
-@@ -2942,7 +2945,9 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	if (pdat) {
- 		pd->cap_mask = pdat->cap_mask;
- 	} else {
--		dma_cap_set(DMA_MEMCPY, pd->cap_mask);
-+		if (adev->dev.of_node &&
-+		    of_find_property(node, "pl330,dma-memcpy", NULL))
-+			dma_cap_set(DMA_MEMCPY, pd->cap_mask);
- 		if (pi->pcfg.num_peri) {
- 			dma_cap_set(DMA_SLAVE, pd->cap_mask);
- 			dma_cap_set(DMA_CYCLIC, pd->cap_mask);
+ #define EXYNOS4_PA_MDMA0		0x10810000
+-#define EXYNOS4_PA_MDMA1		0x12850000
++#define EXYNOS4_PA_NS_MDMA1		0x12850000
++#define EXYNOS4_PA_S_MDMA1		0x12840000
+ #define EXYNOS4_PA_PDMA0		0x12680000
+ #define EXYNOS4_PA_PDMA1		0x12690000
+ #define EXYNOS5_PA_MDMA0		0x10800000
 -- 
 1.8.0
 
