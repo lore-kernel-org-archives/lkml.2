@@ -1,96 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab2J2ErR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:47:17 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:24649 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab2J2ErQ (ORCPT
+	id S1753265Ab2J2E7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:59:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44040 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab2J2E7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:47:16 -0400
-X-AuditID: cbfee61a-b7fa66d0000004cf-cb-508e0a534d53
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000501cdb590$588260f0$098722d0$%han@samsung.com>
-In-reply-to: <000501cdb590$588260f0$098722d0$%han@samsung.com>
-Subject: [PATCH 2/2] backlight: max8925: drop devm_kfree of devm_kzalloc'd data
-Date: Mon, 29 Oct 2012 13:47:15 +0900
-Message-id: <000601cdb590$77a78dc0$66f6a940$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac21kFhmA4SJbq7/SSeHEgsu/+gYEgAAAliQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t9jQd1grr4Ag1fzBSwu75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAldG56I1LAULeCv2T3/E1sD4nquLkYNDQsBEYvak2i5GTiBTTOLC
-	vfVsXYxcHEIC0xklXtz5zQThzGaSeLf/HTNIFZuAmsSXL4fZQWwRgQiJ5hmzmEEGMQv4SGye
-	pQkSFhKwlXh/eRYTiM0pYCfx79UjMFtYwF/ielMPC4jNIqAqce7cZFYQmxeofsLLRUwQtqDE
-	j8n3wGqYBbQk1u88zgRhy0tsXvOWGeJmdYlHf3UhLjCSmDftBlS5iMS+F+8YJzAKzUIyaRaS
-	SbOQTJqFpGUBI8sqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOAgfia1g3Flg8UhRgEORiUe
-	3sY3vQFCrIllxZW5hxglOJiVRHiXcgOFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8zZ7pAQICaQn
-	lqRmp6YWpBbBZJk4OKUaGFVeWD1d8qpfteLi7dnByy2eKdp4u1u8sTyZuv4Gk63qkbeHWJ8v
-	0jx6cuJ7jx0vzO9K/um9X5+4beZrge6X101Ov5H0cN8ya9dXk0xW/e+C3WlaPfYOFapTWZpV
-	ltju9NglwsW9t10ltbFT7Nvhyxf6JVaErelfuvh35MmfHfPmVu1/pDe1WFCJpTgj0VCLuag4
-	EQA/53y5XgIAAA==
+	Mon, 29 Oct 2012 00:59:06 -0400
+Subject: Re: [PATCH v2 3/4] DMA: PL330: Balance module remove function with
+ probe
+From: Vinod Koul <vkoul@infradead.org>
+To: Inderpal Singh <inderpal.singh@linaro.org>
+Cc: vinod.koul@intel.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jassisinghbrar@gmail.com,
+        boojin.kim@samsung.com, patches@linaro.org, kgene.kim@samsung.com
+In-Reply-To: <CAG17yqTx6MnmpYLZCxeJ9gC_ha6i3Bp3Fc+=9L7EJEJoNwCFtQ@mail.gmail.com>
+References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
+	 <1349432276-22919-4-git-send-email-inderpal.singh@linaro.org>
+	 <1351052091.5263.19.camel@vkoul-udesk3>
+	 <CAG17yqQBep4Y3YOGVFr6s_apX9f0YeTC7dxDcTQM7ahxnr1B4w@mail.gmail.com>
+	 <1351226723.7077.14.camel@vkoul-udesk3>
+	 <CAG17yqTx6MnmpYLZCxeJ9gC_ha6i3Bp3Fc+=9L7EJEJoNwCFtQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Oct 2012 10:15:43 +0530
+Message-ID: <1351485943.7077.30.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The devm_kfree function allocates memory that is released
-when a driver detaches. Thus, there is no reason to explicitly
-call devm_kfree in probe or remove functions.
+On Sat, 2012-10-27 at 15:50 +0530, Inderpal Singh wrote:
+> Hi Vinod,
+> 
+> On 26 October 2012 10:15, Vinod Koul <vkoul@infradead.org> wrote:
+> > On Thu, 2012-10-25 at 16:53 +0530, Inderpal Singh wrote:
+> >>
+> >> This code will get executed only in case of force removal of the
+> >> module which was discussed in the first version of the patch at [1].
+> >> Now, if we do not have to think about force removal then this patch
+> >> will go back to the first version.
+> > But why are you doing force removal of driver even when client is
+> > holding a reference to you.
+> >
+> > What happens when client finally tries to free the channel?
+> Since we return EBUSY so forced removal won't succeed. Client can free
+> the channel eventually.
+And that is my concern. You have forcefully removed the dma module.
+What happens then? How will the free calll get executed, wont you hit a
+panic.
+> 
+> >
+> > What is the problem you are trying to solve?
+> >>
+> 
+> There was a long discussion about it in the first version of the
+> patch. Allow me to explain it to you.
+> 
+> The existing driver does DMA_TERMINATE_ALL and frees resources for all
+> the channels in the _remove function.
+Which for starters may not be right thing to do. Shouldn't you first
+make sure client has freed all references to your driver and then only
+remove. Freeing resources in .remove without keeping client in sync
+doesn't sound to be good idea to me.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/video/backlight/max8925_bl.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+>  The first version of patch
+> removed this flushing and freeing of channel resources because they
+> are not getting allocated in the probe. Jassi pointed out that manual
+> flushing is needed if a force removal happens and some client is
+> queued. Then it was agreed that flushing is not needed, instead we
+> should return EBUSY if client is queued on some channel (this will
+> happen only in force removal case). Hence this additional check in v2
+> version so that force removal does not succeeds if any client is
+> queued.
+> 
+> If you think force removal is not a practical scenario and we should
+> not be bothering about it, this check can be removed and the patch
+> will go back to first version which just removes flushing and freeing
+> of channels beacues they are not getting allocated in probe.
+> 
+> Let me know your view.
+> 
+> Regards,
+> Inder
+> 
+> 
+> >> Let me know your view.
+> >>
+> >> [1] https://patchwork.kernel.org/patch/1503171/
+> >>
+> >
+> >
+> > --
+> > Vinod Koul
+> > Intel Corp.
+> >
 
-diff --git a/drivers/video/backlight/max8925_bl.c b/drivers/video/backlight/max8925_bl.c
-index f72ba54..01e9f7d 100644
---- a/drivers/video/backlight/max8925_bl.c
-+++ b/drivers/video/backlight/max8925_bl.c
-@@ -120,15 +120,13 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
- 	res = platform_get_resource(pdev, IORESOURCE_REG, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "No REG resource for mode control!\n");
--		ret = -ENXIO;
--		goto out;
-+		return -ENXIO;
- 	}
- 	data->reg_mode_cntl = res->start;
- 	res = platform_get_resource(pdev, IORESOURCE_REG, 1);
- 	if (!res) {
- 		dev_err(&pdev->dev, "No REG resource for control!\n");
--		ret = -ENXIO;
--		goto out;
-+		return -ENXIO;
- 	}
- 	data->reg_cntl = res->start;
- 
-@@ -142,8 +140,7 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
- 					&max8925_backlight_ops, &props);
- 	if (IS_ERR(bl)) {
- 		dev_err(&pdev->dev, "failed to register backlight\n");
--		ret = PTR_ERR(bl);
--		goto out;
-+		return PTR_ERR(bl);
- 	}
- 	bl->props.brightness = MAX_BRIGHTNESS;
- 
-@@ -166,8 +163,6 @@ static int __devinit max8925_backlight_probe(struct platform_device *pdev)
- 	return 0;
- out_brt:
- 	backlight_device_unregister(bl);
--out:
--	devm_kfree(&pdev->dev, data);
- 	return ret;
- }
- 
+
 -- 
-1.7.1
-
+Vinod Koul
+Intel Corp.
 
