@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381Ab2J2PRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:17:35 -0400
-Received: from fieldses.org ([174.143.236.118]:39269 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759276Ab2J2PRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:17:33 -0400
-Date: Mon, 29 Oct 2012 11:16:54 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Sasha Levin <levinsasha928@gmail.com>, tj@kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 09/16] SUNRPC/cache: use new hashtable implementation
-Message-ID: <20121029151653.GC9502@fieldses.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-9-git-send-email-levinsasha928@gmail.com>
- <20121029124229.GC11733@Krystal>
- <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
- <20121029151343.GA17722@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029151343.GA17722@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758325Ab2J2PQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:16:17 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56319 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757906Ab2J2PQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 11:16:12 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, ming.m.lin@intel.com
+Subject: [Patch v1 05/10] perf/x86: export PEBS load latency threshold register to sysfs
+Date: Mon, 29 Oct 2012 16:15:47 +0100
+Message-Id: <1351523752-4215-6-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 11:13:43AM -0400, Mathieu Desnoyers wrote:
-> * Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> > On Mon, Oct 29, 2012 at 5:42 AM, Mathieu Desnoyers
-> > <mathieu.desnoyers@efficios.com> wrote:
-> > >
-> > > So defining e.g.:
-> > >
-> > > #include <linux/log2.h>
-> > >
-> > > #define DFR_HASH_BITS  (PAGE_SHIFT - ilog2(BITS_PER_LONG))
-> > >
-> > > would keep the intended behavior in all cases: use one page for the hash
-> > > array.
-> > 
-> > Well, since that wasn't true before either because of the long-time
-> > bug you point out, clearly the page size isn't all that important. I
-> > think it's more important to have small and simple code, and "9" is
-> > certainly that, compared to playing ilog2 games with not-so-obvious
-> > things.
-> > 
-> > Because there's no reason to believe that '9' is in any way a worse
-> > random number than something page-shift-related, is there? And getting
-> > away from *previous* overly-complicated size calculations that had
-> > been broken because they were too complicated and random, sounds like
-> > a good idea.
-> 
-> Good point. I agree that unless we really care about the precise number
-> of TLB entries and cache lines used by this hash table, we might want to
-> stay away from page-size and pointer-size based calculation.
->
-> It might not hurt to explain this in the patch changelog though.
+Make the PEBS Load Latency threshold register layout
+and encoding visible to user level tools.
 
-I'd also be happy to take that as a separate patch now.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---b.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 059fc8c..c37b7f8 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1787,6 +1787,8 @@ static void intel_pmu_flush_branch_stack(void)
+ 
+ PMU_FORMAT_ATTR(offcore_rsp, "config1:0-63");
+ 
++PMU_FORMAT_ATTR(ldlat, "config1:0-15");
++
+ static struct attribute *intel_arch3_formats_attr[] = {
+ 	&format_attr_event.attr,
+ 	&format_attr_umask.attr,
+@@ -1797,6 +1799,7 @@ static struct attribute *intel_arch3_formats_attr[] = {
+ 	&format_attr_cmask.attr,
+ 
+ 	&format_attr_offcore_rsp.attr, /* XXX do NHM/WSM + SNB breakout */
++	&format_attr_ldlat.attr, /* PEBS load latency */
+ 	NULL,
+ };
+ 
+-- 
+1.7.9.5
+
