@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758958Ab2J2N2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:28:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44308 "EHLO
+	id S1757705Ab2J2N2f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:28:35 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42297 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504Ab2J2N2e (ORCPT
+	with ESMTP id S1757181Ab2J2N2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:28:34 -0400
+	Mon, 29 Oct 2012 09:28:32 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 6/9] nohz: Add API to check tick state
-Date: Mon, 29 Oct 2012 14:28:13 +0100
-Message-Id: <1351517296-9173-7-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 5/9] x86: Implement arch_irq_work_has_ipi()
+Date: Mon, 29 Oct 2012 14:28:12 +0100
+Message-Id: <1351517296-9173-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
 References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
@@ -25,9 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need some quick way to check if the CPU has stopped
-its tick. This will be useful to implement the printk tick
-using the irq work subsystem.
+Most of the time, x86 can trigger self-IPIs. Tell
+irq work subsystem about it.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -37,64 +36,26 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/tick.h     |   17 ++++++++++++++++-
- kernel/time/tick-sched.c |    2 +-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/irq_work.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index f37fceb..2307dd3 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -8,6 +8,8 @@
+diff --git a/arch/x86/include/asm/irq_work.h b/arch/x86/include/asm/irq_work.h
+index dad8266..c7489cd 100644
+--- a/arch/x86/include/asm/irq_work.h
++++ b/arch/x86/include/asm/irq_work.h
+@@ -2,8 +2,12 @@
+ #define _ASM_X86_IRQ_WORK_H
  
- #include <linux/clockchips.h>
- #include <linux/irqflags.h>
-+#include <linux/percpu.h>
-+#include <linux/hrtimer.h>
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- 
-@@ -122,13 +124,26 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
- # ifdef CONFIG_NO_HZ
-+DECLARE_PER_CPU(struct tick_sched, tick_cpu_sched);
+ #ifdef CONFIG_X86_LOCAL_APIC
++#include <asm/cpufeature.h>
 +
-+static inline int tick_nohz_tick_stopped(void)
-+{
-+	return __this_cpu_read(tick_cpu_sched.tick_stopped);
-+}
+ extern void __arch_irq_work_raise(void);
+ #define arch_irq_work_raise __arch_irq_work_raise
 +
- extern void tick_nohz_idle_enter(void);
- extern void tick_nohz_idle_exit(void);
- extern void tick_nohz_irq_exit(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
--# else
-+
-+# else /* !CONFIG_NO_HZ */
-+static inline int tick_nohz_tick_stopped(void)
-+{
-+	return 0;
-+}
-+
- static inline void tick_nohz_idle_enter(void) { }
- static inline void tick_nohz_idle_exit(void) { }
++#define arch_irq_work_has_ipi() (cpu_has_apic)
+ #endif
  
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index f423bdd..ccc1971 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -28,7 +28,7 @@
- /*
-  * Per cpu nohz control structure
-  */
--static DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
-+DEFINE_PER_CPU(struct tick_sched, tick_cpu_sched);
- 
- /*
-  * The time, when the last jiffy update happened. Protected by xtime_lock.
+ #include <asm-generic/irq_work.h>
 -- 
 1.7.5.4
 
