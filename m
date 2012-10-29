@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760750Ab2J2UKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:10:47 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42855 "EHLO mail.kernel.org"
+	id S1760715Ab2J2UJO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42719 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760719Ab2J2UJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:16 -0400
+	id S1760165Ab2J2UJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 24/34] USB: mos7840: remove invalid disconnect handling
-Date: Mon, 29 Oct 2012 13:07:55 -0700
-Message-Id: <20121029200423.240178613@linuxfoundation.org>
+Subject: [ 20/34] USB: sierra: fix memory leak in probe error path
+Date: Mon, 29 Oct 2012 13:07:51 -0700
+Message-Id: <20121029200422.799301912@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -27,56 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit e681b66f2e19fadbe8a7e2a17900978cb6bc921f upstream.
+commit 084817d79399ab5ccab2f90a148b0369912a8369 upstream.
 
-Remove private zombie flag used to signal disconnect and to prevent
-control urb from being submitted from interrupt urb completion handler.
-
-The control urb will not be re-submitted as both the control urb and the
-interrupt urb is killed on disconnect.
+Move interface data allocation to attach so that it is deallocated on
+errors in usb-serial probe.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   13 +------------
- 1 file changed, 1 insertion(+), 12 deletions(-)
+ drivers/usb/serial/sierra.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -239,7 +239,6 @@ struct moschip_port {
- 	__u8 shadowMCR;		/* last MCR value received */
- 	char open;
- 	char open_ports;
--	char zombie;
- 	wait_queue_head_t wait_chase;	/* for handling sleeping while waiting for chase to finish */
- 	wait_queue_head_t delta_msr_wait;	/* for handling sleeping while waiting for msr change to happen */
- 	int delta_msr_cond;
-@@ -642,14 +641,7 @@ static void mos7840_interrupt_callback(s
- 					wreg = MODEM_STATUS_REGISTER;
- 					break;
- 				}
--				spin_lock(&mos7840_port->pool_lock);
--				if (!mos7840_port->zombie) {
--					rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
--				} else {
--					spin_unlock(&mos7840_port->pool_lock);
--					return;
--				}
--				spin_unlock(&mos7840_port->pool_lock);
-+				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
- 			}
- 		}
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -171,7 +171,6 @@ static int sierra_probe(struct usb_seria
+ {
+ 	int result = 0;
+ 	struct usb_device *udev;
+-	struct sierra_intf_private *data;
+ 	u8 ifnum;
+ 
+ 	udev = serial->dev;
+@@ -199,11 +198,6 @@ static int sierra_probe(struct usb_seria
+ 		return -ENODEV;
  	}
-@@ -2612,9 +2604,6 @@ static void mos7840_disconnect(struct us
- 		mos7840_port = mos7840_get_port_private(serial->port[i]);
- 		dbg ("mos7840_port %d = %p", i, mos7840_port);
- 		if (mos7840_port) {
--			spin_lock_irqsave(&mos7840_port->pool_lock, flags);
--			mos7840_port->zombie = 1;
--			spin_unlock_irqrestore(&mos7840_port->pool_lock, flags);
- 			usb_kill_urb(mos7840_port->control_urb);
- 		}
+ 
+-	data = serial->private = kzalloc(sizeof(struct sierra_intf_private), GFP_KERNEL);
+-	if (!data)
+-		return -ENOMEM;
+-	spin_lock_init(&data->susp_lock);
+-
+ 	return result;
+ }
+ 
+@@ -915,6 +909,7 @@ static void sierra_dtr_rts(struct usb_se
+ static int sierra_startup(struct usb_serial *serial)
+ {
+ 	struct usb_serial_port *port;
++	struct sierra_intf_private *intfdata;
+ 	struct sierra_port_private *portdata;
+ 	struct sierra_iface_info *himemoryp = NULL;
+ 	int i;
+@@ -922,6 +917,14 @@ static int sierra_startup(struct usb_ser
+ 
+ 	dev_dbg(&serial->dev->dev, "%s\n", __func__);
+ 
++	intfdata = kzalloc(sizeof(*intfdata), GFP_KERNEL);
++	if (!intfdata)
++		return -ENOMEM;
++
++	spin_lock_init(&intfdata->susp_lock);
++
++	usb_set_serial_data(serial, intfdata);
++
+ 	/* Set Device mode to D0 */
+ 	sierra_set_power_state(serial->dev, 0x0000);
+ 
+@@ -979,6 +982,7 @@ err:
+ 		portdata = usb_get_serial_port_data(serial->port[i]);
+ 		kfree(portdata);
  	}
++	kfree(intfdata);
+ 
+ 	return -ENOMEM;
+ }
 
 
