@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761088Ab2J2Vgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:36:31 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47012 "EHLO mail.kernel.org"
+	id S1761107Ab2J2Vgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:36:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47035 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761068Ab2J2Vg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:29 -0400
+	id S1761087Ab2J2Vgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 002/101] drm/radeon: add error output if VM CS fails on cayman
-Date: Mon, 29 Oct 2012 14:34:15 -0700
-Message-Id: <20121029213240.429614218@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 004/101] ALSA: hda - Fix silent headphone output from Toshiba P200
+Date: Mon, 29 Oct 2012 14:34:17 -0700
+Message-Id: <20121029213240.640989661@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,28 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c71721324c612f7f040657ce9917d87f530f9784 upstream.
+commit cb766404e6b8c566569eb9ada02ea45d28729864 upstream.
 
-So we know why the CS was rejected.
+By some reason, Toshiba laptop doesn't like the EAPD turned up for the
+headphone pin.  Add a fix up code to force to turn down EAPD for NID
+0x15.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=569991
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen_cs.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/pci/hda/patch_realtek.c |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen_cs.c
-+++ b/drivers/gpu/drm/radeon/evergreen_cs.c
-@@ -2829,6 +2829,7 @@ static bool evergreen_vm_reg_valid(u32 r
- 	case CAYMAN_SQ_EX_ALLOC_TABLE_SLOTS:
- 		return true;
- 	default:
-+		DRM_ERROR("Invalid register 0x%x in CS\n", reg);
- 		return false;
- 	}
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5704,6 +5704,7 @@ static const struct hda_verb alc268_beep
+ 
+ enum {
+ 	ALC268_FIXUP_INV_DMIC,
++	ALC268_FIXUP_HP_EAPD,
+ };
+ 
+ static const struct alc_fixup alc268_fixups[] = {
+@@ -5711,10 +5712,26 @@ static const struct alc_fixup alc268_fix
+ 		.type = ALC_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+ 	},
++	[ALC268_FIXUP_HP_EAPD] = {
++		.type = ALC_FIXUP_VERBS,
++		.v.verbs = (const struct hda_verb[]) {
++			{0x15, AC_VERB_SET_EAPD_BTLENABLE, 0},
++			{}
++		}
++	},
+ };
+ 
+ static const struct alc_model_fixup alc268_fixup_models[] = {
+ 	{.id = ALC268_FIXUP_INV_DMIC, .name = "inv-dmic"},
++	{.id = ALC268_FIXUP_HP_EAPD, .name = "hp-eapd"},
++	{}
++};
++
++static const struct snd_pci_quirk alc268_fixup_tbl[] = {
++	/* below is codec SSID since multiple Toshiba laptops have the
++	 * same PCI SSID 1179:ff00
++	 */
++	SND_PCI_QUIRK(0x1179, 0xff06, "Toshiba P200", ALC268_FIXUP_HP_EAPD),
+ 	{}
+ };
+ 
+@@ -5749,7 +5766,7 @@ static int patch_alc268(struct hda_codec
+ 
+ 	spec = codec->spec;
+ 
+-	alc_pick_fixup(codec, alc268_fixup_models, NULL, alc268_fixups);
++	alc_pick_fixup(codec, alc268_fixup_models, alc268_fixup_tbl, alc268_fixups);
+ 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PRE_PROBE);
+ 
+ 	/* automatic parse from the BIOS config */
 
 
