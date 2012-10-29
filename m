@@ -1,92 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab2J2N15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:27:57 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:42672 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2J2N14 (ORCPT
+	id S1757116Ab2J2N2Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:28:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44308 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756606Ab2J2N2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:27:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <50880774.5090605@ti.com>
-References: <1349595838-31274-1-git-send-email-vincent.guittot@linaro.org>
-	<1349595838-31274-6-git-send-email-vincent.guittot@linaro.org>
-	<50880774.5090605@ti.com>
-Date: Mon, 29 Oct 2012 14:27:54 +0100
-Message-ID: <CAKfTPtBsAJ4u265TzOz9qvL4d-eMmrVD-MtgG_Rri_2shGrPBQ@mail.gmail.com>
-Subject: Re: [RFC 5/6] sched: pack the idle load balance
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linaro-dev@lists.linaro.org, peterz@infradead.org, mingo@redhat.com,
-        pjt@google.com, linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Oct 2012 09:28:23 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [RFC PATCH 0/9] printk: Make it usable on nohz CPUs v3
+Date: Mon, 29 Oct 2012 14:28:07 +0100
+Message-Id: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2012 17:21, Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
-> On Sunday 07 October 2012 01:13 PM, Vincent Guittot wrote:
->>
->> Look for an idle CPU close the pack buddy CPU whenever possible.
->
-> s/close/close to
+Hi,
 
-yes
+Changes since v2:
 
->
->> The goal is to prevent the wake up of a CPU which doesn't share the power
->> line of the pack CPU
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>   kernel/sched/fair.c |   18 ++++++++++++++++++
->>   1 file changed, 18 insertions(+)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 6df53b5..f76acdc 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -5158,7 +5158,25 @@ static struct {
->>
->>   static inline int find_new_ilb(int call_cpu)
->>   {
->> +       struct sched_domain *sd;
->>         int ilb = cpumask_first(nohz.idle_cpus_mask);
->> +       int buddy = per_cpu(sd_pack_buddy, call_cpu);
->> +
->> +       /*
->> +        * If we have a pack buddy CPU, we try to run load balance on a
->> CPU
->> +        * that is close to the buddy.
->> +        */
->> +       if (buddy != -1)
->> +               for_each_domain(buddy, sd) {
->> +                       if (sd->flags & SD_SHARE_CPUPOWER)
->> +                               continue;
->
-> Do you mean SD_SHARE_POWERLINE here ?
+* Use an irq_work flag instead of a queue parameter to define whether
+we want an IPI or not. This way it becomes a work property that can't
+change during its lifecyle. It more simple that way.
 
-No, I just don't want to take hyperthread level for ILB
+* Fix some build errors reported by Wu Fengguang.
 
->
->> +
->> +                       ilb = cpumask_first_and(sched_domain_span(sd),
->> +                                       nohz.idle_cpus_mask);
->> +
->> +                       if (ilb < nr_cpu_ids)
->> +                               break;
->> +               }
->>
->>         if (ilb < nr_cpu_ids && idle_cpu(ilb))
->>                 return ilb;
->>
-> Can you please expand "idle CPU _close_ the pack buddy CPU" ?
+* Send an IPI even on non-empty queues, in case it's only filled with lazy
+works.
 
-The goal is to packed  the tasks on the pack buddy CPU so when the
-scheduler needs to start ILB, I try to wake up a CPU that is close to
-the buddy and preferably in the same cluster
+* Fix a race when claiming is concurrent with another CPU.
 
->
-> Regards
-> santosh
+Only boot-tested on x86 for now.
+
+Testing can be made by pulling:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+ 	nohz/printk-v3
+
+Thanks.
+
+Frederic Weisbecker (9):
+  irq_work: Fix racy check on work pending flag
+  irq_work: Remove CONFIG_HAVE_IRQ_WORK
+  irq_work: Move irq_work_raise() declaration/default definition to
+    arch headers
+  irq_work: Let the arch tell us about self-IPI support
+  x86: Implement arch_irq_work_has_ipi()
+  nohz: Add API to check tick state
+  irq_work: Make self-IPIs optable
+  irq_work: Handle queuing without IPI support in dyntick idle mode
+  printk: Wake up klogd using irq_work
+
+ arch/alpha/Kconfig                     |    1 -
+ arch/alpha/include/asm/irq_work.h      |    9 +++
+ arch/alpha/kernel/time.c               |    2 +-
+ arch/arm/Kconfig                       |    1 -
+ arch/arm/include/asm/irq_work.h        |    1 +
+ arch/arm64/Kconfig                     |    1 -
+ arch/arm64/include/asm/irq_work.h      |    1 +
+ arch/avr32/include/asm/irq_work.h      |    1 +
+ arch/blackfin/Kconfig                  |    1 -
+ arch/blackfin/include/asm/irq_work.h   |    1 +
+ arch/c6x/include/asm/irq_work.h        |    1 +
+ arch/cris/include/asm/irq_work.h       |    1 +
+ arch/frv/Kconfig                       |    1 -
+ arch/frv/include/asm/irq_work.h        |    1 +
+ arch/h8300/include/asm/irq_work.h      |    1 +
+ arch/hexagon/Kconfig                   |    1 -
+ arch/hexagon/include/asm/irq_work.h    |    1 +
+ arch/ia64/include/asm/irq_work.h       |    1 +
+ arch/m32r/include/asm/irq_work.h       |    1 +
+ arch/m68k/include/asm/irq_work.h       |    1 +
+ arch/microblaze/include/asm/irq_work.h |    1 +
+ arch/mips/Kconfig                      |    1 -
+ arch/mips/include/asm/irq_work.h       |    1 +
+ arch/mn10300/include/asm/irq_work.h    |    1 +
+ arch/openrisc/include/asm/irq_work.h   |    1 +
+ arch/parisc/Kconfig                    |    1 -
+ arch/parisc/include/asm/irq_work.h     |    1 +
+ arch/powerpc/Kconfig                   |    1 -
+ arch/powerpc/include/asm/irq_work.h    |    8 +++
+ arch/powerpc/kernel/time.c             |    2 +-
+ arch/s390/Kconfig                      |    1 -
+ arch/s390/include/asm/irq_work.h       |    1 +
+ arch/score/include/asm/irq_work.h      |    1 +
+ arch/sh/Kconfig                        |    1 -
+ arch/sh/include/asm/irq_work.h         |    1 +
+ arch/sparc/Kconfig                     |    1 -
+ arch/sparc/include/asm/irq_work.h      |    8 +++
+ arch/sparc/kernel/pcr.c                |    2 +-
+ arch/tile/include/asm/irq_work.h       |    1 +
+ arch/um/include/asm/irq_work.h         |    1 +
+ arch/unicore32/include/asm/irq_work.h  |    1 +
+ arch/x86/Kconfig                       |    1 -
+ arch/x86/include/asm/irq_work.h        |   15 +++++
+ arch/x86/kernel/irq_work.c             |    6 +-
+ arch/xtensa/include/asm/irq_work.h     |    1 +
+ drivers/staging/iio/trigger/Kconfig    |    1 -
+ include/asm-generic/irq_work.h         |   23 ++++++++
+ include/linux/irq_work.h               |   32 ++++++++++++
+ include/linux/printk.h                 |    3 -
+ include/linux/tick.h                   |   17 ++++++-
+ init/Kconfig                           |    5 +--
+ kernel/irq_work.c                      |   88 ++++++++++++++++++++++----------
+ kernel/printk.c                        |   12 ++---
+ kernel/time/tick-sched.c               |    7 ++-
+ kernel/timer.c                         |    1 -
+ 55 files changed, 211 insertions(+), 67 deletions(-)
+ create mode 100644 arch/alpha/include/asm/irq_work.h
+ create mode 100644 arch/arm/include/asm/irq_work.h
+ create mode 100644 arch/arm64/include/asm/irq_work.h
+ create mode 100644 arch/avr32/include/asm/irq_work.h
+ create mode 100644 arch/blackfin/include/asm/irq_work.h
+ create mode 100644 arch/c6x/include/asm/irq_work.h
+ create mode 100644 arch/cris/include/asm/irq_work.h
+ create mode 100644 arch/frv/include/asm/irq_work.h
+ create mode 100644 arch/h8300/include/asm/irq_work.h
+ create mode 100644 arch/hexagon/include/asm/irq_work.h
+ create mode 100644 arch/ia64/include/asm/irq_work.h
+ create mode 100644 arch/m32r/include/asm/irq_work.h
+ create mode 100644 arch/m68k/include/asm/irq_work.h
+ create mode 100644 arch/microblaze/include/asm/irq_work.h
+ create mode 100644 arch/mips/include/asm/irq_work.h
+ create mode 100644 arch/mn10300/include/asm/irq_work.h
+ create mode 100644 arch/openrisc/include/asm/irq_work.h
+ create mode 100644 arch/parisc/include/asm/irq_work.h
+ create mode 100644 arch/powerpc/include/asm/irq_work.h
+ create mode 100644 arch/s390/include/asm/irq_work.h
+ create mode 100644 arch/score/include/asm/irq_work.h
+ create mode 100644 arch/sh/include/asm/irq_work.h
+ create mode 100644 arch/sparc/include/asm/irq_work.h
+ create mode 100644 arch/tile/include/asm/irq_work.h
+ create mode 100644 arch/um/include/asm/irq_work.h
+ create mode 100644 arch/unicore32/include/asm/irq_work.h
+ create mode 100644 arch/x86/include/asm/irq_work.h
+ create mode 100644 arch/xtensa/include/asm/irq_work.h
+ create mode 100644 include/asm-generic/irq_work.h
+
+-- 
+1.7.5.4
+
