@@ -1,34 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760965Ab2J2VAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:00:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46932 "EHLO
+	id S1760962Ab2J2VDV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:03:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60696 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760691Ab2J2VAm (ORCPT
+	with ESMTP id S1759650Ab2J2VDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:00:42 -0400
-Date: Mon, 29 Oct 2012 22:00:35 +0100
+	Mon, 29 Oct 2012 17:03:19 -0400
+Date: Mon, 29 Oct 2012 22:03:16 +0100
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Roland Stigge <stigge@antcom.de>
 Cc: a.zummo@towertech.it, grant.likely@secretlab.ca, rob.herring@calxeda.com,
         rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org,
         linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] rtc-imxdi: Add devicetree support
-Message-ID: <20121029210035.GV1641@pengutronix.de>
+Subject: Re: [PATCH] ARM: mach-imx: Support for DryIce RTC in i.MX53
+Message-ID: <20121029210316.GW1641@pengutronix.de>
 References: <1350576370-29098-1-git-send-email-stigge@antcom.de>
- <1350576370-29098-2-git-send-email-stigge@antcom.de>
+ <1350576370-29098-3-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1350576370-29098-2-git-send-email-stigge@antcom.de>
+In-Reply-To: <1350576370-29098-3-git-send-email-stigge@antcom.de>
 X-Sent-From: Pengutronix Hildesheim
 X-URL: http://www.pengutronix.de/
 X-IRC: #ptxdist @freenode
 X-Accept-Language: de,en
 X-Accept-Content-Type: text/plain
-X-Uptime: 22:00:10 up 128 days, 12:11, 39 users,  load average: 0.52, 0.52,
- 0.43
+X-Uptime: 22:03:05 up 128 days, 12:14, 39 users,  load average: 0.66, 0.53,
+ 0.44
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
@@ -38,70 +38,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 06:06:09PM +0200, Roland Stigge wrote:
-> This patch adds device tree support to the rtc-imxdi driver.
+On Thu, Oct 18, 2012 at 06:06:10PM +0200, Roland Stigge wrote:
+> This patch enables support for i.MX53 in addition to i.MX25 by providing a
+> dummy clock on i.MX53 since this one doesn't have a separate clock for internal
+> RTC but the driver requests one.
 > 
 > Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Applied, thanks
 
+Sascha
 
 > ---
->  Documentation/devicetree/bindings/rtc/imxdi-rtc.txt |   17 +++++++++++++++++
->  drivers/rtc/rtc-imxdi.c                             |   11 +++++++++++
->  2 files changed, 28 insertions(+)
+>  arch/arm/mach-imx/clk-imx51-imx53.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> --- /dev/null
-> +++ linux-2.6/Documentation/devicetree/bindings/rtc/imxdi-rtc.txt
-> @@ -0,0 +1,17 @@
-> +* i.MX25 Real Time Clock controller
-> +
-> +This binding supports the following chips: i.MX25, i.MX53
-> +
-> +Required properties:
-> +- compatible: should be: "fsl,imx25-rtc"
-> +- reg: physical base address of the controller and length of memory mapped
-> +  region.
-> +- interrupts: rtc alarm interrupt
-> +
-> +Example:
-> +
-> +rtc@80056000 {
-> +	compatible = "fsl,imx53-rtc", "fsl,imx25-rtc";
-> +	reg = <0x80056000 2000>;
-> +	interrupts = <29>;
-> +};
-> --- linux-2.6.orig/drivers/rtc/rtc-imxdi.c
-> +++ linux-2.6/drivers/rtc/rtc-imxdi.c
-> @@ -37,6 +37,7 @@
->  #include <linux/rtc.h>
->  #include <linux/sched.h>
->  #include <linux/workqueue.h>
-> +#include <linux/of.h>
+> --- linux-2.6.orig/arch/arm/mach-imx/clk-imx51-imx53.c
+> +++ linux-2.6/arch/arm/mach-imx/clk-imx51-imx53.c
+> @@ -467,6 +467,7 @@ int __init mx53_clocks_init(unsigned lon
+>  	clk_register_clkdev(clk[can1_serial_gate], "per", "53fc8000.can");
+>  	clk_register_clkdev(clk[can2_ipg_gate], "ipg", "53fcc000.can");
+>  	clk_register_clkdev(clk[can2_serial_gate], "per", "53fcc000.can");
+> +	clk_register_clkdev(clk[dummy], NULL, "53fa4000.rtc");
 >  
->  /* DryIce Register Definitions */
->  
-> @@ -493,10 +494,20 @@ static int __devexit dryice_rtc_remove(s
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id dryice_dt_ids[] = {
-> +	{ .compatible = "fsl,imx25-rtc" },
-> +	{ /* sentinel */ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, dryice_dt_ids);
-> +#endif
-> +
->  static struct platform_driver dryice_rtc_driver = {
->  	.driver = {
->  		   .name = "imxdi_rtc",
->  		   .owner = THIS_MODULE,
-> +		   .of_match_table = of_match_ptr(dryice_dt_ids),
->  		   },
->  	.remove = __devexit_p(dryice_rtc_remove),
->  };
+>  	/* set SDHC root clock to 200MHZ*/
+>  	clk_set_rate(clk[esdhc_a_podf], 200000000);
 > 
 
 -- 
