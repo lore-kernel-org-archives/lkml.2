@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab2J2Guv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 02:50:51 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42474 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2J2Gut (ORCPT
+	id S1752730Ab2J2G7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 02:59:06 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:48574 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2J2G7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 02:50:49 -0400
-Date: Mon, 29 Oct 2012 07:50:44 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
-Message-ID: <20121029065044.GB14107@gmail.com>
-References: <20121025121617.617683848@chello.nl>
- <508A52E1.8020203@redhat.com>
- <1351242480.12171.48.camel@twins>
- <20121028175615.GC29827@cmpxchg.org>
- <508DEDA2.9030503@redhat.com>
+	Mon, 29 Oct 2012 02:59:04 -0400
+Date: Mon, 29 Oct 2012 12:32:15 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+ do_notify_resume()
+Message-ID: <20121029070215.GB4987@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121028173900.GA14621@redhat.com>
+ <20121028173925.GA14642@redhat.com>
+ <20121029052707.GA3400@in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <508DEDA2.9030503@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121029052707.GA3400@in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102906-7408-0000-0000-000009B96685
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Ananth N Mavinakayanahalli <ananth@in.ibm.com> [2012-10-29 10:57:07]:
 
-* Zhouping Liu <zliu@redhat.com> wrote:
-
-> Hi Johannes,
+> On Sun, Oct 28, 2012 at 06:39:25PM +0100, Oleg Nesterov wrote:
 > 
-> Tested the below patch, and I'm sure it has fixed the above 
-> issue, thank you.
+> Hi Oleg,
+> 
+> > Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
+> > 
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > ---
+> >  arch/powerpc/kernel/signal.c |    4 +---
+> >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+> > index a2dc757..3b99711 100644
+> > --- a/arch/powerpc/kernel/signal.c
+> > +++ b/arch/powerpc/kernel/signal.c
+> > @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+> > 
+> >  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+> 
+> But this _is_ do_notify_resume()... I don't see this flag cleared
+> anywhere else.
+> 
+> Did you have something else in mind?
 
-Thanks. Below is the folded up patch.
+uprobe_notify_resume() itself clears TIF_UPROBES.
 
-	Ingo
+This change is already part of -tip but not mainline.
+Hence you might have missed it.
 
----------------------------->
-Subject: sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Thu Oct 25 12:49:51 CEST 2012
-
-Add memory control group support to hugepage migration.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Zhouping Liu <zliu@redhat.com>
-Link: http://lkml.kernel.org/n/tip-rDk9mgpoyhZlwh2xhlykvgnp@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- mm/huge_memory.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-Index: tip/mm/huge_memory.c
-===================================================================
---- tip.orig/mm/huge_memory.c
-+++ tip/mm/huge_memory.c
-@@ -743,6 +743,7 @@ void do_huge_pmd_numa_page(struct mm_str
- 			   unsigned int flags, pmd_t entry)
- {
- 	unsigned long haddr = address & HPAGE_PMD_MASK;
-+	struct mem_cgroup *memcg = NULL;
- 	struct page *new_page = NULL;
- 	struct page *page = NULL;
- 	int node, lru;
-@@ -833,6 +834,14 @@ migrate:
- 
- 		return;
- 	}
-+	/*
-+	 * Traditional migration needs to prepare the memcg charge
-+	 * transaction early to prevent the old page from being
-+	 * uncharged when installing migration entries.  Here we can
-+	 * save the potential rollback and start the charge transfer
-+	 * only when migration is already known to end successfully.
-+	 */
-+	mem_cgroup_prepare_migration(page, new_page, &memcg);
- 
- 	entry = mk_pmd(new_page, vma->vm_page_prot);
- 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
-@@ -843,6 +852,12 @@ migrate:
- 	set_pmd_at(mm, haddr, pmd, entry);
- 	update_mmu_cache_pmd(vma, address, entry);
- 	page_remove_rmap(page);
-+	/*
-+	 * Finish the charge transaction under the page table lock to
-+	 * prevent split_huge_page() from dividing up the charge
-+	 * before it's fully transferred to the new page.
-+	 */
-+	mem_cgroup_end_migration(memcg, page, new_page, true);
- 	spin_unlock(&mm->page_table_lock);
- 
- 	put_page(page);			/* Drop the rmap reference */
+> >  {
+> > -	if (thread_info_flags & _TIF_UPROBE) {
+> > -		clear_thread_flag(TIF_UPROBE);
+> > +	if (thread_info_flags & _TIF_UPROBE)
+> >  		uprobe_notify_resume(regs);
+> > -	}
+> > 
+> >  	if (thread_info_flags & _TIF_SIGPENDING)
+> >  		do_signal(regs);
 
