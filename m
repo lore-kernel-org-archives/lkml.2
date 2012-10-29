@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198Ab2J2ED7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 00:03:59 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:34940 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750788Ab2J2ED5 (ORCPT
+	id S1751308Ab2J2ERJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 00:17:09 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:48886 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750800Ab2J2ERH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 00:03:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqIBAG6Zu08YNPuJ/2dsb2JhbAANN4UtqxuHEARRNgIFFgsCCwMCAQIBSwEMCAEBrxiSe4EmjgqBFAOoEA
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="203047618"
-Message-ID: <508E002B.4090200@teksavvy.com>
-Date: Mon, 29 Oct 2012 00:03:55 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 00:17:07 -0400
+Message-ID: <508E0345.1010600@xenotime.net>
+Date: Sun, 28 Oct 2012 21:17:09 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Regression from 3.4.9 to 3.4.16 "stable" kernel
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: Tree for Oct 29 (tty->raw)
+References: <20121029144655.4a3d916780e0246f1f007c3e@canb.auug.org.au>
+In-Reply-To: <20121029144655.4a3d916780e0246f1f007c3e@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My server here runs the 3.4.xx series of "stable" kernels.
-Until today, it was running 3.4.9.
-Today I tried to upgrade it to 3.4.16.
-It hangs in setup.c.
+On 10/28/2012 08:46 PM, Stephen Rothwell wrote:
 
-I've isolated the fault down to this specific change
-that was made between 3.4.9 and 3.4.16.
-Reverting this change allows the system to boot/run normally again.
+> Hi all,
+> 
+> Changes since 20121026:
+> 
 
 
---- linux-3.4.9/arch/x86/kernel/setup.c	2012-08-15 11:17:17.000000000 -0400
-+++ linux-3.4.16/arch/x86/kernel/setup.c	2012-10-28 13:36:33.000000000 -0400
-@@ -927,8 +927,21 @@
+Who made some changes that remove tty->raw ?
 
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
-+		int i;
-+		for (i = 0; i < e820.nr_map; i++) {
-+			struct e820entry *ei = &e820.map[i];
-+
-+			if (ei->addr + ei->size <= 1UL << 32)
-+				continue;
-+
-+			if (ei->type == E820_RESERVED)
-+				continue;
-+
-+			max_pfn_mapped = init_memory_mapping(
-+				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
-+				ei->addr + ei->size);
-+		}
-+
- 		/* can we preseve max_low_pfn ?*/
- 		max_low_pfn = max_pfn;
- 	}
+There is still one occurrence in arch/um that is causing
+a build error (on x86_64 defconfig):
+
+arch/um/drivers/chan_kern.c: In function 'tty_receive_char':
+arch/um/drivers/chan_kern.c:89:42: error: 'struct tty_struct' has no member named 'raw'
+
+
+-- 
+~Randy
