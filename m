@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761271Ab2J2WNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:13:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47454 "EHLO mail.kernel.org"
+	id S1761083Ab2J2WN4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:13:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47443 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761199Ab2J2VhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:09 -0400
+	id S1761196Ab2J2VhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 031/101] staging: comedi: amplc_dio200: fix possible NULL deref during detach
-Date: Mon, 29 Oct 2012 14:34:44 -0700
-Message-Id: <20121029213243.670493260@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Jason Wang <jasowang@redhat.com>
+Subject: [ 037/101] Drivers: hv: Cleanup error handling in vmbus_open()
+Date: Mon, 29 Oct 2012 14:34:50 -0700
+Message-Id: <20121029213244.363414032@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -25,41 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit dfb2540e91e1f63765bc3ff497ad0b714d774261 upstream.
+commit 1392550240aaa72ce3a094a38bd23525cd67ce60 upstream.
 
-`dio200_detach()` is called by the comedi core to clean up if either
-`dio200_attach()` or `dio200_attach_pci()` return an error.  It assigns
-`thisboard` to the return value of `comedi_board(dev)` and assumes it is
-non-null.  In the case of a previous call to `dio200_attach()` it won't
-be `NULL` because the comedi core will have pointed it to one of the
-elements of `dio200_boards[]`, but in the case of a previous call to
-`dio200_attach_pci()` it could be `NULL`, leading to a null pointer
-dereference.
+Fix a memory leak  in the error handling path in the function vmbus_open().
 
-Check that `thisboard` is valid at the top of `dio200_detach()` and
-return early if it is `NULL`.  This is okay because the only other thing
-that could have been allocated is `dev->private` and that is freed by
-the comedi core, not by this function.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/amplc_dio200.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/hv/channel.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- a/drivers/staging/comedi/drivers/amplc_dio200.c
-+++ b/drivers/staging/comedi/drivers/amplc_dio200.c
-@@ -1429,6 +1429,8 @@ static void dio200_detach(struct comedi_
- 	const struct dio200_layout_struct *layout;
- 	unsigned n;
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -146,14 +146,14 @@ int vmbus_open(struct vmbus_channel *new
  
-+	if (!thisboard)
-+		return;
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
- 	if (dev->subdevices) {
+ 	if (ret != 0) {
+ 		err = ret;
+-		goto errorout;
++		goto error0;
+ 	}
+ 
+ 	ret = hv_ringbuffer_init(
+ 		&newchannel->inbound, in, recv_ringbuffer_size);
+ 	if (ret != 0) {
+ 		err = ret;
+-		goto errorout;
++		goto error0;
+ 	}
+ 
+ 
+@@ -168,7 +168,7 @@ int vmbus_open(struct vmbus_channel *new
+ 
+ 	if (ret != 0) {
+ 		err = ret;
+-		goto errorout;
++		goto error0;
+ 	}
+ 
+ 	/* Create and init the channel open message */
+@@ -177,7 +177,7 @@ int vmbus_open(struct vmbus_channel *new
+ 			   GFP_KERNEL);
+ 	if (!open_info) {
+ 		err = -ENOMEM;
+-		goto errorout;
++		goto error0;
+ 	}
+ 
+ 	init_completion(&open_info->waitevent);
+@@ -193,7 +193,7 @@ int vmbus_open(struct vmbus_channel *new
+ 
+ 	if (userdatalen > MAX_USER_DEFINED_BYTES) {
+ 		err = -EINVAL;
+-		goto errorout;
++		goto error0;
+ 	}
+ 
+ 	if (userdatalen)
+@@ -208,19 +208,18 @@ int vmbus_open(struct vmbus_channel *new
+ 			       sizeof(struct vmbus_channel_open_channel));
+ 
+ 	if (ret != 0)
+-		goto cleanup;
++		goto error1;
+ 
+ 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
+ 	if (t == 0) {
+ 		err = -ETIMEDOUT;
+-		goto errorout;
++		goto error1;
+ 	}
+ 
+ 
+ 	if (open_info->response.open_result.status)
+ 		err = open_info->response.open_result.status;
+ 
+-cleanup:
+ 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
+ 	list_del(&open_info->msglistentry);
+ 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+@@ -228,9 +227,12 @@ cleanup:
+ 	kfree(open_info);
+ 	return err;
+ 
+-errorout:
+-	hv_ringbuffer_cleanup(&newchannel->outbound);
+-	hv_ringbuffer_cleanup(&newchannel->inbound);
++error1:
++	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
++	list_del(&open_info->msglistentry);
++	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
++
++error0:
+ 	free_pages((unsigned long)out,
+ 		get_order(send_ringbuffer_size + recv_ringbuffer_size));
+ 	kfree(open_info);
 
 
