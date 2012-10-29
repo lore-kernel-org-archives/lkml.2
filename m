@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab2J2Ku7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:50:59 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:32295 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755738Ab2J2Ku5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:50:57 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-mm@kvack.org>
-Cc: <linux-kernel@vger.kernel.org>, Glauber Costa <glommer@parallels.com>,
-        Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        David Rientjes <rientjes@google.com>, JoonSoo Kim <js1304@gmail.com>
-Subject: [PATCH] slab: annotate on-slab caches nodelist locks
-Date: Mon, 29 Oct 2012 14:49:39 +0400
-Message-Id: <1351507779-26847-1-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1758236Ab2J2Ky6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:54:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:26715 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750846Ab2J2Ky5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:54:57 -0400
+X-IronPort-AV: E=Sophos;i="4.80,671,1344182400"; 
+   d="scan'208";a="6092350"
+Message-ID: <508E61D6.3080101@cn.fujitsu.com>
+Date: Mon, 29 Oct 2012 19:00:38 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, bhelgaas@google.com,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v3 1/2] update mem= option's spec according to its implementation
+References: <1351500524-23907-1-git-send-email-wency@cn.fujitsu.com>	<1351500524-23907-2-git-send-email-wency@cn.fujitsu.com> <CAFLxGvyOo065sc2QeTkFsPotJbJEgEAV_ktvz5Z2gYpD-Ft7WA@mail.gmail.com>
+In-Reply-To: <CAFLxGvyOo065sc2QeTkFsPotJbJEgEAV_ktvz5Z2gYpD-Ft7WA@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 18:54:13,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 18:54:14,
+	Serialize complete at 2012/10/29 18:54:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently provide lockdep annotation for kmalloc caches, and also
-caches that have SLAB_DEBUG_OBJECTS enabled. The reason for this is that
-we can quite frequently nest in the l3->list_lock lock, which is not
-something trivial to avoid.
+At 10/29/2012 06:48 PM, richard -rw- weinberger Wrote:
+> On Mon, Oct 29, 2012 at 9:48 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
+>> Current mem= implementation seems buggy because specification and
+>> implementation doesn't match. Current mem= has been working
+>> for many years and it's not buggy, it works as expected. So
+>> we should update the specification.
+>>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
+> 
+> So, is this an ACK or not?
+> 
 
-My proposal with this patch, is to extend this to caches whose slab
-management object lives within the slab as well ("on_slab"). The need
-for this arose in the context of testing kmemcg-slab patches. With such
-patchset, we can have per-memcg kmalloc caches. So the same path that
-led to nesting between kmalloc caches will could then lead to in-memcg
-nesting. Because they are not annotated, lockdep will trigger.
+I don't know.
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: David Rientjes <rientjes@google.com>
-CC: JoonSoo Kim <js1304@gmail.com>
+Here is the origin message:
 
----
-Instead of "on_slab", I considered checking the memcg cache's root
-cache, and annotating that only in case this is a kmalloc cache.
-I ended up annotating on_slab caches, because given how frequently
-those locks can nest, it seemed like a safe choice to go. I was
-a little bit inspired by the key's name as well, that indicated
-this could work for all on_slab caches. Let me know if you guys
-want a different test condition for this.
----
- mm/slab.c | 30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 9b7f6b63..ef1c8b3 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -654,6 +654,26 @@ static void init_node_lock_keys(int q)
- 	}
- }
- 
-+static void on_slab_lock_classes_node(struct kmem_cache *cachep, int q)
-+{
-+	struct kmem_list3 *l3;
-+	l3 = cachep->nodelists[q];
-+	if (!l3)
-+		return;
-+
-+	slab_set_lock_classes(cachep, &on_slab_l3_key,
-+			&on_slab_alc_key, q);
-+}
-+
-+static inline void on_slab_lock_classes(struct kmem_cache *cachep)
-+{
-+	int node;
-+
-+	VM_BUG_ON(OFF_SLAB(cachep));
-+	for_each_node(node)
-+		on_slab_lock_classes_node(cachep, node);
-+}
-+
- static inline void init_lock_keys(void)
- {
- 	int node;
-@@ -670,6 +690,10 @@ static inline void init_lock_keys(void)
- {
- }
- 
-+static inline void on_slab_lock_classes(struct kmem_cache *cachep)
-+{
-+}
-+
- static void slab_set_debugobj_lock_classes_node(struct kmem_cache *cachep, int node)
- {
- }
-@@ -1397,6 +1421,9 @@ static int __cpuinit cpuup_prepare(long cpu)
- 		free_alien_cache(alien);
- 		if (cachep->flags & SLAB_DEBUG_OBJECTS)
- 			slab_set_debugobj_lock_classes_node(cachep, node);
-+		else if (!OFF_SLAB(cachep) &&
-+			 !(cachep->flags & SLAB_DESTROY_BY_RCU))
-+			on_slab_lock_classes_node(cachep, node);
- 	}
- 	init_node_lock_keys(node);
- 
-@@ -2554,7 +2581,8 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 		WARN_ON_ONCE(flags & SLAB_DESTROY_BY_RCU);
- 
- 		slab_set_debugobj_lock_classes(cachep);
--	}
-+	} else if (!OFF_SLAB(cachep) && !(flags & SLAB_DESTROY_BY_RCU))
-+		on_slab_lock_classes(cachep);
- 
- 	return 0;
- }
--- 
-1.7.11.7
-
+At 06/15/2012 04:22 AM, Rob Landley Wrote:
+> I have no objection to this but can't confirm it's true or not without
+> an awful lot more digging through the code I don't have time for right
+> now. (All the x86-32 machines I've used just had the 640k->1m hole and
+> the rest was contiguous memory, so the behavior would be the same either
+> way...)
+> 
+> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
+> 
+> Rob
