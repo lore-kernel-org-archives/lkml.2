@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760771Ab2J2UJc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:09:32 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42884 "EHLO mail.kernel.org"
+	id S1760759Ab2J2UJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:09:29 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42870 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760683Ab2J2UJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:20 -0400
+	id S1760731Ab2J2UJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 34/34] drm/i915: no lvds quirk for Zotac ZDBOX SD ID12/ID13
-Date: Mon, 29 Oct 2012 13:08:05 -0700
-Message-Id: <20121029200424.325685040@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 33/34] staging: comedi: amplc_pc236: fix invalid register access during detach
+Date: Mon, 29 Oct 2012 13:08:04 -0700
+Message-Id: <20121029200424.219993550@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,37 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 9756fe38d10b2bf90c81dc4d2f17d5632e135364 upstream.
+commit aaeb61a97b7159ebe30b18a422d04eeabfa8790b upstream.
 
-This box claims to have an LVDS interface but doesn't
-actually have one.
+`pc236_detach()` is called by the comedi core if it attempted to attach
+a device and failed.  `pc236_detach()` calls `pc236_intr_disable()` if
+the comedi device private data pointer (`devpriv`) is non-null.  This
+test is insufficient as `pc236_intr_disable()` accesses hardware
+registers and the attach routine may have failed before it has saved
+their I/O base addresses.
 
-Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fix it by checking `dev->iobase` is non-zero before calling
+`pc236_intr_disable()` as that means the I/O base addresses have been
+saved and the hardware registers can be accessed.  It also implies the
+comedi device private data pointer is valid, so there is no need to
+check it.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/comedi/drivers/amplc_pc236.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -751,6 +751,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_BOARD_NAME, "MS-7469"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "ZOTAC ZBOXSD-ID12/ID13",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "ZOTAC"),
-+			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
-+		},
-+	},
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -470,7 +470,7 @@ static int pc236_detach(struct comedi_de
+ {
+ 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+ 	       PC236_DRIVER_NAME);
+-	if (devpriv)
++	if (dev->iobase)
+ 		pc236_intr_disable(dev);
  
- 	{ }	/* terminating entry */
- };
+ 	if (dev->irq)
 
 
