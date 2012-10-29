@@ -1,160 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2J2Cao (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:30:44 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58195 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756261Ab2J2Can (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:30:43 -0400
-Date: Sun, 28 Oct 2012 22:30:34 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: [PATCH -v3] ext4: fix unjournaled inode bitmap modification
-Message-ID: <20121029023034.GA9365@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Eric Sandeen <sandeen@redhat.com>, Nix <nix@esperi.org.uk>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	gregkh@linuxfoundation.org
-References: <87objupjlr.fsf@spindle.srvr.nix>
- <20121023013343.GB6370@fieldses.org>
- <87mwzdnuww.fsf@spindle.srvr.nix>
- <20121023143019.GA3040@fieldses.org>
- <874nllxi7e.fsf_-_@spindle.srvr.nix>
- <87pq48nbyz.fsf_-_@spindle.srvr.nix>
- <508CB35D.9080102@redhat.com>
+	id S1757630Ab2J2CeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:34:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18086 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755360Ab2J2CeO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:34:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,668,1344236400"; 
+   d="scan'208,223";a="210525994"
+From: "Zhang, Jun" <jun.zhang@intel.com>
+To: Robert Richter <robert.richter@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Zhang, Jun" <jun.zhang@intel.com>
+Subject: [PATCH] Sometimes, there is OOPS happened when we use oprofile. 
+Thread-Topic: [PATCH] Sometimes, there is OOPS happened when we use
+ oprofile. 
+Thread-Index: Ac21fdbrMGxdLfDSTxOYLdnLhBOHyg==
+Date: Mon, 29 Oct 2012 02:33:54 +0000
+Message-ID: <88DC34334CA3444C85D647DBFA962C270FD7E416@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508CB35D.9080102@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 27, 2012 at 11:23:57PM -0500, Eric Sandeen wrote:
-> A little more going on here to try to properly handle error
-> cases & moving to the next group; despite
-> ext4_handle_release_buffer being a no-op, I've tried
-> to sprinkle it in at the right places.  Double checking
-> on review is probably a fine idea ;)
+>From fff479313342940372444797814edee996b18fc9 Mon Sep 17 00:00:00 2001
+From: jzha144 <jun.zhang@intel.com>
+Date: Mon, 29 Oct 2012 09:07:22 +0800
+Subject: [PATCH] Sometimes, there is OOPS happened when we use oprofile. next
+ is the call stack. From call stack, we find in
+ call_on_stack if there is a nmi interrupt between "xchgl
+ %%ebx,%%esp" and "call *%%edi", system will OOPS.
 
-Sorry, I didn't see your newer version of your patch.  I'm not
-convinced it's worth it to try to get the calls to
-ext4_handle_release_buffer() right.  There are plenty of other places
-where we're not calling ext4_handle_release_buffer(), and I'm not
-convinced it would ever be useful to make it be something other than a
-no-op.  In order to make it be useful, we'd have to enforce a rule
-that every single get_write_access() was matched with either a
-handle_dirty_metadata() or a handle_release_buffer().  That would be
-tricky; worse, we'd have to keep track of a refcount on each bh, which
-would cost us on the scalability front.  The main benefit would be
-that might be able to be able to reclaim bh's where we called
-get_write_access() and then changed our mind, but that's relatively
-rare, and I think it's easier to simply be more careful about calling
-get_write_acceess() until we're sure we're going to need write access.
+ BUG: unable to handle kernel paging request at ff06383f
+ IP: [<c12051cd>] print_context_stack+0x4d/0x100
+ *pde = 00000000
+ Oops: 0000 [#1] PREEMPT SMP
+ Modules linked in: wl12xx_sdio wl12xx mac80211 cfg80211
+ compat btwilink atomisp lm3554 mt9m114 mt9e013 videobuf2_memops videobuf2_core st_drv matrix(C)
 
-Hence in my version of the patch, I've waited until right before the
-call to ext4_lock_group() before calling get_write_access().  Note
-that it's safe to call get_write_access() on a bh twice; the second
-time the jbd2 layer will notice that the bh is already a part of the
-transaction.
+ Pid: 162, comm: adbd Tainted: G        WC  3.0.34-140446-g9e77874-dirty #1 Intel Corporation
+ EIP: 0060:[<c12051cd>] EFLAGS: 00010083 CPU: 1
+ EIP is at print_context_stack+0x4d/0x100
+ EAX: ff063ffc EBX: ff06383f ECX: f4a0bd74 EDX: ff06383f
+ ESI: 00000000 EDI: ffffe000 EBP: f58dbe48 ESP: f58dbe24
+  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+ Process adbd (pid: 162, ti=f58da000 task=f430a730 task.ti=f4a0a000)
+ Stack:
+  0000000c ff063ffc f4a0bd74 ffffe000 ff062000 f4a0bd74 ff06383f c1b2b1c0
+  ff062000 f58dbe74 c120428f c1b2b1c0 f58dbe98 00000000 f58dbe60 00000000
+  00000000 f4a0bd74 f58dbfc4 00000005 f58dbebc c172d52f f4a0bd74 c1b2b1c0
+ Call Trace:
+  [<c120428f>] dump_trace+0x7f/0xf0
+  [<c172d52f>] x86_backtrace+0x13f/0x150
+  [<c172b504>] ? op_cpu_buffer_write_commit+0x14/0x20
+  [<c172b66e>] ? log_sample+0x8e/0xb0
+  [<c172b8ca>] oprofile_add_sample+0x9a/0xc0
+  [<c172f09e>] ppro_check_ctrs+0x8e/0x110
+  [<c12a31ce>] ? rb_reserve_next_event+0x3e/0x370
+  [<c172d8d7>] profile_exceptions_notify+0x67/0x70
+  [<c18694c7>] notifier_call_chain+0x47/0x90
+  [<c1869548>] __atomic_notifier_call_chain+0x38/0x50
+  [<c1250930>] ? remote_softirq_receive+0x110/0x110
+  [<c186957f>] atomic_notifier_call_chain+0x1f/0x30
+  [<c18695bd>] notify_die+0x2d/0x30
+  [<c1867390>] do_nmi+0xb0/0x300
+  [<c124fcef>] ? __local_bh_enable+0x4f/0xa0
+  [<c1866f95>] nmi_stack_correct+0x28/0x2d
+  [<c1250930>] ? remote_softirq_receive+0x110/0x110
+  [<c120412f>] ? do_softirq+0x8f/0xe0
+  <IRQ>
+  [<c1250e26>] irq_exit+0x86/0xd0
+  [<c186cb49>] smp_apic_timer_interrupt+0x59/0x88
+  [<c1496738>] ? trace_hardirqs_off_thunk+0xc/0x14
+  [<c1866ca7>] apic_timer_interrupt+0x2f/0x34
+  [<c122007b>] ? handle_vm86_fault+0x78b/0x9b0
+  [<c186661f>] ? _raw_spin_unlock_irqrestore+0x3f/0x50
+  [<c1230d3c>] __wake_up_sync_key+0x4c/0x60
+  [<c17353f0>] sock_def_readable+0x40/0x70
+  [<c17d050d>] unix_stream_sendmsg+0x22d/0x390
+  [<c173103b>] sock_aio_write+0x11b/0x140
+  [<c186375d>] ? __schedule+0x23d/0x8d0
+  [<c1866f95>] ? nmi_stack_correct+0x28/0x2d
+  [<c12feaf9>] do_sync_write+0xa9/0xe0
+  [<c186942d>] ? sub_preempt_count+0x3d/0x50
+  [<c12ff321>] vfs_write+0x151/0x160
+  [<c1300798>] ? fget_light+0x58/0xd0
+  [<c12ff53d>] sys_write+0x3d/0x70
+  [<c18669a1>] syscall_call+0x7/0xb
+ Code: f6 89 4d f0 89 4d e4 89 45 e0 89 7d e8 74 5e 8d b4 26 00 00 00 00 39
+ f3 72 0c 8b 45 f0 83 c4 18 5b 5e 5f 5d c3 90 3b 5d e8 72 ef <8b> 3b 89 f8
+ 89 7d dc e8 c7 07 06 00 85 c0 74 2b 8b 45 f0 83 c0
+ EIP: [<c12051cd>] print_context_stack+0x4d/0x100 SS:ESP 0068:f58dbe24
+ CR2: 00000000ff06383f
 
-Also, leaving out the calls to ext4_handle_release_buffer() makes the
-patch easier to understand and reason about.
+Signed-off-by: jzha144 <jun.zhang@intel.com>
+---
+ arch/x86/oprofile/backtrace.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-What do you think of this version?
-
-						- Ted
-
-commit 67d725143e9e7ea458a0c1c4a6625657c3dc7ba2
-Author: Eric Sandeen <sandeen@redhat.com>
-Date:   Sun Oct 28 22:24:57 2012 -0400
-
-    ext4: fix unjournaled inode bitmap modification
-    
-    commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 changed
-    ext4_new_inode() such that the inode bitmap was being modified
-    outside a transaction, which could lead to corruption, and was
-    discovered when journal_checksum found a bad checksum in the
-    journal during log replay.
-    
-    Nix ran into this when using the journal_async_commit mount
-    option, which enables journal checksumming.  The ensuing
-    journal replay failures due to the bad checksums led to
-    filesystem corruption reported as the now infamous
-    "Apparent serious progressive ext4 data corruption bug"
-    
-    [ Changed by tytso to only call ext4_journal_get_write_access() only
-      when we're fairly certain that we're going to allocate the inode. ]
-    
-    I've tested this by mounting with journal_checksum and
-    running fsstress then dropping power; I've also tested by
-    hacking DM to create snapshots w/o first quiescing, which
-    allows me to test journal replay repeatedly w/o actually
-    power-cycling the box.  Without the patch I hit a journal
-    checksum error every time.  With this fix it survives
-    many iterations.
-    
-    Reported-by: Nix <nix@esperi.org.uk>
-    Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-    Cc: stable@vger.kernel.org
-
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 4facdd2..3a100e7 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -725,6 +725,10 @@ repeat_in_this_group:
- 				   "inode=%lu", ino + 1);
- 			continue;
- 		}
-+		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
-+		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
-+		if (err)
-+			goto fail;
- 		ext4_lock_group(sb, group);
- 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
- 		ext4_unlock_group(sb, group);
-@@ -738,6 +742,11 @@ repeat_in_this_group:
- 	goto out;
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index d6aa6e8..c1af4f0 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -113,6 +113,10 @@ x86_backtrace(struct pt_regs * const regs, unsigned int depth)
  
- got:
-+	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
-+	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
-+	if (err)
-+		goto fail;
+ 	if (!user_mode_vm(regs)) {
+ 		unsigned long stack = kernel_stack_pointer(regs);
 +
- 	/* We may have to initialize the block bitmap if it isn't already */
- 	if (ext4_has_group_desc_csum(sb) &&
- 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
-@@ -771,11 +780,6 @@ got:
- 			goto fail;
- 	}
- 
--	BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
--	err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "get_write_access");
- 	err = ext4_journal_get_write_access(handle, group_desc_bh);
- 	if (err)
-@@ -823,11 +827,6 @@ got:
- 	}
- 	ext4_unlock_group(sb, group);
- 
--	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
--	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
--	if (err)
--		goto fail;
--
- 	BUFFER_TRACE(group_desc_bh, "call ext4_handle_dirty_metadata");
- 	err = ext4_handle_dirty_metadata(handle, NULL, group_desc_bh);
- 	if (err)
-
-
++		if (!((unsigned long)stack & (THREAD_SIZE - 1)))
++			stack = 0;
++
+ 		if (depth)
+ 			dump_trace(NULL, regs, (unsigned long *)stack, 0,
+ 				   &backtrace_ops, &depth);
+-- 
+1.7.6
