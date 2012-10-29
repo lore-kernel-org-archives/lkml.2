@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761609Ab2J2Vz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:55:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48455 "EHLO mail.kernel.org"
+	id S1761614Ab2J2V4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:56:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36939 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761398Ab2J2VlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/54] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
-Date: Mon, 29 Oct 2012 14:40:06 -0700
-Message-Id: <20121029213803.345949900@linuxfoundation.org>
-X-Mailer: git-send-email 1.7.12.2.421.g261b511
-In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
-References: <20121029213802.697479610@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1755851Ab2J2V4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:56:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,673,1344236400"; 
+   d="scan'208";a="162093381"
+Date: Mon, 29 Oct 2012 14:56:07 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load
+ Latency
+Message-ID: <20121029215607.GM2266@tassilo.jf.intel.com>
+References: <1351523752-4215-1-git-send-email-eranian@google.com>
+ <1351523752-4215-5-git-send-email-eranian@google.com>
+ <20121029194203.GK2266@tassilo.jf.intel.com>
+ <CABPqkBQ3pdvhV=tYjmdaAFyZFvUsM0PkvVw385c1cLA9_Z3KoQ@mail.gmail.com>
+ <20121029211615.GL2266@tassilo.jf.intel.com>
+ <CABPqkBTwoVQw8yb1dbYcyV=11U3_xYDNdQQLhuJgn9iJ2Ar65g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBTwoVQw8yb1dbYcyV=11U3_xYDNdQQLhuJgn9iJ2Ar65g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+> I agree. I did that because it was the easiest thing I could think of.
+> Discovered I had to deal with all of this just two days ago when I
+> rebased. Wasn't too happy to have to deal with this at the last minute.
 
-------------------
+I'll repost, as soon as I debugged why Jiri's version of my 31/33 parser patch
+doesn't work.
 
-From: Kees Cook <keescook@chromium.org>
+-Andi
 
-commit 12176503366885edd542389eed3aaf94be163fdb upstream.
-
-The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
-while converting ioctl arguments.  This could lead to leaking kernel
-stack contents into userspace.
-
-Patch extracted from existing fix in grsecurity.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/compat_ioctl.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -210,6 +210,8 @@ static int do_video_set_spu_palette(unsi
- 
- 	err  = get_user(palp, &up->palette);
- 	err |= get_user(length, &up->length);
-+	if (err)
-+		return -EFAULT;
- 
- 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
- 	err  = put_user(compat_ptr(palp), &up_native->palette);
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
