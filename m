@@ -1,108 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab2J2W0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:26:19 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:27991 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754817Ab2J2W0Q (ORCPT
+	id S1755757Ab2J2W0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:26:34 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:35922 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755279Ab2J2W0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:26:16 -0400
+	Mon, 29 Oct 2012 18:26:32 -0400
+X-SENDER-IP: [85.230.29.114]
+X-LISTENER: [smtp.bredband.net]
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0MANkBj1B5LDZd/2dsb2JhbABEvQeGAYEJgh4BAQUnExwjEAgDDgcDLhQlAyETiAUMq2+QGRSLYQkehjYDlXOBG48ogwOBRwIe
-Date: Tue, 30 Oct 2012 09:26:13 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: xfs@oss.sgi.com, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Hang in XFS reclaim on 3.7.0-rc3
-Message-ID: <20121029222613.GU29378@dastard>
-References: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
+X-IronPort-Anti-Spam-Result: AhWdAD0Bj1BV5h1yPGdsb2JhbABEilK3KgICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTh3QDCQqyLA2JVBSKeoEdgSaCJ4F5YQOUH4FUhXmFOYdzDg
+X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
+   d="scan'208";a="435648226"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 29 Oct 2012 23:31:09 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 09/11] HID: hid-multitouch: support for hovering
+ devices
+Message-ID: <20121029223109.GA15589@polaris.bitmath.org>
+References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1351241067-9521-10-git-send-email-benjamin.tissoires@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPVoSvSM9=hictqwT2rzZA-fU_XSwd-_FRzW_J+HQYj7iohTWQ@mail.gmail.com>
+In-Reply-To: <1351241067-9521-10-git-send-email-benjamin.tissoires@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 09:03:15PM +0100, Torsten Kaiser wrote:
-> After experiencing a hang of all IO yesterday (
-> http://marc.info/?l=linux-kernel&m=135142236520624&w=2 ), I turned on
-> LOCKDEP after upgrading to -rc3.
+Hi Benjamin,
+
+> Win8 devices supporting hovering must provides InRange HID field.
+> The information that the finger is here but is not touching the surface
+> is sent to the user space through ABS_MT_DISTANCE as required by the
+> multitouch protocol.
 > 
-> I then tried to replicate the load that hung yesterday and got the
-> following lockdep report, implicating XFS instead of by stacking swap
-> onto dm-crypt and md.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c | 21 +++++++++++++++++++--
+>  1 file changed, 19 insertions(+), 2 deletions(-)
+
+I suppose the idea here is to send position and distance values even
+when there is no touch, but the code does not seem to do that?
+
 > 
-> [ 2844.971913]
-> [ 2844.971920] =================================
-> [ 2844.971921] [ INFO: inconsistent lock state ]
-> [ 2844.971924] 3.7.0-rc3 #1 Not tainted
-> [ 2844.971925] ---------------------------------
-> [ 2844.971927] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> [ 2844.971929] kswapd0/725 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> [ 2844.971931] (&(&ip->i_lock)->mr_lock){++++?.}, at: [<ffffffff811e7ef4>] xfs_ilock+0x84/0xb0
-> [ 2844.971941] {RECLAIM_FS-ON-W} state was registered at:
-> [ 2844.971942]   [<ffffffff8108137e>] mark_held_locks+0x7e/0x130
-> [ 2844.971947]   [<ffffffff81081a63>] lockdep_trace_alloc+0x63/0xc0
-> [ 2844.971949]   [<ffffffff810e9dd5>] kmem_cache_alloc+0x35/0xe0
-> [ 2844.971952]   [<ffffffff810dba31>] vm_map_ram+0x271/0x770
-> [ 2844.971955]   [<ffffffff811e10a6>] _xfs_buf_map_pages+0x46/0xe0
-> [ 2844.971959]   [<ffffffff811e1fba>] xfs_buf_get_map+0x8a/0x130
-> [ 2844.971961]   [<ffffffff81233849>] xfs_trans_get_buf_map+0xa9/0xd0
-> [ 2844.971964]   [<ffffffff8121e339>] xfs_ifree_cluster+0x129/0x670
-> [ 2844.971967]   [<ffffffff8121f959>] xfs_ifree+0xe9/0xf0
-> [ 2844.971969]   [<ffffffff811f4abf>] xfs_inactive+0x2af/0x480
-> [ 2844.971972]   [<ffffffff811efb90>] xfs_fs_evict_inode+0x70/0x80
-> [ 2844.971974]   [<ffffffff8110cb8f>] evict+0xaf/0x1b0
-> [ 2844.971977]   [<ffffffff8110cd95>] iput+0x105/0x210
-> [ 2844.971979]   [<ffffffff811070d0>] dentry_iput+0xa0/0xe0
-> [ 2844.971981]   [<ffffffff81108310>] dput+0x150/0x280
-> [ 2844.971983]   [<ffffffff811020fb>] sys_renameat+0x21b/0x290
-> [ 2844.971986]   [<ffffffff81102186>] sys_rename+0x16/0x20
-> [ 2844.971988]   [<ffffffff816b2292>] system_call_fastpath+0x16/0x1b
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index bd23f19..c0ab1c6 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -55,7 +55,7 @@ MODULE_LICENSE("GPL");
+>  #define MT_QUIRK_WIN_8_CERTIFIED	(1 << 10)
+>  
+>  struct mt_slot {
+> -	__s32 x, y, cx, cy, p, w, h;
+> +	__s32 x, y, cx, cy, z, p, w, h;
+>  	__s32 contactid;	/* the device ContactID assigned to this slot */
+>  	bool touch_state;	/* is the touch valid? */
+>  };
+> @@ -394,6 +394,12 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  	case HID_UP_DIGITIZER:
+>  		switch (usage->hid) {
+>  		case HID_DG_INRANGE:
+> +			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED) {
+> +				hid_map_usage(hi, usage, bit, max,
+> +					EV_ABS, ABS_MT_DISTANCE);
+> +				input_set_abs_params(hi->input,
+> +					ABS_MT_DISTANCE, 0, 1, 0, 0);
+> +			}
+>  			mt_store_field(usage, td, hi);
+>  			td->last_field_index = field->index;
+>  			return 1;
+> @@ -511,6 +517,11 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>  		struct mt_slot *s = &td->curdata;
+>  
+>  		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+> +		    !test_bit(ABS_MT_DISTANCE, input->absbit))
+> +			/* If InRange is not present, rely on TipSwitch */
+> +			s->touch_state = !s->z;
+> +
+> +		if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+>  		    !s->touch_state) {
+>  			struct input_mt_slot *slot = &input->mt->slots[slotnum];
+>  			int prv_x = input_mt_get_value(slot, ABS_MT_POSITION_X);
+> @@ -543,6 +554,7 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
+>  				input_event(input, EV_ABS, ABS_MT_TOOL_Y,
+>  					s->cy);
+>  			}
+> +			input_event(input, EV_ABS, ABS_MT_DISTANCE, s->z);
 
-We shouldn't be mapping pages there. See if the patch below fixes
-it.
+This only happens if touch_state is true?
 
-Fundamentally, though, the lockdep warning has come about because
-vm_map_ram is doing a GFP_KERNEL allocation when we need it to be
-doing GFP_NOFS - we are within a transaction here, so memory reclaim
-is not allowed to recurse back into the filesystem.
+>  			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
+>  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
+>  			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
+> @@ -575,11 +587,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
+>  		case HID_DG_INRANGE:
+>  			if (quirks & MT_QUIRK_VALID_IS_INRANGE)
+>  				td->curvalid = value;
+> +			if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
+> +				td->curdata.touch_state = value;
+>  			break;
+>  		case HID_DG_TIPSWITCH:
+>  			if (quirks & MT_QUIRK_NOT_SEEN_MEANS_UP)
+>  				td->curvalid = value;
+> -			td->curdata.touch_state = value;
+> +			if (quirks & MT_QUIRK_WIN_8_CERTIFIED)
+> +				td->curdata.z = !value;
 
-mm-folk: can we please get this vmalloc/gfp_flags passing API
-fixed once and for all? This is the fourth time in the last month or
-so that I've seen XFS bug reports with silent hangs and associated
-lockdep output that implicate GFP_KERNEL allocations from vm_map_ram
-in GFP_NOFS conditions as the potential cause....
+Here, z is a boolean?
 
-Cheers,
+> +			else
+> +				td->curdata.touch_state = value;
+>  			break;
+>  		case HID_DG_CONFIDENCE:
+>  			if (quirks & MT_QUIRK_VALID_IS_CONFIDENCE)
+> -- 
+> 1.7.11.7
+> 
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
-
-xfs: don't vmap inode cluster buffers during free
-
-From: Dave Chinner <dchinner@redhat.com>
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
-index c4add46..82f6e5d 100644
---- a/fs/xfs/xfs_inode.c
-+++ b/fs/xfs/xfs_inode.c
-@@ -1781,7 +1781,8 @@ xfs_ifree_cluster(
- 		 * to mark all the active inodes on the buffer stale.
- 		 */
- 		bp = xfs_trans_get_buf(tp, mp->m_ddev_targp, blkno,
--					mp->m_bsize * blks_per_cluster, 0);
-+					mp->m_bsize * blks_per_cluster,
-+					XBF_UNMAPPED);
- 
- 		if (!bp)
- 			return ENOMEM;
+Henrik
