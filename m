@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2J2BEl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 21:04:41 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:46824 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2J2BEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 21:04:39 -0400
-From: Nix <nix@esperi.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Eric Sandeen <sandeen@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3 (and other stable branches?)
-References: <20121026205618.GC8614@thunk.org>
-	<87objpx84k.fsf@spindle.srvr.nix> <20121026211542.GE8614@thunk.org>
-	<87haphx76u.fsf@spindle.srvr.nix> <20121027002258.GB31030@thunk.org>
-	<873910xevu.fsf@spindle.srvr.nix> <20121027175534.GA7783@thunk.org>
-	<87fw4zzra3.fsf@spindle.srvr.nix> <508C4FE5.1030102@redhat.com>
-	<508C633F.4070100@redhat.com> <20121029010012.GE9161@thunk.org>
-Emacs: if SIGINT doesn't work, try a tranquilizer.
-Date: Mon, 29 Oct 2012 01:04:32 +0000
-In-Reply-To: <20121029010012.GE9161@thunk.org> (Theodore Ts'o's message of
-	"Sun, 28 Oct 2012 21:00:13 -0400")
-Message-ID: <87lieqdr6n.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2.50 (gnu/linux)
+	id S1757440Ab2J2BMD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 21:12:03 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:47514 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145Ab2J2BMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 21:12:00 -0400
+From: guanxuetao@mprc.pku.edu.cn
+Message-ID: <57835.162.105.203.8.1351474122.squirrel@mprc.pku.edu.cn>
+In-Reply-To: <1350984117-17369-1-git-send-email-james.hogan@imgtec.com>
+References: <1350984117-17369-1-git-send-email-james.hogan@imgtec.com>
+Date: Mon, 29 Oct 2012 09:28:42 +0800 (CST)
+Subject: Re: [PATCH] asm-generic/io.h: remove asm/cacheflush.h include
+To: "James Hogan" <james.hogan@imgtec.com>
+Cc: "Arnd Bergmann" <arnd@arndb.de>, "Jonas Bonn" <jonas@southpole.se>,
+        linux-arch@vger.kernel.org, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+        linux-xtensa@linux-xtensa.org, "James Hogan" <james.hogan@imgtec.com>,
+        "Chris Zankel" <chris@zankel.net>, "Max Filippov" <jcmvbkbc@gmail.com>,
+        "Mike Frysinger" <vapier@gentoo.org>,
+        "Chen Liqin" <liqin.chen@sunplusct.com>,
+        "Lennox Wu" <lennox.wu@gmail.com>, "Guan Xuetao" <gxt@mprc.pku.edu.cn>
+User-Agent: SquirrelMail/1.4.8-4.0.1.el5
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-URT-Metrics: spindle 1060; Body=5 Fuz1=5 Fuz2=5
+Content-Type: text/plain;charset=GB2312
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 Oct 2012, Theodore Ts'o spake thusly:
+> Including <asm/cacheflush.h> from <asm-generic/io.h> prevents
+> cacheflush.h being able to use I/O functions like readl and writel due
+> to circular include dependencies. It doesn't appear as if anything from
+> cacheflush.h is actually used by the generic io.h, so remove the
+> include.
+>
+> I've compile tested a defconfig compilation of blackfin, openrisc (which
+> needed <asm/pgtable.h> including from it's <asm/io.h> to get the PAGE_*
+> definitions), and xtensa.
+>
+> Other architectures which use asm-generic/io.h are score and unicore32,
+> and looking at their io.h I don't see any obvious problems.
+>
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: Chris Zankel <chris@zankel.net>
+> Cc: Max Filippov <jcmvbkbc@gmail.com>
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: Chen Liqin <liqin.chen@sunplusct.com>
+> Cc: Lennox Wu <lennox.wu@gmail.com>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
->     commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 modified this function
->     such that the inode bitmap was being modified outside a transaction,
->     which could lead to corruption, and was discovered when journal_checksum
->     found a bad checksum in the journal.
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
-Hm. If this could have caused corruption for non-checksum users, it must
-be a pretty rare case if nobody's hit it in six months -- or maybe, I
-suppose, they hit it and never noticed. (But, hey, this makes me happier
-to have reported this despite all the flap, if it's found a genuine bug
-that could have hit people not using wierdo mount options.)
+> ---
+> Any compile testing of score and unicore32 anybody could provide would
+> be great.
+>
+>  arch/openrisc/include/asm/io.h |    1 +
+>  include/asm-generic/io.h       |    1 -
+>  2 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/openrisc/include/asm/io.h
+> b/arch/openrisc/include/asm/io.h
+> index 07f5299..7c69139 100644
+> --- a/arch/openrisc/include/asm/io.h
+> +++ b/arch/openrisc/include/asm/io.h
+> @@ -30,6 +30,7 @@
+>  #define PIO_MASK		0
+>
+>  #include <asm-generic/io.h>
+> +#include <asm/pgtable.h>
+>
+>  extern void __iomem *__ioremap(phys_addr_t offset, unsigned long size,
+>  				pgprot_t prot);
+> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+> index 448303b..616eea5 100644
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@ -12,7 +12,6 @@
+>  #define __ASM_GENERIC_IO_H
+>
+>  #include <asm/page.h> /* I/O is all done through memory accesses */
+> -#include <asm/cacheflush.h>
+>  #include <linux/types.h>
+>
+>  #ifdef CONFIG_GENERIC_IOMAP
+> --
+> 1.7.7.6
+>
+>
 
-Thanks for spending so much time on this fix. Much appreciated.
-
--- 
-NULL && (void)
