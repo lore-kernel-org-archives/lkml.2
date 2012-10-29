@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526Ab2J2WKy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:10:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47515 "EHLO mail.kernel.org"
+	id S933511Ab2J2WKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:10:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47555 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761117Ab2J2VhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:16 -0400
+	id S1761234Ab2J2VhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, Peter Berger <pberger@brimson.com>,
-        Al Borchers <alborchers@steinerpoint.com>
-Subject: [ 044/101] USB: digi_acceleport: fix port-data memory leak
-Date: Mon, 29 Oct 2012 14:34:57 -0700
-Message-Id: <20121029213245.141961954@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 048/101] USB: option: fix interface-data memory leak in error path
+Date: Mon, 29 Oct 2012 14:35:01 -0700
+Message-Id: <20121029213245.605874387@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -28,194 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit fb44ff854e148bc5c5982dad32da98b7a0989d2d upstream.
+commit c2dd4a8eac7821fed2c2d19e4607d0986b53b0fe upstream.
 
-Fix port-data memory leak by moving port data allocation and
-deallocation to port_probe and port_remove.
+Move interface data allocation to attach so that it is deallocated
+should usb-serial probe fail.
 
-Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
-
-Note that the oob port is never registered as a port device and should
-thus be handled in attach and release.
-
-Compile-only tested.
+Note that the usb device id is stored at probe so that it can be used
+in attach to determine send-setup blacklisting.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Cc: Peter Berger <pberger@brimson.com>
-Cc: Al Borchers <alborchers@steinerpoint.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/digi_acceleport.c |  117 ++++++++++++++++++++---------------
- 1 file changed, 67 insertions(+), 50 deletions(-)
+ drivers/usb/serial/option.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -244,6 +244,8 @@ static int digi_startup_device(struct us
- static int digi_startup(struct usb_serial *serial);
- static void digi_disconnect(struct usb_serial *serial);
- static void digi_release(struct usb_serial *serial);
-+static int digi_port_probe(struct usb_serial_port *port);
-+static int digi_port_remove(struct usb_serial_port *port);
- static void digi_read_bulk_callback(struct urb *urb);
- static int digi_read_inb_callback(struct urb *urb);
- static int digi_read_oob_callback(struct urb *urb);
-@@ -298,6 +300,8 @@ static struct usb_serial_driver digi_acc
- 	.attach =			digi_startup,
- 	.disconnect =			digi_disconnect,
- 	.release =			digi_release,
-+	.port_probe =			digi_port_probe,
-+	.port_remove =			digi_port_remove,
- };
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -47,6 +47,7 @@
+ /* Function prototypes */
+ static int  option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id);
++static int option_attach(struct usb_serial *serial);
+ static void option_release(struct usb_serial *serial);
+ static int option_send_setup(struct usb_serial_port *port);
+ static void option_instat_callback(struct urb *urb);
+@@ -1288,6 +1289,7 @@ static struct usb_serial_driver option_1
+ 	.tiocmget          = usb_wwan_tiocmget,
+ 	.tiocmset          = usb_wwan_tiocmset,
+ 	.ioctl             = usb_wwan_ioctl,
++	.attach            = option_attach,
+ 	.release           = option_release,
+ 	.port_probe        = usb_wwan_port_probe,
+ 	.port_remove	   = usb_wwan_port_remove,
+@@ -1337,8 +1339,6 @@ static bool is_blacklisted(const u8 ifnu
+ static int option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id)
+ {
+-	struct usb_wwan_intf_private *data;
+-	struct option_private *priv;
+ 	struct usb_interface_descriptor *iface_desc =
+ 				&serial->interface->cur_altsetting->desc;
+ 	struct usb_device_descriptor *dev_desc = &serial->dev->descriptor;
+@@ -1376,6 +1376,19 @@ static int option_probe(struct usb_seria
+ 		iface_desc->bInterfaceClass != USB_CLASS_CDC_DATA)
+ 		return -ENODEV;
  
- static struct usb_serial_driver digi_acceleport_4_device = {
-@@ -324,6 +328,8 @@ static struct usb_serial_driver digi_acc
- 	.attach =			digi_startup,
- 	.disconnect =			digi_disconnect,
- 	.release =			digi_release,
-+	.port_probe =			digi_port_probe,
-+	.port_remove =			digi_port_remove,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
-@@ -1237,59 +1243,50 @@ static int digi_startup_device(struct us
- 	return ret;
- }
- 
-+static int digi_port_init(struct usb_serial_port *port, unsigned port_num)
-+{
-+	struct digi_port *priv;
-+
-+	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&priv->dp_port_lock);
-+	priv->dp_port_num = port_num;
-+	init_waitqueue_head(&priv->dp_modem_change_wait);
-+	init_waitqueue_head(&priv->dp_transmit_idle_wait);
-+	init_waitqueue_head(&priv->dp_flush_wait);
-+	init_waitqueue_head(&priv->dp_close_wait);
-+	INIT_WORK(&priv->dp_wakeup_work, digi_wakeup_write_lock);
-+	priv->dp_port = port;
-+
-+	init_waitqueue_head(&port->write_wait);
-+
-+	usb_set_serial_port_data(port, priv);
++	/* Store device id so we can use it during attach. */
++	usb_set_serial_data(serial, (void *)id);
 +
 +	return 0;
 +}
- 
- static int digi_startup(struct usb_serial *serial)
- {
--
--	int i;
--	struct digi_port *priv;
- 	struct digi_serial *serial_priv;
-+	int ret;
- 
--	/* allocate the private data structures for all ports */
--	/* number of regular ports + 1 for the out-of-band port */
--	for (i = 0; i < serial->type->num_ports + 1; i++) {
--		/* allocate port private structure */
--		priv = kmalloc(sizeof(struct digi_port), GFP_KERNEL);
--		if (priv == NULL) {
--			while (--i >= 0)
--				kfree(usb_get_serial_port_data(serial->port[i]));
--			return 1;			/* error */
--		}
-+	serial_priv = kzalloc(sizeof(*serial_priv), GFP_KERNEL);
-+	if (!serial_priv)
-+		return -ENOMEM;
- 
--		/* initialize port private structure */
--		spin_lock_init(&priv->dp_port_lock);
--		priv->dp_port_num = i;
--		priv->dp_out_buf_len = 0;
--		priv->dp_write_urb_in_use = 0;
--		priv->dp_modem_signals = 0;
--		init_waitqueue_head(&priv->dp_modem_change_wait);
--		priv->dp_transmit_idle = 0;
--		init_waitqueue_head(&priv->dp_transmit_idle_wait);
--		priv->dp_throttled = 0;
--		priv->dp_throttle_restart = 0;
--		init_waitqueue_head(&priv->dp_flush_wait);
--		init_waitqueue_head(&priv->dp_close_wait);
--		INIT_WORK(&priv->dp_wakeup_work, digi_wakeup_write_lock);
--		priv->dp_port = serial->port[i];
--		/* initialize write wait queue for this port */
--		init_waitqueue_head(&serial->port[i]->write_wait);
--
--		usb_set_serial_port_data(serial->port[i], priv);
--	}
--
--	/* allocate serial private structure */
--	serial_priv = kmalloc(sizeof(struct digi_serial), GFP_KERNEL);
--	if (serial_priv == NULL) {
--		for (i = 0; i < serial->type->num_ports + 1; i++)
--			kfree(usb_get_serial_port_data(serial->port[i]));
--		return 1;			/* error */
--	}
--
--	/* initialize serial private structure */
- 	spin_lock_init(&serial_priv->ds_serial_lock);
- 	serial_priv->ds_oob_port_num = serial->type->num_ports;
- 	serial_priv->ds_oob_port = serial->port[serial_priv->ds_oob_port_num];
--	serial_priv->ds_device_started = 0;
 +
-+	ret = digi_port_init(serial_priv->ds_oob_port,
-+						serial_priv->ds_oob_port_num);
-+	if (ret) {
-+		kfree(serial_priv);
-+		return ret;
-+	}
-+
- 	usb_set_serial_data(serial, serial_priv);
- 
- 	return 0;
-@@ -1310,15 +1307,35 @@ static void digi_disconnect(struct usb_s
- 
- static void digi_release(struct usb_serial *serial)
- {
--	int i;
-+	struct digi_serial *serial_priv;
-+	struct digi_port *priv;
-+
-+	serial_priv = usb_get_serial_data(serial);
-+
-+	priv = usb_get_serial_port_data(serial_priv->ds_oob_port);
-+	kfree(priv);
- 
--	/* free the private data structures for all ports */
--	/* number of regular ports + 1 for the out-of-band port */
--	for (i = 0; i < serial->type->num_ports + 1; i++)
--		kfree(usb_get_serial_port_data(serial->port[i]));
--	kfree(usb_get_serial_data(serial));
-+	kfree(serial_priv);
- }
- 
-+static int digi_port_probe(struct usb_serial_port *port)
++static int option_attach(struct usb_serial *serial)
 +{
-+	unsigned port_num;
++	struct usb_interface_descriptor *iface_desc;
++	const struct usb_device_id *id;
++	struct usb_wwan_intf_private *data;
++	struct option_private *priv;
 +
-+	port_num = port->number - port->serial->minor;
-+
-+	return digi_port_init(port, port_num);
-+}
-+
-+static int digi_port_remove(struct usb_serial_port *port)
-+{
-+	struct digi_port *priv;
-+
-+	priv = usb_get_serial_port_data(port);
-+	kfree(priv);
-+
-+	return 0;
-+}
+ 	data = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+@@ -1386,6 +1399,10 @@ static int option_probe(struct usb_seria
+ 		return -ENOMEM;
+ 	}
  
- static void digi_read_bulk_callback(struct urb *urb)
- {
++	/* Retrieve device id stored at probe. */
++	id = usb_get_serial_data(serial);
++	iface_desc = &serial->interface->cur_altsetting->desc;
++
+ 	priv->bInterfaceNumber = iface_desc->bInterfaceNumber;
+ 	data->private = priv;
+ 
 
 
