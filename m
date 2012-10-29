@@ -1,154 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2J2A4n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 20:56:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59708 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab2J2A4m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 20:56:42 -0400
-Message-ID: <508DD443.9050505@gmail.com>
-Date: Mon, 29 Oct 2012 11:56:35 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757416Ab2J2BA1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 21:00:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58186 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754273Ab2J2BAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 21:00:25 -0400
+Date: Sun, 28 Oct 2012 21:00:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Nix <nix@esperi.org.uk>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: Apparent serious progressive ext4 data corruption bug in 3.6.3
+ (and other stable branches?)
+Message-ID: <20121029010012.GE9161@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Eric Sandeen <sandeen@redhat.com>, Nix <nix@esperi.org.uk>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	gregkh@linuxfoundation.org
+References: <20121026205618.GC8614@thunk.org>
+ <87objpx84k.fsf@spindle.srvr.nix>
+ <20121026211542.GE8614@thunk.org>
+ <87haphx76u.fsf@spindle.srvr.nix>
+ <20121027002258.GB31030@thunk.org>
+ <873910xevu.fsf@spindle.srvr.nix>
+ <20121027175534.GA7783@thunk.org>
+ <87fw4zzra3.fsf@spindle.srvr.nix>
+ <508C4FE5.1030102@redhat.com>
+ <508C633F.4070100@redhat.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Corey Minyard <cminyard@mvista.com>, minyard@acm.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>
-Subject: Re: [PATCH v2] Remove uninitialized_var()
-References: <1350420820-7156-1-git-send-email-minyard@acm.org> <1350420820-7156-5-git-send-email-minyard@acm.org> <20121022164902.9b204646.akpm@linux-foundation.org> <508AE611.3020504@mvista.com> <CA+55aFw+Vbj0i=1TGqCR5vQkCzWJ0QxK6CernOU6eedsudAixw@mail.gmail.com> <20121027131203.GA27313@gmail.com> <20121027114836.e9a6a922.akpm@linux-foundation.org> <20121028102007.GA7547@gmail.com>
-In-Reply-To: <20121028102007.GA7547@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <508C633F.4070100@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/10/12 21:20, Ingo Molnar wrote:
+On Sat, Oct 27, 2012 at 05:42:07PM -0500, Eric Sandeen wrote:
 > 
-> * Andrew Morton <akpm@linux-foundation.org> wrote:
+> It looks like the inode_bitmap_bh is being modified outside a transaction:
 > 
->> On Sat, 27 Oct 2012 15:12:03 +0200 Ingo Molnar <mingo@kernel.org> wrote:
->>
->>> There's 3 types of conversions done:
->>>
->>>    uninitialized_var(x)        =>  x = 0       /* for scalar types */
->>>    uninitialized_var(x)        =>  x = NULL    /* for pointers */
->>>    uninitialized_var(x)        =>  x = { }     /* for structures, unions */
->>
->> It's regrettable that we lose information.  
->> uninitialized_var() says "this isn't needed - it's just there 
->> for gcc".  The reader can of course work out the reason with 
->> careful code inspection, but that's a lot more time consuming.
->>
->> We could go add "/* keep gcc quiet */" to every site, or add 
->> self-documenting macros for the above.
+>                 ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
 > 
-> Ok, agreed - I've added /* GCC */ to every site to make people 
-> think about it.
-> 
-> I left it a bit mystic because in some cases this macro was 
-> mis-used not to suppress GCC being wrong, but to hide GCC being 
-> *right*: for example unused variable warnings in cases like:
-> 
->    int uninitialized_var(var);
-> 
->    #ifdef XYZ
->    var = ...;
->    ...
->    #endif
-> 
-> which (ab-)use was no doubt actively dangerous beyond being 
-> ugly. One such example is in arch/x86/mm/numa.c. (These cases 
-> now turn into clear (and always harmless) compiler warnings, as 
-> they should.)
+> It needs a get_write_access / handle_dirty_metadata pair around it.
 
-Shouldn't those cases be using:
+Oops.   Nice catch!!
 
-	int var __maybe_unused;
+The patch isn't quite right, though.  We only want to call
+ext4_journal_get_write_access() when we know that there is an available
+bit in the bitmap.  (We could still lose the race, but in that case
+the winner of the race probably grabbed the bitmap block first.)
 
-To clarify that the variable is not used in some configurations. Or
-moving the variable declaration inside the #ifdef block if possible. The
-alternative:
+Also, we only need to call ext4_handle_dirty_metadata() if we
+successfully grab the bit in the bitmap.
 
-	#ifdef XYZ
-	int var;
-	#endif
-	
-	...
+So I suggest this patch instead:
 
-	#ifdef XYZ
-	var = ...;
-	#endif
+commit 087eda81f1ac6a6a0394f781b44f1d555d8f64c6
+Author: Eric Sandeen <sandeen@redhat.com>
+Date:   Sun Oct 28 20:59:57 2012 -0400
 
-Does get pretty clunky.
+    ext4: fix unjournaled inode bitmap modification
+    
+    commit 119c0d4460b001e44b41dcf73dc6ee794b98bd31 modified this function
+    such that the inode bitmap was being modified outside a transaction,
+    which could lead to corruption, and was discovered when journal_checksum
+    found a bad checksum in the journal.
+    
+    Reported-by: Nix <nix@esperi.org.uk>
+    Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+    Cc: stable@vger.kernel.org
 
-> 
-> This further strengthens the argument that we should remove this 
-> whole thing.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> ---
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-<snip>
-
->  185 files changed, 281 insertions(+), 291 deletions(-)
-
-It might be interesting to know how many instances of uninitialized_var
-are no longer required because of code change around them. Possibly
-redefining uninitialized_var as an empty macro and then checking how
-many don't cause errors would identify if any can just be removed
-outright rather than converting them to an assignment.
-
-> diff --git a/arch/arm/mach-sa1100/assabet.c b/arch/arm/mach-sa1100/assabet.c
-> index 6a7ad3c..5ec34d6 100644
-> --- a/arch/arm/mach-sa1100/assabet.c
-> +++ b/arch/arm/mach-sa1100/assabet.c
-> @@ -388,7 +388,7 @@ static void __init map_sa1100_gpio_regs( void )
->   */
->  static void __init get_assabet_scr(void)
->  {
-> -	unsigned long uninitialized_var(scr), i;
-> +	unsigned long scr = 0 /* GCC */, i;
->  
->  	GPDR |= 0x3fc;			/* Configure GPIO 9:2 as outputs */
->  	GPSR = 0x3fc;			/* Write 0xFF to GPIO 9:2 */
-> diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-> index 35e106f..2c2da64 100644
-> --- a/arch/ia64/kernel/process.c
-> +++ b/arch/ia64/kernel/process.c
-> @@ -493,7 +493,7 @@ static void
->  do_copy_task_regs (struct task_struct *task, struct unw_frame_info *info, void *arg)
->  {
->  	unsigned long mask, sp, nat_bits = 0, ar_rnat, urbs_end, cfm;
-> -	unsigned long uninitialized_var(ip);	/* GCC be quiet */
-> +	unsigned long ip = 0 /* GCC */;	/* GCC be quiet */
-
-Doubled up comment. Same in a few other places.
-
->  	elf_greg_t *dst = arg;
->  	struct pt_regs *pt;
->  	char nat;
-> diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
-> index c641333..75cc8da 100644
-> --- a/arch/ia64/mm/discontig.c
-> +++ b/arch/ia64/mm/discontig.c
-> @@ -185,7 +185,7 @@ static void *per_cpu_node_setup(void *cpu_data, int node)
->  void __init setup_per_cpu_areas(void)
->  {
->  	struct pcpu_alloc_info *ai;
-> -	struct pcpu_group_info *uninitialized_var(gi);
-> +	struct pcpu_group_info *gi = NULL /* GCC */;
-
-The placement of the comment here is a bit ugly, can you change it so it
-appears after the semicolon when it is the last initialiser?
-
-~Ryan
-
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 4facdd2..575afac 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -725,6 +725,10 @@ repeat_in_this_group:
+ 				   "inode=%lu", ino + 1);
+ 			continue;
+ 		}
++		BUFFER_TRACE(inode_bitmap_bh, "get_write_access");
++		err = ext4_journal_get_write_access(handle, inode_bitmap_bh);
++		if (err)
++			goto fail;
+ 		ext4_lock_group(sb, group);
+ 		ret2 = ext4_test_and_set_bit(ino, inode_bitmap_bh->b_data);
+ 		ext4_unlock_group(sb, group);
+@@ -738,6 +742,11 @@ repeat_in_this_group:
+ 	goto out;
+ 
+ got:
++	BUFFER_TRACE(inode_bitmap_bh, "call ext4_handle_dirty_metadata");
++	err = ext4_handle_dirty_metadata(handle, NULL, inode_bitmap_bh);
++	if (err)
++		goto fail;
++
+ 	/* We may have to initialize the block bitmap if it isn't already */
+ 	if (ext4_has_group_desc_csum(sb) &&
+ 	    gdp->bg_flags & cpu_to_le16(EXT4_BG_BLOCK_UNINIT)) {
