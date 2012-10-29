@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab2J2WBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:01:44 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47943 "EHLO mail.kernel.org"
+	id S933353Ab2J2WBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:01:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47896 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761358Ab2J2Vh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:57 -0400
+	id S1761349Ab2J2Vhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 082/101] tilegx: fix some issues in the SW TSO support
-Date: Mon, 29 Oct 2012 14:35:35 -0700
-Message-Id: <20121029213249.422260574@linuxfoundation.org>
+        Florian Reitmeir <florian@reitmeir.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 078/101] mac80211: connect with HT20 if HT40 is not permitted
+Date: Mon, 29 Oct 2012 14:35:31 -0700
+Message-Id: <20121029213248.972848350@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,131 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 3da3fff8006c608f19a51859d44ba47ca8b41461 upstream.
+commit 3a40414f826a8f1096d9b94c4a53ef91b25ba28d upstream.
 
-This change correctly computes the header length and data length in
-the fragments to avoid a bug where we would end up with extremely
-slow performance.  Also adopt use of skb_frag_size() accessor.
+Some changes to fix issues with HT40 APs in Korea
+and follow-up changes to allow using HT40 even if
+the local regulatory database disallows it caused
+issues with iwlwifi (and could cause issues with
+other devices); iwlwifi firmware would assert if
+you tried to connect to an AP that has an invalid
+configuration (e.g. using HT40- on channel 140.)
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this, while avoiding the "Korean AP" issue by
+disabling HT40 and advertising HT20 to the AP
+when connecting.
+
+Reported-by: Florian Reitmeir <florian@reitmeir.org>
+Tested-by: Florian Reitmeir <florian@reitmeir.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/tile/tilegx.c |   35 +++++++++++++++++++----------------
- 1 file changed, 19 insertions(+), 16 deletions(-)
+ net/mac80211/mlme.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
---- a/drivers/net/ethernet/tile/tilegx.c
-+++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -1334,11 +1334,11 @@ static int tso_count_edescs(struct sk_bu
- {
- 	struct skb_shared_info *sh = skb_shinfo(skb);
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int num_edescs = 0;
- 	int segment;
-@@ -1353,7 +1353,7 @@ static int tso_count_edescs(struct sk_bu
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_used = 0;
- 			}
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -3065,22 +3065,32 @@ static int ieee80211_prep_connection(str
+ 				   ht_cfreq, ht_oper->primary_chan,
+ 				   cbss->channel->band);
+ 			ht_oper = NULL;
++		} else {
++			channel_type = NL80211_CHAN_HT20;
+ 		}
+ 	}
  
-@@ -1384,13 +1384,13 @@ static void tso_headers_prepare(struct s
- 	struct iphdr *ih;
- 	struct tcphdr *th;
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned char *data = skb->data;
- 	unsigned int ih_off, th_off, p_len;
- 	unsigned int isum_seed, tsum_seed, id, seq;
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
- 	long n;            /* size of the current piece of payload */
- 	int segment;
+-	if (ht_oper) {
+-		channel_type = NL80211_CHAN_HT20;
++	if (ht_oper && sband->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40) {
++		/*
++		 * cfg80211 already verified that the channel itself can
++		 * be used, but it didn't check that we can do the right
++		 * HT type, so do that here as well. If HT40 isn't allowed
++		 * on this channel, disable 40 MHz operation.
++		 */
  
-@@ -1405,7 +1405,7 @@ static void tso_headers_prepare(struct s
- 	isum_seed = ((0xFFFF - ih->check) +
- 		     (0xFFFF - ih->tot_len) +
- 		     (0xFFFF - ih->id));
--	tsum_seed = th->check + (0xFFFF ^ htons(sh_len + data_len));
-+	tsum_seed = th->check + (0xFFFF ^ htons(skb->len));
- 	id = ntohs(ih->id);
- 	seq = ntohl(th->seq);
+-		if (sband->ht_cap.cap & IEEE80211_HT_CAP_SUP_WIDTH_20_40) {
+-			switch (ht_oper->ht_param &
+-					IEEE80211_HT_PARAM_CHA_SEC_OFFSET) {
+-			case IEEE80211_HT_PARAM_CHA_SEC_ABOVE:
++		switch (ht_oper->ht_param & IEEE80211_HT_PARAM_CHA_SEC_OFFSET) {
++		case IEEE80211_HT_PARAM_CHA_SEC_ABOVE:
++			if (cbss->channel->flags & IEEE80211_CHAN_NO_HT40PLUS)
++				ifmgd->flags |= IEEE80211_STA_DISABLE_40MHZ;
++			else
+ 				channel_type = NL80211_CHAN_HT40PLUS;
+-				break;
+-			case IEEE80211_HT_PARAM_CHA_SEC_BELOW:
++			break;
++		case IEEE80211_HT_PARAM_CHA_SEC_BELOW:
++			if (cbss->channel->flags & IEEE80211_CHAN_NO_HT40MINUS)
++				ifmgd->flags |= IEEE80211_STA_DISABLE_40MHZ;
++			else
+ 				channel_type = NL80211_CHAN_HT40MINUS;
+-				break;
+-			}
++			break;
+ 		}
+ 	}
  
-@@ -1444,7 +1444,7 @@ static void tso_headers_prepare(struct s
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_used = 0;
- 			}
- 
-@@ -1478,14 +1478,14 @@ static void tso_egress(struct net_device
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	struct skb_shared_info *sh = skb_shinfo(skb);
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
--	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
-+	unsigned int data_len = skb->len - sh_len;
- 	unsigned int p_len = sh->gso_size;
- 	gxio_mpipe_edesc_t edesc_head = { { 0 } };
- 	gxio_mpipe_edesc_t edesc_body = { { 0 } };
- 	long f_id = -1;    /* id of the current fragment */
--	long f_size = skb->hdr_len;  /* size of the current fragment */
--	long f_used = sh_len;  /* bytes used from the current fragment */
--	void *f_data = skb->data;
-+	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
-+	long f_used = 0;  /* bytes used from the current fragment */
-+	void *f_data = skb->data + sh_len;
- 	long n;            /* size of the current piece of payload */
- 	unsigned long tx_packets = 0, tx_bytes = 0;
- 	unsigned int csum_start;
-@@ -1516,15 +1516,18 @@ static void tso_egress(struct net_device
- 
- 		/* Egress the payload. */
- 		while (p_used < p_len) {
-+			void *va;
- 
- 			/* Advance as needed. */
- 			while (f_used >= f_size) {
- 				f_id++;
--				f_size = sh->frags[f_id].size;
--				f_used = 0;
-+				f_size = skb_frag_size(&sh->frags[f_id]);
- 				f_data = tile_net_frag_buf(&sh->frags[f_id]);
-+				f_used = 0;
- 			}
- 
-+			va = f_data + f_used;
-+
- 			/* Use bytes from the current fragment. */
- 			n = p_len - p_used;
- 			if (n > f_size - f_used)
-@@ -1533,7 +1536,7 @@ static void tso_egress(struct net_device
- 			p_used += n;
- 
- 			/* Egress a piece of the payload. */
--			edesc_body.va = va_to_tile_io_addr(f_data) + f_used;
-+			edesc_body.va = va_to_tile_io_addr(va);
- 			edesc_body.xfer_size = n;
- 			edesc_body.bound = !(p_used < p_len);
- 			gxio_mpipe_equeue_put_at(equeue, edesc_body, slot);
 
 
