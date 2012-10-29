@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab2J2QWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:22:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39817 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932495Ab2J2QWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:22:17 -0400
-Date: Mon, 29 Oct 2012 17:22:12 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
-        Jiang Liu <jiang.liu@huawei.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org
-Subject: Re: [V5 PATCH 08/26] memcontrol: use N_MEMORY instead N_HIGH_MEMORY
-Message-ID: <20121029162212.GE20757@dhcp22.suse.cz>
-References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
- <1351524078-20363-7-git-send-email-laijs@cn.fujitsu.com>
+	id S932684Ab2J2QW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:22:26 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58798 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932495Ab2J2QWY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:22:24 -0400
+Date: Mon, 29 Oct 2012 12:22:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
+        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
+        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
+        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
+        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
+        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
+        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20121029162221.GB19346@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <20121029112907.GA9115@Krystal> <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com> <20121029161412.GB18944@Krystal> <20121029161809.GA4066@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351524078-20363-7-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121029161809.GA4066@htj.dyndns.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 23:20:58, Lai Jiangshan wrote:
-> N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-> N_MEMORY stands for the nodes that has any memory.
+* Tejun Heo (tj@kernel.org) wrote:
+> Hello,
+> 
+> On Mon, Oct 29, 2012 at 12:14:12PM -0400, Mathieu Desnoyers wrote:
+> > Most of the calls to this initialization function apply it on zeroed
+> > memory (static/kzalloc'd...), which makes it useless. I'd actually be in
+> > favor of removing those redundant calls (as I pointed out in another
+> > email), and document that zeroed memory don't need to be explicitly
+> > initialized.
+> > 
+> > Those sites that need to really reinitialize memory, or initialize it
+> > (if located on the stack or in non-zeroed dynamically allocated memory)
+> > could use a memset to 0, which will likely be faster than setting to
+> > NULL on many architectures.
+> 
+> I don't think it's a good idea to optimize out the basic encapsulation
+> there.  We're talking about re-zeroing some static memory areas which
+> are pretty small.  It's just not worth optimizing out at the cost of
+> proper initializtion.  e.g. We might add debug fields to list_head
+> later.
 
-What is the difference of those two?
+Future-proofness for debugging fields is indeed a very compelling
+argument. Fair enough!
 
-> The code here need to handle with the nodes which have memory, we should
-> use N_MEMORY instead.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
->  mm/memcontrol.c  |   18 +++++++++---------
->  mm/page_cgroup.c |    2 +-
->  2 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7acf43b..1b69665 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -800,7 +800,7 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
->  	int nid;
->  	u64 total = 0;
->  
-> -	for_each_node_state(nid, N_HIGH_MEMORY)
-> +	for_each_node_state(nid, N_MEMORY)
->  		total += mem_cgroup_node_nr_lru_pages(memcg, nid, lru_mask);
->  	return total;
->  }
-> @@ -1611,9 +1611,9 @@ static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
->  		return;
->  
->  	/* make a nodemask where this memcg uses memory from */
-> -	memcg->scan_nodes = node_states[N_HIGH_MEMORY];
-> +	memcg->scan_nodes = node_states[N_MEMORY];
->  
-> -	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
-> +	for_each_node_mask(nid, node_states[N_MEMORY]) {
->  
->  		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
->  			node_clear(nid, memcg->scan_nodes);
-> @@ -1684,7 +1684,7 @@ static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
->  	/*
->  	 * Check rest of nodes.
->  	 */
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		if (node_isset(nid, memcg->scan_nodes))
->  			continue;
->  		if (test_mem_cgroup_node_reclaimable(memcg, nid, noswap))
-> @@ -3759,7 +3759,7 @@ move_account:
->  		drain_all_stock_sync(memcg);
->  		ret = 0;
->  		mem_cgroup_start_move(memcg);
-> -		for_each_node_state(node, N_HIGH_MEMORY) {
-> +		for_each_node_state(node, N_MEMORY) {
->  			for (zid = 0; !ret && zid < MAX_NR_ZONES; zid++) {
->  				enum lru_list lru;
->  				for_each_lru(lru) {
-> @@ -4087,7 +4087,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  
->  	total_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL);
->  	seq_printf(m, "total=%lu", total_nr);
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL);
->  		seq_printf(m, " N%d=%lu", nid, node_nr);
->  	}
-> @@ -4095,7 +4095,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  
->  	file_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_FILE);
->  	seq_printf(m, "file=%lu", file_nr);
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
->  				LRU_ALL_FILE);
->  		seq_printf(m, " N%d=%lu", nid, node_nr);
-> @@ -4104,7 +4104,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  
->  	anon_nr = mem_cgroup_nr_lru_pages(memcg, LRU_ALL_ANON);
->  	seq_printf(m, "anon=%lu", anon_nr);
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
->  				LRU_ALL_ANON);
->  		seq_printf(m, " N%d=%lu", nid, node_nr);
-> @@ -4113,7 +4113,7 @@ static int memcg_numa_stat_show(struct cgroup *cont, struct cftype *cft,
->  
->  	unevictable_nr = mem_cgroup_nr_lru_pages(memcg, BIT(LRU_UNEVICTABLE));
->  	seq_printf(m, "unevictable=%lu", unevictable_nr);
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		node_nr = mem_cgroup_node_nr_lru_pages(memcg, nid,
->  				BIT(LRU_UNEVICTABLE));
->  		seq_printf(m, " N%d=%lu", nid, node_nr);
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 5ddad0c..c1054ad 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -271,7 +271,7 @@ void __init page_cgroup_init(void)
->  	if (mem_cgroup_disabled())
->  		return;
->  
-> -	for_each_node_state(nid, N_HIGH_MEMORY) {
-> +	for_each_node_state(nid, N_MEMORY) {
->  		unsigned long start_pfn, end_pfn;
->  
->  		start_pfn = node_start_pfn(nid);
-> -- 
-> 1.7.4.4
-> 
+We might want to document this intent at the top of the initialization
+function though, just in case anyone want to short-circuit it.
+
+Thanks,
+
+Mathieu
 
 -- 
-Michal Hocko
-SUSE Labs
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
