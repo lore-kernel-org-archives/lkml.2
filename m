@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760666Ab2J2UQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:16:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42639 "EHLO mail.kernel.org"
+	id S1760785Ab2J2UQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:16:34 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42628 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760632Ab2J2UIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760623Ab2J2UIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 16:08:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Anisse Astier <anisse@astier.eu>
-Subject: [ 12/34] ehci: Add yet-another Lucid nohandoff pci quirk
-Date: Mon, 29 Oct 2012 13:07:43 -0700
-Message-Id: <20121029200421.929261654@linuxfoundation.org>
+        Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 09/34] SUNRPC: Prevent races in xs_abort_connection()
+Date: Mon, 29 Oct 2012 13:07:40 -0700
+Message-Id: <20121029200421.622147505@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -25,34 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anisse Astier <anisse@astier.eu>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 8daf8b6086f9d575200cd0aa3797e26137255609 upstream.
+commit 4bc1e68ed6a8b59be8a79eb719be515a55c7bc68 upstream.
 
-Board name changed on another shipping Lucid tablet.
+The call to xprt_disconnect_done() that is triggered by a successful
+connection reset will trigger another automatic wakeup of all tasks
+on the xprt->pending rpc_wait_queue. In particular it will cause an
+early wake up of the task that called xprt_connect().
 
-Signed-off-by: Anisse Astier <anisse@astier.eu>
+All we really want to do here is clear all the socket-specific state
+flags, so we split that functionality out of xs_sock_mark_closed()
+into a helper that can be called by xs_abort_connection()
+
+Reported-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Chris Perl <chris.perl@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/sunrpc/xprtsock.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -546,6 +546,13 @@ static const struct dmi_system_id __devi
- 			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
- 		},
- 	},
-+	{
-+		/*  Pegatron Lucid (Ordissimo) */
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_NAME, "Ordissimo"),
-+			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
-+		},
-+	},
- 	{ }
- };
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1449,7 +1449,7 @@ static void xs_tcp_cancel_linger_timeout
+ 	xprt_clear_connecting(xprt);
+ }
  
+-static void xs_sock_mark_closed(struct rpc_xprt *xprt)
++static void xs_sock_reset_connection_flags(struct rpc_xprt *xprt)
+ {
+ 	smp_mb__before_clear_bit();
+ 	clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+@@ -1457,6 +1457,11 @@ static void xs_sock_mark_closed(struct r
+ 	clear_bit(XPRT_CLOSE_WAIT, &xprt->state);
+ 	clear_bit(XPRT_CLOSING, &xprt->state);
+ 	smp_mb__after_clear_bit();
++}
++
++static void xs_sock_mark_closed(struct rpc_xprt *xprt)
++{
++	xs_sock_reset_connection_flags(xprt);
+ 	/* Mark transport as closed and wake up all pending tasks */
+ 	xprt_disconnect_done(xprt);
+ }
+@@ -1991,10 +1996,8 @@ static void xs_abort_connection(struct s
+ 	any.sa_family = AF_UNSPEC;
+ 	result = kernel_connect(transport->sock, &any, sizeof(any), 0);
+ 	if (!result)
+-		xs_sock_mark_closed(&transport->xprt);
+-	else
+-		dprintk("RPC:       AF_UNSPEC connect return code %d\n",
+-				result);
++		xs_sock_reset_connection_flags(&transport->xprt);
++	dprintk("RPC:       AF_UNSPEC connect return code %d\n", result);
+ }
+ 
+ static void xs_tcp_reuse_connection(struct sock_xprt *transport)
 
 
