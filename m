@@ -1,180 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab2J2V4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:56:25 -0400
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:58847 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab2J2V4U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:56:20 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhWdAND6jlBV5h1yPGdsb2JhbABEilK3KAICgQgZAQEBATg0gh4BAQQBJxMcIwULCANGFA0YChoTh3QDCQqyJQ2JVBSKeoEdgSaCJ4F5YQOUH4FUgRuEXoU5h3MO
-X-IronPort-AV: E=Sophos;i="4.80,674,1344204000"; 
-   d="scan'208";a="219480540"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 23:00:58 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 06/11] HID: hid-multitouch: support T and C for win8
- devices
-Message-ID: <20121029220058.GB15413@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-7-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351241067-9521-7-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933293Ab2J2Vzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:55:55 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48464 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761404Ab2J2VlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 09/54] x86, mm: Trim memory in memblock to be page aligned
+Date: Mon, 29 Oct 2012 14:40:10 -0700
+Message-Id: <20121029213803.790620968@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
+References: <20121029213802.697479610@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> Win8 input specification clarifies the X and Y sent by devices.
-> It distincts the position where the user wants to Touch (T) from
-> the center of the ellipsoide (C). This patch enable supports for this
-> distinction in hid-multitouch.
-> 
-> We recognize Win8 certified devices from their vendor feature 0xff0000c5
-> where Microsoft put a signed blob in the report to check if the device
-> passed the certification.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 53 ++++++++++++++++++++++++++++++++++++--------
->  1 file changed, 44 insertions(+), 9 deletions(-)
+------------------
 
-This is great, just a few comments below.
+From: Yinghai Lu <yinghai@kernel.org>
 
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 41f2981..000c979 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -52,9 +52,10 @@ MODULE_LICENSE("GPL");
->  #define MT_QUIRK_VALID_IS_CONFIDENCE	(1 << 6)
->  #define MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE	(1 << 8)
->  #define MT_QUIRK_NO_AREA		(1 << 9)
-> +#define MT_QUIRK_WIN_8_CERTIFIED	(1 << 10)
->  
->  struct mt_slot {
-> -	__s32 x, y, p, w, h;
-> +	__s32 x, y, cx, cy, p, w, h;
->  	__s32 contactid;	/* the device ContactID assigned to this slot */
->  	bool touch_state;	/* is the touch valid? */
->  };
-> @@ -292,6 +293,10 @@ static void mt_feature_mapping(struct hid_device *hdev,
->  			td->maxcontacts = td->mtclass.maxcontacts;
->  
->  		break;
-> +	case 0xff0000c5:
-> +		if (field->report_count == 256 && field->report_size == 8)
-> +			td->mtclass.quirks |= MT_QUIRK_WIN_8_CERTIFIED;
-> +		break;
->  	}
->  }
->  
-> @@ -350,18 +355,36 @@ static int mt_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	case HID_UP_GENDESK:
->  		switch (usage->hid) {
->  		case HID_GD_X:
-> -			hid_map_usage(hi, usage, bit, max,
-> +			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+commit 6ede1fd3cb404c0016de6ac529df46d561bd558b upstream.
 
-Parenthesis, please. Precedence is not always enough.
+We will not map partial pages, so need to make sure memblock
+allocation will not allocate those bytes out.
 
-> +				usage_index) {
-> +				hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_TOOL_X);
-> +				set_abs(hi->input, ABS_MT_TOOL_X, field,
-> +					cls->sn_move);
-> +			} else {
-> +				hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_X);
-> -			set_abs(hi->input, ABS_MT_POSITION_X, field,
-> -				cls->sn_move);
-> +				set_abs(hi->input, ABS_MT_POSITION_X, field,
-> +					cls->sn_move);
-> +			}
-> +
+Also we will use for_each_mem_pfn_range() to loop to map memory
+range to keep them consistent.
 
-Do we really want to do the latter several times, even if the device is not a win8 one?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Link: http://lkml.kernel.org/r/CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com
+Acked-by: Jacob Shin <jacob.shin@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
->  		case HID_GD_Y:
-> -			hid_map_usage(hi, usage, bit, max,
-> +			if (cls->quirks & MT_QUIRK_WIN_8_CERTIFIED &&
+---
+ arch/x86/kernel/e820.c   |    3 +++
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |   24 ++++++++++++++++++++++++
+ 3 files changed, 28 insertions(+)
 
-Ditto.
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1076,6 +1076,9 @@ void __init memblock_x86_fill(void)
+ 		memblock_add(ei->addr, ei->size);
+ 	}
+ 
++	/* throw away partial pages */
++	memblock_trim_memory(PAGE_SIZE);
++
+ 	memblock_dump_all();
+ }
+ 
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -57,6 +57,7 @@ int memblock_add(phys_addr_t base, phys_
+ int memblock_remove(phys_addr_t base, phys_addr_t size);
+ int memblock_free(phys_addr_t base, phys_addr_t size);
+ int memblock_reserve(phys_addr_t base, phys_addr_t size);
++void memblock_trim_memory(phys_addr_t align);
+ 
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ void __next_mem_pfn_range(int *idx, int nid, unsigned long *out_start_pfn,
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -908,6 +908,30 @@ int __init_memblock memblock_is_region_r
+ 	return memblock_overlaps_region(&memblock.reserved, base, size) >= 0;
+ }
+ 
++void __init_memblock memblock_trim_memory(phys_addr_t align)
++{
++	int i;
++	phys_addr_t start, end, orig_start, orig_end;
++	struct memblock_type *mem = &memblock.memory;
++
++	for (i = 0; i < mem->cnt; i++) {
++		orig_start = mem->regions[i].base;
++		orig_end = mem->regions[i].base + mem->regions[i].size;
++		start = round_up(orig_start, align);
++		end = round_down(orig_end, align);
++
++		if (start == orig_start && end == orig_end)
++			continue;
++
++		if (start < end) {
++			mem->regions[i].base = start;
++			mem->regions[i].size = end - start;
++		} else {
++			memblock_remove_region(mem, i);
++			i--;
++		}
++	}
++}
+ 
+ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
+ {
 
-> +				usage_index) {
-> +				hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_TOOL_Y);
-> +				set_abs(hi->input, ABS_MT_TOOL_Y, field,
-> +					cls->sn_move);
-> +			} else {
-> +				hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_Y);
-> -			set_abs(hi->input, ABS_MT_POSITION_Y, field,
-> -				cls->sn_move);
-> +				set_abs(hi->input, ABS_MT_POSITION_Y, field,
-> +					cls->sn_move);
-> +			}
-> +
 
-Ditto.
-
->  			mt_store_field(usage, td, hi);
->  			td->last_field_index = field->index;
->  			return 1;
-> @@ -502,6 +525,12 @@ static void mt_complete_slot(struct mt_device *td, struct input_dev *input)
->  
->  			input_event(input, EV_ABS, ABS_MT_POSITION_X, s->x);
->  			input_event(input, EV_ABS, ABS_MT_POSITION_Y, s->y);
-> +			if (td->mtclass.quirks & MT_QUIRK_WIN_8_CERTIFIED) {
-> +				input_event(input, EV_ABS, ABS_MT_TOOL_X,
-> +					s->cx);
-
-Won't this fit on one line?
-
-> +				input_event(input, EV_ABS, ABS_MT_TOOL_Y,
-> +					s->cy);
-> +			}
->  			input_event(input, EV_ABS, ABS_MT_ORIENTATION, wide);
->  			input_event(input, EV_ABS, ABS_MT_PRESSURE, s->p);
->  			input_event(input, EV_ABS, ABS_MT_TOUCH_MAJOR, major);
-> @@ -553,10 +582,16 @@ static int mt_event(struct hid_device *hid, struct hid_field *field,
->  			td->curdata.p = value;
->  			break;
->  		case HID_GD_X:
-> -			td->curdata.x = value;
-> +			if (usage->code == ABS_MT_POSITION_X)
-> +				td->curdata.x = value;
-> +			else
-> +				td->curdata.cx = value;
-
-Since cx is the new value, reversing the logic would make sense here.
-
->  			break;
->  		case HID_GD_Y:
-> -			td->curdata.y = value;
-> +			if (usage->code == ABS_MT_POSITION_Y)
-> +				td->curdata.y = value;
-> +			else
-> +				td->curdata.cy = value;
->  			break;
->  		case HID_DG_WIDTH:
->  			td->curdata.w = value;
-> -- 
-> 1.7.11.7
-> 
-
-Thanks,
-Henrik
