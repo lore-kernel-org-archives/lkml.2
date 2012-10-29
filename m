@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab2J2IRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 04:17:05 -0400
-Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:37719 "EHLO
-	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2J2IRD (ORCPT
+	id S1758013Ab2J2ITr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 04:19:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50215 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab2J2ITo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 04:17:03 -0400
-X-Greylist: delayed 466 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Oct 2012 04:17:03 EDT
+	Mon, 29 Oct 2012 04:19:44 -0400
+Message-ID: <508E3BE6.3070609@ti.com>
+Date: Mon, 29 Oct 2012 13:48:46 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Mon, 29 Oct 2012 09:09:13 +0100
-From: =?UTF-8?Q?David_H=C3=A4rdeman?= <david@hardeman.nu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-In-Reply-To: <20121029111403.911c815a3c7d8d9572ff8e89@canb.auug.org.au>
-References: <20121029111403.911c815a3c7d8d9572ff8e89@canb.auug.org.au>
-Message-ID: <8d5c617feaaecfcf9e358a8b2cc35d20@hardeman.nu>
-User-Agent: RoundCube Webmail/0.3.1
+To: Matt Porter <mporter@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Rob Landley <rob@landley.net>,
+        Chris Ball <cjb@laptop.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Documentation List <linux-doc@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux SPI Devel List 
+	<spi-devel-general@lists.sourceforge.net>,
+        Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [RFC PATCH v3 11/16] mmc: omap_hsmmc: limit max_segs with the
+ EDMA DMAC
+References: <1350566815-409-1-git-send-email-mporter@ti.com> <1350566815-409-12-git-send-email-mporter@ti.com>
+In-Reply-To: <1350566815-409-12-git-send-email-mporter@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Oct 2012 11:14:03 +1100, Stephen Rothwell
-<sfr@canb.auug.org.au>
-wrote:
-> Hi Mauro,
+On 10/18/2012 6:56 PM, Matt Porter wrote:
+> The EDMA DMAC has a hardware limitation that prevents supporting
+> scatter gather lists with any number of segments. Since the EDMA
+> DMA Engine driver sets the maximum segments to 16, we do the
+> same.
 > 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> TODO: this will be replaced once the DMA Engine API supports an
+> API to query the DMAC's segment size limit.
 > 
-> drivers/hid/hid-picolcd_cir.c: In function 'picolcd_init_cir':
-> drivers/hid/hid-picolcd_cir.c:119:27: error: 'RC_TYPE_ALL' undeclared
-> (first use in this function)
-
-I can fix it, should be easy (rename RC_TYPE_ALL to RC_BIT_ALL).
-
-> Caused by commit c003ab1bedf0 ("[media] rc-core: add separate defines
-for
-> protocol bitmaps and numbers").  The new reference was introduced in
-> commit ae08e324146c ("HID: picoLCD: Add support for CIR") which was
-> merged by Linus on October 2 into v3.7-rc1 via the hid tree.
+> Signed-off-by: Matt Porter <mporter@ti.com>
+> ---
+>  drivers/mmc/host/omap_hsmmc.c |   10 ++++++++++
+>  1 file changed, 10 insertions(+)
 > 
-> I have used the v4l-dvb tree from next-20121026 for today.
+> diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+> index b327cd0..52bab01 100644
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -1828,6 +1828,16 @@ static int __devinit omap_hsmmc_probe(struct platform_device *pdev)
+>  	 * as we want. */
+>  	mmc->max_segs = 1024;
+>  
+> +	/* Eventually we should get our max_segs limitation for EDMA by
+> +	 * querying the dmaengine API */
 
-The question is in which form you want the patch - as a separate patch or
-a new version of commit c003ab1bedf0 (i.e. the entire patch)? Also, against
-which tree should I create the patch?
+Nit picking: This is not as per multi-line comment style in
+Documentation/CodingStyle.
 
-
+Thanks,
+Sekhar
