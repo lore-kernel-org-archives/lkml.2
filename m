@@ -1,102 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab2J2LYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 07:24:55 -0400
-Received: from servizi.voixit.com ([78.46.247.94]:35028 "EHLO
-	servizi.voixit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758670Ab2J2LYy (ORCPT
+	id S1758741Ab2J2L0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 07:26:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57384 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758683Ab2J2L0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 07:24:54 -0400
-Message-ID: <508E6783.2080403@unimore.it>
-Date: Mon, 29 Oct 2012 12:24:51 +0100
-From: Paolo Valente <paolo.valente@unimore.it>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 07:26:22 -0400
+Date: Mon, 29 Oct 2012 04:26:03 -0700
+From: tip-bot for Johannes Weiner <hannes@cmpxchg.org>
+Message-ID: <tip-3eaf14577ceb5c540e33a4eab967160d374b93b1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
+        aarcange@redhat.com, zliu@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        hannes@cmpxchg.org, riel@redhat.com, akpm@linux-foundation.org,
+        zliu@redhat.com, aarcange@redhat.com, tglx@linutronix.de
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:numa/core] sched, numa, mm:
+  Add memcg support to do_huge_pmd_numa_page()
+Git-Commit-ID: 3eaf14577ceb5c540e33a4eab967160d374b93b1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: jhs@mojatatu.com, davem@davemloft.net, shemminger@vyatta.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH RFC] pkt_sched: enable QFQ to support TSO/GSO
-References: <20121029085106.GA3733@paolo-ThinkPad-W520> <508E63AD.20803@gmail.com>
-In-Reply-To: <508E63AD.20803@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 29 Oct 2012 04:26:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 29/10/2012 12:08, Cong Wang ha scritto:
-> On 10/29/2012 04:51 PM, Paolo Valente wrote:
->> Hi,
->> if the max packet size for some class (configured through tc) is
->> violated by the actual size of the packets of that class, then QFQ
->> would not schedule classes correctly, and the data structures
->> implementing the bucket lists may get corrupted. This problem occurs
->> with TSO/GSO even if the max packet size is set to the MTU, and is,
->> e.g., the cause of the failure reported in [1]. Two patches have been
->> proposed to solve this problem in [2], one of them is a preliminary
->> version of this patch.
->>
->> This patch addresses the above issues by: 1) setting QFQ parameters to
->> proper values for supporting TSO/GSO (in particular, setting the
->> maximum possible packet size to 64KB), 2) automatically increasing the
->> max packet size for a class, lmax, when a packet with a larger size
->> than the current value of lmax arrives (a notification is also appended
->> to the log).
->>
->> The drawback of the first point is that the maximum weight for a class
->> is now limited to 4096, which is equal to 1/16 of the maximum weight
->> sum.
->>
->> Finally, this patch also forcibly caps the timestamps of a class if
->> they are too high to be stored in the bucket list. This capping, taken
->> from QFQ+ [3], handles the unfrequent case described in the comment to
->> the function slot_insert.
->>
->> [1] http://marc.info/?l=linux-netdev&m=134968777902077&w=2
->> [2] http://marc.info/?l=linux-netdev&m=135096573507936&w=2
->> [3] http://marc.info/?l=linux-netdev&m=134902691421670&w=2
->>
->> Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
->
->
-> Please respect people who helps you to test it:
->
-> Tested-by: Cong Wang <amwang@redhat.com>
-Oops, really sorry about that. I did not mean to hide your contribution. 
-I am just not familiar with the process.
->
-> I tested it again just in case...
-Thanks again
->
-> By the way, one nit below:
->
->
->> +    if (unlikely(cl->lmax < qdisc_pkt_len(skb))) {
->> +        pr_notice("qfq: increasing maxpkt from %u to %u for class %u",
->> +              cl->lmax, qdisc_pkt_len(skb), cl->common.classid);
->> +        qfq_update_reactivate_class(q, cl, cl->inv_w,
->> +                        qdisc_pkt_len(skb), 0);
->> +    }
->
->
-> Seems the log level KERN_NOTICE is overkill, normal users don't care
-> about these information, so s/pr_notice/pr_debug/.
->
-Thanks, I will integrate this and possible other suggestions in a new 
-version of the patch.
->
-> Thanks!
->
->
+Commit-ID:  3eaf14577ceb5c540e33a4eab967160d374b93b1
+Gitweb:     http://git.kernel.org/tip/3eaf14577ceb5c540e33a4eab967160d374b93b1
+Author:     Johannes Weiner <hannes@cmpxchg.org>
+AuthorDate: Thu, 25 Oct 2012 12:49:51 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 29 Oct 2012 12:15:15 +0100
 
+sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
 
--- 
------------------------------------------------------------
-| Paolo Valente              |                            |
-| Algogroup                  |                            |
-| Dip. Ing. Informazione     | tel:   +39 059 2056318     |
-| Via Vignolese 905/b        | fax:   +39 059 2056129     |
-| 41125 Modena - Italy       |                            |
-|     home:  http://algo.ing.unimo.it/people/paolo/       |
------------------------------------------------------------
+Add memory control group support to hugepage migration.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Zhouping Liu <zliu@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-rDk9mgpoyhZlwh2xhlykvgnp@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c |   15 +++++++++++++++
+ mm/memcontrol.c  |    7 +++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 7361fd9..1fc805e 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -742,6 +742,7 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			   unsigned int flags, pmd_t entry)
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct mem_cgroup *memcg = NULL;
+ 	struct page *new_page = NULL;
+ 	struct page *page = NULL;
+ 	int node, lru;
+@@ -832,6 +833,14 @@ migrate:
+ 
+ 		return;
+ 	}
++	/*
++	 * Traditional migration needs to prepare the memcg charge
++	 * transaction early to prevent the old page from being
++	 * uncharged when installing migration entries.  Here we can
++	 * save the potential rollback and start the charge transfer
++	 * only when migration is already known to end successfully.
++	 */
++	mem_cgroup_prepare_migration(page, new_page, &memcg);
+ 
+ 	entry = mk_pmd(new_page, vma->vm_page_prot);
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+@@ -842,6 +851,12 @@ migrate:
+ 	set_pmd_at(mm, haddr, pmd, entry);
+ 	update_mmu_cache_pmd(vma, address, entry);
+ 	page_remove_rmap(page);
++	/*
++	 * Finish the charge transaction under the page table lock to
++	 * prevent split_huge_page() from dividing up the charge
++	 * before it's fully transferred to the new page.
++	 */
++	mem_cgroup_end_migration(memcg, page, new_page, true);
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	put_page(page);			/* Drop the rmap reference */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 7acf43b..011e510 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3255,15 +3255,18 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+ 				  struct mem_cgroup **memcgp)
+ {
+ 	struct mem_cgroup *memcg = NULL;
++	unsigned int nr_pages = 1;
+ 	struct page_cgroup *pc;
+ 	enum charge_type ctype;
+ 
+ 	*memcgp = NULL;
+ 
+-	VM_BUG_ON(PageTransHuge(page));
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 
++	if (PageTransHuge(page))
++		nr_pages <<= compound_order(page);
++
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+@@ -3325,7 +3328,7 @@ void mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+ 	 * charged to the res_counter since we plan on replacing the
+ 	 * old one and only one page is going to be left afterwards.
+ 	 */
+-	__mem_cgroup_commit_charge(memcg, newpage, 1, ctype, false);
++	__mem_cgroup_commit_charge(memcg, newpage, nr_pages, ctype, false);
+ }
+ 
+ /* remove redundant charge if migration failed*/
