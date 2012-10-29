@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab2J2OMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:12:37 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:45244 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753958Ab2J2OMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:12:31 -0400
-Date: Mon, 29 Oct 2012 07:13:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Oct 29 (tty->raw)
-Message-ID: <20121029141324.GA23983@kroah.com>
-References: <20121029144655.4a3d916780e0246f1f007c3e@canb.auug.org.au>
- <508E0345.1010600@xenotime.net>
+	id S1754255Ab2J2OPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:15:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33349 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752860Ab2J2OPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 10:15:38 -0400
+Date: Mon, 29 Oct 2012 15:15:34 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 3/6] memcg: Simplify mem_cgroup_force_empty_list error
+ handling
+Message-ID: <20121029141534.GB20757@dhcp22.suse.cz>
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz>
+ <1351251453-6140-4-git-send-email-mhocko@suse.cz>
+ <508E8B95.406@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508E0345.1010600@xenotime.net>
+In-Reply-To: <508E8B95.406@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 09:17:09PM -0700, Randy Dunlap wrote:
-> On 10/28/2012 08:46 PM, Stephen Rothwell wrote:
+On Mon 29-10-12 17:58:45, Glauber Costa wrote:
 > 
-> > Hi all,
 > > 
-> > Changes since 20121026:
+> > Changes since v1
+> > - use kerndoc
+> > - be more specific about mem_cgroup_move_parent possible failures
 > > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > Reviewed-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Glauber Costa <glommer@parallels.com>
+
+Thanks!
+
+> > + * move charges to its parent or the root cgroup if the group has no
+> > + * parent (aka use_hierarchy==0).
+> > + * Although this might fail (get_page_unless_zero, isolate_lru_page or
+> > + * mem_cgroup_move_account fails) the failure is always temporary and
+> > + * it signals a race with a page removal/uncharge or migration. In the
+> > + * first case the page is on the way out and it will vanish from the LRU
+> > + * on the next attempt and the call should be retried later.
+> > + * Isolation from the LRU fails only if page has been isolated from
+> > + * the LRU since we looked at it and that usually means either global
+> > + * reclaim or migration going on. The page will either get back to the
+> > + * LRU or vanish.
 > 
-> 
-> Who made some changes that remove tty->raw ?
+> I just wonder for how long can it go in the worst case?
+ 
+That's a good question and to be honest I have no idea. The point is
+that it will terminate eventually and that the group is on the way out
+so the time to complete the removal is not a big deal IMHO. We had
+basically similar situation previously when we would need to repeat
+rmdir loop on EBUSY. The only change is that we do not have to retry
+anymore.
 
-Jiri did.
+So the key point is to check whether my assumption about temporarily is
+correct and that we cannot block the rest of the kernel/userspace to
+proceed even though we are waiting for finalization. I believe this is
+true but... (last famous words?)
 
-> There is still one occurrence in arch/um that is causing
-> a build error (on x86_64 defconfig):
-> 
-> arch/um/drivers/chan_kern.c: In function 'tty_receive_char':
-> arch/um/drivers/chan_kern.c:89:42: error: 'struct tty_struct' has no member named 'raw'
-
-Known issue, it is being worked on.
-
-thanks,
-
-greg k-h
+-- 
+Michal Hocko
+SUSE Labs
