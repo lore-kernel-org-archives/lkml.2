@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756103Ab2J2I6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 04:58:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42876 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2J2I6w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 04:58:52 -0400
-Date: Mon, 29 Oct 2012 09:58:51 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.6.4-rt10
-Message-ID: <alpine.LFD.2.02.1210290957290.2756@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S932201Ab2J2JAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 05:00:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47123 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758163Ab2J2JAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 05:00:08 -0400
+Date: Mon, 29 Oct 2012 09:59:59 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Borislav Petkov <bp@alien8.de>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] add some drop_caches documentation and info messsge
+In-Reply-To: <20121024181752.de011615.akpm@linux-foundation.org>
+Message-ID: <alpine.LRH.2.00.1210290958450.10392@twin.jikos.cz>
+References: <20121012125708.GJ10110@dhcp22.suse.cz> <20121024210600.GA17037@liondog.tnic> <20121024141303.0797d6a1.akpm@linux-foundation.org> <1787395.7AzIesGUbB@vostro.rjw.lan> <20121024181752.de011615.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Wed, 24 Oct 2012, Andrew Morton wrote:
 
-I'm pleased to announce the 3.6.4-rt10 release. This is just an update
-to 3.6.4 with no RT related changes
+> > > > I have drop_caches in my suspend-to-disk script so that the hibernation
+> > > > image is kept at minimum and suspend times are as small as possible.
+> > > 
+> > > hm, that sounds smart.
+> > > 
+> > > > Would that be a valid use-case?
+> > > 
+> > > I'd say so, unless we change the kernel to do that internally.  We do
+> > > have the hibernation-specific shrink_all_memory() in the vmscan code. 
+> > > We didn't see fit to document _why_ that exists, but IIRC it's there to
+> > > create enough free memory for hibernation to be able to successfully
+> > > complete, but no more.
+> > 
+> > That's correct.
+> 
+> Well, my point was: how about the idea of reclaiming clean pagecache
+> (and inodes, dentries, etc) before hibernation so we read/write less
+> disk data?
 
-The RT patch against 3.6.4 can be found here:
+You might or might not want to do that. Dropping caches around suspend 
+makes the hibernation process itself faster, but the realtime response of 
+the applications afterwards is worse, as everything touched by user has to 
+be paged in again.
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patch-3.6.4-rt10.patch.xz
+-- 
+Jiri Kosina
+SUSE Labs
 
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.6/patches-3.6.4-rt10.tar.xz
-
-Enjoy,
-
-	tglx
