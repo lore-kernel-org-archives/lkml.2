@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab2J2Mmf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 08:42:35 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58403 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932332Ab2J2Mmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 08:42:33 -0400
-Date: Mon, 29 Oct 2012 08:42:29 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
-        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
-        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
-        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
-        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
-        linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 09/16] SUNRPC/cache: use new hashtable implementation
-Message-ID: <20121029124229.GC11733@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-9-git-send-email-levinsasha928@gmail.com>
+	id S932509Ab2J2MnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 08:43:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26969 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932332Ab2J2Mm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 08:42:59 -0400
+Date: Mon, 29 Oct 2012 13:43:25 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+	do_notify_resume()
+Message-ID: <20121029124325.GA31397@redhat.com>
+References: <20121028173900.GA14621@redhat.com> <20121028173925.GA14642@redhat.com> <20121029052707.GA3400@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351450948-15618-9-git-send-email-levinsasha928@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
+In-Reply-To: <20121029052707.GA3400@in.ibm.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Sasha Levin (levinsasha928@gmail.com) wrote:
-> Switch cache to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in the cache implementation.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  net/sunrpc/cache.c | 20 +++++++++-----------
->  1 file changed, 9 insertions(+), 11 deletions(-)
-> 
-> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-> index fc2f7aa..0490546 100644
-> --- a/net/sunrpc/cache.c
-> +++ b/net/sunrpc/cache.c
-> @@ -28,6 +28,7 @@
->  #include <linux/workqueue.h>
->  #include <linux/mutex.h>
->  #include <linux/pagemap.h>
-> +#include <linux/hashtable.h>
->  #include <asm/ioctls.h>
->  #include <linux/sunrpc/types.h>
->  #include <linux/sunrpc/cache.h>
-> @@ -524,19 +525,18 @@ EXPORT_SYMBOL_GPL(cache_purge);
->   * it to be revisited when cache info is available
->   */
->  
-> -#define	DFR_HASHSIZE	(PAGE_SIZE/sizeof(struct list_head))
-> -#define	DFR_HASH(item)	((((long)item)>>4 ^ (((long)item)>>13)) % DFR_HASHSIZE)
-> +#define	DFR_HASH_BITS	9
+On 10/29, Ananth N Mavinakayanahalli wrote:
+>
+> On Sun, Oct 28, 2012 at 06:39:25PM +0100, Oleg Nesterov wrote:
+>
+> Hi Oleg,
+>
+> > Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
+> >
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > ---
+> >  arch/powerpc/kernel/signal.c |    4 +---
+> >  1 files changed, 1 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+> > index a2dc757..3b99711 100644
+> > --- a/arch/powerpc/kernel/signal.c
+> > +++ b/arch/powerpc/kernel/signal.c
+> > @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+> >
+> >  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+>
+> But this _is_ do_notify_resume()...
 
-If we look at a bit of history, mainly commit:
+Argh. I'll fix the changelog, see v2 below.
 
-commit 1117449276bb909b029ed0b9ba13f53e4784db9d
-Author: NeilBrown <neilb@suse.de>
-Date:   Thu Aug 12 17:04:08 2010 +1000
+> I don't see this flag cleared
+> anywhere else.
+>
+> Did you have something else in mind?
 
-    sunrpc/cache: change deferred-request hash table to use hlist.
+Sorry for confusion.
 
+As Srikar explained, it is cleared by uprobe_notify_resume(). See db023ea5
+"uprobes: Move clear_thread_flag(TIF_UPROBE) to uprobe_notify_resume()", it
+is already in Linus's tree.
 
-we'll notice that the only reason why the prior DFR_HASHSIZE was using
+Oleg.
 
-  (PAGE_SIZE/sizeof(struct list_head))
+------------------------------------------------------------------------------
+Subject: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in do_notify_resume()
 
-instead of
+Cleanup. No need to clear TIF_UPROBE, uprobe_notify_resume() does this.
 
-  (PAGE_SIZE/sizeof(struct hlist_head))
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/powerpc/kernel/signal.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-is because it has been forgotten in that commit. The intent there is to
-make the hash table array fit the page size.
-
-By defining DFR_HASH_BITS arbitrarily to "9", this indeed fulfills this
-purpose on architectures with 4kB page size and 64-bit pointers, but not
-on some powerpc configurations, and Tile architectures, which have more
-exotic 64kB page size, and of course on the far less exotic 32-bit
-pointer architectures.
-
-So defining e.g.:
-
-#include <linux/log2.h>
-
-#define DFR_HASH_BITS  (PAGE_SHIFT - ilog2(BITS_PER_LONG))
-
-would keep the intended behavior in all cases: use one page for the hash
-array.
-
-Thanks,
-
-Mathieu
-
+diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+index a2dc757..3b99711 100644
+--- a/arch/powerpc/kernel/signal.c
++++ b/arch/powerpc/kernel/signal.c
+@@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+ 
+ void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
+ {
+-	if (thread_info_flags & _TIF_UPROBE) {
+-		clear_thread_flag(TIF_UPROBE);
++	if (thread_info_flags & _TIF_UPROBE)
+ 		uprobe_notify_resume(regs);
+-	}
+ 
+ 	if (thread_info_flags & _TIF_SIGPENDING)
+ 		do_signal(regs);
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.5.5.1
+
+
