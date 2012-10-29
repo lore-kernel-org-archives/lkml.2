@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab2J2CGg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 22:06:36 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64963 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753850Ab2J2CGf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 22:06:35 -0400
-X-AuditID: 9c930179-b7c8bae000003559-95-508de4a9e6f9
-Date: Mon, 29 Oct 2012 11:12:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <js1304@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 0/5] minor clean-up and optimize highmem related code
-Message-ID: <20121029021219.GK15767@bbox>
-References: <Yes>
- <1351451576-2611-1-git-send-email-js1304@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351451576-2611-1-git-send-email-js1304@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1757541Ab2J2CMr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 22:12:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29496 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756205Ab2J2CMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Oct 2012 22:12:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.80,668,1344236400"; 
+   d="scan'208";a="239615421"
+Subject: [PATCH] hrtimer: Printing timer info when hitting BUG_ON()
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: tglx@linutronix.de, mingo@kernel.org, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, fei.li@intel.com,
+        yanmin_zhang@linux.intel.com, chuansheng.liu@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Oct 2012 19:02:31 +0800
+Message-ID: <1351508551.15558.1428.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
 
-On Mon, Oct 29, 2012 at 04:12:51AM +0900, Joonsoo Kim wrote:
-> This patchset clean-up and optimize highmem related code.
-> 
-> [1] is just clean-up and doesn't introduce any functional change.
-> [2-3] are for clean-up and optimization.
-> These eliminate an useless lock opearation and list management.
-> [4-5] is for optimization related to flush_all_zero_pkmaps().
-> 
-> Joonsoo Kim (5):
->   mm, highmem: use PKMAP_NR() to calculate an index of pkmap
->   mm, highmem: remove useless pool_lock
->   mm, highmem: remove page_address_pool list
->   mm, highmem: makes flush_all_zero_pkmaps() return index of last
->     flushed entry
->   mm, highmem: get virtual address of the page using PKMAP_ADDR()
+We encounted one BUG_ON() issue at function __run_hrtimer(),
+but the panic info is not enough to find out which hrtimer
+users use the hrtimer wrongly.
+(in this BUG_ON case, it is callback running at the same time
+hrtimer_start() is executed on different context.)
 
-This patchset looks awesome to me.
-If you have a plan to respin, please CCed Peter.
+We can print basic timer info before BUG(), it is easy to find
+out which hrtimer user has fault, the output info is like below:
 
+<3>[   41.118552] timer info: state/3, func/test_timer_cb
+<3>[   41.118618] timer stats: pid/786(sh), site/hrtimer_start
+<0>[   41.118670] ------------[ cut here ]------------
+<2>[   41.118691] kernel BUG at /root/r4_code/hardware/intel/linux-2.6/kernel/hrtimer.c:1260!
+<0>[   41.118715] invalid opcode: 0000 [#1] PREEMPT SMP
+
+The infos of callback/state are very helpful for debugging this BUG_ON().
+
+Signed-off-by: Li Fei <fei.li@intel.com>
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ kernel/hrtimer.c |   34 +++++++++++++++++++++++++++++++++-
+ 1 files changed, 33 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 6db7a5e..388e8b2 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1204,6 +1204,35 @@ int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp)
+ }
+ EXPORT_SYMBOL_GPL(hrtimer_get_res);
+ 
++/*
++ * dump_hrtimer_callinfo - print hrtimer information including:
++ * state, callback function, pid and start_site.
++*/
++static void dump_hrtimer_callinfo(struct hrtimer *timer)
++{
++
++	char symname[KSYM_NAME_LEN];
++
++	if (lookup_symbol_name((unsigned long)(timer->function), symname) < 0) {
++		pr_err("timer info: state/%lx, func/%pK\n",
++			timer->state, timer->function);
++	} else {
++		pr_err("timer info: state/%lx, func/%s",
++			timer->state, symname);
++	}
++
++#ifdef CONFIG_TIMER_STATS
++	if (lookup_symbol_name((unsigned long)(timer->start_site),
++						symname) < 0) {
++		pr_err("timer stats: pid/%d(%s), site/%pK\n",
++			timer->start_pid, timer->start_comm, timer->start_site);
++	} else {
++		pr_err("timer stats: pid/%d(%s), site/%s\n",
++			timer->start_pid, timer->start_comm, symname);
++	}
++#endif
++}
++
+ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ {
+ 	struct hrtimer_clock_base *base = timer->base;
+@@ -1235,7 +1264,10 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ 	 * hrtimer_start_range_ns() or in hrtimer_interrupt()
+ 	 */
+ 	if (restart != HRTIMER_NORESTART) {
+-		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
++		if (timer->state != HRTIMER_STATE_CALLBACK) {
++			dump_hrtimer_callinfo(timer);
++			BUG();
++		}
+ 		enqueue_hrtimer(timer, base);
+ 	}
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
+
+
