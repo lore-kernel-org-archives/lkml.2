@@ -1,52 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230Ab2J2OU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:20:56 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:50823 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756302Ab2J2OUy (ORCPT
+	id S1759258Ab2J2OU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:20:59 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49473 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755292Ab2J2OUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:20:54 -0400
-X-Greylist: delayed 1069 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Oct 2012 10:20:54 EDT
+	Mon, 29 Oct 2012 10:20:53 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Cc: Jan Beulich <JBeulich@suse.com>, Jan Beulich <jbeulich@suse.com>,
+Cc: Jan Beulich <jbeulich@suse.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen/xenbus: fix overflow check in xenbus_file_write()
-Date: Mon, 29 Oct 2012 10:08:18 -0400
-Message-Id: <1351519698-11069-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/2] xen/hypercall: fix hypercall fallback code for very old hypervisors
+Date: Mon, 29 Oct 2012 10:08:17 -0400
+Message-Id: <1351519698-11069-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
 References: <1351519698-11069-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Jan Beulich <jbeulich@suse.com>
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+While copying the argument structures in HYPERVISOR_event_channel_op()
+and HYPERVISOR_physdev_op() into the local variable is sufficiently
+safe even if the actual structure is smaller than the container one,
+copying back eventual output values the same way isn't: This may
+collide with on-stack variables (particularly "rc") which may change
+between the first and second memcpy() (i.e. the second memcpy() could
+discard that change).
+
+Move the fallback code into out-of-line functions, and handle all of
+the operations known by this old a hypervisor individually: Some don't
+require copying back anything at all, and for the rest use the
+individual argument structures' sizes rather than the container's.
+
 Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
-[v1: Rebased on upstream]
+[v2: Reduce #define/#undef usage in HYPERVISOR_physdev_op_compat().]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xenbus/xenbus_dev_frontend.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/xen/hypercall.h |   21 +++------
+ drivers/xen/Makefile                 |    2 +-
+ drivers/xen/fallback.c               |   78 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 86 insertions(+), 15 deletions(-)
+ create mode 100644 drivers/xen/fallback.c
 
-diff --git a/drivers/xen/xenbus/xenbus_dev_frontend.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
-index 89f7625..ac72702 100644
---- a/drivers/xen/xenbus/xenbus_dev_frontend.c
-+++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
-@@ -458,7 +458,7 @@ static ssize_t xenbus_file_write(struct file *filp,
- 		goto out;
+diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+index 59c226d..c812360 100644
+--- a/arch/x86/include/asm/xen/hypercall.h
++++ b/arch/x86/include/asm/xen/hypercall.h
+@@ -359,18 +359,14 @@ HYPERVISOR_update_va_mapping(unsigned long va, pte_t new_val,
+ 		return _hypercall4(int, update_va_mapping, va,
+ 				   new_val.pte, new_val.pte >> 32, flags);
+ }
++int __must_check HYPERVISOR_event_channel_op_compat(int, void *);
  
- 	/* Can't write a xenbus message larger we can buffer */
--	if ((len + u->len) > sizeof(u->u.buffer)) {
-+	if (len > sizeof(u->u.buffer) - u->len) {
- 		/* On error, dump existing buffer */
- 		u->len = 0;
- 		rc = -EINVAL;
+ static inline int
+ HYPERVISOR_event_channel_op(int cmd, void *arg)
+ {
+ 	int rc = _hypercall2(int, event_channel_op, cmd, arg);
+-	if (unlikely(rc == -ENOSYS)) {
+-		struct evtchn_op op;
+-		op.cmd = cmd;
+-		memcpy(&op.u, arg, sizeof(op.u));
+-		rc = _hypercall1(int, event_channel_op_compat, &op);
+-		memcpy(arg, &op.u, sizeof(op.u));
+-	}
++	if (unlikely(rc == -ENOSYS))
++		rc = HYPERVISOR_event_channel_op_compat(cmd, arg);
+ 	return rc;
+ }
+ 
+@@ -386,17 +382,14 @@ HYPERVISOR_console_io(int cmd, int count, char *str)
+ 	return _hypercall3(int, console_io, cmd, count, str);
+ }
+ 
++int __must_check HYPERVISOR_physdev_op_compat(int, void *);
++
+ static inline int
+ HYPERVISOR_physdev_op(int cmd, void *arg)
+ {
+ 	int rc = _hypercall2(int, physdev_op, cmd, arg);
+-	if (unlikely(rc == -ENOSYS)) {
+-		struct physdev_op op;
+-		op.cmd = cmd;
+-		memcpy(&op.u, arg, sizeof(op.u));
+-		rc = _hypercall1(int, physdev_op_compat, &op);
+-		memcpy(arg, &op.u, sizeof(op.u));
+-	}
++	if (unlikely(rc == -ENOSYS))
++		rc = HYPERVISOR_physdev_op_compat(cmd, arg);
+ 	return rc;
+ }
+ 
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 0e863703..46de6cd 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -2,7 +2,7 @@ ifneq ($(CONFIG_ARM),y)
+ obj-y	+= manage.o balloon.o
+ obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+ endif
+-obj-y	+= grant-table.o features.o events.o
++obj-y	+= grant-table.o features.o events.o fallback.o
+ obj-y	+= xenbus/
+ 
+ nostackp := $(call cc-option, -fno-stack-protector)
+diff --git a/drivers/xen/fallback.c b/drivers/xen/fallback.c
+new file mode 100644
+index 0000000..0bdc468
+--- /dev/null
++++ b/drivers/xen/fallback.c
+@@ -0,0 +1,78 @@
++#include <linux/kernel.h>
++#include <linux/string.h>
++#include <linux/bug.h>
++#include <asm/hypervisor.h>
++#include <asm/xen/hypercall.h>
++
++int HYPERVISOR_event_channel_op_compat(int cmd, void *arg)
++{
++	struct evtchn_op op;
++	int rc;
++
++	op.cmd = cmd;
++	memcpy(&op.u, arg, sizeof(op.u));
++	rc = _hypercall1(int, event_channel_op_compat, &op);
++
++	switch (cmd) {
++	case EVTCHNOP_close:
++	case EVTCHNOP_send:
++	case EVTCHNOP_bind_vcpu:
++	case EVTCHNOP_unmask:
++		/* no output */
++		break;
++
++#define COPY_BACK(eop) \
++	case EVTCHNOP_##eop: \
++		memcpy(arg, &op.u.eop, sizeof(op.u.eop)); \
++		break
++
++	COPY_BACK(bind_interdomain);
++	COPY_BACK(bind_virq);
++	COPY_BACK(bind_pirq);
++	COPY_BACK(status);
++	COPY_BACK(alloc_unbound);
++	COPY_BACK(bind_ipi);
++#undef COPY_BACK
++
++	default:
++		WARN_ON(rc != -ENOSYS);
++		break;
++	}
++
++	return rc;
++}
++
++int HYPERVISOR_physdev_op_compat(int cmd, void *arg)
++{
++	struct physdev_op op;
++	int rc;
++
++	op.cmd = cmd;
++	memcpy(&op.u, arg, sizeof(op.u));
++	rc = _hypercall1(int, physdev_op_compat, &op);
++
++	switch (cmd) {
++	case PHYSDEVOP_IRQ_UNMASK_NOTIFY:
++	case PHYSDEVOP_set_iopl:
++	case PHYSDEVOP_set_iobitmap:
++	case PHYSDEVOP_apic_write:
++		/* no output */
++		break;
++
++#define COPY_BACK(pop, fld) \
++	case PHYSDEVOP_##pop: \
++		memcpy(arg, &op.u.fld, sizeof(op.u.fld)); \
++		break
++
++	COPY_BACK(irq_status_query, irq_status_query);
++	COPY_BACK(apic_read, apic_op);
++	COPY_BACK(ASSIGN_VECTOR, irq_op);
++#undef COPY_BACK
++
++	default:
++		WARN_ON(rc != -ENOSYS);
++		break;
++	}
++
++	return rc;
++}
 -- 
 1.7.7.6
 
