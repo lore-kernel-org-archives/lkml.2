@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab2J2WVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:21:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47106 "EHLO mail.kernel.org"
+	id S933611Ab2J2WW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:22:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47058 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761115Ab2J2Vgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:37 -0400
+	id S1761098Ab2J2Vge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Luebbe <jlu@pengutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Roland Stigge <stigge@antcom.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>, Michal Marek <mmarek@suse.cz>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 008/101] drivers/rtc/rtc-imxdi.c: add missing spin lock initialization
-Date: Mon, 29 Oct 2012 14:34:21 -0700
-Message-Id: <20121029213241.070409715@linuxfoundation.org>
+Subject: [ 006/101] gen_init_cpio: avoid stack overflow when expanding
+Date: Mon, 29 Oct 2012 14:34:19 -0700
+Message-Id: <20121029213240.856149674@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -32,35 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Luebbe <jlu@pengutronix.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit fee0de7791f967c2c5f0d43eb7b7261761b45e64 upstream.
+commit 20f1de659b77364d55d4e7fad2ef657e7730323f upstream.
 
-Signed-off-by: Jan Luebbe <jlu@pengutronix.de>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Roland Stigge <stigge@antcom.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Tested-by: Roland Stigge <stigge@antcom.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
+Fix possible overflow of the buffer used for expanding environment
+variables when building file list.
+
+In the extremely unlikely case of an attacker having control over the
+environment variables visible to gen_init_cpio, control over the
+contents of the file gen_init_cpio parses, and gen_init_cpio was built
+without compiler hardening, the attacker can gain arbitrary execution
+control via a stack buffer overflow.
+
+  $ cat usr/crash.list
+  file foo ${BIG}${BIG}${BIG}${BIG}${BIG}${BIG} 0755 0 0
+  $ BIG=$(perl -e 'print "A" x 4096;') ./usr/gen_init_cpio usr/crash.list
+  *** buffer overflow detected ***: ./usr/gen_init_cpio terminated
+
+This also replaces the space-indenting with tabs.
+
+Patch based on existing fix extracted from grsecurity.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-imxdi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ usr/gen_init_cpio.c |   41 ++++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 19 deletions(-)
 
---- a/drivers/rtc/rtc-imxdi.c
-+++ b/drivers/rtc/rtc-imxdi.c
-@@ -392,6 +392,8 @@ static int dryice_rtc_probe(struct platf
- 	if (imxdi->ioaddr == NULL)
- 		return -ENOMEM;
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -303,7 +303,7 @@ static int cpio_mkfile(const char *name,
+ 	int retval;
+ 	int rc = -1;
+ 	int namesize;
+-	int i;
++	unsigned int i;
  
-+	spin_lock_init(&imxdi->irq_lock);
+ 	mode |= S_IFREG;
+ 
+@@ -381,25 +381,28 @@ error:
+ 
+ static char *cpio_replace_env(char *new_location)
+ {
+-       char expanded[PATH_MAX + 1];
+-       char env_var[PATH_MAX + 1];
+-       char *start;
+-       char *end;
+-
+-       for (start = NULL; (start = strstr(new_location, "${")); ) {
+-               end = strchr(start, '}');
+-               if (start < end) {
+-                       *env_var = *expanded = '\0';
+-                       strncat(env_var, start + 2, end - start - 2);
+-                       strncat(expanded, new_location, start - new_location);
+-                       strncat(expanded, getenv(env_var), PATH_MAX);
+-                       strncat(expanded, end + 1, PATH_MAX);
+-                       strncpy(new_location, expanded, PATH_MAX);
+-               } else
+-                       break;
+-       }
++	char expanded[PATH_MAX + 1];
++	char env_var[PATH_MAX + 1];
++	char *start;
++	char *end;
 +
- 	imxdi->irq = platform_get_irq(pdev, 0);
- 	if (imxdi->irq < 0)
- 		return imxdi->irq;
++	for (start = NULL; (start = strstr(new_location, "${")); ) {
++		end = strchr(start, '}');
++		if (start < end) {
++			*env_var = *expanded = '\0';
++			strncat(env_var, start + 2, end - start - 2);
++			strncat(expanded, new_location, start - new_location);
++			strncat(expanded, getenv(env_var),
++				PATH_MAX - strlen(expanded));
++			strncat(expanded, end + 1,
++				PATH_MAX - strlen(expanded));
++			strncpy(new_location, expanded, PATH_MAX);
++			new_location[PATH_MAX] = 0;
++		} else
++			break;
++	}
+ 
+-       return new_location;
++	return new_location;
+ }
+ 
+ 
 
 
