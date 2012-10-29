@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759161Ab2J2NsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:48:15 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:46098 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759108Ab2J2NsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:48:13 -0400
-Message-ID: <508E8910.40203@parallels.com>
-Date: Mon, 29 Oct 2012 17:48:00 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+	id S1759156Ab2J2Nui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:50:38 -0400
+Received: from mailserver5.natinst.com ([130.164.80.5]:57482 "EHLO
+	spamkiller05.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759072Ab2J2Nuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 09:50:37 -0400
+Date: Mon, 29 Oct 2012 07:36:09 -0600
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: "arm@kernel.org" <arm@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        John Linn <linnj@xilinx.com>, Nick Bowler <nbowler@elliptictech.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v4 0/5] zynq subarch cleanups
+Message-ID: <20121029133609.GE5190@beefymiracle.amer.corp.natinst.com>
+References: <cover.1351466765.git.josh.cartwright@ni.com>
+ <5c2911d7-f753-4d9f-b8d8-3bf011d58e52@TX2EHSMHS014.ehs.local>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v3 2/6] memcg: root_cgroup cannot reach mem_cgroup_move_parent
-References: <1351251453-6140-1-git-send-email-mhocko@suse.cz> <1351251453-6140-3-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1351251453-6140-3-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5c2911d7-f753-4d9f-b8d8-3bf011d58e52@TX2EHSMHS014.ehs.local>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/29/2012 08:36:01 AM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 10/29/2012 08:36:01 AM,
+	Serialize complete at 10/29/2012 08:36:01 AM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
+ definitions=2012-10-29_01:2012-10-26,2012-10-29,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2012 03:37 PM, Michal Hocko wrote:
-> The root cgroup cannot be destroyed so we never hit it down the
-> mem_cgroup_pre_destroy path and mem_cgroup_force_empty_write shouldn't
-> even try to do anything if called for the root.
-> 
-> This means that mem_cgroup_move_parent doesn't have to bother with the
-> root cgroup and it can assume it can always move charges upwards.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: Tejun Heo <tj@kernel.org>
+On Mon, Oct 29, 2012 at 07:24:16AM +0000, Michal Simek wrote:
+> Hi Josh,
+>
+> > Michal-
+> >
+> > Here is a v5 of the zynq cleanup patchset that addresses your
+> > feedback.  I've intentionally left patches 4 and 5 in the set until
+> > we figure out the appropriate way to get them in tree (feel free to
+> > just apply 1-3)
+>
+> I am ok to pick just several patches from your patchset. But this is
+> no definitely good working style. Not expert for submission process
+> but I think that if there is one broken patch maintainer shouldn't
+> apply it.  Can someone else check this?
 
-I think it would be safer to have this folded in the last patch, to
-avoid a weird intermediate state (specially for force_empty). Being a
-single statement, it doesn't confuse review so much.
+It turns out that with the change to patch 5 to map the uart to a known
+working address (instead of VMALLOC_END - 0x1000), patch 4 isn't needed,
+and as such can be dropped.  (I didn't realize this until this morning
+until I had saw you had applied 1-3,5 to your tree, but not 4).
 
-However, this is also pretty much just a nitpick, do as you prefer.
+So, for what it's worth, you've applied all of the relevant patches for
+this patchset.
 
-Reviewed-by: Glauber Costa <glommer@parallels.com>
-
+  Josh
