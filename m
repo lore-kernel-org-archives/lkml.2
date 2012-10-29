@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761139Ab2J2WWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:22:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47043 "EHLO mail.kernel.org"
+	id S1752104Ab2J2WXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:23:08 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47023 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761092Ab2J2Vgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:33 -0400
+	id S1761071Ab2J2Vga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Holger Kiehl <Holger.Kiehl@dwd.de>, Kees Cook <keescook@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Theodore Tso <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 005/101] VFS: dont do protected {sym,hard}links by default
-Date: Mon, 29 Oct 2012 14:34:18 -0700
-Message-Id: <20121029213240.753499989@linuxfoundation.org>
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 003/101] ALSA: hda - add dock support for Thinkpad T430
+Date: Mon, 29 Oct 2012 14:34:16 -0700
+Message-Id: <20121029213240.534969138@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -29,66 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: =?UTF-8?q?Stef=C3=A1n=20Freyr?= <stefan.freyr@gmail.com>
 
-commit 561ec64ae67ef25cac8d72bb9c4bfc955edfd415 upstream.
+commit 84f98fdf7865fbd35b312eb39ea91e5618c514c7 upstream.
 
-In commit 800179c9b8a1 ("This adds symlink and hardlink restrictions to
-the Linux VFS"), the new link protections were enabled by default, in
-the hope that no actual application would care, despite it being
-technically against legacy UNIX (and documented POSIX) behavior.
+I have a Lenovo ThinkPad T430 and an UltraBase Series 3 docking
+station.
 
-However, it does turn out to break some applications.  It's rare, and
-it's unfortunate, but it's unacceptable to break existing systems, so
-we'll have to default to legacy behavior.
+Without this patch, if I plug my headphones into the jack on the
+computer, everything works fine. The computer speakers mute and the
+audio is played in the headphones. However, if I plug into the docking
+station headphone jack the computer speakers are muted but there is no
+audio in the headphones.
 
-In particular, it has broken the way AFD distributes files, see
+Addresses https://bugs.launchpad.net/bugs/1060372
 
-  http://www.dwd.de/AFD/
-
-along with some legacy scripts.
-
-Distributions can end up setting this at initrd time or in system
-scripts: if you have security problems due to link attacks during your
-early boot sequence, you have bigger problems than some kernel sysctl
-setting. Do:
-
-	echo 1 > /proc/sys/fs/protected_symlinks
-	echo 1 > /proc/sys/fs/protected_hardlinks
-
-to re-enable the link protections.
-
-Alternatively, we may at some point introduce a kernel config option
-that sets these kinds of "more secure but not traditional" behavioural
-options automatically.
-
-Reported-by: Nick Bowler <nbowler@elliptictech.com>
-Reported-by: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -651,8 +651,8 @@ static inline void put_link(struct namei
- 	path_put(link);
- }
- 
--int sysctl_protected_symlinks __read_mostly = 1;
--int sysctl_protected_hardlinks __read_mostly = 1;
-+int sysctl_protected_symlinks __read_mostly = 0;
-+int sysctl_protected_hardlinks __read_mostly = 0;
- 
- /**
-  * may_follow_link - Check symlink following for unsafe situations
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6214,6 +6214,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x21e9, "Thinkpad Edge 15", ALC269_FIXUP_SKU_IGNORE),
+ 	SND_PCI_QUIRK(0x17aa, 0x21f6, "Thinkpad T530", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x21fa, "Thinkpad X230", ALC269_FIXUP_LENOVO_DOCK),
++	SND_PCI_QUIRK(0x17aa, 0x21f3, "Thinkpad T430", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x21fb, "Thinkpad T430s", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x2203, "Thinkpad X230 Tablet", ALC269_FIXUP_LENOVO_DOCK),
+ 	SND_PCI_QUIRK(0x17aa, 0x3bf8, "Quanta FL1", ALC269_FIXUP_PCM_44K),
 
 
