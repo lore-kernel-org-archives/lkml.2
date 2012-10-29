@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759051Ab2J2N36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:29:58 -0400
+	id S1758916Ab2J2Naj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:30:39 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:44308 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758625Ab2J2N2i (ORCPT
+	with ESMTP id S1757314Ab2J2N2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:28:38 -0400
+	Mon, 29 Oct 2012 09:28:31 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [RFC PATCH 8/9] irq_work: Handle queuing without IPI support in dyntick idle mode
-Date: Mon, 29 Oct 2012 14:28:15 +0100
-Message-Id: <1351517296-9173-9-git-send-email-fweisbec@gmail.com>
+Subject: [RFC PATCH 4/9] irq_work: Let the arch tell us about self-IPI support
+Date: Mon, 29 Oct 2012 14:28:11 +0100
+Message-Id: <1351517296-9173-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
 References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
@@ -25,12 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we enqueue a work while in dyntick idle mode and the arch doesn't
-have self-IPI support, we may not find an opportunity to run the work
-before a while.
-
-In this case, exit the idle loop to re-evaluate irq_work_needs_cpu()
-and restart the tick.
+This prepares us to make printk working on nohz CPUs
+using irq work.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -40,31 +36,157 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/irq_work.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ arch/alpha/include/asm/irq_work.h   |    5 ++++-
+ arch/alpha/kernel/time.c            |    2 +-
+ arch/powerpc/include/asm/irq_work.h |    4 +++-
+ arch/powerpc/kernel/time.c          |    2 +-
+ arch/sparc/include/asm/irq_work.h   |    4 +++-
+ arch/sparc/kernel/pcr.c             |    2 +-
+ arch/x86/include/asm/irq_work.h     |    9 +++++----
+ arch/x86/kernel/irq_work.c          |    2 +-
+ include/asm-generic/irq_work.h      |   14 ++++++++++++++
+ 9 files changed, 33 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index ce72b20..b500271 100644
---- a/kernel/irq_work.c
-+++ b/kernel/irq_work.c
-@@ -76,6 +76,17 @@ static void __irq_work_queue(struct irq_work *work)
- 		 */
- 		if (!arch_irq_work_has_ipi() || tick_nohz_tick_stopped())
- 			arch_irq_work_raise();
+diff --git a/arch/alpha/include/asm/irq_work.h b/arch/alpha/include/asm/irq_work.h
+index 814ff3d..3d32132 100644
+--- a/arch/alpha/include/asm/irq_work.h
++++ b/arch/alpha/include/asm/irq_work.h
+@@ -1,6 +1,9 @@
+ #ifndef _ALPHA_IRQ_WORK_H
+ #define _ALPHA_IRQ_WORK_H
+ 
+-extern void arch_irq_work_raise(void);
++extern void __arch_irq_work_raise(void);
++#define arch_irq_work_raise __arch_irq_work_raise
 +
-+		/*
-+		 * If we rely on the timer tick or some obscure way to run the work
-+		 * while the CPU is in dyntick idle mode, we may not have an opportunity
-+		 * to do so before a while. Let's just exit the idle loop and hope we
-+		 * haven't yet reached the last need_resched() check before the CPU goes
-+		 * to low power mode.
-+		 */
-+		if (!arch_irq_work_has_ipi() && tick_nohz_tick_stopped()
-+		    && is_idle_task(current))
-+			set_need_resched();
- 	}
- out:
- 	preempt_enable();
++#include <asm-generic/irq_work.h>
+ 
+ #endif
+diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
+index e336694..91c5eec 100644
+--- a/arch/alpha/kernel/time.c
++++ b/arch/alpha/kernel/time.c
+@@ -90,7 +90,7 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+ #define test_irq_work_pending()      __get_cpu_var(irq_work_pending)
+ #define clear_irq_work_pending()     __get_cpu_var(irq_work_pending) = 0
+ 
+-void arch_irq_work_raise(void)
++void __arch_irq_work_raise(void)
+ {
+ 	set_irq_work_pending_flag();
+ }
+diff --git a/arch/powerpc/include/asm/irq_work.h b/arch/powerpc/include/asm/irq_work.h
+index 8b9927f..8aa36aa 100644
+--- a/arch/powerpc/include/asm/irq_work.h
++++ b/arch/powerpc/include/asm/irq_work.h
+@@ -1,6 +1,8 @@
+ #ifndef _ASM_POWERPC_IRQ_WORK_H
+ #define _ASM_POWERPC_IRQ_WORK_H
+ 
+-extern void arch_irq_work_raise(void);
++extern void __arch_irq_work_raise(void);
++#define arch_irq_work_raise __arch_irq_work_raise
+ 
++#include <asm-generic/irq_work.h>
+ #endif
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index c9986fd..31565ac 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -466,7 +466,7 @@ DEFINE_PER_CPU(u8, irq_work_pending);
+ 
+ #endif /* 32 vs 64 bit */
+ 
+-void arch_irq_work_raise(void)
++void __arch_irq_work_raise(void)
+ {
+ 	preempt_disable();
+ 	set_irq_work_pending_flag();
+diff --git a/arch/sparc/include/asm/irq_work.h b/arch/sparc/include/asm/irq_work.h
+index 1d062a6..383772d 100644
+--- a/arch/sparc/include/asm/irq_work.h
++++ b/arch/sparc/include/asm/irq_work.h
+@@ -1,6 +1,8 @@
+ #ifndef ___ASM_SPARC_IRQ_H
+ #define ___ASM_SPARC_IRQ_H
+ 
+-extern void arch_irq_work_raise(void);
++extern void __arch_irq_work_raise(void);
++#define arch_irq_work_raise __arch_irq_work_raise
+ 
++#include <asm-generic/irq_work.h>
+ #endif
+diff --git a/arch/sparc/kernel/pcr.c b/arch/sparc/kernel/pcr.c
+index 269af58..d1e1ecf 100644
+--- a/arch/sparc/kernel/pcr.c
++++ b/arch/sparc/kernel/pcr.c
+@@ -43,7 +43,7 @@ void __irq_entry deferred_pcr_work_irq(int irq, struct pt_regs *regs)
+ 	set_irq_regs(old_regs);
+ }
+ 
+-void arch_irq_work_raise(void)
++void __arch_irq_work_raise(void)
+ {
+ 	set_softint(1 << PIL_DEFERRED_PCR_WORK);
+ }
+diff --git a/arch/x86/include/asm/irq_work.h b/arch/x86/include/asm/irq_work.h
+index 38eed96..dad8266 100644
+--- a/arch/x86/include/asm/irq_work.h
++++ b/arch/x86/include/asm/irq_work.h
+@@ -1,10 +1,11 @@
+ #ifndef _ASM_X86_IRQ_WORK_H
+ #define _ASM_X86_IRQ_WORK_H
+ 
+-#ifndef CONFIG_X86_LOCAL_APIC
+-#include <asm-generic/irq_work.h>
+-# else
+-extern void arch_irq_work_raise(void);
++#ifdef CONFIG_X86_LOCAL_APIC
++extern void __arch_irq_work_raise(void);
++#define arch_irq_work_raise __arch_irq_work_raise
+ #endif
+ 
++#include <asm-generic/irq_work.h>
++
+ #endif
+diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c
+index 95f5d4e..7389d5e 100644
+--- a/arch/x86/kernel/irq_work.c
++++ b/arch/x86/kernel/irq_work.c
+@@ -19,7 +19,7 @@ void smp_irq_work_interrupt(struct pt_regs *regs)
+ }
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+-void arch_irq_work_raise(void)
++void __arch_irq_work_raise(void)
+ {
+ 	if (!cpu_has_apic)
+ 		return;
+diff --git a/include/asm-generic/irq_work.h b/include/asm-generic/irq_work.h
+index a2d4108..e3e4f02 100644
+--- a/include/asm-generic/irq_work.h
++++ b/include/asm-generic/irq_work.h
+@@ -4,6 +4,20 @@
+ /*
+  * Lame architectures will get the timer tick callback
+  */
++#ifndef arch_irq_work_raise
+ static inline void arch_irq_work_raise(void) { }
++#endif
++
++/*
++ * Unless told otherwise, consider the arch doesn't implement irq work
++ * using self IPIs but through another way like defaulting to the hook
++ * on the sched tick.
++ */
++#ifndef arch_irq_work_has_ipi
++static inline bool arch_irq_work_has_ipi(void)
++{
++	return false;
++}
++#endif
+ 
+ #endif
 -- 
 1.7.5.4
 
