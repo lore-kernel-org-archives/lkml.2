@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760464Ab2J2V67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:58:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48029 "EHLO mail.kernel.org"
+	id S1761480Ab2J2V7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:59:22 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47990 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761383Ab2J2ViF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:05 -0400
+	id S1761378Ab2J2ViD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: =?UTF-8?q?=5B=20084/101=5D=20qmi=5Fwwan/cdc=5Fether=3A=20move=20Novatel=20551=20and=20E362=20to=20qmi=5Fwwan?=
-Date: Mon, 29 Oct 2012 14:35:37 -0700
-Message-Id: <20121029213249.649926820@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 089/101] iwlwifi: fix 6000 series channel switch command
+Date: Mon, 29 Oct 2012 14:35:42 -0700
+Message-Id: <20121029213250.210698848@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,106 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f8295ec22cb0f1ee6849b862addbfa3ea9320755 upstream.
+commit 8f7b8db6e0557c8437adf9371e020cd89a7e85dc upstream.
 
-These devices provide QMI and ethernet functionality via a standard CDC
-ethernet descriptor.  But when driven by cdc_ether, the QMI
-functionality is unavailable because only cdc_ether can claim the USB
-interface.  Thus blacklist the devices in cdc_ether and add their IDs to
-qmi_wwan, which enables both QMI and ethernet simultaneously.
+The channel switch command for 6000 series devices
+is larger than the maximum inline command size of
+320 bytes. The command is therefore refused with a
+warning. Fix this by allocating the command and
+using the NOCOPY mechanism.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/cdc_ether.c |   41 ++++++++++++++++++++++++++---------------
- drivers/net/usb/qmi_wwan.c  |   14 ++++++++++++++
- 2 files changed, 40 insertions(+), 15 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/devices.c |   39 +++++++++++++++++------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
 
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -592,6 +592,32 @@ static const struct usb_device_id	produc
- 	.driver_info		= 0,
- },
+--- a/drivers/net/wireless/iwlwifi/dvm/devices.c
++++ b/drivers/net/wireless/iwlwifi/dvm/devices.c
+@@ -518,7 +518,7 @@ static int iwl6000_hw_channel_switch(str
+ 	 * See iwlagn_mac_channel_switch.
+ 	 */
+ 	struct iwl_rxon_context *ctx = &priv->contexts[IWL_RXON_CTX_BSS];
+-	struct iwl6000_channel_switch_cmd cmd;
++	struct iwl6000_channel_switch_cmd *cmd;
+ 	u32 switch_time_in_usec, ucode_switch_time;
+ 	u16 ch;
+ 	u32 tsf_low;
+@@ -527,18 +527,25 @@ static int iwl6000_hw_channel_switch(str
+ 	struct ieee80211_vif *vif = ctx->vif;
+ 	struct iwl_host_cmd hcmd = {
+ 		.id = REPLY_CHANNEL_SWITCH,
+-		.len = { sizeof(cmd), },
++		.len = { sizeof(*cmd), },
+ 		.flags = CMD_SYNC,
+-		.data = { &cmd, },
++		.dataflags[0] = IWL_HCMD_DFL_NOCOPY,
+ 	};
++	int err;
  
-+/* Novatel USB551L and MC551 - handled by qmi_wwan */
-+{
-+	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
-+		 | USB_DEVICE_ID_MATCH_PRODUCT
-+		 | USB_DEVICE_ID_MATCH_INT_INFO,
-+	.idVendor               = NOVATEL_VENDOR_ID,
-+	.idProduct		= 0xB001,
-+	.bInterfaceClass	= USB_CLASS_COMM,
-+	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
-+	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
-+	.driver_info = 0,
-+},
+-	cmd.band = priv->band == IEEE80211_BAND_2GHZ;
++	cmd = kzalloc(sizeof(*cmd), GFP_KERNEL);
++	if (!cmd)
++		return -ENOMEM;
 +
-+/* Novatel E362 - handled by qmi_wwan */
-+{
-+	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
-+		 | USB_DEVICE_ID_MATCH_PRODUCT
-+		 | USB_DEVICE_ID_MATCH_INT_INFO,
-+	.idVendor               = NOVATEL_VENDOR_ID,
-+	.idProduct		= 0x9010,
-+	.bInterfaceClass	= USB_CLASS_COMM,
-+	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
-+	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
-+	.driver_info = 0,
-+},
++	hcmd.data[0] = cmd;
 +
- /*
-  * WHITELIST!!!
-  *
-@@ -604,21 +630,6 @@ static const struct usb_device_id	produc
-  * because of bugs/quirks in a given product (like Zaurus, above).
-  */
- {
--	/* Novatel USB551L */
--	/* This match must come *before* the generic CDC-ETHER match so that
--	 * we get FLAG_WWAN set on the device, since it's descriptors are
--	 * generic CDC-ETHER.
--	 */
--	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
--		 | USB_DEVICE_ID_MATCH_PRODUCT
--		 | USB_DEVICE_ID_MATCH_INT_INFO,
--	.idVendor               = NOVATEL_VENDOR_ID,
--	.idProduct		= 0xB001,
--	.bInterfaceClass	= USB_CLASS_COMM,
--	.bInterfaceSubClass	= USB_CDC_SUBCLASS_ETHERNET,
--	.bInterfaceProtocol	= USB_CDC_PROTO_NONE,
--	.driver_info = (unsigned long)&wwan_info,
--}, {
- 	/* ZTE (Vodafone) K3805-Z */
- 	.match_flags    =   USB_DEVICE_ID_MATCH_VENDOR
- 		 | USB_DEVICE_ID_MATCH_PRODUCT
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -364,6 +364,20 @@ static const struct usb_device_id produc
- 		USB_VENDOR_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, USB_CLASS_VENDOR_SPEC, 1, 57),
- 		.driver_info        = (unsigned long)&qmi_wwan_info,
- 	},
-+	{	/* Novatel USB551L and MC551 */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x1410, 0xb001,
-+		                              USB_CLASS_COMM,
-+		                              USB_CDC_SUBCLASS_ETHERNET,
-+		                              USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
-+	{	/* Novatel E362 */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x1410, 0x9010,
-+		                              USB_CLASS_COMM,
-+		                              USB_CDC_SUBCLASS_ETHERNET,
-+		                              USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
++	cmd->band = priv->band == IEEE80211_BAND_2GHZ;
+ 	ch = ch_switch->channel->hw_value;
+ 	IWL_DEBUG_11H(priv, "channel switch from %u to %u\n",
+ 		      ctx->active.channel, ch);
+-	cmd.channel = cpu_to_le16(ch);
+-	cmd.rxon_flags = ctx->staging.flags;
+-	cmd.rxon_filter_flags = ctx->staging.filter_flags;
++	cmd->channel = cpu_to_le16(ch);
++	cmd->rxon_flags = ctx->staging.flags;
++	cmd->rxon_filter_flags = ctx->staging.filter_flags;
+ 	switch_count = ch_switch->count;
+ 	tsf_low = ch_switch->timestamp & 0x0ffffffff;
+ 	/*
+@@ -554,23 +561,25 @@ static int iwl6000_hw_channel_switch(str
+ 			switch_count = 0;
+ 	}
+ 	if (switch_count <= 1)
+-		cmd.switch_time = cpu_to_le32(priv->ucode_beacon_time);
++		cmd->switch_time = cpu_to_le32(priv->ucode_beacon_time);
+ 	else {
+ 		switch_time_in_usec =
+ 			vif->bss_conf.beacon_int * switch_count * TIME_UNIT;
+ 		ucode_switch_time = iwl_usecs_to_beacons(priv,
+ 							 switch_time_in_usec,
+ 							 beacon_interval);
+-		cmd.switch_time = iwl_add_beacon_time(priv,
+-						      priv->ucode_beacon_time,
+-						      ucode_switch_time,
+-						      beacon_interval);
++		cmd->switch_time = iwl_add_beacon_time(priv,
++						       priv->ucode_beacon_time,
++						       ucode_switch_time,
++						       beacon_interval);
+ 	}
+ 	IWL_DEBUG_11H(priv, "uCode time for the switch is 0x%x\n",
+-		      cmd.switch_time);
+-	cmd.expect_beacon = ch_switch->channel->flags & IEEE80211_CHAN_RADAR;
++		      cmd->switch_time);
++	cmd->expect_beacon = ch_switch->channel->flags & IEEE80211_CHAN_RADAR;
  
- 	/* 2. Combined interface devices matching on class+protocol */
- 	{	/* Huawei E367 and possibly others in "Windows mode" */
+-	return iwl_dvm_send_cmd(priv, &hcmd);
++	err = iwl_dvm_send_cmd(priv, &hcmd);
++	kfree(cmd);
++	return err;
+ }
+ 
+ struct iwl_lib_ops iwl6000_lib = {
 
 
