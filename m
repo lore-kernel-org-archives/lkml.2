@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760780Ab2J2UL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:11:27 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42822 "EHLO mail.kernel.org"
+	id S1760754Ab2J2ULZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:11:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42834 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760707Ab2J2UJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:13 -0400
+	id S1760712Ab2J2UJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Stanislaw Gruszka <sgruszka@redhat.com>,
+        Arend Van Spriel <arend@broadcom.com>,
+        Piotr Haber <phaber@broadcom.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 28/34] mac80211: check if key has TKIP type before updating IV
-Date: Mon, 29 Oct 2012 13:07:59 -0700
-Message-Id: <20121029200423.685764605@linuxfoundation.org>
+Subject: [ 29/34] bcma: fix unregistration of cores
+Date: Mon, 29 Oct 2012 13:08:00 -0700
+Message-Id: <20121029200423.782080965@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -26,47 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Piotr Haber <phaber@broadcom.com>
 
-commit 4045f72bcf3c293c7c5932ef001742d8bb5ded76 upstream.
+commit 1fffa905adffbf0d3767fc978ef09afb830275eb upstream.
 
-This patch fix corruption which can manifest itself by following crash
-when switching on rfkill switch with rt2x00 driver:
-https://bugzilla.redhat.com/attachment.cgi?id=615362
+When cores are unregistered, entries
+need to be removed from cores list in a safe manner.
 
-Pointer key->u.ccmp.tfm of group key get corrupted in:
-
-ieee80211_rx_h_michael_mic_verify():
-
-        /* update IV in key information to be able to detect replays */
-        rx->key->u.tkip.rx[rx->security_idx].iv32 = rx->tkip_iv32;
-        rx->key->u.tkip.rx[rx->security_idx].iv16 = rx->tkip_iv16;
-
-because rt2x00 always set RX_FLAG_MMIC_STRIPPED, even if key is not TKIP.
-
-We already check type of the key in different path in
-ieee80211_rx_h_michael_mic_verify() function, so adding additional
-check here is reasonable.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reviewed-by: Arend Van Spriel <arend@broadcom.com>
+Signed-off-by: Piotr Haber <phaber@broadcom.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/wpa.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/bcma/main.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/wpa.c
-+++ b/net/mac80211/wpa.c
-@@ -109,7 +109,8 @@ ieee80211_rx_h_michael_mic_verify(struct
- 		if (status->flag & RX_FLAG_MMIC_ERROR)
- 			goto mic_fail;
+--- a/drivers/bcma/main.c
++++ b/drivers/bcma/main.c
+@@ -110,9 +110,10 @@ static int bcma_register_cores(struct bc
  
--		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key)
-+		if (!(status->flag & RX_FLAG_IV_STRIPPED) && rx->key &&
-+		    rx->key->conf.cipher == WLAN_CIPHER_SUITE_TKIP)
- 			goto update_iv;
+ static void bcma_unregister_cores(struct bcma_bus *bus)
+ {
+-	struct bcma_device *core;
++	struct bcma_device *core, *tmp;
  
- 		return RX_CONTINUE;
+-	list_for_each_entry(core, &bus->cores, list) {
++	list_for_each_entry_safe(core, tmp, &bus->cores, list) {
++		list_del(&core->list);
+ 		if (core->dev_registered)
+ 			device_unregister(&core->dev);
+ 	}
 
 
