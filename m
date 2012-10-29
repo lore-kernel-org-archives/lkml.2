@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab2J2B3f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 21:29:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42903 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2J2B3d (ORCPT
+	id S1753686Ab2J2BmX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 21:42:23 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47985 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2J2BmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 21:29:33 -0400
-Date: Sun, 28 Oct 2012 18:29:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
-        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
-        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
-        eric.dumazet@gmail.com, mathieu.desnoyers@efficios.com,
-        axboe@kernel.dk, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 08/16] block,elevator: use new hashtable implementation
-Message-ID: <20121029012927.GA5171@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <1351450948-15618-8-git-send-email-levinsasha928@gmail.com>
+	Sun, 28 Oct 2012 21:42:22 -0400
+X-AuditID: 9c930197-b7c4aae000004160-04-508ddefb3b67
+Date: Mon, 29 Oct 2012 10:48:05 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 1/5] mm, highmem: use PKMAP_NR() to calculate an index of
+ pkmap
+Message-ID: <20121029014805.GF15767@bbox>
+References: <Yes>
+ <1351451576-2611-1-git-send-email-js1304@gmail.com>
+ <1351451576-2611-2-git-send-email-js1304@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351450948-15618-8-git-send-email-levinsasha928@gmail.com>
+In-Reply-To: <1351451576-2611-2-git-send-email-js1304@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 03:02:20PM -0400, Sasha Levin wrote:
-> Switch elevator to use the new hashtable implementation. This reduces the amount of
-> generic unrelated code in the elevator.
+On Mon, Oct 29, 2012 at 04:12:52AM +0900, Joonsoo Kim wrote:
+> To calculate an index of pkmap, using PKMAP_NR() is more understandable
+> and maintainable, So change it.
 > 
-> This also removes the dymanic allocation of the hash table. The size of the table is
-> constant so there's no point in paying the price of an extra dereference when accessing
-> it.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-
-Reviewed-by: Tejun Heo <tj@kernel.orG>
-
-But please reformat commit message to fit inside 80col (preferably 74
-or something like that).
-
-Thanks.
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
 -- 
-tejun
+Kind regards,
+Minchan Kim
