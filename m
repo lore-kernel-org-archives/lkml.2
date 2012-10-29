@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271Ab2J2Vrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:47:43 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:46668 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933006Ab2J2Vrk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:47:40 -0400
-X-SENDER-IP: [85.230.29.114]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhidAHj4jlBV5h1yPGdsb2JhbABEilK3KAICgQgZAQEBATg0gh4BAQUnExwTAQ8QCAMYLhQNGAoaE4d0AxOyHQ2JVBSKemc2gSaCJ4F5YQOUH4FUhXmDT4Fqh3MO
-X-IronPort-AV: E=Sophos;i="4.80,675,1344204000"; 
-   d="scan'208";a="219478834"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 29 Oct 2012 22:52:19 +0100
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/11] HID: hid-multitouch: get maxcontacts also from
- logical_max value
-Message-ID: <20121029215219.GA15413@polaris.bitmath.org>
-References: <1351241067-9521-1-git-send-email-benjamin.tissoires@gmail.com>
- <1351241067-9521-6-git-send-email-benjamin.tissoires@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1351241067-9521-6-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933170Ab2J2VsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:48:03 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48797 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933040Ab2J2Vlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ivan Shugov <ivan.shugov@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [ 38/54] ARM: at91: at91sam9g10: fix SOC type detection
+Date: Mon, 29 Oct 2012 14:40:39 -0700
+Message-Id: <20121029213806.981418075@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
+References: <20121029213802.697479610@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 10:44:21AM +0200, Benjamin Tissoires wrote:
-> Win8 devices are required to present the feature "Maximum Contact Number".
-> Fortunately all win7 devices I've seen presents this feature.
-> If the current value is 0, then, the driver can get the actual supported
-> contact count by refering to the logical_max.
-> This win8 specification ensures that logical_max may not be above 250.
-> This also allows us to detect when devices like irtouch or stantum reports
-> an obviously wrong value of 255.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/hid-multitouch.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 95562d8..41f2981 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -121,6 +121,7 @@ struct mt_device {
->  #define MT_CLS_GENERALTOUCH_PWT_TENFINGERS	0x0109
->  
->  #define MT_DEFAULT_MAXCONTACT	10
-> +#define MT_MAX_MAXCONTACT	250
->  
->  #define MT_USB_DEVICE(v, p)	HID_DEVICE(BUS_USB, HID_GROUP_MULTITOUCH, v, p)
->  #define MT_BT_DEVICE(v, p)	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_MULTITOUCH, v, p)
-> @@ -283,6 +284,9 @@ static void mt_feature_mapping(struct hid_device *hdev,
->  	case HID_DG_CONTACTMAX:
->  		td->maxcontact_report_id = field->report->id;
->  		td->maxcontacts = field->value[0];
-> +		if (!td->maxcontacts &&
-> +		    field->logical_maximum <= MT_MAX_MAXCONTACT)
-> +			td->maxcontacts = field->logical_maximum;
->  		if (td->mtclass.maxcontacts)
->  			/* check if the maxcontacts is given by the class */
->  			td->maxcontacts = td->mtclass.maxcontacts;
-> -- 
-> 1.7.11.7
-> 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
+------------------
+
+From: Ivan Shugov <ivan.shugov@gmail.com>
+
+commit 3d9a0183dd3423353e9e363bcc261c1220d05f9f upstream.
+
+Newer at91sam9g10 SoC revision can't be detected, so the kernel can't boot with
+this kind of kernel panic:
+"AT91: Impossible to detect the SOC type"
+
+CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
+CPU: VIVT data cache, VIVT instruction cache
+Machine: Atmel AT91SAM9G10-EK
+Ignoring tag cmdline (using the default kernel command line)
+bootconsole [earlycon0] enabled
+Memory policy: ECC disabled, Data cache writeback
+Kernel panic - not syncing: AT91: Impossible to detect the SOC type
+[<c00133d4>] (unwind_backtrace+0x0/0xe0) from [<c02366dc>] (panic+0x78/0x1cc)
+[<c02366dc>] (panic+0x78/0x1cc) from [<c02fa35c>] (at91_map_io+0x90/0xc8)
+[<c02fa35c>] (at91_map_io+0x90/0xc8) from [<c02f9860>] (paging_init+0x564/0x6d0)
+[<c02f9860>] (paging_init+0x564/0x6d0) from [<c02f7914>] (setup_arch+0x464/0x704)
+[<c02f7914>] (setup_arch+0x464/0x704) from [<c02f44f8>] (start_kernel+0x6c/0x2d4)
+[<c02f44f8>] (start_kernel+0x6c/0x2d4) from [<20008040>] (0x20008040)
+
+The reason for this is that the Debug Unit Chip ID Register has changed between
+Engineering Sample and definitive revision of the SoC. Changing the check of
+cidr to socid will address the problem. We do not integrate this check to the
+list just above because we also have to make sure that the extended id is
+disregarded.
+
+Signed-off-by: Ivan Shugov <ivan.shugov@gmail.com>
+[nicolas.ferre@atmel.com: change commit message]
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-at91/setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -146,7 +146,7 @@ static void __init soc_detect(u32 dbgu_b
+ 	}
+ 
+ 	/* at91sam9g10 */
+-	if ((cidr & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
++	if ((socid & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
+ 		at91_soc_initdata.type = AT91_SOC_SAM9G10;
+ 		at91_boot_soc = at91sam9261_soc;
+ 	}
+
+
