@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab2J2I3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 04:29:53 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51164 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757963Ab2J2I3v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 04:29:51 -0400
-Date: Mon, 29 Oct 2012 09:29:40 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org,
-        lkml <linux-kernel@vger.kernel.org>, arm@kernel.org
-Subject: Re: [PULL REQ] IXP4xx changes for Linux 3.7
-Message-ID: <20121029082940.GC2527@netboy.at.omicron.at>
-References: <m3bog6m5iz.fsf@intrepid.localdomain>
- <201210142002.55841.arnd@arndb.de>
- <m3a9vkahci.fsf@intrepid.localdomain>
+	id S1758073Ab2J2IeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 04:34:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46320 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756401Ab2J2IeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 04:34:18 -0400
+Date: Mon, 29 Oct 2012 09:34:13 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Xianhan Yu <aroundight77@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yxhma <yxhma@163.com>
+Subject: Re: [PATCH 1/1] hid:Fix maxcontacts problem on GeneralTouch
+ multi-touchscreen.
+In-Reply-To: <1351523077-2177-1-git-send-email-aroundight77@gmail.com>
+Message-ID: <alpine.LNX.2.00.1210290931580.19184@pobox.suse.cz>
+References: <1351523077-2177-1-git-send-email-aroundight77@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m3a9vkahci.fsf@intrepid.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 18, 2012 at 12:01:17AM +0200, Krzysztof Halasa wrote:
-> 
-> Don't get me wrong. If I had time for this it could be different.
-> Unfortunately IXP4xx is a legacy arch, and for me it's simply a hobby at
-> this point. Given the raised barriers to participate, probably aimed at
-> paid maintainers, I have to quit doing this.
-> 
-> BTW since Imre has probably even much less time, it would be a good time
-> to find someone to maintain IXP4xx code. I will be publishing (from time
-> to time) my tree (I'm using the hw myself), so even simple
-> cherry-picking would probably make some sense.
+On Mon, 29 Oct 2012, Xianhan Yu wrote:
 
-So if no one else wants to do this, then I am willing to look after
-the IXP code. I think that I do have the time for it.
+> Fix maxcontacts problem for PWT GeneralTouch multi-touchscreen,modify 
+> driver for all GeneralTouch PWT touchscreen.
 
-Thanks,
-Richard
+Could you please provide some more verbose changelog, like what is the 
+problem, why the original code was wrong and why the patch fixes the 
+problem?
+
+Thanks.
+
+> 
+> Signed-off-by: Xianhan Yu <aroundight77@gmail.com>
+> ---
+>  drivers/hid/hid-multitouch.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 3eb02b9..7afeb77 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -210,8 +210,7 @@ static struct mt_class mt_classes[] = {
+>  	},
+>  	{ .name	= MT_CLS_GENERALTOUCH_PWT_TENFINGERS,
+>  		.quirks	= MT_QUIRK_NOT_SEEN_MEANS_UP |
+> -			MT_QUIRK_SLOT_IS_CONTACTNUMBER,
+> -		.maxcontacts = 10
+> +			MT_QUIRK_SLOT_IS_CONTACTNUMBER
+>  	},
+>  
+>  	{ .name = MT_CLS_FLATFROG,
+> -- 
+> 1.7.9.5
+> 
+
+-- 
+Jiri Kosina
+SUSE Labs
