@@ -1,65 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab2J2UlQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:41:16 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:37489 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760634Ab2J2UlO convert rfc822-to-8bit (ORCPT
+	id S1760467Ab2J2UjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:39:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9739 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758282Ab2J2Uiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:41:14 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Mike Waychison <mikew@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "Matthew Garrett (mjg@redhat.com)" <mjg@redhat.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [PATCH v3 7/7] Add a format check for an existing variable name
- at erasing time
-Thread-Topic: [PATCH v3 7/7] Add a format check for an existing variable
- name at erasing time
-Thread-Index: Ac2zwvFR+xYuXJbURSmiNIlI2zWcyQCcfmgAAAfYtmA=
-Date: Mon, 29 Oct 2012 20:40:59 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D4138995EA@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41388F059@USINDEM103.corp.hds.com>
- <CAGTjWtAfaXgx_v46zf_fJ7KhBUTgciU7yedX6w2niER-JQBzTA@mail.gmail.com>
-In-Reply-To: <CAGTjWtAfaXgx_v46zf_fJ7KhBUTgciU7yedX6w2niER-JQBzTA@mail.gmail.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-29_03:2012-10-29,2012-10-29,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1210290243
+	Mon, 29 Oct 2012 16:38:55 -0400
+X-Authority-Analysis: v=2.0 cv=KcBQQHkD c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=NwVulMYDqiUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=D-9iOUBoPy4A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=9AzMRrQhAAAA:8 a=NufY4J3AAAAA:8 a=KKAkSRfTAAAA:8 a=JfrnYn6hAAAA:8 a=ftUzEednAAAA:8 a=sozttTNsAAAA:8 a=EUspDBNiAAAA:8 a=VnNF1IyMAAAA:8 a=fh4mg5NFAAAA:8 a=t6nRzRaj4nB9lmydYAEA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=SxxB86fLhQ4A:10 a=re9sYKne76oA:10 a=WwgC8nHKvroA:10 a=3Rfx1nUSh_UA:10 a=QwxQZocgbLcA:10 a=x2szoZtqnggA:10 a=IG2fH9E8heMA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121029203850.897192220@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 29 Oct 2012 16:27:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: [PATCH 29/32] sched: Update nohz rq clock before searching busiest group on load
+ balancing
+References: <20121029202711.062749374@goodmis.org>
+Content-Disposition: inline; filename=0029-sched-Update-nohz-rq-clock-before-searching-busiest-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +                                 utf16_strlen(efi_name))) {
-> > +                       /*
-> > +                        * Check if an old format,
-> > +                        * which doesn't support holding
-> > +                        * multiple logs, remains.
-> > +                        */
-> > +                       if (sscanf(name, "dump-type%u-%u-%lu",
-> > +                                  &type_old, &part_old, &time_old) !=
-> > + 3)
-> 
-> This doesn't look right.  This should probably mirror the sprintf() at the top of the function using a new string, convert it to 16-bit
-> Unicodeand then compare it like we do for the 4-variable version above (please ignore the fact that this driver incorrectly calls these
-> strings utf16 everywhere -- that needs to be fixed).
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-I will fix it as well.
+While load balancing an rq target, we look for the busiest group.
+This operation may require an uptodate rq clock if we end up calling
+scale_rt_power(). To this end, update it manually if the target is
+running tickless.
 
-Seiji
+DOUBT: don't we actually also need this in vanilla kernel, in case
+this_cpu is in dyntick-idle mode?
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/fair.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 89e816e..b1b9a20 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4252,6 +4252,19 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 
+ 	schedstat_inc(sd, lb_count[idle]);
+ 
++	/*
++	 * find_busiest_group() may need an uptodate cpu clock
++	 * for find_busiest_group() (see scale_rt_power()). If
++	 * the CPU is nohz, it's clock may be stale.
++	 */
++	if (cpuset_cpu_adaptive_nohz(this_cpu)) {
++		local_irq_save(flags);
++		raw_spin_lock(&this_rq->lock);
++		update_rq_clock(this_rq);
++		raw_spin_unlock(&this_rq->lock);
++		local_irq_restore(flags);
++	}
++
+ redo:
+ 	group = find_busiest_group(&env, balance);
+ 
+-- 
+1.7.10.4
+
+
