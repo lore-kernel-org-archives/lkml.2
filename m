@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959Ab2J2VKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:10:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48713 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab2J2VKS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:10:18 -0400
-Date: Mon, 29 Oct 2012 22:10:15 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Philippe Reynes <tremyfr@yahoo.fr>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        julien.boibessot@armadeus.com, eric.jarrige@armadeus.org
-Subject: Re: [PATCH] Add device tree file for the armadeus apf27
-Message-ID: <20121029211015.GX1641@pengutronix.de>
-References: <1351268980-25347-1-git-send-email-tremyfr@yahoo.fr>
+	id S1760926Ab2J2VLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:11:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:46354 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758546Ab2J2VLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:11:44 -0400
+Date: Mon, 29 Oct 2012 14:11:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Richard Retanubun <richardretanubun@ruggedcom.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Tang Nguyen <TangNguyen@ruggedcom.com>,
+        "m.grzeschik@pengutronix.de" <m.grzeschik@pengutronix.de>,
+        Arvid Brodin <Arvid.Brodin@xdin.com>,
+        linux-usb mailing list <linux-usb@vger.kernel.org>,
+        "bigeasy@linutronix.de" <bigeasy@linutronix.de>
+Subject: Re: kmemleak report on isp1763 and sierra MC8705
+Message-ID: <20121029211142.GA31351@kroah.com>
+References: <508B0743.9040806@ruggedcom.com>
+ <20121026233509.GA26646@kroah.com>
+ <508EEB48.9070508@ruggedcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1351268980-25347-1-git-send-email-tremyfr@yahoo.fr>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 22:04:49 up 128 days, 12:16, 39 users,  load average: 0.32, 0.46,
- 0.42
+In-Reply-To: <508EEB48.9070508@ruggedcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 26, 2012 at 06:29:40PM +0200, Philippe Reynes wrote:
-> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
-> Signed-off-by: Eric Jarrige <eric.jarrige@armadeus.org>
-> ---
->  arch/arm/boot/dts/imx27-apf27.dts |   96 +++++++++++++++++++++++++++++++++++++
->  1 files changed, 96 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/boot/dts/imx27-apf27.dts
+On Mon, Oct 29, 2012 at 04:47:04PM -0400, Richard Retanubun wrote:
+> On 26/10/12 07:35 PM, Greg KH wrote:
+> >On Fri, Oct 26, 2012 at 05:57:23PM -0400, Richard Retanubun wrote:
+> >>Hi Guys,
+> >>
+> >>I am debugging a reported kmemleak involving a sierra wireless MC8705 connected
+> >>through isp1763 on powerpc linux-3.0.22
+> >
+> >Does this also happen on 3.6.3?
+> >
+> >thanks,
+> >
+> >greg k-h
 > 
-> diff --git a/arch/arm/boot/dts/imx27-apf27.dts b/arch/arm/boot/dts/imx27-apf27.dts
-> new file mode 100644
-> index 0000000..b7d11e0
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/imx27-apf27.dts
-> @@ -0,0 +1,96 @@
-> +/*
-> + * Copyright 2012 Philippe Reynes <tremyfr@yahoo.fr>
-> + * Copyright 2012 Armadeus Systems <support@armadeus.com>
-> + *
-> + * Based on code which is: Copyright 2012 Sascha Hauer, Pengutronix
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +/dts-v1/;
-> +/include/ "imx27.dtsi"
-> +
-> +/ {
-> +	model = "Armadeus apf27";
-> +	compatible = "armadeus,imx27-apf27", "fsl,imx27";
-> +
-> +	memory {
-> +		reg = <0xa0000000 0x04000000>;
-> +	};
-> +
-> +	clocks {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		osc26m {
-> +			compatible = "fsl,imx-osc26m", "fixed-clock";
-> +			clock-frequency = <33554432>;
+> Hi Greg,
+> 
+> Unfortunately, it is not trivial for us to update the kernel on this platform,
+> Is there a specific experiment/patch I should look at for 3.0.22?
 
-Is this really correct? The Datasheet specificies 26MHz, some boards
-have 27Mhz, but 33?
+I have no idea, given that 3.0.22 is based on 18 month old kernel, tens
+of thousands of patches ago.
 
-> +		};
-> +	};
-> +
-> +	soc {
-> +		aipi@10000000 {
-> +			wdog@10002000 {
-> +				status = "okay";
-> +			};
+You are on your own here, sorry.
 
-This node is not necessary. The watchdog is enabled already in the dtsi
-file.
+Best of luck,
 
-Sascha
-
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+greg k-h
