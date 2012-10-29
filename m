@@ -1,54 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab2J2Qb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:31:58 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63910 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759542Ab2J2Qb5 (ORCPT
+	id S1760049Ab2J2QcH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:32:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52623 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760005Ab2J2QcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:31:57 -0400
+	Mon, 29 Oct 2012 12:32:01 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, peterz@infradead.org, fweisbec@gmail.com,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 0/9 v2] perf: consolidate all the open counters loops
-Date: Mon, 29 Oct 2012 10:31:40 -0600
-Message-Id: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 1/9] perf python: add ui stubs file
+Date: Mon, 29 Oct 2012 10:31:41 -0600
+Message-Id: <1351528309-87705-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
+References: <1351528309-87705-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set consolidates all of the open counters loops into a
-single common one.
+stdio based implementations of ui_xxxx based functions for the python
+library. Needed for patch 3 - consolidating open counters method.
 
-Rebased to latest perf/core. Added more hooks to ui stubs file.
-
-David Ahern (9):
-  perf python: add ui stubs file
-  perf top: make use of perf_record_opts
-  perf evlist: introduce open counters method
-  perf top: use the new perf_evlist__open_counters method
-  perf record: use the new perf_evlist__open_counters method
-  perf stat: move user options to perf_record_opts
-  perf evlist: add stat unique code to open_counters method
-  perf stat: move to perf_evlist__open_counters
-  perf evsel: remove perf_evsel__open_per_cpu
-
- tools/perf/builtin-record.c        |  116 +----------------
- tools/perf/builtin-stat.c          |  246 ++++++++++++++++--------------------
- tools/perf/builtin-top.c           |  146 ++++++---------------
- tools/perf/util/evlist.c           |  143 ++++++++++++++++++++-
- tools/perf/util/evlist.h           |    4 +
- tools/perf/util/evsel.c            |    6 -
- tools/perf/util/evsel.h            |    2 -
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+---
  tools/perf/util/python-ext-sources |    1 +
- tools/perf/util/python_stubs.c     |   54 ++++++++
- tools/perf/util/top.c              |   20 +--
- tools/perf/util/top.h              |    9 +-
- 11 files changed, 366 insertions(+), 381 deletions(-)
+ tools/perf/util/python_stubs.c     |   54 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+)
  create mode 100644 tools/perf/util/python_stubs.c
 
+diff --git a/tools/perf/util/python-ext-sources b/tools/perf/util/python-ext-sources
+index c40c2d3..92d9e05 100644
+--- a/tools/perf/util/python-ext-sources
++++ b/tools/perf/util/python-ext-sources
+@@ -19,3 +19,4 @@ util/debugfs.c
+ util/rblist.c
+ util/strlist.c
+ ../../lib/rbtree.c
++util/python_stubs.c
+diff --git a/tools/perf/util/python_stubs.c b/tools/perf/util/python_stubs.c
+new file mode 100644
+index 0000000..7b31880
+--- /dev/null
++++ b/tools/perf/util/python_stubs.c
+@@ -0,0 +1,54 @@
++/*
++ * stubs for various ui-specific functions for the python library
++ */
++
++#include <stdio.h>
++#include "debug.h"
++
++#if !defined(NEWT_SUPPORT) && !defined(GTK2_SUPPORT)
++#undef ui__error
++#endif
++
++int verbose;
++
++int ui__warning(const char *format, ...)
++{
++	va_list args;
++
++	va_start(args, format);
++	vfprintf(stderr, format, args);
++	va_end(args);
++	return 0;
++}
++
++int ui__error(const char *format, ...)
++{
++	va_list args;
++
++	va_start(args, format);
++	vfprintf(stderr, format, args);
++	va_end(args);
++	return 0;
++}
++
++int ui__error_paranoid(void)
++{
++	return ui__error("Permission error - are you root?\n"
++			 "Consider tweaking /proc/sys/kernel/perf_event_paranoid:\n"
++			 " -1 - Not paranoid at all\n"
++			 "  0 - Disallow raw tracepoint access for unpriv\n"
++			 "  1 - Disallow cpu events for unpriv\n"
++			 "  2 - Disallow kernel profiling for unpriv\n");
++}
++
++int eprintf(int level, const char *fmt, ...)
++{
++	va_list args;
++	int ret = 0;
++
++	va_start(args, fmt);
++	ret = vfprintf(stderr, fmt, args);
++	va_end(args);
++
++	return ret;
++}
 -- 
 1.7.10.1
 
