@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab2J2VtO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:49:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48775 "EHLO mail.kernel.org"
+	id S933266Ab2J2Vti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:49:38 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48752 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933029Ab2J2Vln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:43 -0400
+	id S933005Ab2J2Vlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 29/54] USB: sierra: fix memory leak in probe error path
-Date: Mon, 29 Oct 2012 14:40:30 -0700
-Message-Id: <20121029213805.994924151@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 34/54] vhost: fix mergeable bufs on BE hosts
+Date: Mon, 29 Oct 2012 14:40:35 -0700
+Message-Id: <20121029213806.547982258@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -25,72 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 084817d79399ab5ccab2f90a148b0369912a8369 upstream.
+commit 910a578f7e9400a78a3b13aba0b4d2df16a2cb05 upstream.
 
-Move interface data allocation to attach so that it is deallocated on
-errors in usb-serial probe.
+We copy head count to a 16 bit field, this works by chance on LE but on
+BE guest gets 0. Fix it up.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/sierra.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/vhost/net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -171,7 +171,6 @@ static int sierra_probe(struct usb_seria
- {
- 	int result = 0;
- 	struct usb_device *udev;
--	struct sierra_intf_private *data;
- 	u8 ifnum;
- 
- 	udev = serial->dev;
-@@ -199,11 +198,6 @@ static int sierra_probe(struct usb_seria
- 		return -ENODEV;
- 	}
- 
--	data = serial->private = kzalloc(sizeof(struct sierra_intf_private), GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--	spin_lock_init(&data->susp_lock);
--
- 	return result;
- }
- 
-@@ -914,6 +908,7 @@ static void sierra_dtr_rts(struct usb_se
- static int sierra_startup(struct usb_serial *serial)
- {
- 	struct usb_serial_port *port;
-+	struct sierra_intf_private *intfdata;
- 	struct sierra_port_private *portdata;
- 	struct sierra_iface_info *himemoryp = NULL;
- 	int i;
-@@ -921,6 +916,14 @@ static int sierra_startup(struct usb_ser
- 
- 	dev_dbg(&serial->dev->dev, "%s\n", __func__);
- 
-+	intfdata = kzalloc(sizeof(*intfdata), GFP_KERNEL);
-+	if (!intfdata)
-+		return -ENOMEM;
-+
-+	spin_lock_init(&intfdata->susp_lock);
-+
-+	usb_set_serial_data(serial, intfdata);
-+
- 	/* Set Device mode to D0 */
- 	sierra_set_power_state(serial->dev, 0x0000);
- 
-@@ -978,6 +981,7 @@ err:
- 		portdata = usb_get_serial_port_data(serial->port[i]);
- 		kfree(portdata);
- 	}
-+	kfree(intfdata);
- 
- 	return -ENOMEM;
- }
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -376,7 +376,8 @@ static void handle_rx(struct vhost_net *
+ 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
+ 	};
+ 	size_t total_len = 0;
+-	int err, headcount, mergeable;
++	int err, mergeable;
++	s16 headcount;
+ 	size_t vhost_hlen, sock_hlen;
+ 	size_t vhost_len, sock_len;
+ 	/* TODO: check that we are running from vhost_worker? */
 
 
