@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760601Ab2J2UIs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:08:48 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42522 "EHLO mail.kernel.org"
+	id S1760651Ab2J2UI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:08:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42618 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760585Ab2J2UIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:08:45 -0400
+	id S1760165Ab2J2UIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:08:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, David Miller <davem@davemloft.net>,
-        Brad Spengler <spender@grsecurity.net>,
-        PaX Team <pageexec@freemail.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 02/34] fs/compat_ioctl.c: VIDEO_SET_SPU_PALETTE missing error check
-Date: Mon, 29 Oct 2012 13:07:33 -0700
-Message-Id: <20121029200420.851856769@linuxfoundation.org>
+        Anisse Astier <anisse@astier.eu>
+Subject: [ 11/34] ehci: fix Lucid nohandoff pci quirk to be more generic with BIOS versions
+Date: Mon, 29 Oct 2012 13:07:42 -0700
+Message-Id: <20121029200421.825911545@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -29,38 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Anisse Astier <anisse@astier.eu>
 
-commit 12176503366885edd542389eed3aaf94be163fdb upstream.
+commit c323dc023b9501e5d09582ec7efd1d40a9001d99 upstream.
 
-The compat ioctl for VIDEO_SET_SPU_PALETTE was missing an error check
-while converting ioctl arguments.  This could lead to leaking kernel
-stack contents into userspace.
+BIOS vendors keep changing the BIOS versions. Only match the beginning
+of the string to match all Lucid tablets with board name M11JB.
 
-Patch extracted from existing fix in grsecurity.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anisse Astier <anisse@astier.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/compat_ioctl.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/pci-quirks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -208,6 +208,8 @@ static int do_video_set_spu_palette(unsi
- 
- 	err  = get_user(palp, &up->palette);
- 	err |= get_user(length, &up->length);
-+	if (err)
-+		return -EFAULT;
- 
- 	up_native = compat_alloc_user_space(sizeof(struct video_spu_palette));
- 	err  = put_user(compat_ptr(palp), &up_native->palette);
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -543,7 +543,7 @@ static const struct dmi_system_id __devi
+ 		/*  Pegatron Lucid (Ordissimo AIRIS) */
+ 		.matches = {
+ 			DMI_MATCH(DMI_BOARD_NAME, "M11JB"),
+-			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-GE-133"),
++			DMI_MATCH(DMI_BIOS_VERSION, "Lucid-"),
+ 		},
+ 	},
+ 	{ }
 
 
