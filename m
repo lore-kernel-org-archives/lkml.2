@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759800Ab2J2QDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:03:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34341 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759569Ab2J2QDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:03:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.80,672,1344236400"; 
-   d="scan'208";a="210776108"
-Date: Wed, 31 Oct 2012 00:01:49 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 7/8] perf hists browser: Add option for runtime
- switching perf data file
-Message-ID: <20121030160149.GA14234@feng-snb>
-References: <1351569369-26732-1-git-send-email-feng.tang@intel.com>
- <1351569369-26732-8-git-send-email-feng.tang@intel.com>
- <20121029140620.GD6754@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121029140620.GD6754@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759708Ab2J2QDS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:03:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31364 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759569Ab2J2QDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:03:17 -0400
+X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
+   d="scan'208";a="6093401"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Yinghai Lu <yinghai@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org
+Subject: [V5 PATCH 11/26] mempolicy: use N_MEMORY instead N_HIGH_MEMORY
+Date: Mon, 29 Oct 2012 23:21:01 +0800
+Message-Id: <1351524078-20363-10-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 23:19:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 23:19:07,
+	Serialize complete at 2012/10/29 23:19:07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+N_HIGH_MEMORY stands for the nodes that has normal or high memory.
+N_MEMORY stands for the nodes that has any memory.
 
-Thanks for the review.
+The code here need to handle with the nodes which have memory, we should
+use N_MEMORY instead.
 
-On Mon, Oct 29, 2012 at 12:06:20PM -0200, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Oct 30, 2012 at 11:56:08AM +0800, Feng Tang escreveu:
-> > +	pwd_dir = opendir(pwd);
-> > +	if (!pwd_dir)
-> > +		return ret;
-> > +
-> > +	memset(options, 0, sizeof(options));
-> > +	memset(options, 0, sizeof(abs_path));
-> > +
-> > +	while ((dent = readdir(pwd_dir))) {
-> > +		char path[PATH_MAX];
-> > +		u64 magic;
-> > +		char *name = dent->d_name;
-> > +		FILE *file;
-> > +
-> > +		if (!(dent->d_type == DT_REG))
-> > +			continue;
-> > +
-> > +		snprintf(path, PATH_MAX, "%s/%s", pwd, name);
-> > +
-> > +		file = fopen(path, "r");
-> > +		if (!file)
-> > +			continue;
-> > +
-> > +		if (fread(&magic, 1, 8, file) < 8)
-> > +			goto close_file_and_continue;
-> > +
-> > +		if (is_perf_magic(magic)) {
-> > +			options[nr_options] = strdup(name);
-> > +			if (!options[nr_options])
-> > +				goto close_file_and_continue;
-> 
-> Silently not offering a valid file? At this point I think you should
-> warn the user and bail out.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ mm/mempolicy.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Yeah, we should give a warning message and go on with the valid data
-files already got.
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d04a8a5..d4a084c 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -212,9 +212,9 @@ static int mpol_set_nodemask(struct mempolicy *pol,
+ 	/* if mode is MPOL_DEFAULT, pol is NULL. This is right. */
+ 	if (pol == NULL)
+ 		return 0;
+-	/* Check N_HIGH_MEMORY */
++	/* Check N_MEMORY */
+ 	nodes_and(nsc->mask1,
+-		  cpuset_current_mems_allowed, node_states[N_HIGH_MEMORY]);
++		  cpuset_current_mems_allowed, node_states[N_MEMORY]);
  
-> > +
-> > +			abs_path[nr_options] = strdup(path);
-> > +			if (!abs_path[nr_options]) {
-> > +				free(options[nr_options]);
-> > +				goto close_file_and_continue;
-> > +			}
-> > +
-> > +			nr_options++;
-> > +		}
-> > +
-> > +close_file_and_continue:
-> > +		fclose(file);
-> > +		if (nr_options >= 256)
-> > +			break;
-> 
-> Why is this? At the very least a warning has to be given to the user
-> that way too many perf.data files are present, so only the first N are
-> in the menu.
+ 	VM_BUG_ON(!nodes);
+ 	if (pol->mode == MPOL_PREFERRED && nodes_empty(*nodes))
+@@ -1388,7 +1388,7 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
+ 		goto out_put;
+ 	}
+ 
+-	if (!nodes_subset(*new, node_states[N_HIGH_MEMORY])) {
++	if (!nodes_subset(*new, node_states[N_MEMORY])) {
+ 		err = -EINVAL;
+ 		goto out_put;
+ 	}
+@@ -2361,7 +2361,7 @@ void __init numa_policy_init(void)
+ 	 * fall back to the largest node if they're all smaller.
+ 	 */
+ 	nodes_clear(interleave_nodes);
+-	for_each_node_state(nid, N_HIGH_MEMORY) {
++	for_each_node_state(nid, N_MEMORY) {
+ 		unsigned long total_pages = node_present_pages(nid);
+ 
+ 		/* Preserve the largest node */
+@@ -2442,7 +2442,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 		*nodelist++ = '\0';
+ 		if (nodelist_parse(nodelist, nodes))
+ 			goto out;
+-		if (!nodes_subset(nodes, node_states[N_HIGH_MEMORY]))
++		if (!nodes_subset(nodes, node_states[N_MEMORY]))
+ 			goto out;
+ 	} else
+ 		nodes_clear(nodes);
+@@ -2476,7 +2476,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+ 		 * Default to online nodes with memory if no nodelist
+ 		 */
+ 		if (!nodelist)
+-			nodes = node_states[N_HIGH_MEMORY];
++			nodes = node_states[N_MEMORY];
+ 		break;
+ 	case MPOL_LOCAL:
+ 		/*
+-- 
+1.7.4.4
 
-Ok. 
-
-> > +	}
-> > +	closedir(pwd_dir);
-> > +
-> > +	if (nr_options) {
-> > +		choice = ui__popup_menu(nr_options, options);
-> > +		if (choice < nr_options && choice >= 0) {
-> > +			tmp = strdup(abs_path[choice]);
-> > +			if (tmp) {
-> > +				if (is_input_name_malloced)
-> > +					free((void *)input_name);
-> > +				input_name = tmp;
-> > +				is_input_name_malloced = true;
-> > +				ret = 0;
-> > +			}
-> 
-> Here you return an error, but will the user get any warning on the
-> caller of this function if it returns -1?
-> 
-> 
-> > +		/* Switch to another data file */
-> > +		else if (choice == switch_data) {
-> > +do_data_switch:
-> > +			if (!switch_data_file()) {
-> > +				key = K_SWITCH_INPUT_DATA;
-> > +				break;
-> > +			}
-> > +		}
-> 
-> ... no, so it will silently continue and the user will get confused.
->
-
-Yes, I will add more ui_warning() in these error/problematic path
-
-Thanks,
-Feng
