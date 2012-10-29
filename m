@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab2J2PSv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:18:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56319 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757912Ab2J2PQO (ORCPT
+	id S1759425Ab2J2PTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:19:30 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:56872 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756768Ab2J2PQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:16:14 -0400
+	Mon, 29 Oct 2012 11:16:03 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, ming.m.lin@intel.com
-Subject: [Patch v1 06/10] perf/x86: add support for PEBS Precise Store
-Date: Mon, 29 Oct 2012 16:15:48 +0100
-Message-Id: <1351523752-4215-7-git-send-email-eranian@google.com>
+Subject: [Patch v1 02/10] perf/x86: add flags to event constraints
+Date: Mon, 29 Oct 2012 16:15:44 +0100
+Message-Id: <1351523752-4215-3-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1351523752-4215-1-git-send-email-eranian@google.com>
 References: <1351523752-4215-1-git-send-email-eranian@google.com>
@@ -21,172 +21,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for PEBS Precise Store
-which is available on Intel Sandy Bridge and
-Ivy Bridge processors.
+This patch adds a flags field to each event constraint.
+It can be used to store event specific features which can
+then later be used by scheduling code or low-level x86 code.
 
-To use Precise store, the proper PEBS event
-must be used: mem_trans_retired:precise_stores.
-For the perf tool, the generic mem-stores event
-exported via sysfs can be used directly.
+The flags are propagated into event->hw.flags during the
+get_event_constraint() call. They are cleared during the
+put_event_constraint() call.
+
+This mechanism is going to be used by the PEBS-LL patches.
+It avoids defining yet another table to hold event specific
+information.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.h          |    5 +++
- arch/x86/kernel/cpu/perf_event_intel.c    |    2 ++
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   49 +++++++++++++++++++++++++++--
- 3 files changed, 54 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c              |    2 +-
+ arch/x86/kernel/cpu/perf_event.h              |    8 +++++---
+ arch/x86/kernel/cpu/perf_event_intel.c        |    5 ++++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     |    4 +++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |    2 +-
+ include/linux/perf_event.h                    |    1 +
+ 6 files changed, 15 insertions(+), 7 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 7c30b4c..9b56c20 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1470,7 +1470,7 @@ static int __init init_hw_perf_events(void)
+ 
+ 	unconstrained = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+-				   0, x86_pmu.num_counters, 0);
++				   0, x86_pmu.num_counters, 0, 0);
+ 
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 3c5aa72..4e95c90 100644
+index 41479da..f78d6e8 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -66,6 +66,7 @@ struct event_constraint {
-  * struct event_constraint flags
-  */
- #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
-+#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+@@ -59,6 +59,7 @@ struct event_constraint {
+ 	u64	cmask;
+ 	int	weight;
+ 	int	overlap;
++	int	flags;
+ };
  
  struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-@@ -242,6 +243,10 @@ struct cpu_hw_events {
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
- 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
- 
-+#define INTEL_PST_CONSTRAINT(c, n)	\
-+	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-+			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
-+
- #define EVENT_CONSTRAINT_END		\
- 	EVENT_CONSTRAINT(0, 0, 0)
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index c37b7f8..bf25b7b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -150,6 +150,7 @@ EVENT_ATTR(ref-cycles,			REF_CPU_CYCLES		);
- 
- EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x100b,umask=0x1,ldlat=3");
- EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
-+EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
- 
- struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(CPU_CYCLES),
-@@ -178,6 +179,7 @@ struct attribute *snb_events_attrs[] = {
- 	EVENT_PTR(STALLED_CYCLES_BACKEND),
- 	EVENT_PTR(REF_CPU_CYCLES),
- 	EVENT_PTR(mem_ld_snb),
-+	EVENT_PTR(mem_st_snb),
- 	NULL,
+@@ -170,16 +171,17 @@ struct cpu_hw_events {
+ 	void				*kfree_on_online;
  };
  
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 3ee6e83..4c5f639 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -69,6 +69,44 @@ static const u64 pebs_data_source[] = {
- 	OP_LH | P(LVL,UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
- };
- 
-+static u64 precise_store_data(u64 status)
-+{
-+	union intel_x86_pebs_dse dse;
-+	u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
-+
-+	dse.val = status;
-+
-+	/*
-+	 * bit 4: TLB access
-+	 * 1 = stored missed 2nd level TLB
-+	 *
-+	 * so it either hit the walker or the OS
-+	 * otherwise hit 2nd level TLB
-+	 */
-+	if (dse.st_stlb_miss)
-+		val |= P(TLB, MISS);
-+	else
-+		val |= P(TLB, HIT);
-+
-+	/*
-+	 * bit 0: hit L1 data cache
-+	 * if not set, then all we know is that
-+	 * it missed L1D
-+	 */
-+	if (dse.st_l1d_hit)
-+		val |= P(LVL, HIT);
-+	else
-+		val |= P(LVL, MISS);
-+
-+	/*
-+	 * bit 5: Locked prefix
-+	 */
-+	if (dse.st_locked)
-+		val |= P(LOCK, LOCKED);
-+
-+	return val;
-+}
-+
- static u64 load_latency_data(u64 status)
- {
- 	union intel_x86_pebs_dse dse;
-@@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
- 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -537,6 +577,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 
- 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
- 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
-+	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
-+		cpuc->pebs_enabled |= 1ULL << 63;
+-#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
++#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
+ 	{ .idxmsk64 = (n) },		\
+ 	.code = (c),			\
+ 	.cmask = (m),			\
+ 	.weight = (w),			\
+ 	.overlap = (o),			\
++	.flags = f,			\
  }
  
- void intel_pmu_pebs_disable(struct perf_event *event)
-@@ -657,12 +699,13 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
- 	u64 sample_type;
--	int fll;
-+	int fll, fst;
+ #define EVENT_CONSTRAINT(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
  
- 	if (!intel_pmu_save_and_restart(event))
- 		return;
+ /*
+  * The overlap flag marks event constraints with overlapping counter
+@@ -203,7 +205,7 @@ struct cpu_hw_events {
+  * and its counter masks must be kept at a minimum.
+  */
+ #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
  
- 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
-+	fst = event->hw.flags & PERF_X86_EVENT_PEBS_ST;
+ /*
+  * Constraint on the Event code.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 93b9e11..57d6527 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1367,8 +1367,10 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
  
- 	perf_sample_data_init(&data, 0, event->hw.last_period);
- 
-@@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	/*
- 	 * if PEBS-LL or PreciseStore
- 	 */
--	if (fll) {
-+	if (fll || fst) {
- 		if (sample_type & PERF_SAMPLE_ADDR)
- 			data.addr = pebs->dla;
- 
-@@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		if (sample_type & PERF_SAMPLE_DSRC) {
- 			if (fll)
- 				data.dsrc.val = load_latency_data(pebs->dse);
-+			else if (fst)
-+				data.dsrc.val = precise_store_data(pebs->dse);
+ 	if (x86_pmu.event_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
  		}
  	}
  
+@@ -1413,6 +1415,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 					struct perf_event *event)
+ {
++	event->hw.flags = 0;
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 826054a..f30d85b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 
+ 	if (x86_pmu.pebs_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
+ 		}
+ 	}
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 3cf3d97..cc39e64 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 
+ 	type->unconstrainted = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
+-				0, type->num_counters, 0);
++				0, type->num_counters, 0, 0);
+ 
+ 	for (i = 0; i < type->num_boxes; i++) {
+ 		pmus[i].func_id = -1;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 6bfb2faa..484cfbc 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -128,6 +128,7 @@ struct hw_perf_event {
+ 			int		event_base_rdpmc;
+ 			int		idx;
+ 			int		last_cpu;
++			int		flags;
+ 
+ 			struct hw_perf_event_extra extra_reg;
+ 			struct hw_perf_event_extra branch_reg;
 -- 
 1.7.9.5
 
