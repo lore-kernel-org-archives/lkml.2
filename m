@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab2J2Vjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:39:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48124 "EHLO mail.kernel.org"
+	id S1761453Ab2J2Vj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:39:58 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48097 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761412Ab2J2ViP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:15 -0400
+	id S1761316Ab2J2ViM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 091/101] net/wireless: ipw2200: Fix panic occurring in ipw_handle_promiscuous_tx()
-Date: Mon, 29 Oct 2012 14:35:44 -0700
-Message-Id: <20121029213250.437034658@linuxfoundation.org>
+        Josh Triplett <josh@joshtriplett.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: [ 097/101] efi: Defer freeing boot services memory until after ACPI init
+Date: Mon, 29 Oct 2012 14:35:50 -0700
+Message-Id: <20121029213251.087106185@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,44 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+From: Josh Triplett <josh@joshtriplett.org>
 
-commit bf11315eeda510ea4fc1a2bf972d8155d31d89b4 upstream.
+commit 785107923a83d8456bbd8564e288a24d84109a46 upstream.
 
-The driver does not count space of radiotap fields when allocating skb for
-radiotap packet. This leads to kernel panic with the following call trace:
+Some new ACPI 5.0 tables reference resources stored in boot services
+memory, so keep that memory around until we have ACPI and can extract
+data from it.
 
-...
-[67607.676067] [<c152f90f>] error_code+0x67/0x6c
-[67607.676067] [<c142f831>] ? skb_put+0x91/0xa0
-[67607.676067] [<f8cf5e5b>] ? ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf5e5b>] ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
-[67607.676067] [<f8cf899b>] ipw_net_hard_start_xmit+0x8b/0x90 [ipw2200]
-[67607.676067] [<f8741c5a>] libipw_xmit+0x55a/0x980 [libipw]
-[67607.676067] [<c143d3e8>] dev_hard_start_xmit+0x218/0x4d0
-...
-
-This bug was found by VittGam.
-https://bugzilla.kernel.org/show_bug.cgi?id=43255
-
-Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Link: http://lkml.kernel.org/r/baaa6d44bdc4eb0c58e5d1b4ccd2c729f854ac55.1348876882.git.josh@joshtriplett.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Matt Fleming <matt@console-pimps.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ipw2x00/ipw2200.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/platform/efi/efi.c |   31 ++++++++++++++++++-------------
+ include/linux/efi.h         |    5 +++++
+ init/main.c                 |    3 +++
+ 3 files changed, 26 insertions(+), 13 deletions(-)
 
---- a/drivers/net/wireless/ipw2x00/ipw2200.c
-+++ b/drivers/net/wireless/ipw2x00/ipw2200.c
-@@ -10479,7 +10479,7 @@ static void ipw_handle_promiscuous_tx(st
- 		} else
- 			len = src->len;
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -419,10 +419,21 @@ void __init efi_reserve_boot_services(vo
+ 	}
+ }
  
--		dst = alloc_skb(len + sizeof(*rt_hdr), GFP_ATOMIC);
-+		dst = alloc_skb(len + sizeof(*rt_hdr) + sizeof(u16)*2, GFP_ATOMIC);
- 		if (!dst)
- 			continue;
+-static void __init efi_free_boot_services(void)
++static void __init efi_unmap_memmap(void)
++{
++	if (memmap.map) {
++		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
++		memmap.map = NULL;
++	}
++}
++
++void __init efi_free_boot_services(void)
+ {
+ 	void *p;
  
++	if (!efi_native)
++		return;
++
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		efi_memory_desc_t *md = p;
+ 		unsigned long long start = md->phys_addr;
+@@ -438,6 +449,8 @@ static void __init efi_free_boot_service
+ 
+ 		free_bootmem_late(start, size);
+ 	}
++
++	efi_unmap_memmap();
+ }
+ 
+ static int __init efi_systab_init(void *phys)
+@@ -787,8 +800,10 @@ void __init efi_enter_virtual_mode(void)
+ 	 * non-native EFI
+ 	 */
+ 
+-	if (!efi_native)
+-		goto out;
++	if (!efi_native) {
++		efi_unmap_memmap();
++		return;
++	}
+ 
+ 	/* Merge contiguous regions of the same type and attribute */
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+@@ -878,13 +893,6 @@ void __init efi_enter_virtual_mode(void)
+ 	}
+ 
+ 	/*
+-	 * Thankfully, it does seem that no runtime services other than
+-	 * SetVirtualAddressMap() will touch boot services code, so we can
+-	 * get rid of it all at this point
+-	 */
+-	efi_free_boot_services();
+-
+-	/*
+ 	 * Now that EFI is in virtual mode, update the function
+ 	 * pointers in the runtime service table to the new virtual addresses.
+ 	 *
+@@ -907,9 +915,6 @@ void __init efi_enter_virtual_mode(void)
+ 	if (__supported_pte_mask & _PAGE_NX)
+ 		runtime_code_page_mkexec();
+ 
+-out:
+-	early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
+-	memmap.map = NULL;
+ 	kfree(new_memmap);
+ }
+ 
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -496,6 +496,11 @@ extern void efi_map_pal_code (void);
+ extern void efi_memmap_walk (efi_freemem_callback_t callback, void *arg);
+ extern void efi_gettimeofday (struct timespec *ts);
+ extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
++#ifdef CONFIG_X86
++extern void efi_free_boot_services(void);
++#else
++static inline void efi_free_boot_services(void) {}
++#endif
+ extern u64 efi_get_iobase (void);
+ extern u32 efi_mem_type (unsigned long phys_addr);
+ extern u64 efi_mem_attributes (unsigned long phys_addr);
+--- a/init/main.c
++++ b/init/main.c
+@@ -631,6 +631,9 @@ asmlinkage void __init start_kernel(void
+ 	acpi_early_init(); /* before LAPIC and SMP init */
+ 	sfi_init_late();
+ 
++	if (efi_enabled)
++		efi_free_boot_services();
++
+ 	ftrace_init();
+ 
+ 	/* Do the rest non-__init'ed, we're now alive */
 
 
