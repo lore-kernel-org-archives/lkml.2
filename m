@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760247Ab2J2RVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 13:21:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51132 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757317Ab2J2RVh (ORCPT
+	id S1760314Ab2J2RWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 13:22:00 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11471 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758481Ab2J2RV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 13:21:37 -0400
-Message-ID: <508EBB1E.9060400@vflare.org>
-Date: Mon, 29 Oct 2012 10:21:34 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
+	Mon, 29 Oct 2012 13:21:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 29 Oct 2012 10:21:51 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>, <linux@arm.linux.org.uk>
+CC: <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 4/4] ARM: tegra: config: enable spi driver for Tegra SLINK controller
+Date: Mon, 29 Oct 2012 22:49:40 +0530
+Message-ID: <1351531180-1652-5-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1351531180-1652-1-git-send-email-ldewangan@nvidia.com>
+References: <1351531180-1652-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] zram: handle mem suffixes in disk size zram_sysfs
- parameter
-References: <20121027160347.GB4771@swordfish>
-In-Reply-To: <20121027160347.GB4771@swordfish>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2012 09:03 AM, Sergey Senozhatsky wrote:
->    zram: handle mem suffixes in disk size zram_sysfs parameter
->
->    Use memparse() to allow mem suffixes in disksize sysfs number.
->    Examples:
->         echo 256K > /sys/block/zram0/disksize
->         echo 512M > /sys/block/zram0/disksize
->         echo 1G > /sys/block/zram0/disksize
->
->    Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
->
-> ---
->
->   drivers/staging/zram/zram_sysfs.c | 8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> index edb0ed4..6be318e 100644
-> --- a/drivers/staging/zram/zram_sysfs.c
-> +++ b/drivers/staging/zram/zram_sysfs.c
-> @@ -15,6 +15,7 @@
->   #include <linux/device.h>
->   #include <linux/genhd.h>
->   #include <linux/mm.h>
-> +#include <linux/kernel.h>
->
->   #include "zram_drv.h"
->
-> @@ -54,13 +55,12 @@ static ssize_t disksize_show(struct device *dev,
->   static ssize_t disksize_store(struct device *dev,
->   		struct device_attribute *attr, const char *buf, size_t len)
->   {
-> -	int ret;
->   	u64 disksize;
->   	struct zram *zram = dev_to_zram(dev);
->
-> -	ret = kstrtoull(buf, 10, &disksize);
-> -	if (ret)
-> -		return ret;
-> +	disksize = memparse(buf, NULL);
-> +	if (disksize < 1)
-> +		return -EINVAL;
->
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+No change from V1.
 
-or, just: if (!disksize) ...
+ arch/arm/configs/tegra_defconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
-Nitin
-
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index fb29680..60e1b2e 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -117,7 +117,7 @@ CONFIG_I2C_MUX=y
+ CONFIG_I2C_MUX_PINCTRL=y
+ CONFIG_I2C_TEGRA=y
+ CONFIG_SPI=y
+-CONFIG_SPI_TEGRA=y
++CONFIG_SPI_TEGRA20_SLINK=y
+ CONFIG_GPIO_PCA953X_IRQ=y
+ CONFIG_GPIO_TPS6586X=y
+ CONFIG_GPIO_TPS65910=y
+-- 
+1.7.1.1
 
