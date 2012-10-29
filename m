@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761132Ab2J2Vh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:37:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47546 "EHLO mail.kernel.org"
+	id S933488Ab2J2WJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:09:17 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47605 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760691Ab2J2VhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:19 -0400
+	id S1761257Ab2J2Vh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 047/101] USB: mct_u232: fix broken close
-Date: Mon, 29 Oct 2012 14:35:00 -0700
-Message-Id: <20121029213245.498794722@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, support@connecttech.com
+Subject: [ 053/101] USB: whiteheat: fix port-data memory leak
+Date: Mon, 29 Oct 2012 14:35:06 -0700
+Message-Id: <20121029213246.148563013@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,48 +27,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
+commit c467206ed6bcce26c83d0435612cc4fee2527305 upstream.
 
-Make sure generic close is called at close.
+Fix port-data memory leak by moving port data allocation and
+deallocation to port_probe and port_remove.
 
-The driver relies on the generic write implementation but did not call
-generic close.
+Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
+driver is bound) the port private data is no longer freed at release as
+it is no longer accessible.
 
-Note that the call to kill the read urb is not redundant, as mct_u232
-uses an interrupt urb from the second port as the read urb and that
-generic close therefore fails to kill it.
+Note that the fifth port (command port) is never registered as a
+port device and thus should be handled in attach and release.
 
 Compile-only tested.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: <support@connecttech.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mct_u232.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/usb/serial/whiteheat.c |   59 ++++++++++++++++++-----------------------
+ 1 file changed, 26 insertions(+), 33 deletions(-)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -524,12 +524,14 @@ static void mct_u232_dtr_rts(struct usb_
- 
- static void mct_u232_close(struct usb_serial_port *port)
+--- a/drivers/usb/serial/whiteheat.c
++++ b/drivers/usb/serial/whiteheat.c
+@@ -86,6 +86,8 @@ static int  whiteheat_firmware_attach(st
+ /* function prototypes for the Connect Tech WhiteHEAT serial converter */
+ static int  whiteheat_attach(struct usb_serial *serial);
+ static void whiteheat_release(struct usb_serial *serial);
++static int  whiteheat_port_probe(struct usb_serial_port *port);
++static int  whiteheat_port_remove(struct usb_serial_port *port);
+ static int  whiteheat_open(struct tty_struct *tty,
+ 			struct usb_serial_port *port);
+ static void whiteheat_close(struct usb_serial_port *port);
+@@ -120,6 +122,8 @@ static struct usb_serial_driver whitehea
+ 	.num_ports =		4,
+ 	.attach =		whiteheat_attach,
+ 	.release =		whiteheat_release,
++	.port_probe =		whiteheat_port_probe,
++	.port_remove =		whiteheat_port_remove,
+ 	.open =			whiteheat_open,
+ 	.close =		whiteheat_close,
+ 	.ioctl =		whiteheat_ioctl,
+@@ -290,15 +294,12 @@ static int whiteheat_attach(struct usb_s
  {
--	if (port->serial->dev) {
--		/* shutdown our urbs */
--		usb_kill_urb(port->write_urb);
--		usb_kill_urb(port->read_urb);
--		usb_kill_urb(port->interrupt_in_urb);
+ 	struct usb_serial_port *command_port;
+ 	struct whiteheat_command_private *command_info;
+-	struct usb_serial_port *port;
+-	struct whiteheat_private *info;
+ 	struct whiteheat_hw_info *hw_info;
+ 	int pipe;
+ 	int ret;
+ 	int alen;
+ 	__u8 *command;
+ 	__u8 *result;
+-	int i;
+ 
+ 	command_port = serial->port[COMMAND_PORT];
+ 
+@@ -357,22 +358,6 @@ static int whiteheat_attach(struct usb_s
+ 		 serial->type->description,
+ 		 hw_info->sw_major_rev, hw_info->sw_minor_rev);
+ 
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-
+-		info = kmalloc(sizeof(struct whiteheat_private), GFP_KERNEL);
+-		if (info == NULL) {
+-			dev_err(&port->dev,
+-				"%s: Out of memory for port structures\n",
+-				serial->type->description);
+-			goto no_private;
+-		}
+-
+-		info->mcr = 0;
+-
+-		usb_set_serial_port_data(port, info);
 -	}
-+	/*
-+	 * Must kill the read urb as it is actually an interrupt urb, which
-+	 * generic close thus fails to kill.
-+	 */
-+	usb_kill_urb(port->read_urb);
-+	usb_kill_urb(port->interrupt_in_urb);
+-
+ 	command_info = kmalloc(sizeof(struct whiteheat_command_private),
+ 								GFP_KERNEL);
+ 	if (command_info == NULL) {
+@@ -409,13 +394,6 @@ no_firmware:
+ 	return -ENODEV;
+ 
+ no_command_private:
+-	for (i = serial->num_ports - 1; i >= 0; i--) {
+-		port = serial->port[i];
+-		info = usb_get_serial_port_data(port);
+-		kfree(info);
+-no_private:
+-		;
+-	}
+ 	kfree(result);
+ no_result_buffer:
+ 	kfree(command);
+@@ -423,21 +401,36 @@ no_command_buffer:
+ 	return -ENOMEM;
+ }
+ 
+-
+ static void whiteheat_release(struct usb_serial *serial)
+ {
+ 	struct usb_serial_port *command_port;
+-	struct whiteheat_private *info;
+-	int i;
+ 
+ 	/* free up our private data for our command port */
+ 	command_port = serial->port[COMMAND_PORT];
+ 	kfree(usb_get_serial_port_data(command_port));
++}
+ 
+-	for (i = 0; i < serial->num_ports; i++) {
+-		info = usb_get_serial_port_data(serial->port[i]);
+-		kfree(info);
+-	}
++static int whiteheat_port_probe(struct usb_serial_port *port)
++{
++	struct whiteheat_private *info;
 +
-+	usb_serial_generic_close(port);
- } /* mct_u232_close */
++	info = kzalloc(sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	usb_set_serial_port_data(port, info);
++
++	return 0;
++}
++
++static int whiteheat_port_remove(struct usb_serial_port *port)
++{
++	struct whiteheat_private *info;
++
++	info = usb_get_serial_port_data(port);
++	kfree(info);
++
++	return 0;
+ }
  
- 
+ static int whiteheat_open(struct tty_struct *tty, struct usb_serial_port *port)
 
 
