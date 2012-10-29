@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab2J2P4D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:56:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57646 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759743Ab2J2Prt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:47:49 -0400
-Date: Mon, 29 Oct 2012 17:50:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 5/8] vhost: track zero copy failures using DMA length
-Message-ID: <ee60165e6501fb037dfa6e83e3569b3f4dc0c59a.1351524502.git.mst@redhat.com>
-References: <cover.1351524501.git.mst@redhat.com>
+	id S1759612Ab2J2QAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:00:03 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58708 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756011Ab2J2QAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:00:00 -0400
+Date: Mon, 29 Oct 2012 11:59:57 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 15/16] openvswitch: use new hashtable implementation
+Message-ID: <20121029155957.GB18834@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-15-git-send-email-levinsasha928@gmail.com> <20121029132931.GC16391@Krystal> <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1351524501.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <CA+1xoqfRGhPaBEVh228O5_295bWh8FmcyLSOwq8VE5Dm7i3JHg@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used to disable zerocopy when error rate
-is high.
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> Hi Mathieu,
+> 
+> On Mon, Oct 29, 2012 at 9:29 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> > [...]
+> >> -static struct hlist_head *hash_bucket(struct net *net, const char *name)
+> >> -{
+> >> -     unsigned int hash = jhash(name, strlen(name), (unsigned long) net);
+> >> -     return &dev_table[hash & (VPORT_HASH_BUCKETS - 1)];
+> >> -}
+> >> -
+> >>  /**
+> >>   *   ovs_vport_locate - find a port that has already been created
+> >>   *
+> >> @@ -84,13 +76,12 @@ static struct hlist_head *hash_bucket(struct net *net, const char *name)
+> >>   */
+> >>  struct vport *ovs_vport_locate(struct net *net, const char *name)
+> >>  {
+> >> -     struct hlist_head *bucket = hash_bucket(net, name);
+> >>       struct vport *vport;
+> >>       struct hlist_node *node;
+> >> +     int key = full_name_hash(name, strlen(name));
+> >>
+> >> -     hlist_for_each_entry_rcu(vport, node, bucket, hash_node)
+> >> -             if (!strcmp(name, vport->ops->get_name(vport)) &&
+> >> -                 net_eq(ovs_dp_get_net(vport->dp), net))
+> >> +     hash_for_each_possible_rcu(dev_table, vport, node, hash_node, key)
+> >
+> > Is applying hash_32() on top of full_name_hash() needed and expected ?
+> 
+> Since this was pointed out in several of the patches, I'll answer it
+> just once here.
+> 
+> I've intentionally "allowed" double hashing with hash_32 to keep the
+> code simple.
+> 
+> hash_32() is pretty simple and gcc optimizes it to be almost nothing,
+> so doing that costs us a multiplication and a shift. On the other
+> hand, we benefit from keeping our code simple - how would we avoid
+> doing this double hash? adding a different hashtable function for
+> strings? or a new function for already hashed keys? I think we benefit
+> a lot from having to mul/shr instead of adding extra lines of code
+> here.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/vhost/vhost.c | 7 ++++---
- drivers/vhost/vhost.h | 4 ++++
- 2 files changed, 8 insertions(+), 3 deletions(-)
+This could be done, as I pointed out in another email within this
+thread, by changing the "key" argument from add/for_each_possible to an
+expected "hash" value, and let the caller invoke hash_32() if they want.
+I doubt this would add a significant amount of complexity for users of
+this API, but would allow much more flexibility to choose hash
+functions.
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 906fd9f..5affce3 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -425,7 +425,7 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
- 	int j = 0;
- 
- 	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
--		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
-+		if (VHOST_DMA_IS_DONE(vq->heads[i].len)) {
- 			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
- 			vhost_add_used_and_signal(vq->dev, vq,
- 						  vq->heads[i].id, 0);
-@@ -1600,13 +1600,14 @@ void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
- 	kfree(ubufs);
- }
- 
--void vhost_zerocopy_callback(struct ubuf_info *ubuf, int zerocopy_status)
-+void vhost_zerocopy_callback(struct ubuf_info *ubuf, int status)
- {
- 	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
- 	struct vhost_virtqueue *vq = ubufs->vq;
- 
- 	vhost_poll_queue(&vq->poll);
- 	/* set len to mark this desc buffers done DMA */
--	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-+	vq->heads[ubuf->desc].len = status ?
-+		VHOST_DMA_FAILED_LEN : VHOST_DMA_DONE_LEN;
- 	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
- }
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index ad72a1f..6fdf31d 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -17,6 +17,8 @@
-  * For transmit, used buffer len is unused; we override it to track buffer
-  * status internally; used for zerocopy tx only.
-  */
-+/* Lower device DMA failed */
-+#define VHOST_DMA_FAILED_LEN	3
- /* Lower device DMA done */
- #define VHOST_DMA_DONE_LEN	2
- /* Lower device DMA in progress */
-@@ -24,6 +26,8 @@
- /* Buffer unused */
- #define VHOST_DMA_CLEAR_LEN	0
- 
-+#define VHOST_DMA_IS_DONE(len) ((len) >= VHOST_DMA_DONE_LEN)
-+
- struct vhost_device;
- 
- struct vhost_work;
+Thanks,
+
+Mathieu
+
 -- 
-MST
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
