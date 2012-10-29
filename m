@@ -1,149 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760870Ab2J2Upq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:45:46 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38698 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760804Ab2J2Upn (ORCPT
+	id S1760823Ab2J2UoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:44:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10288 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757787Ab2J2Uix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:45:43 -0400
-Message-ID: <508EEAF2.4090506@ursulin.net>
-Date: Mon, 29 Oct 2012 20:45:38 +0000
-From: Tvrtko Ursulin <tvrtko@ursulin.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Milan Broz <gmazyland@gmail.com>
-CC: dm-crypt@saout.de, linux-kernel@vger.kernel.org, okozina@redhat.com,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [dm-crypt] cryptsetup not working under 3.6 - RT patch set seem
- to break it
-References: <50830D33.5050807@ursulin.net> <5083C61C.5090807@gmail.com> <5083E4A8.3060501@ursulin.net> <5083E87B.2080908@gmail.com> <5083EC61.8070505@ursulin.net> <50844D01.9090805@gmail.com> <5084551E.5040304@ursulin.net> <508ED985.5060301@ursulin.net> <508EDD6E.7030908@gmail.com> <508EE395.9010709@ursulin.net>
-In-Reply-To: <508EE395.9010709@ursulin.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Oct 2012 16:38:53 -0400
+X-Authority-Analysis: v=2.0 cv=NLdXCjGg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Rr-zUMreGdkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=5zYnBtOpk0cA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=9AzMRrQhAAAA:8 a=NufY4J3AAAAA:8 a=KKAkSRfTAAAA:8 a=JfrnYn6hAAAA:8 a=ftUzEednAAAA:8 a=sozttTNsAAAA:8 a=EUspDBNiAAAA:8 a=VnNF1IyMAAAA:8 a=fh4mg5NFAAAA:8 a=fiaL1sVHFq21geOVfxEA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=SxxB86fLhQ4A:10 a=re9sYKne76oA:10 a=WwgC8nHKvroA:10 a=3Rfx1nUSh_UA:10 a=QwxQZocgbLcA:10 a=x2szoZtqnggA:10 a=IG2fH9E8heMA:10 a=Im-eZXwrtqoA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121029203850.612013355@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 29 Oct 2012 16:27:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Subject: [PATCH 27/32] sched: Update clock of nohz busiest rq before balancing
+References: <20121029202711.062749374@goodmis.org>
+Content-Disposition: inline; filename=0027-sched-Update-clock-of-nohz-busiest-rq-before-balanci.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/12 20:14, Tvrtko Ursulin wrote:
-> On 29/10/12 19:47, Milan Broz wrote:
->> On 10/29/2012 08:31 PM, Tvrtko Ursulin wrote:
->>> Just tried 3.6.4 and it is still broken. Is there anything else I could
->>> try to debug this?
->>
->> See response from response from Ondra on dmcrypt list - your kernel
->> config
->> is perhaps broken.
->
-> I don't think that reached me - perhaps I was not copied.
->
-> Weird yes, I mean no one can spot anything bad with my config...
->
->> Please use fresh checkout, run make oldconfig and try again.
->> (Many people use 3.6 already and there is no other report.)
->
-> ... and I just used it today to configure a fresh 3.6.4 (plus -rt10
-> patches) without a problem.
->
-> Unless RT patchset is the culprit. Hm.. that would be unexpected, but I
-> guess it is worth a shot. I'll let you know what happens without -rt.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Ha, this is exciting, vanilla 3.6.4 works, with -rt10 patch it does not.
+move_tasks() and active_load_balance_cpu_stop() both need
+to have the busiest rq clock uptodate because they may end
+up calling can_migrate_task() that uses rq->clock_task
+to determine if the task running in the busiest runqueue
+is cache hot.
 
-Copying in linux-rt-users.
+Hence if the busiest runqueue is tickless, update its clock
+before reading it.
 
-To recap, 3.6 RT seems to break dm-crypt. Try it like this:
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: Max Krasnyansky <maxk@qualcomm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+[ Forward port conflicts ]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/sched/fair.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-cryptsetup --debug --key-file=- luksOpen /some/luks/formatted/file any-label
-
-And kernel will fail like this:
-
-Kernel says this:
-      device-mapper: table: 252:1: crypt: Error allocating crypto tfm
-      device-mapper: ioctl: error adding target to table
-
-I think crypto modules are not getting auto loaded for some reason, but 
-even if I load them manually before hand and still breaks in the same way.
-
-Maybe someone will have a "ah yes" moment? Here is the diff between 
-working (vanilla 3.6.4) and non-working (3.6.4-rt10) configs:
-
---- 1	2012-10-29 20:37:49.472306922 +0000
-+++ 2	2012-10-29 20:37:52.319732779 +0000
-@@ -892,7 +892,6 @@
-  # CONFIG_DEBUG_SECTION_MISMATCH is not set
-  # CONFIG_DEBUG_SET_MODULE_RONX is not set
-  # CONFIG_DEBUG_SG is not set
--# CONFIG_DEBUG_SHIRQ is not set
-  # CONFIG_DEBUG_SPINLOCK is not set
-  # CONFIG_DEBUG_STACKOVERFLOW is not set
-  # CONFIG_DEBUG_STACK_USAGE is not set
-@@ -1810,7 +1809,7 @@
-  CONFIG_MTRR_SANITIZER=y
-  CONFIG_MTRR=y
-  # CONFIG_MULTICORE_RAID456 is not set
--CONFIG_MUTEX_SPIN_ON_OWNER=y
-+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
-  # CONFIG_MWAVE is not set
-  CONFIG_NAMESPACES=y
-  CONFIG_NATIONAL_PHY=y
-@@ -1842,7 +1841,6 @@
-  CONFIG_NET_CLS_TCINDEX=m
-  CONFIG_NET_CLS_U32=m
-  CONFIG_NET_CLS=y
--# CONFIG_NETCONSOLE is not set
-  CONFIG_NET_CORE=y
-  CONFIG_NETDEVICES=y
-  # CONFIG_NET_DSA is not set
-@@ -2260,9 +2258,13 @@
-  CONFIG_PPP=y
-  # CONFIG_PPS is not set
-  CONFIG_PREEMPT_COUNT=y
-+# CONFIG_PREEMPT__LL is not set
-  # CONFIG_PREEMPT_NONE is not set
-  CONFIG_PREEMPT_NOTIFIERS=y
-  CONFIG_PREEMPT_RCU=y
-+CONFIG_PREEMPT_RT_BASE=y
-+# CONFIG_PREEMPT_RTB is not set
-+CONFIG_PREEMPT_RT_FULL=y
-  # CONFIG_PREEMPT_VOLUNTARY is not set
-  CONFIG_PREEMPT=y
-  CONFIG_PREVENT_FIRMWARE_BUILD=y
-@@ -2368,11 +2370,10 @@
-  CONFIG_RTC_INTF_PROC=y
-  CONFIG_RTC_INTF_SYSFS=y
-  CONFIG_RTC_LIB=y
--# CONFIG_RT_GROUP_SCHED is not set
-  CONFIG_RT_MUTEXES=y
-  # CONFIG_RT_MUTEX_TESTER is not set
--# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
--CONFIG_RWSEM_XCHGADD_ALGORITHM=y
-+CONFIG_RWSEM_GENERIC_SPINLOCK=y
-+# CONFIG_RWSEM_XCHGADD_ALGORITHM is not set
-  # CONFIG_SAMPLES is not set
-  # CONFIG_SATA_ACARD_AHCI is not set
-  CONFIG_SATA_AHCI=m
-@@ -2851,7 +2852,6 @@
-  CONFIG_TRACE_IRQFLAGS_SUPPORT=y
-  # CONFIG_TRACE_SINK is not set
-  CONFIG_TRACING_SUPPORT=y
--# CONFIG_TRANSPARENT_HUGEPAGE is not set
-  CONFIG_TREE_PREEMPT_RCU=y
-  # CONFIG_TREE_RCU_TRACE is not set
-  CONFIG_TUN=y
-@@ -2867,7 +2867,6 @@
-  CONFIG_UID16=y
-  # CONFIG_UIO is not set
-  # CONFIG_ULTRIX_PARTITION is not set
--CONFIG_UNINLINE_SPIN_UNLOCK=y
-  CONFIG_UNIX98_PTYS=y
-  CONFIG_UNIX_DIAG=y
-  # CONFIG_UNIXWARE_DISKLABEL is not set
-
-No crypto related differences.
-
-Tvrtko
-
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f320922..a63e641 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4231,6 +4231,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ {
+ 	int ld_moved, cur_ld_moved, active_balance = 0;
+ 	int lb_iterations, max_lb_iterations;
++	int clock_updated;
+ 	struct sched_group *group;
+ 	struct rq *busiest;
+ 	unsigned long flags;
+@@ -4274,6 +4275,7 @@ redo:
+ 
+ 	ld_moved = 0;
+ 	lb_iterations = 1;
++	clock_updated = 0;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+ 		 * Attempt to move tasks. If find_busiest_group has found
+@@ -4297,6 +4299,14 @@ more_balance:
+ 		 */
+ 		cur_ld_moved = move_tasks(&env);
+ 		ld_moved += cur_ld_moved;
++
++		/*
++		 * Move tasks may end up calling can_migrate_task() which
++		 * requires an uptodate value of the rq clock.
++		 */
++		update_nohz_rq_clock(busiest);
++		clock_updated = 1;
++
+ 		double_rq_unlock(env.dst_rq, busiest);
+ 		local_irq_restore(flags);
+ 
+@@ -4392,6 +4402,13 @@ more_balance:
+ 				busiest->active_balance = 1;
+ 				busiest->push_cpu = this_cpu;
+ 				active_balance = 1;
++				/*
++				 * active_load_balance_cpu_stop may end up calling
++				 * can_migrate_task() which requires an uptodate
++				 * value of the rq clock.
++				 */
++				if (!clock_updated)
++					update_nohz_rq_clock(busiest);
+ 			}
+ 			raw_spin_unlock_irqrestore(&busiest->lock, flags);
+ 
+-- 
+1.7.10.4
 
 
