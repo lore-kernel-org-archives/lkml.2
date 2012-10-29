@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab2J2GU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 02:20:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46387 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab2J2GU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 02:20:27 -0400
-Date: Mon, 29 Oct 2012 08:14:27 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Constantine Shulyupin <const@MakeLinux.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <tim.bird@am.sony.com>, <pandaboard@googlegroups.com>,
-        Tony Lindgren OMAP <tony@atomide.com>,
-        Santosh Shilimkar OMAP <santosh.shilimkar@ti.com>, <nsekhar@ti.com>,
-        <balbi@ti.com>
-Subject: Re: [PATCH] Add FDT support to Pandaboard initialization
-Message-ID: <20121029061427.GP17570@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1351363800-28744-1-git-send-email-const@MakeLinux.com>
+	id S1755418Ab2J2GWB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 02:22:01 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33899 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2J2GV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 02:21:58 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="neYutvxvOLaeuPCA"
-Content-Disposition: inline
-In-Reply-To: <1351363800-28744-1-git-send-email-const@MakeLinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121028231608.685974874@decadent.org.uk>
+References: <20121028231536.970033833@decadent.org.uk> <20121028231608.685974874@decadent.org.uk>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Mon, 29 Oct 2012 07:21:37 +0100
+Message-ID: <CAHkwnC8awjvFxM1x2VGpG0K44zR2jTo8MRQk1v1YwJwrKxMYnA@mail.gmail.com>
+Subject: Re: [ 102/105] usb: gadget: at91_udc: fix dt support
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---neYutvxvOLaeuPCA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 29, 2012 at 12:17 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> 3.2-stable review patch.  If anyone has any objections, please let me know.
 
-On Sat, Oct 27, 2012 at 08:50:00PM +0200, Constantine Shulyupin wrote:
-> From: Constantine Shulyupin <const@MakeLinux.com>
->=20
-> Problem:
-> - FDT is supported only by generic OMAP board initialization in arch/arm/=
-mach-omap2/board-generic.c and lacks some configurations, which are not yet=
- configured in FDT (USB for example).
-> Solution:
-> - arch/arm/mach-omap2/board-omap4panda.c supports initialization with FDT=
- and without it.
->=20
-> Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
+Hi Ben,
+this patch is only useful only for kernel version 3.4 and later,
+because the dt support was
+introduced in the 3.4 release with the following commit:
+     d1494a340807c9b77aa44bc8d8166353df4cf1c3
+so i think it's best to doesn't apply this patch.
 
-NAK, the whole idea of DT is to drop board-*.c. It would be best to see
-the "missing initialization" being added to board-generic/dts files.
+Best regards
+-- 
+Fabio Porcedda
 
---=20
-balbi
-
---neYutvxvOLaeuPCA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQjh7DAAoJEIaOsuA1yqREOGQP/0+3Up8ExM94GhgldMoKYLEx
-1WsAMRReXR0QDLe+rJDxfzHoICgz1Mc7QzsammNU6q9va6q4pLt6Mq+v6VibsfLe
-FWiejPJCUixvklmy25FZ1Vq8Cb4NTQCIgubBK26Bpxd9j6wZFNz33ygFWPw1UPkb
-pVgsLlpkViiilLrrrD8f8ZHQy7H7EajiwtrC0d1WV6N7LaXsNeKFuML/TfJrqNKY
-9iUINrTf+OC3G8tS4UFuGesZ3dt+MWVNoJKCV9z4xeXOh7wgah7LX51DKW5RWtiF
-31Tpcyp1DBxzvNzWm5Xdl/OGXJBOc/SaTnJu9Tm/RwHG45W8HMadCqWvW/TOg+Vd
-k1oJr7+BNebKkFP/Uq/zB0E6jem+C2tmiWLXdq8LnYbc8b8DfqLYHD9D4A3pyB/m
-FTwWqPoJQttUSnE9YqXDqQwM6XLH511LdzivYq3n+JSUvcv5BqGp4bly8NiZeFCO
-99DDUiYrrLDI/fNGuP046uJzo/M3UpSUtmLsNGnZ6DmlHEd+euRBuuiGVR2bwWZZ
-9FsyA+k1tRc/qcVhKLOq9LnFNqBLovhSGxN5bJz6beAy+pgcfNQftQbl+Qu8Um0S
-CVNQMWq0f9c+FoIataBNTW/XYw3dXB63KRaax83uehOLME716JBIjyn19jVMTMpN
-Hq3AOUmK+xRRb9H8S0W3
-=3EdU
------END PGP SIGNATURE-----
-
---neYutvxvOLaeuPCA--
+> ------------------
+>
+> From: Fabio Porcedda <fabio.porcedda@gmail.com>
+>
+> commit 9c6d196d5aa35e07482f23c3e37755e7a82140e0 upstream.
+>
+> Don't fail the initialization check for the platform_data
+> if there is avaiable an associated device tree node.
+>
+> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/usb/gadget/at91_udc.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- a/drivers/usb/gadget/at91_udc.c
+> +++ b/drivers/usb/gadget/at91_udc.c
+> @@ -1735,7 +1735,7 @@ static int __devinit at91udc_probe(struc
+>         int             retval;
+>         struct resource *res;
+>
+> -       if (!dev->platform_data) {
+> +       if (!dev->platform_data && !pdev->dev.of_node) {
+>                 /* small (so we copy it) but critical! */
+>                 DBG("missing platform_data\n");
+>                 return -ENODEV;
+>
+>
