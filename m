@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933502Ab2J2WJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:09:56 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47576 "EHLO mail.kernel.org"
+	id S933508Ab2J2WKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:10:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47567 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760979Ab2J2VhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761247Ab2J2VhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 17:37:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 050/101] USB: omninet: fix port-data memory leak
-Date: Mon, 29 Oct 2012 14:35:03 -0700
-Message-Id: <20121029213245.818697435@linuxfoundation.org>
+Subject: [ 049/101] USB: keyspan: fix NULL-pointer dereferences and memory leaks
+Date: Mon, 29 Oct 2012 14:35:02 -0700
+Message-Id: <20121029213245.713048100@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,14 +27,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit feffa7ca6008ab859dd7ab7448a5a899bf0aa98f upstream.
+commit f79b2d0fe81eecb412dc48e87a119afc690da8e9 upstream.
 
-Fix port-data memory leak by replacing attach and release with
-port_probe and port_remove.
+Fix NULL-pointer dereference at release by moving port data allocation
+and deallocation to port_probe and port_remove.
+
+Fix NULL-pointer dereference at disconnect by stopping port urbs at
+port_remove.
 
 Since commit 0998d0631001288 (device-core: Ensure drvdata = NULL when no
-driver is bound) the port private data is no longer freed at release as
-it is no longer accessible.
+driver is bound) the port private data is no longer accessible at
+disconnect or release.
+
+Note that this patch also fixes port and interface-data memory leaks in
+the error path of attach should port initialisation fail for any port.
 
 Compile-only tested.
 
@@ -42,87 +48,289 @@ Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/omninet.c |   36 ++++++++++++++++++------------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ drivers/usb/serial/keyspan.c |  183 ++++++++++++++++++++-----------------------
+ drivers/usb/serial/keyspan.h |    8 +
+ 2 files changed, 96 insertions(+), 95 deletions(-)
 
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -46,8 +46,8 @@ static int  omninet_write(struct tty_str
- 				const unsigned char *buf, int count);
- static int  omninet_write_room(struct tty_struct *tty);
- static void omninet_disconnect(struct usb_serial *serial);
--static void omninet_release(struct usb_serial *serial);
--static int omninet_attach(struct usb_serial *serial);
-+static int omninet_port_probe(struct usb_serial_port *port);
-+static int omninet_port_remove(struct usb_serial_port *port);
- 
- static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(ZYXEL_VENDOR_ID, ZYXEL_OMNINET_ID) },
-@@ -64,7 +64,8 @@ static struct usb_serial_driver zyxel_om
- 	.description =		"ZyXEL - omni.net lcd plus usb",
- 	.id_table =		id_table,
- 	.num_ports =		1,
--	.attach =		omninet_attach,
-+	.port_probe =		omninet_port_probe,
-+	.port_remove =		omninet_port_remove,
- 	.open =			omninet_open,
- 	.close =		omninet_close,
- 	.write =		omninet_write,
-@@ -72,7 +73,6 @@ static struct usb_serial_driver zyxel_om
- 	.read_bulk_callback =	omninet_read_bulk_callback,
- 	.write_bulk_callback =	omninet_write_bulk_callback,
- 	.disconnect =		omninet_disconnect,
--	.release =		omninet_release,
- };
- 
- static struct usb_serial_driver * const serial_drivers[] = {
-@@ -114,18 +114,26 @@ struct omninet_data {
- 	__u8	od_outseq;	/* Sequence number for bulk_out URBs */
- };
- 
--static int omninet_attach(struct usb_serial *serial)
-+static int omninet_port_probe(struct usb_serial_port *port)
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -1392,13 +1392,9 @@ static struct callbacks {
+ 	   data in device_details */
+ static void keyspan_setup_urbs(struct usb_serial *serial)
  {
- 	struct omninet_data *od;
--	struct usb_serial_port *port = serial->port[0];
+-	int				i, j;
+ 	struct keyspan_serial_private 	*s_priv;
+ 	const struct keyspan_device_details	*d_details;
+-	struct usb_serial_port		*port;
+-	struct keyspan_port_private	*p_priv;
+ 	struct callbacks		*cback;
+-	int				endp;
  
- 	od = kmalloc(sizeof(struct omninet_data), GFP_KERNEL);
--	if (!od) {
--		dev_err(&port->dev, "%s- kmalloc(%Zd) failed.\n",
--			__func__, sizeof(struct omninet_data));
-+	if (!od)
- 		return -ENOMEM;
+ 	s_priv = usb_get_serial_data(serial);
+ 	d_details = s_priv->device_details;
+@@ -1422,45 +1418,6 @@ static void keyspan_setup_urbs(struct us
+ 		(serial, d_details->glocont_endpoint, USB_DIR_OUT,
+ 		 serial, s_priv->glocont_buf, GLOCONT_BUFLEN,
+ 		 cback->glocont_callback);
+-
+-	/* Setup endpoints for each port specific thing */
+-	for (i = 0; i < d_details->num_ports; i++) {
+-		port = serial->port[i];
+-		p_priv = usb_get_serial_port_data(port);
+-
+-		/* Do indat endpoints first, once for each flip */
+-		endp = d_details->indat_endpoints[i];
+-		for (j = 0; j <= d_details->indat_endp_flip; ++j, ++endp) {
+-			p_priv->in_urbs[j] = keyspan_setup_urb
+-				(serial, endp, USB_DIR_IN, port,
+-				 p_priv->in_buffer[j], 64,
+-				 cback->indat_callback);
+-		}
+-		for (; j < 2; ++j)
+-			p_priv->in_urbs[j] = NULL;
+-
+-		/* outdat endpoints also have flip */
+-		endp = d_details->outdat_endpoints[i];
+-		for (j = 0; j <= d_details->outdat_endp_flip; ++j, ++endp) {
+-			p_priv->out_urbs[j] = keyspan_setup_urb
+-				(serial, endp, USB_DIR_OUT, port,
+-				 p_priv->out_buffer[j], 64,
+-				 cback->outdat_callback);
+-		}
+-		for (; j < 2; ++j)
+-			p_priv->out_urbs[j] = NULL;
+-
+-		/* inack endpoint */
+-		p_priv->inack_urb = keyspan_setup_urb
+-			(serial, d_details->inack_endpoints[i], USB_DIR_IN,
+-			 port, p_priv->inack_buffer, 1, cback->inack_callback);
+-
+-		/* outcont endpoint */
+-		p_priv->outcont_urb = keyspan_setup_urb
+-			(serial, d_details->outcont_endpoints[i], USB_DIR_OUT,
+-			 port, p_priv->outcont_buffer, 64,
+-			 cback->outcont_callback);
+-	}
+ }
+ 
+ /* usa19 function doesn't require prescaler */
+@@ -2422,9 +2379,7 @@ static void keyspan_send_setup(struct us
+ static int keyspan_startup(struct usb_serial *serial)
+ {
+ 	int				i, err;
+-	struct usb_serial_port		*port;
+ 	struct keyspan_serial_private 	*s_priv;
+-	struct keyspan_port_private	*p_priv;
+ 	const struct keyspan_device_details	*d_details;
+ 
+ 	for (i = 0; (d_details = keyspan_devices[i]) != NULL; ++i)
+@@ -2448,19 +2403,6 @@ static int keyspan_startup(struct usb_se
+ 	s_priv->device_details = d_details;
+ 	usb_set_serial_data(serial, s_priv);
+ 
+-	/* Now setup per port private data */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		p_priv = kzalloc(sizeof(struct keyspan_port_private),
+-								GFP_KERNEL);
+-		if (!p_priv) {
+-			dbg("%s - kmalloc for keyspan_port_private (%d) failed!.", __func__, i);
+-			return 1;
+-		}
+-		p_priv->device_details = d_details;
+-		usb_set_serial_port_data(port, p_priv);
+-	}
+-
+ 	keyspan_setup_urbs(serial);
+ 
+ 	if (s_priv->instat_urb != NULL) {
+@@ -2481,61 +2423,112 @@ static int keyspan_startup(struct usb_se
+ 
+ static void keyspan_disconnect(struct usb_serial *serial)
+ {
+-	int				i, j;
+-	struct usb_serial_port		*port;
+-	struct keyspan_serial_private 	*s_priv;
+-	struct keyspan_port_private	*p_priv;
++	struct keyspan_serial_private *s_priv;
+ 
+ 	s_priv = usb_get_serial_data(serial);
+ 
+-	/* Stop reading/writing urbs */
+ 	stop_urb(s_priv->instat_urb);
+ 	stop_urb(s_priv->glocont_urb);
+ 	stop_urb(s_priv->indat_urb);
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		port = serial->port[i];
+-		p_priv = usb_get_serial_port_data(port);
+-		stop_urb(p_priv->inack_urb);
+-		stop_urb(p_priv->outcont_urb);
+-		for (j = 0; j < 2; j++) {
+-			stop_urb(p_priv->in_urbs[j]);
+-			stop_urb(p_priv->out_urbs[j]);
+-		}
+-	}
++}
++
++static void keyspan_release(struct usb_serial *serial)
++{
++	struct keyspan_serial_private *s_priv;
++
++	s_priv = usb_get_serial_data(serial);
+ 
+-	/* Now free them */
+ 	usb_free_urb(s_priv->instat_urb);
+ 	usb_free_urb(s_priv->indat_urb);
+ 	usb_free_urb(s_priv->glocont_urb);
+-	for (i = 0; i < serial->num_ports; ++i) {
+-		port = serial->port[i];
+-		p_priv = usb_get_serial_port_data(port);
+-		usb_free_urb(p_priv->inack_urb);
+-		usb_free_urb(p_priv->outcont_urb);
+-		for (j = 0; j < 2; j++) {
+-			usb_free_urb(p_priv->in_urbs[j]);
+-			usb_free_urb(p_priv->out_urbs[j]);
+-		}
 -	}
 +
- 	usb_set_serial_port_data(port, od);
++	kfree(s_priv);
+ }
+ 
+-static void keyspan_release(struct usb_serial *serial)
++static int keyspan_port_probe(struct usb_serial_port *port)
+ {
+-	int				i;
+-	struct usb_serial_port		*port;
+-	struct keyspan_serial_private 	*s_priv;
++	struct usb_serial *serial = port->serial;
++	struct keyspan_port_private *s_priv;
++	struct keyspan_port_private *p_priv;
++	const struct keyspan_device_details *d_details;
++	struct callbacks *cback;
++	int endp;
++	int port_num;
++	int i;
+ 
+ 	s_priv = usb_get_serial_data(serial);
++	d_details = s_priv->device_details;
+ 
+-	/*  dbg("Freeing serial->private."); */
+-	kfree(s_priv);
++	p_priv = kzalloc(sizeof(*p_priv), GFP_KERNEL);
++	if (!p_priv)
++		return -ENOMEM;
 +
++	s_priv = usb_get_serial_data(port->serial);
++	p_priv->device_details = d_details;
++
++	/* Setup values for the various callback routines */
++	cback = &keyspan_callbacks[d_details->msg_format];
++
++	port_num = port->number - port->serial->minor;
++
++	/* Do indat endpoints first, once for each flip */
++	endp = d_details->indat_endpoints[port_num];
++	for (i = 0; i <= d_details->indat_endp_flip; ++i, ++endp) {
++		p_priv->in_urbs[i] = keyspan_setup_urb(serial, endp,
++						USB_DIR_IN, port,
++						p_priv->in_buffer[i], 64,
++						cback->indat_callback);
++	}
++	/* outdat endpoints also have flip */
++	endp = d_details->outdat_endpoints[port_num];
++	for (i = 0; i <= d_details->outdat_endp_flip; ++i, ++endp) {
++		p_priv->out_urbs[i] = keyspan_setup_urb(serial, endp,
++						USB_DIR_OUT, port,
++						p_priv->out_buffer[i], 64,
++						cback->outdat_callback);
++	}
++	/* inack endpoint */
++	p_priv->inack_urb = keyspan_setup_urb(serial,
++					d_details->inack_endpoints[port_num],
++					USB_DIR_IN, port,
++					p_priv->inack_buffer, 1,
++					cback->inack_callback);
++	/* outcont endpoint */
++	p_priv->outcont_urb = keyspan_setup_urb(serial,
++					d_details->outcont_endpoints[port_num],
++					USB_DIR_OUT, port,
++					p_priv->outcont_buffer, 64,
++					 cback->outcont_callback);
++
++	usb_set_serial_port_data(port, p_priv);
+ 
+-	/*  dbg("Freeing port->private."); */
+-	/* Now free per port private data */
+-	for (i = 0; i < serial->num_ports; i++) {
+-		port = serial->port[i];
+-		kfree(usb_get_serial_port_data(port));
 +	return 0;
 +}
 +
-+static int omninet_port_remove(struct usb_serial_port *port)
++static int keyspan_port_remove(struct usb_serial_port *port)
 +{
-+	struct omninet_data *od;
++	struct keyspan_port_private *p_priv;
++	int i;
 +
-+	od = usb_get_serial_port_data(port);
-+	kfree(od);
++	p_priv = usb_get_serial_port_data(port);
 +
- 	return 0;
++	stop_urb(p_priv->inack_urb);
++	stop_urb(p_priv->outcont_urb);
++	for (i = 0; i < 2; i++) {
++		stop_urb(p_priv->in_urbs[i]);
++		stop_urb(p_priv->out_urbs[i]);
++	}
++
++	usb_free_urb(p_priv->inack_urb);
++	usb_free_urb(p_priv->outcont_urb);
++	for (i = 0; i < 2; i++) {
++		usb_free_urb(p_priv->in_urbs[i]);
++		usb_free_urb(p_priv->out_urbs[i]);
+ 	}
++
++	kfree(p_priv);
++
++	return 0;
  }
- 
-@@ -291,14 +299,6 @@ static void omninet_disconnect(struct us
- 	usb_kill_urb(wport->write_urb);
- }
- 
--
--static void omninet_release(struct usb_serial *serial)
--{
--	struct usb_serial_port *port = serial->port[0];
--
--	kfree(usb_get_serial_port_data(port));
--}
--
- module_usb_serial_driver(serial_drivers, id_table);
  
  MODULE_AUTHOR(DRIVER_AUTHOR);
+--- a/drivers/usb/serial/keyspan.h
++++ b/drivers/usb/serial/keyspan.h
+@@ -42,6 +42,8 @@ static void keyspan_dtr_rts		(struct usb
+ static int  keyspan_startup		(struct usb_serial *serial);
+ static void keyspan_disconnect		(struct usb_serial *serial);
+ static void keyspan_release		(struct usb_serial *serial);
++static int keyspan_port_probe(struct usb_serial_port *port);
++static int keyspan_port_remove(struct usb_serial_port *port);
+ static int  keyspan_write_room		(struct tty_struct *tty);
+ 
+ static int  keyspan_write		(struct tty_struct *tty,
+@@ -562,6 +564,8 @@ static struct usb_serial_driver keyspan_
+ 	.attach			= keyspan_startup,
+ 	.disconnect		= keyspan_disconnect,
+ 	.release		= keyspan_release,
++	.port_probe		= keyspan_port_probe,
++	.port_remove		= keyspan_port_remove,
+ };
+ 
+ static struct usb_serial_driver keyspan_2port_device = {
+@@ -584,6 +588,8 @@ static struct usb_serial_driver keyspan_
+ 	.attach			= keyspan_startup,
+ 	.disconnect		= keyspan_disconnect,
+ 	.release		= keyspan_release,
++	.port_probe		= keyspan_port_probe,
++	.port_remove		= keyspan_port_remove,
+ };
+ 
+ static struct usb_serial_driver keyspan_4port_device = {
+@@ -606,6 +612,8 @@ static struct usb_serial_driver keyspan_
+ 	.attach			= keyspan_startup,
+ 	.disconnect		= keyspan_disconnect,
+ 	.release		= keyspan_release,
++	.port_probe		= keyspan_port_probe,
++	.port_remove		= keyspan_port_remove,
+ };
+ 
+ static struct usb_serial_driver * const serial_drivers[] = {
 
 
