@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab2J2WTv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:19:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47168 "EHLO mail.kernel.org"
+	id S933618Ab2J2WTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:19:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47181 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761144Ab2J2Vgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:43 -0400
+	id S1761151Ab2J2Vgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 014/101] mm: fix XFS oops due to dirty pages without buffers on s390
-Date: Mon, 29 Oct 2012 14:34:27 -0700
-Message-Id: <20121029213241.743362432@linuxfoundation.org>
+        Chris Perl <chris.perl@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 015/101] SUNRPC: Get rid of the xs_error_report socket callback
+Date: Mon, 29 Oct 2012 14:34:28 -0700
+Message-Id: <20121029213241.850173721@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -29,107 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit ef5d437f71afdf4afdbab99213add99f4b1318fd upstream.
+commit f878b657ce8e7d3673afe48110ec208a29e38c4a upstream.
 
-On s390 any write to a page (even from kernel itself) sets architecture
-specific page dirty bit.  Thus when a page is written to via buffered
-write, HW dirty bit gets set and when we later map and unmap the page,
-page_remove_rmap() finds the dirty bit and calls set_page_dirty().
+Chris Perl reports that we're seeing races between the wakeup call in
+xs_error_report and the connect attempts. Basically, Chris has shown
+that in certain circumstances, the call to xs_error_report causes the
+rpc_task that is responsible for reconnecting to wake up early, thus
+triggering a disconnect and retry.
 
-Dirtying of a page which shouldn't be dirty can cause all sorts of
-problems to filesystems.  The bug we observed in practice is that
-buffers from the page get freed, so when the page gets later marked as
-dirty and writeback writes it, XFS crashes due to an assertion
-BUG_ON(!PagePrivate(page)) in page_buffers() called from
-xfs_count_page_state().
+Since the sk->sk_error_report() calls in the socket layer are always
+followed by a tcp_done() in the cases where we care about waking up
+the rpc_tasks, just let the state_change callbacks take responsibility
+for those wake ups.
 
-Similar problem can also happen when zero_user_segment() call from
-xfs_vm_writepage() (or block_write_full_page() for that matter) set the
-hardware dirty bit during writeback, later buffers get freed, and then
-page unmapped.
-
-Fix the issue by ignoring s390 HW dirty bit for page cache pages of
-mappings with mapping_cap_account_dirty().  This is safe because for
-such mappings when a page gets marked as writeable in PTE it is also
-marked dirty in do_wp_page() or do_page_fault().  When the dirty bit is
-cleared by clear_page_dirty_for_io(), the page gets writeprotected in
-page_mkclean().  So pagecache page is writeable if and only if it is
-dirty.
-
-Thanks to Hugh Dickins for pointing out mapping has to have
-mapping_cap_account_dirty() for things to work and proposing a cleaned
-up variant of the patch.
-
-The patch has survived about two hours of running fsx-linux on tmpfs
-while heavily swapping and several days of running on out build machines
-where the original problem was triggered.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Chris Perl <chris.perl@gmail.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Chris Perl <chris.perl@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/rmap.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ net/sunrpc/xprtsock.c |   25 -------------------------
+ 1 file changed, 25 deletions(-)
 
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -56,6 +56,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
- #include <linux/hugetlb.h>
-+#include <linux/backing-dev.h>
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -254,7 +254,6 @@ struct sock_xprt {
+ 	void			(*old_data_ready)(struct sock *, int);
+ 	void			(*old_state_change)(struct sock *);
+ 	void			(*old_write_space)(struct sock *);
+-	void			(*old_error_report)(struct sock *);
+ };
  
- #include <asm/tlbflush.h>
+ /*
+@@ -781,7 +780,6 @@ static void xs_save_old_callbacks(struct
+ 	transport->old_data_ready = sk->sk_data_ready;
+ 	transport->old_state_change = sk->sk_state_change;
+ 	transport->old_write_space = sk->sk_write_space;
+-	transport->old_error_report = sk->sk_error_report;
+ }
  
-@@ -971,11 +972,8 @@ int page_mkclean(struct page *page)
+ static void xs_restore_old_callbacks(struct sock_xprt *transport, struct sock *sk)
+@@ -789,7 +787,6 @@ static void xs_restore_old_callbacks(str
+ 	sk->sk_data_ready = transport->old_data_ready;
+ 	sk->sk_state_change = transport->old_state_change;
+ 	sk->sk_write_space = transport->old_write_space;
+-	sk->sk_error_report = transport->old_error_report;
+ }
  
- 	if (page_mapped(page)) {
- 		struct address_space *mapping = page_mapping(page);
--		if (mapping) {
-+		if (mapping)
- 			ret = page_mkclean_file(mapping, page);
--			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
--				ret = 1;
--		}
- 	}
+ static void xs_reset_transport(struct sock_xprt *transport)
+@@ -1549,25 +1546,6 @@ static void xs_tcp_state_change(struct s
+ 	read_unlock_bh(&sk->sk_callback_lock);
+ }
  
- 	return ret;
-@@ -1161,6 +1159,7 @@ void page_add_file_rmap(struct page *pag
-  */
- void page_remove_rmap(struct page *page)
+-/**
+- * xs_error_report - callback mainly for catching socket errors
+- * @sk: socket
+- */
+-static void xs_error_report(struct sock *sk)
+-{
+-	struct rpc_xprt *xprt;
+-
+-	read_lock_bh(&sk->sk_callback_lock);
+-	if (!(xprt = xprt_from_sock(sk)))
+-		goto out;
+-	dprintk("RPC:       %s client %p...\n"
+-			"RPC:       error %d\n",
+-			__func__, xprt, sk->sk_err);
+-	xprt_wake_pending_tasks(xprt, -EAGAIN);
+-out:
+-	read_unlock_bh(&sk->sk_callback_lock);
+-}
+-
+ static void xs_write_space(struct sock *sk)
  {
-+	struct address_space *mapping = page_mapping(page);
- 	bool anon = PageAnon(page);
- 	bool locked;
- 	unsigned long flags;
-@@ -1183,8 +1182,19 @@ void page_remove_rmap(struct page *page)
- 	 * this if the page is anon, so about to be freed; but perhaps
- 	 * not if it's in swapcache - there might be another pte slot
- 	 * containing the swap entry, but page not yet written to swap.
-+	 *
-+	 * And we can skip it on file pages, so long as the filesystem
-+	 * participates in dirty tracking; but need to catch shm and tmpfs
-+	 * and ramfs pages which have been modified since creation by read
-+	 * fault.
-+	 *
-+	 * Note that mapping must be decided above, before decrementing
-+	 * mapcount (which luckily provides a barrier): once page is unmapped,
-+	 * it could be truncated and page->mapping reset to NULL at any moment.
-+	 * Note also that we are relying on page_mapping(page) to set mapping
-+	 * to &swapper_space when PageSwapCache(page).
- 	 */
--	if ((!anon || PageSwapCache(page)) &&
-+	if (mapping && !mapping_cap_account_dirty(mapping) &&
- 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
- 		set_page_dirty(page);
- 	/*
+ 	struct socket *sock;
+@@ -1867,7 +1845,6 @@ static int xs_local_finish_connecting(st
+ 		sk->sk_user_data = xprt;
+ 		sk->sk_data_ready = xs_local_data_ready;
+ 		sk->sk_write_space = xs_udp_write_space;
+-		sk->sk_error_report = xs_error_report;
+ 		sk->sk_allocation = GFP_ATOMIC;
+ 
+ 		xprt_clear_connected(xprt);
+@@ -1995,7 +1972,6 @@ static void xs_udp_finish_connecting(str
+ 		sk->sk_user_data = xprt;
+ 		sk->sk_data_ready = xs_udp_data_ready;
+ 		sk->sk_write_space = xs_udp_write_space;
+-		sk->sk_error_report = xs_error_report;
+ 		sk->sk_no_check = UDP_CSUM_NORCV;
+ 		sk->sk_allocation = GFP_ATOMIC;
+ 
+@@ -2113,7 +2089,6 @@ static int xs_tcp_finish_connecting(stru
+ 		sk->sk_data_ready = xs_tcp_data_ready;
+ 		sk->sk_state_change = xs_tcp_state_change;
+ 		sk->sk_write_space = xs_tcp_write_space;
+-		sk->sk_error_report = xs_error_report;
+ 		sk->sk_allocation = GFP_ATOMIC;
+ 
+ 		/* socket options */
 
 
