@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab2J2Vl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:41:59 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48884 "EHLO mail.kernel.org"
+	id S933123Ab2J2Vlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:41:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48765 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933012Ab2J2Vly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:54 -0400
+	id S933012Ab2J2Vlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 46/54] cpufreq / powernow-k8: Remove usage of smp_processor_id() in preemptible code
-Date: Mon, 29 Oct 2012 14:40:47 -0700
-Message-Id: <20121029213807.900755997@linuxfoundation.org>
+        Heiko Stuebner <heiko@sntech.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 35/54] ARM: SAMSUNG: Add naming of s3c64xx-spi devices
+Date: Mon, 29 Oct 2012 14:40:36 -0700
+Message-Id: <20121029213806.646766364@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -26,60 +27,200 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Heiko Stuebner <heiko@sntech.de>
 
-commit e4df1cbcc1f329e53a1fff7450b2229e0addff20 upstream.
+commit 308b3afb97dc342e9c4f958d8b4c459ae0e22bd7 upstream.
 
-Commit 6889125b8b4e09c5e53e6ecab3433bed1ce198c9
-(cpufreq/powernow-k8: workqueue user shouldn't migrate the kworker to another CPU)
-causes powernow-k8 to trigger a preempt warning, e.g.:
+Commit a5238e360b71 (spi: s3c64xx: move controller information into driver
+data) introduced separate device names for the different subtypes of the
+spi controller but forgot to set these in the relevant machines.
 
-  BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq/3776
-  caller is powernowk8_target+0x20/0x49
-  Pid: 3776, comm: cpufreq Not tainted 3.6.0 #9
-  Call Trace:
-   [<ffffffff8125b447>] debug_smp_processor_id+0xc7/0xe0
-   [<ffffffff814877e7>] powernowk8_target+0x20/0x49
-   [<ffffffff81482b02>] __cpufreq_driver_target+0x82/0x8a
-   [<ffffffff81484fc6>] cpufreq_governor_performance+0x4e/0x54
-   [<ffffffff81482c50>] __cpufreq_governor+0x8c/0xc9
-   [<ffffffff81482e6f>] __cpufreq_set_policy+0x1a9/0x21e
-   [<ffffffff814839af>] store_scaling_governor+0x16f/0x19b
-   [<ffffffff81484f16>] ? cpufreq_update_policy+0x124/0x124
-   [<ffffffff8162b4a5>] ? _raw_spin_unlock_irqrestore+0x2c/0x49
-   [<ffffffff81483640>] store+0x60/0x88
-   [<ffffffff811708c0>] sysfs_write_file+0xf4/0x130
-   [<ffffffff8111243b>] vfs_write+0xb5/0x151
-   [<ffffffff811126e0>] sys_write+0x4a/0x71
-   [<ffffffff816319a9>] system_call_fastpath+0x16/0x1b
+To fix this introduce a s3c64xx_spi_setname function and populate all
+Samsung arches with the correct names. The function resides in a new
+header, as the s3c64xx-spi.h contains driver platform data and should
+therefore at some later point move out of the Samsung include dir.
 
-Fix this by by always using work_on_cpu().
+Tested on a s3c2416-based machine.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+[s.nawrocki@samsung.com: tested on mach-exynos]
+Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k8.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ arch/arm/mach-exynos/common.c                 |    5 ++++
+ arch/arm/mach-s3c24xx/s3c2416.c               |    2 +
+ arch/arm/mach-s3c24xx/s3c2443.c               |    4 +++
+ arch/arm/mach-s5p64x0/common.c                |    3 ++
+ arch/arm/mach-s5pc100/common.c                |    3 ++
+ arch/arm/mach-s5pv210/common.c                |    3 ++
+ arch/arm/plat-samsung/include/plat/spi-core.h |   30 ++++++++++++++++++++++++++
+ 7 files changed, 50 insertions(+)
 
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1223,14 +1223,7 @@ static int powernowk8_target(struct cpuf
- 	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
- 					     .relation = relation };
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -44,6 +44,7 @@
+ #include <plat/fimc-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/tv-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
  
--	/*
--	 * Must run on @pol->cpu.  cpufreq core is responsible for ensuring
--	 * that we're bound to the current CPU and pol->cpu stays online.
--	 */
--	if (smp_processor_id() == pol->cpu)
--		return powernowk8_target_fn(&pta);
--	else
--		return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
-+	return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
+ #include "common.h"
+@@ -338,6 +339,8 @@ static void __init exynos4_map_io(void)
+ 
+ 	s5p_fb_setname(0, "exynos4-fb");
+ 	s5p_hdmi_setname("exynos4-hdmi");
++
++	s3c64xx_spi_setname("exynos4210-spi");
  }
  
- /* Driver entry point to verify the policy and range of frequencies */
+ static void __init exynos5_map_io(void)
+@@ -358,6 +361,8 @@ static void __init exynos5_map_io(void)
+ 	s3c_i2c0_setname("s3c2440-i2c");
+ 	s3c_i2c1_setname("s3c2440-i2c");
+ 	s3c_i2c2_setname("s3c2440-i2c");
++
++	s3c64xx_spi_setname("exynos4210-spi");
+ }
+ 
+ static void __init exynos4_init_clocks(int xtal)
+--- a/arch/arm/mach-s3c24xx/s3c2416.c
++++ b/arch/arm/mach-s3c24xx/s3c2416.c
+@@ -61,6 +61,7 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
++#include <plat/spi-core.h>
+ 
+ static struct map_desc s3c2416_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -131,6 +132,7 @@ void __init s3c2416_map_io(void)
+ 	/* initialize device information early */
+ 	s3c2416_default_sdhci0();
+ 	s3c2416_default_sdhci1();
++	s3c64xx_spi_setname("s3c2443-spi");
+ 
+ 	iotable_init(s3c2416_iodesc, ARRAY_SIZE(s3c2416_iodesc));
+ }
+--- a/arch/arm/mach-s3c24xx/s3c2443.c
++++ b/arch/arm/mach-s3c24xx/s3c2443.c
+@@ -43,6 +43,7 @@
+ #include <plat/nand-core.h>
+ #include <plat/adc-core.h>
+ #include <plat/rtc-core.h>
++#include <plat/spi-core.h>
+ 
+ static struct map_desc s3c2443_iodesc[] __initdata = {
+ 	IODESC_ENT(WATCHDOG),
+@@ -100,6 +101,9 @@ void __init s3c2443_map_io(void)
+ 	s3c24xx_gpiocfg_default.set_pull = s3c2443_gpio_setpull;
+ 	s3c24xx_gpiocfg_default.get_pull = s3c2443_gpio_getpull;
+ 
++	/* initialize device information early */
++	s3c64xx_spi_setname("s3c2443-spi");
++
+ 	iotable_init(s3c2443_iodesc, ARRAY_SIZE(s3c2443_iodesc));
+ }
+ 
+--- a/arch/arm/mach-s5p64x0/common.c
++++ b/arch/arm/mach-s5p64x0/common.c
+@@ -44,6 +44,7 @@
+ #include <plat/sdhci.h>
+ #include <plat/adc-core.h>
+ #include <plat/fb-core.h>
++#include <plat/spi-core.h>
+ #include <plat/gpio-cfg.h>
+ #include <plat/regs-irqtype.h>
+ #include <plat/regs-serial.h>
+@@ -179,6 +180,7 @@ void __init s5p6440_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
++	s3c64xx_spi_setname("s5p64x0-spi");
+ 
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+@@ -193,6 +195,7 @@ void __init s5p6450_map_io(void)
+ 	/* initialize any device information early */
+ 	s3c_adc_setname("s3c64xx-adc");
+ 	s3c_fb_setname("s5p64x0-fb");
++	s3c64xx_spi_setname("s5p64x0-spi");
+ 
+ 	s5p64x0_default_sdhci0();
+ 	s5p64x0_default_sdhci1();
+--- a/arch/arm/mach-s5pc100/common.c
++++ b/arch/arm/mach-s5pc100/common.c
+@@ -45,6 +45,7 @@
+ #include <plat/fb-core.h>
+ #include <plat/iic-core.h>
+ #include <plat/onenand-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ #include <plat/watchdog-reset.h>
+ 
+@@ -165,6 +166,8 @@ void __init s5pc100_map_io(void)
+ 	s3c_onenand_setname("s5pc100-onenand");
+ 	s3c_fb_setname("s5pc100-fb");
+ 	s3c_cfcon_setname("s5pc100-pata");
++
++	s3c64xx_spi_setname("s5pc100-spi");
+ }
+ 
+ void __init s5pc100_init_clocks(int xtal)
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@ -43,6 +43,7 @@
+ #include <plat/iic-core.h>
+ #include <plat/keypad-core.h>
+ #include <plat/tv-core.h>
++#include <plat/spi-core.h>
+ #include <plat/regs-serial.h>
+ 
+ #include "common.h"
+@@ -196,6 +197,8 @@ void __init s5pv210_map_io(void)
+ 
+ 	/* setup TV devices */
+ 	s5p_hdmi_setname("s5pv210-hdmi");
++
++	s3c64xx_spi_setname("s5pv210-spi");
+ }
+ 
+ void __init s5pv210_init_clocks(int xtal)
+--- /dev/null
++++ b/arch/arm/plat-samsung/include/plat/spi-core.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2012 Heiko Stuebner <heiko@sntech.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __PLAT_S3C_SPI_CORE_H
++#define __PLAT_S3C_SPI_CORE_H
++
++/* These functions are only for use with the core support code, such as
++ * the cpu specific initialisation code
++ */
++
++/* re-define device name depending on support. */
++static inline void s3c64xx_spi_setname(char *name)
++{
++#ifdef CONFIG_S3C64XX_DEV_SPI0
++	s3c64xx_device_spi0.name = name;
++#endif
++#ifdef CONFIG_S3C64XX_DEV_SPI1
++	s3c64xx_device_spi1.name = name;
++#endif
++#ifdef CONFIG_S3C64XX_DEV_SPI2
++	s3c64xx_device_spi2.name = name;
++#endif
++}
++
++#endif /* __PLAT_S3C_SPI_CORE_H */
 
 
