@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab2J2QSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:18:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39449 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759511Ab2J2QSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:18:15 -0400
-Date: Mon, 29 Oct 2012 09:18:09 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive hashtable
-Message-ID: <20121029161809.GA4066@htj.dyndns.org>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com>
- <20121029112907.GA9115@Krystal>
- <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com>
- <20121029161412.GB18944@Krystal>
+	id S932624Ab2J2QTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:19:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43201 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932173Ab2J2QTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 12:19:18 -0400
+Date: Mon, 29 Oct 2012 18:13:24 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: <Vineet.Gupta1@synopsys.com>
+CC: <gregkh@linuxfoundation.org>, <alan@linux.intel.com>, <balbi@ti.com>,
+        <arc-linux-dev@synopsys.com>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7] serial/arc-uart: Add new driver
+Message-ID: <20121029161324.GH27566@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1351322232-32137-1-git-send-email-vgupta@synopsys.com>
+ <1351322232-32137-2-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+PbGPm1eXpwOoWkI"
 Content-Disposition: inline
-In-Reply-To: <20121029161412.GB18944@Krystal>
+In-Reply-To: <1351322232-32137-2-git-send-email-vgupta@synopsys.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--+PbGPm1eXpwOoWkI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 29, 2012 at 12:14:12PM -0400, Mathieu Desnoyers wrote:
-> Most of the calls to this initialization function apply it on zeroed
-> memory (static/kzalloc'd...), which makes it useless. I'd actually be in
-> favor of removing those redundant calls (as I pointed out in another
-> email), and document that zeroed memory don't need to be explicitly
-> initialized.
-> 
-> Those sites that need to really reinitialize memory, or initialize it
-> (if located on the stack or in non-zeroed dynamically allocated memory)
-> could use a memset to 0, which will likely be faster than setting to
-> NULL on many architectures.
+Hi,
 
-I don't think it's a good idea to optimize out the basic encapsulation
-there.  We're talking about re-zeroing some static memory areas which
-are pretty small.  It's just not worth optimizing out at the cost of
-proper initializtion.  e.g. We might add debug fields to list_head
-later.
+On Sat, Oct 27, 2012 at 12:47:12PM +0530, Vineet.Gupta1@synopsys.com wrote:
+> From: Vineet Gupta <vgupta@synopsys.com>
+>=20
+> Driver for non-standard on-chip UART, instantiated in the ARC (Synopsys)
+> FPGA Boards such as ARCAngel4/ML50x
+>=20
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 
-Thanks.
+I'm by no means an expert on the tty layer, but this looks a lot better
+than previous version.
 
--- 
-tejun
+FWIW:
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--+PbGPm1eXpwOoWkI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQjqskAAoJEIaOsuA1yqRE11sP/iWHvpFHz0z8iAsqjblmzTAe
+K2aN7ZvwiMNKR/WtP1qlxRQ6wwIJqHg5iegxDvsh1KFXXQKyVAMTIbxWqujc8hPG
+I32IE5R3HzNiDFtxS7CnoAiY6DGDlkV4tKqNX/a5ZHMsXUNLKbMPhlpD49NY9UNL
+Rg3px8uHsdl2Q4/gs0Rx3rH8rmmVdGC5WNWlcu3tt5IcGirAGfBURVPPw136h1lc
+dAjB44CFitEpr8HDltXnNFRil8zkcISSt4q/J+4e/4C7wpN4I2auUw744pNl28vM
+Rvcqub+0MMPCJshO6Z86U7El6+cdi5PsHCLuF4g/6bzjmGk2Hf+2+aiHAW/1DsjN
+gYK9CoaCmpkPHsorj8p+t1qZ5zUyb7LLCe7AAKJ57XI/NLPxMFgFlJ5u1HOnAaYz
+Ogl6SxDFVtrqmEbSJ6hm1kUUS8wdkNeM3m3G9oTjgASjfPTfe2l+cTx5yKIJ8J2i
+mqZmWvWm1oFm0XmnVInmyryghBfjEYtxj/e2BFw4VpVpzhcDNZpv224/9DAnv1Vj
+uf4GYohsjP6WbXh3hPScz6wApaz0G1mrKPK3vKFFHHGCLDBeaJjAZgKLyw5L2doh
+sJ39HntvstbbiU8+ocygLcPHGh2maPENVfTcmbjnEJ6MEtFBRgod6mxEVxcsLKqQ
+FxDgKm0XxXcxk1lkMTrr
+=cW/y
+-----END PGP SIGNATURE-----
+
+--+PbGPm1eXpwOoWkI--
