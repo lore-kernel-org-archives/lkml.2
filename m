@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831Ab2J2PNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:13:48 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58627 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752265Ab2J2PNq (ORCPT
+	id S932091Ab2J2POh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:14:37 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48713 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab2J2POe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:13:46 -0400
-Date: Mon, 29 Oct 2012 11:13:43 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, tj@kernel.org,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, paul.gortmaker@windriver.com, davem@davemloft.net,
-        rostedt@goodmis.org, mingo@elte.hu, ebiederm@xmission.com,
-        aarcange@redhat.com, ericvh@gmail.com, netdev@vger.kernel.org,
-        josh@joshtriplett.org, eric.dumazet@gmail.com, axboe@kernel.dk,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        ccaulfie@redhat.com, teigland@redhat.com, Trond.Myklebust@netapp.com,
-        bfields@fieldses.org, fweisbec@gmail.com, jesse@nicira.com,
-        venkat.x.venkatsubra@oracle.com, ejt@redhat.com, snitzer@redhat.com,
-        edumazet@google.com, linux-nfs@vger.kernel.org, dev@openvswitch.org,
-        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
-Subject: Re: [PATCH v7 09/16] SUNRPC/cache: use new hashtable implementation
-Message-ID: <20121029151343.GA17722@Krystal>
-References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <1351450948-15618-9-git-send-email-levinsasha928@gmail.com> <20121029124229.GC11733@Krystal> <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
+	Mon, 29 Oct 2012 11:14:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzO8DJJP3HBfgqXFac9r3=bYK+_nYe4cuXiNFg-623s6w@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1350656442-1523-12-git-send-email-glommer@parallels.com>
+References: <1350656442-1523-1-git-send-email-glommer@parallels.com>
+	<1350656442-1523-12-git-send-email-glommer@parallels.com>
+Date: Tue, 30 Oct 2012 00:14:34 +0900
+Message-ID: <CAAmzW4M7SFF8t491mrHdXmdmCVA_=ma_XMCEyuOMo3TnqDVNxg@mail.gmail.com>
+Subject: Re: [PATCH v5 11/18] sl[au]b: Allocate objects from memcg cache
+From: JoonSoo Kim <js1304@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        kamezawa.hiroyu@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, devel@openvz.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Suleiman Souhlal <suleiman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Mon, Oct 29, 2012 at 5:42 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > So defining e.g.:
-> >
-> > #include <linux/log2.h>
-> >
-> > #define DFR_HASH_BITS  (PAGE_SHIFT - ilog2(BITS_PER_LONG))
-> >
-> > would keep the intended behavior in all cases: use one page for the hash
-> > array.
-> 
-> Well, since that wasn't true before either because of the long-time
-> bug you point out, clearly the page size isn't all that important. I
-> think it's more important to have small and simple code, and "9" is
-> certainly that, compared to playing ilog2 games with not-so-obvious
-> things.
-> 
-> Because there's no reason to believe that '9' is in any way a worse
-> random number than something page-shift-related, is there? And getting
-> away from *previous* overly-complicated size calculations that had
-> been broken because they were too complicated and random, sounds like
-> a good idea.
+Hi, Glauber.
 
-Good point. I agree that unless we really care about the precise number
-of TLB entries and cache lines used by this hash table, we might want to
-stay away from page-size and pointer-size based calculation.
+2012/10/19 Glauber Costa <glommer@parallels.com>:
+> We are able to match a cache allocation to a particular memcg.  If the
+> task doesn't change groups during the allocation itself - a rare event,
+> this will give us a good picture about who is the first group to touch a
+> cache page.
+>
+> This patch uses the now available infrastructure by calling
+> memcg_kmem_get_cache() before all the cache allocations.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Christoph Lameter <cl@linux.com>
+> CC: Pekka Enberg <penberg@cs.helsinki.fi>
+> CC: Michal Hocko <mhocko@suse.cz>
+> CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Johannes Weiner <hannes@cmpxchg.org>
+> CC: Suleiman Souhlal <suleiman@google.com>
+> CC: Tejun Heo <tj@kernel.org>
+> ---
+>  include/linux/slub_def.h | 15 ++++++++++-----
+>  mm/memcontrol.c          |  3 +++
+>  mm/slab.c                |  6 +++++-
+>  mm/slub.c                |  5 +++--
+>  4 files changed, 21 insertions(+), 8 deletions(-)
+>
+> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+> index 961e72e..ed330df 100644
+> --- a/include/linux/slub_def.h
+> +++ b/include/linux/slub_def.h
+> @@ -13,6 +13,8 @@
+>  #include <linux/kobject.h>
+>
+>  #include <linux/kmemleak.h>
+> +#include <linux/memcontrol.h>
+> +#include <linux/mm.h>
+>
+>  enum stat_item {
+>         ALLOC_FASTPATH,         /* Allocation from cpu slab */
+> @@ -209,14 +211,14 @@ static __always_inline int kmalloc_index(size_t size)
+>   * This ought to end up with a global pointer to the right cache
+>   * in kmalloc_caches.
+>   */
+> -static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
+> +static __always_inline struct kmem_cache *kmalloc_slab(gfp_t flags, size_t size)
+>  {
+>         int index = kmalloc_index(size);
+>
+>         if (index == 0)
+>                 return NULL;
+>
+> -       return kmalloc_caches[index];
+> +       return memcg_kmem_get_cache(kmalloc_caches[index], flags);
+>  }
 
-It might not hurt to explain this in the patch changelog though.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+You don't need this,
+because memcg_kmem_get_cache() is invoked in both slab_alloc() and
+__cache_alloc_node().
