@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab2J2IiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 04:38:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51529 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab2J2IiX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 04:38:23 -0400
-Message-ID: <1351499898.14725.5.camel@phoenix>
-Subject: [PATCH] backlight: lm3639_bl: Fix up world writable sysfs file
-From: Axel Lin <axel.lin@ingics.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "G.Shark Jeong" <gshark.jeong@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Daniel Jeong <daniel.jeong@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 29 Oct 2012 16:38:18 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932152Ab2J2InM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 04:43:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7860 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756787Ab2J2InH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 04:43:07 -0400
+X-IronPort-AV: E=Sophos;i="4.80,670,1344182400"; 
+   d="scan'208";a="6091104"
+From: Wen Congyang <wency@cn.fujitsu.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, bhelgaas@google.com,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>
+Subject: [PATCH v3 0/2] fixes for mem= option
+Date: Mon, 29 Oct 2012 16:48:42 +0800
+Message-Id: <1351500524-23907-1-git-send-email-wency@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 16:42:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/10/29 16:42:23,
+	Serialize complete at 2012/10/29 16:42:23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need the sysfs file to be world writable or group writable.
-This file is write-only, change it to S_IWUSR (0200).
+The documentation and implementation of 'mem=' option doesn't match, and the
+option can't work for efi platform. This patchset updates the documentation
+and make the option to work for efi platform.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/video/backlight/lm3639_bl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Changes from v2 to v3:
+    Patch1: X86-32 ===> X86
 
-diff --git a/drivers/video/backlight/lm3639_bl.c b/drivers/video/backlight/lm3639_bl.c
-index 585949b..6f7a20e 100644
---- a/drivers/video/backlight/lm3639_bl.c
-+++ b/drivers/video/backlight/lm3639_bl.c
-@@ -214,7 +214,7 @@ out_input:
- 
- }
- 
--static DEVICE_ATTR(bled_mode, 0666, NULL, lm3639_bled_mode_store);
-+static DEVICE_ATTR(bled_mode, S_IWUSR, NULL, lm3639_bled_mode_store);
- 
- /* torch */
- static void lm3639_torch_brightness_set(struct led_classdev *cdev,
+Changes from v1 to v2:
+    Patch1: Just fix a typo error(ingoring -> ignoring).
+
+Wen Congyang (2):
+  update mem= option's spec according to its implementation
+  x86: make 'mem=' option to work for efi platform
+
+ Documentation/kernel-parameters.txt |  7 ++++---
+ arch/x86/kernel/e820.c              | 29 +++++++++++++++++++++++++----
+ 2 files changed, 29 insertions(+), 7 deletions(-)
+
 -- 
-1.7.9.5
-
-
+1.8.0
 
