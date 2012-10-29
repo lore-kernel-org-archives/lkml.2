@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759521Ab2J2PnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:43:07 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:39089 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2J2PnF (ORCPT
+	id S1759537Ab2J2Pnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:43:35 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:53762 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348Ab2J2Pnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 11:43:05 -0400
+	Mon, 29 Oct 2012 11:43:33 -0400
+Message-ID: <508EA417.1040304@linux.vnet.ibm.com>
+Date: Mon, 29 Oct 2012 10:43:19 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1351525112.24721.36.camel@twins>
-References: <1351523752-4215-1-git-send-email-eranian@google.com>
-	<1351523752-4215-5-git-send-email-eranian@google.com>
-	<1351525112.24721.36.camel@twins>
-Date: Mon, 29 Oct 2012 16:43:04 +0100
-Message-ID: <CABPqkBT8_nXJhgr4MkbyHrg2wmXr+-DAf_FPBWWnK_GdkEFf_Q@mail.gmail.com>
-Subject: Re: [Patch v1 04/10] perf/x86: add memory profiling via PEBS Load Latency
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Minchan Kim <minchan@kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, gaowanlong@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v3 0/3] zram/zsmalloc promotion
+References: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1351501009-15111-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102915-2398-0000-0000-00000CFFB4A5
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00186698; UDB=6.00042292; UTC=2012-10-29
+ 15:43:32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 4:38 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2012-10-29 at 16:15 +0100, Stephane Eranian wrote:
->> +       fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
->> +
->>         perf_sample_data_init(&data, 0, event->hw.last_period);
->>
->> +       data.period = event->hw.last_period;
->> +       sample_type = event->attr.sample_type;
->> +
->> +       /*
->> +        * if PEBS-LL or PreciseStore
->> +        */
->> +       if (fll) {
->> +               if (sample_type & PERF_SAMPLE_ADDR)
->> +                       data.addr = pebs->dla;
->> +
->> +               /*
->> +                * Use latency for cost (only avail with PEBS-LL)
->> +                */
->> +               if (fll && (sample_type & PERF_SAMPLE_COST))
->> +                       data.cost = pebs->lat;
->> +
->> +               /*
->> +                * data.dsrc encodes the data source
->> +                */
->> +               if (sample_type & PERF_SAMPLE_DSRC) {
->> +                       if (fll)
->> +                               data.dsrc.val = load_latency_data(pebs->dse);
->> +               }
->> +       }
->
->
-> Why does fl1 exist? the above looks really convoluted, all fl1 checks
-> inside are pointless. Also 'fl1' is a bizarre name, 'pebs_ll' would be a
-> better name I guess.
->
-You meant fll, instead I think.
+On 10/29/2012 03:56 AM, Minchan Kim wrote:
+> This patchset promotes zram/zsmalloc from staging.
+> Both are very clean and zram have been used by many embedded product
+> for a long time.
+> It's time to go out of staging.
 
-> What's wrong with:
->
->         if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT) {
->                 if (sample_type & PERF_SAMPLE_ADDR)
->                         data.addr = pebs->dla;
->
->                 if (sample_type & PERF_SAMPLE_COST)
->                         data.cost = perf->lat;
->
->                 if (sample_type & PERF_SAMPLE_DSRC)
->                         data.dsrc.val = load_latency_data(pebs->dse);
->         }
->
-Well, that would work too, but I am trying to factorize the code
-with Precise Store which is a later patch. But we could clone
-your proposal and do:
+Agreed!
 
->         if (event->hw.flags & PERF_X86_EVENT_PEBS_ST) {
->                 if (sample_type & PERF_SAMPLE_ADDR)
->                         data.addr = pebs->dla;
->
->                 if (sample_type & PERF_SAMPLE_DSRC)
->                         data.dsrc.val = precise_store_data(pebs->dse);
->         }
+> Greg, Jens is already OK that zram is located under driver/blocks/.
+> The issue remained is where we put zsmalloc.
 
-I am fine with that too.
+Doesn't matter much for me, but seems to be leaning toward /lib,
+baring an opinion from Andrew that it go in /mm.  /lib is fine by me.
+
+Seth
+
