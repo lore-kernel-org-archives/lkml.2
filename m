@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933218Ab2J2VmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:42:19 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48919 "EHLO mail.kernel.org"
+	id S933076Ab2J2VmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:42:15 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48957 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933141Ab2J2Vl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:41:58 -0400
+	id S933155Ab2J2VmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:42:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 49/54] x86, mm: Undo incorrect revert in arch/x86/mm/init.c
-Date: Mon, 29 Oct 2012 14:40:50 -0700
-Message-Id: <20121029213808.235026558@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 52/54] staging: comedi: amplc_pc236: fix invalid register access during detach
+Date: Mon, 29 Oct 2012 14:40:53 -0700
+Message-Id: <20121029213808.565404843@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
 References: <20121029213802.697479610@linuxfoundation.org>
@@ -26,42 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit f82f64dd9f485e13f29f369772d4a0e868e5633a upstream.
+commit aaeb61a97b7159ebe30b18a422d04eeabfa8790b upstream.
 
-Commit
+`pc236_detach()` is called by the comedi core if it attempted to attach
+a device and failed.  `pc236_detach()` calls `pc236_intr_disable()` if
+the comedi device private data pointer (`devpriv`) is non-null.  This
+test is insufficient as `pc236_intr_disable()` accesses hardware
+registers and the attach routine may have failed before it has saved
+their I/O base addresses.
 
-    844ab6f9 x86, mm: Find_early_table_space based on ranges that are actually being mapped
+Fix it by checking `dev->iobase` is non-zero before calling
+`pc236_intr_disable()` as that means the I/O base addresses have been
+saved and the hardware registers can be accessed.  It also implies the
+comedi device private data pointer is valid, so there is no need to
+check it.
 
-added back some lines back wrongly that has been removed in commit
-
-    7b16bbf97 Revert "x86/mm: Fix the size calculation of mapping tables"
-
-remove them again.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/init.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/staging/comedi/drivers/amplc_pc236.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -65,10 +65,6 @@ static void __init find_early_table_spac
- #ifdef CONFIG_X86_32
- 			extra += PMD_SIZE;
- #endif
--			/* The first 2/4M doesn't use large pages. */
--			if (mr[i].start < PMD_SIZE)
--				extra += range;
--
- 			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		} else {
- 			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+--- a/drivers/staging/comedi/drivers/amplc_pc236.c
++++ b/drivers/staging/comedi/drivers/amplc_pc236.c
+@@ -468,7 +468,7 @@ static int pc236_detach(struct comedi_de
+ {
+ 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+ 	       PC236_DRIVER_NAME);
+-	if (devpriv)
++	if (dev->iobase)
+ 		pc236_intr_disable(dev);
+ 
+ 	if (dev->irq)
 
 
