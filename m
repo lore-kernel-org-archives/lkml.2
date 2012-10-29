@@ -1,51 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760517Ab2J2VKQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:10:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752746Ab2J2VKO (ORCPT
+	id S1760959Ab2J2VKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:10:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48713 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab2J2VKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:10:14 -0400
-Date: Mon, 29 Oct 2012 14:10:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        liuj97@gmail.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com
-Subject: Re: [PATCH v3 4/9] clear the memory to store struct page
-Message-Id: <20121029141012.4c1c2b07.akpm@linux-foundation.org>
-In-Reply-To: <508A5B66.7000309@cn.fujitsu.com>
-References: <1350629202-9664-1-git-send-email-wency@cn.fujitsu.com>
-	<1350629202-9664-5-git-send-email-wency@cn.fujitsu.com>
-	<508A5B66.7000309@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Oct 2012 17:10:18 -0400
+Date: Mon, 29 Oct 2012 22:10:15 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Philippe Reynes <tremyfr@yahoo.fr>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        julien.boibessot@armadeus.com, eric.jarrige@armadeus.org
+Subject: Re: [PATCH] Add device tree file for the armadeus apf27
+Message-ID: <20121029211015.GX1641@pengutronix.de>
+References: <1351268980-25347-1-git-send-email-tremyfr@yahoo.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1351268980-25347-1-git-send-email-tremyfr@yahoo.fr>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:04:49 up 128 days, 12:16, 39 users,  load average: 0.32, 0.46,
+ 0.42
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Oct 2012 17:44:06 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+On Fri, Oct 26, 2012 at 06:29:40PM +0200, Philippe Reynes wrote:
+> Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
+> Signed-off-by: Eric Jarrige <eric.jarrige@armadeus.org>
+> ---
+>  arch/arm/boot/dts/imx27-apf27.dts |   96 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 96 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/imx27-apf27.dts
+> 
+> diff --git a/arch/arm/boot/dts/imx27-apf27.dts b/arch/arm/boot/dts/imx27-apf27.dts
+> new file mode 100644
+> index 0000000..b7d11e0
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/imx27-apf27.dts
+> @@ -0,0 +1,96 @@
+> +/*
+> + * Copyright 2012 Philippe Reynes <tremyfr@yahoo.fr>
+> + * Copyright 2012 Armadeus Systems <support@armadeus.com>
+> + *
+> + * Based on code which is: Copyright 2012 Sascha Hauer, Pengutronix
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +
+> +/dts-v1/;
+> +/include/ "imx27.dtsi"
+> +
+> +/ {
+> +	model = "Armadeus apf27";
+> +	compatible = "armadeus,imx27-apf27", "fsl,imx27";
+> +
+> +	memory {
+> +		reg = <0xa0000000 0x04000000>;
+> +	};
+> +
+> +	clocks {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		osc26m {
+> +			compatible = "fsl,imx-osc26m", "fixed-clock";
+> +			clock-frequency = <33554432>;
 
-> This patch has been acked by kosaki motohiro. Is it OK to be merged
-> into -mm tree?
+Is this really correct? The Datasheet specificies 26MHz, some boards
+have 27Mhz, but 33?
 
-I'd already merged the v2 patchset when you later sent out the v3
-patchset which contains some of the material from v2 plus more things.
+> +		};
+> +	};
+> +
+> +	soc {
+> +		aipi@10000000 {
+> +			wdog@10002000 {
+> +				status = "okay";
+> +			};
 
-I can drop all of v2 and remerge v3.  But I see from the discussion
-under "[PATCH v3 6/9] memory-hotplug: update mce_bad_pages when
-removing the memory" that you intend to send out a v4 patchset.
+This node is not necessary. The watchdog is enabled already in the dtsi
+file.
 
-This is all a bit of a mess.  Piecemeal picking-and-choosing of various
-patches from various iterations of the same patchset is confusing and
-error-prone.
+Sascha
 
-Please, take a look at the current -mm tree at
-http://ozlabs.org/~akpm/mmots/ then come up with a plan for us.  We can
-either add new patches or we can drop old patches and replace them.
 
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
