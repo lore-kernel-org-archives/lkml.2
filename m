@@ -1,120 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758323Ab2J2JAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 05:00:25 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41225 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758286Ab2J2JAT (ORCPT
+	id S1758372Ab2J2JAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 05:00:49 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:40720 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758316Ab2J2JAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 05:00:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <1351485943.7077.30.camel@vkoul-udesk3>
-References: <1349432276-22919-1-git-send-email-inderpal.singh@linaro.org>
-	<1349432276-22919-4-git-send-email-inderpal.singh@linaro.org>
-	<1351052091.5263.19.camel@vkoul-udesk3>
-	<CAG17yqQBep4Y3YOGVFr6s_apX9f0YeTC7dxDcTQM7ahxnr1B4w@mail.gmail.com>
-	<1351226723.7077.14.camel@vkoul-udesk3>
-	<CAG17yqTx6MnmpYLZCxeJ9gC_ha6i3Bp3Fc+=9L7EJEJoNwCFtQ@mail.gmail.com>
-	<1351485943.7077.30.camel@vkoul-udesk3>
-Date: Mon, 29 Oct 2012 14:30:17 +0530
-Message-ID: <CAG17yqQPNFOYjJYdLrg4exKRbqbhPPV6zOv4oBYBuo5=gCnadw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] DMA: PL330: Balance module remove function with probe
-From: Inderpal Singh <inderpal.singh@linaro.org>
-To: Vinod Koul <vkoul@infradead.org>
-Cc: vinod.koul@intel.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jassisinghbrar@gmail.com,
-        boojin.kim@samsung.com, patches@linaro.org, kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Oct 2012 05:00:46 -0400
+Subject: Re: [PATCH V3 07/10] Secure boot: Add a dummy kernel parameter
+ that will switch on Secure Boot mode
+From: joeyli <jlee@suse.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-efi@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Matthew Garrett <mjg@redhat.com>, tiwai@suse.de
+In-Reply-To: <20120925130818.GE18546@hansolo.jdub.homelinux.org>
+References: <1348152065-31353-1-git-send-email-mjg@redhat.com>
+	 <1348152065-31353-8-git-send-email-mjg@redhat.com>
+	 <20120920163237.GA11077@kroah.com>
+	 <20120925130818.GE18546@hansolo.jdub.homelinux.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Oct 2012 17:00:06 +0800
+Message-ID: <1351501206.21227.47.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+Hi Josh, 
 
-On 29 October 2012 10:15, Vinod Koul <vkoul@infradead.org> wrote:
-> On Sat, 2012-10-27 at 15:50 +0530, Inderpal Singh wrote:
->> Hi Vinod,
->>
->> On 26 October 2012 10:15, Vinod Koul <vkoul@infradead.org> wrote:
->> > On Thu, 2012-10-25 at 16:53 +0530, Inderpal Singh wrote:
->> >>
->> >> This code will get executed only in case of force removal of the
->> >> module which was discussed in the first version of the patch at [1].
->> >> Now, if we do not have to think about force removal then this patch
->> >> will go back to the first version.
->> > But why are you doing force removal of driver even when client is
->> > holding a reference to you.
->> >
->> > What happens when client finally tries to free the channel?
->> Since we return EBUSY so forced removal won't succeed. Client can free
->> the channel eventually.
-> And that is my concern. You have forcefully removed the dma module.
-> What happens then? How will the free calll get executed, wont you hit a
-> panic.
+於 二，2012-09-25 於 09:08 -0400，Josh Boyer 提到：
+> This forcibly drops CAP_COMPROMISE_KERNEL from both cap_permitted and cap_bset
+> in the init_cred struct, which everything else inherits from.  This works on
+> any machine and can be used to develop even if the box doesn't have UEFI.
+> 
+> Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+> ---
+>  Documentation/kernel-parameters.txt |  7 +++++++
+>  kernel/cred.c                       | 17 +++++++++++++++++
+>  2 files changed, 24 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 9b2b8d3..93978d5 100644
+...
+> diff --git a/kernel/cred.c b/kernel/cred.c
+> index de728ac..7e6e83f 100644
+> --- a/kernel/cred.c
+> +++ b/kernel/cred.c
+> @@ -623,6 +623,23 @@ void __init cred_init(void)
+>  				     0, SLAB_HWCACHE_ALIGN|SLAB_PANIC, NULL);
+>  }
+>  
+> +void __init secureboot_enable()
+> +{
+...
+> +
+> +/* Dummy Secure Boot enable option to fake out UEFI SB=1 */
+> +static int __init secureboot_enable_opt(char *str)
+> +{
+> +	int sb_enable = !!simple_strtol(str, NULL, 0);
+> +	if (sb_enable)
+> +		secureboot_enable();
+> +	return 1;
+> +}
+> +__setup("secureboot_enable=", secureboot_enable_opt);
+> +
+>  
 
-Yes, you are correct, It will hit a panic.
-The return value from remove is not being checked in
-__device_release_driver because of which dma module is forcefully
-removed even if we return EBUSY from driver's remove. Hence returning
-error from .remove is not useful at all.
-
->>
->> >
->> > What is the problem you are trying to solve?
->> >>
->>
->> There was a long discussion about it in the first version of the
->> patch. Allow me to explain it to you.
->>
->> The existing driver does DMA_TERMINATE_ALL and frees resources for all
->> the channels in the _remove function.
-> Which for starters may not be right thing to do.
+Tahashi has a good idea for use strtobool to allow
+'secureboot_enable=yes' works. Please consider the following change.
 
 
-Please consider v1 patch which removes DMA_TERMINATE_ALL and freeing
-of resources from .remove function because in normal scenario if
-remove is reached it is sure that no client is holding any reference
-to the driver hence no need to flush and free the channels.
+Thanks a lot!
+Joey Lee
 
-> Shouldn't you first
-> make sure client has freed all references to your driver and then only
-> remove. Freeing resources in .remove without keeping client in sync
-> doesn't sound to be good idea to me.
->
->>  The first version of patch
->> removed this flushing and freeing of channel resources because they
->> are not getting allocated in the probe. Jassi pointed out that manual
->> flushing is needed if a force removal happens and some client is
->> queued. Then it was agreed that flushing is not needed, instead we
->> should return EBUSY if client is queued on some channel (this will
->> happen only in force removal case). Hence this additional check in v2
->> version so that force removal does not succeeds if any client is
->> queued.
->>
->> If you think force removal is not a practical scenario and we should
->> not be bothering about it, this check can be removed and the patch
->> will go back to first version which just removes flushing and freeing
->> of channels beacues they are not getting allocated in probe.
->>
->> Let me know your view.
->>
->> Regards,
->> Inder
->>
->>
->> >> Let me know your view.
->> >>
->> >> [1] https://patchwork.kernel.org/patch/1503171/
->> >>
->> >
->> >
->> > --
->> > Vinod Koul
->> > Intel Corp.
->> >
->
->
-> --
-> Vinod Koul
-> Intel Corp.
->
+>From f6841a476f3d332fe7b04cb716e0b518cccd5055 Mon Sep 17 00:00:00 2001
+From: Lee, Chun-Yi <jlee@suse.com>
+Date: Mon, 29 Oct 2012 16:36:57 +0800
+Subject: [PATCH] efi: more user-friendly secureboot_enable parameter
+
+From: Takashi Iwai <tiwai@suse.de>
+
+Use strtobool can allow 'secureboot_enable=yes', it's more user-friendly.
+
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+---
+ kernel/cred.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 3f5be65..70897a2 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -633,9 +633,10 @@ void __init secureboot_enable()
+ /* Dummy Secure Boot enable option to fake out UEFI SB=1 */
+ static int __init secureboot_enable_opt(char *str)
+ {
+-	int sb_enable = !!simple_strtol(str, NULL, 0);
+-	if (sb_enable)
++	bool sb_enable;
++	if (!strtobool(str, &sb_enable) && sb_enable)
+ 		secureboot_enable();
++
+ 	return 1;
+ }
+ __setup("secureboot_enable=", secureboot_enable_opt);
+-- 
+1.6.0.2
+
+
+
+
