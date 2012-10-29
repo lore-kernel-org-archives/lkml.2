@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760699Ab2J2UJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:09:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42678 "EHLO mail.kernel.org"
+	id S1760734Ab2J2UMm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:12:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42798 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760447Ab2J2UJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:09:00 -0400
+	id S1760698Ab2J2UJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 16:09:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 17/34] USB: opticon: fix memory leak in error path
-Date: Mon, 29 Oct 2012 13:07:48 -0700
-Message-Id: <20121029200422.460974048@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/34] vhost: fix mergeable bufs on BE hosts
+Date: Mon, 29 Oct 2012 13:07:57 -0700
+Message-Id: <20121029200423.461884979@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029200420.550338074@linuxfoundation.org>
 References: <20121029200420.550338074@linuxfoundation.org>
@@ -25,38 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit acbf0e5263de563e25f7c104868e4490b9e72b13 upstream.
+commit 910a578f7e9400a78a3b13aba0b4d2df16a2cb05 upstream.
 
-Fix memory leak in write error path.
+We copy head count to a 16 bit field, this works by chance on LE but on
+BE guest gets 0. Fix it up.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Alexander Graf <agraf@suse.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/opticon.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/vhost/net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -297,7 +297,7 @@ static int opticon_write(struct tty_stru
- 	if (!dr) {
- 		dev_err(&port->dev, "out of memory\n");
- 		count = -ENOMEM;
--		goto error;
-+		goto error_no_dr;
- 	}
- 
- 	dr->bRequestType = USB_TYPE_VENDOR | USB_RECIP_INTERFACE | USB_DIR_OUT;
-@@ -327,6 +327,8 @@ static int opticon_write(struct tty_stru
- 
- 	return count;
- error:
-+	kfree(dr);
-+error_no_dr:
- 	usb_free_urb(urb);
- error_no_urb:
- 	kfree(buffer);
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -305,7 +305,8 @@ static void handle_rx(struct vhost_net *
+ 		.hdr.gso_type = VIRTIO_NET_HDR_GSO_NONE
+ 	};
+ 	size_t total_len = 0;
+-	int err, headcount, mergeable;
++	int err, mergeable;
++	s16 headcount;
+ 	size_t vhost_hlen, sock_hlen;
+ 	size_t vhost_len, sock_len;
+ 	/* TODO: check that we are running from vhost_worker? */
 
 
