@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab2J2Vvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:51:40 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60283 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932986Ab2J2Vvh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:51:37 -0400
-MIME-Version: 1.0
-X-Originating-IP: [72.73.18.11]
-In-Reply-To: <20121028225109.GA6931@thunk.org>
-References: <015201cdb54f$844487e0$8ccd97a0$@lucidpixels.com>
-	<20121028225109.GA6931@thunk.org>
-Date: Mon, 29 Oct 2012 17:51:37 -0400
-Message-ID: <CAO9zADx=DHHDcj3by9RSMatN4RFOQLzWwPJCZzs=NemQ4_sOUQ@mail.gmail.com>
-Subject: Re: 3.6.0 ext4 dump/filemap_fault?
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Justin Piszcz <jpiszcz@lucidpixels.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933315Ab2J2VwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:52:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48605 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761560Ab2J2Vl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:41:28 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Oleksandr Chumachenko <ledest@gmail.com>,
+        Michael Shigorin <mike@osdn.org.ua>
+Subject: [ 22/54] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
+Date: Mon, 29 Oct 2012 14:40:23 -0700
+Message-Id: <20121029213805.232823088@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213802.697479610@linuxfoundation.org>
+References: <20121029213802.697479610@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 28, 2012 at 6:51 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Sun, Oct 28, 2012 at 05:02:17PM -0400, Justin Piszcz wrote:
->> Hello,
->>
->> Any idea what happened here (during a backup)?
->
-> A sync system call took longer than two mintues.  Why that happened,
-> it's harder to say.  It's a warning, though, and not a fatal panic or
-> kernel oops.
-Ah, got it.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
->
-> How much memory do you have in your system?
-32GB memory/32GB swap
+------------------
 
-> What happened afterwards?
-It did eventually complete.
+From: Michael Shigorin <mike@osdn.org.ua>
 
-> Did the system continue, and did the sync command (I presume you ran
-> "sync" from the command line?)  finally return to the command prompt?
-In this case I did not run sync, I waited for the processes/dump/etc
-to complete.
+commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
 
-Thanks.
+This commit sets removable subclass for Casio EX-N1 digital camera.
 
-Justin.
+The patch has been tested within an ALT Linux kernel:
+http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
+
+See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
+
+Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
+Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/storage/unusual_devs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9
+ 		USB_SC_8070, USB_PR_CB, NULL,
+ 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
+ 
++/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
++UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
++		"Casio",
++		"EX-N1 DigitalCamera",
++		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
++
+ /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
+ UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
+ 		"Samsung",
+
+
