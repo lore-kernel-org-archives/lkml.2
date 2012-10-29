@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab2J2UwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 16:52:23 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34168 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab2J2UwT (ORCPT
+	id S932943Ab2J2UxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 16:53:11 -0400
+Received: from mail2.ruggedcom.com ([204.50.148.11]:10517 "EHLO
+	mail2.ruggedcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932203Ab2J2UxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 16:52:19 -0400
+	Mon, 29 Oct 2012 16:53:08 -0400
+Message-ID: <508EEB48.9070508@ruggedcom.com>
+Date: Mon, 29 Oct 2012 16:47:04 -0400
+From: Richard Retanubun <richardretanubun@ruggedcom.com>
+Organization: Ruggedcom
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1210292149270.23875@ayla.of.borg>
-References: <alpine.DEB.2.00.1210292149270.23875@ayla.of.borg>
-Date: Mon, 29 Oct 2012 21:52:18 +0100
-X-Google-Sender-Auth: vRReVrvXE2GfH1Qx6DIdidcxNjU
-Message-ID: <CAMuHMdXwn0iLd=Phgpn4pAHwVkRebHNt=RhcnEYWe40gUckZ4w@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.7-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Greg KH <greg@kroah.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Tang Nguyen <TangNguyen@ruggedcom.com>,
+        "m.grzeschik@pengutronix.de" <m.grzeschik@pengutronix.de>,
+        Arvid Brodin <Arvid.Brodin@xdin.com>,
+        linux-usb mailing list <linux-usb@vger.kernel.org>,
+        "bigeasy@linutronix.de" <bigeasy@linutronix.de>
+Subject: Re: kmemleak report on isp1763 and sierra MC8705
+References: <508B0743.9040806@ruggedcom.com> <20121026233509.GA26646@kroah.com>
+In-Reply-To: <20121026233509.GA26646@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 9:50 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.7-rc3 to v3.7-rc2[3], the summaries are:
->   - build errors: +5/-6
->   - build warnings: +149/-2090
+On 26/10/12 07:35 PM, Greg KH wrote:
+> On Fri, Oct 26, 2012 at 05:57:23PM -0400, Richard Retanubun wrote:
+>> Hi Guys,
+>>
+>> I am debugging a reported kmemleak involving a sierra wireless MC8705 connected
+>> through isp1763 on powerpc linux-3.0.22
+>
+> Does this also happen on 3.6.3?
+>
+> thanks,
+>
+> greg k-h
 
-  + error: file_storage.c: undefined reference to `usb_ep_autoconfig':
- => .init.text+0x10bc5), .init.text+0x10be7), .init.text+0x10bac)
-  + error: file_storage.c: undefined reference to
-`usb_ep_autoconfig_reset':  => .init.text+0x10ba0)
-  + error: file_storage.c: undefined reference to
-`usb_gadget_config_buf':  => .text+0x34726a)
-  + error: file_storage.c: undefined reference to
-`usb_gadget_get_string':  => .text+0x347289)
+Hi Greg,
 
-i386-randconfig
+Unfortunately, it is not trivial for us to update the kernel on this platform,
+Is there a specific experiment/patch I should look at for 3.0.22?
 
-  + error: phy_n.c: relocation truncated to fit: R_PPC64_REL24 against
-symbol `_restgpr0_14' defined in .text.save.restore section in
-arch/powerpc/lib/built-in.o: (.text+0x1ff7df4), (.text+0x1ff9f70) =>
-(.text+0x1ff79ac), (.text+0x1ff7fdc), (.text+0x1ffa158)
+I will be attempting to use 3.6.3 on another platform, but this may take some time.
 
-powerpc-allyesconfig
+I am thinking there may be an action that can be done at /sysfs or /procfs to
+do the disconnect without actually removing the power to the device.
+I tried "echo 1 > /sys/bus/usb/drivers/usb/2-1.2/remove" and then take down the power
+but this produced the same leak signature even before I take down the power.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/5580/ (all 117 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/5550/ (all 117 configs)
+Update on trigger to problem
+============================
+This will happen as the modem is powered down and /dev/ttyUSB from sierra is teared down
+either by powering it off/removing it, or sending at!reset.
 
-Gr{oetje,eeting}s,
+It does not happen when the same thing is done using a simple usb to serial converter (pl2303)
 
-                        Geert
+Focusing down on one of the dumps:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+unreferenced object 0xd3849740 (size 8):
+   comm "khubd", pid 1026, jiffies 232553037 (age 506.597s)
+   hex dump (first 8 bytes):
+     4d 43 38 37 30 35 00 00                          MC8705..
+   backtrace:
+     [<e30efd74>] usb_cache_string+0x74/0xac [usbcore]
+     [<e30e77bc>] usb_enumerate_device+0x44/0xf8 [usbcore]
+     [<e30e7aa0>] usb_new_device+0x3c/0x13c [usbcore]
+     [<e30e9824>] hub_thread+0xc8c/0x1544 [usbcore]
+     [<c0043aa8>] kthread+0x7c/0x80
+     [<c000ed48>] kernel_thread+0x4c/0x68
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I have a small question. How does the memory kmalloc-ed() in usb_cache_string is supposed to be released?
+(during usb_serial_disconnect()?) Is the sierra driver is supposed to participate
+in the tear down process (in sierra_release() maybe) and not doing something that is expected?
+I am still missing the link between the actions done by the hub_thread() for the caching the stings
+and the sierra driver code.
+
+Thanks a lot for your time.
