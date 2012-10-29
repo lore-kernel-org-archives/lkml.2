@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab2J2Kjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:39:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51518 "EHLO mx2.suse.de"
+	id S1758206Ab2J2KkJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:40:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57044 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab2J2Kjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:39:53 -0400
-Date: Mon, 29 Oct 2012 11:39:50 +0100
-From: Jan Kara <jack@suse.cz>
-To: Zhao Hongjiang <zhaohongjiang37@gmail.com>
-Cc: jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext3: get rid of the duplicate code on ext3_fill_super
-Message-ID: <20121029103950.GA18767@quack.suse.cz>
-References: <508E3007.1070902@gmail.com>
+	id S1750743Ab2J2KkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 06:40:05 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <b-cousson@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <sourav.poddar@ti.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [RESEND/PATCHv3] arm: dts: omap5-evm: Add keypad support
+Date: Mon, 29 Oct 2012 16:10:26 +0530
+Message-ID: <1351507226-10328-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <508E3007.1070902@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-10-12 15:28:07, Zhao Hongjiang wrote:
-> From: Zhao Hongjiang <zhaohongjiang@huawei.com>
-> 
-> Clean the duplicate code on ext3_fill_super cause the bellow
-> also have it.
-> 
-> Signed-off-by: Zhao Hongjiang <zhaohongjiang@huawei.com>
-  Thanks. I've merged the patch to my tree with somewhat updated changelog:
-Setting s_mount_opt to 0 is unnecessary because we use kzalloc() for sb
-allocation. s_resuid and s_resgid are set again few lines below based on
-values in on disk superblock.
+Add keypad data node in omap5-evm.
 
-								Honza
+Based on I2C support patch for omap5, which has been
+already posted as a different series.
 
-> ---
->  fs/ext3/super.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> index 5366393..6e50223 100644
-> --- a/fs/ext3/super.c
-> +++ b/fs/ext3/super.c
-> @@ -1661,9 +1661,6 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
->  		return -ENOMEM;
->  	}
->  	sb->s_fs_info = sbi;
-> -	sbi->s_mount_opt = 0;
-> -	sbi->s_resuid = make_kuid(&init_user_ns, EXT3_DEF_RESUID);
-> -	sbi->s_resgid = make_kgid(&init_user_ns, EXT3_DEF_RESGID);
->  	sbi->s_sb_block = sb_block;
-> 
->  	blocksize = sb_min_blocksize(sb, EXT3_MIN_BLOCK_SIZE);
-> -- 1.7.1
+Tested on omap5430 evm with 3.7-rc1 kernel.
+
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Tested on omap5430 sdp with 3.7-rc1 kernel.
+
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+ arch/arm/boot/dts/omap5-evm.dts |   95 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 95 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap5-evm.dts b/arch/arm/boot/dts/omap5-evm.dts
+index c663eba..b812d6d 100644
+--- a/arch/arm/boot/dts/omap5-evm.dts
++++ b/arch/arm/boot/dts/omap5-evm.dts
+@@ -140,3 +140,98 @@
+ &mcbsp3 {
+ 	status = "disabled";
+ };
++
++&i2c5 {
++	clock-frequency = <400000>;
++
++	smsc@38 {
++		compatible = "smscece1099";
++		reg = <0x38>;
++		clock = <0x13>;
++		keypad {
++			compatible = "smsc,keypad";
++			interrupt-parent = <&gpio5>;
++			interrupts = <23>; /* gpio line 151 */
++			keypad,num-rows = <8>;
++			keypad,num-columns = <16>;
++			linux,keymap = < 0x20041 /* KEY_F7 */
++					0x30001 /* KEY_ESC */
++					0x4003e /* KEY_F4 */
++					0x50022 /* KEY_G */
++					0x70023 /* KEY_H */
++					0x9009a /* KEY_CYCLEWINDOWS */
++					0xc000e /* KEY_BACKSPACE */
++					0xd0057 /* KEY_F11 */
++					0xe009f /* KEY_FORWARD */
++					0xf006e /* KEY_INSERT */
++					0x1020036 /* KEY_RIGHTSHIFT */
++					0x1030011 /* KEY_W */
++					0x1040010 /* KEY_Q */
++					0x1050012 /* KEY_E */
++					0x1070013 /* KEY_R */
++					0x1080016 /* KEY_U */
++					0x10c0017 /* KEY_I */
++					0x10d0067 /* KEY_UP */
++					0x10e0018 /* KEY_O */
++					0x10f0019 /* KEY_LEFT */
++					0x2020003 /* KEY_2 */
++					0x2040004 /* KEY_1 */
++					0x2050005 /* KEY_3 */
++					0x2070008 /* KEY_4 */
++					0x2080009 /* KEY_7 */
++					0x20b0064 /* KEY_8 */
++					0x20c006c /* KEY_RIGHTALT */
++					0x20d000a /* KEY_DOWN */
++					0x20e0001 /* KEY_0 */
++					0x20f006a /* KEY_RIGHT */
++					0x3010061 /* KEY_RIGHTCTRL */
++					0x302001f /* KEY_S */
++					0x303001e /* KEY_A */
++					0x3040020 /* KEY_D */
++					0x3050021 /* KEY_F */
++					0x3070024 /* KEY_J */
++					0x3080025 /* KEY_K */
++					0x30c001c /* KEY_ENTER */
++					0x30d0026 /* KEY_L */
++					0x30e0027 /* KEY_SEMICOLON */
++					0x400002a /* KEY_LEFTSHIFT */
++					0x402002d /* KEY_X */
++					0x403002c /* KEY_Z */
++					0x404002e /* KEY_C */
++					0x405002f /* KEY_V */
++					0x4070032 /* KEY_M */
++					0x4080033 /* KEY_COMMA */
++					0x40c0039 /* KEY_SPACE */
++					0x40d0033 /* KEY_DOT */
++					0x40e0035 /* KEY_SLASH */
++					0x40f006b /* KEY_END */
++					0x501001d /* KEY_LEFTCTRL */
++					0x5020040 /* KEY_F6 */
++					0x503000f /* KEY_TAB */
++					0x504003d /* KEY_F3 */
++					0x5050014 /* KEY_T */
++					0x5070015 /* KEY_Y */
++					0x508001a /* KEY_LEFTBRACE */
++					0x50d0044 /* KEY_F10 */
++					0x50e001b /* KEY_RIGHTBRACE */
++					0x50f0066 /* KEY_HOME */
++					0x602003f /* KEY_F5 */
++					0x604003c /* KEY_F2 */
++					0x6050006 /* KEY_5 */
++					0x60601d0 /* KEY_FN */
++					0x6070007 /* KEY_6 */
++					0x60a008b /* KEY_MENU */
++					0x60c002b /* KEY_BACKSLASH */
++					0x60d0043 /* KEY_F9 */
++					0x7020042 /* KEY_F8 */
++					0x703003a /* KEY_CAPSLOCK */
++					0x704003b /* KEY_F1 */
++					0x7050030 /* KEY_B */
++					0x7070031 /* KEY_N */
++					0x70b0038 /* KEY_LEFTALT */
++					0x70d0058 /* KEY_F12 */
++					0x70f006f >; /* KEY_DELETE */
++			linux,input-no-autorepeat;
++		};
++	};
++};
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.1
+
