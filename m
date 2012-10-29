@@ -1,91 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab2J2Gq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 02:46:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:34634 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113Ab2J2Gq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 02:46:56 -0400
-Date: Mon, 29 Oct 2012 07:46:43 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+	id S1752386Ab2J2Guv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 02:50:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42474 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2J2Gut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 02:50:49 -0400
+Date: Mon, 29 Oct 2012 07:50:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-Message-ID: <20121029064643.GE574@1wt.eu>
-References: <508E002B.4090200@teksavvy.com>
-Mime-Version: 1.0
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
+Message-ID: <20121029065044.GB14107@gmail.com>
+References: <20121025121617.617683848@chello.nl>
+ <508A52E1.8020203@redhat.com>
+ <1351242480.12171.48.camel@twins>
+ <20121028175615.GC29827@cmpxchg.org>
+ <508DEDA2.9030503@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <508E002B.4090200@teksavvy.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <508DEDA2.9030503@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 12:03:55AM -0400, Mark Lord wrote:
-> My server here runs the 3.4.xx series of "stable" kernels.
-> Until today, it was running 3.4.9.
-> Today I tried to upgrade it to 3.4.16.
-> It hangs in setup.c.
-> 
-> I've isolated the fault down to this specific change
-> that was made between 3.4.9 and 3.4.16.
-> Reverting this change allows the system to boot/run normally again.
-> 
-> 
-> --- linux-3.4.9/arch/x86/kernel/setup.c	2012-08-15 11:17:17.000000000 -0400
-> +++ linux-3.4.16/arch/x86/kernel/setup.c	2012-10-28 13:36:33.000000000 -0400
-> @@ -927,8 +927,21 @@
-> 
->  #ifdef CONFIG_X86_64
->  	if (max_pfn > max_low_pfn) {
-> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
-> -						     max_pfn<<PAGE_SHIFT);
-> +		int i;
-> +		for (i = 0; i < e820.nr_map; i++) {
-> +			struct e820entry *ei = &e820.map[i];
-> +
-> +			if (ei->addr + ei->size <= 1UL << 32)
-> +				continue;
-> +
-> +			if (ei->type == E820_RESERVED)
-> +				continue;
-> +
-> +			max_pfn_mapped = init_memory_mapping(
-> +				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
-> +				ei->addr + ei->size);
-> +		}
-> +
->  		/* can we preseve max_low_pfn ?*/
->  		max_low_pfn = max_pfn;
->  	}
 
-For the record, it is this commit introduced in 3.4.16 :
+* Zhouping Liu <zliu@redhat.com> wrote:
 
-commit efd5fa0c1a1d1b46846ea6e8d1a783d0d8a6a721
-Author: Jacob Shin <jacob.shin@amd.com>
-Date:   Thu Oct 20 16:15:26 2011 -0500
+> Hi Johannes,
+> 
+> Tested the below patch, and I'm sure it has fixed the above 
+> issue, thank you.
 
-    x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
-    
-    commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
-    
-    On systems with very large memory (1 TB in our case), BIOS may report a
-    reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
-    these from the direct mapping.
-    
-    [ hpa: this should be done not just for > 4 GB but for everything above the legacy
-      region (1 MB), at the very least.  That, however, turns out to require significant
-      restructuring.  That work is well underway, but is not suitable for rc/stable. ]
-    
-    Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-    Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Thanks. Below is the folded up patch.
 
-Willy
+	Ingo
+
+---------------------------->
+Subject: sched, numa, mm: Add memcg support to do_huge_pmd_numa_page()
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Thu Oct 25 12:49:51 CEST 2012
+
+Add memory control group support to hugepage migration.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Zhouping Liu <zliu@redhat.com>
+Link: http://lkml.kernel.org/n/tip-rDk9mgpoyhZlwh2xhlykvgnp@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ mm/huge_memory.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+Index: tip/mm/huge_memory.c
+===================================================================
+--- tip.orig/mm/huge_memory.c
++++ tip/mm/huge_memory.c
+@@ -743,6 +743,7 @@ void do_huge_pmd_numa_page(struct mm_str
+ 			   unsigned int flags, pmd_t entry)
+ {
+ 	unsigned long haddr = address & HPAGE_PMD_MASK;
++	struct mem_cgroup *memcg = NULL;
+ 	struct page *new_page = NULL;
+ 	struct page *page = NULL;
+ 	int node, lru;
+@@ -833,6 +834,14 @@ migrate:
+ 
+ 		return;
+ 	}
++	/*
++	 * Traditional migration needs to prepare the memcg charge
++	 * transaction early to prevent the old page from being
++	 * uncharged when installing migration entries.  Here we can
++	 * save the potential rollback and start the charge transfer
++	 * only when migration is already known to end successfully.
++	 */
++	mem_cgroup_prepare_migration(page, new_page, &memcg);
+ 
+ 	entry = mk_pmd(new_page, vma->vm_page_prot);
+ 	entry = maybe_pmd_mkwrite(pmd_mkdirty(entry), vma);
+@@ -843,6 +852,12 @@ migrate:
+ 	set_pmd_at(mm, haddr, pmd, entry);
+ 	update_mmu_cache_pmd(vma, address, entry);
+ 	page_remove_rmap(page);
++	/*
++	 * Finish the charge transaction under the page table lock to
++	 * prevent split_huge_page() from dividing up the charge
++	 * before it's fully transferred to the new page.
++	 */
++	mem_cgroup_end_migration(memcg, page, new_page, true);
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ 	put_page(page);			/* Drop the rmap reference */
 
