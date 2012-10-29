@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761497Ab2J2WBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:01:25 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47953 "EHLO mail.kernel.org"
+	id S933329Ab2J2WBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:01:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47943 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761360Ab2J2Vh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:58 -0400
+	id S1761358Ab2J2Vh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 083/101] Bluetooth: SMP: Fix setting unknown auth_req bits
-Date: Mon, 29 Oct 2012 14:35:36 -0700
-Message-Id: <20121029213249.536788976@linuxfoundation.org>
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 082/101] tilegx: fix some issues in the SW TSO support
+Date: Mon, 29 Oct 2012 14:35:35 -0700
+Message-Id: <20121029213249.422260574@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,54 +26,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 065a13e2cc665f6547dc7e8a9d6b6565badf940a upstream.
+commit 3da3fff8006c608f19a51859d44ba47ca8b41461 upstream.
 
-When sending a pairing request or response we should not just blindly
-copy the value that the remote device sent. Instead we should at least
-make sure to mask out any unknown bits. This is particularly critical
-from the upcoming LE Secure Connections feature perspective as
-incorrectly indicating support for it (by copying the remote value)
-would cause a failure to pair with devices that support it.
+This change correctly computes the header length and data length in
+the fragments to avoid a bug where we would end up with extremely
+slow performance.  Also adopt use of skb_frag_size() accessor.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/smp.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/tile/tilegx.c |   35 +++++++++++++++++++----------------
+ 1 file changed, 19 insertions(+), 16 deletions(-)
 
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -32,6 +32,8 @@
- 
- #define SMP_TIMEOUT	msecs_to_jiffies(30000)
- 
-+#define AUTH_REQ_MASK   0x07
-+
- static inline void swap128(u8 src[16], u8 dst[16])
+--- a/drivers/net/ethernet/tile/tilegx.c
++++ b/drivers/net/ethernet/tile/tilegx.c
+@@ -1334,11 +1334,11 @@ static int tso_count_edescs(struct sk_bu
  {
- 	int i;
-@@ -230,7 +232,7 @@ static void build_pairing_cmd(struct l2c
- 		req->max_key_size = SMP_MAX_ENC_KEY_SIZE;
- 		req->init_key_dist = 0;
- 		req->resp_key_dist = dist_keys;
--		req->auth_req = authreq;
-+		req->auth_req = (authreq & AUTH_REQ_MASK);
- 		return;
- 	}
+ 	struct skb_shared_info *sh = skb_shinfo(skb);
+ 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+-	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
++	unsigned int data_len = skb->len - sh_len;
+ 	unsigned int p_len = sh->gso_size;
+ 	long f_id = -1;    /* id of the current fragment */
+-	long f_size = skb->hdr_len;  /* size of the current fragment */
+-	long f_used = sh_len;  /* bytes used from the current fragment */
++	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
++	long f_used = 0;  /* bytes used from the current fragment */
+ 	long n;            /* size of the current piece of payload */
+ 	int num_edescs = 0;
+ 	int segment;
+@@ -1353,7 +1353,7 @@ static int tso_count_edescs(struct sk_bu
+ 			/* Advance as needed. */
+ 			while (f_used >= f_size) {
+ 				f_id++;
+-				f_size = sh->frags[f_id].size;
++				f_size = skb_frag_size(&sh->frags[f_id]);
+ 				f_used = 0;
+ 			}
  
-@@ -239,7 +241,7 @@ static void build_pairing_cmd(struct l2c
- 	rsp->max_key_size = SMP_MAX_ENC_KEY_SIZE;
- 	rsp->init_key_dist = 0;
- 	rsp->resp_key_dist = req->resp_key_dist & dist_keys;
--	rsp->auth_req = authreq;
-+	rsp->auth_req = (authreq & AUTH_REQ_MASK);
- }
+@@ -1384,13 +1384,13 @@ static void tso_headers_prepare(struct s
+ 	struct iphdr *ih;
+ 	struct tcphdr *th;
+ 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+-	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
++	unsigned int data_len = skb->len - sh_len;
+ 	unsigned char *data = skb->data;
+ 	unsigned int ih_off, th_off, p_len;
+ 	unsigned int isum_seed, tsum_seed, id, seq;
+ 	long f_id = -1;    /* id of the current fragment */
+-	long f_size = skb->hdr_len;  /* size of the current fragment */
+-	long f_used = sh_len;  /* bytes used from the current fragment */
++	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
++	long f_used = 0;  /* bytes used from the current fragment */
+ 	long n;            /* size of the current piece of payload */
+ 	int segment;
  
- static u8 check_enc_key_size(struct l2cap_conn *conn, __u8 max_key_size)
+@@ -1405,7 +1405,7 @@ static void tso_headers_prepare(struct s
+ 	isum_seed = ((0xFFFF - ih->check) +
+ 		     (0xFFFF - ih->tot_len) +
+ 		     (0xFFFF - ih->id));
+-	tsum_seed = th->check + (0xFFFF ^ htons(sh_len + data_len));
++	tsum_seed = th->check + (0xFFFF ^ htons(skb->len));
+ 	id = ntohs(ih->id);
+ 	seq = ntohl(th->seq);
+ 
+@@ -1444,7 +1444,7 @@ static void tso_headers_prepare(struct s
+ 			/* Advance as needed. */
+ 			while (f_used >= f_size) {
+ 				f_id++;
+-				f_size = sh->frags[f_id].size;
++				f_size = skb_frag_size(&sh->frags[f_id]);
+ 				f_used = 0;
+ 			}
+ 
+@@ -1478,14 +1478,14 @@ static void tso_egress(struct net_device
+ 	struct tile_net_priv *priv = netdev_priv(dev);
+ 	struct skb_shared_info *sh = skb_shinfo(skb);
+ 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
+-	unsigned int data_len = skb->data_len + skb->hdr_len - sh_len;
++	unsigned int data_len = skb->len - sh_len;
+ 	unsigned int p_len = sh->gso_size;
+ 	gxio_mpipe_edesc_t edesc_head = { { 0 } };
+ 	gxio_mpipe_edesc_t edesc_body = { { 0 } };
+ 	long f_id = -1;    /* id of the current fragment */
+-	long f_size = skb->hdr_len;  /* size of the current fragment */
+-	long f_used = sh_len;  /* bytes used from the current fragment */
+-	void *f_data = skb->data;
++	long f_size = skb_headlen(skb) - sh_len;  /* current fragment size */
++	long f_used = 0;  /* bytes used from the current fragment */
++	void *f_data = skb->data + sh_len;
+ 	long n;            /* size of the current piece of payload */
+ 	unsigned long tx_packets = 0, tx_bytes = 0;
+ 	unsigned int csum_start;
+@@ -1516,15 +1516,18 @@ static void tso_egress(struct net_device
+ 
+ 		/* Egress the payload. */
+ 		while (p_used < p_len) {
++			void *va;
+ 
+ 			/* Advance as needed. */
+ 			while (f_used >= f_size) {
+ 				f_id++;
+-				f_size = sh->frags[f_id].size;
+-				f_used = 0;
++				f_size = skb_frag_size(&sh->frags[f_id]);
+ 				f_data = tile_net_frag_buf(&sh->frags[f_id]);
++				f_used = 0;
+ 			}
+ 
++			va = f_data + f_used;
++
+ 			/* Use bytes from the current fragment. */
+ 			n = p_len - p_used;
+ 			if (n > f_size - f_used)
+@@ -1533,7 +1536,7 @@ static void tso_egress(struct net_device
+ 			p_used += n;
+ 
+ 			/* Egress a piece of the payload. */
+-			edesc_body.va = va_to_tile_io_addr(f_data) + f_used;
++			edesc_body.va = va_to_tile_io_addr(va);
+ 			edesc_body.xfer_size = n;
+ 			edesc_body.bound = !(p_used < p_len);
+ 			gxio_mpipe_equeue_put_at(equeue, edesc_body, slot);
 
 
