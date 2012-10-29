@@ -1,152 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab2J2FLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 01:11:43 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59652 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab2J2FLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 01:11:41 -0400
-Message-ID: <1351487489.18143.3.camel@phoenix>
-Subject: [PATCH RFT] leds: blinkm: Don't init a workqueue per brightness_set
- call
-From: Axel Lin <axel.lin@ingics.com>
-To: Jan-Simon Moeller <jansimon.moeller@gmx.de>, Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 29 Oct 2012 13:11:29 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753130Ab2J2F1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 01:27:15 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:42791 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab2J2F1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 01:27:14 -0400
+Date: Mon, 29 Oct 2012 10:57:07 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Rabin Vincent <rabin@rab.in>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] uprobes/powerpc: Don't clear TIF_UPROBE in
+	do_notify_resume()
+Message-ID: <20121029052707.GA3400@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20121028173900.GA14621@redhat.com> <20121028173925.GA14642@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121028173925.GA14642@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12102905-8974-0000-0000-0000104194FC
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000294; HX=3.00000198; KW=3.00000007;
+ PH=3.00000001; SC=3.00000008; SDB=6.00186576; UDB=6.00042264; UTC=2012-10-29
+ 05:27:12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling INIT_WORK in blinkm_led_common_set() means we init a workqueue every time
-when brightness_set callback is called.
-Move INIT_WORK to blinkm_probe() so we only need to init the workqueue once.
+On Sun, Oct 28, 2012 at 06:39:25PM +0100, Oleg Nesterov wrote:
 
-So we only need to init a workqueue per blinkm led rather than init a workqueue
-per brightness_set call.
+Hi Oleg,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-This patch is v2 of "[PATCH RFT] leds: blinkm: Avoid calling INIT_WORK in blinkm_led_common_set()"
-I think the new subject line is better for the reason I sent the patch.
+> Cleanup. No need to clear TIF_UPROBE, do_notify_resume() does this.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/powerpc/kernel/signal.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/signal.c b/arch/powerpc/kernel/signal.c
+> index a2dc757..3b99711 100644
+> --- a/arch/powerpc/kernel/signal.c
+> +++ b/arch/powerpc/kernel/signal.c
+> @@ -158,10 +158,8 @@ static int do_signal(struct pt_regs *regs)
+> 
+>  void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
 
-v2:
-Now we have a workqueue per blinkm led.
-I think the code can be simpler and has better readability if we embeded
-struct work_struct in struct blinkm_led.
+But this _is_ do_notify_resume()... I don't see this flag cleared
+anywhere else.
 
-Note I don't have this hardware, so I added Request-For-Test (RFT) in the subject line.
-Axel
+Did you have something else in mind?
 
- drivers/leds/leds-blinkm.c |   30 +++++++-----------------------
- 1 file changed, 7 insertions(+), 23 deletions(-)
+Ananth
 
-diff --git a/drivers/leds/leds-blinkm.c b/drivers/leds/leds-blinkm.c
-index f7c3d7f..b62d214 100644
---- a/drivers/leds/leds-blinkm.c
-+++ b/drivers/leds/leds-blinkm.c
-@@ -37,19 +37,15 @@ static int blinkm_transfer_hw(struct i2c_client *client, int cmd);
- static int blinkm_test_run(struct i2c_client *client);
- 
- struct blinkm_led {
-+	struct work_struct work;
- 	struct i2c_client *i2c_client;
- 	struct led_classdev led_cdev;
- 	int id;
- 	atomic_t active;
- };
- 
--struct blinkm_work {
--	struct blinkm_led *blinkm_led;
--	struct work_struct work;
--};
--
- #define cdev_to_blmled(c)          container_of(c, struct blinkm_led, led_cdev)
--#define work_to_blmwork(c)         container_of(c, struct blinkm_work, work)
-+#define work_to_blmled(c)         container_of(c, struct blinkm_led, work)
- 
- struct blinkm_data {
- 	struct i2c_client *i2c_client;
-@@ -446,12 +442,9 @@ static int blinkm_transfer_hw(struct i2c_client *client, int cmd)
- static void led_work(struct work_struct *work)
- {
- 	int ret;
--	struct blinkm_led *led;
--	struct blinkm_data *data ;
--	struct blinkm_work *blm_work = work_to_blmwork(work);
-+	struct blinkm_led *led = work_to_blmled(work);
-+	struct blinkm_data *data = i2c_get_clientdata(led->i2c_client);
- 
--	led = blm_work->blinkm_led;
--	data = i2c_get_clientdata(led->i2c_client);
- 	ret = blinkm_transfer_hw(led->i2c_client, BLM_GO_RGB);
- 	atomic_dec(&led->active);
- 	dev_dbg(&led->i2c_client->dev,
-@@ -459,7 +452,6 @@ static void led_work(struct work_struct *work)
- 			" next_blue = %d, active = %d\n",
- 			data->next_red, data->next_green,
- 			data->next_blue, atomic_read(&led->active));
--	kfree(blm_work);
- }
- 
- static int blinkm_led_common_set(struct led_classdev *led_cdev,
-@@ -468,7 +460,6 @@ static int blinkm_led_common_set(struct led_classdev *led_cdev,
- 	/* led_brightness is 0, 127 or 255 - we just use it here as-is */
- 	struct blinkm_led *led = cdev_to_blmled(led_cdev);
- 	struct blinkm_data *data = i2c_get_clientdata(led->i2c_client);
--	struct blinkm_work *bl_work;
- 
- 	switch (color) {
- 	case RED:
-@@ -510,10 +501,6 @@ static int blinkm_led_common_set(struct led_classdev *led_cdev,
- 		return -EINVAL;
- 	}
- 
--	bl_work = kzalloc(sizeof(*bl_work), GFP_ATOMIC);
--	if (!bl_work)
--		return -ENOMEM;
--
- 	atomic_inc(&led->active);
- 	dev_dbg(&led->i2c_client->dev,
- 			"#TO_SCHED# next_red = %d, next_green = %d,"
-@@ -521,11 +508,8 @@ static int blinkm_led_common_set(struct led_classdev *led_cdev,
- 			data->next_red, data->next_green,
- 			data->next_blue, atomic_read(&led->active));
- 
--	/* a fresh work _item_ for each change */
--	bl_work->blinkm_led = led;
--	INIT_WORK(&bl_work->work, led_work);
- 	/* queue work in own queue for easy sync on exit*/
--	schedule_work(&bl_work->work);
-+	schedule_work(&led->work);
- 
- 	return 0;
- }
-@@ -667,6 +651,7 @@ static int __devinit blinkm_probe(struct i2c_client *client,
- 	}
- 
- 	for (i = 0; i < 3; i++) {
-+		INIT_WORK(&data->blinkm_leds[i].work, led_work);
- 		/* RED = 0, GREEN = 1, BLUE = 2 */
- 		led[i] = &data->blinkm_leds[i];
- 		led[i]->i2c_client = client;
-@@ -746,8 +731,7 @@ exit:
- static int __devexit blinkm_remove(struct i2c_client *client)
- {
- 	struct blinkm_data *data = i2c_get_clientdata(client);
--	int ret = 0;
--	int i;
-+	int i, ret;
- 
- 	/* make sure no workqueue entries are pending */
- 	for (i = 0; i < 3; i++) {
--- 
-1.7.9.5
-
-
+>  {
+> -	if (thread_info_flags & _TIF_UPROBE) {
+> -		clear_thread_flag(TIF_UPROBE);
+> +	if (thread_info_flags & _TIF_UPROBE)
+>  		uprobe_notify_resume(regs);
+> -	}
+> 
+>  	if (thread_info_flags & _TIF_SIGPENDING)
+>  		do_signal(regs);
+> -- 
+> 1.5.5.1
 
