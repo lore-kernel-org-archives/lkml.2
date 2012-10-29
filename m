@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761379Ab2J2ViD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:38:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47929 "EHLO mail.kernel.org"
+	id S933340Ab2J2V7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:59:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47990 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761357Ab2J2Vh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:37:56 -0400
+	id S1761373Ab2J2ViB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Markus Kanet <dvmailing@gmx.eu>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 081/101] b43: Fix oops on unload when firmware not found
-Date: Mon, 29 Oct 2012 14:35:34 -0700
-Message-Id: <20121029213249.288010784@linuxfoundation.org>
+        Barry Song <Baohua.Song@csr.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>
+Subject: [ 087/101] dmaengine: sirf: fix a typo in moving running dma_desc to active queue
+Date: Mon, 29 Oct 2012 14:35:40 -0700
+Message-Id: <20121029213249.988432875@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -27,46 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Barry Song <Baohua.Song@csr.com>
 
-commit f89ff6441df06abc2d95f3ef67525923032d6283 upstream.
+commit 26fd12209c08fe947be1828896ef4ffc5bd0e6df upstream.
 
-When b43 fails to find firmware when loaded, a subsequent unload will
-oops due to calling ieee80211_unregister_hw() when the corresponding
-register call was never made.
+list_move_tail(&schan->queued, &schan->active) makes the list_empty(schan->queued)
+undefined, we either should change it to:
+list_move_tail(schan->queued.next, &schan->active)
+or
+list_move_tail(&sdesc->node, &schan->active)
 
-Commit 2d838bb608e2d1f6cb4280e76748cb812dc822e7 fixed the same problem
-for b43legacy.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Tested-by: Markus Kanet <dvmailing@gmx.eu>
-Cc: Markus Kanet <dvmailing@gmx.eu>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/dma/sirf-dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -5374,6 +5374,8 @@ static void b43_bcma_remove(struct bcma_
- 	cancel_work_sync(&wldev->restart_work);
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -109,7 +109,7 @@ static void sirfsoc_dma_execute(struct s
+ 	sdesc = list_first_entry(&schan->queued, struct sirfsoc_dma_desc,
+ 		node);
+ 	/* Move the first queued descriptor to active list */
+-	list_move_tail(&schan->queued, &schan->active);
++	list_move_tail(&sdesc->node, &schan->active);
  
- 	B43_WARN_ON(!wl);
-+	if (!wldev->fw.ucode.data)
-+		return;			/* NULL if firmware never loaded */
- 	if (wl->current_dev == wldev && wl->hw_registred) {
- 		b43_leds_stop(wldev);
- 		ieee80211_unregister_hw(wl->hw);
-@@ -5448,6 +5450,8 @@ static void b43_ssb_remove(struct ssb_de
- 	cancel_work_sync(&wldev->restart_work);
- 
- 	B43_WARN_ON(!wl);
-+	if (!wldev->fw.ucode.data)
-+		return;			/* NULL if firmware never loaded */
- 	if (wl->current_dev == wldev && wl->hw_registred) {
- 		b43_leds_stop(wldev);
- 		ieee80211_unregister_hw(wl->hw);
+ 	/* Start the DMA transfer */
+ 	writel_relaxed(sdesc->width, sdma->base + SIRFSOC_DMA_WIDTH_0 +
 
 
