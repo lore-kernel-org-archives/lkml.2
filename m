@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758266Ab2J2KsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 06:48:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62490 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab2J2KsL (ORCPT
+	id S1757036Ab2J2Kts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 06:49:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45479 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab2J2Ktr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 06:48:11 -0400
+	Mon, 29 Oct 2012 06:49:47 -0400
+X-AuditID: 9c930197-b7c4aae000004160-d1-508e5f4925b8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        jolsa@redhat.com, eranian@google.com, mingo@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 21/33] perf, tools: Add support for record transaction flags
+References: <1351283415-13170-1-git-send-email-andi@firstfloor.org>
+	<1351283415-13170-22-git-send-email-andi@firstfloor.org>
+Date: Mon, 29 Oct 2012 19:49:45 +0900
+In-Reply-To: <1351283415-13170-22-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Fri, 26 Oct 2012 13:30:03 -0700")
+Message-ID: <87r4oh7dti.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1351500524-23907-2-git-send-email-wency@cn.fujitsu.com>
-References: <1351500524-23907-1-git-send-email-wency@cn.fujitsu.com>
-	<1351500524-23907-2-git-send-email-wency@cn.fujitsu.com>
-Date: Mon, 29 Oct 2012 11:48:09 +0100
-Message-ID: <CAFLxGvyOo065sc2QeTkFsPotJbJEgEAV_ktvz5Z2gYpD-Ft7WA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] update mem= option's spec according to its implementation
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, bhelgaas@google.com,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 29, 2012 at 9:48 AM, Wen Congyang <wency@cn.fujitsu.com> wrote:
-> Current mem= implementation seems buggy because specification and
-> implementation doesn't match. Current mem= has been working
-> for many years and it's not buggy, it works as expected. So
-> we should update the specification.
+On Fri, 26 Oct 2012 13:30:03 -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 >
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Sort-of-tentatively-acked-by: Rob Landley <rob@landley.net>
+> Add the glue in the user tools to record transaction flags with
+> --transaction (-T was already taken) and dump them.
+>
+> Followon patches will use them.
+>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  tools/perf/Documentation/perf-record.txt |    5 ++++-
+>  tools/perf/builtin-record.c              |    2 ++
+>  tools/perf/perf.h                        |    1 +
+>  tools/perf/util/event.h                  |    1 +
+>  tools/perf/util/evsel.c                  |    9 +++++++++
+>  tools/perf/util/session.c                |    3 +++
+>  6 files changed, 20 insertions(+), 1 deletions(-)
+>
+> diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+> index 0ffb436..34f4f1a 100644
+> --- a/tools/perf/Documentation/perf-record.txt
+> +++ b/tools/perf/Documentation/perf-record.txt
+> @@ -185,12 +185,15 @@ is enabled for all the sampling events. The sampled branch type is the same for
+>  The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
+>  Note that this feature may not be available on all processors.
+>  
+> --W::
+>  --weight::
+>  Enable weightened sampling. When the event supports an additional weight per sample scale
+>  the histogram by this weight. This currently works for TSX abort events and some memory events
+>  in precise mode on modern Intel CPUs.
+>  
+> +-T::
 
-So, is this an ACK or not?
+No, as you said, -T was already taken. ;)
 
--- 
 Thanks,
-//richard
+Namhyung
+
+
+> +--transaction::
+> +Record transaction flags for transaction related events.
+> +
+>  SEE ALSO
+>  --------
+>  linkperf:perf-stat[1], linkperf:perf-list[1]
