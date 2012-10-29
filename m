@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab2J2Pxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 11:53:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:18353 "EHLO song.cn.fujitsu.com"
+	id S932584Ab2J2Pxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 11:53:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20672 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759873Ab2J2PsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759857Ab2J2PsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Oct 2012 11:48:18 -0400
 X-IronPort-AV: E=Sophos;i="4.80,673,1344182400"; 
-   d="scan'208";a="6093343"
+   d="scan'208";a="6093341"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
         LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>
@@ -16,48 +16,101 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Rusty Russell <rusty@rustcorp.com.au>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Yasuaki ISIMATU <isimatu.yasuaki@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Jim Cromie <jim.cromie@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [V5 PATCH 15/26] init: use N_MEMORY instead N_HIGH_MEMORY
-Date: Mon, 29 Oct 2012 23:21:05 +0800
-Message-Id: <1351524078-20363-14-git-send-email-laijs@cn.fujitsu.com>
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org
+Subject: [V5 PATCH 26/26] mempolicy: fix is_valid_nodemask()
+Date: Mon, 29 Oct 2012 23:21:16 +0800
+Message-Id: <1351524078-20363-25-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1351523301-20048-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:16,
+ 2012/10/29 23:19:59,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/10/29 23:19:17,
-	Serialize complete at 2012/10/29 23:19:17
+ 2012/10/29 23:20:00,
+	Serialize complete at 2012/10/29 23:20:00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_HIGH_MEMORY stands for the nodes that has normal or high memory.
-N_MEMORY stands for the nodes that has any memory.
+is_valid_nodemask() is introduced by 19770b32. but it does not match
+its comments, because it does not check the zone which > policy_zone.
 
-The code here need to handle with the nodes which have memory, we should
-use N_MEMORY instead.
+Also in b377fd, this commits told us, if highest zone is ZONE_MOVABLE,
+we should also apply memory policies to it. so ZONE_MOVABLE should be valid zone
+for policies. is_valid_nodemask() need to be changed to match it.
+
+Fix: check all zones, even its zoneid > policy_zone.
+Use nodes_intersects() instead open code to check it.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Reported-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- init/main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/mempolicy.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index 9cf77ab..9595968 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -855,7 +855,7 @@ static void __init kernel_init_freeable(void)
- 	/*
- 	 * init can allocate pages on any node
- 	 */
--	set_mems_allowed(node_states[N_HIGH_MEMORY]);
-+	set_mems_allowed(node_states[N_MEMORY]);
- 	/*
- 	 * init can run on any cpu.
- 	 */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index d4a084c..ed7c249 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -140,19 +140,7 @@ static const struct mempolicy_operations {
+ /* Check that the nodemask contains at least one populated zone */
+ static int is_valid_nodemask(const nodemask_t *nodemask)
+ {
+-	int nd, k;
+-
+-	for_each_node_mask(nd, *nodemask) {
+-		struct zone *z;
+-
+-		for (k = 0; k <= policy_zone; k++) {
+-			z = &NODE_DATA(nd)->node_zones[k];
+-			if (z->present_pages > 0)
+-				return 1;
+-		}
+-	}
+-
+-	return 0;
++	return nodes_intersects(*nodemask, node_states[N_MEMORY]);
+ }
+ 
+ static inline int mpol_store_user_nodemask(const struct mempolicy *pol)
+@@ -1572,6 +1560,26 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
+ 	return pol;
+ }
+ 
++static int apply_policy_zone(struct mempolicy *policy, enum zone_type zone)
++{
++	enum zone_type dynamic_policy_zone = policy_zone;
++
++	BUG_ON(dynamic_policy_zone == ZONE_MOVABLE);
++
++	/*
++	 * if policy->v.nodes has movable memory only,
++	 * we apply policy when gfp_zone(gfp) = ZONE_MOVABLE only.
++	 *
++	 * policy->v.nodes is intersect with node_states[N_MEMORY].
++	 * so if the following test faile, it implies
++	 * policy->v.nodes has movable memory only.
++	 */
++	if (!nodes_intersects(policy->v.nodes, node_states[N_HIGH_MEMORY]))
++		dynamic_policy_zone = ZONE_MOVABLE;
++
++	return zone >= dynamic_policy_zone;
++}
++
+ /*
+  * Return a nodemask representing a mempolicy for filtering nodes for
+  * page allocation
+@@ -1580,7 +1588,7 @@ static nodemask_t *policy_nodemask(gfp_t gfp, struct mempolicy *policy)
+ {
+ 	/* Lower zones don't get a nodemask applied for MPOL_BIND */
+ 	if (unlikely(policy->mode == MPOL_BIND) &&
+-			gfp_zone(gfp) >= policy_zone &&
++			apply_policy_zone(policy, gfp_zone(gfp)) &&
+ 			cpuset_nodemask_valid_mems_allowed(&policy->v.nodes))
+ 		return &policy->v.nodes;
+ 
 -- 
 1.7.4.4
 
