@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761245Ab2J2WMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:12:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38271 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933469Ab2J2WMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 18:12:25 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] Input: introduce managed input devices (add devres support)
-Date: Mon, 29 Oct 2012 15:12:20 -0700
-Message-ID: <8202410.zO713iQhxO@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.9.2 (Linux/3.6.0+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121029213254.GA15390@polaris.bitmath.org>
-References: <20121023053513.GA15642@core.coreip.homeip.net> <20121029204023.GB13256@core.coreip.homeip.net> <20121029213254.GA15390@polaris.bitmath.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1761219Ab2J2WMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:12:33 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47473 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761212Ab2J2VhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:37:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Oleksandr Chumachenko <ledest@gmail.com>,
+        Michael Shigorin <mike@osdn.org.ua>
+Subject: [ 040/101] usb-storage: add unusual_devs entry for Casio EX-N1 digital camera
+Date: Mon, 29 Oct 2012 14:34:53 -0700
+Message-Id: <20121029213244.697657046@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
+References: <20121029213240.128426598@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 29, 2012 10:32:54 PM Henrik Rydberg wrote:
-> > > Either way, the code looks functional to me.
-> > 
-> > So is that "reviewed-by"?
-> 
-> I was thinking about this hunk:
-> > @@ -1972,7 +2084,20 @@ int input_register_device(struct input_dev *dev)
-> > 
-> >         mutex_unlock(&input_mutex);
-> > 
-> > +       if (dev->devres_managed) {
-> > +               dev_info(dev->dev.parent, "%s: registerign %s with
-> > devres.\n", +                       __func__, dev->name ?: "N/A");
-> > +               devres_add(dev->dev.parent, devres);
-> > +       }
-> > 
-> >         return 0;
-> > 
-> > +
-> > +err_device_del:
-> > +       device_del(&dev->dev);
-> > +err_free_vals:
-> > +       kfree(dev->vals);
-> 
-> Won't this yield a double free once we reach release()?
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-Nicely spotted, we need "dev->vals = NULL;" here.
+------------------
 
--- 
-Dmitry
+From: Michael Shigorin <mike@osdn.org.ua>
+
+commit d7870af7e2e3a91b462075ec1ca669b482215187 upstream.
+
+This commit sets removable subclass for Casio EX-N1 digital camera.
+
+The patch has been tested within an ALT Linux kernel:
+http://git.altlinux.org/people/led/packages/?p=kernel-image-3.0.git;a=commitdiff;h=c0fd891836e89fe0c93a4d536a59216d90e4e3e7
+
+See also https://bugzilla.kernel.org/show_bug.cgi?id=49221
+
+Signed-off-by: Oleksandr Chumachenko <ledest@gmail.com>
+Signed-off-by: Michael Shigorin <mike@osdn.org.ua>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/storage/unusual_devs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1004,6 +1004,12 @@ UNUSUAL_DEV( 0x07cf, 0x1001, 0x1000, 0x9
+ 		USB_SC_8070, USB_PR_CB, NULL,
+ 		US_FL_NEED_OVERRIDE | US_FL_FIX_INQUIRY ),
+ 
++/* Submitted by Oleksandr Chumachenko <ledest@gmail.com> */
++UNUSUAL_DEV( 0x07cf, 0x1167, 0x0100, 0x0100,
++		"Casio",
++		"EX-N1 DigitalCamera",
++		USB_SC_8070, USB_PR_DEVICE, NULL, 0),
++
+ /* Submitted by Hartmut Wahl <hwahl@hwahl.de>*/
+ UNUSUAL_DEV( 0x0839, 0x000a, 0x0001, 0x0001,
+ 		"Samsung",
+
+
