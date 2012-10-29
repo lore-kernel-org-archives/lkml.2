@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759777Ab2J2QOA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 12:14:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42815 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752348Ab2J2QN6 (ORCPT
+	id S1760025Ab2J2QOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 12:14:19 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58762 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759912Ab2J2QOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 12:13:58 -0400
-Date: Mon, 29 Oct 2012 16:13:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [Q] .readable_reg() not verified during read?
-Message-ID: <20121029161356.GD4511@opensource.wolfsonmicro.com>
-References: <Pine.LNX.4.64.1210280034310.4378@axis700.grange>
- <20121028180629.GB4547@opensource.wolfsonmicro.com>
- <Pine.LNX.4.64.1210290833440.17869@axis700.grange>
+	Mon, 29 Oct 2012 12:14:15 -0400
+Date: Mon, 29 Oct 2012 12:14:12 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: torvalds@linux-foundation.org, tj@kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        paul.gortmaker@windriver.com, davem@davemloft.net, rostedt@goodmis.org,
+        mingo@elte.hu, ebiederm@xmission.com, aarcange@redhat.com,
+        ericvh@gmail.com, netdev@vger.kernel.org, josh@joshtriplett.org,
+        eric.dumazet@gmail.com, axboe@kernel.dk, agk@redhat.com,
+        dm-devel@redhat.com, neilb@suse.de, ccaulfie@redhat.com,
+        teigland@redhat.com, Trond.Myklebust@netapp.com, bfields@fieldses.org,
+        fweisbec@gmail.com, jesse@nicira.com, venkat.x.venkatsubra@oracle.com,
+        ejt@redhat.com, snitzer@redhat.com, edumazet@google.com,
+        linux-nfs@vger.kernel.org, dev@openvswitch.org,
+        rds-devel@oss.oracle.com, lw@cn.fujitsu.com
+Subject: Re: [PATCH v7 01/16] hashtable: introduce a small and naive
+	hashtable
+Message-ID: <20121029161412.GB18944@Krystal>
+References: <1351450948-15618-1-git-send-email-levinsasha928@gmail.com> <20121029112907.GA9115@Krystal> <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a2FkP9tdjPU2nyhF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1210290833440.17869@axis700.grange>
-X-Cookie: You will never know hunger.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+1xoqfQn92igbFS1TtrpYuSiy7+Ro02ar=axgqSOJOuE_EVuA@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Sasha Levin (levinsasha928@gmail.com) wrote:
+> On Mon, Oct 29, 2012 at 7:29 AM, Mathieu Desnoyers
+> <mathieu.desnoyers@efficios.com> wrote:
+> > * Sasha Levin (levinsasha928@gmail.com) wrote:
+> >> +
+> >> +     for (i = 0; i < sz; i++)
+> >> +             INIT_HLIST_HEAD(&ht[sz]);
+> >
+> > ouch. How did this work ? Has it been tested at all ?
+> >
+> > sz -> i
+> 
+> Funny enough, it works perfectly. Generally as a test I boot the
+> kernel in a VM and let it fuzz with trinity for a bit, doing that with
+> the code above worked flawlessly.
+> 
+> While it works, it's obviously wrong. Why does it work though? Usually
+> there's a list op happening pretty soon after that which brings the
+> list into proper state.
+> 
+> I've been playing with a patch that adds a magic value into list_head
+> if CONFIG_DEBUG_LIST is set, and checks that magic in the list debug
+> code in lib/list_debug.c.
+> 
+> Does it sound like something useful? If so I'll send that patch out.
 
---a2FkP9tdjPU2nyhF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Most of the calls to this initialization function apply it on zeroed
+memory (static/kzalloc'd...), which makes it useless. I'd actually be in
+favor of removing those redundant calls (as I pointed out in another
+email), and document that zeroed memory don't need to be explicitly
+initialized.
 
-On Mon, Oct 29, 2012 at 08:40:55AM +0100, Guennadi Liakhovetski wrote:
-> On Sun, 28 Oct 2012, Mark Brown wrote:
+Those sites that need to really reinitialize memory, or initialize it
+(if located on the stack or in non-zeroed dynamically allocated memory)
+could use a memset to 0, which will likely be faster than setting to
+NULL on many architectures.
 
-> > No real reason, though to be honest it's not that important - the main
-> > reason for having the function is to make the debugfs stuff work nicely
-> > rather than anything else.
+About testing, I'd recommend taking the few sites that still need the
+initialization function, and just initialize the array with garbage
+before calling the initialization function. Things should blow up quite
+quickly. Doing it as a one-off thing might be enough to catch any issue.
+I don't think we need extra magic numbers to catch issues in this rather
+obvious init function.
 
-> But what about initialising the register cache in regcache_hw_init()?=20
-> Doesn't it read in all registers without checking their readability?
+Thanks,
 
-I don't know if anyone's actually using that to be honest, I don't on
-any of my systems, and in any case most hardware is implemented to allow
-reads on undocumented registers so probably it'll do something
-reasonable even if it's not doing quite what you'd expect.
+Mathieu
 
---a2FkP9tdjPU2nyhF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> 
+> Thanks,
+> Sasha
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQjqsxAAoJELSic+t+oim9/WsQAIw8XcfwXz1tSTpa6/2UXkQl
-cAzpkqH4X0wpOKKKHMWuNqUOiWDPFjpiQ1OYGpurXUpzBkuielMpjBQVHGkqKGea
-nEWSydKcRBlO2E7CFzRimgl9jBSjImdzSy4/W+f+/9wqkD5lkCu6C+6zPb+M5nv1
-L7q5DReMNQwc/GsA2jPx47ep+aTKkQp0pc1t8S9/ziUMz7ZvhU8mG0t1XWLVSRTJ
-H8pXfzjnRlCqNgWeyGhvrVTNUbkall1hB5EKeq7rO/qCSijXyiOZL5+b2dKrn2qf
-vjV/81bIeFrv/IKrmXJDZtJwgls72ww9jmx/CxvP0EOCPqfXL0xkHByJoJFTje8n
-K8TFwfGWhSd7HjtGc0ddlml9/498Frjk3GWAykn2/QLeOXrsXoaSiFRfIZOPcABF
-1FK0eRn0bJOdozRE5tjhoxGEBR8zEhkJMI1E7BUzywJR/MNkw/eFob0GVWQJjBwR
-uhJTvDAez2GHo84+kwWUcWSwHmpiBLjcbm6Su5brUQjnVCFbx8dyaueWrvr/7JqA
-7FuaP0lzGHeRGxWWWhikHnQnDW4rgLtTmcxQQKO13ZuB/z4Zm/feeEJGscbllKFP
-jdu4446T2fbdbXvDDmsWRnJ+HlShk9MaZkOrS2atLnLnF91e4ktjNJAWdhTKaV6Z
-9ye5J3rPPIS89lBWH6Pq
-=jQXq
------END PGP SIGNATURE-----
-
---a2FkP9tdjPU2nyhF--
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
