@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761487Ab2J2VjB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:39:01 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59643 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751822Ab2J2Vi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:57 -0400
-Message-ID: <508EF6C1.4000302@fb.com>
-Date: Mon, 29 Oct 2012 14:36:01 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [RFC/PATCHSET 00/15] perf report: Add support to accumulate hist
- periods
-References: <1347520811-28150-1-git-send-email-namhyung@kernel.org> <1351537727.4047.21.camel@twins>
-In-Reply-To: <1351537727.4047.21.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.254]
-X-Proofpoint-Spam-Reason: safe
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.7.7855,1.0.431,0.0.0000
- definitions=2012-10-29_04:2012-10-29,2012-10-29,1970-01-01 signatures=0
+	id S1761465Ab2J2Vjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:39:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48124 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761412Ab2J2ViP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 091/101] net/wireless: ipw2200: Fix panic occurring in ipw_handle_promiscuous_tx()
+Date: Mon, 29 Oct 2012 14:35:44 -0700
+Message-Id: <20121029213250.437034658@linuxfoundation.org>
+X-Mailer: git-send-email 1.7.12.2.421.g261b511
+In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
+References: <20121029213240.128426598@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/12 12:08 PM, Peter Zijlstra wrote:
+3.6-stable review patch.  If anyone has any objections, please let me know.
 
-> Right, so I tried this and I would expect the callchains to be inverted
-> too, so that when I expand say 'c' I would see that 'c' calls 'b' for
-> 100% which calls 'a' for 100%.
->
-> Instead I get the regular callchains, expanding 'c' gives me main calls
-> it for 100%.
->
-> Adding -G (invert callchains) doesn't make it better, in that case, when
-> I expand 'c' we start at '__libc_start_main' instead of 'c'.
->
-> Is there anything I'm missing?
->
+------------------
 
-Sounds like a reasonable expectation.
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 
-I tested mainly:
+commit bf11315eeda510ea4fc1a2bf972d8155d31d89b4 upstream.
 
-perf report --cumulate  -g graph,100,callee
+The driver does not count space of radiotap fields when allocating skb for
+radiotap packet. This leads to kernel panic with the following call trace:
 
-to find the functions with a large amount of CPU time underneath. Then 
-examined the callgraph without --cumulate. But yeah - it'd be nice to be 
-able to do both in a single invocation.
+...
+[67607.676067] [<c152f90f>] error_code+0x67/0x6c
+[67607.676067] [<c142f831>] ? skb_put+0x91/0xa0
+[67607.676067] [<f8cf5e5b>] ? ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
+[67607.676067] [<f8cf5e5b>] ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
+[67607.676067] [<f8cf899b>] ipw_net_hard_start_xmit+0x8b/0x90 [ipw2200]
+[67607.676067] [<f8741c5a>] libipw_xmit+0x55a/0x980 [libipw]
+[67607.676067] [<c143d3e8>] dev_hard_start_xmit+0x218/0x4d0
+...
 
-Also, when callgraphs are displayed, the percentages are off (> 100%). 
-Namhyung probably needs to use he->stat_acc->period in a few places as 
-the denominator instead of he->period.
+This bug was found by VittGam.
+https://bugzilla.kernel.org/show_bug.cgi?id=43255
 
-  -Arun
+Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/ipw2x00/ipw2200.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -10479,7 +10479,7 @@ static void ipw_handle_promiscuous_tx(st
+ 		} else
+ 			len = src->len;
+ 
+-		dst = alloc_skb(len + sizeof(*rt_hdr), GFP_ATOMIC);
++		dst = alloc_skb(len + sizeof(*rt_hdr) + sizeof(u16)*2, GFP_ATOMIC);
+ 		if (!dst)
+ 			continue;
+ 
+
+
