@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573Ab2J2WSf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 18:18:35 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47255 "EHLO mail.kernel.org"
+	id S933609Ab2J2WTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 18:19:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47201 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761172Ab2J2Vgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:36:50 -0400
+	id S1761158Ab2J2Vgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:36:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 022/101] xhci: fix integer overflow
-Date: Mon, 29 Oct 2012 14:34:35 -0700
-Message-Id: <20121029213242.646328502@linuxfoundation.org>
+        Nix <nix@esperi.org.uk>, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 018/101] LOCKD: fix races in nsm_client_get
+Date: Mon, 29 Oct 2012 14:34:31 -0700
+Message-Id: <20121029213242.194355625@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,36 +25,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 16b45fdf9c4e82f5d3bc53aa70737650e7c8d5ed upstream.
+commit a4ee8d978e47e79d536226dccb48991f70091168 upstream.
 
-xhci_service_interval_to_ns() returns long long
-to avoid an overflow. However, the type cast happens
-too late. The fix is to force ULL from the beginning.
+Commit e9406db20fecbfcab646bad157b4cfdc7cadddfb (lockd: per-net
+NSM client creation and destruction helpers introduced) contains
+a nasty race on initialisation of the per-net NSM client because
+it doesn't check whether or not the client is set after grabbing
+the nsm_create_mutex.
 
-This patch should be backported to kernels as old as 3.5, that contain
-the commit e3567d2c15a7a8e2f992a5f7c7683453ca406d82 "xhci: Add Intel
-U1/U2 timeout policy."
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/lockd/mon.c |   43 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4020,7 +4020,7 @@ int xhci_update_device(struct usb_hcd *h
- static unsigned long long xhci_service_interval_to_ns(
- 		struct usb_endpoint_descriptor *desc)
- {
--	return (1 << (desc->bInterval - 1)) * 125 * 1000;
-+	return (1ULL << (desc->bInterval - 1)) * 125 * 1000;
+--- a/fs/lockd/mon.c
++++ b/fs/lockd/mon.c
+@@ -85,29 +85,38 @@ static struct rpc_clnt *nsm_create(struc
+ 	return rpc_create(&args);
  }
  
- static u16 xhci_get_timeout_no_hub_lpm(struct usb_device *udev,
++static struct rpc_clnt *nsm_client_set(struct lockd_net *ln,
++		struct rpc_clnt *clnt)
++{
++	spin_lock(&ln->nsm_clnt_lock);
++	if (ln->nsm_users == 0) {
++		if (clnt == NULL)
++			goto out;
++		ln->nsm_clnt = clnt;
++	}
++	clnt = ln->nsm_clnt;
++	ln->nsm_users++;
++out:
++	spin_unlock(&ln->nsm_clnt_lock);
++	return clnt;
++}
++
+ static struct rpc_clnt *nsm_client_get(struct net *net)
+ {
+-	static DEFINE_MUTEX(nsm_create_mutex);
+-	struct rpc_clnt	*clnt;
++	struct rpc_clnt	*clnt, *new;
+ 	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 
+-	spin_lock(&ln->nsm_clnt_lock);
+-	if (ln->nsm_users) {
+-		ln->nsm_users++;
+-		clnt = ln->nsm_clnt;
+-		spin_unlock(&ln->nsm_clnt_lock);
++	clnt = nsm_client_set(ln, NULL);
++	if (clnt != NULL)
+ 		goto out;
+-	}
+-	spin_unlock(&ln->nsm_clnt_lock);
+ 
+-	mutex_lock(&nsm_create_mutex);
+-	clnt = nsm_create(net);
+-	if (!IS_ERR(clnt)) {
+-		ln->nsm_clnt = clnt;
+-		smp_wmb();
+-		ln->nsm_users = 1;
+-	}
+-	mutex_unlock(&nsm_create_mutex);
++	clnt = new = nsm_create(net);
++	if (IS_ERR(clnt))
++		goto out;
++
++	clnt = nsm_client_set(ln, new);
++	if (clnt != new)
++		rpc_shutdown_client(new);
+ out:
+ 	return clnt;
+ }
 
 
