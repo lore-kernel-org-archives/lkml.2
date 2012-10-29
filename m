@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab2J2ODN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:03:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60713 "EHLO mx2.suse.de"
+	id S1759213Ab2J2OE2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:04:28 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:36977 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755350Ab2J2ODK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:03:10 -0400
-Date: Mon, 29 Oct 2012 15:03:08 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Paul Thompson <set.mailinglist@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: IRQ subsystem menu
-Message-ID: <20121029140308.GA19316@sepie.suse.cz>
-References: <20121021074016.GA2604@squish.home.loc>
+	id S1755350Ab2J2OE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 10:04:26 -0400
+Message-ID: <508E8CDE.1090702@parallels.com>
+Date: Mon, 29 Oct 2012 18:04:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121021074016.GA2604@squish.home.loc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 4/6] cgroups: forbid pre_destroy callback to fail
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz> <1351251453-6140-5-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1351251453-6140-5-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding lkml and Thomas as IRQ subsystem maintainer to CC)
+On 10/26/2012 03:37 PM, Michal Hocko wrote:
+> Now that mem_cgroup_pre_destroy callback doesn't fail (other than a race
+> with a task attach resp. child group appears) finally we can safely move
+> on and forbit all the callbacks to fail.
+> The last missing piece is moving cgroup_call_pre_destroy after
+> cgroup_clear_css_refs so that css_tryget fails so no new charges for the
+> memcg can happen.
+> We cannot, however, move cgroup_call_pre_destroy right after because we
+> cannot call mem_cgroup_pre_destroy with the cgroup_lock held (see
+> 3fa59dfb cgroup: fix potential deadlock in pre_destroy) so we have to
+> move it after the lock is released.
+> 
 
-On Sun, Oct 21, 2012 at 03:40:16AM -0400, Paul Thompson wrote:
-> 	Hi;
-> 
-> 	In menuconfig, General setup -> IRQ subsystem, there are two
-> possible menu-items. One depends partly on IRQ_DOMAIN, and the other
-> on MAY_HAVE_SPARSE_IRQ.
-> 
-> 	On the x86-64 arch, neither of these seems to be set, so the
-> menu entry is blank if entered (displaying an odd ^@ if you try to
-> navigate up or down. And sometimes some screen garbage on the sides.)
-> 
-> 	Previously (in the 3.2 kernel at least) this menu used to be
-> populated by the "Support sparse IRQ numbering" menu-item, which
-> at that time depended on HAVE_SPARSE_IRQ, and was forced to YES.
-> 
-> 	I do not know if the current behaviour is intended, but it
-> is ugly and confusing to be confronted with a blank menu page.
-> 
-> 	Ideally, the "IRQ subsystem" menu would not even show up
-> if it would contain no menu-items, but I do not know enough to
-> formulate that constraint.
-> 
-> 	A simple alternative is a comment section to reasure babes in
-> the wood of kernel configuration that something is not amiss. I include
-> a sample patch.
-> 
-> Paul
-> set.mailinglist@gmail.com
+If we don't have the cgroup lock held, how safe is the following
+statement in mem_cgroup_reparent_charges():
 
-> --- linux-3.7-rc2/kernel/irq/Kconfig.orig	2012-10-20 15:11:32.000000000 -0400
-> +++ linux-3.7-rc2/kernel/irq/Kconfig	2012-10-21 03:14:56.272952813 -0400
-> @@ -4,6 +4,9 @@ config HAVE_GENERIC_HARDIRQS
->  
->  if HAVE_GENERIC_HARDIRQS
->  menu "IRQ subsystem"
-> +
-> +comment "Some configurations may have no available options here"
-> +
->  #
->  # Interrupt subsystem related configuration options
->  #
+if (cgroup_task_count(cgrp) || !list_empty(&cgrp->children))
+	return -EBUSY;
+
+?
+
+IIUC, although this is not generally safe, but it would be safe here
+because at this point we are expected to had already set the removed bit
+in the css. If this is the case, however, this condition is impossible
+and becomes useless - in which case you may want to remove it from Patch1.
 
