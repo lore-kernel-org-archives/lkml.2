@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759057Ab2J2NnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 09:43:25 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65454 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab2J2NnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 09:43:24 -0400
-From: Joonsoo Kim <js1304@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Irina Tirdea <irina.tirdea@intel.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] Documentation: insert an additional information to android.txt
-Date: Mon, 29 Oct 2012 22:41:06 +0900
-Message-Id: <1351518066-4791-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759101Ab2J2Nph (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 09:45:37 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:45987 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758625Ab2J2Npf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 09:45:35 -0400
+Message-ID: <508E886C.20908@parallels.com>
+Date: Mon, 29 Oct 2012 17:45:16 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121016 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v3 1/6] memcg: split mem_cgroup_force_empty into reclaiming
+ and reparenting parts
+References: <1351251453-6140-1-git-send-email-mhocko@suse.cz> <1351251453-6140-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1351251453-6140-2-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without defining ARCH=arm, building a perf for Android ARM will be failed,
-because it needs architecture specific files.
-So add related information to a document.
+On 10/26/2012 03:37 PM, Michal Hocko wrote:
+> mem_cgroup_force_empty did two separate things depending on free_all
+> parameter from the very beginning. It either reclaimed as many pages as
+> possible and moved the rest to the parent or just moved charges to the
+> parent. The first variant is used as memory.force_empty callback while
+> the later is used from the mem_cgroup_pre_destroy.
+> 
+> The whole games around gotos are far from being nice and there is no
+> reason to keep those two functions inside one. Let's split them and
+> also move the responsibility for css reference counting to their callers
+> to make to code easier.
+> 
+> This patch doesn't have any functional changes.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-
----
-It is based on git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git,
-perf-core-for-mingo branch.
-
-diff --git a/tools/perf/Documentation/android.txt b/tools/perf/Documentation/android.txt
-index a39dbbb..8484c3a 100644
---- a/tools/perf/Documentation/android.txt
-+++ b/tools/perf/Documentation/android.txt
-@@ -48,7 +48,10 @@ For x86:
- II. Compile perf for Android
- ------------------------------------------------
- You need to run make with the NDK toolchain and sysroot defined above:
--  make CROSS_COMPILE=${NDK_TOOLCHAIN} CFLAGS="--sysroot=${NDK_SYSROOT}"
-+For arm:
-+  make ARCH=arm CROSS_COMPILE=${NDK_TOOLCHAIN} CFLAGS="--sysroot=${NDK_SYSROOT}"
-+For x86:
-+  make ARCH=x86 CROSS_COMPILE=${NDK_TOOLCHAIN} CFLAGS="--sysroot=${NDK_SYSROOT}"
- 
- III. Install perf
- -----------------------------------------------
--- 
-1.7.9.5
-
+Reviewed-by: Glauber Costa <glommer@parallels.com>
