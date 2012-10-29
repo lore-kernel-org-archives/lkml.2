@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761468Ab2J2Vig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 17:38:36 -0400
-Received: from mail.kernel.org ([198.145.19.201]:48165 "EHLO mail.kernel.org"
+	id S1761444Ab2J2ViS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 17:38:18 -0400
+Received: from mail.kernel.org ([198.145.19.201]:48110 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761446Ab2J2ViT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 17:38:19 -0400
+	id S1761423Ab2J2ViO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Oct 2012 17:38:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 099/101] x86, mm: Use memblock memory loop instead of e820_RAM
-Date: Mon, 29 Oct 2012 14:35:52 -0700
-Message-Id: <20121029213251.310699631@linuxfoundation.org>
+        Marko Kohtala <marko.kohtala@gmail.com>, Maxim Kammerer <mk@dee.su>,
+        Olof Johansson <olof@lixom.net>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [ 098/101] x86: efi: Turn off efi_enabled after setup on mixed fw/kernel
+Date: Mon, 29 Oct 2012 14:35:51 -0700
+Message-Id: <20121029213251.191731353@linuxfoundation.org>
 X-Mailer: git-send-email 1.7.12.2.421.g261b511
 In-Reply-To: <20121029213240.128426598@linuxfoundation.org>
 References: <20121029213240.128426598@linuxfoundation.org>
@@ -26,53 +29,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Olof Johansson <olof@lixom.net>
 
-commit 1f2ff682ac951ed82cc043cf140d2851084512df upstream.
+commit 5189c2a7c7769ee9d037d76c1a7b8550ccf3481c upstream.
 
-We need to handle E820_RAM and E820_RESERVED_KERNEL at the same time.
+When 32-bit EFI is used with 64-bit kernel (or vice versa), turn off
+efi_enabled once setup is done. Beyond setup, it is normally used to
+determine if runtime services are available and we will have none.
 
-Also memblock has page aligned range for ram, so we could avoid mapping
-partial pages.
+This will resolve issues stemming from efivars modprobe panicking on a
+32/64-bit setup, as well as some reboot issues on similar setups.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQVZirvaBMFYRfXMmWEcHbKSicQEHz4VAwUv0xFCk51ZNw@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=45991
+
+Reported-by: Marko Kohtala <marko.kohtala@gmail.com>
+Reported-by: Maxim Kammerer <mk@dee.su>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/setup.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/include/asm/efi.h  |    1 +
+ arch/x86/kernel/setup.c     |   12 ++++++++++++
+ arch/x86/platform/efi/efi.c |   18 ++++++++++--------
+ 3 files changed, 23 insertions(+), 8 deletions(-)
 
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -98,6 +98,7 @@ extern void efi_set_executable(efi_memor
+ extern int efi_memblock_x86_reserve_range(void);
+ extern void efi_call_phys_prelog(void);
+ extern void efi_call_phys_epilog(void);
++extern void efi_unmap_memmap(void);
+ 
+ #ifndef CONFIG_EFI
+ /*
 --- a/arch/x86/kernel/setup.c
 +++ b/arch/x86/kernel/setup.c
-@@ -920,18 +920,19 @@ void __init setup_arch(char **cmdline_p)
- #ifdef CONFIG_X86_64
- 	if (max_pfn > max_low_pfn) {
- 		int i;
--		for (i = 0; i < e820.nr_map; i++) {
--			struct e820entry *ei = &e820.map[i];
-+		unsigned long start, end;
-+		unsigned long start_pfn, end_pfn;
+@@ -1047,6 +1047,18 @@ void __init setup_arch(char **cmdline_p)
+ 	mcheck_init();
  
--			if (ei->addr + ei->size <= 1UL << 32)
--				continue;
-+		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
-+							 NULL) {
+ 	arch_init_ideal_nops();
++
++#ifdef CONFIG_EFI
++	/* Once setup is done above, disable efi_enabled on mismatched
++	 * firmware/kernel archtectures since there is no support for
++	 * runtime services.
++	 */
++	if (efi_enabled && IS_ENABLED(CONFIG_X86_64) != efi_64bit) {
++		pr_info("efi: Setup done, disabling due to 32/64-bit mismatch\n");
++		efi_unmap_memmap();
++		efi_enabled = 0;
++	}
++#endif
+ }
  
--			if (ei->type == E820_RESERVED)
-+			end = PFN_PHYS(end_pfn);
-+			if (end <= (1UL<<32))
- 				continue;
+ #ifdef CONFIG_X86_32
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -69,11 +69,15 @@ EXPORT_SYMBOL(efi);
+ struct efi_memory_map memmap;
  
-+			start = PFN_PHYS(start_pfn);
- 			max_pfn_mapped = init_memory_mapping(
--				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
--				ei->addr + ei->size);
-+						max((1UL<<32), start), end);
- 		}
+ bool efi_64bit;
+-static bool efi_native;
  
- 		/* can we preseve max_low_pfn ?*/
+ static struct efi efi_phys __initdata;
+ static efi_system_table_t efi_systab __initdata;
+ 
++static inline bool efi_is_native(void)
++{
++	return IS_ENABLED(CONFIG_X86_64) == efi_64bit;
++}
++
+ static int __init setup_noefi(char *arg)
+ {
+ 	efi_enabled = 0;
+@@ -419,7 +423,7 @@ void __init efi_reserve_boot_services(vo
+ 	}
+ }
+ 
+-static void __init efi_unmap_memmap(void)
++void __init efi_unmap_memmap(void)
+ {
+ 	if (memmap.map) {
+ 		early_iounmap(memmap.map, memmap.nr_map * memmap.desc_size);
+@@ -431,7 +435,7 @@ void __init efi_free_boot_services(void)
+ {
+ 	void *p;
+ 
+-	if (!efi_native)
++	if (!efi_is_native())
+ 		return;
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+@@ -683,12 +687,10 @@ void __init efi_init(void)
+ 		return;
+ 	}
+ 	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+-	efi_native = !efi_64bit;
+ #else
+ 	efi_phys.systab = (efi_system_table_t *)
+ 			  (boot_params.efi_info.efi_systab |
+ 			  ((__u64)boot_params.efi_info.efi_systab_hi<<32));
+-	efi_native = efi_64bit;
+ #endif
+ 
+ 	if (efi_systab_init(efi_phys.systab)) {
+@@ -722,7 +724,7 @@ void __init efi_init(void)
+ 	 * that doesn't match the kernel 32/64-bit mode.
+ 	 */
+ 
+-	if (!efi_native)
++	if (!efi_is_native())
+ 		pr_info("No EFI runtime due to 32/64-bit mismatch with kernel\n");
+ 	else if (efi_runtime_init()) {
+ 		efi_enabled = 0;
+@@ -734,7 +736,7 @@ void __init efi_init(void)
+ 		return;
+ 	}
+ #ifdef CONFIG_X86_32
+-	if (efi_native) {
++	if (efi_is_native()) {
+ 		x86_platform.get_wallclock = efi_get_time;
+ 		x86_platform.set_wallclock = efi_set_rtc_mmss;
+ 	}
+@@ -800,7 +802,7 @@ void __init efi_enter_virtual_mode(void)
+ 	 * non-native EFI
+ 	 */
+ 
+-	if (!efi_native) {
++	if (!efi_is_native()) {
+ 		efi_unmap_memmap();
+ 		return;
+ 	}
 
 
