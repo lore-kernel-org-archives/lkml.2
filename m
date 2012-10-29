@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab2J2OLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:11:09 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51850 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab2J2OLH (ORCPT
+	id S1754173Ab2J2OL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:11:29 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42105 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794Ab2J2OLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:11:07 -0400
+	Mon, 29 Oct 2012 10:11:25 -0400
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
+        Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Rik van Riel <riel@redhat.com>
 Cc: Srikar <srikar@linux.vnet.ibm.com>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         KVM <kvm@vger.kernel.org>,
@@ -20,103 +20,95 @@ Cc: Srikar <srikar@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
         Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>
-Date: Mon, 29 Oct 2012 19:36:22 +0530
-Message-Id: <20121029140621.15448.92083.sendpatchset@codeblue>
-Subject: [PATCH V2 RFC 0/3] kvm: Improving undercommit,overcommit scenarios
-x-cbid: 12102914-2674-0000-0000-000006839D52
+Date: Mon, 29 Oct 2012 19:36:42 +0530
+Message-Id: <20121029140642.15448.84115.sendpatchset@codeblue>
+In-Reply-To: <20121029140621.15448.92083.sendpatchset@codeblue>
+References: <20121029140621.15448.92083.sendpatchset@codeblue>
+Subject: [PATCH V2 RFC 1/3] sched: Bail out of yield_to when source and target runqueue has one task
+x-cbid: 12102914-5140-0000-0000-00000245C892
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- In some special scenarios like #vcpu <= #pcpu, PLE handler may
-prove very costly, because there is no need to iterate over vcpus
-and do unsuccessful yield_to burning CPU.
+From: Peter Zijlstra <peterz@infradead.org>
 
- Similarly, when we have large number of small guests, it is
-possible that a spinning vcpu fails to yield_to any vcpu of same
-VM and go back and spin. This is also not effective when we are
-over-committed. Instead, we do a yield() so that we give chance
-to other VMs to run.
+In case of undercomitted scenarios, especially in large guests
+yield_to overhead is significantly high. when run queue length of
+source and target is one, take an opportunity to bail out and return
+-ESRCH. This return condition can be further exploited to quickly come
+out of PLE handler.
 
-This patch tries to optimize above scenarios.
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Raghavendra, Checking the rq length of target vcpu condition added.
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+---
 
- The first patch optimizes all the yield_to by bailing out when there
- is no need to continue yield_to (i.e., when there is only one task 
- in source and target rq).
+ kernel/sched/core.c |   25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
- Second patch uses that in PLE handler.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2d8927f..fc219a5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+  * It's the caller's job to ensure that the target task struct
+  * can't go away on us before we can do any checks.
+  *
+- * Returns true if we indeed boosted the target task.
++ * Returns:
++ *	true (>0) if we indeed boosted the target task.
++ *	false (0) if we failed to boost the target.
++ *	-ESRCH if there's no task to yield to.
+  */
+ bool __sched yield_to(struct task_struct *p, bool preempt)
+ {
+@@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
  
- Third patch uses overall system load knowledge to take decison on
- continuing in yield_to handler, and also yielding in overcommits.
- To be precise, 
- * loadavg is converted to a scale of 2048  / per CPU 
- * a load value of less than 1024 is considered as undercommit and we
- return from PLE handler in those cases 
- * a load value of greater than 3586 (1.75 * 2048) is considered as overcommit
-  and  we yield to other VMs in such cases.
-
-(let threshold = 2048)
-Rationale for using threshold/2 for undercommit limit:
- Having a load below (0.5 * threshold) is used to avoid (the concern rasied by Rik)
-scenarios where we still have lock holder preempted vcpu waiting to be
-scheduled. (scenario arises when rq length is > 1 even when we are under
-committed)
-
-Rationale for using (1.75 * threshold) for overcommit scenario:
-This is a heuristic where we should probably see rq length > 1
-and a vcpu of a different VM is waiting to be scheduled.
-
- Related future work (independent of this series):
+ again:
+ 	p_rq = task_rq(p);
++	/*
++	 * If we're the only runnable task on the rq and target rq also
++	 * has only one task, there's absolutely no point in yielding.
++	 */
++	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
++		yielded = -ESRCH;
++		goto out_irq;
++	}
++
+ 	double_rq_lock(rq, p_rq);
+ 	while (task_rq(p) != p_rq) {
+ 		double_rq_unlock(rq, p_rq);
+@@ -4310,13 +4322,13 @@ again:
+ 	}
  
- - Dynamically changing PLE window depending on system load.
-
- Result on 3.7.0-rc1 kernel shows around 146% improvement for ebizzy 1x
- with 32 core PLE machine with 32 vcpu guest.
- I believe we should get very good improvements for overcommit (especially > 2)
- on large machines with small vcpu guests. (Could not test this as I do not have
- access to a bigger machine)
-
-base = 3.7.0-rc1 
-machine: 32 core mx3850 x5 PLE mc
-
---+-----------+-----------+-----------+------------+-----------+
-               ebizzy (rec/sec higher is beter)
---+-----------+-----------+-----------+------------+-----------+
-    base        stdev       patched     stdev       %improve     
---+-----------+-----------+-----------+------------+-----------+
-1x  2543.3750    20.2903    6279.3750    82.5226   146.89143   
-2x  2410.8750    96.4327    2450.7500   207.8136     1.65396
-3x  2184.9167   205.5226    2178.3333    97.2034    -0.30131
---+-----------+-----------+-----------+------------+-----------+
-
---+-----------+-----------+-----------+------------+-----------+
-        dbench (throughput in MB/sec. higher is better)
---+-----------+-----------+-----------+------------+-----------+
-    base        stdev       patched     stdev       %improve     
---+-----------+-----------+-----------+------------+-----------+
-1x  5545.4330   596.4344    7042.8510  1012.0924    27.00272
-2x  1993.0970    43.6548    1990.6200    75.7837    -0.12428
-3x  1295.3867    22.3997    1315.5208    36.0075     1.55429
---+-----------+-----------+-----------+------------+-----------+
-
- Changes since V1:
- - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
- - Use yield() instead of schedule in overcommit scenarios (Rik)
- - Use loadavg knowledge to detect undercommit/overcommit
-
- Peter Zijlstra (1):
-  Bail out of yield_to when source and target runqueue has one task
-
- Raghavendra K T (2):
-  Handle yield_to failure return for potential undercommit case
-  Check system load and handle different commit cases accordingly
-
- Please let me know your comments and suggestions.
-
- Link for V1:
- https://lkml.org/lkml/2012/9/21/168
-
- kernel/sched/core.c | 25 +++++++++++++++++++------
- virt/kvm/kvm_main.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 65 insertions(+), 16 deletions(-)
+ 	if (!curr->sched_class->yield_to_task)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (curr->sched_class != p->sched_class)
+-		goto out;
++		goto out_unlock;
+ 
+ 	if (task_running(p_rq, p) || p->state)
+-		goto out;
++		goto out_unlock;
+ 
+ 	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+ 	if (yielded) {
+@@ -4329,11 +4341,12 @@ again:
+ 			resched_task(p_rq->curr);
+ 	}
+ 
+-out:
++out_unlock:
+ 	double_rq_unlock(rq, p_rq);
++out_irq:
+ 	local_irq_restore(flags);
+ 
+-	if (yielded)
++	if (yielded > 0)
+ 		schedule();
+ 
+ 	return yielded;
 
