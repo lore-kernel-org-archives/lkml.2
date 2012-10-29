@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759238Ab2J2Ohz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Oct 2012 10:37:55 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:6243 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752714Ab2J2Ohx (ORCPT
+	id S1759285Ab2J2OiD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Oct 2012 10:38:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16124 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759249Ab2J2Oh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Oct 2012 10:37:53 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAG6Zu08YNPuJ/2dsb2JhbAANN4UtsgEBAQEBAyNVARALDgYEAgIFFgsCAgkDAgECATQRBg0BBQIBAYgVpwOSe4EmiWIahA6BFAOWKoldiAmBQw
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="203067846"
-Message-ID: <508E94BF.4010007@teksavvy.com>
-Date: Mon, 29 Oct 2012 10:37:51 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: Regression from 3.4.9 to 3.4.16 "stable" kernel
-References: <508E002B.4090200@teksavvy.com> <20121029064643.GE574@1wt.eu> <508E913D.2080104@teksavvy.com>
-In-Reply-To: <508E913D.2080104@teksavvy.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 29 Oct 2012 10:37:59 -0400
+X-Authority-Analysis: v=2.0 cv=YP4dOG6x c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=4456EzkC7ncA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=HN6keoNmPfQA:10 a=pGLkceISAAAA:8 a=TaiTUGwJvLFDZ6K1fv8A:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.115.198
+Message-ID: <1351521477.8467.78.camel@gandalf.local.home>
+Subject: Re: [RFC PATCH 9/9] printk: Wake up klogd using irq_work
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Mon, 29 Oct 2012 10:37:57 -0400
+In-Reply-To: <1351517296-9173-10-git-send-email-fweisbec@gmail.com>
+References: <1351517296-9173-1-git-send-email-fweisbec@gmail.com>
+	 <1351517296-9173-10-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-10-29 10:22 AM, Mark Lord wrote:
-> On 12-10-29 02:46 AM, Willy Tarreau wrote:
->> On Mon, Oct 29, 2012 at 12:03:55AM -0400, Mark Lord wrote:
->>> My server here runs the 3.4.xx series of "stable" kernels.
->>> Until today, it was running 3.4.9.
->>> Today I tried to upgrade it to 3.4.16.
->>> It hangs in setup.c.
->>>
->>> I've isolated the fault down to this specific change
->>> that was made between 3.4.9 and 3.4.16.
->>> Reverting this change allows the system to boot/run normally again.
-..
->> For the record, it is this commit introduced in 3.4.16 :
->>
->> commit efd5fa0c1a1d1b46846ea6e8d1a783d0d8a6a721
->> Author: Jacob Shin <jacob.shin@amd.com>
->> Date:   Thu Oct 20 16:15:26 2011 -0500
->>
->>     x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
->>     
->>     commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
->>     
->>     On systems with very large memory (1 TB in our case), BIOS may report a
->>     reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
->>     these from the direct mapping.
->>     
->>     [ hpa: this should be done not just for > 4 GB but for everything above the legacy
->>       region (1 MB), at the very least.  That, however, turns out to require significant
->>       restructuring.  That work is well underway, but is not suitable for rc/stable. ]
->>     
->>     Signed-off-by: Jacob Shin <jacob.shin@amd.com>
->>     Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
->>     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-..
-> I've also now downloaded linux-3.7.0-rc3, and it boots/runs without need for patching.
-> So there's a fix somewhere in between that perhaps could also get backported to -stable.
-..
+On Mon, 2012-10-29 at 14:28 +0100, Frederic Weisbecker wrote:
+> klogd is woken up asynchronously from the tick in order
+> to do it safely.
+> 
+> However if printk is called when the tick is stopped, the reader
+> won't be woken up until the next interrupt, which might not fire
+> before a while. As a result, the user may miss some message.
 
-Heh.. except that kernel has its own issues -- hangs in some kind of screen loop
-in the Radeon code (?) when trying to shutdown.  ctrl-alt-sysrq s+u+s+b gets out of that,
-but it hangs in a similar fashion during the subsequent reboot.
+Just a grammar nit (and goes for your previous patch as well). We say
+"might not fire for a while." or you could say ".. for some time", but
+not "before a while" ;-)
 
-A full power-off was required to get the Radeon video to behave so I could reboot
-the system with 3.4.16 again.  I'm not going to pursue that issue for now, though.
+I wounder what the French translation of that is.
+
+-- Steve
+
+
+> 
+> To fix this, lets implement the printk tick using a lazy irq work.
+> This subsystem takes care of the timer tick state and can
+> fix up accordingly.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
 
